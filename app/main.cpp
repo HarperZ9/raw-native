@@ -6,6 +6,8 @@
 #include "raw/composite.hpp"
 #include "raw/certificate.hpp"
 #include "raw/render.hpp"
+#include "raw/cli_params.hpp"
+#include "raw/channels_json.hpp"
 #include "raw/mat.hpp"
 #include "raw/arena.hpp"
 #include <string>
@@ -17,16 +19,33 @@
 #include <optional>
 #include <utility>
 using namespace raw;
-// Render one frame and every Tier-3 channel. prevViewProj defaults to the
-// current frame's view-projection (static camera -> zero motion).
-static FrameResult renderFrame(int W, int H, Arena* arena){
-    Scene s = buildTestScene(W, H, arena);
-    Mat4 curVP = mul(s.camera.proj(), s.camera.view());
-    return renderWithParams(s, W, H, /*prevViewProj=*/curVP, arena);
+// Build the parameterized scene: the canonical test geometry/lights, but the
+// camera and frame size come from the CLI params (the model's chosen view).
+static Scene buildScene(const CliParams& p, Arena* arena){
+    Scene s = buildTestScene(p.width, p.height, arena);
+    s.camera = cameraFromParams(p);
+    return s;
+}
+// Render one frame and every Tier-3 channel for the given params. The previous
+// camera (when supplied) drives motion reprojection; otherwise the previous
+// view-projection equals the current one -> honest zero motion.
+static FrameResult renderFrame(const CliParams& p, Arena* arena){
+    Scene s = buildScene(p, arena);
+    Mat4 curVP  = mul(s.camera.proj(), s.camera.view());
+    Mat4 prevVP = curVP;
+    if (p.hasPrevCamera()){
+        Camera pc = prevCameraFromParams(p);
+        prevVP = mul(pc.proj(), pc.view());
+    }
+    return renderWithParams(s, p.width, p.height, prevVP, arena);
 }
 int main(int argc, char** argv){
-    std::string out = argc > 1 ? argv[1] : ".";
-    const int W = 256, H = 256;
+    std::string err;
+    std::optional<CliParams> parsed = parseArgs(argc, argv, err);
+    if (!parsed){ std::printf("param error: %s\n", err.c_str()); return 2; }
+    const CliParams p = *parsed;
+    const std::string out = p.out;
+    const int W = p.width, H = p.height;
 
     // PASS 1 - MEASURE the footprint in a computed generous slab (no magic constant).
     const std::size_t PER_PIXEL_UPPER =
@@ -36,7 +55,7 @@ int main(int argc, char** argv){
     std::size_t slabUB = (std::size_t)W*H*PER_PIXEL_UPPER*2 + (1u<<20);
     std::vector<std::uint8_t> slab1(slabUB);
     Arena measure(slab1.data(), slabUB);
-    try { (void)renderFrame(W, H, &measure); }
+    try { (void)renderFrame(p, &measure); }
     catch (const std::bad_alloc&){ std::printf("measure pass overflowed slab - raise PER_PIXEL_UPPER\n"); return 2; }
     std::size_t Hbytes = measure.stats().high_water;
 
@@ -44,7 +63,7 @@ int main(int argc, char** argv){
     std::vector<std::uint8_t> slab2(Hbytes);
     Arena arena(slab2.data(), Hbytes);
     FrameResult o(&arena);
-    try { o = renderFrame(W, H, &arena); }
+    try { o = renderFrame(p, &arena); }
     catch (const std::bad_alloc&){
         Certificate br = certificate_from_arena(arena.stats());
         std::ofstream(out + "/arena_certificate.json") << to_json(br);
@@ -57,8 +76,9 @@ int main(int argc, char** argv){
     writePGM(o.aoSS,  out + "/ao_ss.pgm");
     writePGM(o.rec.errorMap, out + "/ao_error.pgm");
 
-    // Per-channel fidelity witness. Static-camera CLI -> motion is all-zero but
-    // fully valid, so motion coherence is 1.0; HDR headroom is the real max.
+    // Per-channel fidelity witness. Motion coherence is null when no covered
+    // pixel has a denominator; with a static (or absent) previous camera every
+    // covered pixel is a valid zero, so coherence is 1.0. HDR headroom is real.
     std::optional<double> motionCoherence =
         o.motionTotal > 0 ? std::optional<double>((double)o.motionValid / o.motionTotal)
                           : std::nullopt;
@@ -67,6 +87,11 @@ int main(int argc, char** argv){
     Certificate arenaCert = certificate_from_arena(arena.stats());
     std::ofstream(out + "/certificate.json")        << to_json(aoCert);
     std::ofstream(out + "/arena_certificate.json")  << to_json(arenaCert);
+
+    // The single machine-readable artifact the two-way loop reads back: the
+    // certificate PLUS compact channel summaries, so a caller need not parse the
+    // raw image files. Absent channels are honest null.
+    std::ofstream(out + "/channels.json") << channelsJson(o, p);
 
     std::printf("reconcile: pixels=%d rmse=%.4f maxError=%.4f verdict=%s\n",
         o.rec.pixels, o.rec.rmse, o.rec.maxError,
