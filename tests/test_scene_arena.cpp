@@ -5,7 +5,7 @@
 #include <cstdint>
 using namespace raw;
 int main() {
-    // heap scene (default) — unchanged behavior
+    // heap scene (default) - unchanged behavior
     Scene heap = buildTestScene(256, 256);
     CHECK(heap.meshes.size() == 2);
     CHECK(heap.lights.size() == 1);
@@ -13,7 +13,7 @@ int main() {
     for (auto& m : heap.meshes) tris += m.indices.size() / 3;
     CHECK(tris > 0);
 
-    // arena scene — geometry drawn from the arena, identical structure
+    // arena scene - geometry drawn from the arena, identical structure
     std::array<std::uint8_t, 65536> backing{};
     Arena a(backing.data(), backing.size());
     Scene as = buildTestScene(256, 256, &a);

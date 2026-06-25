@@ -9,11 +9,14 @@ struct GBuffer {
     Buffer<float> depth;
     Buffer<Vec3> normal, position, albedo;
     Buffer<uint8_t> mask;
+    // Screen-space velocity per pixel (Tier-3 channel): current minus previous
+    // clip-space UV, in [0,1] UV units. Zero for a static camera. See raw/motion.hpp.
+    Buffer<Vec2> motion;
     GBuffer() = default;
     explicit GBuffer(Arena* a)
-        : depth(a), normal(a), position(a), albedo(a), mask(a) {}
+        : depth(a), normal(a), position(a), albedo(a), mask(a), motion(a) {}
     void resize(int W,int H){ w=W;h=H;
         depth.resize(W,H); normal.resize(W,H); position.resize(W,H);
-        albedo.resize(W,H); mask.resize(W,H); }
+        albedo.resize(W,H); mask.resize(W,H); motion.resize(W,H); }
 };
 }
