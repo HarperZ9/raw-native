@@ -1,5 +1,40 @@
 # raw-native
 
+![raw-native hero](docs/brand/raw-native-hero.png)
+
+> Render and verify a small CPU scene with C++23, ambient occlusion, and certificates.
+
+raw-native is a zero-dependency C++23 rendering and verification engine. It
+renders a small scene, compares screen-space ambient occlusion against a
+ray-traced reference, and emits JSON certificates for the render and allocator.
+
+## Why it matters
+
+Creative engines and scientific demos need renderers that can produce evidence,
+not only pixels. raw-native is a compact CPU-side testbed for measured rendering,
+bounded memory, and receipt-backed comparison.
+
+## Try it
+
+```sh
+cmake -B build -S .
+cmake --build build
+ctest --test-dir build -C Debug --output-on-failure
+```
+
+## What to test first
+
+- Build the C++23 command-line driver.
+- Run CTest.
+- Run `./build/raw_native_cli ./out` and inspect the generated certificates.
+
+## Current status
+
+Local feature branch with standalone C++23 renderer work. It has no remote
+configured in this checkout, so changes here are local until a remote is added.
+
+## Existing technical notes
+
 A zero-dependency, two-way rendering engine in C++23.
 
 raw-native renders a small 3D scene two ways and then checks one against the
@@ -56,7 +91,7 @@ cmake --build build
 ## Test
 
 ```sh
-ctest --test-dir build --output-on-failure
+ctest --test-dir build -C Debug --output-on-failure
 ```
 
 ## Run
