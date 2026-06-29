@@ -113,3 +113,13 @@ fails closed and emits a breach certificate instead of growing.
 ## License
 
 MIT. See [LICENSE](LICENSE). Copyright (c) 2026 Zain Dana Harper.
+
+## For developers
+
+Keep the public README, build notes, and examples aligned with current behavior. Before opening a PR or pushing a release, run the local native verification path.
+
+```bash
+cmake -S . -B build
+cmake --build build
+ctest --test-dir build --output-on-failure
+```
