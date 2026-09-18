@@ -43,29 +43,36 @@ int main(int argc, char** argv){
     // PASS 2 — render within a budget of EXACTLY the measured footprint.
     std::vector<std::uint8_t> slab2(Hbytes);
     Arena arena(slab2.data(), Hbytes);
-    FrameOut o;
-    try { o = renderFrame(W, H, &arena); }
+    try {
+        // Direct initialization elides the extra move. Debug iterator bookkeeping
+        // during a vector move can allocate after the measured budget is full.
+        FrameOut o = renderFrame(W, H, &arena);
+        writePPM(o.frame, out + "/frame.ppm");
+        writePGM(o.aoRT,  out + "/ao_rt.pgm");
+        writePGM(o.aoSS,  out + "/ao_ss.pgm");
+        writePGM(o.rec.errorMap, out + "/ao_error.pgm");
+
+        Certificate aoCert    = certificate_from_reconcile(o.rec, 0.12f);
+        Certificate arenaCert = certificate_from_arena(arena.stats());
+        std::ofstream(out + "/certificate.json")        << to_json(aoCert);
+        std::ofstream(out + "/arena_certificate.json")  << to_json(arenaCert);
+
+        std::printf("reconcile: pixels=%d rmse=%.4f maxError=%.4f verdict=%s\n",
+            o.rec.pixels, o.rec.rmse, o.rec.maxError,
+            o.rec.withinTolerance ? "WITHIN-TOLERANCE" : "DIVERGENT");
+        std::printf("certificate: %s\n", to_json(aoCert).c_str());
+        std::printf("arena: %s\n", arena_witness(arena.stats()).c_str());
+        std::printf("arena-certificate: %s\n", to_json(arenaCert).c_str());
+        return 0;
+    }
     catch (const std::bad_alloc&){
+        if (arena.stats().refusals == 0) {
+            std::fprintf(stderr, "heap allocation failed; no arena refusal recorded\n");
+            return 2;
+        }
         Certificate br = certificate_from_arena(arena.stats());
         std::ofstream(out + "/arena_certificate.json") << to_json(br);
         std::printf("arena: %s\n", to_json(br).c_str());     // BREACHED, fail-closed
         return 1;
     }
-    writePPM(o.frame, out + "/frame.ppm");
-    writePGM(o.aoRT,  out + "/ao_rt.pgm");
-    writePGM(o.aoSS,  out + "/ao_ss.pgm");
-    writePGM(o.rec.errorMap, out + "/ao_error.pgm");
-
-    Certificate aoCert    = certificate_from_reconcile(o.rec, 0.12f);
-    Certificate arenaCert = certificate_from_arena(arena.stats());
-    std::ofstream(out + "/certificate.json")        << to_json(aoCert);
-    std::ofstream(out + "/arena_certificate.json")  << to_json(arenaCert);
-
-    std::printf("reconcile: pixels=%d rmse=%.4f maxError=%.4f verdict=%s\n",
-        o.rec.pixels, o.rec.rmse, o.rec.maxError,
-        o.rec.withinTolerance ? "WITHIN-TOLERANCE" : "DIVERGENT");
-    std::printf("certificate: %s\n", to_json(aoCert).c_str());
-    std::printf("arena: %s\n", arena_witness(arena.stats()).c_str());
-    std::printf("arena-certificate: %s\n", to_json(arenaCert).c_str());
-    return 0;
 }
