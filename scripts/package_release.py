@@ -11,6 +11,13 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 EPOCH = (1980, 1, 1, 0, 0, 0)
+TEXT = (".md", ".mjs", "LICENSE")
+
+
+def read(src):
+    """File bytes; text files with LF line endings whatever the checkout uses."""
+    data = Path(src).read_bytes()
+    return data.replace(b"\r\n", b"\n") if str(src).endswith(TEXT) else data
 
 
 def zip_pack(dest, prefix, files):
@@ -19,7 +26,7 @@ def zip_pack(dest, prefix, files):
             info = zipfile.ZipInfo(f"{prefix}/{name}", EPOCH)
             info.external_attr = (0o100000 | mode) << 16
             info.compress_type = zipfile.ZIP_DEFLATED
-            z.writestr(info, Path(src).read_bytes())
+            z.writestr(info, read(src))
 
 
 def tar_pack(dest, prefix, files):
@@ -29,7 +36,7 @@ def tar_pack(dest, prefix, files):
         d.type, d.mode, d.mtime = tarfile.DIRTYPE, 0o755, 0
         t.addfile(d)
         for name, src, mode in sorted(files):
-            data = Path(src).read_bytes()
+            data = read(src)
             info = tarfile.TarInfo(f"{prefix}/{name}")
             info.size, info.mode, info.mtime = len(data), mode, 0
             t.addfile(info, io.BytesIO(data))
@@ -60,7 +67,7 @@ def main():
     p = f"raw-native-{v}-wasm"
     zip_pack(dist / f"{p}.zip", p, docs + wasm_files); names.append(f"{p}.zip")
     for name, src, _ in wasm_files:
-        shutil.copyfile(src, dist / name); names.append(name)
+        (dist / name).write_bytes(read(src)); names.append(name)
     lines = [f"{hashlib.sha256((dist / n).read_bytes()).hexdigest()}  {n}" for n in names]
     (dist / "SHA256SUMS").write_text("\n".join(lines) + "\n", newline="\n")
     print("\n".join(lines))
