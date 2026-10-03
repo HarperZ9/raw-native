@@ -21,12 +21,17 @@
 #include <optional>
 #include <utility>
 #include <cstring>
+#include <filesystem>
+#include <system_error>
 using namespace raw;
 // Render, write every file and certificate, and print the summary for a frame
 // rendered inside `arena`.
 static int emitOutputs(const FrameResult& o, const CliParams& p, Arena& arena){
     const std::string out = p.out;
     FileDigests outputs = writeFrameFiles(o, p);
+    for (const auto& kv : outputs){
+        if (kv.second.empty()){ std::printf("could not write %s/%s\n", out.c_str(), kv.first.c_str()); return 2; }
+    }
     Certificate aoCert    = aoCertificate(o, p, outputs);
     Certificate arenaCert = certificate_from_arena(arena.stats());
     std::ofstream(out + "/certificate.json")        << to_json(aoCert);
@@ -85,6 +90,12 @@ int main(int argc, char** argv){
     if (p.bench > 0){ std::printf("%s\n", benchJson(p).c_str()); return 0; }
     const std::string out = p.out;
     const int W = p.width, H = p.height;
+    // Create the output directory up front. A render whose files cannot be
+    // written is bad setup (exit 2), never a silent success.
+    std::error_code dirErr;
+    std::filesystem::create_directories(out, dirErr);
+    if (dirErr || !std::filesystem::is_directory(out)){
+        std::printf("cannot create output directory: %s\n", out.c_str()); return 2; }
 
     // PASS 1 - MEASURE the footprint in a computed generous slab (no magic constant).
     const std::size_t PER_PIXEL_UPPER =
