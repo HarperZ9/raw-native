@@ -5,7 +5,7 @@
 #include <type_traits>
 namespace raw {
 // A std::allocator that draws bytes from a raw::Arena (arena_ != null) or the heap
-// (arena_ == null, the default — so existing containers are byte-for-byte unchanged).
+// (arena_ == null, the default - so existing containers are byte-for-byte unchanged).
 // Over-budget arena allocation is fail-closed: it throws std::bad_alloc.
 template<class T>
 struct ArenaAllocator {
