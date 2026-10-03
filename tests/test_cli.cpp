@@ -34,6 +34,13 @@ int main() {
     char program[] = "raw_native_cli";
     char* args[] = {program, destination.data()};
     CHECK(raw_cli_main(2, args) == 0);
+    char versionFlag[] = "--version";
+    char* versionArgs[] = {program, versionFlag};
+    CHECK(raw_cli_main(2, versionArgs) == 0);
+    CHECK(std::string(raw::version()).rfind("raw-native ", 0) == 0);
+    char badFlag[] = "--no-such-flag";
+    char* badArgs[] = {program, badFlag};
+    CHECK(raw_cli_main(2, badArgs) == 2);
     for (const char* name : {"frame.ppm", "ao_rt.pgm", "ao_ss.pgm",
                              "ao_error.pgm", "certificate.json", "arena_certificate.json"}) {
         CHECK(std::filesystem::exists(out / name));

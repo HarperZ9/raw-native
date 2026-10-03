@@ -35,3 +35,13 @@ compile_commands.json
 .idea/
 .DS_Store
 Thumbs.db
+
+# Example certificates shipped with the docs
+!docs/examples/*.json
+
+# Local scratch output
+/views/
+/run*/
+/t/
+/_inst/
+/build-*/

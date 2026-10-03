@@ -1,8 +1,11 @@
 #pragma once
 #include <cmath>
 namespace raw {
+struct Vec2 { float x{}, y{}; };
 struct Vec3 { float x{}, y{}, z{}; };
 struct Vec4 { float x{}, y{}, z{}, w{}; };
+inline Vec2 operator-(Vec2 a, Vec2 b){ return {a.x-b.x, a.y-b.y}; }
+inline float length(Vec2 v){ return std::sqrt(v.x*v.x + v.y*v.y); }
 inline Vec3 operator+(Vec3 a, Vec3 b){ return {a.x+b.x,a.y+b.y,a.z+b.z}; }
 inline Vec3 operator-(Vec3 a, Vec3 b){ return {a.x-b.x,a.y-b.y,a.z-b.z}; }
 inline Vec3 operator*(Vec3 a, float s){ return {a.x*s,a.y*s,a.z*s}; }
