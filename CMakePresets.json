@@ -1,0 +1,36 @@
+{
+  "version": 6,
+  "configurePresets": [
+    {
+      "name": "wasm",
+      "displayName": "WebAssembly (Emscripten, baseline)",
+      "description": "Needs EMSDK set by emsdk_env. Output: build-wasm/raw-native.mjs and raw-native.wasm",
+      "generator": "Ninja",
+      "binaryDir": "${sourceDir}/build-wasm",
+      "toolchainFile": "$env{EMSDK}/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake",
+      "cacheVariables": {
+        "CMAKE_BUILD_TYPE": "Release",
+        "RAW_NATIVE_BUILD_TESTS": "OFF"
+      }
+    },
+    {
+      "name": "wasm-simd",
+      "inherits": "wasm",
+      "displayName": "WebAssembly with SIMD",
+      "binaryDir": "${sourceDir}/build-wasm-simd",
+      "cacheVariables": { "RAW_NATIVE_WASM_SIMD": "ON" }
+    },
+    {
+      "name": "wasm-threads",
+      "inherits": "wasm",
+      "displayName": "WebAssembly with SIMD and pthreads (needs cross-origin isolation)",
+      "binaryDir": "${sourceDir}/build-wasm-threads",
+      "cacheVariables": { "RAW_NATIVE_WASM_SIMD": "ON", "RAW_NATIVE_WASM_THREADS": "ON" }
+    }
+  ],
+  "buildPresets": [
+    { "name": "wasm", "configurePreset": "wasm" },
+    { "name": "wasm-simd", "configurePreset": "wasm-simd" },
+    { "name": "wasm-threads", "configurePreset": "wasm-threads" }
+  ]
+}

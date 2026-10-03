@@ -18,6 +18,10 @@ struct CliParams {
     Vec3 center{0,1,0};          // camera look-at target (world)
     Vec3 up{0,1,0};              // camera up
     float fovy{0.9f};            // vertical field of view, radians
+    float tolerance{0.12f};      // RMSE bound for the AO verdict
+    bool  rtao{true};            // false: skip the ray-traced reference (--no-rt)
+    int   threads{1};            // render threads; output is identical for any count
+    int   bench{0};              // > 0: time this many renders, print JSON, write no files
     // Previous camera for motion reprojection. Absent -> static frame (the
     // previous view equals the current view, so motion is honestly all-zero).
     std::optional<Vec3> prevEye;
@@ -42,9 +46,15 @@ Camera prevCameraFromParams(const CliParams& p);
 //   --width <int>  --height <int>
 //   --eye x,y,z    --target x,y,z   --up x,y,z
 //   --fovy <radians>
+//   --tolerance <rmse>  --no-rt  --threads <n>  --bench <runs>
 //   --prev-eye x,y,z  --prev-target x,y,z  --prev-up x,y,z
 //   --params <file.json>            (loaded first; later flags override it)
 // On a malformed value, returns std::nullopt and writes a reason to `err`.
+// Canonical JSON of every parameter that changes the rendered output: sorted
+// keys, floats at round-trip precision, absent previous camera as null. `out`,
+// `threads` and `bench` are excluded because they do not change the pixels.
+std::string canonicalParamsJson(const CliParams& p);
+
 std::optional<CliParams> parseArgs(int argc, const char* const* argv, std::string& err);
 
 // Parse a small flat JSON params object (stdlib only, no third-party parser):

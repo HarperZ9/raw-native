@@ -1,5 +1,6 @@
 #include "raw/ray_ao.hpp"
 #include "raw/primitives.hpp"
+#include "raw/parallel.hpp"
 #include <cmath>
 #include <cstdint>
 namespace raw {
@@ -15,9 +16,10 @@ static void basis(Vec3 n, Vec3& t, Vec3& b){
     t = normalize(cross(a, n)); b = cross(n, t);
 }
 Buffer<float> computeRTAO(const GBuffer& g, const LinearAccel& accel,
-                          int samples, float radius, Arena* arena){
+                          int samples, float radius, Arena* arena, int threads){
     Buffer<float> ao(arena); ao.resize(g.w, g.h);
-    for (int y=0;y<g.h;++y) for (int x=0;x<g.w;++x){
+    parallelRows(g.h, threads, [&](int y){
+    for (int x=0;x<g.w;++x){
         if (!g.mask.at(x,y)){ ao.at(x,y)=1.0f; continue; }
         Vec3 p = g.position.at(x,y);
         Vec3 n = g.normal.at(x,y);
@@ -36,6 +38,7 @@ Buffer<float> computeRTAO(const GBuffer& g, const LinearAccel& accel,
         }
         ao.at(x,y) = (float)open / (float)samples;
     }
+    });
     return ao;
 }
 }

@@ -97,5 +97,32 @@ int main(){
     }
     CHECK(diffZ > 50);
 
+    // (5) 0.3.0 flags and the canonical params record.
+    {
+        const char* a2[] = {"cli", "--tolerance", "0.2", "--no-rt", "--threads", "3", "--bench", "2"};
+        std::string e2;
+        auto q = parseArgs(8, a2, e2);
+        CHECK(q.has_value());
+        if (q){
+            CHECK_NEAR(q->tolerance, 0.2f, 1e-7);
+            CHECK(!q->rtao);
+            CHECK(q->threads == 3);
+            CHECK(q->bench == 2);
+            std::string c = canonicalParamsJson(*q);
+            CHECK(c.find("\"rt\":false") != std::string::npos);
+            CHECK(c.find("\"tolerance\":0.200000003") != std::string::npos);
+            CHECK(c.find("threads") == std::string::npos);   // does not change the pixels
+            CHECK(c.find("\"out\"") == std::string::npos);
+            // The canonical record reads back as a params file to the same record.
+            CliParams back;
+            std::string e3;
+            CHECK(applyParamsJson(c, back, e3));
+            CHECK(canonicalParamsJson(back) == c);
+        }
+        const char* bad[] = {"cli", "--threads", "0"};
+        CHECK(!parseArgs(3, bad, e2).has_value());
+        const char* badTol[] = {"cli", "--tolerance", "-1"};
+        CHECK(!parseArgs(3, badTol, e2).has_value());
+    }
     return raw_test_summary();
 }

@@ -4,6 +4,7 @@
 #include <cstdlib>
 #include <cctype>
 #include <cstring>
+#include <cstdio>
 namespace raw {
 Camera cameraFromParams(const CliParams& p){
     Camera c;
@@ -80,6 +81,13 @@ std::optional<CliParams> parseArgs(int argc, const char* const* argv, std::strin
             if (!parseInt(v, p.height)){ err = "bad --height"; return std::nullopt; } }
         else if (a == "--fovy"){ const char* v = need(i); if (!v) return std::nullopt;
             if (!parseFloat(v, p.fovy)){ err = "bad --fovy"; return std::nullopt; } }
+        else if (a == "--tolerance"){ const char* v = need(i); if (!v) return std::nullopt;
+            if (!parseFloat(v, p.tolerance) || !(p.tolerance >= 0.0f)){ err = "bad --tolerance"; return std::nullopt; } }
+        else if (a == "--threads"){ const char* v = need(i); if (!v) return std::nullopt;
+            if (!parseInt(v, p.threads) || p.threads < 1 || p.threads > 256){ err = "bad --threads (1..256)"; return std::nullopt; } }
+        else if (a == "--bench"){ const char* v = need(i); if (!v) return std::nullopt;
+            if (!parseInt(v, p.bench) || p.bench < 1 || p.bench > 1000){ err = "bad --bench (1..1000)"; return std::nullopt; } }
+        else if (a == "--no-rt"){ p.rtao = false; }
         else if (a == "--eye"){ const char* v = need(i); if (!v) return std::nullopt;
             if (!parseVec3(v, p.eye)){ err = "bad --eye (want x,y,z)"; return std::nullopt; } }
         else if (a == "--target"){ const char* v = need(i); if (!v) return std::nullopt;
@@ -140,13 +148,18 @@ bool applyParamsJson(const std::string& json, CliParams& p, std::string& err){
     if (findValue(json, "width", v)  && !parseInt(v, p.width)){ err = "bad json width"; return false; }
     if (findValue(json, "height", v) && !parseInt(v, p.height)){ err = "bad json height"; return false; }
     if (findValue(json, "fovy", v)   && !parseFloat(v, p.fovy)){ err = "bad json fovy"; return false; }
+    if (findValue(json, "tolerance", v) && (!parseFloat(v, p.tolerance) || !(p.tolerance >= 0.0f))){
+        err = "bad json tolerance"; return false; }
+    if (findValue(json, "rt", v)){
+        if (v == "true") p.rtao = true; else if (v == "false") p.rtao = false;
+        else { err = "bad json rt"; return false; } }
     Vec3 t;
     if (findValue(json, "eye", v)){ if (!jsonArrayVec3(v, t)){ err = "bad json eye"; return false; } p.eye = t; }
     if (findValue(json, "target", v)){ if (!jsonArrayVec3(v, t)){ err = "bad json target"; return false; } p.center = t; }
     if (findValue(json, "up", v)){ if (!jsonArrayVec3(v, t)){ err = "bad json up"; return false; } p.up = t; }
-    if (findValue(json, "prev_eye", v)){ if (!jsonArrayVec3(v, t)){ err = "bad json prev_eye"; return false; } p.prevEye = t; }
-    if (findValue(json, "prev_target", v)){ if (!jsonArrayVec3(v, t)){ err = "bad json prev_target"; return false; } p.prevCenter = t; }
-    if (findValue(json, "prev_up", v)){ if (!jsonArrayVec3(v, t)){ err = "bad json prev_up"; return false; } p.prevUp = t; }
+    if (findValue(json, "prev_eye", v) && v != "null"){ if (!jsonArrayVec3(v, t)){ err = "bad json prev_eye"; return false; } p.prevEye = t; }
+    if (findValue(json, "prev_target", v) && v != "null"){ if (!jsonArrayVec3(v, t)){ err = "bad json prev_target"; return false; } p.prevCenter = t; }
+    if (findValue(json, "prev_up", v) && v != "null"){ if (!jsonArrayVec3(v, t)){ err = "bad json prev_up"; return false; } p.prevUp = t; }
     if (p.width <= 0 || p.height <= 0){ err = "json width/height must be positive"; return false; }
     return true;
 }
@@ -156,5 +169,25 @@ bool loadParamsFile(const std::string& path, CliParams& p, std::string& err){
     if (!f){ err = "cannot open params file: " + path; return false; }
     std::ostringstream ss; ss << f.rdbuf();
     return applyParamsJson(ss.str(), p, err);
+}
+// --- canonical params ----------------------------------------------------
+static std::string cf(float v){ char b[32]; std::snprintf(b, sizeof b, "%.9g", (double)v); return b; }
+static std::string cv(const Vec3& v){ return "[" + cf(v.x) + "," + cf(v.y) + "," + cf(v.z) + "]"; }
+static std::string cov(const std::optional<Vec3>& v){ return v ? cv(*v) : std::string("null"); }
+std::string canonicalParamsJson(const CliParams& p){
+    std::string o = "{";
+    o += "\"eye\":" + cv(p.eye);
+    o += ",\"fovy\":" + cf(p.fovy);
+    o += ",\"height\":" + std::to_string(p.height);
+    o += ",\"prev_eye\":" + cov(p.prevEye);
+    o += ",\"prev_target\":" + cov(p.prevCenter);
+    o += ",\"prev_up\":" + cov(p.prevUp);
+    o += std::string(",\"rt\":") + (p.rtao ? "true" : "false");
+    o += ",\"target\":" + cv(p.center);
+    o += ",\"tolerance\":" + cf(p.tolerance);
+    o += ",\"up\":" + cv(p.up);
+    o += ",\"width\":" + std::to_string(p.width);
+    o += "}";
+    return o;
 }
 }

@@ -1,0 +1,40 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>raw-native wasm benchmark</title>
+<style>body{font:14px/1.5 system-ui,sans-serif;margin:24px}pre{white-space:pre-wrap}</style>
+<h1>raw-native wasm benchmark</h1>
+<p>Each configuration runs <code>--bench 5</code> inside a Worker and reports the median of 5 full renders.</p>
+<pre id="log"></pre>
+<script type="module">
+const log = (s) => { document.getElementById("log").textContent += s + "\n"; };
+const q = new URLSearchParams(location.search);
+const runs = +(q.get("runs") || 5);
+const sizes = JSON.parse(q.get("sizes") || "[[256,256],[512,512],[1440,900]]");
+const modes = JSON.parse(q.get("modes") || "[true,false]");
+const variants = (q.get("variants") || "wasm,wasm-simd,wasm-threads").split(",");
+const sums = await (await fetch("../build-wasm-sums.json")).json();
+function runVariant(variant) {
+  return new Promise((resolve) => {
+    const dir = `../build-${variant}/`;
+    const w = new Worker("bench-worker.mjs", { type: "module" });
+    w.onmessage = ({ data }) => {
+      if (data.progress) log(data.progress);
+      if (data.error) { log(`${variant} ERROR ${data.error}`); resolve({ variant, error: data.error }); w.terminate(); }
+      if (data.done) { resolve({ variant, version: data.version, results: data.results }); w.terminate(); }
+    };
+    const threads = variant === "wasm-threads" ? navigator.hardwareConcurrency : 1;
+    w.postMessage({ variant, moduleUrl: dir + "raw-native.mjs", wasmUrl: dir + "raw-native.wasm",
+      moduleSha256: sums[variant].mjs, wasmSha256: sums[variant].wasm, threads, sizes, modes, runs });
+  });
+}
+log(`crossOriginIsolated=${self.crossOriginIsolated} hardwareConcurrency=${navigator.hardwareConcurrency}`);
+log(navigator.userAgent);
+const out = { userAgent: navigator.userAgent, crossOriginIsolated: self.crossOriginIsolated,
+  hardwareConcurrency: navigator.hardwareConcurrency, runs, variants: [] };
+for (const v of variants) {
+  if (v === "wasm-threads" && !self.crossOriginIsolated) { log("wasm-threads skipped: page is not cross-origin isolated"); out.variants.push({ variant: v, skipped: "not cross-origin isolated" }); continue; }
+  out.variants.push(await runVariant(v));
+}
+window.benchResult = out;
+log("DONE");
+</script>

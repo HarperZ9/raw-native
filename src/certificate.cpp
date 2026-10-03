@@ -35,6 +35,29 @@ static std::string jstr(const std::string& s){
     o += "\"";
     return o;
 }
+std::string exactFloat(float v){
+    if (!std::isfinite(v)) return "null";
+    char b[64]; std::snprintf(b, sizeof b, "%.9g", (double)v); return b;
+}
+// Append the raw-cert/2 block. Placed after the original fields so a reader of
+// the 0.2.0 shape still finds claim, verdict, oracle and evidence first.
+static void appendProvenance(std::string& o, const Provenance& p){
+    o += ",\"schema\":\"raw-cert/2\"";
+    o += ",\"renderer\":" + jstr(p.renderer);
+    o += ",\"params\":" + p.paramsJson;
+    o += ",\"samples\":{\"rt\":" + std::to_string(p.rtSamples)
+       + ",\"ss\":" + std::to_string(p.ssSamples) + "}";
+    o += ",\"exact\":{\"pixels\":" + std::to_string(p.pixels)
+       + ",\"rmse\":" + exactFloat(p.rmse)
+       + ",\"maxError\":" + exactFloat(p.maxError)
+       + ",\"tolerance\":" + exactFloat(p.tolerance) + "}";
+    o += ",\"outputs\":{";
+    for (std::size_t i = 0; i < p.outputs.size(); ++i){
+        if (i) o += ",";
+        o += jstr(p.outputs[i].first) + ":" + jstr(p.outputs[i].second);
+    }
+    o += "}";
+}
 std::string to_json(const Certificate& c){
     std::string o = "{";
     o += "\"claim\":"   + jstr(c.claim)                 + ",";
@@ -56,6 +79,7 @@ std::string to_json(const Certificate& c){
         o += "\"hdr_headroom\":"     + jnum(ch.hdrHeadroom);
         o += "}";
     }
+    if (c.provenance.has_value()) appendProvenance(o, *c.provenance);
     o += "}";
     return o;
 }

@@ -1,5 +1,8 @@
 cmake_minimum_required(VERSION 3.24)
-project(raw_native VERSION 0.2.0 LANGUAGES CXX)
+project(raw_native VERSION 0.3.0
+    DESCRIPTION "CPU renderer that checks fast ambient occlusion against a ray-traced reference"
+    HOMEPAGE_URL "https://github.com/HarperZ9/raw-native"
+    LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
@@ -12,6 +15,17 @@ target_include_directories(raw_native PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
     "$<INSTALL_INTERFACE:include>")
 target_compile_features(raw_native PUBLIC cxx_std_23)
+# Strip the build machine's source path from anything the compiler embeds, so
+# two checkouts in different directories produce the same binaries.
+target_compile_options(raw_native PUBLIC
+    "$<$<NOT:$<CXX_COMPILER_ID:MSVC>>:-ffile-prefix-map=${CMAKE_CURRENT_SOURCE_DIR}=.>")
+set(RAW_NATIVE_LICENSE "FSL-1.1-MIT")   # SPDX id; 0.2.0 and earlier were released under MIT
+if(EMSCRIPTEN)
+    include(cmake/wasm.cmake)
+elseif(NOT WIN32)
+    find_package(Threads REQUIRED)
+    target_link_libraries(raw_native PUBLIC Threads::Threads)
+endif()
 
 if(RAW_NATIVE_BUILD_TESTS)
     enable_testing()
@@ -27,6 +41,9 @@ endif()
 
 add_executable(raw_native_cli app/main.cpp)
 target_link_libraries(raw_native_cli PRIVATE raw_native)
+if(EMSCRIPTEN)
+    raw_native_wasm_target(raw_native_cli)
+endif()
 
 # Install the CLI, the static library, its headers and a CMake package so other
 # projects can use find_package(raw_native CONFIG) and link raw_native::raw_native.
@@ -40,9 +57,13 @@ install(DIRECTORY raw DESTINATION include FILES_MATCHING PATTERN "*.hpp")
 install(EXPORT raw_nativeTargets NAMESPACE raw_native::
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/raw_native)
 file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/raw_nativeConfig.cmake"
+    "set(raw_native_LICENSE \"${RAW_NATIVE_LICENSE}\")\n"
+    "include(CMakeFindDependencyMacro)\n"
+    "if(NOT WIN32)\n  find_dependency(Threads)\nendif()\n"
     "include(\"\${CMAKE_CURRENT_LIST_DIR}/raw_nativeTargets.cmake\")\n")
 write_basic_package_version_file("${CMAKE_CURRENT_BINARY_DIR}/raw_nativeConfigVersion.cmake"
     VERSION ${PROJECT_VERSION} COMPATIBILITY SameMinorVersion)
 install(FILES "${CMAKE_CURRENT_BINARY_DIR}/raw_nativeConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/raw_nativeConfigVersion.cmake"
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/raw_native)
+install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/doc/raw_native)

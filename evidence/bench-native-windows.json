@@ -1,0 +1,200 @@
+{
+  "note": "Windows runs use high priority with power throttling disabled",
+  "platform": "Windows-11-10.0.26220-SP0",
+  "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+  "cpu_count": 24,
+  "results": [
+    {
+      "renderer": "raw-native 0.3.0",
+      "width": 256,
+      "height": 256,
+      "rt": true,
+      "threads": 1,
+      "runs_ms": [
+        260.918,
+        257.628,
+        258.693,
+        256.299,
+        255.777
+      ],
+      "median_ms": 257.628,
+      "variant": "native"
+    },
+    {
+      "renderer": "raw-native 0.3.0",
+      "width": 256,
+      "height": 256,
+      "rt": false,
+      "threads": 1,
+      "runs_ms": [
+        29.721,
+        29.055,
+        28.95,
+        28.701,
+        28.649
+      ],
+      "median_ms": 28.95,
+      "variant": "native"
+    },
+    {
+      "renderer": "raw-native 0.3.0",
+      "width": 512,
+      "height": 512,
+      "rt": true,
+      "threads": 1,
+      "runs_ms": [
+        1022.472,
+        1022.625,
+        1044.265,
+        1027.567,
+        1033.617
+      ],
+      "median_ms": 1027.567,
+      "variant": "native"
+    },
+    {
+      "renderer": "raw-native 0.3.0",
+      "width": 512,
+      "height": 512,
+      "rt": false,
+      "threads": 1,
+      "runs_ms": [
+        118.17,
+        123.93,
+        117.014,
+        118.328,
+        115.657
+      ],
+      "median_ms": 118.17,
+      "variant": "native"
+    },
+    {
+      "renderer": "raw-native 0.3.0",
+      "width": 1440,
+      "height": 900,
+      "rt": true,
+      "threads": 1,
+      "runs_ms": [
+        4572.299,
+        4514.185,
+        4522.108,
+        4537.976,
+        4527.033
+      ],
+      "median_ms": 4527.033,
+      "variant": "native"
+    },
+    {
+      "renderer": "raw-native 0.3.0",
+      "width": 1440,
+      "height": 900,
+      "rt": false,
+      "threads": 1,
+      "runs_ms": [
+        526.617,
+        518.345,
+        533.846,
+        526.154,
+        529.9
+      ],
+      "median_ms": 526.617,
+      "variant": "native"
+    },
+    {
+      "renderer": "raw-native 0.3.0",
+      "width": 256,
+      "height": 256,
+      "rt": true,
+      "threads": 24,
+      "runs_ms": [
+        28.46,
+        41.449,
+        240.52,
+        261.324,
+        274.212
+      ],
+      "median_ms": 240.52,
+      "variant": "native-24t"
+    },
+    {
+      "renderer": "raw-native 0.3.0",
+      "width": 256,
+      "height": 256,
+      "rt": false,
+      "threads": 24,
+      "runs_ms": [
+        113.972,
+        127.406,
+        109.292,
+        102.052,
+        118.035
+      ],
+      "median_ms": 113.972,
+      "variant": "native-24t"
+    },
+    {
+      "renderer": "raw-native 0.3.0",
+      "width": 512,
+      "height": 512,
+      "rt": true,
+      "threads": 24,
+      "runs_ms": [
+        287.599,
+        345.933,
+        307.697,
+        255.526,
+        293.002
+      ],
+      "median_ms": 293.002,
+      "variant": "native-24t"
+    },
+    {
+      "renderer": "raw-native 0.3.0",
+      "width": 512,
+      "height": 512,
+      "rt": false,
+      "threads": 24,
+      "runs_ms": [
+        141.395,
+        119.286,
+        120.266,
+        116.382,
+        118.422
+      ],
+      "median_ms": 119.286,
+      "variant": "native-24t"
+    },
+    {
+      "renderer": "raw-native 0.3.0",
+      "width": 1440,
+      "height": 900,
+      "rt": true,
+      "threads": 24,
+      "runs_ms": [
+        584.53,
+        612.675,
+        619.641,
+        658.861,
+        584.665
+      ],
+      "median_ms": 612.675,
+      "variant": "native-24t"
+    },
+    {
+      "renderer": "raw-native 0.3.0",
+      "width": 1440,
+      "height": 900,
+      "rt": false,
+      "threads": 24,
+      "runs_ms": [
+        212.624,
+        253.189,
+        198.955,
+        183.369,
+        188.504
+      ],
+      "median_ms": 198.955,
+      "variant": "native-24t"
+    }
+  ]
+}
