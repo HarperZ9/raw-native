@@ -4,9 +4,11 @@
 #include <vector>
 namespace raw {
 // What the GPU adapter says about itself. Strings come from the WebGPU adapter
-// info and are recorded verbatim; empty means the browser did not say.
+// info or from DXGI and are recorded verbatim; empty means the API did not say.
+// driver is the user-mode driver version DXGI reports (D3D12 only; a browser
+// does not expose it).
 struct GpuAdapterInfo {
-    std::string vendor, architecture, device, description, backend;
+    std::string vendor, architecture, device, description, backend, driver;
 };
 // One channel compared between the GPU frame and the CPU reference, over the
 // pixels both sides cover.

@@ -2,7 +2,7 @@
 #include "raw/cli_params.hpp"
 #include <string>
 namespace raw {
-// raw_native_cli --gpu: render on the WebGPU backend, render the CPU reference
+// raw_native_cli --gpu: render on the GPU backend (D3D12 or WebGPU), render the CPU reference
 // for the same params, and write
 //   <out>/            the GPU frame's files, certificate.json and channels.json
 //   <out>/cpu/        the CPU reference's files, certificate.json and channels.json

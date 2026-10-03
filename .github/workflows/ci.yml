@@ -36,6 +36,72 @@ jobs:
           "$cli" verify out
           if command -v python3 >/dev/null && python3 --version >/dev/null 2>&1; then py=python3; else py=python; fi
           "$py" scripts/recheck.py out
+      - name: The default build has no GPU backend and says so
+        shell: bash
+        run: |
+          if [ -x build/raw_native_cli ]; then cli=build/raw_native_cli; else cli=build/Release/raw_native_cli.exe; fi
+          ! grep -qi "d3d12.dll" "$cli"
+          set +e; "$cli" --gpu --out gpu-none --width 64 --height 64 >/dev/null; rc=$?; set -e
+          test "$rc" = 4
+          grep -q '"verdict":"unverifiable"' gpu-none/gpu_certificate.json
+          grep -q '"backend":"none"' gpu-none/gpu_certificate.json
+      - name: The generated HLSL matches the WGSL
+        shell: bash
+        run: |
+          if command -v python3 >/dev/null && python3 --version >/dev/null 2>&1; then py=python3; else py=python; fi
+          "$py" scripts/wgsl_to_hlsl.py --selftest
+          "$py" scripts/wgsl_to_hlsl.py --check
+  d3d12:
+    # Builds the native D3D12 backend with the Windows SDK's DXC. The runner has
+    # no GPU: the hardware runtime test must report itself skipped with its
+    # reason (exit 77), and --gpu must exit 4 with an unverifiable certificate.
+    # WARP, the Windows software rasterizer, then runs the same D3D12 code path
+    # on the CPU; it is not a GPU and its results are not GPU evidence.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure with RAW_NATIVE_GPU_D3D12=ON
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRAW_NATIVE_GPU_D3D12=ON
+      - name: Build (compiles every HLSL pass to DXIL)
+        run: cmake --build build --config Release
+      - name: Test
+        run: ctest --test-dir build -C Release --output-on-failure
+      - name: The hardware runtime test is skipped, with its reason, and never passes without a GPU
+        shell: bash
+        run: |
+          set +e; build/Release/gpu_d3d12_runtime.exe | tee runtime.txt; rc=${PIPESTATUS[0]}; set -e
+          if [ "$rc" = 77 ]; then
+            reason=$(grep '^SKIP:' runtime.txt)
+            test -n "$reason"
+            echo "::notice title=D3D12 runtime test skipped::$reason"
+          elif [ "$rc" = 0 ]; then
+            grep -q '^adapter: ' runtime.txt
+            echo "::notice title=D3D12 runtime test ran::$(grep '^adapter: ' runtime.txt)"
+          else
+            exit 1
+          fi
+      - name: Without an adapter, --gpu exits 4 with an unverifiable certificate
+        shell: bash
+        run: |
+          set +e; build/Release/raw_native_cli.exe --gpu --out gpu-hw --width 64 --height 64; rc=$?; set -e
+          if [ "$rc" = 4 ]; then
+            grep -q '"verdict":"unverifiable"' gpu-hw/gpu_certificate.json
+            grep -q '"backend":"d3d12"' gpu-hw/gpu_certificate.json
+          else
+            test "$rc" = 0 && grep -q '"verdict":"verified"' gpu-hw/gpu_certificate.json
+          fi
+      - name: The D3D12 code path on WARP (software, not a GPU) matches the CPU reference
+        shell: bash
+        env:
+          RAW_NATIVE_D3D12_WARP: "1"
+        run: |
+          build/Release/gpu_d3d12_runtime.exe
+          build/Release/raw_native_cli.exe --gpu --out gpu-warp --width 128 --height 128 --prev-eye 4.3,4,5.7 >/dev/null
+          grep -q '"verdict":"verified"' gpu-warp/gpu_certificate.json
+          grep -q '"description":"Microsoft Basic Render Driver"' gpu-warp/gpu_certificate.json
+          build/Release/raw_native_cli.exe verify gpu-warp
+          build/Release/raw_native_cli.exe verify gpu-warp/cpu
+          cat gpu-warp/gpu_certificate.json
   wasm:
     runs-on: ubuntu-24.04
     env:

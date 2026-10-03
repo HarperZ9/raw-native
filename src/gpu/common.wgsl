@@ -1,4 +1,8 @@
-// raw-native WebGPU backend: definitions shared by every pass.
+// raw-native GPU passes: definitions shared by every pass.
+// This WGSL is the one shader source. WebGPU runs it as written; the D3D12
+// backend runs src/gpu/hlsl/, which scripts/wgsl_to_hlsl.py generates from it
+// (CI fails when the two differ). The translator needs every let and var to
+// carry an explicit type.
 // Each function mirrors one C++ function in src/ line for line, with the same
 // operation order, so the GPU computes the same float32 expressions as the CPU
 // reference. Shader compilers may still fuse or reorder; the reconcile
@@ -23,8 +27,8 @@ const SETUP_STRIDE: u32 = 16u;
 fn vlen(v: vec3f) -> f32 { return sqrt(v.x * v.x + v.y * v.y + v.z * v.z); }
 // raw::normalize: l > 0 ? v * (1/l) : v
 fn vnorm(v: vec3f) -> vec3f {
-    let l = vlen(v);
-    if (l > 0.0) { let s = 1.0 / l; return vec3f(v.x * s, v.y * s, v.z * s); }
+    let l: f32 = vlen(v);
+    if (l > 0.0) { let s: f32 = 1.0 / l; return vec3f(v.x * s, v.y * s, v.z * s); }
     return v;
 }
 fn vcross(a: vec3f, b: vec3f) -> vec3f {

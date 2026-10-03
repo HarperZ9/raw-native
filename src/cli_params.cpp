@@ -177,7 +177,7 @@ static std::string cv(const Vec3& v){ return "[" + cf(v.x) + "," + cf(v.y) + ","
 static std::string cov(const std::optional<Vec3>& v){ return v ? cv(*v) : std::string("null"); }
 std::string canonicalParamsJson(const CliParams& p){
     std::string o = "{";
-    if (p.gpu) o += "\"backend\":\"webgpu\",";
+    if (p.gpu) o += "\"backend\":\"" + (p.gpuBackend.empty() ? std::string("none") : p.gpuBackend) + "\",";
     o += "\"eye\":" + cv(p.eye);
     o += ",\"fovy\":" + cf(p.fovy);
     o += ",\"height\":" + std::to_string(p.height);

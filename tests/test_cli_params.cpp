@@ -131,8 +131,12 @@ int main(){
         auto g = parseArgs(2, a4, e4);
         CHECK(g.has_value() && g->gpu);
         if (g){
-            std::string c = canonicalParamsJson(*g);
-            CHECK(c.rfind("{\"backend\":\"webgpu\",\"eye\":", 0) == 0);
+            // 0.5.0: the backend name comes from the build; unset means no backend.
+            CHECK(canonicalParamsJson(*g).rfind("{\"backend\":\"none\",\"eye\":", 0) == 0);
+            CliParams wg = *g; wg.gpuBackend = "webgpu";
+            CHECK(canonicalParamsJson(wg).rfind("{\"backend\":\"webgpu\",\"eye\":", 0) == 0);
+            CliParams dx = *g; dx.gpuBackend = "d3d12";
+            CHECK(canonicalParamsJson(dx).rfind("{\"backend\":\"d3d12\",\"eye\":", 0) == 0);
             CliParams cpu = *g; cpu.gpu = false;
             CHECK(canonicalParamsJson(cpu).find("backend") == std::string::npos);
         }

@@ -18,6 +18,11 @@ std::string errorJson(const std::string& e){
     for (char c : e){ if (c == '"' || c == '\\') o += '\\'; o += (c == '\n' || c == '\r') ? ' ' : c; }
     return o + "\"}";
 }
+// A string as a JSON string value, escaped the same way.
+std::string jsonStr(const std::string& s){
+    std::string o = errorJson(s);                    // {"error":"<escaped>"}
+    return o.substr(9, o.size() - 10);               // "<escaped>"
+}
 struct GpuJob { Scene scene; Mat4 prevVP; RenderOptions opts; };
 GpuJob jobFor(const CliParams& p){
     GpuJob j{buildTestScene(p.width, p.height), {}, {}};
@@ -61,8 +66,9 @@ int runGpu(const CliParams& p){
     GpuReconcile r = reconcileGpuCpu(g, c, p.rtao);
     std::string cert = gpuCertificateJson(r, info, version(), canonicalParamsJson(p), gpuMs, cpuMs);
     std::ofstream(p.out + "/gpu_certificate.json") << cert;
-    std::printf("gpu: %s %s (%s), %.1f ms; cpu reference %.1f ms\n", info.vendor.c_str(), info.architecture.c_str(),
-                info.backend.c_str(), gpuMs, cpuMs);
+    std::printf("gpu: %s %s%s (%s%s%s), %.1f ms; cpu reference %.1f ms\n", info.vendor.c_str(), info.architecture.c_str(),
+                info.description.c_str(), info.backend.c_str(), info.driver.empty() ? "" : ", driver ",
+                info.driver.c_str(), gpuMs, cpuMs);
     std::printf("gpu-certificate: %s\n", cert.c_str());
     return 0;
 }
@@ -96,8 +102,10 @@ std::string benchGpuJson(const CliParams& p){
     if (!renderGpu(job.scene, p.width, p.height, job.prevVP, job.opts, warm, err)) return errorJson(err);
     std::vector<double> all, frame;
     if (!timeRuns(p, job, false, all, err) || !timeRuns(p, job, true, frame, err)) return errorJson(err);
-    std::string j = "{\"renderer\":\"" + std::string(version()) + "\",\"backend\":\"webgpu\"";
-    j += ",\"adapter\":{\"vendor\":\"" + info.vendor + "\",\"architecture\":\"" + info.architecture + "\"}";
+    std::string j = "{\"renderer\":\"" + std::string(version()) + "\",\"backend\":" + jsonStr(gpuBackendName());
+    j += ",\"adapter\":{\"vendor\":" + jsonStr(info.vendor) + ",\"architecture\":" + jsonStr(info.architecture)
+       + ",\"device\":" + jsonStr(info.device) + ",\"description\":" + jsonStr(info.description)
+       + ",\"driver\":" + jsonStr(info.driver) + "}";
     j += ",\"width\":" + std::to_string(p.width) + ",\"height\":" + std::to_string(p.height);
     j += std::string(",\"rt\":") + (p.rtao ? "true" : "false") + ",\"warmup_runs\":1";
     j += runsJson("", all) + runsJson("frame_only_", frame);

@@ -13,6 +13,7 @@
 #include "raw/version.hpp"
 #include "raw/run.hpp"
 #include "raw/gpu_run.hpp"
+#include "raw/gpu.hpp"
 #include <string>
 #include <vector>
 #include <cstdint>
@@ -60,7 +61,7 @@ static const char* kUsage =
     "  --no-rt                     skip the ray-traced reference; verdict is unverifiable\n"
     "  --threads <n>               render threads (default 1); output is identical for any n\n"
     "  --bench <runs>              time <runs> renders, print JSON, write no files\n"
-    "  --gpu                       render on the WebGPU backend (raw-native-gpu build only) and\n"
+    "  --gpu                       render on the GPU backend (D3D12 or WebGPU builds only) and\n"
     "                              write gpu_certificate.json against the CPU reference in <out>/cpu\n"
     "  --params <file.json>        load parameters first; later flags override\n"
     "  --version                   print the version and exit\n"
@@ -90,7 +91,8 @@ int main(int argc, char** argv){
     std::string err;
     std::optional<CliParams> parsed = parseArgs(argc, argv, err);
     if (!parsed){ std::printf("param error: %s\n", err.c_str()); return 2; }
-    const CliParams p = *parsed;
+    CliParams p = *parsed;
+    if (p.gpu) p.gpuBackend = gpuBackendName();
     if (p.gpu && p.bench > 0){ std::printf("%s\n", benchGpuJson(p).c_str()); return 0; }
     if (p.gpu) return runGpu(p);
     if (p.bench > 0){ std::printf("%s\n", benchJson(p).c_str()); return 0; }
