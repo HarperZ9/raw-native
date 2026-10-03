@@ -8,6 +8,7 @@
 #include "raw/scene.hpp"
 #include "check.hpp"
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 using namespace raw;
@@ -20,6 +21,9 @@ int main(){
     std::printf("adapter: %s %s (%s), driver %s\n", info.vendor.c_str(), info.description.c_str(),
                 info.device.c_str(), info.driver.c_str());
     CHECK(std::strcmp(gpuBackendName(), "d3d12") == 0);
+    // A software adapter is never a GPU result, whatever DXGI's flags say.
+    if (info.vendor == "microsoft" && !std::getenv("RAW_NATIVE_D3D12_WARP")){
+        std::printf("FAIL: a software adapter was selected as hardware\n"); return 1; }
     const int w = 96, h = 80;
     for (bool rt : {true, false}){
         Scene s = buildTestScene(w, h);

@@ -50,7 +50,11 @@ bool pickAdapter(Device& dev, std::string& err){
     for (UINT i = 0; f->EnumAdapterByGpuPreference(i, DXGI_GPU_PREFERENCE_HIGH_PERFORMANCE, IID_PPV_ARGS(&a)) != DXGI_ERROR_NOT_FOUND; ++i){
         DXGI_ADAPTER_DESC1 d{};
         a->GetDesc1(&d);
-        if (d.Flags & DXGI_ADAPTER_FLAG_SOFTWARE){ skipped += (skipped.empty() ? "" : ", ") + utf8(d.Description) + " (software)"; continue; }
+        // The Basic Render Driver is software; on a machine without a GPU (a CI
+        // runner) DXGI can list it without the software flag, so the vendor id
+        // decides too. Microsoft (0x1414) ships no hardware D3D12 adapter.
+        if ((d.Flags & DXGI_ADAPTER_FLAG_SOFTWARE) || d.VendorId == 0x1414){
+            skipped += (skipped.empty() ? "" : ", ") + utf8(d.Description) + " (software)"; continue; }
         if ((dev.device = tryDevice(a.Get()))){ dev.adapter = a; return true; }
         skipped += (skipped.empty() ? "" : ", ") + utf8(d.Description) + " (no D3D12 device with shader model 6.0)";
     }

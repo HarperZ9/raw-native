@@ -76,6 +76,7 @@ jobs:
             echo "::notice title=D3D12 runtime test skipped::$reason"
           elif [ "$rc" = 0 ]; then
             grep -q '^adapter: ' runtime.txt
+            ! grep -qi '^adapter: microsoft' runtime.txt
             echo "::notice title=D3D12 runtime test ran::$(grep '^adapter: ' runtime.txt)"
           else
             exit 1
@@ -89,6 +90,7 @@ jobs:
             grep -q '"backend":"d3d12"' gpu-hw/gpu_certificate.json
           else
             test "$rc" = 0 && grep -q '"verdict":"verified"' gpu-hw/gpu_certificate.json
+            ! grep -q '"vendor":"microsoft"' gpu-hw/gpu_certificate.json
           fi
       - name: The D3D12 code path on WARP (software, not a GPU) matches the CPU reference
         shell: bash

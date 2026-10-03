@@ -3,6 +3,10 @@
 so the same binaries always give the same archive bytes. Writes SHA256SUMS.
 
 Usage: package_release.py <version> <dist> --windows <exe> --linux <bin> --wasm <dir>
+                          [--windows-d3d12 <exe>]
+--windows-d3d12 adds raw-native-<version>-windows-x64-d3d12.zip: the CLI built
+with RAW_NATIVE_GPU_D3D12=ON, which renders --gpu on D3D12. The plain Windows
+archive stays the CPU-only, dependency-free build.
 The wasm dir must hold raw-native.mjs and raw-native.wasm. raw-loader.mjs is
 taken from wasm/ in this repo; raw-native-gpu.mjs and raw-native-gpu.wasm are
 included when present. The wasm files are also published loose,
@@ -52,6 +56,7 @@ def main():
     ap.add_argument("--windows", required=True)
     ap.add_argument("--linux", required=True)
     ap.add_argument("--wasm", required=True)
+    ap.add_argument("--windows-d3d12")
     a = ap.parse_args()
     v, dist = a.version, Path(a.dist)
     dist.mkdir(parents=True, exist_ok=True)
@@ -68,6 +73,9 @@ def main():
     names = []
     p = f"raw-native-{v}-windows-x64"
     zip_pack(dist / f"{p}.zip", p, docs + [("raw_native_cli.exe", a.windows, 0o755)]); names.append(f"{p}.zip")
+    if a.windows_d3d12:
+        p = f"raw-native-{v}-windows-x64-d3d12"
+        zip_pack(dist / f"{p}.zip", p, docs + [("raw_native_cli.exe", a.windows_d3d12, 0o755)]); names.append(f"{p}.zip")
     p = f"raw-native-{v}-linux-x64"
     tar_pack(dist / f"{p}.tar.gz", p, docs + [("raw_native_cli", a.linux, 0o755)]); names.append(f"{p}.tar.gz")
     p = f"raw-native-{v}-wasm"

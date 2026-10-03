@@ -31,7 +31,8 @@ struct Device {
     static Device& get();
     // Pick the first hardware adapter in the DXGI high-performance order that
     // creates a feature level 11_0 device with shader model 6.0, once. Software
-    // adapters (WARP, the Basic Render Driver) are skipped unless the environment
+    // adapters (WARP, the Basic Render Driver: the software flag or Microsoft's
+    // vendor id 0x1414) are skipped unless the environment
     // sets RAW_NATIVE_D3D12_WARP=1, which uses WARP explicitly.
     // RAW_NATIVE_D3D12_DEBUG=1 enables the D3D12 debug layer.
     static bool init(GpuAdapterInfo& info, std::string& err);
