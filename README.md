@@ -122,8 +122,11 @@ node wasm/run-node.mjs build-wasm/raw-native.mjs ./out-wasm
 python scripts/compare_renders.py ./out ./out-wasm
 ```
 
-With emsdk 6.0.11 the build is byte-for-byte repeatable: two checkouts in
-different directories produce the same `raw-native.wasm`. The presets
+With emsdk 6.0.11 on one host system the build is byte-for-byte repeatable:
+two checkouts in different directories produce the same `raw-native.wasm`. A
+build on a Linux host gives different wasm bytes than a build on a Windows host,
+and both write the same output files; CI checks the Linux build against the
+native renderer on every push. The released wasm was built on Windows. The presets
 `wasm-simd` and `wasm-threads` build the two variants in the timing table
 below.
 
