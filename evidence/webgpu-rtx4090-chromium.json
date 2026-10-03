@@ -1,0 +1,4579 @@
+{
+ "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+ "runs": 5,
+ "gpu": true,
+ "checks": [
+  {
+   "case": "256x256",
+   "rt": true,
+   "exitCode": 0,
+   "gpu_certificate": {
+    "schema": "raw-gpu-cert/1",
+    "claim": "the GPU frame matches the CPU reference within the committed tolerance",
+    "verdict": "verified",
+    "oracle": "raw-gpu-cpu-v1",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      4,
+      4,
+      6
+     ],
+     "fovy": 0.899999976,
+     "height": 256,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": true,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 256
+    },
+    "adapter": {
+     "vendor": "nvidia",
+     "architecture": "lovelace",
+     "device": "",
+     "description": "",
+     "backend": "webgpu"
+    },
+    "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
+    "coverage": {
+     "covered_either": 37996,
+     "covered_both": 37996,
+     "mismatch": 0,
+     "mismatch_fraction": 0,
+     "bound": 0.002,
+     "pass": true
+    },
+    "channels": [
+     {
+      "name": "depth_rel",
+      "values": 37996,
+      "rmse": 3.24587942e-08,
+      "max_error": 2.33515777e-07,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "position",
+      "values": 113988,
+      "rmse": 3.43616475e-07,
+      "max_error": 7.15255737e-06,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "normal",
+      "values": 113988,
+      "rmse": 1.16237186e-08,
+      "max_error": 5.96046448e-08,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "motion",
+      "values": 75992,
+      "rmse": 0,
+      "max_error": 0,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "ao_ss",
+      "values": 37996,
+      "rmse": 4.82515021e-09,
+      "max_error": 5.96046448e-08,
+      "bound": 0.01,
+      "pass": true
+     },
+     {
+      "name": "ao_rt",
+      "values": 37996,
+      "rmse": 0,
+      "max_error": 0,
+      "bound": 0.01,
+      "pass": true
+     },
+     {
+      "name": "frame",
+      "values": 113988,
+      "rmse": 2.29888419e-08,
+      "max_error": 1.1920929e-07,
+      "bound": 0.01,
+      "pass": true
+     }
+    ],
+    "ao_verdict": {
+     "cpu_rmse": 0.129436031,
+     "gpu_rmse": 0.129436031,
+     "rmse_delta_bound": 0.005,
+     "cpu": "refuted",
+     "gpu": "refuted",
+     "pass": true
+    },
+    "timing_ms": {
+     "gpu": 22.555,
+     "cpu": 329.98,
+     "judged": false
+    },
+    "does_not_prove": [
+     "Agreement with the CPU path is not agreement with ground truth: the CPU ray-traced AO is itself a 64-sample estimate.",
+     "Checked on the adapter and driver named here only. Another GPU, driver or browser may differ.",
+     "An RMSE bound limits the average difference, not the worst pixel. Maximum errors are reported, not bounded.",
+     "One built-in scene. No claim about other geometry, lights or materials.",
+     "The timings are one run each and are not judged."
+    ]
+   },
+   "gpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "refuted",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "37996"
+     ],
+     [
+      "rmse",
+      "0.1294"
+     ],
+     [
+      "maxError",
+      "0.6094"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": 0.885398,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.875542
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      4,
+      4,
+      6
+     ],
+     "fovy": 0.899999976,
+     "height": 256,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": true,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 256
+    },
+    "samples": {
+     "rt": 64,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 37996,
+     "rmse": 0.129436031,
+     "maxError": 0.609375,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_error.pgm": "e3ba51f463677aa4945e31641d62ca5f7d9b8d26dcf6b53534cb0edabd3eff9e",
+     "ao_rt.pfm": "3bd5cce0f7424363c04d17b7bf644b82a9f51338297b4666329d398e9fb886ee",
+     "ao_rt.pgm": "0a83697599343d297929b12227240f811d1e90f53a4bc76ca11eb568c2892f48",
+     "ao_ss.pfm": "89eb5c2d9207942cc929649a37d7c81d4e059e7c2b9d7d8454025501a8d6d85a",
+     "ao_ss.pgm": "305edb16225ab27a29223ef2d70e0ad3ac4799e3b4492904ce07616f5ad14acc",
+     "frame.ppm": "e276f24f4a2a23e7b43b61d2e45147446468bf8d99a75809675f2cea91edb06d",
+     "frame_hdr.pfm": "1814610e59c3b90fd2a040618174d9462a78347d2ef627a97f251cf6ed5cc661",
+     "mask.pgm": "413410cd6f8755f3b234272f0c100125a38ddd89c6a8bc302fe7463170f96108"
+    }
+   },
+   "cpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "refuted",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "37996"
+     ],
+     [
+      "rmse",
+      "0.1294"
+     ],
+     [
+      "maxError",
+      "0.6094"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": 0.885398,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.875542
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "eye": [
+      4,
+      4,
+      6
+     ],
+     "fovy": 0.899999976,
+     "height": 256,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": true,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 256
+    },
+    "samples": {
+     "rt": 64,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 37996,
+     "rmse": 0.129436031,
+     "maxError": 0.609375,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_error.pgm": "1f2b8dacd738ce231dfbe60d9ecef16c1972a5bcc59890c145edc139c9a04197",
+     "ao_rt.pfm": "3bd5cce0f7424363c04d17b7bf644b82a9f51338297b4666329d398e9fb886ee",
+     "ao_rt.pgm": "0a83697599343d297929b12227240f811d1e90f53a4bc76ca11eb568c2892f48",
+     "ao_ss.pfm": "66c99812f843fe487eabb77e397fbe05e08864f981fd0b1179eba6fb78f86fb3",
+     "ao_ss.pgm": "305edb16225ab27a29223ef2d70e0ad3ac4799e3b4492904ce07616f5ad14acc",
+     "frame.ppm": "e276f24f4a2a23e7b43b61d2e45147446468bf8d99a75809675f2cea91edb06d",
+     "frame_hdr.pfm": "5e598db0424414e7e37904592dbb295cbdb8623070ffb7350bd8e3ed867557db",
+     "mask.pgm": "413410cd6f8755f3b234272f0c100125a38ddd89c6a8bc302fe7463170f96108"
+    }
+   }
+  },
+  {
+   "case": "256x256",
+   "rt": false,
+   "exitCode": 0,
+   "gpu_certificate": {
+    "schema": "raw-gpu-cert/1",
+    "claim": "the GPU frame matches the CPU reference within the committed tolerance",
+    "verdict": "verified",
+    "oracle": "raw-gpu-cpu-v1",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      4,
+      4,
+      6
+     ],
+     "fovy": 0.899999976,
+     "height": 256,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": false,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 256
+    },
+    "adapter": {
+     "vendor": "nvidia",
+     "architecture": "lovelace",
+     "device": "",
+     "description": "",
+     "backend": "webgpu"
+    },
+    "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
+    "coverage": {
+     "covered_either": 37996,
+     "covered_both": 37996,
+     "mismatch": 0,
+     "mismatch_fraction": 0,
+     "bound": 0.002,
+     "pass": true
+    },
+    "channels": [
+     {
+      "name": "depth_rel",
+      "values": 37996,
+      "rmse": 3.24587942e-08,
+      "max_error": 2.33515777e-07,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "position",
+      "values": 113988,
+      "rmse": 3.43616475e-07,
+      "max_error": 7.15255737e-06,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "normal",
+      "values": 113988,
+      "rmse": 1.16237186e-08,
+      "max_error": 5.96046448e-08,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "motion",
+      "values": 75992,
+      "rmse": 0,
+      "max_error": 0,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "ao_ss",
+      "values": 37996,
+      "rmse": 4.82515021e-09,
+      "max_error": 5.96046448e-08,
+      "bound": 0.01,
+      "pass": true
+     },
+     {
+      "name": "frame",
+      "values": 113988,
+      "rmse": 1.946119e-08,
+      "max_error": 1.1920929e-07,
+      "bound": 0.01,
+      "pass": true
+     }
+    ],
+    "ao_verdict": null,
+    "timing_ms": {
+     "gpu": 10.4,
+     "cpu": 27.94,
+     "judged": false
+    },
+    "does_not_prove": [
+     "Agreement with the CPU path is not agreement with ground truth: the CPU ray-traced AO is itself a 64-sample estimate.",
+     "Checked on the adapter and driver named here only. Another GPU, driver or browser may differ.",
+     "An RMSE bound limits the average difference, not the worst pixel. Maximum errors are reported, not bounded.",
+     "One built-in scene. No claim about other geometry, lights or materials.",
+     "The timings are one run each and are not judged."
+    ]
+   },
+   "gpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "unverifiable",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "0"
+     ],
+     [
+      "rmse",
+      "0.0000"
+     ],
+     [
+      "maxError",
+      "0.0000"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": null,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.875542
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      4,
+      4,
+      6
+     ],
+     "fovy": 0.899999976,
+     "height": 256,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": false,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 256
+    },
+    "samples": {
+     "rt": 0,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 0,
+     "rmse": 0,
+     "maxError": 0,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_ss.pfm": "89eb5c2d9207942cc929649a37d7c81d4e059e7c2b9d7d8454025501a8d6d85a",
+     "ao_ss.pgm": "305edb16225ab27a29223ef2d70e0ad3ac4799e3b4492904ce07616f5ad14acc",
+     "frame.ppm": "88f3ae3e625e50ad9e87437a0dbd3e3079069391130a3dd99abdf655d28b8e8f",
+     "frame_hdr.pfm": "1641825095b00ab30b5f088cd15e29d7a0ad42d44f04b8797860158ee47375e7",
+     "mask.pgm": "413410cd6f8755f3b234272f0c100125a38ddd89c6a8bc302fe7463170f96108"
+    }
+   },
+   "cpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "unverifiable",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "0"
+     ],
+     [
+      "rmse",
+      "0.0000"
+     ],
+     [
+      "maxError",
+      "0.0000"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": null,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.875542
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "eye": [
+      4,
+      4,
+      6
+     ],
+     "fovy": 0.899999976,
+     "height": 256,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": false,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 256
+    },
+    "samples": {
+     "rt": 0,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 0,
+     "rmse": 0,
+     "maxError": 0,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_ss.pfm": "66c99812f843fe487eabb77e397fbe05e08864f981fd0b1179eba6fb78f86fb3",
+     "ao_ss.pgm": "305edb16225ab27a29223ef2d70e0ad3ac4799e3b4492904ce07616f5ad14acc",
+     "frame.ppm": "88f3ae3e625e50ad9e87437a0dbd3e3079069391130a3dd99abdf655d28b8e8f",
+     "frame_hdr.pfm": "639f92d90b6c1e9081fbe9998d8dfc40ae8c5f6fca55d00f43a4d12098d26eba",
+     "mask.pgm": "413410cd6f8755f3b234272f0c100125a38ddd89c6a8bc302fe7463170f96108"
+    }
+   }
+  },
+  {
+   "case": "512x512",
+   "rt": true,
+   "exitCode": 0,
+   "gpu_certificate": {
+    "schema": "raw-gpu-cert/1",
+    "claim": "the GPU frame matches the CPU reference within the committed tolerance",
+    "verdict": "verified",
+    "oracle": "raw-gpu-cpu-v1",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      4,
+      4,
+      6
+     ],
+     "fovy": 0.899999976,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": true,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "adapter": {
+     "vendor": "nvidia",
+     "architecture": "lovelace",
+     "device": "",
+     "description": "",
+     "backend": "webgpu"
+    },
+    "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
+    "coverage": {
+     "covered_either": 151984,
+     "covered_both": 151984,
+     "mismatch": 0,
+     "mismatch_fraction": 0,
+     "bound": 0.002,
+     "pass": true
+    },
+    "channels": [
+     {
+      "name": "depth_rel",
+      "values": 151984,
+      "rmse": 3.21099176e-08,
+      "max_error": 2.22538915e-07,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "position",
+      "values": 455952,
+      "rmse": 3.44100715e-07,
+      "max_error": 7.62939453e-06,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "normal",
+      "values": 455952,
+      "rmse": 1.28176186e-08,
+      "max_error": 5.96046448e-08,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "motion",
+      "values": 303968,
+      "rmse": 0,
+      "max_error": 0,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "ao_ss",
+      "values": 151984,
+      "rmse": 3.38438069e-09,
+      "max_error": 5.96046448e-08,
+      "bound": 0.01,
+      "pass": true
+     },
+     {
+      "name": "ao_rt",
+      "values": 151984,
+      "rmse": 4.00793889e-05,
+      "max_error": 0.015625,
+      "bound": 0.01,
+      "pass": true
+     },
+     {
+      "name": "frame",
+      "values": 455952,
+      "rmse": 9.50950099e-06,
+      "max_error": 0.00585409999,
+      "bound": 0.01,
+      "pass": true
+     }
+    ],
+    "ao_verdict": {
+     "cpu_rmse": 0.134912357,
+     "gpu_rmse": 0.134912148,
+     "rmse_delta_bound": 0.005,
+     "cpu": "refuted",
+     "gpu": "refuted",
+     "pass": true
+    },
+    "timing_ms": {
+     "gpu": 40.715,
+     "cpu": 1015.615,
+     "judged": false
+    },
+    "does_not_prove": [
+     "Agreement with the CPU path is not agreement with ground truth: the CPU ray-traced AO is itself a 64-sample estimate.",
+     "Checked on the adapter and driver named here only. Another GPU, driver or browser may differ.",
+     "An RMSE bound limits the average difference, not the worst pixel. Maximum errors are reported, not bounded.",
+     "One built-in scene. No claim about other geometry, lights or materials.",
+     "The timings are one run each and are not judged."
+    ]
+   },
+   "gpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "refuted",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "151984"
+     ],
+     [
+      "rmse",
+      "0.1349"
+     ],
+     [
+      "maxError",
+      "0.6406"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": 0.881125,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.875542
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      4,
+      4,
+      6
+     ],
+     "fovy": 0.899999976,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": true,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "samples": {
+     "rt": 64,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 151984,
+     "rmse": 0.134912148,
+     "maxError": 0.640625,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_error.pgm": "5ac2b519333e41b0d83e222be5e2fb25b41435514961413a96f69bcb6bccf32b",
+     "ao_rt.pfm": "1a01d940020e0c746c36794cf8ce72a1a585448c1fe1d86b4953e23ded6a38d7",
+     "ao_rt.pgm": "a644fede129bc165aa9fb233ee78aaec29f2a521b3dc44702838e6b6b23da44a",
+     "ao_ss.pfm": "a4ff6003bd284e4b8b898f44b806e7c56c3a196a7f102213a29015242b447d48",
+     "ao_ss.pgm": "ec08b52325d6e9f583963a78c271673bce6360ab4d405a1d5b76b37009b9b5a4",
+     "frame.ppm": "0285f52cb42b99f062e8dd8f4dad4026273ea902540912ad9fdcb50d5b29d801",
+     "frame_hdr.pfm": "d214462572ae7b2cbc527b6594e957950aebab20bb18f4769a7558812a40ba19",
+     "mask.pgm": "892aacd21cae36dfd14afe157ca30befb5fa8dc576f150aa5f1bec9938d721bc"
+    }
+   },
+   "cpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "refuted",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "151984"
+     ],
+     [
+      "rmse",
+      "0.1349"
+     ],
+     [
+      "maxError",
+      "0.6406"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": 0.881125,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.875542
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "eye": [
+      4,
+      4,
+      6
+     ],
+     "fovy": 0.899999976,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": true,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "samples": {
+     "rt": 64,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 151984,
+     "rmse": 0.134912357,
+     "maxError": 0.640625,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_error.pgm": "3cf1fd83151a016a554aad58ddd767e5ccca3832d83cd918021f4d5e231d1e31",
+     "ao_rt.pfm": "eb60b22d4151262866b956dfc3a0afe3541e0f7776d406cc7c7caf93ed219bc1",
+     "ao_rt.pgm": "fbddc1c59736f63a457fb4c7a2f8a3220b8f4779b9e42500a043a41e856ac9cf",
+     "ao_ss.pfm": "fddc169c7fca39e87ec032dfc471f066f1f7a932a9bc8812472d0b8f67cb7ce6",
+     "ao_ss.pgm": "ec08b52325d6e9f583963a78c271673bce6360ab4d405a1d5b76b37009b9b5a4",
+     "frame.ppm": "ff58d8c63e7ded4f6ed506d9b2521ed4d67a93a05e0f291b4d7c660802f55186",
+     "frame_hdr.pfm": "f155648b496680888024e4ec021c4981f822d9fa476ee415315c17e782054c32",
+     "mask.pgm": "892aacd21cae36dfd14afe157ca30befb5fa8dc576f150aa5f1bec9938d721bc"
+    }
+   }
+  },
+  {
+   "case": "512x512",
+   "rt": false,
+   "exitCode": 0,
+   "gpu_certificate": {
+    "schema": "raw-gpu-cert/1",
+    "claim": "the GPU frame matches the CPU reference within the committed tolerance",
+    "verdict": "verified",
+    "oracle": "raw-gpu-cpu-v1",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      4,
+      4,
+      6
+     ],
+     "fovy": 0.899999976,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": false,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "adapter": {
+     "vendor": "nvidia",
+     "architecture": "lovelace",
+     "device": "",
+     "description": "",
+     "backend": "webgpu"
+    },
+    "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
+    "coverage": {
+     "covered_either": 151984,
+     "covered_both": 151984,
+     "mismatch": 0,
+     "mismatch_fraction": 0,
+     "bound": 0.002,
+     "pass": true
+    },
+    "channels": [
+     {
+      "name": "depth_rel",
+      "values": 151984,
+      "rmse": 3.21099176e-08,
+      "max_error": 2.22538915e-07,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "position",
+      "values": 455952,
+      "rmse": 3.44100715e-07,
+      "max_error": 7.62939453e-06,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "normal",
+      "values": 455952,
+      "rmse": 1.28176186e-08,
+      "max_error": 5.96046448e-08,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "motion",
+      "values": 303968,
+      "rmse": 0,
+      "max_error": 0,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "ao_ss",
+      "values": 151984,
+      "rmse": 3.38438069e-09,
+      "max_error": 5.96046448e-08,
+      "bound": 0.01,
+      "pass": true
+     },
+     {
+      "name": "frame",
+      "values": 455952,
+      "rmse": 2.16811709e-08,
+      "max_error": 1.1920929e-07,
+      "bound": 0.01,
+      "pass": true
+     }
+    ],
+    "ao_verdict": null,
+    "timing_ms": {
+     "gpu": 26.93,
+     "cpu": 109.64,
+     "judged": false
+    },
+    "does_not_prove": [
+     "Agreement with the CPU path is not agreement with ground truth: the CPU ray-traced AO is itself a 64-sample estimate.",
+     "Checked on the adapter and driver named here only. Another GPU, driver or browser may differ.",
+     "An RMSE bound limits the average difference, not the worst pixel. Maximum errors are reported, not bounded.",
+     "One built-in scene. No claim about other geometry, lights or materials.",
+     "The timings are one run each and are not judged."
+    ]
+   },
+   "gpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "unverifiable",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "0"
+     ],
+     [
+      "rmse",
+      "0.0000"
+     ],
+     [
+      "maxError",
+      "0.0000"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": null,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.875542
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      4,
+      4,
+      6
+     ],
+     "fovy": 0.899999976,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": false,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "samples": {
+     "rt": 0,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 0,
+     "rmse": 0,
+     "maxError": 0,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_ss.pfm": "a4ff6003bd284e4b8b898f44b806e7c56c3a196a7f102213a29015242b447d48",
+     "ao_ss.pgm": "ec08b52325d6e9f583963a78c271673bce6360ab4d405a1d5b76b37009b9b5a4",
+     "frame.ppm": "f11d9c54440aa6b8956b7f62f259bd1fe48f0627c117d20a390ebbe1c2ac65e4",
+     "frame_hdr.pfm": "878050b73805d34f872c7b5150bd75d21afddef7e861a60222b6a5660c5467a2",
+     "mask.pgm": "892aacd21cae36dfd14afe157ca30befb5fa8dc576f150aa5f1bec9938d721bc"
+    }
+   },
+   "cpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "unverifiable",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "0"
+     ],
+     [
+      "rmse",
+      "0.0000"
+     ],
+     [
+      "maxError",
+      "0.0000"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": null,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.875542
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "eye": [
+      4,
+      4,
+      6
+     ],
+     "fovy": 0.899999976,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": false,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "samples": {
+     "rt": 0,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 0,
+     "rmse": 0,
+     "maxError": 0,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_ss.pfm": "fddc169c7fca39e87ec032dfc471f066f1f7a932a9bc8812472d0b8f67cb7ce6",
+     "ao_ss.pgm": "ec08b52325d6e9f583963a78c271673bce6360ab4d405a1d5b76b37009b9b5a4",
+     "frame.ppm": "f11d9c54440aa6b8956b7f62f259bd1fe48f0627c117d20a390ebbe1c2ac65e4",
+     "frame_hdr.pfm": "787985b4542834ba5bf90d290dd12999420acda995fbc94cfaa48e92821dfff4",
+     "mask.pgm": "892aacd21cae36dfd14afe157ca30befb5fa8dc576f150aa5f1bec9938d721bc"
+    }
+   }
+  },
+  {
+   "case": "1440x900",
+   "rt": true,
+   "exitCode": 0,
+   "gpu_certificate": {
+    "schema": "raw-gpu-cert/1",
+    "claim": "the GPU frame matches the CPU reference within the committed tolerance",
+    "verdict": "verified",
+    "oracle": "raw-gpu-cpu-v1",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      4,
+      4,
+      6
+     ],
+     "fovy": 0.899999976,
+     "height": 900,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": true,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 1440
+    },
+    "adapter": {
+     "vendor": "nvidia",
+     "architecture": "lovelace",
+     "device": "",
+     "description": "",
+     "backend": "webgpu"
+    },
+    "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
+    "coverage": {
+     "covered_either": 674096,
+     "covered_both": 674096,
+     "mismatch": 0,
+     "mismatch_fraction": 0,
+     "bound": 0.002,
+     "pass": true
+    },
+    "channels": [
+     {
+      "name": "depth_rel",
+      "values": 674096,
+      "rmse": 2.23273763e-08,
+      "max_error": 2.38002869e-07,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "position",
+      "values": 2022288,
+      "rmse": 1.79839268e-07,
+      "max_error": 6.67572021e-06,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "normal",
+      "values": 2022288,
+      "rmse": 1.3021957e-08,
+      "max_error": 5.96046448e-08,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "motion",
+      "values": 1348192,
+      "rmse": 0,
+      "max_error": 0,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "ao_ss",
+      "values": 674096,
+      "rmse": 2.21510374e-09,
+      "max_error": 5.96046448e-08,
+      "bound": 0.01,
+      "pass": true
+     },
+     {
+      "name": "ao_rt",
+      "values": 674096,
+      "rmse": 1.90308923e-05,
+      "max_error": 0.015625,
+      "bound": 0.01,
+      "pass": true
+     },
+     {
+      "name": "frame",
+      "values": 2022288,
+      "rmse": 1.45795512e-05,
+      "max_error": 0.0119702816,
+      "bound": 0.01,
+      "pass": true
+     }
+    ],
+    "ao_verdict": {
+     "cpu_rmse": 0.11490202,
+     "gpu_rmse": 0.114902012,
+     "rmse_delta_bound": 0.005,
+     "cpu": "verified",
+     "gpu": "verified",
+     "pass": true
+    },
+    "timing_ms": {
+     "gpu": 178.945,
+     "cpu": 4389.975,
+     "judged": false
+    },
+    "does_not_prove": [
+     "Agreement with the CPU path is not agreement with ground truth: the CPU ray-traced AO is itself a 64-sample estimate.",
+     "Checked on the adapter and driver named here only. Another GPU, driver or browser may differ.",
+     "An RMSE bound limits the average difference, not the worst pixel. Maximum errors are reported, not bounded.",
+     "One built-in scene. No claim about other geometry, lights or materials.",
+     "The timings are one run each and are not judged."
+    ]
+   },
+   "gpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "verified",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "674096"
+     ],
+     [
+      "rmse",
+      "0.1149"
+     ],
+     [
+      "maxError",
+      "0.7083"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": 0.89694,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.875542
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      4,
+      4,
+      6
+     ],
+     "fovy": 0.899999976,
+     "height": 900,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": true,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 1440
+    },
+    "samples": {
+     "rt": 64,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 674096,
+     "rmse": 0.114902012,
+     "maxError": 0.708333313,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_error.pgm": "b3d9720b0af12b53fb09ee8afd8eab702efbdd996463f8a2069b69224d96703d",
+     "ao_rt.pfm": "783f8456b7904110bffff8ab8c13e06eb792d0c06c600bfbd637496fe51204d2",
+     "ao_rt.pgm": "61fe4e84d5fa22de449d7fb50b0ab5663502ac15b33b9280d6bacd35aa5210e9",
+     "ao_ss.pfm": "b1c96a9bd90d0aceda300f73525cf4d9fcd89838ec64cea64c85657dbc339d11",
+     "ao_ss.pgm": "00e599a69baac1a059e2448407de49069e310a44536ffe3ca32998759ead3813",
+     "frame.ppm": "b1e3866b5913ff73643eb19c40991e899bbc56acbb8c7b75b69b00a04ab9e0ce",
+     "frame_hdr.pfm": "20e7ce66420d6506399cedd3800270a063437028a867cbd0f7b7094885cd527b",
+     "mask.pgm": "4db76785b0158d4ca64646d1750ba8df52aa62f6e7193650fbce0e92dc559bc7"
+    }
+   },
+   "cpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "verified",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "674096"
+     ],
+     [
+      "rmse",
+      "0.1149"
+     ],
+     [
+      "maxError",
+      "0.7083"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": 0.89694,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.875542
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "eye": [
+      4,
+      4,
+      6
+     ],
+     "fovy": 0.899999976,
+     "height": 900,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": true,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 1440
+    },
+    "samples": {
+     "rt": 64,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 674096,
+     "rmse": 0.11490202,
+     "maxError": 0.708333313,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_error.pgm": "a2f4bbb806a2cefa0b04d0e0db380742a44b703bb7fa404861fe05c7cb91afb5",
+     "ao_rt.pfm": "28b1d76b18416a3f085373eeb53ddea24f719b9dfd03f963c3cb36ca9754e9ed",
+     "ao_rt.pgm": "3408ab7c4fa2765dbc4022eb0479a5a5ff5fc2db7b7b0d16b135dc3f1129a880",
+     "ao_ss.pfm": "51a36e5176f943c0d2541df855482cc6ce52c47f2804820b4fff563e0e7f0076",
+     "ao_ss.pgm": "00e599a69baac1a059e2448407de49069e310a44536ffe3ca32998759ead3813",
+     "frame.ppm": "a585cc74713ca36d40cd0ea24b14ba614b4a2c82d1c73353b3e8d65895285549",
+     "frame_hdr.pfm": "bcb62727d79976c7c6567a710edb9448badbc8be8e9d7a324e191cc8a9df6e21",
+     "mask.pgm": "4db76785b0158d4ca64646d1750ba8df52aa62f6e7193650fbce0e92dc559bc7"
+    }
+   }
+  },
+  {
+   "case": "1440x900",
+   "rt": false,
+   "exitCode": 0,
+   "gpu_certificate": {
+    "schema": "raw-gpu-cert/1",
+    "claim": "the GPU frame matches the CPU reference within the committed tolerance",
+    "verdict": "verified",
+    "oracle": "raw-gpu-cpu-v1",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      4,
+      4,
+      6
+     ],
+     "fovy": 0.899999976,
+     "height": 900,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": false,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 1440
+    },
+    "adapter": {
+     "vendor": "nvidia",
+     "architecture": "lovelace",
+     "device": "",
+     "description": "",
+     "backend": "webgpu"
+    },
+    "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
+    "coverage": {
+     "covered_either": 674096,
+     "covered_both": 674096,
+     "mismatch": 0,
+     "mismatch_fraction": 0,
+     "bound": 0.002,
+     "pass": true
+    },
+    "channels": [
+     {
+      "name": "depth_rel",
+      "values": 674096,
+      "rmse": 2.23273763e-08,
+      "max_error": 2.38002869e-07,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "position",
+      "values": 2022288,
+      "rmse": 1.79839268e-07,
+      "max_error": 6.67572021e-06,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "normal",
+      "values": 2022288,
+      "rmse": 1.3021957e-08,
+      "max_error": 5.96046448e-08,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "motion",
+      "values": 1348192,
+      "rmse": 0,
+      "max_error": 0,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "ao_ss",
+      "values": 674096,
+      "rmse": 2.21510374e-09,
+      "max_error": 5.96046448e-08,
+      "bound": 0.01,
+      "pass": true
+     },
+     {
+      "name": "frame",
+      "values": 2022288,
+      "rmse": 2.21788384e-08,
+      "max_error": 1.1920929e-07,
+      "bound": 0.01,
+      "pass": true
+     }
+    ],
+    "ao_verdict": null,
+    "timing_ms": {
+     "gpu": 146.685,
+     "cpu": 487.51,
+     "judged": false
+    },
+    "does_not_prove": [
+     "Agreement with the CPU path is not agreement with ground truth: the CPU ray-traced AO is itself a 64-sample estimate.",
+     "Checked on the adapter and driver named here only. Another GPU, driver or browser may differ.",
+     "An RMSE bound limits the average difference, not the worst pixel. Maximum errors are reported, not bounded.",
+     "One built-in scene. No claim about other geometry, lights or materials.",
+     "The timings are one run each and are not judged."
+    ]
+   },
+   "gpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "unverifiable",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "0"
+     ],
+     [
+      "rmse",
+      "0.0000"
+     ],
+     [
+      "maxError",
+      "0.0000"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": null,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.875542
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      4,
+      4,
+      6
+     ],
+     "fovy": 0.899999976,
+     "height": 900,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": false,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 1440
+    },
+    "samples": {
+     "rt": 0,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 0,
+     "rmse": 0,
+     "maxError": 0,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_ss.pfm": "b1c96a9bd90d0aceda300f73525cf4d9fcd89838ec64cea64c85657dbc339d11",
+     "ao_ss.pgm": "00e599a69baac1a059e2448407de49069e310a44536ffe3ca32998759ead3813",
+     "frame.ppm": "b50facb76fee39c53e468a2df15d4139a5f00f866605efa1568220964bbd3484",
+     "frame_hdr.pfm": "7970b34b78ecb54ea2b6c0b84098404f01146db3233e1d44db4414edebda36c6",
+     "mask.pgm": "4db76785b0158d4ca64646d1750ba8df52aa62f6e7193650fbce0e92dc559bc7"
+    }
+   },
+   "cpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "unverifiable",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "0"
+     ],
+     [
+      "rmse",
+      "0.0000"
+     ],
+     [
+      "maxError",
+      "0.0000"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": null,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.875542
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "eye": [
+      4,
+      4,
+      6
+     ],
+     "fovy": 0.899999976,
+     "height": 900,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": false,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 1440
+    },
+    "samples": {
+     "rt": 0,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 0,
+     "rmse": 0,
+     "maxError": 0,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_ss.pfm": "51a36e5176f943c0d2541df855482cc6ce52c47f2804820b4fff563e0e7f0076",
+     "ao_ss.pgm": "00e599a69baac1a059e2448407de49069e310a44536ffe3ca32998759ead3813",
+     "frame.ppm": "b50facb76fee39c53e468a2df15d4139a5f00f866605efa1568220964bbd3484",
+     "frame_hdr.pfm": "8c16e1593660337f2f541d570e9ad13c81edcf97a9c43ecfa69694f4980fd1ab",
+     "mask.pgm": "4db76785b0158d4ca64646d1750ba8df52aa62f6e7193650fbce0e92dc559bc7"
+    }
+   }
+  },
+  {
+   "case": "high-512",
+   "rt": true,
+   "exitCode": 0,
+   "gpu_certificate": {
+    "schema": "raw-gpu-cert/1",
+    "claim": "the GPU frame matches the CPU reference within the committed tolerance",
+    "verdict": "verified",
+    "oracle": "raw-gpu-cpu-v1",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      0,
+      9,
+      3
+     ],
+     "fovy": 0.899999976,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": true,
+     "target": [
+      0,
+      0.5,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "adapter": {
+     "vendor": "nvidia",
+     "architecture": "lovelace",
+     "device": "",
+     "description": "",
+     "backend": "webgpu"
+    },
+    "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
+    "coverage": {
+     "covered_either": 239854,
+     "covered_both": 239854,
+     "mismatch": 0,
+     "mismatch_fraction": 0,
+     "bound": 0.002,
+     "pass": true
+    },
+    "channels": [
+     {
+      "name": "depth_rel",
+      "values": 239854,
+      "rmse": 5.06027221e-08,
+      "max_error": 2.30040271e-07,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "position",
+      "values": 719562,
+      "rmse": 3.47744815e-07,
+      "max_error": 2.86102295e-06,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "normal",
+      "values": 719562,
+      "rmse": 1.4267138e-08,
+      "max_error": 5.96046448e-08,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "motion",
+      "values": 479708,
+      "rmse": 0,
+      "max_error": 0,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "ao_ss",
+      "values": 239854,
+      "rmse": 1.96242603e-09,
+      "max_error": 5.96046448e-08,
+      "bound": 0.01,
+      "pass": true
+     },
+     {
+      "name": "ao_rt",
+      "values": 239854,
+      "rmse": 0,
+      "max_error": 0,
+      "bound": 0.01,
+      "pass": true
+     },
+     {
+      "name": "frame",
+      "values": 719562,
+      "rmse": 2.96492408e-08,
+      "max_error": 1.1920929e-07,
+      "bound": 0.01,
+      "pass": true
+     }
+    ],
+    "ao_verdict": {
+     "cpu_rmse": 0.082736887,
+     "gpu_rmse": 0.082736887,
+     "rmse_delta_bound": 0.005,
+     "cpu": "verified",
+     "gpu": "verified",
+     "pass": true
+    },
+    "timing_ms": {
+     "gpu": 17.05,
+     "cpu": 1593.955,
+     "judged": false
+    },
+    "does_not_prove": [
+     "Agreement with the CPU path is not agreement with ground truth: the CPU ray-traced AO is itself a 64-sample estimate.",
+     "Checked on the adapter and driver named here only. Another GPU, driver or browser may differ.",
+     "An RMSE bound limits the average difference, not the worst pixel. Maximum errors are reported, not bounded.",
+     "One built-in scene. No claim about other geometry, lights or materials.",
+     "The timings are one run each and are not judged."
+    ]
+   },
+   "gpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "verified",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "239854"
+     ],
+     [
+      "rmse",
+      "0.0827"
+     ],
+     [
+      "maxError",
+      "0.6250"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": 0.923585,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.875542
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      0,
+      9,
+      3
+     ],
+     "fovy": 0.899999976,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": true,
+     "target": [
+      0,
+      0.5,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "samples": {
+     "rt": 64,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 239854,
+     "rmse": 0.082736887,
+     "maxError": 0.625,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_error.pgm": "e4fc48d6bb3445ec62911225a416d7b8f734f9b0bba5bc32e19ee5d9ad1f3f26",
+     "ao_rt.pfm": "b668dcacaf770ed511ebc0ede1eab70a16f4b69a1562ea8d2ac1b5a3ef9e9363",
+     "ao_rt.pgm": "89092f12466c164c5d2cd84f3bd734ca7e386d8b5f79c67d8a1ed4d24ccae146",
+     "ao_ss.pfm": "7c5aa9618ddd80d1ab090ca60a35044faa7692581f24acf21d51a0c378247f9b",
+     "ao_ss.pgm": "adbd3a8952b3da460cea45961c72441593b14f78bda9448cc424b058e65ab7af",
+     "frame.ppm": "14cec3aa4762af9614e4082679cc2697328dc253fec92bd50aaef69bf1ae5da6",
+     "frame_hdr.pfm": "0b6c9ef3afa95b2220987bf80ba788b6918eb3ece1d8c579294045fb7ca697f1",
+     "mask.pgm": "d32d3fe82990b52212e212852fa88d583e49456756d990bca9d76063427a80ac"
+    }
+   },
+   "cpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "verified",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "239854"
+     ],
+     [
+      "rmse",
+      "0.0827"
+     ],
+     [
+      "maxError",
+      "0.6250"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": 0.923585,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.875542
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "eye": [
+      0,
+      9,
+      3
+     ],
+     "fovy": 0.899999976,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": true,
+     "target": [
+      0,
+      0.5,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "samples": {
+     "rt": 64,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 239854,
+     "rmse": 0.082736887,
+     "maxError": 0.625,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_error.pgm": "d15ef241c42fc6aeaf8c6b29f5b415c48a085ca654e922bf7626a629c2d84ad6",
+     "ao_rt.pfm": "b668dcacaf770ed511ebc0ede1eab70a16f4b69a1562ea8d2ac1b5a3ef9e9363",
+     "ao_rt.pgm": "89092f12466c164c5d2cd84f3bd734ca7e386d8b5f79c67d8a1ed4d24ccae146",
+     "ao_ss.pfm": "0f2a01d303635afb28d638aedd35d020e30f089a98568035951188ee8ddc00cd",
+     "ao_ss.pgm": "adbd3a8952b3da460cea45961c72441593b14f78bda9448cc424b058e65ab7af",
+     "frame.ppm": "14cec3aa4762af9614e4082679cc2697328dc253fec92bd50aaef69bf1ae5da6",
+     "frame_hdr.pfm": "2f015fea83fba17ec3349df8ba86f54dfbaade91f08f5b813f8472a8a075c7c2",
+     "mask.pgm": "d32d3fe82990b52212e212852fa88d583e49456756d990bca9d76063427a80ac"
+    }
+   }
+  },
+  {
+   "case": "high-512",
+   "rt": false,
+   "exitCode": 0,
+   "gpu_certificate": {
+    "schema": "raw-gpu-cert/1",
+    "claim": "the GPU frame matches the CPU reference within the committed tolerance",
+    "verdict": "verified",
+    "oracle": "raw-gpu-cpu-v1",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      0,
+      9,
+      3
+     ],
+     "fovy": 0.899999976,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": false,
+     "target": [
+      0,
+      0.5,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "adapter": {
+     "vendor": "nvidia",
+     "architecture": "lovelace",
+     "device": "",
+     "description": "",
+     "backend": "webgpu"
+    },
+    "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
+    "coverage": {
+     "covered_either": 239854,
+     "covered_both": 239854,
+     "mismatch": 0,
+     "mismatch_fraction": 0,
+     "bound": 0.002,
+     "pass": true
+    },
+    "channels": [
+     {
+      "name": "depth_rel",
+      "values": 239854,
+      "rmse": 5.06027221e-08,
+      "max_error": 2.30040271e-07,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "position",
+      "values": 719562,
+      "rmse": 3.47744815e-07,
+      "max_error": 2.86102295e-06,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "normal",
+      "values": 719562,
+      "rmse": 1.4267138e-08,
+      "max_error": 5.96046448e-08,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "motion",
+      "values": 479708,
+      "rmse": 0,
+      "max_error": 0,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "ao_ss",
+      "values": 239854,
+      "rmse": 1.96242603e-09,
+      "max_error": 5.96046448e-08,
+      "bound": 0.01,
+      "pass": true
+     },
+     {
+      "name": "frame",
+      "values": 719562,
+      "rmse": 2.49141206e-08,
+      "max_error": 1.1920929e-07,
+      "bound": 0.01,
+      "pass": true
+     }
+    ],
+    "ao_verdict": null,
+    "timing_ms": {
+     "gpu": 16.64,
+     "cpu": 173.94,
+     "judged": false
+    },
+    "does_not_prove": [
+     "Agreement with the CPU path is not agreement with ground truth: the CPU ray-traced AO is itself a 64-sample estimate.",
+     "Checked on the adapter and driver named here only. Another GPU, driver or browser may differ.",
+     "An RMSE bound limits the average difference, not the worst pixel. Maximum errors are reported, not bounded.",
+     "One built-in scene. No claim about other geometry, lights or materials.",
+     "The timings are one run each and are not judged."
+    ]
+   },
+   "gpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "unverifiable",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "0"
+     ],
+     [
+      "rmse",
+      "0.0000"
+     ],
+     [
+      "maxError",
+      "0.0000"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": null,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.875542
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      0,
+      9,
+      3
+     ],
+     "fovy": 0.899999976,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": false,
+     "target": [
+      0,
+      0.5,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "samples": {
+     "rt": 0,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 0,
+     "rmse": 0,
+     "maxError": 0,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_ss.pfm": "7c5aa9618ddd80d1ab090ca60a35044faa7692581f24acf21d51a0c378247f9b",
+     "ao_ss.pgm": "adbd3a8952b3da460cea45961c72441593b14f78bda9448cc424b058e65ab7af",
+     "frame.ppm": "dc8d3ff9af45f0bfea1c7bdea4dde15df52a3fbbf12a4f5873fb8a5985a7cefe",
+     "frame_hdr.pfm": "764cd80aba22134f4ac9358a6f4936504559f5eac2f9451ff2e8ab957ea866fe",
+     "mask.pgm": "d32d3fe82990b52212e212852fa88d583e49456756d990bca9d76063427a80ac"
+    }
+   },
+   "cpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "unverifiable",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "0"
+     ],
+     [
+      "rmse",
+      "0.0000"
+     ],
+     [
+      "maxError",
+      "0.0000"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": null,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.875542
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "eye": [
+      0,
+      9,
+      3
+     ],
+     "fovy": 0.899999976,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": false,
+     "target": [
+      0,
+      0.5,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "samples": {
+     "rt": 0,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 0,
+     "rmse": 0,
+     "maxError": 0,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_ss.pfm": "0f2a01d303635afb28d638aedd35d020e30f089a98568035951188ee8ddc00cd",
+     "ao_ss.pgm": "adbd3a8952b3da460cea45961c72441593b14f78bda9448cc424b058e65ab7af",
+     "frame.ppm": "dc8d3ff9af45f0bfea1c7bdea4dde15df52a3fbbf12a4f5873fb8a5985a7cefe",
+     "frame_hdr.pfm": "6a280f0e0939056cf531be4b579cace90c3a576f11cad1a13811ef43eb92e65f",
+     "mask.pgm": "d32d3fe82990b52212e212852fa88d583e49456756d990bca9d76063427a80ac"
+    }
+   }
+  },
+  {
+   "case": "low-512",
+   "rt": true,
+   "exitCode": 0,
+   "gpu_certificate": {
+    "schema": "raw-gpu-cert/1",
+    "claim": "the GPU frame matches the CPU reference within the committed tolerance",
+    "verdict": "verified",
+    "oracle": "raw-gpu-cpu-v1",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      6,
+      1.5,
+      2
+     ],
+     "fovy": 0.899999976,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": true,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "adapter": {
+     "vendor": "nvidia",
+     "architecture": "lovelace",
+     "device": "",
+     "description": "",
+     "backend": "webgpu"
+    },
+    "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
+    "coverage": {
+     "covered_either": 140838,
+     "covered_both": 140838,
+     "mismatch": 0,
+     "mismatch_fraction": 0,
+     "bound": 0.002,
+     "pass": true
+    },
+    "channels": [
+     {
+      "name": "depth_rel",
+      "values": 140838,
+      "rmse": 2.22555338e-08,
+      "max_error": 2.36070406e-07,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "position",
+      "values": 422514,
+      "rmse": 2.06029128e-06,
+      "max_error": 6.19888306e-05,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "normal",
+      "values": 422514,
+      "rmse": 1.31076736e-08,
+      "max_error": 5.96046448e-08,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "motion",
+      "values": 281676,
+      "rmse": 0,
+      "max_error": 0,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "ao_ss",
+      "values": 140838,
+      "rmse": 3.53364388e-09,
+      "max_error": 5.96046448e-08,
+      "bound": 0.01,
+      "pass": true
+     },
+     {
+      "name": "ao_rt",
+      "values": 140838,
+      "rmse": 4.16351469e-05,
+      "max_error": 0.015625,
+      "bound": 0.01,
+      "pass": true
+     },
+     {
+      "name": "frame",
+      "values": 422514,
+      "rmse": 3.18964557e-05,
+      "max_error": 0.011970222,
+      "bound": 0.01,
+      "pass": true
+     }
+    ],
+    "ao_verdict": {
+     "cpu_rmse": 0.165862963,
+     "gpu_rmse": 0.165862948,
+     "rmse_delta_bound": 0.005,
+     "cpu": "refuted",
+     "gpu": "refuted",
+     "pass": true
+    },
+    "timing_ms": {
+     "gpu": 17.205,
+     "cpu": 907.58,
+     "judged": false
+    },
+    "does_not_prove": [
+     "Agreement with the CPU path is not agreement with ground truth: the CPU ray-traced AO is itself a 64-sample estimate.",
+     "Checked on the adapter and driver named here only. Another GPU, driver or browser may differ.",
+     "An RMSE bound limits the average difference, not the worst pixel. Maximum errors are reported, not bounded.",
+     "One built-in scene. No claim about other geometry, lights or materials.",
+     "The timings are one run each and are not judged."
+    ]
+   },
+   "gpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "refuted",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "140838"
+     ],
+     [
+      "rmse",
+      "0.1659"
+     ],
+     [
+      "maxError",
+      "0.6927"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": 0.857734,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.766099
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      6,
+      1.5,
+      2
+     ],
+     "fovy": 0.899999976,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": true,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "samples": {
+     "rt": 64,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 140838,
+     "rmse": 0.165862948,
+     "maxError": 0.692708313,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_error.pgm": "d9de6403647d7108b87ba5f1ce5a330be1eff28b459021ee7ff7ea9d3a718e95",
+     "ao_rt.pfm": "f0406faf7e7ea9298142c0e2d80b10bbd7f6b972411e3f16928116c396b2e571",
+     "ao_rt.pgm": "c641c7aded84a03269e86a1bbf8e564bcec87fd0fb43ba27e8596f7bb1e79256",
+     "ao_ss.pfm": "db5ce1f14d84c1590da7576a4e7cfccb691fdea598608ec52ee4d08825e9b734",
+     "ao_ss.pgm": "0923a30eb2bbf19a93548c350aed2f4865ada4119617ce4181d7a8bff486a2c0",
+     "frame.ppm": "378a98279454d7f970ec3c6aa60f4c8d30ae63335b728b78a9aad0b033778676",
+     "frame_hdr.pfm": "ae99214cb3c7fba28f5725cb7e97be609d7b055d5071c4a67c33eb11803db30a",
+     "mask.pgm": "0b3a47ae9503df17e0f90dfa15d9774b98a1175a1f4611778be12b439e79acc5"
+    }
+   },
+   "cpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "refuted",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "140838"
+     ],
+     [
+      "rmse",
+      "0.1659"
+     ],
+     [
+      "maxError",
+      "0.6927"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": 0.857734,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.766099
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "eye": [
+      6,
+      1.5,
+      2
+     ],
+     "fovy": 0.899999976,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": true,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "samples": {
+     "rt": 64,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 140838,
+     "rmse": 0.165862963,
+     "maxError": 0.692708313,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_error.pgm": "320d31d2a9defe1fa73033ccbc5bb879d946f0a0fcc6d6f6d12579cf9a60cc6f",
+     "ao_rt.pfm": "1aba198921fd32865bce4980b6628e355db93496a5b1490aeed6b450831e5771",
+     "ao_rt.pgm": "51f13114314904d873200da1ceeb0c6ff94b6553fbfe016bc215a9d0d4fa51f9",
+     "ao_ss.pfm": "254809a6597592d18dfc247042f7f36b10e142ccf9f070a6326dc0ba1a407d62",
+     "ao_ss.pgm": "0923a30eb2bbf19a93548c350aed2f4865ada4119617ce4181d7a8bff486a2c0",
+     "frame.ppm": "7b2b2f4e5b78532ceafa46d6ac461824c2bc769fc89a587afc2556943590bfb1",
+     "frame_hdr.pfm": "34a6129fa46b2a8d4b162c5db487a5b842ea8b0f1203ca080f4eea1fbfd360e7",
+     "mask.pgm": "0b3a47ae9503df17e0f90dfa15d9774b98a1175a1f4611778be12b439e79acc5"
+    }
+   }
+  },
+  {
+   "case": "low-512",
+   "rt": false,
+   "exitCode": 0,
+   "gpu_certificate": {
+    "schema": "raw-gpu-cert/1",
+    "claim": "the GPU frame matches the CPU reference within the committed tolerance",
+    "verdict": "verified",
+    "oracle": "raw-gpu-cpu-v1",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      6,
+      1.5,
+      2
+     ],
+     "fovy": 0.899999976,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": false,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "adapter": {
+     "vendor": "nvidia",
+     "architecture": "lovelace",
+     "device": "",
+     "description": "",
+     "backend": "webgpu"
+    },
+    "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
+    "coverage": {
+     "covered_either": 140838,
+     "covered_both": 140838,
+     "mismatch": 0,
+     "mismatch_fraction": 0,
+     "bound": 0.002,
+     "pass": true
+    },
+    "channels": [
+     {
+      "name": "depth_rel",
+      "values": 140838,
+      "rmse": 2.22555338e-08,
+      "max_error": 2.36070406e-07,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "position",
+      "values": 422514,
+      "rmse": 2.06029128e-06,
+      "max_error": 6.19888306e-05,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "normal",
+      "values": 422514,
+      "rmse": 1.31076736e-08,
+      "max_error": 5.96046448e-08,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "motion",
+      "values": 281676,
+      "rmse": 0,
+      "max_error": 0,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "ao_ss",
+      "values": 140838,
+      "rmse": 3.53364388e-09,
+      "max_error": 5.96046448e-08,
+      "bound": 0.01,
+      "pass": true
+     },
+     {
+      "name": "frame",
+      "values": 422514,
+      "rmse": 2.07130107e-08,
+      "max_error": 1.1920929e-07,
+      "bound": 0.01,
+      "pass": true
+     }
+    ],
+    "ao_verdict": null,
+    "timing_ms": {
+     "gpu": 14.795,
+     "cpu": 101.48,
+     "judged": false
+    },
+    "does_not_prove": [
+     "Agreement with the CPU path is not agreement with ground truth: the CPU ray-traced AO is itself a 64-sample estimate.",
+     "Checked on the adapter and driver named here only. Another GPU, driver or browser may differ.",
+     "An RMSE bound limits the average difference, not the worst pixel. Maximum errors are reported, not bounded.",
+     "One built-in scene. No claim about other geometry, lights or materials.",
+     "The timings are one run each and are not judged."
+    ]
+   },
+   "gpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "unverifiable",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "0"
+     ],
+     [
+      "rmse",
+      "0.0000"
+     ],
+     [
+      "maxError",
+      "0.0000"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": null,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.766099
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      6,
+      1.5,
+      2
+     ],
+     "fovy": 0.899999976,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": false,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "samples": {
+     "rt": 0,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 0,
+     "rmse": 0,
+     "maxError": 0,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_ss.pfm": "db5ce1f14d84c1590da7576a4e7cfccb691fdea598608ec52ee4d08825e9b734",
+     "ao_ss.pgm": "0923a30eb2bbf19a93548c350aed2f4865ada4119617ce4181d7a8bff486a2c0",
+     "frame.ppm": "8e6ab38c6c7109ea8609c66ec84f5801546b578ba4adb8b57a22557b92d110f6",
+     "frame_hdr.pfm": "b6d13c8ef7c22c1cc64b1c74f3cc5832a81d4853df67ca4fd76c5b4bfd745bc5",
+     "mask.pgm": "0b3a47ae9503df17e0f90dfa15d9774b98a1175a1f4611778be12b439e79acc5"
+    }
+   },
+   "cpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "unverifiable",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "0"
+     ],
+     [
+      "rmse",
+      "0.0000"
+     ],
+     [
+      "maxError",
+      "0.0000"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": null,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.766099
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "eye": [
+      6,
+      1.5,
+      2
+     ],
+     "fovy": 0.899999976,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": false,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "samples": {
+     "rt": 0,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 0,
+     "rmse": 0,
+     "maxError": 0,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_ss.pfm": "254809a6597592d18dfc247042f7f36b10e142ccf9f070a6326dc0ba1a407d62",
+     "ao_ss.pgm": "0923a30eb2bbf19a93548c350aed2f4865ada4119617ce4181d7a8bff486a2c0",
+     "frame.ppm": "8e6ab38c6c7109ea8609c66ec84f5801546b578ba4adb8b57a22557b92d110f6",
+     "frame_hdr.pfm": "d7c6c39440719951162cd79fe6216c13f04c43b0665d91a3a419aa545da2b0b8",
+     "mask.pgm": "0b3a47ae9503df17e0f90dfa15d9774b98a1175a1f4611778be12b439e79acc5"
+    }
+   }
+  },
+  {
+   "case": "close-512",
+   "rt": true,
+   "exitCode": 0,
+   "gpu_certificate": {
+    "schema": "raw-gpu-cert/1",
+    "claim": "the GPU frame matches the CPU reference within the committed tolerance",
+    "verdict": "verified",
+    "oracle": "raw-gpu-cpu-v1",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      2,
+      2.5,
+      3
+     ],
+     "fovy": 0.699999988,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": true,
+     "target": [
+      0,
+      0.800000012,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "adapter": {
+     "vendor": "nvidia",
+     "architecture": "lovelace",
+     "device": "",
+     "description": "",
+     "backend": "webgpu"
+    },
+    "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
+    "coverage": {
+     "covered_either": 214043,
+     "covered_both": 214043,
+     "mismatch": 0,
+     "mismatch_fraction": 0,
+     "bound": 0.002,
+     "pass": true
+    },
+    "channels": [
+     {
+      "name": "depth_rel",
+      "values": 214043,
+      "rmse": 4.03570515e-08,
+      "max_error": 2.59625267e-07,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "position",
+      "values": 642129,
+      "rmse": 6.92833966e-08,
+      "max_error": 5.36441803e-07,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "normal",
+      "values": 642129,
+      "rmse": 1.22448539e-08,
+      "max_error": 5.96046448e-08,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "motion",
+      "values": 428086,
+      "rmse": 0,
+      "max_error": 0,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "ao_ss",
+      "values": 214043,
+      "rmse": 0,
+      "max_error": 0,
+      "bound": 0.01,
+      "pass": true
+     },
+     {
+      "name": "ao_rt",
+      "values": 214043,
+      "rmse": 0,
+      "max_error": 0,
+      "bound": 0.01,
+      "pass": true
+     },
+     {
+      "name": "frame",
+      "values": 642129,
+      "rmse": 1.29689055e-08,
+      "max_error": 1.1920929e-07,
+      "bound": 0.01,
+      "pass": true
+     }
+    ],
+    "ao_verdict": {
+     "cpu_rmse": 0.216674253,
+     "gpu_rmse": 0.216674253,
+     "rmse_delta_bound": 0.005,
+     "cpu": "refuted",
+     "gpu": "refuted",
+     "pass": true
+    },
+    "timing_ms": {
+     "gpu": 16.31,
+     "cpu": 1428.37,
+     "judged": false
+    },
+    "does_not_prove": [
+     "Agreement with the CPU path is not agreement with ground truth: the CPU ray-traced AO is itself a 64-sample estimate.",
+     "Checked on the adapter and driver named here only. Another GPU, driver or browser may differ.",
+     "An RMSE bound limits the average difference, not the worst pixel. Maximum errors are reported, not bounded.",
+     "One built-in scene. No claim about other geometry, lights or materials.",
+     "The timings are one run each and are not judged."
+    ]
+   },
+   "gpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "refuted",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "214043"
+     ],
+     [
+      "rmse",
+      "0.2167"
+     ],
+     [
+      "maxError",
+      "0.7188"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": 0.821913,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.875542
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      2,
+      2.5,
+      3
+     ],
+     "fovy": 0.699999988,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": true,
+     "target": [
+      0,
+      0.800000012,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "samples": {
+     "rt": 64,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 214043,
+     "rmse": 0.216674253,
+     "maxError": 0.71875,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_error.pgm": "43f783e8bd326b2d64d2fd78e7c627cc942c111459381bd0df3f1c064130ec74",
+     "ao_rt.pfm": "1125c0699f77763d0fa28eaceb3d9d60a58137f32e764a9c990e29a7770182d9",
+     "ao_rt.pgm": "1d0a47220d51d2ab43b2ce60e928e081b4b048b32deacd61b893ad10c0e62d32",
+     "ao_ss.pfm": "32ca53f1bedb3f8c2e621ae8a4e5bab76fc50177e981e69c90c2ec2c4ce8577e",
+     "ao_ss.pgm": "86c5d5123b6b07ed39ea7b1f46890f080e85d600943371a340fcfa9947e072a3",
+     "frame.ppm": "39bfba64422adecfa14f526ecd56d9932be24a0e619c41fb32fe2a098db75c24",
+     "frame_hdr.pfm": "0d157dd3b66ffc69377e9c72a7ea2e65b9329dc0179b994e756921af55f98d7d",
+     "mask.pgm": "5edb061ecac6016785221bfd0d5a55617e570e9471b087171b6e8f04cd1463a9"
+    }
+   },
+   "cpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "refuted",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "214043"
+     ],
+     [
+      "rmse",
+      "0.2167"
+     ],
+     [
+      "maxError",
+      "0.7188"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": 0.821913,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.875542
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "eye": [
+      2,
+      2.5,
+      3
+     ],
+     "fovy": 0.699999988,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": true,
+     "target": [
+      0,
+      0.800000012,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "samples": {
+     "rt": 64,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 214043,
+     "rmse": 0.216674253,
+     "maxError": 0.71875,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_error.pgm": "43f783e8bd326b2d64d2fd78e7c627cc942c111459381bd0df3f1c064130ec74",
+     "ao_rt.pfm": "1125c0699f77763d0fa28eaceb3d9d60a58137f32e764a9c990e29a7770182d9",
+     "ao_rt.pgm": "1d0a47220d51d2ab43b2ce60e928e081b4b048b32deacd61b893ad10c0e62d32",
+     "ao_ss.pfm": "32ca53f1bedb3f8c2e621ae8a4e5bab76fc50177e981e69c90c2ec2c4ce8577e",
+     "ao_ss.pgm": "86c5d5123b6b07ed39ea7b1f46890f080e85d600943371a340fcfa9947e072a3",
+     "frame.ppm": "39bfba64422adecfa14f526ecd56d9932be24a0e619c41fb32fe2a098db75c24",
+     "frame_hdr.pfm": "cc05bc56f980b88337d21044c079ab1b049bd68f9e7ace011bacbc3bc4014379",
+     "mask.pgm": "5edb061ecac6016785221bfd0d5a55617e570e9471b087171b6e8f04cd1463a9"
+    }
+   }
+  },
+  {
+   "case": "close-512",
+   "rt": false,
+   "exitCode": 0,
+   "gpu_certificate": {
+    "schema": "raw-gpu-cert/1",
+    "claim": "the GPU frame matches the CPU reference within the committed tolerance",
+    "verdict": "verified",
+    "oracle": "raw-gpu-cpu-v1",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      2,
+      2.5,
+      3
+     ],
+     "fovy": 0.699999988,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": false,
+     "target": [
+      0,
+      0.800000012,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "adapter": {
+     "vendor": "nvidia",
+     "architecture": "lovelace",
+     "device": "",
+     "description": "",
+     "backend": "webgpu"
+    },
+    "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
+    "coverage": {
+     "covered_either": 214043,
+     "covered_both": 214043,
+     "mismatch": 0,
+     "mismatch_fraction": 0,
+     "bound": 0.002,
+     "pass": true
+    },
+    "channels": [
+     {
+      "name": "depth_rel",
+      "values": 214043,
+      "rmse": 4.03570515e-08,
+      "max_error": 2.59625267e-07,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "position",
+      "values": 642129,
+      "rmse": 6.92833966e-08,
+      "max_error": 5.36441803e-07,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "normal",
+      "values": 642129,
+      "rmse": 1.22448539e-08,
+      "max_error": 5.96046448e-08,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "motion",
+      "values": 428086,
+      "rmse": 0,
+      "max_error": 0,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "ao_ss",
+      "values": 214043,
+      "rmse": 0,
+      "max_error": 0,
+      "bound": 0.01,
+      "pass": true
+     },
+     {
+      "name": "frame",
+      "values": 642129,
+      "rmse": 1.50903985e-08,
+      "max_error": 1.1920929e-07,
+      "bound": 0.01,
+      "pass": true
+     }
+    ],
+    "ao_verdict": null,
+    "timing_ms": {
+     "gpu": 15.26,
+     "cpu": 153.83,
+     "judged": false
+    },
+    "does_not_prove": [
+     "Agreement with the CPU path is not agreement with ground truth: the CPU ray-traced AO is itself a 64-sample estimate.",
+     "Checked on the adapter and driver named here only. Another GPU, driver or browser may differ.",
+     "An RMSE bound limits the average difference, not the worst pixel. Maximum errors are reported, not bounded.",
+     "One built-in scene. No claim about other geometry, lights or materials.",
+     "The timings are one run each and are not judged."
+    ]
+   },
+   "gpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "unverifiable",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "0"
+     ],
+     [
+      "rmse",
+      "0.0000"
+     ],
+     [
+      "maxError",
+      "0.0000"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": null,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.875542
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      2,
+      2.5,
+      3
+     ],
+     "fovy": 0.699999988,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": false,
+     "target": [
+      0,
+      0.800000012,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "samples": {
+     "rt": 0,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 0,
+     "rmse": 0,
+     "maxError": 0,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_ss.pfm": "32ca53f1bedb3f8c2e621ae8a4e5bab76fc50177e981e69c90c2ec2c4ce8577e",
+     "ao_ss.pgm": "86c5d5123b6b07ed39ea7b1f46890f080e85d600943371a340fcfa9947e072a3",
+     "frame.ppm": "6b2b5f46ebf5994376341d1b39fdb8ff0c02affc52c1bb5017a32825e0564d64",
+     "frame_hdr.pfm": "6d13cba38b44a828b70280a4c07c227fc383cb7c8aef8bef154cc0b237a77310",
+     "mask.pgm": "5edb061ecac6016785221bfd0d5a55617e570e9471b087171b6e8f04cd1463a9"
+    }
+   },
+   "cpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "unverifiable",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "0"
+     ],
+     [
+      "rmse",
+      "0.0000"
+     ],
+     [
+      "maxError",
+      "0.0000"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": null,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.875542
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "eye": [
+      2,
+      2.5,
+      3
+     ],
+     "fovy": 0.699999988,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": false,
+     "target": [
+      0,
+      0.800000012,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "samples": {
+     "rt": 0,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 0,
+     "rmse": 0,
+     "maxError": 0,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_ss.pfm": "32ca53f1bedb3f8c2e621ae8a4e5bab76fc50177e981e69c90c2ec2c4ce8577e",
+     "ao_ss.pgm": "86c5d5123b6b07ed39ea7b1f46890f080e85d600943371a340fcfa9947e072a3",
+     "frame.ppm": "6b2b5f46ebf5994376341d1b39fdb8ff0c02affc52c1bb5017a32825e0564d64",
+     "frame_hdr.pfm": "a88d88f2d99cbd26619c876b6154ad5f376374b79b08167424da7b30821b7d6c",
+     "mask.pgm": "5edb061ecac6016785221bfd0d5a55617e570e9471b087171b6e8f04cd1463a9"
+    }
+   }
+  },
+  {
+   "case": "wide-512",
+   "rt": true,
+   "exitCode": 0,
+   "gpu_certificate": {
+    "schema": "raw-gpu-cert/1",
+    "claim": "the GPU frame matches the CPU reference within the committed tolerance",
+    "verdict": "verified",
+    "oracle": "raw-gpu-cpu-v1",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      5,
+      5,
+      8
+     ],
+     "fovy": 1.20000005,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": true,
+     "target": [
+      0,
+      0.5,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "adapter": {
+     "vendor": "nvidia",
+     "architecture": "lovelace",
+     "device": "",
+     "description": "",
+     "backend": "webgpu"
+    },
+    "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
+    "coverage": {
+     "covered_either": 88869,
+     "covered_both": 88869,
+     "mismatch": 0,
+     "mismatch_fraction": 0,
+     "bound": 0.002,
+     "pass": true
+    },
+    "channels": [
+     {
+      "name": "depth_rel",
+      "values": 88869,
+      "rmse": 4.27195787e-08,
+      "max_error": 2.68913169e-07,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "position",
+      "values": 266607,
+      "rmse": 2.82414388e-07,
+      "max_error": 4.29153442e-06,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "normal",
+      "values": 266607,
+      "rmse": 1.39854927e-08,
+      "max_error": 5.96046448e-08,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "motion",
+      "values": 177738,
+      "rmse": 0,
+      "max_error": 0,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "ao_ss",
+      "values": 88869,
+      "rmse": 3.29146774e-09,
+      "max_error": 5.96046448e-08,
+      "bound": 0.01,
+      "pass": true
+     },
+     {
+      "name": "ao_rt",
+      "values": 88869,
+      "rmse": 0,
+      "max_error": 0,
+      "bound": 0.01,
+      "pass": true
+     },
+     {
+      "name": "frame",
+      "values": 266607,
+      "rmse": 2.66856826e-08,
+      "max_error": 1.1920929e-07,
+      "bound": 0.01,
+      "pass": true
+     }
+    ],
+    "ao_verdict": {
+     "cpu_rmse": 0.0882399976,
+     "gpu_rmse": 0.0882399976,
+     "rmse_delta_bound": 0.005,
+     "cpu": "verified",
+     "gpu": "verified",
+     "pass": true
+    },
+    "timing_ms": {
+     "gpu": 16.485,
+     "cpu": 572.055,
+     "judged": false
+    },
+    "does_not_prove": [
+     "Agreement with the CPU path is not agreement with ground truth: the CPU ray-traced AO is itself a 64-sample estimate.",
+     "Checked on the adapter and driver named here only. Another GPU, driver or browser may differ.",
+     "An RMSE bound limits the average difference, not the worst pixel. Maximum errors are reported, not bounded.",
+     "One built-in scene. No claim about other geometry, lights or materials.",
+     "The timings are one run each and are not judged."
+    ]
+   },
+   "gpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "verified",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "88869"
+     ],
+     [
+      "rmse",
+      "0.0882"
+     ],
+     [
+      "maxError",
+      "0.6250"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": 0.918915,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.875542
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      5,
+      5,
+      8
+     ],
+     "fovy": 1.20000005,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": true,
+     "target": [
+      0,
+      0.5,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "samples": {
+     "rt": 64,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 88869,
+     "rmse": 0.0882399976,
+     "maxError": 0.625,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_error.pgm": "a115c2e04ab91f55adb2002ec619d79fa1eb363b6457ea82b349644c73fd8b91",
+     "ao_rt.pfm": "f8d8b82cd712382b992b568262c8f7ea1c24696380d25ca77ff473107769d524",
+     "ao_rt.pgm": "f815227aad5226ef2e1ad90cceb2c8417fe7f0955cb3d45be325cdde8873e533",
+     "ao_ss.pfm": "19e295e0d3443144f172b976d10cbf7f9753693a7946b5df9c212574a1309c72",
+     "ao_ss.pgm": "05fc624ddf043cdc8e1c1e5038858f875020b202cc33ae2460e00b7f18be4765",
+     "frame.ppm": "dfddaae4a8b0e96a59e97b1ce4354308918d228f29b786cb1e8c51f0666ef5c6",
+     "frame_hdr.pfm": "7054d8ced8398bc40713c319945b29233e1ec264ff7300ebefcea3fd6e68f542",
+     "mask.pgm": "40c9f5ac58ea678b3cb279694aa7f324660a10d7b6a370b12b6419770f55832a"
+    }
+   },
+   "cpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "verified",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "88869"
+     ],
+     [
+      "rmse",
+      "0.0882"
+     ],
+     [
+      "maxError",
+      "0.6250"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": 0.918915,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.875542
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "eye": [
+      5,
+      5,
+      8
+     ],
+     "fovy": 1.20000005,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": true,
+     "target": [
+      0,
+      0.5,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "samples": {
+     "rt": 64,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 88869,
+     "rmse": 0.0882399976,
+     "maxError": 0.625,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_error.pgm": "13250eb1b2fd82d7721c0833257d67914b7bf0a4d2fb4b8a21a15c798331d4eb",
+     "ao_rt.pfm": "f8d8b82cd712382b992b568262c8f7ea1c24696380d25ca77ff473107769d524",
+     "ao_rt.pgm": "f815227aad5226ef2e1ad90cceb2c8417fe7f0955cb3d45be325cdde8873e533",
+     "ao_ss.pfm": "ab6fe2ac99e4924f0b694f2a7b065729231bd43810b096abb54d405dd30388a3",
+     "ao_ss.pgm": "05fc624ddf043cdc8e1c1e5038858f875020b202cc33ae2460e00b7f18be4765",
+     "frame.ppm": "dfddaae4a8b0e96a59e97b1ce4354308918d228f29b786cb1e8c51f0666ef5c6",
+     "frame_hdr.pfm": "1c4979bd74f9e80d58034260fdac68cf6635acdb77a7f5f73910d800cd0f5ac7",
+     "mask.pgm": "40c9f5ac58ea678b3cb279694aa7f324660a10d7b6a370b12b6419770f55832a"
+    }
+   }
+  },
+  {
+   "case": "wide-512",
+   "rt": false,
+   "exitCode": 0,
+   "gpu_certificate": {
+    "schema": "raw-gpu-cert/1",
+    "claim": "the GPU frame matches the CPU reference within the committed tolerance",
+    "verdict": "verified",
+    "oracle": "raw-gpu-cpu-v1",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      5,
+      5,
+      8
+     ],
+     "fovy": 1.20000005,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": false,
+     "target": [
+      0,
+      0.5,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "adapter": {
+     "vendor": "nvidia",
+     "architecture": "lovelace",
+     "device": "",
+     "description": "",
+     "backend": "webgpu"
+    },
+    "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
+    "coverage": {
+     "covered_either": 88869,
+     "covered_both": 88869,
+     "mismatch": 0,
+     "mismatch_fraction": 0,
+     "bound": 0.002,
+     "pass": true
+    },
+    "channels": [
+     {
+      "name": "depth_rel",
+      "values": 88869,
+      "rmse": 4.27195787e-08,
+      "max_error": 2.68913169e-07,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "position",
+      "values": 266607,
+      "rmse": 2.82414388e-07,
+      "max_error": 4.29153442e-06,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "normal",
+      "values": 266607,
+      "rmse": 1.39854927e-08,
+      "max_error": 5.96046448e-08,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "motion",
+      "values": 177738,
+      "rmse": 0,
+      "max_error": 0,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "ao_ss",
+      "values": 88869,
+      "rmse": 3.29146774e-09,
+      "max_error": 5.96046448e-08,
+      "bound": 0.01,
+      "pass": true
+     },
+     {
+      "name": "frame",
+      "values": 266607,
+      "rmse": 2.38551332e-08,
+      "max_error": 1.1920929e-07,
+      "bound": 0.01,
+      "pass": true
+     }
+    ],
+    "ao_verdict": null,
+    "timing_ms": {
+     "gpu": 16.005,
+     "cpu": 65.475,
+     "judged": false
+    },
+    "does_not_prove": [
+     "Agreement with the CPU path is not agreement with ground truth: the CPU ray-traced AO is itself a 64-sample estimate.",
+     "Checked on the adapter and driver named here only. Another GPU, driver or browser may differ.",
+     "An RMSE bound limits the average difference, not the worst pixel. Maximum errors are reported, not bounded.",
+     "One built-in scene. No claim about other geometry, lights or materials.",
+     "The timings are one run each and are not judged."
+    ]
+   },
+   "gpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "unverifiable",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "0"
+     ],
+     [
+      "rmse",
+      "0.0000"
+     ],
+     [
+      "maxError",
+      "0.0000"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": null,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.875542
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      5,
+      5,
+      8
+     ],
+     "fovy": 1.20000005,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": false,
+     "target": [
+      0,
+      0.5,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "samples": {
+     "rt": 0,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 0,
+     "rmse": 0,
+     "maxError": 0,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_ss.pfm": "19e295e0d3443144f172b976d10cbf7f9753693a7946b5df9c212574a1309c72",
+     "ao_ss.pgm": "05fc624ddf043cdc8e1c1e5038858f875020b202cc33ae2460e00b7f18be4765",
+     "frame.ppm": "27e59fcfcf63e0aeea5380d9bcf076679daca00151c03bfc75daeca8028159c5",
+     "frame_hdr.pfm": "46fc304b6ea4ea224ae2e2ca5a847e50fdae016f9b47e2b3d2a0c2c382cdc9c3",
+     "mask.pgm": "40c9f5ac58ea678b3cb279694aa7f324660a10d7b6a370b12b6419770f55832a"
+    }
+   },
+   "cpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "unverifiable",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "0"
+     ],
+     [
+      "rmse",
+      "0.0000"
+     ],
+     [
+      "maxError",
+      "0.0000"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": null,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.875542
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "eye": [
+      5,
+      5,
+      8
+     ],
+     "fovy": 1.20000005,
+     "height": 512,
+     "prev_eye": null,
+     "prev_target": null,
+     "prev_up": null,
+     "rt": false,
+     "target": [
+      0,
+      0.5,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 512
+    },
+    "samples": {
+     "rt": 0,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 0,
+     "rmse": 0,
+     "maxError": 0,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_ss.pfm": "ab6fe2ac99e4924f0b694f2a7b065729231bd43810b096abb54d405dd30388a3",
+     "ao_ss.pgm": "05fc624ddf043cdc8e1c1e5038858f875020b202cc33ae2460e00b7f18be4765",
+     "frame.ppm": "27e59fcfcf63e0aeea5380d9bcf076679daca00151c03bfc75daeca8028159c5",
+     "frame_hdr.pfm": "e2708eb75346e7703cecc40d37ec5c6725bb7f32feb9ef5c5e2f36b0d506a099",
+     "mask.pgm": "40c9f5ac58ea678b3cb279694aa7f324660a10d7b6a370b12b6419770f55832a"
+    }
+   }
+  },
+  {
+   "case": "motion-256",
+   "rt": true,
+   "exitCode": 0,
+   "gpu_certificate": {
+    "schema": "raw-gpu-cert/1",
+    "claim": "the GPU frame matches the CPU reference within the committed tolerance",
+    "verdict": "verified",
+    "oracle": "raw-gpu-cpu-v1",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      4,
+      4,
+      6
+     ],
+     "fovy": 0.899999976,
+     "height": 256,
+     "prev_eye": [
+      4.30000019,
+      4,
+      5.69999981
+     ],
+     "prev_target": null,
+     "prev_up": null,
+     "rt": true,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 256
+    },
+    "adapter": {
+     "vendor": "nvidia",
+     "architecture": "lovelace",
+     "device": "",
+     "description": "",
+     "backend": "webgpu"
+    },
+    "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
+    "coverage": {
+     "covered_either": 37996,
+     "covered_both": 37996,
+     "mismatch": 0,
+     "mismatch_fraction": 0,
+     "bound": 0.002,
+     "pass": true
+    },
+    "channels": [
+     {
+      "name": "depth_rel",
+      "values": 37996,
+      "rmse": 3.24587942e-08,
+      "max_error": 2.33515777e-07,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "position",
+      "values": 113988,
+      "rmse": 3.43616475e-07,
+      "max_error": 7.15255737e-06,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "normal",
+      "values": 113988,
+      "rmse": 1.16237186e-08,
+      "max_error": 5.96046448e-08,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "motion",
+      "values": 75992,
+      "rmse": 3.52186721e-08,
+      "max_error": 2.38418579e-07,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "ao_ss",
+      "values": 37996,
+      "rmse": 4.82515021e-09,
+      "max_error": 5.96046448e-08,
+      "bound": 0.01,
+      "pass": true
+     },
+     {
+      "name": "ao_rt",
+      "values": 37996,
+      "rmse": 0,
+      "max_error": 0,
+      "bound": 0.01,
+      "pass": true
+     },
+     {
+      "name": "frame",
+      "values": 113988,
+      "rmse": 2.29888419e-08,
+      "max_error": 1.1920929e-07,
+      "bound": 0.01,
+      "pass": true
+     }
+    ],
+    "ao_verdict": {
+     "cpu_rmse": 0.129436031,
+     "gpu_rmse": 0.129436031,
+     "rmse_delta_bound": 0.005,
+     "cpu": "refuted",
+     "gpu": "refuted",
+     "pass": true
+    },
+    "timing_ms": {
+     "gpu": 5.725,
+     "cpu": 255.995,
+     "judged": false
+    },
+    "does_not_prove": [
+     "Agreement with the CPU path is not agreement with ground truth: the CPU ray-traced AO is itself a 64-sample estimate.",
+     "Checked on the adapter and driver named here only. Another GPU, driver or browser may differ.",
+     "An RMSE bound limits the average difference, not the worst pixel. Maximum errors are reported, not bounded.",
+     "One built-in scene. No claim about other geometry, lights or materials.",
+     "The timings are one run each and are not judged."
+    ]
+   },
+   "gpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "refuted",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "37996"
+     ],
+     [
+      "rmse",
+      "0.1294"
+     ],
+     [
+      "maxError",
+      "0.6094"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": 0.885398,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.875542
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      4,
+      4,
+      6
+     ],
+     "fovy": 0.899999976,
+     "height": 256,
+     "prev_eye": [
+      4.30000019,
+      4,
+      5.69999981
+     ],
+     "prev_target": null,
+     "prev_up": null,
+     "rt": true,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 256
+    },
+    "samples": {
+     "rt": 64,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 37996,
+     "rmse": 0.129436031,
+     "maxError": 0.609375,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_error.pgm": "e3ba51f463677aa4945e31641d62ca5f7d9b8d26dcf6b53534cb0edabd3eff9e",
+     "ao_rt.pfm": "3bd5cce0f7424363c04d17b7bf644b82a9f51338297b4666329d398e9fb886ee",
+     "ao_rt.pgm": "0a83697599343d297929b12227240f811d1e90f53a4bc76ca11eb568c2892f48",
+     "ao_ss.pfm": "89eb5c2d9207942cc929649a37d7c81d4e059e7c2b9d7d8454025501a8d6d85a",
+     "ao_ss.pgm": "305edb16225ab27a29223ef2d70e0ad3ac4799e3b4492904ce07616f5ad14acc",
+     "frame.ppm": "e276f24f4a2a23e7b43b61d2e45147446468bf8d99a75809675f2cea91edb06d",
+     "frame_hdr.pfm": "1814610e59c3b90fd2a040618174d9462a78347d2ef627a97f251cf6ed5cc661",
+     "mask.pgm": "413410cd6f8755f3b234272f0c100125a38ddd89c6a8bc302fe7463170f96108"
+    }
+   },
+   "cpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "refuted",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "37996"
+     ],
+     [
+      "rmse",
+      "0.1294"
+     ],
+     [
+      "maxError",
+      "0.6094"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": 0.885398,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.875542
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "eye": [
+      4,
+      4,
+      6
+     ],
+     "fovy": 0.899999976,
+     "height": 256,
+     "prev_eye": [
+      4.30000019,
+      4,
+      5.69999981
+     ],
+     "prev_target": null,
+     "prev_up": null,
+     "rt": true,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 256
+    },
+    "samples": {
+     "rt": 64,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 37996,
+     "rmse": 0.129436031,
+     "maxError": 0.609375,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_error.pgm": "1f2b8dacd738ce231dfbe60d9ecef16c1972a5bcc59890c145edc139c9a04197",
+     "ao_rt.pfm": "3bd5cce0f7424363c04d17b7bf644b82a9f51338297b4666329d398e9fb886ee",
+     "ao_rt.pgm": "0a83697599343d297929b12227240f811d1e90f53a4bc76ca11eb568c2892f48",
+     "ao_ss.pfm": "66c99812f843fe487eabb77e397fbe05e08864f981fd0b1179eba6fb78f86fb3",
+     "ao_ss.pgm": "305edb16225ab27a29223ef2d70e0ad3ac4799e3b4492904ce07616f5ad14acc",
+     "frame.ppm": "e276f24f4a2a23e7b43b61d2e45147446468bf8d99a75809675f2cea91edb06d",
+     "frame_hdr.pfm": "5e598db0424414e7e37904592dbb295cbdb8623070ffb7350bd8e3ed867557db",
+     "mask.pgm": "413410cd6f8755f3b234272f0c100125a38ddd89c6a8bc302fe7463170f96108"
+    }
+   }
+  },
+  {
+   "case": "motion-256",
+   "rt": false,
+   "exitCode": 0,
+   "gpu_certificate": {
+    "schema": "raw-gpu-cert/1",
+    "claim": "the GPU frame matches the CPU reference within the committed tolerance",
+    "verdict": "verified",
+    "oracle": "raw-gpu-cpu-v1",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      4,
+      4,
+      6
+     ],
+     "fovy": 0.899999976,
+     "height": 256,
+     "prev_eye": [
+      4.30000019,
+      4,
+      5.69999981
+     ],
+     "prev_target": null,
+     "prev_up": null,
+     "rt": false,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 256
+    },
+    "adapter": {
+     "vendor": "nvidia",
+     "architecture": "lovelace",
+     "device": "",
+     "description": "",
+     "backend": "webgpu"
+    },
+    "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
+    "coverage": {
+     "covered_either": 37996,
+     "covered_both": 37996,
+     "mismatch": 0,
+     "mismatch_fraction": 0,
+     "bound": 0.002,
+     "pass": true
+    },
+    "channels": [
+     {
+      "name": "depth_rel",
+      "values": 37996,
+      "rmse": 3.24587942e-08,
+      "max_error": 2.33515777e-07,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "position",
+      "values": 113988,
+      "rmse": 3.43616475e-07,
+      "max_error": 7.15255737e-06,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "normal",
+      "values": 113988,
+      "rmse": 1.16237186e-08,
+      "max_error": 5.96046448e-08,
+      "bound": 0.001,
+      "pass": true
+     },
+     {
+      "name": "motion",
+      "values": 75992,
+      "rmse": 3.52186721e-08,
+      "max_error": 2.38418579e-07,
+      "bound": 0.0001,
+      "pass": true
+     },
+     {
+      "name": "ao_ss",
+      "values": 37996,
+      "rmse": 4.82515021e-09,
+      "max_error": 5.96046448e-08,
+      "bound": 0.01,
+      "pass": true
+     },
+     {
+      "name": "frame",
+      "values": 113988,
+      "rmse": 1.946119e-08,
+      "max_error": 1.1920929e-07,
+      "bound": 0.01,
+      "pass": true
+     }
+    ],
+    "ao_verdict": null,
+    "timing_ms": {
+     "gpu": 5.63,
+     "cpu": 27.375,
+     "judged": false
+    },
+    "does_not_prove": [
+     "Agreement with the CPU path is not agreement with ground truth: the CPU ray-traced AO is itself a 64-sample estimate.",
+     "Checked on the adapter and driver named here only. Another GPU, driver or browser may differ.",
+     "An RMSE bound limits the average difference, not the worst pixel. Maximum errors are reported, not bounded.",
+     "One built-in scene. No claim about other geometry, lights or materials.",
+     "The timings are one run each and are not judged."
+    ]
+   },
+   "gpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "unverifiable",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "0"
+     ],
+     [
+      "rmse",
+      "0.0000"
+     ],
+     [
+      "maxError",
+      "0.0000"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": null,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.875542
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "backend": "webgpu",
+     "eye": [
+      4,
+      4,
+      6
+     ],
+     "fovy": 0.899999976,
+     "height": 256,
+     "prev_eye": [
+      4.30000019,
+      4,
+      5.69999981
+     ],
+     "prev_target": null,
+     "prev_up": null,
+     "rt": false,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 256
+    },
+    "samples": {
+     "rt": 0,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 0,
+     "rmse": 0,
+     "maxError": 0,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_ss.pfm": "89eb5c2d9207942cc929649a37d7c81d4e059e7c2b9d7d8454025501a8d6d85a",
+     "ao_ss.pgm": "305edb16225ab27a29223ef2d70e0ad3ac4799e3b4492904ce07616f5ad14acc",
+     "frame.ppm": "88f3ae3e625e50ad9e87437a0dbd3e3079069391130a3dd99abdf655d28b8e8f",
+     "frame_hdr.pfm": "1641825095b00ab30b5f088cd15e29d7a0ad42d44f04b8797860158ee47375e7",
+     "mask.pgm": "413410cd6f8755f3b234272f0c100125a38ddd89c6a8bc302fe7463170f96108"
+    }
+   },
+   "cpu_ao_certificate": {
+    "claim": "screen-space AO matches ray-traced ground truth within tolerance",
+    "verdict": "unverifiable",
+    "oracle": "raw-rt-ao-v1",
+    "evidence": [
+     [
+      "pixels",
+      "0"
+     ],
+     [
+      "rmse",
+      "0.0000"
+     ],
+     [
+      "maxError",
+      "0.0000"
+     ],
+     [
+      "tolerance",
+      "0.1200"
+     ]
+    ],
+    "channels": {
+     "ao_fidelity": null,
+     "motion_coherence": 1,
+     "hdr_headroom": 0.875542
+    },
+    "schema": "raw-cert/2",
+    "renderer": "raw-native 0.4.0",
+    "params": {
+     "eye": [
+      4,
+      4,
+      6
+     ],
+     "fovy": 0.899999976,
+     "height": 256,
+     "prev_eye": [
+      4.30000019,
+      4,
+      5.69999981
+     ],
+     "prev_target": null,
+     "prev_up": null,
+     "rt": false,
+     "target": [
+      0,
+      1,
+      0
+     ],
+     "tolerance": 0.119999997,
+     "up": [
+      0,
+      1,
+      0
+     ],
+     "width": 256
+    },
+    "samples": {
+     "rt": 0,
+     "ss": 24
+    },
+    "exact": {
+     "pixels": 0,
+     "rmse": 0,
+     "maxError": 0,
+     "tolerance": 0.119999997
+    },
+    "outputs": {
+     "ao_ss.pfm": "66c99812f843fe487eabb77e397fbe05e08864f981fd0b1179eba6fb78f86fb3",
+     "ao_ss.pgm": "305edb16225ab27a29223ef2d70e0ad3ac4799e3b4492904ce07616f5ad14acc",
+     "frame.ppm": "88f3ae3e625e50ad9e87437a0dbd3e3079069391130a3dd99abdf655d28b8e8f",
+     "frame_hdr.pfm": "639f92d90b6c1e9081fbe9998d8dfc40ae8c5f6fca55d00f43a4d12098d26eba",
+     "mask.pgm": "413410cd6f8755f3b234272f0c100125a38ddd89c6a8bc302fe7463170f96108"
+    }
+   }
+  }
+ ],
+ "bench": [
+  {
+   "variant": "webgpu",
+   "renderer": "raw-native 0.4.0",
+   "backend": "webgpu",
+   "adapter": {
+    "vendor": "nvidia",
+    "architecture": "lovelace"
+   },
+   "width": 256,
+   "height": 256,
+   "rt": true,
+   "warmup_runs": 1,
+   "runs_ms": [
+    5.02,
+    5.46,
+    7.225,
+    6.75,
+    6.995
+   ],
+   "median_ms": 6.75,
+   "frame_only_runs_ms": [
+    4.425,
+    4.015,
+    3.97,
+    3.925,
+    4.105
+   ],
+   "frame_only_median_ms": 4.015
+  },
+  {
+   "variant": "webgpu",
+   "renderer": "raw-native 0.4.0",
+   "backend": "webgpu",
+   "adapter": {
+    "vendor": "nvidia",
+    "architecture": "lovelace"
+   },
+   "width": 256,
+   "height": 256,
+   "rt": false,
+   "warmup_runs": 1,
+   "runs_ms": [
+    6.42,
+    5.755,
+    7.285,
+    5.875,
+    6.69
+   ],
+   "median_ms": 6.42,
+   "frame_only_runs_ms": [
+    1.145,
+    0.79,
+    0.725,
+    0.765,
+    0.715
+   ],
+   "frame_only_median_ms": 0.765
+  },
+  {
+   "variant": "webgpu",
+   "renderer": "raw-native 0.4.0",
+   "backend": "webgpu",
+   "adapter": {
+    "vendor": "nvidia",
+    "architecture": "lovelace"
+   },
+   "width": 512,
+   "height": 512,
+   "rt": true,
+   "warmup_runs": 1,
+   "runs_ms": [
+    16.72,
+    15.835,
+    14.265,
+    13.695,
+    14.305
+   ],
+   "median_ms": 14.305,
+   "frame_only_runs_ms": [
+    4.385,
+    4.65,
+    4.5,
+    4.215,
+    4.175
+   ],
+   "frame_only_median_ms": 4.385
+  },
+  {
+   "variant": "webgpu",
+   "renderer": "raw-native 0.4.0",
+   "backend": "webgpu",
+   "adapter": {
+    "vendor": "nvidia",
+    "architecture": "lovelace"
+   },
+   "width": 512,
+   "height": 512,
+   "rt": false,
+   "warmup_runs": 1,
+   "runs_ms": [
+    13.555,
+    11.415,
+    13.155,
+    11.95,
+    11.945
+   ],
+   "median_ms": 11.95,
+   "frame_only_runs_ms": [
+    2.505,
+    4.065,
+    4.575,
+    4.135,
+    2.465
+   ],
+   "frame_only_median_ms": 4.065
+  },
+  {
+   "variant": "webgpu",
+   "renderer": "raw-native 0.4.0",
+   "backend": "webgpu",
+   "adapter": {
+    "vendor": "nvidia",
+    "architecture": "lovelace"
+   },
+   "width": 1440,
+   "height": 900,
+   "rt": true,
+   "warmup_runs": 1,
+   "runs_ms": [
+    169.75,
+    67.665,
+    72.745,
+    67.28,
+    74.54
+   ],
+   "median_ms": 72.745,
+   "frame_only_runs_ms": [
+    16.755,
+    24.745,
+    22.15,
+    17.845,
+    17.765
+   ],
+   "frame_only_median_ms": 17.845
+  },
+  {
+   "variant": "webgpu",
+   "renderer": "raw-native 0.4.0",
+   "backend": "webgpu",
+   "adapter": {
+    "vendor": "nvidia",
+    "architecture": "lovelace"
+   },
+   "width": 1440,
+   "height": 900,
+   "rt": false,
+   "warmup_runs": 1,
+   "runs_ms": [
+    69.285,
+    63.595,
+    62.305,
+    64.46,
+    64.355
+   ],
+   "median_ms": 64.355,
+   "frame_only_runs_ms": [
+    17.38,
+    19.885,
+    18.99,
+    15.64,
+    15.7
+   ],
+   "frame_only_median_ms": 17.38
+  }
+ ],
+ "adapterInfo": {
+  "vendor": "nvidia",
+  "architecture": "lovelace",
+  "device": "",
+  "description": ""
+ },
+ "module": {
+  "mjs": "274033274c534faeb599f607d4d62955e9f5d3b94d943ba09e53b3c7a235900b",
+  "wasm": "2299b9d34191147c6afe5f638dc27220061ad7564126e27b63cfc3f89952d2f3"
+ },
+ "version": "raw-native 0.4.0",
+ "note": "Headed Chrome 154 (Playwright, not headless) on Windows 11 with an NVIDIA RTX 4090 (adapter reports nvidia/lovelace). Bench runs include upload, every pass, and read-back through mapAsync; one untimed warm-up render compiles the pipelines."
+}

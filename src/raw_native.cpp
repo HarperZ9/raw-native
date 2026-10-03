@@ -1,2 +1,2 @@
 #include "raw/version.hpp"
-namespace raw { const char* version() { return "raw-native 0.3.0"; } }
+namespace raw { const char* version() { return "raw-native 0.4.0"; } }

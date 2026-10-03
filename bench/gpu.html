@@ -1,0 +1,57 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>raw-native WebGPU check and benchmark</title>
+<style>body{font:14px/1.5 system-ui,sans-serif;margin:24px}pre{white-space:pre-wrap}canvas{border:1px solid #888;margin:4px}</style>
+<h1>raw-native WebGPU check and benchmark</h1>
+<p>For each size: one <code>--gpu</code> render with its GPU-versus-CPU certificate, then
+<code>--gpu --bench 5</code> with and without the ray-traced reference (one untimed warm-up each).</p>
+<div id="frames"></div>
+<pre id="log"></pre>
+<script type="module">
+import { loadRawNative } from "../wasm/raw-loader.mjs";
+const log = (s) => { document.getElementById("log").textContent += s + "\n"; };
+const q = new URLSearchParams(location.search);
+const runs = +(q.get("runs") || 5);
+const sizes = JSON.parse(q.get("sizes") || "[[256,256],[512,512],[1440,900]]");
+const views = JSON.parse(q.get("views") || "{}");
+const out = { userAgent: navigator.userAgent, runs, gpu: !!navigator.gpu, checks: [], bench: [] };
+window.gpuResult = null;
+try {
+  if (!navigator.gpu) throw new Error("navigator.gpu is absent");
+  const a = await navigator.gpu.requestAdapter({ powerPreference: "high-performance" });
+  out.adapterInfo = a && a.info ? { vendor: a.info.vendor, architecture: a.info.architecture, device: a.info.device, description: a.info.description } : null;
+  const sums = (await (await fetch("../build-wasm-sums.json")).json())["wasm-gpu"];
+  out.module = { mjs: sums.mjs, wasm: sums.wasm };
+  const raw = await loadRawNative({ moduleUrl: "../build-wasm-gpu/raw-native-gpu.mjs", moduleSha256: sums.mjs,
+    wasmUrl: "../build-wasm-gpu/raw-native-gpu.wasm", wasmSha256: sums.wasm });
+  out.version = raw.version;
+  log(`${raw.version} on ${JSON.stringify(out.adapterInfo)}`);
+  const cases = sizes.map(([width, height]) => ({ name: `${width}x${height}`, params: { width, height } }));
+  for (const [name, v] of Object.entries(views)) cases.push({ name, params: v });
+  for (const c of cases) {
+    for (const rt of [true, false]) {
+      const r = await raw.renderAsync({ ...c.params, rt, gpu: true });
+      const g = r.gpuCertificate;
+      out.checks.push({ case: c.name, rt, exitCode: r.exitCode, gpu_certificate: g,
+        gpu_ao_certificate: r.certificate, cpu_ao_certificate: r.files["cpu/certificate.json"] ? JSON.parse(new TextDecoder().decode(r.files["cpu/certificate.json"])) : null });
+      log(`${c.name} rt=${rt}: gpu certificate ${g && g.verdict} ` + (g && g.channels ? g.channels.map((x) => `${x.name} ${x.rmse.toExponential(2)}`).join(", ") : r.stdout));
+      if (rt && r.frame) {
+        const cv = document.createElement("canvas"); cv.width = r.frame.width; cv.height = r.frame.height;
+        cv.style.width = Math.min(360, r.frame.width) + "px";
+        cv.getContext("2d").putImageData(new ImageData(r.frame.rgba, r.frame.width, r.frame.height), 0, 0);
+        document.getElementById("frames").append(cv);
+      }
+    }
+  }
+  for (const [width, height] of sizes) for (const rt of [true, false]) {
+    const b = await raw.benchAsync({ width, height, rt, gpu: true }, runs);
+    out.bench.push({ variant: "webgpu", ...b });
+    log(`bench webgpu ${width}x${height} rt=${rt}: median ${b.median_ms} ms with every channel read back, ${b.frame_only_median_ms} ms frame only`);
+  }
+} catch (e) {
+  out.error = String(e && e.stack || e);
+  log("ERROR " + out.error);
+}
+window.gpuResult = out;
+log("DONE");
+</script>

@@ -4,7 +4,8 @@ so the same binaries always give the same archive bytes. Writes SHA256SUMS.
 
 Usage: package_release.py <version> <dist> --windows <exe> --linux <bin> --wasm <dir>
 The wasm dir must hold raw-native.mjs and raw-native.wasm. raw-loader.mjs is
-taken from wasm/ in this repo. The three wasm files are also published loose,
+taken from wasm/ in this repo; raw-native-gpu.mjs and raw-native-gpu.wasm are
+included when present. The wasm files are also published loose,
 so a web page can fetch them directly and check each against SHA256SUMS."""
 import argparse, gzip, hashlib, io, shutil, tarfile, zipfile
 from pathlib import Path
@@ -59,6 +60,11 @@ def main():
     wasm_files = [("raw-native.mjs", wasm_dir / "raw-native.mjs", 0o644),
                   ("raw-native.wasm", wasm_dir / "raw-native.wasm", 0o644),
                   ("raw-loader.mjs", ROOT / "wasm" / "raw-loader.mjs", 0o644)]
+    # From 0.4.0 the WebGPU build sits beside the CPU build when it was built
+    # with the wasm-gpu preset (which writes both into one directory).
+    for name in ("raw-native-gpu.mjs", "raw-native-gpu.wasm"):
+        if (wasm_dir / name).exists():
+            wasm_files.append((name, wasm_dir / name, 0o644))
     names = []
     p = f"raw-native-{v}-windows-x64"
     zip_pack(dist / f"{p}.zip", p, docs + [("raw_native_cli.exe", a.windows, 0o755)]); names.append(f"{p}.zip")
