@@ -26,6 +26,10 @@ def write_sums(root):
         if (d / "raw-native.wasm").exists():
             sums[variant] = {ext: hashlib.sha256((d / f"raw-native.{ext}").read_bytes()).hexdigest()
                              for ext in ("mjs", "wasm")}
+    gpu = root / "build-wasm-gpu"
+    if (gpu / "raw-native-gpu.wasm").exists():
+        sums["wasm-gpu"] = {ext: hashlib.sha256((gpu / f"raw-native-gpu.{ext}").read_bytes()).hexdigest()
+                            for ext in ("mjs", "wasm")}
     (root / "build-wasm-sums.json").write_text(json.dumps(sums, indent=1))
 
 

@@ -63,6 +63,17 @@ jobs:
           path: |
             build-wasm/raw-native.wasm
             build-wasm/raw-native.mjs
+      - name: Build the WebGPU module (compiles WGSL into the binary; no GPU on the runner)
+        run: |
+          source "$RUNNER_TEMP/emsdk/emsdk_env.sh"
+          cmake --preset wasm-gpu
+          cmake --build --preset wasm-gpu
+          test -s build-wasm-gpu/raw-native-gpu.wasm
+          sha256sum build-wasm-gpu/raw-native-gpu.wasm build-wasm-gpu/raw-native-gpu.mjs
+      - name: The default native build carries no GPU code
+        run: |
+          ! grep -q "emdawnwebgpu\|wgpu" build/raw_native_cli
+          ! nm -C build/raw_native_cli 2>/dev/null | grep -q "wgpu"
       - name: Render both and compare certificates
         run: |
           source "$RUNNER_TEMP/emsdk/emsdk_env.sh"

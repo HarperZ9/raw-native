@@ -26,11 +26,19 @@
       "displayName": "WebAssembly with SIMD and pthreads (needs cross-origin isolation)",
       "binaryDir": "${sourceDir}/build-wasm-threads",
       "cacheVariables": { "RAW_NATIVE_WASM_SIMD": "ON", "RAW_NATIVE_WASM_THREADS": "ON" }
+    },
+    {
+      "name": "wasm-gpu",
+      "inherits": "wasm",
+      "displayName": "WebAssembly with the WebGPU backend (needs a browser with WebGPU and JSPI)",
+      "binaryDir": "${sourceDir}/build-wasm-gpu",
+      "cacheVariables": { "RAW_NATIVE_GPU": "ON" }
     }
   ],
   "buildPresets": [
     { "name": "wasm", "configurePreset": "wasm" },
     { "name": "wasm-simd", "configurePreset": "wasm-simd" },
-    { "name": "wasm-threads", "configurePreset": "wasm-threads" }
+    { "name": "wasm-threads", "configurePreset": "wasm-threads" },
+    { "name": "wasm-gpu", "configurePreset": "wasm-gpu" }
   ]
 }

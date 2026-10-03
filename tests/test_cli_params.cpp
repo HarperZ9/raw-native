@@ -124,5 +124,18 @@ int main(){
         const char* badTol[] = {"cli", "--tolerance", "-1"};
         CHECK(!parseArgs(3, badTol, e2).has_value());
     }
+    // (6) 0.4.0: --gpu marks the canonical record; a CPU record is unchanged.
+    {
+        const char* a4[] = {"cli", "--gpu"};
+        std::string e4;
+        auto g = parseArgs(2, a4, e4);
+        CHECK(g.has_value() && g->gpu);
+        if (g){
+            std::string c = canonicalParamsJson(*g);
+            CHECK(c.rfind("{\"backend\":\"webgpu\",\"eye\":", 0) == 0);
+            CliParams cpu = *g; cpu.gpu = false;
+            CHECK(canonicalParamsJson(cpu).find("backend") == std::string::npos);
+        }
+    }
     return raw_test_summary();
 }

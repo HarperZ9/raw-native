@@ -88,6 +88,7 @@ std::optional<CliParams> parseArgs(int argc, const char* const* argv, std::strin
         else if (a == "--bench"){ const char* v = need(i); if (!v) return std::nullopt;
             if (!parseInt(v, p.bench) || p.bench < 1 || p.bench > 1000){ err = "bad --bench (1..1000)"; return std::nullopt; } }
         else if (a == "--no-rt"){ p.rtao = false; }
+        else if (a == "--gpu"){ p.gpu = true; }
         else if (a == "--eye"){ const char* v = need(i); if (!v) return std::nullopt;
             if (!parseVec3(v, p.eye)){ err = "bad --eye (want x,y,z)"; return std::nullopt; } }
         else if (a == "--target"){ const char* v = need(i); if (!v) return std::nullopt;
@@ -176,6 +177,7 @@ static std::string cv(const Vec3& v){ return "[" + cf(v.x) + "," + cf(v.y) + ","
 static std::string cov(const std::optional<Vec3>& v){ return v ? cv(*v) : std::string("null"); }
 std::string canonicalParamsJson(const CliParams& p){
     std::string o = "{";
+    if (p.gpu) o += "\"backend\":\"webgpu\",";
     o += "\"eye\":" + cv(p.eye);
     o += ",\"fovy\":" + cf(p.fovy);
     o += ",\"height\":" + std::to_string(p.height);

@@ -12,6 +12,7 @@
 #include "raw/arena.hpp"
 #include "raw/version.hpp"
 #include "raw/run.hpp"
+#include "raw/gpu_run.hpp"
 #include <string>
 #include <vector>
 #include <cstdint>
@@ -59,11 +60,14 @@ static const char* kUsage =
     "  --no-rt                     skip the ray-traced reference; verdict is unverifiable\n"
     "  --threads <n>               render threads (default 1); output is identical for any n\n"
     "  --bench <runs>              time <runs> renders, print JSON, write no files\n"
+    "  --gpu                       render on the WebGPU backend (raw-native-gpu build only) and\n"
+    "                              write gpu_certificate.json against the CPU reference in <out>/cpu\n"
     "  --params <file.json>        load parameters first; later flags override\n"
     "  --version                   print the version and exit\n"
     "  --help                      print this text and exit\n"
     "exit codes: 0 rendered or verified, 1 memory budget breached (fail-closed),\n"
-    "            2 bad input or missing files, 3 verify found a mismatch\n";
+    "            2 bad input or missing files, 3 verify found a mismatch,\n"
+    "            4 --gpu asked for and no GPU backend or adapter is available\n";
 // Answer --help and --version before parsing render flags. Returns -1 to continue.
 static int infoFlags(int argc, char** argv){
     for (int i = 1; i < argc; ++i){
@@ -87,6 +91,8 @@ int main(int argc, char** argv){
     std::optional<CliParams> parsed = parseArgs(argc, argv, err);
     if (!parsed){ std::printf("param error: %s\n", err.c_str()); return 2; }
     const CliParams p = *parsed;
+    if (p.gpu && p.bench > 0){ std::printf("%s\n", benchGpuJson(p).c_str()); return 0; }
+    if (p.gpu) return runGpu(p);
     if (p.bench > 0){ std::printf("%s\n", benchJson(p).c_str()); return 0; }
     const std::string out = p.out;
     const int W = p.width, H = p.height;

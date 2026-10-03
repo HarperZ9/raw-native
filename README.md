@@ -11,7 +11,9 @@ not. You get the picture and the evidence for it in the same run.
 It is written in C++23 with no third-party dependencies, no GPU and no graphics
 API. Every pixel comes from the standard library and the engine's own code, so
 it builds the same way on any C++23 toolchain. The same code also runs in a web
-browser as WebAssembly and writes byte-identical files.
+browser as WebAssembly and writes byte-identical files. A separate WebGPU build
+renders the frame on the GPU and checks every GPU frame against this CPU path;
+the default build contains no GPU code.
 
 | Shaded frame | Ray-traced AO (reference) | Screen-space AO (shortcut) | Error map |
 |---|---|---|---|
@@ -26,7 +28,7 @@ with the output digests shortened here:
  "verdict":"refuted","oracle":"raw-rt-ao-v1",
  "evidence":[["pixels","151984"],["rmse","0.1349"],["maxError","0.6406"],["tolerance","0.1200"]],
  "channels":{"ao_fidelity":0.881125,"motion_coherence":1,"hdr_headroom":0.875542},
- "schema":"raw-cert/2","renderer":"raw-native 0.3.0",
+ "schema":"raw-cert/2","renderer":"raw-native 0.4.0",
  "params":{"eye":[4,4,6],"fovy":0.899999976,"height":512,"prev_eye":null,"prev_target":null,
            "prev_up":null,"rt":true,"target":[0,1,0],"tolerance":0.119999997,"up":[0,1,0],"width":512},
  "samples":{"rt":64,"ss":24},
@@ -130,6 +132,47 @@ native renderer on every push. The released wasm was built on Windows. The prese
 `wasm-simd` and `wasm-threads` build the two variants in the timing table
 below.
 
+## Render on the GPU, checked against the CPU
+
+From 0.4.0 the release adds a WebGPU build, `raw-native-gpu.mjs` and
+`raw-native-gpu.wasm`. It runs the whole frame on the GPU as WGSL compute
+passes: triangle setup, rasterization with depth, normal, position and motion
+channels, screen-space AO, ray-traced AO and shading. Then it renders the same
+camera on the CPU and writes `gpu_certificate.json`, which says whether the two
+agree. A GPU frame never ships without that check.
+
+```js
+const raw = await loadRawNative({
+  moduleUrl: "raw-native-gpu.mjs", moduleSha256: "<from SHA256SUMS>",
+  wasmUrl: "raw-native-gpu.wasm",  wasmSha256: "<from SHA256SUMS>",
+});
+const run = await raw.renderAsync({ width: 512, height: 512, gpu: true });
+run.frame;            // the GPU frame
+run.gpuCertificate;   // raw-gpu-cert/1: GPU against the CPU reference
+run.files["cpu/certificate.json"];   // the CPU reference's own certificate
+```
+
+It needs a browser with WebGPU and JSPI; it was tested in Chrome 154. The command
+line flag is `--gpu`; the native build and the CPU wasm build answer it with
+exit code 4 and an `unverifiable` GPU certificate, because they contain no GPU
+code. Build it with `cmake --preset wasm-gpu` and `cmake --build --preset wasm-gpu`.
+
+What the GPU certificate compares, over the pixels both sides cover:
+
+| Check | Bound |
+|---|---|
+| Coverage pixels that disagree | 0.2% of pixels either side covers |
+| Depth, relative RMSE | 1e-4 |
+| Position, normal (RMSE per component) | 1e-3 |
+| Motion vectors (RMSE, UV units) | 1e-4 |
+| Screen-space AO, ray-traced AO, frame (RMSE, 0..1) | 0.01 |
+| The frame's own AO verdict | must equal the CPU's; RMSE within 0.005 |
+
+The bounds and the reasoning behind them are in `raw/gpu_tolerance.hpp`, which
+was committed before the first line of GPU code and before any GPU output was
+seen. Maximum errors are reported and never bounded. The certificate also
+records the adapter, both render times and five `does_not_prove` lines.
+
 ## Point the camera anywhere
 
 ```sh
@@ -153,11 +196,38 @@ pass. With no reference to compare against, the certificate says
 
 ## Measured results
 
-All numbers come from the v0.3.0 build on one machine (Intel Core i7-13700KF,
-24 threads, Windows 11) unless noted.
+All numbers come from one machine (Intel Core i7-13700KF, 24 threads, NVIDIA
+RTX 4090, Windows 11). The CPU and wasm numbers were measured on v0.3.0, whose
+CPU render code 0.4.0 keeps unchanged; the GPU numbers on v0.4.0.
 
-- **Tests:** 31 of 31 CTest targets pass in Release and Debug with MSVC 19.50,
-  and 31 of 31 in Release with GCC 13.3 on Ubuntu 24.04.
+- **Tests:** 32 of 32 CTest targets pass in Release with MSVC 19.50 and in CI
+  on GitHub's Windows and Ubuntu runners.
+- **The GPU frame matches the CPU reference.** 16 of 16 GPU certificates say
+  `verified`: three frame sizes and the five views below, each with and without
+  the ray-traced pass, plus a moving camera for motion vectors. Coverage agrees
+  on every pixel in every case. The largest RMSE on any channel is 4.2e-5
+  (ray-traced AO, low view), against a bound of 0.01; the default 256 x 256 view's
+  ray-traced AO is bit-identical. Each GPU frame's own AO verdict equals the
+  CPU's. Headed Chrome 154 on the RTX 4090. Evidence:
+  `evidence/webgpu-rtx4090-chromium.json`.
+- **GPU speed.** Median of 5 renders after one untimed warm-up, in
+  milliseconds, through WebGPU in Chrome 154 on the RTX 4090. "Every channel"
+  includes reading back all nine buffers (about 140 MB at 1440 x 900) and
+  converting them for the certificate; "frame only" reads back the shaded frame.
+
+| Frame | Mode | WebGPU, every channel | WebGPU, frame only | wasm, one thread | native, one thread |
+|---|---|---|---|---|---|
+| 256 x 256 | Full | 6.8 | 4.0 | 252 | 258 |
+| 512 x 512 | Full | 14.3 | 4.4 | 1,013 | 1,028 |
+| 1440 x 900 | Full | 72.7 | 17.8 | 4,646 | 4,527 |
+| 256 x 256 | No RT | 6.4 | 0.8 | 27 | 29 |
+| 512 x 512 | No RT | 12.0 | 4.1 | 110 | 118 |
+| 1440 x 900 | No RT | 64.4 | 17.4 | 533 | 527 |
+
+  These are wall times measured inside the module, so they include JavaScript
+  promise turns and browser scheduling, not only GPU work. They are one run of
+  5 on one machine; the 256 x 256 no-RT frame-only figure sits near the timer's
+  resolution. The CPU columns repeat the 0.3.0 table below.
 - **Reproducible output:** the default render's `frame.ppm` and
   `certificate.json` are byte-identical across MSVC, GCC 13.3 on Linux and the
   WebAssembly build. `frame.ppm` is also unchanged from 0.2.0.
@@ -237,7 +307,7 @@ second time, the render stops and the memory certificate says `refuted`.
 headers, the license and a CMake package. Then, in your project:
 
 ```cmake
-find_package(raw_native 0.3 CONFIG REQUIRED)
+find_package(raw_native 0.4 CONFIG REQUIRED)
 target_link_libraries(your_target PRIVATE raw_native::raw_native)
 ```
 
@@ -248,14 +318,14 @@ The package sets `raw_native_LICENSE` to `FSL-1.1-MIT`.
 ```
 raw/       headers: vectors, matrices, images, scene, G-buffer, rasterizer,
            ray-traced AO, SSAO, reconcile, certificate, composite, arena, motion
-src/       implementation
+src/       implementation; src/gpu/ holds the WebGPU backend and its WGSL passes
 app/       command-line driver
 tests/     one test executable per test_*.cpp
 wasm/      browser loader and a Node runner for the WebAssembly build
-cmake/     WebAssembly build settings
+cmake/     WebAssembly and WebGPU build settings
 scripts/   independent recheck, render comparison, timing and release packing
-bench/     the browser timing page and a local server with isolation headers
-evidence/  raw timing runs and the wasm-versus-native comparison
+bench/     the browser timing pages (CPU wasm and WebGPU) and a local server
+evidence/  raw timing runs, the wasm-versus-native comparison and the GPU certificates
 docs/      example images and certificates
 ```
 

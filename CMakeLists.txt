@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(raw_native VERSION 0.3.0
+project(raw_native VERSION 0.4.0
     DESCRIPTION "CPU renderer that checks fast ambient occlusion against a ray-traced reference"
     HOMEPAGE_URL "https://github.com/HarperZ9/raw-native"
     LANGUAGES CXX)
@@ -32,15 +32,16 @@ if(RAW_NATIVE_BUILD_TESTS)
     file(GLOB TEST_SRCS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_*.cpp")
     foreach(t ${TEST_SRCS})
         get_filename_component(name ${t} NAME_WE)
-        add_executable(${name} ${t})
+        add_executable(${name} ${t} src/gpu/gpu_none.cpp)
         target_link_libraries(${name} PRIVATE raw_native)
         target_include_directories(${name} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/tests")
         add_test(NAME ${name} COMMAND ${name})
     endforeach()
 endif()
 
-add_executable(raw_native_cli app/main.cpp)
+add_executable(raw_native_cli app/main.cpp src/gpu/gpu_none.cpp)
 target_link_libraries(raw_native_cli PRIVATE raw_native)
+include(cmake/gpu.cmake)
 if(EMSCRIPTEN)
     raw_native_wasm_target(raw_native_cli)
 endif()
