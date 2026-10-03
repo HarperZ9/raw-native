@@ -8,15 +8,28 @@
 #include <utility>
 namespace raw {
 FrameResult renderWithParams(const Scene& scene, int w, int h,
-                             const Mat4& prevViewProj, Arena* arena){
+                             const Mat4& prevViewProj, Arena* arena,
+                             const RenderOptions& opts){
     FrameResult r(arena);
     r.g = rasterize(scene, w, h, arena);
-    LinearAccel accel; accel.build(scene, arena);
-    r.aoRT = computeRTAO(r.g, accel, 64, 2.0f, arena);
-    r.aoSS = computeSSAO(r.g, 24, 2.0f, arena);
-    r.rec  = reconcile(r.aoSS, r.aoRT, r.g.mask, 0.12f, arena);
-    r.frame = shade(r.g, r.aoRT, scene, arena);     // human view: clamped [0,1]
-    r.hdr   = shadeHDR(r.g, r.aoRT, scene, arena);  // model view: unclamped HDR
+    // Same allocation order as 0.2.0 (accel, RT AO, SS AO), so the arena
+    // certificate for a default render is unchanged.
+    if (opts.rtao){
+        LinearAccel accel; accel.build(scene, arena);
+        r.aoRT = computeRTAO(r.g, accel, kRtSamples, kAoRadius, arena, opts.threads);
+    }
+    r.aoSS = computeSSAO(r.g, kSsSamples, kAoRadius, arena, opts.threads);
+    if (opts.rtao){
+        r.rec  = reconcile(r.aoSS, r.aoRT, r.g.mask, opts.tolerance, arena);
+    } else {
+        // No reference: an empty reconcile (pixels == 0) makes the verdict
+        // "unverifiable" instead of comparing against invented data.
+        r.rec.errorMap = Buffer<float>(arena);
+        r.rec.errorMap.resize(w, h);
+    }
+    const Buffer<float>& lightAO = opts.rtao ? r.aoRT : r.aoSS;
+    r.frame = shade(r.g, lightAO, scene, arena);     // human view: clamped [0,1]
+    r.hdr   = shadeHDR(r.g, lightAO, scene, arena);  // model view: unclamped HDR
 
     // Motion vectors by reprojection against the previous view-projection.
     r.viewProj = mul(scene.camera.proj(), scene.camera.view());

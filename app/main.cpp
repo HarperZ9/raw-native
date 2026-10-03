@@ -11,6 +11,7 @@
 #include "raw/mat.hpp"
 #include "raw/arena.hpp"
 #include "raw/version.hpp"
+#include "raw/run.hpp"
 #include <string>
 #include <vector>
 #include <cstdint>
@@ -21,59 +22,21 @@
 #include <utility>
 #include <cstring>
 using namespace raw;
-// Build the parameterized scene: the canonical test geometry/lights, but the
-// camera and frame size come from the CLI params (the model's chosen view).
-static Scene buildScene(const CliParams& p, Arena* arena){
-    Scene s = buildTestScene(p.width, p.height, arena);
-    s.camera = cameraFromParams(p);
-    return s;
-}
-// Render one frame and every extra channel for the given params. The previous
-// camera (when supplied) drives motion reprojection; otherwise the previous
-// view-projection equals the current one -> honest zero motion.
-static FrameResult renderFrame(const CliParams& p, Arena* arena){
-    Scene s = buildScene(p, arena);
-    Mat4 curVP  = mul(s.camera.proj(), s.camera.view());
-    Mat4 prevVP = curVP;
-    if (p.hasPrevCamera()){
-        Camera pc = prevCameraFromParams(p);
-        prevVP = mul(pc.proj(), pc.view());
-    }
-    return renderWithParams(s, p.width, p.height, prevVP, arena);
-}
-// Write every output and print the summary for a frame rendered inside `arena`.
+// Render, write every file and certificate, and print the summary for a frame
+// rendered inside `arena`.
 static int emitOutputs(const FrameResult& o, const CliParams& p, Arena& arena){
     const std::string out = p.out;
-    writePPM(o.frame, out + "/frame.ppm");           // human view: tonemapped/clamped 8-bit
-    writePFM(o.hdr,   out + "/frame_hdr.pfm");        // model view: exact linear radiance
-    writePGM(o.aoRT,  out + "/ao_rt.pgm");
-    writePGM(o.aoSS,  out + "/ao_ss.pgm");
-    writePGM(o.rec.errorMap, out + "/ao_error.pgm");
-
-    // Per-channel fidelity witness. Motion coherence is null when no covered
-    // pixel has a denominator; with a static (or absent) previous camera every
-    // covered pixel is a valid zero, so coherence is 1.0. HDR headroom is real.
-    std::optional<double> motionCoherence =
-        o.motionTotal > 0 ? std::optional<double>((double)o.motionValid / o.motionTotal)
-                          : std::nullopt;
-    std::optional<double> hdrHeadroom = std::optional<double>(maxRadiance(o.hdr));
-    Certificate aoCert    = certificate_with_channels(o.rec, 0.12f, motionCoherence, hdrHeadroom);
+    FileDigests outputs = writeFrameFiles(o, p);
+    Certificate aoCert    = aoCertificate(o, p, outputs);
     Certificate arenaCert = certificate_from_arena(arena.stats());
     std::ofstream(out + "/certificate.json")        << to_json(aoCert);
     std::ofstream(out + "/arena_certificate.json")  << to_json(arenaCert);
-
-    // The single machine-readable artifact the two-way loop reads back: the
-    // certificate PLUS compact channel summaries, so a caller need not parse the
-    // raw image files. Absent channels are honest null.
+    // The certificate plus compact channel summaries, so a caller need not
+    // parse the image files. Absent channels are honest null.
     std::ofstream(out + "/channels.json") << channelsJson(o, p);
-
     std::printf("reconcile: pixels=%d rmse=%.4f maxError=%.4f verdict=%s\n",
         o.rec.pixels, o.rec.rmse, o.rec.maxError,
-        o.rec.withinTolerance ? "WITHIN-TOLERANCE" : "DIVERGENT");
-    std::printf("channels: ao_fidelity=%.4f motion_coherence=%.4f (%d/%d) hdr_headroom=%.4f\n",
-        aoFidelityFromRmse(o.rec.rmse),
-        motionCoherence.has_value() ? *motionCoherence : 0.0,
-        o.motionValid, o.motionTotal, hdrHeadroom.has_value() ? *hdrHeadroom : 0.0);
+        o.rec.pixels == 0 ? "NO-REFERENCE" : (o.rec.withinTolerance ? "WITHIN-TOLERANCE" : "DIVERGENT"));
     std::printf("certificate: %s\n", to_json(aoCert).c_str());
     std::printf("arena: %s\n", arena_witness(arena.stats()).c_str());
     std::printf("arena-certificate: %s\n", to_json(arenaCert).c_str());
@@ -81,15 +44,21 @@ static int emitOutputs(const FrameResult& o, const CliParams& p, Arena& arena){
 }
 static const char* kUsage =
     "usage: raw_native_cli [outdir] [flags]\n"
+    "       raw_native_cli verify <dir>   recheck a render's files against its certificate\n"
     "  --out <dir>                 output directory (default .)\n"
     "  --width <int> --height <int> frame size (default 256x256)\n"
     "  --eye x,y,z --target x,y,z --up x,y,z   camera\n"
     "  --fovy <radians>            vertical field of view (default 0.9)\n"
     "  --prev-eye x,y,z --prev-target x,y,z --prev-up x,y,z   previous camera for motion\n"
+    "  --tolerance <rmse>          AO verdict bound, recorded in the certificate (default 0.12)\n"
+    "  --no-rt                     skip the ray-traced reference; verdict is unverifiable\n"
+    "  --threads <n>               render threads (default 1); output is identical for any n\n"
+    "  --bench <runs>              time <runs> renders, print JSON, write no files\n"
     "  --params <file.json>        load parameters first; later flags override\n"
     "  --version                   print the version and exit\n"
     "  --help                      print this text and exit\n"
-    "exit codes: 0 rendered, 1 memory budget breached (fail-closed), 2 bad input or setup\n";
+    "exit codes: 0 rendered or verified, 1 memory budget breached (fail-closed),\n"
+    "            2 bad input or missing files, 3 verify found a mismatch\n";
 // Answer --help and --version before parsing render flags. Returns -1 to continue.
 static int infoFlags(int argc, char** argv){
     for (int i = 1; i < argc; ++i){
@@ -102,10 +71,18 @@ static int infoFlags(int argc, char** argv){
 }
 int main(int argc, char** argv){
     if (int rc = infoFlags(argc, argv); rc >= 0) return rc;
+    if (argc >= 2 && std::strcmp(argv[1], "verify") == 0){
+        if (argc != 3){ std::printf("usage: raw_native_cli verify <dir>\n"); return 2; }
+        std::string report;
+        int rc = verifyDir(argv[2], report);
+        std::printf("%s", report.c_str());
+        return rc;
+    }
     std::string err;
     std::optional<CliParams> parsed = parseArgs(argc, argv, err);
     if (!parsed){ std::printf("param error: %s\n", err.c_str()); return 2; }
     const CliParams p = *parsed;
+    if (p.bench > 0){ std::printf("%s\n", benchJson(p).c_str()); return 0; }
     const std::string out = p.out;
     const int W = p.width, H = p.height;
 
@@ -117,7 +94,7 @@ int main(int argc, char** argv){
     std::size_t slabUB = (std::size_t)W*H*PER_PIXEL_UPPER*2 + (1u<<20);
     std::vector<std::uint8_t> slab1(slabUB);
     Arena measure(slab1.data(), slabUB);
-    try { (void)renderFrame(p, &measure); }
+    try { (void)renderFromParams(p, &measure); }
     catch (const std::bad_alloc&){ std::printf("measure pass overflowed slab - raise PER_PIXEL_UPPER\n"); return 2; }
     std::size_t Hbytes = measure.stats().high_water;
 
@@ -127,7 +104,7 @@ int main(int argc, char** argv){
     try {
         // Direct initialization elides the extra move. Debug iterator bookkeeping
         // during a vector move can allocate after the measured budget is full.
-        const FrameResult o = renderFrame(p, &arena);
+        const FrameResult o = renderFromParams(p, &arena);
         return emitOutputs(o, p, arena);
     }
     catch (const std::bad_alloc&){

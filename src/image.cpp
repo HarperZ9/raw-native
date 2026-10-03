@@ -3,6 +3,8 @@
 #include <algorithm>
 #include <cstdint>
 #include <cstring>
+#include <iterator>
+#include <sstream>
 namespace raw {
 static unsigned char to8(float v){
     v = std::clamp(v, 0.0f, 1.0f); return (unsigned char)(v*255.0f + 0.5f); }
@@ -32,5 +34,55 @@ void writePFM(const Buffer<Vec3>& img, const std::string& path){
         std::memcpy(bytes, rgb, 12);
         f.write(bytes, 12);
     }
+}
+void writePFM1(const Buffer<float>& img, const std::string& path){
+    std::ofstream f(path, std::ios::binary);
+    f << "Pf\n" << img.w << " " << img.h << "\n-1.0\n";
+    for (int y = img.h - 1; y >= 0; --y) for (int x = 0; x < img.w; ++x){
+        float v = img.at(x,y);
+        char bytes[4];
+        std::memcpy(bytes, &v, 4);
+        f.write(bytes, 4);
+    }
+}
+void writeMaskPGM(const Buffer<uint8_t>& mask, const std::string& path){
+    std::ofstream f(path, std::ios::binary);
+    f << "P5\n" << mask.w << " " << mask.h << "\n255\n";
+    for (int y=0;y<mask.h;++y) for (int x=0;x<mask.w;++x){
+        unsigned char v = mask.at(x,y) ? 255 : 0; f.write((char*)&v, 1); }
+}
+// Read a whole file and split off a three-line header ("magic\nW H\nlast\n").
+static bool readHeader(const std::string& path, const char* magic, std::string& last,
+                       int& w, int& h, std::string& body){
+    std::ifstream f(path, std::ios::binary);
+    if (!f) return false;
+    std::string all((std::istreambuf_iterator<char>(f)), {});
+    size_t a = all.find('\n'); if (a == std::string::npos) return false;
+    size_t b = all.find('\n', a + 1); if (b == std::string::npos) return false;
+    size_t c = all.find('\n', b + 1); if (c == std::string::npos) return false;
+    if (all.substr(0, a) != magic) return false;
+    std::istringstream dims(all.substr(a + 1, b - a - 1));
+    if (!(dims >> w >> h) || w <= 0 || h <= 0) return false;
+    last = all.substr(b + 1, c - b - 1);
+    body = all.substr(c + 1);
+    return true;
+}
+bool readPFM1(const std::string& path, Buffer<float>& out){
+    std::string scale, body; int w = 0, h = 0;
+    if (!readHeader(path, "Pf", scale, w, h, body) || scale != "-1.0") return false;
+    if (body.size() != (size_t)w * h * 4) return false;
+    out.resize(w, h);
+    size_t k = 0;
+    for (int y = h - 1; y >= 0; --y) for (int x = 0; x < w; ++x, k += 4)
+        std::memcpy(&out.at(x,y), body.data() + k, 4);
+    return true;
+}
+bool readMaskPGM(const std::string& path, Buffer<uint8_t>& out){
+    std::string maxv, body; int w = 0, h = 0;
+    if (!readHeader(path, "P5", maxv, w, h, body) || maxv != "255") return false;
+    if (body.size() != (size_t)w * h) return false;
+    out.resize(w, h);
+    for (size_t i = 0; i < body.size(); ++i) out.px[i] = body[i] ? 1 : 0;
+    return true;
 }
 }

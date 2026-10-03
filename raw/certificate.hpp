@@ -26,13 +26,31 @@ struct ChannelFidelity {
     std::optional<double> hdrHeadroom;
 };
 
+// raw-cert/2 provenance: what produced the numbers and which files they were
+// judged from, so a stranger can re-derive the verdict from data alone.
+//   renderer:   "raw-native X.Y.Z"
+//   paramsJson: canonical params (sorted keys, floats at round-trip precision)
+//   pixels/rmse/maxError/tolerance: the reconcile values at full float precision
+//   outputs:    file name -> SHA-256 of the bytes written, sorted by name
+struct Provenance {
+    std::string renderer;
+    std::string paramsJson;
+    int rtSamples{0}, ssSamples{0};
+    int pixels{0};
+    float rmse{0}, maxError{0}, tolerance{0};
+    std::vector<std::pair<std::string, std::string>> outputs;
+};
+
 struct Certificate {
     std::string claim;
     Verdict verdict;
     std::string oracle;                                       // e.g. "raw-rt-ao-v1"
     std::vector<std::pair<std::string, std::string>> evidence; // ordered (key,value) pairs
     std::optional<ChannelFidelity> channels;                  // absent -> original JSON shape
+    std::optional<Provenance> provenance;                     // absent -> raw-cert/1 shape
 };
+// Format a float so that parsing the text back as float32 gives the same bits.
+std::string exactFloat(float v);
 std::string to_json(const Certificate& c);
 struct ReconcileResult;   // fwd (defined in raw/reconcile.hpp)
 struct ArenaStats;        // fwd (defined in raw/arena.hpp)

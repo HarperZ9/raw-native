@@ -29,3 +29,37 @@ jobs:
           grep -q '"oracle":"raw-rt-ao-v1"' out/certificate.json
           grep -q '"verdict":"verified"' out/arena_certificate.json
           sha256sum out/frame.ppm out/certificate.json
+      - name: Recheck the certificate from its files
+        shell: bash
+        run: |
+          if [ -x build/raw_native_cli ]; then cli=build/raw_native_cli; else cli=build/Release/raw_native_cli.exe; fi
+          "$cli" verify out
+          if command -v python3 >/dev/null && python3 --version >/dev/null 2>&1; then py=python3; else py=python; fi
+          "$py" scripts/recheck.py out
+  wasm:
+    runs-on: ubuntu-24.04
+    env:
+      EMSDK_VERSION: 6.0.11
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install emsdk
+        run: |
+          git clone https://github.com/emscripten-core/emsdk.git "$RUNNER_TEMP/emsdk"
+          cd "$RUNNER_TEMP/emsdk"
+          ./emsdk install "$EMSDK_VERSION"
+          ./emsdk activate "$EMSDK_VERSION"
+      - name: Build native and wasm
+        run: |
+          source "$RUNNER_TEMP/emsdk/emsdk_env.sh"
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRAW_NATIVE_BUILD_TESTS=OFF
+          cmake --build build
+          cmake --preset wasm
+          cmake --build --preset wasm
+          sha256sum build-wasm/raw-native.wasm build-wasm/raw-native.mjs
+      - name: Render both and compare certificates
+        run: |
+          source "$RUNNER_TEMP/emsdk/emsdk_env.sh"
+          build/raw_native_cli --out native >/dev/null
+          node wasm/run-node.mjs build-wasm/raw-native.mjs wasm-out >/dev/null
+          python3 scripts/recheck.py wasm-out
+          python3 scripts/compare_renders.py native wasm-out

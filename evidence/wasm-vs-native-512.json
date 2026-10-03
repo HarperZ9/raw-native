@@ -1,0 +1,152 @@
+{
+  "default": {
+    "a": {
+      "dir": "default-native",
+      "renderer": "raw-native 0.3.0",
+      "verdict": "refuted",
+      "pixels": 151984,
+      "rmse": 0.134912357,
+      "maxError": 0.640625,
+      "tolerance": 0.119999997,
+      "self_recheck_exit": 0
+    },
+    "b": {
+      "dir": "default-wasm",
+      "renderer": "raw-native 0.3.0",
+      "verdict": "refuted",
+      "pixels": 151984,
+      "rmse": 0.134912357,
+      "maxError": 0.640625,
+      "tolerance": 0.119999997,
+      "self_recheck_exit": 0
+    },
+    "delta": {
+      "pixels": 0,
+      "rmse": 0.0,
+      "maxError": 0.0
+    },
+    "within_tolerance": true,
+    "bitwise_identical_files": 8,
+    "files": 8
+  },
+  "high": {
+    "a": {
+      "dir": "high-native",
+      "renderer": "raw-native 0.3.0",
+      "verdict": "verified",
+      "pixels": 239854,
+      "rmse": 0.082736887,
+      "maxError": 0.625,
+      "tolerance": 0.119999997,
+      "self_recheck_exit": 0
+    },
+    "b": {
+      "dir": "high-wasm",
+      "renderer": "raw-native 0.3.0",
+      "verdict": "verified",
+      "pixels": 239854,
+      "rmse": 0.082736887,
+      "maxError": 0.625,
+      "tolerance": 0.119999997,
+      "self_recheck_exit": 0
+    },
+    "delta": {
+      "pixels": 0,
+      "rmse": 0.0,
+      "maxError": 0.0
+    },
+    "within_tolerance": true,
+    "bitwise_identical_files": 8,
+    "files": 8
+  },
+  "low": {
+    "a": {
+      "dir": "low-native",
+      "renderer": "raw-native 0.3.0",
+      "verdict": "refuted",
+      "pixels": 140838,
+      "rmse": 0.165862963,
+      "maxError": 0.692708313,
+      "tolerance": 0.119999997,
+      "self_recheck_exit": 0
+    },
+    "b": {
+      "dir": "low-wasm",
+      "renderer": "raw-native 0.3.0",
+      "verdict": "refuted",
+      "pixels": 140838,
+      "rmse": 0.165862963,
+      "maxError": 0.692708313,
+      "tolerance": 0.119999997,
+      "self_recheck_exit": 0
+    },
+    "delta": {
+      "pixels": 0,
+      "rmse": 0.0,
+      "maxError": 0.0
+    },
+    "within_tolerance": true,
+    "bitwise_identical_files": 8,
+    "files": 8
+  },
+  "close": {
+    "a": {
+      "dir": "close-native",
+      "renderer": "raw-native 0.3.0",
+      "verdict": "refuted",
+      "pixels": 214043,
+      "rmse": 0.216674253,
+      "maxError": 0.71875,
+      "tolerance": 0.119999997,
+      "self_recheck_exit": 0
+    },
+    "b": {
+      "dir": "close-wasm",
+      "renderer": "raw-native 0.3.0",
+      "verdict": "refuted",
+      "pixels": 214043,
+      "rmse": 0.216674253,
+      "maxError": 0.71875,
+      "tolerance": 0.119999997,
+      "self_recheck_exit": 0
+    },
+    "delta": {
+      "pixels": 0,
+      "rmse": 0.0,
+      "maxError": 0.0
+    },
+    "within_tolerance": true,
+    "bitwise_identical_files": 8,
+    "files": 8
+  },
+  "wide": {
+    "a": {
+      "dir": "wide-native",
+      "renderer": "raw-native 0.3.0",
+      "verdict": "verified",
+      "pixels": 88869,
+      "rmse": 0.0882399976,
+      "maxError": 0.625,
+      "tolerance": 0.119999997,
+      "self_recheck_exit": 0
+    },
+    "b": {
+      "dir": "wide-wasm",
+      "renderer": "raw-native 0.3.0",
+      "verdict": "verified",
+      "pixels": 88869,
+      "rmse": 0.0882399976,
+      "maxError": 0.625,
+      "tolerance": 0.119999997,
+      "self_recheck_exit": 0
+    },
+    "delta": {
+      "pixels": 0,
+      "rmse": 0.0,
+      "maxError": 0.0
+    },
+    "within_tolerance": true,
+    "bitwise_identical_files": 8,
+    "files": 8
+  }
+}

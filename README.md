@@ -10,30 +10,44 @@ not. You get the picture and the evidence for it in the same run.
 
 It is written in C++23 with no third-party dependencies, no GPU and no graphics
 API. Every pixel comes from the standard library and the engine's own code, so
-it builds the same way on any C++23 toolchain.
+it builds the same way on any C++23 toolchain. The same code also runs in a web
+browser as WebAssembly and writes byte-identical files.
 
 | Shaded frame | Ray-traced AO (reference) | Screen-space AO (shortcut) | Error map |
 |---|---|---|---|
 | ![frame](docs/images/default-frame.png) | ![ray-traced AO](docs/images/default-ao_rt.png) | ![screen-space AO](docs/images/default-ao_ss.png) | ![error](docs/images/default-ao_error.png) |
 
 The default view above, rendered at 512 x 512, comes back `refuted`: the
-shortcut's error is 0.135 RMSE against a tolerance of 0.12. Its certificate:
+shortcut's error is 0.135 RMSE against a tolerance of 0.12. Its certificate,
+with the output digests shortened here:
 
 ```json
 {"claim":"screen-space AO matches ray-traced ground truth within tolerance",
  "verdict":"refuted","oracle":"raw-rt-ao-v1",
  "evidence":[["pixels","151984"],["rmse","0.1349"],["maxError","0.6406"],["tolerance","0.1200"]],
- "channels":{"ao_fidelity":0.881125,"motion_coherence":1,"hdr_headroom":0.875542}}
+ "channels":{"ao_fidelity":0.881125,"motion_coherence":1,"hdr_headroom":0.875542},
+ "schema":"raw-cert/2","renderer":"raw-native 0.3.0",
+ "params":{"eye":[4,4,6],"fovy":0.899999976,"height":512,"prev_eye":null,"prev_target":null,
+           "prev_up":null,"rt":true,"target":[0,1,0],"tolerance":0.119999997,"up":[0,1,0],"width":512},
+ "samples":{"rt":64,"ss":24},
+ "exact":{"pixels":151984,"rmse":0.134912357,"maxError":0.640625,"tolerance":0.119999997},
+ "outputs":{"ao_rt.pfm":"eb60b22d4151...","ao_ss.pfm":"fddc169c7fca...","mask.pgm":"892aacd21cae...","...":"..."}}
 ```
+
+The first fields are the 0.2.0 certificate, unchanged. Everything from `schema`
+on is new in 0.3.0: the renderer version, every parameter that changes the
+pixels, the sample counts, the reconcile values at full float precision and the
+SHA-256 of every file the verdict was judged from.
 
 ## Run it now
 
 Download a prebuilt binary from the
 [latest release](https://github.com/HarperZ9/raw-native/releases/latest)
-(Windows x64 or Linux x64), check it against `SHA256SUMS`, and run:
+(Windows x64, Linux x64 or WebAssembly), check it against `SHA256SUMS`, and run:
 
 ```sh
 raw_native_cli --out ./out
+raw_native_cli verify ./out
 ```
 
 Or build from source. You need CMake 3.24 or newer and a C++23 compiler
@@ -52,10 +66,11 @@ ctest --test-dir build -C Release --output-on-failure
 |---|---|
 | `frame.ppm` | The shaded frame, 8-bit, for people to look at |
 | `frame_hdr.pfm` | The same frame as unclamped linear radiance, for programs to read |
-| `ao_rt.pgm` | Ray-traced ambient occlusion, the reference |
-| `ao_ss.pgm` | Screen-space ambient occlusion, the shortcut |
+| `ao_rt.pfm`, `ao_rt.pgm` | Ray-traced ambient occlusion, the reference, as 32-bit float and as an 8-bit preview |
+| `ao_ss.pfm`, `ao_ss.pgm` | Screen-space ambient occlusion, the shortcut, as 32-bit float and as an 8-bit preview |
+| `mask.pgm` | Coverage mask: 255 where a surface covers the pixel. The reconcile counts only these pixels |
 | `ao_error.pgm` | Per-pixel absolute difference between the two |
-| `certificate.json` | Claim, verdict, oracle and evidence for the AO comparison |
+| `certificate.json` | Claim, verdict, oracle, evidence and the `raw-cert/2` provenance for the AO comparison |
 | `arena_certificate.json` | Proof the render stayed inside its memory budget |
 | `channels.json` | The certificate plus camera, coverage, depth, normal, motion, HDR and an 8x8 luminance readout |
 
@@ -63,29 +78,94 @@ Exit code 0 means the frame rendered. Exit code 1 means the render tried to use
 more memory than its budget and stopped; it still writes a memory certificate,
 with the verdict `refuted`. Exit code 2 means bad input.
 
+## Check a certificate without trusting the renderer
+
+`raw_native_cli verify <dir>` renders nothing. It re-hashes every file the
+certificate lists, recomputes the reconcile from `ao_rt.pfm`, `ao_ss.pfm` and
+`mask.pgm`, and compares pixel count, RMSE, maximum error and verdict with the
+recorded values. Exit code 0 means every check matches, 3 means a mismatch and
+2 means a file is missing.
+
+`scripts/recheck.py <dir>` does the same in Python with the standard library
+only. It shares no code with the C++ verifier, so a bug in one shows up as a
+disagreement with the other. Both reproduce the recorded RMSE bit for bit,
+because the float buffers on disk are the ones the renderer measured.
+
+To replay a render, pass the certificate's `params` object back as a params
+file. The same build on the same platform gives the same output digests.
+
+## Run it in a browser
+
+The release includes a WebAssembly build: `raw-native.wasm`, its Emscripten
+module `raw-native.mjs` and a small loader, `raw-loader.mjs`. The loader fetches
+both files, checks each against the SHA-256 you pass in, and only then runs
+them. It works on the page or in a Worker.
+
+```js
+import { loadRawNative } from "./raw-loader.mjs";
+const raw = await loadRawNative({
+  moduleUrl: "raw-native.mjs", moduleSha256: "<from SHA256SUMS>",
+  wasmUrl: "raw-native.wasm",  wasmSha256: "<from SHA256SUMS>",
+});
+const run = raw.render({ width: 256, height: 256, eye: [0, 9, 3], target: [0, 0.5, 0] });
+run.certificate;  // the same raw-cert/2 certificate the native CLI writes
+run.frame;        // { width, height, rgba }
+```
+
+To build it yourself, install [emsdk](https://github.com/emscripten-core/emsdk),
+activate it in your shell, and run:
+
+```sh
+cmake --preset wasm
+cmake --build --preset wasm      # build-wasm/raw-native.mjs and raw-native.wasm
+node wasm/run-node.mjs build-wasm/raw-native.mjs ./out-wasm
+python scripts/compare_renders.py ./out ./out-wasm
+```
+
+With emsdk 6.0.11 the build is byte-for-byte repeatable: two checkouts in
+different directories produce the same `raw-native.wasm`. The presets
+`wasm-simd` and `wasm-threads` build the two variants in the timing table
+below.
+
 ## Point the camera anywhere
 
 ```sh
 raw_native_cli --out ./out --width 512 --height 512 --eye 0,9,3 --target 0,0.5,0
 raw_native_cli --out ./out --params view.json          # flags given after it override the file
 raw_native_cli --out ./out --prev-eye 4.3,4,5.7        # a previous camera produces motion vectors
+raw_native_cli --out ./out --tolerance 0.15            # recorded in the certificate
+raw_native_cli --out ./out --threads 8                 # same output, faster
+raw_native_cli --out ./out --no-rt                     # skip the reference; verdict is unverifiable
+raw_native_cli --bench 5 --width 512 --height 512      # time 5 renders, print JSON
 raw_native_cli --help
 ```
 
 A params file is a flat JSON object with any of `out`, `width`, `height`, `eye`,
-`target`, `up`, `fovy`, `prev_eye`, `prev_target` and `prev_up`.
+`target`, `up`, `fovy`, `tolerance`, `rt`, `prev_eye`, `prev_target` and
+`prev_up`.
+
+`--no-rt` shades the frame with the screen-space AO and skips the ray-traced
+pass. With no reference to compare against, the certificate says
+`unverifiable`, and the ray-traced files are not written.
 
 ## Measured results
 
-All numbers come from the v0.2.0 CLI on one machine (Intel Core i7-13700KF,
-Windows 11) unless noted.
+All numbers come from the v0.3.0 build on one machine (Intel Core i7-13700KF,
+24 threads, Windows 11) unless noted.
 
-- **Tests:** 29 of 29 CTest targets pass in Release and Debug with MSVC 19.50,
-  and 29 of 29 in Release with GCC 13.3 on Ubuntu 24.04.
-- **Reproducible output:** the default render's images, `certificate.json` and
-  `channels.json` are byte-identical across MSVC Release, MSVC Debug and GCC 13.3
-  on Linux (SHA-256 compared). The memory certificate differs between Debug and
-  Release because Debug builds allocate more; that is expected.
+- **Tests:** 31 of 31 CTest targets pass in Release and Debug with MSVC 19.50,
+  and 31 of 31 in Release with GCC 13.3 on Ubuntu 24.04.
+- **Reproducible output:** the default render's `frame.ppm` and
+  `certificate.json` are byte-identical across MSVC, GCC 13.3 on Linux and the
+  WebAssembly build. `frame.ppm` is also unchanged from 0.2.0.
+- **WebAssembly matches native exactly.** For all five views below at
+  512 x 512, the wasm build's eight output files hash the same as the native
+  build's, so RMSE, maximum error, pixel count and verdict agree with zero
+  difference. The comparison tolerance (RMSE within 1e-4, maximum error within
+  1/64, identical pixels and verdict) was fixed before the first wasm run.
+  Evidence: `evidence/wasm-vs-native-512.json`.
+- **Thread count does not change output:** `--threads 1` and `--threads 8` give
+  identical files.
 - **The verdict depends on the view.** Same scene, 512 x 512, tolerance 0.12:
 
 | View | Flags | Covered pixels | RMSE | Verdict |
@@ -96,9 +176,34 @@ Windows 11) unless noted.
 | Close | `--eye 2,2.5,3 --target 0,0.8,0 --fovy 0.7` | 214,043 | 0.2167 | refuted |
 | Wide | `--eye 5,5,8 --target 0,0.5,0 --fovy 1.2` | 88,869 | 0.0882 | verified |
 
-- **Speed:** about 1.2 s per run at 256 x 256 and 4.6 s at 512 x 512, single
-  threaded, measured wall time including the memory-measuring pass described
-  below. The machine was shared with other work while timing.
+- **Speed.** Median of 5 renders, in milliseconds: wall time for one full frame
+  with no file output (`--bench 5`). "Full" includes the ray-traced reference.
+  "No RT" is rasterization, screen-space AO and shading only. The wasm columns
+  ran in a Worker in headless Chromium 154, and the threaded build used 24
+  threads.
+
+| Frame | Mode | wasm | wasm SIMD | wasm threads | native | native 24 threads |
+|---|---|---|---|---|---|---|
+| 256 x 256 | Full | 252 | 298 | 32 | 258 | 241 |
+| 512 x 512 | Full | 1,013 | 1,143 | 127 | 1,028 | 293 |
+| 1440 x 900 | Full | 4,646 | 4,881 | 523 | 4,527 | 613 |
+| 256 x 256 | No RT | 27 | 31 | 5 | 29 | 114 |
+| 512 x 512 | No RT | 110 | 116 | 21 | 118 | 119 |
+| 1440 x 900 | No RT | 533 | 541 | 85 | 527 | 199 |
+
+  Single-threaded wasm runs at native speed. SIMD gives no gain, because the
+  hot loops (per-pixel hashing and ray-triangle tests) do not auto-vectorize.
+  The threaded wasm build is the fastest configuration measured. Native
+  threading starts fresh threads for every pass, and that cost shows at small
+  frames; a persistent thread pool is the next step there. The machine was
+  running other work during these runs (about 60% total CPU load), which
+  affects the multi-threaded columns most. Raw runs: `evidence/bench-*.json`.
+
+- **Serving the threaded build** needs `SharedArrayBuffer`, which browsers grant
+  only to pages sent with `Cross-Origin-Opener-Policy: same-origin` and
+  `Cross-Origin-Embedder-Policy: require-corp`. GitHub Pages cannot set those
+  headers, so a Pages site can serve the single-threaded build and not the
+  threaded one. `bench/serve.py` sets them for local runs.
 
 Limits, stated plainly:
 
@@ -110,9 +215,10 @@ Limits, stated plainly:
 - The screen-space method is a simple one with 24 samples per pixel. It misses
   most of the occlusion the reference finds, so most views come back `refuted`.
   The check is reporting a weak shortcut there.
-- The tolerance (0.12 RMSE) is fixed in the CLI.
-- Byte-identical output was checked on x86-64 with two compilers. Other CPU
-  architectures and compilers are untested.
+- A pass on RMSE says nothing about the worst pixel. The high view passes at
+  0.0827 RMSE with a 0.625 maximum error.
+- Byte-identical output was checked on x86-64 with two compilers and on
+  WebAssembly. Other CPU architectures are untested.
 
 ## How the memory budget works
 
@@ -125,24 +231,39 @@ second time, the render stops and the memory certificate says `refuted`.
 ## Use it as a library
 
 `cmake --install build --prefix <dir>` installs the CLI, the static library, the
-headers and a CMake package. Then, in your project:
+headers, the license and a CMake package. Then, in your project:
 
 ```cmake
-find_package(raw_native 0.2 CONFIG REQUIRED)
+find_package(raw_native 0.3 CONFIG REQUIRED)
 target_link_libraries(your_target PRIVATE raw_native::raw_native)
 ```
+
+The package sets `raw_native_LICENSE` to `FSL-1.1-MIT`.
 
 ## Layout
 
 ```
-raw/     headers: vectors, matrices, images, scene, G-buffer, rasterizer,
-         ray-traced AO, SSAO, reconcile, certificate, composite, arena, motion
-src/     implementation
-app/     command-line driver
-tests/   one test executable per test_*.cpp
-docs/    example images and certificates
+raw/       headers: vectors, matrices, images, scene, G-buffer, rasterizer,
+           ray-traced AO, SSAO, reconcile, certificate, composite, arena, motion
+src/       implementation
+app/       command-line driver
+tests/     one test executable per test_*.cpp
+wasm/      browser loader and a Node runner for the WebAssembly build
+cmake/     WebAssembly build settings
+scripts/   independent recheck, render comparison, timing and release packing
+bench/     the browser timing page and a local server with isolation headers
+evidence/  raw timing runs and the wasm-versus-native comparison
+docs/      example images and certificates
 ```
 
 ## License
 
-MIT. See [LICENSE](LICENSE). Copyright (c) 2026 Zain Dana Harper.
+From version 0.3.0, raw-native is released under the Functional Source License,
+Version 1.1, MIT Future License (`FSL-1.1-MIT`). See [LICENSE](LICENSE). You may
+use, copy, modify and redistribute it for any purpose other than a competing
+commercial product or service, and each version becomes available under the MIT
+license two years after its release.
+
+Version 0.2.0 and earlier remain under the MIT license, as released.
+
+Copyright 2026 Zain Dana Harper.

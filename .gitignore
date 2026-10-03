@@ -36,8 +36,12 @@ compile_commands.json
 .DS_Store
 Thumbs.db
 
-# Example certificates shipped with the docs
+# Example certificates, evidence and presets shipped with the repo
 !docs/examples/*.json
+!evidence/*.json
+!CMakePresets.json
+build-wasm-sums.json
+/dist/
 
 # Local scratch output
 /views/

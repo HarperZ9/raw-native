@@ -1,0 +1,315 @@
+{
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
+  "crossOriginIsolated": true,
+  "hardwareConcurrency": 24,
+  "runs": 5,
+  "variants": [
+    {
+      "variant": "wasm",
+      "version": "raw-native 0.3.0",
+      "results": [
+        {
+          "variant": "wasm",
+          "renderer": "raw-native 0.3.0",
+          "width": 256,
+          "height": 256,
+          "rt": true,
+          "threads": 1,
+          "runs_ms": [
+            331.475,
+            251.43,
+            251.615,
+            252.015,
+            251.36
+          ],
+          "median_ms": 251.615
+        },
+        {
+          "variant": "wasm",
+          "renderer": "raw-native 0.3.0",
+          "width": 256,
+          "height": 256,
+          "rt": false,
+          "threads": 1,
+          "runs_ms": [
+            27.51,
+            28.705,
+            26.965,
+            27.01,
+            27.235
+          ],
+          "median_ms": 27.235
+        },
+        {
+          "variant": "wasm",
+          "renderer": "raw-native 0.3.0",
+          "width": 512,
+          "height": 512,
+          "rt": true,
+          "threads": 1,
+          "runs_ms": [
+            1013.31,
+            1014.315,
+            1007.155,
+            1018.57,
+            1010.23
+          ],
+          "median_ms": 1013.31
+        },
+        {
+          "variant": "wasm",
+          "renderer": "raw-native 0.3.0",
+          "width": 512,
+          "height": 512,
+          "rt": false,
+          "threads": 1,
+          "runs_ms": [
+            110.245,
+            108.875,
+            109.455,
+            110.12,
+            110.085
+          ],
+          "median_ms": 110.085
+        },
+        {
+          "variant": "wasm",
+          "renderer": "raw-native 0.3.0",
+          "width": 1440,
+          "height": 900,
+          "rt": true,
+          "threads": 1,
+          "runs_ms": [
+            4646.07,
+            4670.305,
+            4674.595,
+            4601.045,
+            4613.19
+          ],
+          "median_ms": 4646.07
+        },
+        {
+          "variant": "wasm",
+          "renderer": "raw-native 0.3.0",
+          "width": 1440,
+          "height": 900,
+          "rt": false,
+          "threads": 1,
+          "runs_ms": [
+            534.605,
+            542.45,
+            507.43,
+            521.635,
+            532.74
+          ],
+          "median_ms": 532.74
+        }
+      ]
+    },
+    {
+      "variant": "wasm-simd",
+      "version": "raw-native 0.3.0",
+      "results": [
+        {
+          "variant": "wasm-simd",
+          "renderer": "raw-native 0.3.0",
+          "width": 256,
+          "height": 256,
+          "rt": true,
+          "threads": 1,
+          "runs_ms": [
+            350.33,
+            285.615,
+            290.82,
+            298.285,
+            312.555
+          ],
+          "median_ms": 298.285
+        },
+        {
+          "variant": "wasm-simd",
+          "renderer": "raw-native 0.3.0",
+          "width": 256,
+          "height": 256,
+          "rt": false,
+          "threads": 1,
+          "runs_ms": [
+            33.83,
+            35.58,
+            30.75,
+            30.48,
+            30.345
+          ],
+          "median_ms": 30.75
+        },
+        {
+          "variant": "wasm-simd",
+          "renderer": "raw-native 0.3.0",
+          "width": 512,
+          "height": 512,
+          "rt": true,
+          "threads": 1,
+          "runs_ms": [
+            1125.625,
+            1138.795,
+            1144.255,
+            1147.19,
+            1143.335
+          ],
+          "median_ms": 1143.335
+        },
+        {
+          "variant": "wasm-simd",
+          "renderer": "raw-native 0.3.0",
+          "width": 512,
+          "height": 512,
+          "rt": false,
+          "threads": 1,
+          "runs_ms": [
+            115.845,
+            113.85,
+            115.595,
+            122.975,
+            115.955
+          ],
+          "median_ms": 115.845
+        },
+        {
+          "variant": "wasm-simd",
+          "renderer": "raw-native 0.3.0",
+          "width": 1440,
+          "height": 900,
+          "rt": true,
+          "threads": 1,
+          "runs_ms": [
+            4952,
+            4881.065,
+            4900.235,
+            4842.61,
+            4828.845
+          ],
+          "median_ms": 4881.065
+        },
+        {
+          "variant": "wasm-simd",
+          "renderer": "raw-native 0.3.0",
+          "width": 1440,
+          "height": 900,
+          "rt": false,
+          "threads": 1,
+          "runs_ms": [
+            527.065,
+            540.58,
+            532.725,
+            541.95,
+            541.265
+          ],
+          "median_ms": 540.58
+        }
+      ]
+    },
+    {
+      "variant": "wasm-threads",
+      "version": "raw-native 0.3.0",
+      "results": [
+        {
+          "variant": "wasm-threads",
+          "renderer": "raw-native 0.3.0",
+          "width": 256,
+          "height": 256,
+          "rt": true,
+          "threads": 24,
+          "runs_ms": [
+            50.08,
+            31.54,
+            30.59,
+            32.05,
+            36.12
+          ],
+          "median_ms": 32.05
+        },
+        {
+          "variant": "wasm-threads",
+          "renderer": "raw-native 0.3.0",
+          "width": 256,
+          "height": 256,
+          "rt": false,
+          "threads": 24,
+          "runs_ms": [
+            7.37,
+            4.93,
+            4.505,
+            4.765,
+            4.655
+          ],
+          "median_ms": 4.765
+        },
+        {
+          "variant": "wasm-threads",
+          "renderer": "raw-native 0.3.0",
+          "width": 512,
+          "height": 512,
+          "rt": true,
+          "threads": 24,
+          "runs_ms": [
+            127.405,
+            131.12,
+            125.365,
+            121.805,
+            127.89
+          ],
+          "median_ms": 127.405
+        },
+        {
+          "variant": "wasm-threads",
+          "renderer": "raw-native 0.3.0",
+          "width": 512,
+          "height": 512,
+          "rt": false,
+          "threads": 24,
+          "runs_ms": [
+            21.015,
+            21.225,
+            23.91,
+            21.24,
+            20.32
+          ],
+          "median_ms": 21.225
+        },
+        {
+          "variant": "wasm-threads",
+          "renderer": "raw-native 0.3.0",
+          "width": 1440,
+          "height": 900,
+          "rt": true,
+          "threads": 24,
+          "runs_ms": [
+            522.99,
+            552.67,
+            548.025,
+            494.27,
+            488.135
+          ],
+          "median_ms": 522.99
+        },
+        {
+          "variant": "wasm-threads",
+          "renderer": "raw-native 0.3.0",
+          "width": 1440,
+          "height": 900,
+          "rt": false,
+          "threads": 24,
+          "runs_ms": [
+            85,
+            85.505,
+            64.77,
+            89.255,
+            82.93
+          ],
+          "median_ms": 85
+        }
+      ]
+    }
+  ],
+  "note": "Headless Chromium 154 via Playwright, page served by bench/serve.py with COOP/COEP. Machine shared with other work (about 60% total CPU busy from other processes during runs)."
+}

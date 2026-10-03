@@ -100,7 +100,7 @@ std::string channelsJson(const FrameResult& o, const CliParams& p, int rw, int r
         o.motionTotal > 0 ? std::optional<double>((double)o.motionValid / o.motionTotal)
                           : std::nullopt;
     std::optional<double> hdrHeadroom = std::optional<double>(maxRadiance(o.hdr));
-    Certificate cert = certificate_with_channels(o.rec, 0.12f, motionCoherence, hdrHeadroom);
+    Certificate cert = certificate_with_channels(o.rec, p.tolerance, motionCoherence, hdrHeadroom);
 
     std::ostringstream j;
     j << "{";
@@ -108,7 +108,8 @@ std::string channelsJson(const FrameResult& o, const CliParams& p, int rw, int r
     // frame block
     j << "\"frame\":{\"width\":" << o.g.w << ",\"height\":" << o.g.h
       << ",\"files\":{\"ppm\":\"frame.ppm\",\"pfm\":\"frame_hdr.pfm\","
-      << "\"ao_rt\":\"ao_rt.pgm\",\"ao_ss\":\"ao_ss.pgm\",\"ao_error\":\"ao_error.pgm\"}},";
+      << "\"ao_rt\":\"ao_rt.pgm\",\"ao_ss\":\"ao_ss.pgm\",\"ao_error\":\"ao_error.pgm\","
+      << "\"ao_rt_exact\":\"ao_rt.pfm\",\"ao_ss_exact\":\"ao_ss.pfm\",\"mask\":\"mask.pgm\"}},";
     // camera block (the view that produced the channels; closes the loop)
     Camera cam = cameraFromParams(p);
     j << "\"camera\":{\"eye\":" << jvec3(cam.eye) << ",\"target\":" << jvec3(cam.center)
