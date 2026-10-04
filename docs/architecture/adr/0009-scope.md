@@ -1,6 +1,6 @@
 # ADR 0009: Product scope, renderer or engine, and the editor
 
-**Status:** Proposed. These are author decisions A3 and A4. **Date:** 2026-10-04.
+**Status:** Accepted. These are author decisions A3 and A4. Accepted by the author on 2026-10-04 ("approve all six engine decisions as proposed"). **Date:** 2026-10-04.
 
 ## Context
 

@@ -1,7 +1,7 @@
 # ADR 0004: Public API, ABI and versioning
 
-**Status:** Accepted for 0.x. The 1.0 terms are **Proposed** (author decision
-A6). **Date:** 2026-10-04.
+**Status:** Accepted for 0.x. The 1.0 terms (author decision
+A6) are **Accepted**. Accepted by the author on 2026-10-04 ("approve all six engine decisions as proposed"). **Date:** 2026-10-04.
 
 ## Context
 
@@ -40,7 +40,7 @@ only append. An `api.json` dump of the tables is committed, and CI checks a
 change against the previous release's dump, as Godot's
 `--validate-extension-api` does.
 
-**1.0 (Proposed, A6):** promise source compatibility of the C++ API within a
+**1.0 (Accepted, A6):** promise source compatibility of the C++ API within a
 major release, after the roadmap's M3 milestone, when the RHI has textures,
 graphics pipelines and a second native backend. Promising earlier would freeze
 an interface that has only seen compute.

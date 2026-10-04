@@ -9,7 +9,7 @@ The decisions behind each part are recorded as ADRs in [adr/](adr/README.md).
 The comparison with mature engines is in [GAP-ANALYSIS.md](GAP-ANALYSIS.md) and
 the staged plan in [ROADMAP.md](ROADMAP.md). Decisions that belong to the author
 are collected in [Decisions for the author](#decisions-for-the-author) and are
-marked **Proposed** until the author accepts them.
+marked **Proposed** until the author accepts them. The author accepted A1 to A6 as proposed on 2026-10-04.
 
 ## What stays true at every scale
 
@@ -254,7 +254,7 @@ The full policy, the candidate libraries and the audit steps are in
 
 ## Decisions for the author
 
-Each is **Proposed** until the author accepts or changes it.
+All six were accepted as proposed by the author on 2026-10-04.
 
 | ID | Decision | Proposal | Where |
 |---|---|---|---|
