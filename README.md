@@ -1,4 +1,20 @@
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/art/hero-dark.svg">
+  <img src="docs/art/hero-light.svg" alt="raw-native: Render on the CPU, then check the fast AO shortcut against ray tracing. A bright point on a surface. On the left, rays fan out and some stop on a hatched box; on the right, sample dots sit over a stepped depth profile. Below, a strip of dots of varying size, the error, and the readout RMSE 0.1349 / TOL 0.1200, REFUTED." width="100%">
+</picture>
+
 # raw-native
+
+Render on the CPU, then check the fast AO shortcut against ray tracing.
+
+```bash
+raw_native_cli --out ./out
+```
+
+[![version: 0.5.1](https://img.shields.io/badge/version-0.5.1-e6e1d6?style=flat-square&labelColor=1a1712)](https://github.com/HarperZ9/raw-native/releases/latest)
+[![CI](https://github.com/HarperZ9/raw-native/actions/workflows/ci.yml/badge.svg)](https://github.com/HarperZ9/raw-native/actions/workflows/ci.yml)
+[![license](https://img.shields.io/badge/license-FSL--1.1--MIT-e6e1d6?style=flat-square&labelColor=1a1712)](LICENSE)
+![C++23](https://img.shields.io/badge/language-C%2B%2B23-e6e1d6?style=flat-square&labelColor=1a1712)
 
 raw-native renders a 3D scene on the CPU and tells you whether its fast lighting
 shortcut can be trusted. It computes ambient occlusion twice: once with a cheap
