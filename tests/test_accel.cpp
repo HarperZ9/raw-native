@@ -1,4 +1,4 @@
-#include "raw/accel.hpp"
+#include "raw/renderer/accel.hpp"
 #include "check.hpp"
 using namespace raw;
 int main() {

@@ -1,10 +1,10 @@
 // The real sight pipeline must produce a Certificate whose JSON the body can consume.
-#include "raw/raster.hpp"
-#include "raw/accel.hpp"
-#include "raw/ray_ao.hpp"
-#include "raw/ssao.hpp"
-#include "raw/reconcile.hpp"
-#include "raw/certificate.hpp"
+#include "raw/renderer/raster.hpp"
+#include "raw/renderer/accel.hpp"
+#include "raw/renderer/ray_ao.hpp"
+#include "raw/renderer/ssao.hpp"
+#include "raw/cert/reconcile.hpp"
+#include "raw/cert/certificate.hpp"
 #include "check.hpp"
 #include <string>
 using namespace raw;

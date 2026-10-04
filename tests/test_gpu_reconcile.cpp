@@ -1,6 +1,6 @@
-#include "raw/gpu_reconcile.hpp"
-#include "raw/gpu_tolerance.hpp"
-#include "raw/scene.hpp"
+#include "raw/renderer/gpu_reconcile.hpp"
+#include "raw/cert/gpu_tolerance.hpp"
+#include "raw/scene/scene.hpp"
 #include "check.hpp"
 #include <string>
 using namespace raw;

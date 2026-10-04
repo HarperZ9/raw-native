@@ -1,11 +1,11 @@
 // superstack.receipt/1 beside raw-cert/2: the scene matches the contract's
 // reference scene, the frame matches the contract's pixel reference, the seal
 // holds and breaks on tampering, and every path reports both verdicts.
-#include "raw/receipt.hpp"
-#include "raw/gpu_reconcile.hpp"
-#include "raw/image.hpp"
-#include "raw/run.hpp"
-#include "raw/sha256.hpp"
+#include "raw/tools/receipt.hpp"
+#include "raw/renderer/gpu_reconcile.hpp"
+#include "raw/core/image.hpp"
+#include "raw/tools/run.hpp"
+#include "raw/core/sha256.hpp"
 #include "superstack.hpp"
 #include "check.hpp"
 #include <string>

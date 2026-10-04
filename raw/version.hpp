@@ -1,2 +1,5 @@
 #pragma once
-namespace raw { const char* version(); }
+// Deprecated include path, kept so code written against 0.5 still builds.
+// The header moved to raw/core/version.hpp in 0.6.0; this forwarder is
+// removed in 0.7.0 (docs/architecture/adr/0004-api-abi-versioning.md).
+#include "raw/core/version.hpp"

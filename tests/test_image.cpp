@@ -1,4 +1,4 @@
-#include "raw/image.hpp"
+#include "raw/core/image.hpp"
 #include "check.hpp"
 #include <cstdio>
 #include <fstream>

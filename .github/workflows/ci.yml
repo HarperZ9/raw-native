@@ -60,12 +60,29 @@ jobs:
           test "$rc" = 4
           grep -q '"verdict":"unverifiable"' gpu-none/gpu_certificate.json
           grep -q '"backend":"none"' gpu-none/gpu_certificate.json
-      - name: The generated HLSL matches the WGSL
+      - name: The generated HLSL and pass layout match the WGSL
         shell: bash
         run: |
           if command -v python3 >/dev/null && python3 --version >/dev/null 2>&1; then py=python3; else py=python; fi
           "$py" scripts/wgsl_to_hlsl.py --selftest
           "$py" scripts/wgsl_to_hlsl.py --check
+      - name: Every include follows the layer rules (docs/architecture/ARCHITECTURE.md)
+        shell: bash
+        run: |
+          if command -v python3 >/dev/null && python3 --version >/dev/null 2>&1; then py=python3; else py=python; fi
+          "$py" scripts/check_layers.py --selftest
+          "$py" scripts/check_layers.py
+      - name: Every case of the identity matrix matches the committed golden hashes
+        # Ten renders (views, sizes, motion, no ray-traced pass, four threads)
+        # and the no-GPU answer: every file each one writes, hashed. The golden
+        # manifest is GCC's; MSVC must give the same bytes. arena_certificate.json
+        # is left out because MSVC and libstdc++ allocate differently.
+        shell: bash
+        run: |
+          if [ -x build/raw_native_cli ]; then cli=build/raw_native_cli; else cli=build/Release/raw_native_cli.exe; fi
+          if command -v python3 >/dev/null && python3 --version >/dev/null 2>&1; then py=python3; else py=python; fi
+          "$py" scripts/identity_matrix.py run "$cli" identity.json identity-out --no-gpu-build
+          "$py" scripts/identity_matrix.py compare evidence/identity-golden.json identity.json --except arena_certificate.json
   d3d12:
     # Builds the native D3D12 backend with the Windows SDK's DXC. The runner has
     # no GPU: the hardware runtime test must report itself skipped with its
@@ -122,6 +139,15 @@ jobs:
           grep -q '"identity":"MATCH"' gpu-warp/gpu_certificate.json
           cat gpu-warp/gpu_receipt.json
           cat gpu-warp/gpu_certificate.json
+      - name: The frame graph on WARP verifies across the quick identity matrix
+        shell: bash
+        env:
+          RAW_NATIVE_D3D12_WARP: "1"
+        run: |
+          python scripts/identity_matrix.py run build/Release/raw_native_cli.exe warp.json warp-out --gpu --quick
+          n=$(grep -l '"verdict":"verified"' warp-out/*/gpu_certificate.json | wc -l)
+          echo "verified GPU certificates: $n of 4"
+          test "$n" = 4
   wasm:
     runs-on: ubuntu-24.04
     env:

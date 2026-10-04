@@ -1,22 +1,5 @@
 #pragma once
-#include "raw/vec.hpp"
-#include "raw/image.hpp"
-#include "raw/arena.hpp"
-#include <cstdint>
-namespace raw {
-struct GBuffer {
-    int w{0}, h{0};
-    Buffer<float> depth;
-    Buffer<Vec3> normal, position, albedo;
-    Buffer<uint8_t> mask;
-    // Screen-space velocity per pixel (extra channel): current minus previous
-    // clip-space UV, in [0,1] UV units. Zero for a static camera. See raw/motion.hpp.
-    Buffer<Vec2> motion;
-    GBuffer() = default;
-    explicit GBuffer(Arena* a)
-        : depth(a), normal(a), position(a), albedo(a), mask(a), motion(a) {}
-    void resize(int W,int H){ w=W;h=H;
-        depth.resize(W,H); normal.resize(W,H); position.resize(W,H);
-        albedo.resize(W,H); mask.resize(W,H); motion.resize(W,H); }
-};
-}
+// Deprecated include path, kept so code written against 0.5 still builds.
+// The header moved to raw/renderer/gbuffer.hpp in 0.6.0; this forwarder is
+// removed in 0.7.0 (docs/architecture/adr/0004-api-abi-versioning.md).
+#include "raw/renderer/gbuffer.hpp"

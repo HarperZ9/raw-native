@@ -1,9 +1,5 @@
 #pragma once
-#include "raw/gbuffer.hpp"
-#include "raw/accel.hpp"
-#include "raw/arena.hpp"
-namespace raw {
-Buffer<float> computeRTAO(const GBuffer& g, const LinearAccel& accel,
-                          int samples, float radius, Arena* arena = nullptr,
-                          int threads = 1);
-}
+// Deprecated include path, kept so code written against 0.5 still builds.
+// The header moved to raw/renderer/ray_ao.hpp in 0.6.0; this forwarder is
+// removed in 0.7.0 (docs/architecture/adr/0004-api-abi-versioning.md).
+#include "raw/renderer/ray_ao.hpp"

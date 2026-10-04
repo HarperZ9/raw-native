@@ -1,6 +1,6 @@
 // SHA-256 against the FIPS 180-4 / NIST example vectors, including the
 // two-block padding boundary.
-#include "raw/sha256.hpp"
+#include "raw/core/sha256.hpp"
 #include "check.hpp"
 #include <string>
 using namespace raw;

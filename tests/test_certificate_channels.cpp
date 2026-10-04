@@ -1,6 +1,6 @@
 // per-channel fidelity witnesses on the certificate.
-#include "raw/certificate.hpp"
-#include "raw/reconcile.hpp"
+#include "raw/cert/certificate.hpp"
+#include "raw/cert/reconcile.hpp"
 #include "check.hpp"
 #include <string>
 #include <optional>

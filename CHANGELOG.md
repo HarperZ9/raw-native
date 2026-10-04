@@ -4,6 +4,31 @@ Each release's full notes, with downloads and evidence, are on the
 [releases page](https://github.com/HarperZ9/raw-native/releases). Dates are
 the day the release was published on GitHub, in UTC.
 
+## Unreleased
+
+- **Layered source tree.** Headers and sources move into layer directories
+  (`math`, `core`, `cert`, `scene`, `rhi`, `graph`, `renderer`, `tools`), and
+  `scripts/check_layers.py` checks in CI that each layer includes only the
+  layers allowed for it. The 0.5 include paths (`raw/render.hpp` and the
+  others) still work through one-line forwarders, removed one minor release
+  later. See `docs/architecture/`.
+- **Render hardware interface.** `raw/rhi/rhi.hpp` is the one boundary between
+  the renderer and a graphics API. The D3D12 and WebGPU backends implement it;
+  the GPU frame (buffers, passes, bindings, read-back) now exists once, in the
+  renderer, where each backend used to carry its own copy.
+- **Frame graph.** `raw/graph/frame_graph.hpp` validates each frame, culls
+  passes whose results nothing reads and places barriers from declared
+  accesses. The GPU renderer and the CPU reference both run through it.
+  Frame-only GPU renders now skip the passes the frame does not need.
+- **Binding layouts from the WGSL.** `scripts/wgsl_to_hlsl.py` writes each
+  pass's bindings and their access into `pass_layout.hpp`; the graph's
+  barriers and the D3D12 root signatures come from it.
+- **Checks.** `RAW_NATIVE_D3D12_DEBUG=1` now fails a submission on any D3D12
+  debug-layer error. `scripts/identity_matrix.py` hashes every file of eleven
+  cases; CI compares MSVC and GCC against `evidence/identity-golden.json`.
+- **Output unchanged.** Every certificate, receipt, channel summary and image
+  is byte-identical to 0.5.1's, on every build and backend checked.
+
 ## 0.5.1
 
 - **superstack 0.2.0.** The vendored `superstack.hpp` and its vector runner come

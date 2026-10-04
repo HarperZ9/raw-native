@@ -1,5 +1,5 @@
-#include "raw/ray_ao.hpp"
-#include "raw/raster.hpp"
+#include "raw/renderer/ray_ao.hpp"
+#include "raw/renderer/raster.hpp"
 #include "check.hpp"
 using namespace raw;
 int main() {

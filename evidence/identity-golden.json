@@ -1,0 +1,259 @@
+{
+ "cases": {
+  "close-512": {
+   "args": [
+    "--width",
+    "512",
+    "--height",
+    "512",
+    "--eye",
+    "2,2.5,3",
+    "--target",
+    "0,0.8,0",
+    "--fovy",
+    "0.7"
+   ],
+   "exit": 0,
+   "files": {
+    "ao_error.pgm": "43f783e8bd326b2d64d2fd78e7c627cc942c111459381bd0df3f1c064130ec74",
+    "ao_rt.pfm": "1125c0699f77763d0fa28eaceb3d9d60a58137f32e764a9c990e29a7770182d9",
+    "ao_rt.pgm": "1d0a47220d51d2ab43b2ce60e928e081b4b048b32deacd61b893ad10c0e62d32",
+    "ao_ss.pfm": "32ca53f1bedb3f8c2e621ae8a4e5bab76fc50177e981e69c90c2ec2c4ce8577e",
+    "ao_ss.pgm": "86c5d5123b6b07ed39ea7b1f46890f080e85d600943371a340fcfa9947e072a3",
+    "arena_certificate.json": "eb0e22e4a0b12472193c3496f0275d8b14bdf6bbe91ec0de6fab2ac4ff4cd7e8",
+    "certificate.json": "06c18bf5e10a383052fff71a911299060caf3cf4be7e36cbad912c4b1e416f8f",
+    "channels.json": "d14fcbcdf7786f03ddd861e4e3a098a334bb15d5bcf6396b660381cb3e164bff",
+    "frame.ppm": "39bfba64422adecfa14f526ecd56d9932be24a0e619c41fb32fe2a098db75c24",
+    "frame_hdr.pfm": "cc05bc56f980b88337d21044c079ab1b049bd68f9e7ace011bacbc3bc4014379",
+    "mask.pgm": "5edb061ecac6016785221bfd0d5a55617e570e9471b087171b6e8f04cd1463a9",
+    "receipt.json": "011ef2d58d7f1ffe3a9f719854680ef24a9934f3288d8a99e0539c63d545e818"
+   }
+  },
+  "default": {
+   "args": [],
+   "exit": 0,
+   "files": {
+    "ao_error.pgm": "1f2b8dacd738ce231dfbe60d9ecef16c1972a5bcc59890c145edc139c9a04197",
+    "ao_rt.pfm": "3bd5cce0f7424363c04d17b7bf644b82a9f51338297b4666329d398e9fb886ee",
+    "ao_rt.pgm": "0a83697599343d297929b12227240f811d1e90f53a4bc76ca11eb568c2892f48",
+    "ao_ss.pfm": "66c99812f843fe487eabb77e397fbe05e08864f981fd0b1179eba6fb78f86fb3",
+    "ao_ss.pgm": "305edb16225ab27a29223ef2d70e0ad3ac4799e3b4492904ce07616f5ad14acc",
+    "arena_certificate.json": "207ce91e019dd50e172d82d22dfc474663949452ab2b64e4bb7bf844fae78b41",
+    "certificate.json": "297f744d4babfbeca5275fa7213b8b013677982849925a8a4955c6674f063e52",
+    "channels.json": "33aaaabdbcf4e819f23e720584544ed21cb94d525cc2bce5d6a6faac12117eb3",
+    "frame.ppm": "e276f24f4a2a23e7b43b61d2e45147446468bf8d99a75809675f2cea91edb06d",
+    "frame_hdr.pfm": "5e598db0424414e7e37904592dbb295cbdb8623070ffb7350bd8e3ed867557db",
+    "mask.pgm": "413410cd6f8755f3b234272f0c100125a38ddd89c6a8bc302fe7463170f96108",
+    "receipt.json": "a1e5ffbe6a80d8e6039892b17cf478d9d6052dfb3fd600dcd6062d4826e6ee40"
+   }
+  },
+  "default-512": {
+   "args": [
+    "--width",
+    "512",
+    "--height",
+    "512"
+   ],
+   "exit": 0,
+   "files": {
+    "ao_error.pgm": "3cf1fd83151a016a554aad58ddd767e5ccca3832d83cd918021f4d5e231d1e31",
+    "ao_rt.pfm": "eb60b22d4151262866b956dfc3a0afe3541e0f7776d406cc7c7caf93ed219bc1",
+    "ao_rt.pgm": "fbddc1c59736f63a457fb4c7a2f8a3220b8f4779b9e42500a043a41e856ac9cf",
+    "ao_ss.pfm": "fddc169c7fca39e87ec032dfc471f066f1f7a932a9bc8812472d0b8f67cb7ce6",
+    "ao_ss.pgm": "ec08b52325d6e9f583963a78c271673bce6360ab4d405a1d5b76b37009b9b5a4",
+    "arena_certificate.json": "eb0e22e4a0b12472193c3496f0275d8b14bdf6bbe91ec0de6fab2ac4ff4cd7e8",
+    "certificate.json": "329c92ecbc2c55776835b94786fea2a63897b6dfd0003d0372d634663de860fe",
+    "channels.json": "25a8b518d7c305221fb5d3e88ac224fa75ea44f700359231e839939cd582f3ec",
+    "frame.ppm": "ff58d8c63e7ded4f6ed506d9b2521ed4d67a93a05e0f291b4d7c660802f55186",
+    "frame_hdr.pfm": "f155648b496680888024e4ec021c4981f822d9fa476ee415315c17e782054c32",
+    "mask.pgm": "892aacd21cae36dfd14afe157ca30befb5fa8dc576f150aa5f1bec9938d721bc",
+    "receipt.json": "6ac7da1242ffd75ace3880dbef39c8bb4d48fe17d7275e6df0b055f5403084d2"
+   }
+  },
+  "high-512": {
+   "args": [
+    "--width",
+    "512",
+    "--height",
+    "512",
+    "--eye",
+    "0,9,3",
+    "--target",
+    "0,0.5,0"
+   ],
+   "exit": 0,
+   "files": {
+    "ao_error.pgm": "d15ef241c42fc6aeaf8c6b29f5b415c48a085ca654e922bf7626a629c2d84ad6",
+    "ao_rt.pfm": "b668dcacaf770ed511ebc0ede1eab70a16f4b69a1562ea8d2ac1b5a3ef9e9363",
+    "ao_rt.pgm": "89092f12466c164c5d2cd84f3bd734ca7e386d8b5f79c67d8a1ed4d24ccae146",
+    "ao_ss.pfm": "0f2a01d303635afb28d638aedd35d020e30f089a98568035951188ee8ddc00cd",
+    "ao_ss.pgm": "adbd3a8952b3da460cea45961c72441593b14f78bda9448cc424b058e65ab7af",
+    "arena_certificate.json": "eb0e22e4a0b12472193c3496f0275d8b14bdf6bbe91ec0de6fab2ac4ff4cd7e8",
+    "certificate.json": "c7d21770a4422892de8cd266518cb92b792aeb9abbb1e67b7a0848a4f055ef85",
+    "channels.json": "2785152ccf65b1e6f044f4c0ab512853af03d6b18203859b2e190b80bf1c334a",
+    "frame.ppm": "14cec3aa4762af9614e4082679cc2697328dc253fec92bd50aaef69bf1ae5da6",
+    "frame_hdr.pfm": "2f015fea83fba17ec3349df8ba86f54dfbaade91f08f5b813f8472a8a075c7c2",
+    "mask.pgm": "d32d3fe82990b52212e212852fa88d583e49456756d990bca9d76063427a80ac",
+    "receipt.json": "77172ed90bc779c1fad11c9c60c01feb517d958d2c92c3813f2e43662ab8383b"
+   }
+  },
+  "low-512": {
+   "args": [
+    "--width",
+    "512",
+    "--height",
+    "512",
+    "--eye",
+    "6,1.5,2",
+    "--target",
+    "0,1,0"
+   ],
+   "exit": 0,
+   "files": {
+    "ao_error.pgm": "320d31d2a9defe1fa73033ccbc5bb879d946f0a0fcc6d6f6d12579cf9a60cc6f",
+    "ao_rt.pfm": "1aba198921fd32865bce4980b6628e355db93496a5b1490aeed6b450831e5771",
+    "ao_rt.pgm": "51f13114314904d873200da1ceeb0c6ff94b6553fbfe016bc215a9d0d4fa51f9",
+    "ao_ss.pfm": "254809a6597592d18dfc247042f7f36b10e142ccf9f070a6326dc0ba1a407d62",
+    "ao_ss.pgm": "0923a30eb2bbf19a93548c350aed2f4865ada4119617ce4181d7a8bff486a2c0",
+    "arena_certificate.json": "eb0e22e4a0b12472193c3496f0275d8b14bdf6bbe91ec0de6fab2ac4ff4cd7e8",
+    "certificate.json": "7c1812b6fe6a8193a00f8b2a2b5522d13099aa2fae6510b74407544b86297644",
+    "channels.json": "9d04b709b59e71b65b41525ac21060f7a2dba20294a7229df1841e164f11ca0b",
+    "frame.ppm": "7b2b2f4e5b78532ceafa46d6ac461824c2bc769fc89a587afc2556943590bfb1",
+    "frame_hdr.pfm": "34a6129fa46b2a8d4b162c5db487a5b842ea8b0f1203ca080f4eea1fbfd360e7",
+    "mask.pgm": "0b3a47ae9503df17e0f90dfa15d9774b98a1175a1f4611778be12b439e79acc5",
+    "receipt.json": "5b6d93ecce40e15ecff529cf39b260db68e731444e668b330f8e693bf0adefe6"
+   }
+  },
+  "motion-256": {
+   "args": [
+    "--width",
+    "256",
+    "--height",
+    "256",
+    "--prev-eye",
+    "4.3,4,5.7"
+   ],
+   "exit": 0,
+   "files": {
+    "ao_error.pgm": "1f2b8dacd738ce231dfbe60d9ecef16c1972a5bcc59890c145edc139c9a04197",
+    "ao_rt.pfm": "3bd5cce0f7424363c04d17b7bf644b82a9f51338297b4666329d398e9fb886ee",
+    "ao_rt.pgm": "0a83697599343d297929b12227240f811d1e90f53a4bc76ca11eb568c2892f48",
+    "ao_ss.pfm": "66c99812f843fe487eabb77e397fbe05e08864f981fd0b1179eba6fb78f86fb3",
+    "ao_ss.pgm": "305edb16225ab27a29223ef2d70e0ad3ac4799e3b4492904ce07616f5ad14acc",
+    "arena_certificate.json": "207ce91e019dd50e172d82d22dfc474663949452ab2b64e4bb7bf844fae78b41",
+    "certificate.json": "9761411d178a4a5c81a41170efb9780caac4ac8a69812537486c72ebde60a5fb",
+    "channels.json": "2c700d25f7b6c419aa0bd3cc20996144bc6dd99dd70b01f3d0a2fbd5249d15e3",
+    "frame.ppm": "e276f24f4a2a23e7b43b61d2e45147446468bf8d99a75809675f2cea91edb06d",
+    "frame_hdr.pfm": "5e598db0424414e7e37904592dbb295cbdb8623070ffb7350bd8e3ed867557db",
+    "mask.pgm": "413410cd6f8755f3b234272f0c100125a38ddd89c6a8bc302fe7463170f96108",
+    "receipt.json": "b378c1ea79e03f4bd4b79f29ecdf026d8473e01a7da5e2659ccf95f5ef9fb18c"
+   }
+  },
+  "no-gpu-64": {
+   "args": [
+    "--gpu",
+    "--width",
+    "64",
+    "--height",
+    "64"
+   ],
+   "exit": 4,
+   "files": {
+    "gpu_certificate.json": "629f949a83a59cad579418b1bd3b89bef28c91d36d0b036e2cb1afc430e4afea",
+    "gpu_receipt.json": "688e4a35fd39ad3c8244e05372d3136b05b913327d2d67278708bce3cad903d1"
+   }
+  },
+  "nort-256": {
+   "args": [
+    "--no-rt"
+   ],
+   "exit": 0,
+   "files": {
+    "ao_ss.pfm": "66c99812f843fe487eabb77e397fbe05e08864f981fd0b1179eba6fb78f86fb3",
+    "ao_ss.pgm": "305edb16225ab27a29223ef2d70e0ad3ac4799e3b4492904ce07616f5ad14acc",
+    "arena_certificate.json": "68bb3257fa5b60e4618269056fb4e8027f8df844e6b420879fa8228eec035cbd",
+    "certificate.json": "1d64d4e9dfd3caceb71fa5a8b9779efe60f71e42fa900ed9497d11ce2abb42ae",
+    "channels.json": "5d59dfd071d163d55e895967c0a4bddcf6df1050b10809e0f9bd08f90f3a20cd",
+    "frame.ppm": "88f3ae3e625e50ad9e87437a0dbd3e3079069391130a3dd99abdf655d28b8e8f",
+    "frame_hdr.pfm": "639f92d90b6c1e9081fbe9998d8dfc40ae8c5f6fca55d00f43a4d12098d26eba",
+    "mask.pgm": "413410cd6f8755f3b234272f0c100125a38ddd89c6a8bc302fe7463170f96108",
+    "receipt.json": "f273887dfe943a337d07a9602b33c31676399128a80d747c3ac8de2b2ce7031d"
+   }
+  },
+  "threads4-256": {
+   "args": [
+    "--threads",
+    "4"
+   ],
+   "exit": 0,
+   "files": {
+    "ao_error.pgm": "1f2b8dacd738ce231dfbe60d9ecef16c1972a5bcc59890c145edc139c9a04197",
+    "ao_rt.pfm": "3bd5cce0f7424363c04d17b7bf644b82a9f51338297b4666329d398e9fb886ee",
+    "ao_rt.pgm": "0a83697599343d297929b12227240f811d1e90f53a4bc76ca11eb568c2892f48",
+    "ao_ss.pfm": "66c99812f843fe487eabb77e397fbe05e08864f981fd0b1179eba6fb78f86fb3",
+    "ao_ss.pgm": "305edb16225ab27a29223ef2d70e0ad3ac4799e3b4492904ce07616f5ad14acc",
+    "arena_certificate.json": "207ce91e019dd50e172d82d22dfc474663949452ab2b64e4bb7bf844fae78b41",
+    "certificate.json": "297f744d4babfbeca5275fa7213b8b013677982849925a8a4955c6674f063e52",
+    "channels.json": "33aaaabdbcf4e819f23e720584544ed21cb94d525cc2bce5d6a6faac12117eb3",
+    "frame.ppm": "e276f24f4a2a23e7b43b61d2e45147446468bf8d99a75809675f2cea91edb06d",
+    "frame_hdr.pfm": "5e598db0424414e7e37904592dbb295cbdb8623070ffb7350bd8e3ed867557db",
+    "mask.pgm": "413410cd6f8755f3b234272f0c100125a38ddd89c6a8bc302fe7463170f96108",
+    "receipt.json": "a1e5ffbe6a80d8e6039892b17cf478d9d6052dfb3fd600dcd6062d4826e6ee40"
+   }
+  },
+  "wide-1440x900": {
+   "args": [
+    "--width",
+    "1440",
+    "--height",
+    "900"
+   ],
+   "exit": 0,
+   "files": {
+    "ao_error.pgm": "a2f4bbb806a2cefa0b04d0e0db380742a44b703bb7fa404861fe05c7cb91afb5",
+    "ao_rt.pfm": "28b1d76b18416a3f085373eeb53ddea24f719b9dfd03f963c3cb36ca9754e9ed",
+    "ao_rt.pgm": "3408ab7c4fa2765dbc4022eb0479a5a5ff5fc2db7b7b0d16b135dc3f1129a880",
+    "ao_ss.pfm": "51a36e5176f943c0d2541df855482cc6ce52c47f2804820b4fff563e0e7f0076",
+    "ao_ss.pgm": "00e599a69baac1a059e2448407de49069e310a44536ffe3ca32998759ead3813",
+    "arena_certificate.json": "c72842892cf715778af90ce7debd564b7e8e1aca754d29747a28e46aaa068b7b",
+    "certificate.json": "5191bdb6076270bf45b52b45313084312fa254319e147561d5d2f222c6390602",
+    "channels.json": "20217d22a44f01047936d76264cedb9331f3184105305f9c0f81b10d40ecb5e1",
+    "frame.ppm": "a585cc74713ca36d40cd0ea24b14ba614b4a2c82d1c73353b3e8d65895285549",
+    "frame_hdr.pfm": "bcb62727d79976c7c6567a710edb9448badbc8be8e9d7a324e191cc8a9df6e21",
+    "mask.pgm": "4db76785b0158d4ca64646d1750ba8df52aa62f6e7193650fbce0e92dc559bc7",
+    "receipt.json": "cf8322d20abba583e4ca56181b96e5d977399a8907342f8db866d3d5b052bd52"
+   }
+  },
+  "wide-512": {
+   "args": [
+    "--width",
+    "512",
+    "--height",
+    "512",
+    "--eye",
+    "5,5,8",
+    "--target",
+    "0,0.5,0",
+    "--fovy",
+    "1.2"
+   ],
+   "exit": 0,
+   "files": {
+    "ao_error.pgm": "13250eb1b2fd82d7721c0833257d67914b7bf0a4d2fb4b8a21a15c798331d4eb",
+    "ao_rt.pfm": "f8d8b82cd712382b992b568262c8f7ea1c24696380d25ca77ff473107769d524",
+    "ao_rt.pgm": "f815227aad5226ef2e1ad90cceb2c8417fe7f0955cb3d45be325cdde8873e533",
+    "ao_ss.pfm": "ab6fe2ac99e4924f0b694f2a7b065729231bd43810b096abb54d405dd30388a3",
+    "ao_ss.pgm": "05fc624ddf043cdc8e1c1e5038858f875020b202cc33ae2460e00b7f18be4765",
+    "arena_certificate.json": "eb0e22e4a0b12472193c3496f0275d8b14bdf6bbe91ec0de6fab2ac4ff4cd7e8",
+    "certificate.json": "04a68076dfff3d542a9d1e1353264a361e23e134c7012de73144b57ddd583759",
+    "channels.json": "dddaf455504aa192cf2b5b79703e044b2da093ddc143b4a2c40f98f59d2ef0ec",
+    "frame.ppm": "dfddaae4a8b0e96a59e97b1ce4354308918d228f29b786cb1e8c51f0666ef5c6",
+    "frame_hdr.pfm": "1c4979bd74f9e80d58034260fdac68cf6635acdb77a7f5f73910d800cd0f5ac7",
+    "mask.pgm": "40c9f5ac58ea678b3cb279694aa7f324660a10d7b6a370b12b6419770f55832a",
+    "receipt.json": "eedf7cb97c54b46a0c248d80cc6218830e8cfb6ecda64ba5ae5eeda08445dde0"
+   }
+  }
+ },
+ "cli_version": "raw-native 0.5.1",
+ "gpu": false
+}

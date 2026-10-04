@@ -1,34 +1,5 @@
 #pragma once
-#include <cstddef>
-#include <string>
-namespace raw {
-// The witness: a re-checkable record of the arena's lifetime behavior.
-struct ArenaStats {
-    std::size_t budget{0};       // total bytes the arena may hand out (its backing span)
-    std::size_t used{0};         // bytes currently handed out (the bump offset)
-    std::size_t high_water{0};   // max `used` ever reached (lifetime)
-    std::size_t allocations{0};  // successful allocations (lifetime)
-    std::size_t refusals{0};     // over-budget / zero-size requests refused (lifetime, fail-closed)
-};
-// A bounded, witnessed, fail-closed bump allocator over caller-provided backing memory.
-// Memory as a gated actuator: every request is gated by the budget; over-budget => refuse
-// (nullptr), never grow, never touch memory outside the backing span.
-class Arena {
-public:
-    Arena(void* base, std::size_t budget);
-    Arena(const Arena&) = delete;
-    Arena& operator=(const Arena&) = delete;
-    void* allocate(std::size_t n, std::size_t align = alignof(std::max_align_t));
-    void reset();                              // used -> 0; lifetime witness retained
-    const ArenaStats& stats() const { return stats_; }
-    bool within_budget() const { return stats_.refusals == 0; }
-private:
-    unsigned char* base_;
-    ArenaStats stats_;
-};
-template<class T>
-T* arena_alloc(Arena& a, std::size_t count){
-    return static_cast<T*>(a.allocate(count * sizeof(T), alignof(T)));
-}
-std::string arena_witness(const ArenaStats& s);
-}
+// Deprecated include path, kept so code written against 0.5 still builds.
+// The header moved to raw/core/arena.hpp in 0.6.0; this forwarder is
+// removed in 0.7.0 (docs/architecture/adr/0004-api-abi-versioning.md).
+#include "raw/core/arena.hpp"

@@ -1,11 +1,5 @@
 #pragma once
-#include <cstddef>
-#include <cstdint>
-#include <string>
-namespace raw {
-// SHA-256 (FIPS 180-4), standard library only. Returns 64 lowercase hex digits.
-std::string sha256Hex(const void* data, std::size_t len);
-std::string sha256Hex(const std::string& bytes);
-// Hash a file's bytes. Returns an empty string when the file cannot be read.
-std::string sha256File(const std::string& path);
-}
+// Deprecated include path, kept so code written against 0.5 still builds.
+// The header moved to raw/core/sha256.hpp in 0.6.0; this forwarder is
+// removed in 0.7.0 (docs/architecture/adr/0004-api-abi-versioning.md).
+#include "raw/core/sha256.hpp"

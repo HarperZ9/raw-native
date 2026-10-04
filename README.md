@@ -222,7 +222,8 @@ adapter; `RAW_NATIVE_D3D12_WARP=1` selects WARP, the Windows software
 rasterizer, on purpose.
 
 There is one shader source. `scripts/wgsl_to_hlsl.py` translates the WGSL
-passes in `src/gpu/` into `src/gpu/hlsl/`, and the generated files are
+passes in `src/renderer/gpu/shaders/` into `src/renderer/gpu/shaders/hlsl/`
+and writes each pass's binding layout beside them. The generated files are
 committed, so the build needs no Python. The translator accepts a strict WGSL
 subset and stops on anything outside it. CI regenerates the HLSL on every push
 and fails when it differs from the committed files, so the two shader trees
@@ -270,7 +271,7 @@ Over the pixels both sides cover:
 | Screen-space AO, ray-traced AO, frame (RMSE, 0..1) | 0.01 |
 | The frame's own AO verdict | must equal the CPU's; RMSE within 0.005 |
 
-The bounds and the reasoning behind them are in `raw/gpu_tolerance.hpp`, which
+The bounds and the reasoning behind them are in `raw/cert/gpu_tolerance.hpp`, which
 was committed before the first line of GPU code and before any GPU output was
 seen. Both GPU backends are judged against the same bounds. Maximum errors are
 reported and never bounded. The certificate also records the backend, the
@@ -442,24 +443,37 @@ The package sets `raw_native_LICENSE` to `FSL-1.1-MIT`.
 
 ## Layout
 
+The engine is split into layers, and CI checks that each one includes only
+the layers below it. The full map, the rules and the decisions behind them are
+in [docs/architecture/](docs/architecture/ARCHITECTURE.md).
+
 ```
-raw/       headers: vectors, matrices, images, scene, G-buffer, rasterizer,
-           ray-traced AO, SSAO, reconcile, certificate, composite, arena, motion
-src/       implementation; src/gpu/ holds the GPU backends, the WGSL passes and the
-           HLSL generated from them
-app/       command-line driver
-tests/     one test executable per test_*.cpp; tests/gpu/ holds the D3D12
-           runtime test
-wasm/      browser loader and a Node runner for the WebAssembly build
-cmake/     WebAssembly, WebGPU and D3D12 build settings
-scripts/   independent recheck, render comparison, timing, the WGSL-to-HLSL
-           translator and release packing
-bench/     the browser timing pages (CPU wasm and WebGPU) and a local server
-evidence/  raw timing runs, the wasm-versus-native comparison and the GPU
-           certificates (D3D12, WARP and WebGPU)
-docs/      example images and certificates
+raw/<layer>/  public headers, one directory per layer:
+              math     vectors, matrices, ray and triangle primitives
+              core     arenas, images, threads, hashing, handles, version
+              cert     certificates, the AO reconcile, GPU tolerances
+              scene    the scene description and the built-in test scene
+              rhi      the render hardware interface over D3D12 and WebGPU
+              graph    the frame graph: passes, culling, barriers
+              renderer the CPU reference and the GPU renderer
+              tools    the CLI's parameters, runs, receipts and verifier
+raw/*.hpp     forwarders from the 0.5 include paths, removed in 0.7.0
+src/<layer>/  implementation; src/rhi/ holds one directory per backend, and
+              src/renderer/gpu/shaders/ the WGSL and the HLSL generated from it
+app/          command-line driver
+tests/        one test executable per test_*.cpp; tests/gpu/ holds the D3D12
+              runtime test
+wasm/         browser loader and a Node runner for the WebAssembly build
+cmake/        WebAssembly, WebGPU and D3D12 build settings
+scripts/      independent recheck, render comparison, timing, the WGSL-to-HLSL
+              translator, the layer check, the identity matrix and release packing
+bench/        the browser timing pages (CPU wasm and WebGPU) and a local server
+evidence/     raw timing runs, the wasm-versus-native comparison, the GPU
+              certificates (D3D12, WARP and WebGPU) and the identity matrix's
+              golden hashes
+docs/         example images and certificates, and the architecture
 third_party/superstack/  the vendored superstack header, its vectors and
-           their pins (FSL-1.1-MIT; see NOTICE.md there)
+              their pins (FSL-1.1-MIT; see NOTICE.md there)
 ```
 
 ## License

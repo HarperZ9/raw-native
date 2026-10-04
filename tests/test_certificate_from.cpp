@@ -1,6 +1,6 @@
-#include "raw/certificate.hpp"
-#include "raw/reconcile.hpp"
-#include "raw/arena.hpp"
+#include "raw/cert/certificate.hpp"
+#include "raw/cert/reconcile.hpp"
+#include "raw/core/arena.hpp"
 #include "check.hpp"
 #include <string>
 using namespace raw;

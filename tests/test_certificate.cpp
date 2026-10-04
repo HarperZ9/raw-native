@@ -1,4 +1,4 @@
-#include "raw/certificate.hpp"
+#include "raw/cert/certificate.hpp"
 #include "check.hpp"
 #include <string>
 using namespace raw;

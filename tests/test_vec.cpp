@@ -1,4 +1,4 @@
-#include "raw/vec.hpp"
+#include "raw/math/vec.hpp"
 #include "check.hpp"
 using namespace raw;
 int main() {

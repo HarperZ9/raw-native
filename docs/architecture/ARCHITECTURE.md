@@ -1,0 +1,287 @@
+# raw-native architecture
+
+raw-native is a renderer that proves its own output. It draws a frame, checks
+every fast path against a CPU reference, and writes the evidence beside the
+pixels. This document sets the architecture it grows into: a consumer renderer,
+and possibly a full engine, that keeps that property at every scale.
+
+The decisions behind each part are recorded as ADRs in [adr/](adr/README.md).
+The comparison with mature engines is in [GAP-ANALYSIS.md](GAP-ANALYSIS.md) and
+the staged plan in [ROADMAP.md](ROADMAP.md). Decisions that belong to the author
+are collected in [Decisions for the author](#decisions-for-the-author) and are
+marked **Proposed** until the author accepts them.
+
+## What stays true at every scale
+
+These four properties define the project. Every layer below exists to serve
+them, and no change may trade one away without an ADR that says so.
+
+1. **A CPU reference for every feature.** The CPU renderer is the oracle. A
+   feature lands in the reference before or with its fast path, and the fast
+   path is reconciled against it.
+2. **Certificates and receipts on every run.** `raw-cert/2`, `raw-gpu-cert/1`
+   and `superstack.receipt/1` record what was claimed, how it was checked and
+   which bytes the verdict came from.
+3. **Byte-identical determinism where the platform allows it.** The CPU path
+   gives the same bytes on MSVC, GCC and WebAssembly. A GPU path gives the same
+   bytes on the same backend and device class, and a tolerance verdict across
+   classes ([ADR 0006](adr/0006-verification-at-scale.md)).
+4. **Every dependency is visible.** The default build depends on the C++
+   standard library and one vendored, hash-pinned header. Any change to that is
+   an ADR ([ADR 0005](adr/0005-dependency-policy.md)).
+
+## Layers
+
+```mermaid
+flowchart BT
+  math["math\nvectors, matrices, primitives"]
+  core["core\nmemory, images, threads, hashing, handles"]
+  platform["platform\nwindows, input, files, time\n(planned)"]
+  cert["cert\ncertificates, reconcile, tolerances"]
+  scene["scene\nscene description"]
+  assets["assets\nglTF, textures, cooking\n(planned)"]
+  rhi["rhi\nD3D12, WebGPU, null\n(Vulkan, Metal planned)"]
+  graph["graph\nframe graph"]
+  renderer["renderer\nCPU reference, GPU renderer"]
+  audio["audio\nsound hook\n(planned)"]
+  world["world\nECS runtime\n(author decision)"]
+  scripting["scripting\nC ABI plugins, scripts\n(author decision)"]
+  tools["tools\nCLI, verifier, receipts"]
+  editor["editor\nviewer, inspector\n(author decision)"]
+  core --> math
+  platform --> core
+  cert --> core
+  scene --> core
+  assets --> scene
+  rhi --> core
+  rhi --> platform
+  graph --> rhi
+  renderer --> graph
+  renderer --> cert
+  renderer --> scene
+  renderer --> assets
+  audio --> platform
+  world --> renderer
+  world --> audio
+  scripting --> world
+  tools --> renderer
+  editor --> tools
+```
+
+An arrow points from a layer to a layer it may include. The table is the rule
+of record; `scripts/check_layers.py` holds the same table and CI runs it on
+every push.
+
+| Layer | Holds today | May include |
+|---|---|---|
+| math | `Vec3`, `Mat4`, rays, triangles, AABBs | the standard library only |
+| core | arenas and the arena allocator, image buffers and their file formats, row-parallel loops, SHA-256, generational slot pools, version | math |
+| platform | nothing yet: windowing, input, files, timers, swapchain surfaces | math, core |
+| cert | certificates, the AO reconcile, GPU tolerances | math, core |
+| scene | the scene description and the built-in test scene | math, core |
+| assets | nothing yet: glTF import, textures, cooked formats | math, core, scene |
+| rhi | the interface, and one directory per backend under `src/rhi/` | math, core, platform |
+| graph | the frame graph | math, core, rhi |
+| renderer | the CPU reference, the GPU renderer, shaders, the GPU reconcile | math, core, platform, cert, scene, assets, rhi, graph |
+| audio | nothing yet: the sound hook | math, core, platform |
+| world | nothing yet; exists only if the author puts a game runtime in scope | math, core, platform, cert, scene, assets, renderer, audio |
+| scripting | nothing yet; same condition | math, core, scene, world |
+| tools | CLI parameters, runs, receipts, the verifier, the CLI | every layer above |
+| editor | nothing yet; same condition | every layer above, and tools |
+
+Three further rules hold across layers:
+
+- **Graphics and OS API headers stay in their backend.** `d3d12.h`, `dxgi*.h`
+  and `windows.h` appear only in `src/rhi/d3d12/` (and a future
+  `src/platform/win32/`); `webgpu.h` only in `src/rhi/webgpu/`. The renderer
+  cannot reach past the RHI.
+- **Public headers include public headers only.** `raw/<layer>/` is the API;
+  `src/<layer>/` is private to its layer, and a backend's private headers are
+  private to that backend.
+- **Vendored code has a named home.** `superstack.hpp` is included from
+  `src/tools/` only, today.
+
+Why `cert` sits low: the renderer's frame result carries a reconcile, and every
+future layer (assets, world, tools) must be able to issue a certificate without
+pulling in the renderer. Why `scene` sits below `renderer`: the scene layer is
+the render-facing description (meshes, materials, lights, cameras), as in
+Godot's servers and Unreal's scene proxies. A game world, if it comes, sits
+above the renderer and extracts into the scene each frame, as Bevy's render
+world does ([ADR 0001](adr/0001-layered-architecture.md)).
+
+## The render hardware interface
+
+`raw/rhi/rhi.hpp` is the one boundary between the renderer and a graphics API.
+Its object model follows WebGPU and wgpu-hal: a `Device` creates buffers and
+pipelines, a `CommandList` records uploads, copies, dispatches and barriers,
+and the device submits one list at a time. Objects are generational handles, so
+a stale handle fails and can never reach a newer object. The RHI does no hazard
+tracking of its own: the frame graph declares every access and hands the RHI
+explicit barriers, and each backend maps them to its API or drops them when
+its API synchronizes by itself, as WebGPU does.
+
+Today it covers what the renderer uses: buffers, compute pipelines, uploads,
+copies, dispatches, read-back. Textures, samplers, graphics pipelines,
+swapchains, timestamp queries and more queues arrive behind the same handles
+when the renderer needs them, with Vulkan and Metal backends after the author
+sets platform priority ([ADR 0002](adr/0002-rhi.md)).
+
+## The frame graph
+
+`raw/graph/frame_graph.hpp` runs every frame, on the GPU and on the CPU. Each
+pass declares the resources it reads and writes. The graph then:
+
+1. validates the frame: no resource is read before something writes it, and no
+   pass names a resource twice;
+2. culls every pass whose results nothing kept reads and that writes no output;
+3. places a barrier wherever a buffer's access changes or a write must be
+   ordered, batched per pass;
+4. on a device, creates only the buffers kept passes use, records the passes
+   in declaration order, submits once and waits.
+
+The GPU renderer's passes take their accesses from the binding layout that
+`scripts/wgsl_to_hlsl.py` generates from the WGSL, so the barriers follow the
+shaders' own declarations and no binding list is written by hand. The CPU
+reference runs the same pass names as a host graph. Passes are never reordered,
+which keeps the arena's allocation order and every certificate unchanged.
+Transient aliasing, async compute, split barriers and textures are the next
+graph features ([ADR 0003](adr/0003-frame-graph.md)).
+
+## Public API, ABI and versioning
+
+- The public C++ API is `raw/<layer>/*.hpp`. Anything under `src/` is private.
+- Before 1.0, a minor release may break the C++ API. A moved header keeps a
+  forwarder at its old path for one minor release: the 0.5 paths
+  (`raw/render.hpp` and the rest) forward to their layered paths in 0.6 and are
+  removed in 0.7.
+- The C++ ABI carries no promise: the library ships as source and as a static
+  library built with one toolchain. Binary plugins will use a C ABI with
+  versioned function tables, and a plugin built for an older minor keeps
+  loading in newer minors, as Godot's GDExtension promises.
+- Certificate and receipt schemas are versioned on their own (`raw-cert/2`,
+  `raw-gpu-cert/1`, `superstack.receipt/1`) and never change shape within a
+  version. A new field is a new version.
+- The RHI carries its own `kRhiVersion`, bumped when a backend or caller must
+  change.
+
+Details and the 1.0 commitments are in
+[ADR 0004](adr/0004-api-abi-versioning.md).
+
+## Plugins
+
+A plugin adds one of four things: an asset importer, a render feature (passes
+plus their shaders), an RHI backend or a tool command. It declares an id, a
+version, the API version it was built against, its capabilities and its
+verification: a render feature brings a CPU reference implementation, or
+declares that it has none, in which case its output can only be checked for
+tolerance against a reference that does exist and its certificates say
+`unverifiable` for identity. First-party features are compile-time plugins.
+Binary plugins come later through the C ABI
+([ADR 0007](adr/0007-plugin-model.md)).
+
+## Verification as the engine grows
+
+- **Every feature has a reference.** The CPU renderer is a layer of the engine,
+  not a test fixture, and it runs as a host frame graph with the same pass
+  names as the GPU graph.
+- **Determinism is scoped and recorded.** CPU output is byte-identical across
+  toolchains. GPU output is compared byte for byte only within a device class
+  (backend, vendor, architecture, driver), and by tolerance across classes. The
+  certificate records the class.
+- **Certificates are the golden images.** `evidence/identity-golden.json` holds
+  the SHA-256 of every file eleven CPU cases write, and CI checks MSVC and GCC
+  against it on every push. The same mechanism extends to GPU device classes on
+  a hardware runner and to glTF conformance scenes.
+- **Checkers are independent.** `scripts/recheck.py` shares no code with the
+  C++ verifier. Each new certificate family gets a second checker of its own.
+- **A check proves it can fail.** The layer check and the shader translator
+  ship self-tests that feed them violations, and the D3D12 debug layer fails a
+  submission on any error it reports.
+
+Details, including how references stay fast enough at 1440p and beyond, are in
+[ADR 0006](adr/0006-verification-at-scale.md).
+
+## Contracts: superstack
+
+superstack is the contract raw-native shares with the author's other engines:
+canonical JSON, the seed rule, the flick clock, two-verdict receipts, colour and
+sound. raw-native vendors its C++ header pinned by hash and runs the shared
+vectors in CI. As the engine grows:
+
+- receipts move from the tools layer into `cert` once they stop depending on
+  the CLI's parameters;
+- the scene description gains a `superstack.scene/1` importer and exporter, so
+  any producer can hand raw-native a scene and get a receipt back;
+- frame time uses flicks, so frames and sound share one clock;
+- the audio layer, when it exists, writes `superstack.sound/1` receipts against
+  an offline sample-exact reference, the same pattern as pixels.
+
+## The site's JS engine
+
+The site's media engine (`system/media-engine/` in the site repository) and
+raw-native stay separate engines that share contracts. The site engine is a
+dependency-free scheduler, plugin host and WebGL2 pool for lightweight pages;
+raw-native is a 3D renderer whose WebAssembly builds are already one of the
+site engine's plugins, the reference renderer that other plugins are checked
+against. That stays the relationship:
+
+- raw-native's wasm builds (CPU, and WebGPU) remain a plugin of the site
+  engine, versioned and hash-checked by the loader;
+- both sides speak superstack: one scene IR, one seed rule, one clock, one
+  receipt;
+- raw-native does not take on the site engine's scheduler or DOM concerns, and
+  the site engine does not reimplement raw-native's renderer.
+
+A web front end over the wasm build (a viewer that loads glTF and shows its
+certificate) is a likely first consumer surface, and it would be a site engine
+plugin built on this boundary ([ADR 0008](adr/0008-contracts-and-web.md)).
+
+## Dependencies
+
+Zero dependencies cannot survive a consumer engine. Vulkan and Metal backends
+need system SDKs, windowing needs OS libraries, and glTF, image decoding and
+texture compression either need vetted libraries or years of reimplementation.
+The proposed policy, **a decision for the author**:
+
+> System SDKs, and vetted, vendored, licence-checked libraries, each behind an
+> interface the engine owns. Every vendored library is pinned by hash, listed
+> with its upstream, version, SPDX licence and local patches, and replaceable
+> without touching code outside its adapter. The CPU reference and the
+> certificate path stay dependency-free.
+
+The full policy, the candidate libraries and the audit steps are in
+[ADR 0005](adr/0005-dependency-policy.md).
+
+## Decisions for the author
+
+Each is **Proposed** until the author accepts or changes it.
+
+| ID | Decision | Proposal | Where |
+|---|---|---|---|
+| A1 | Target platforms and their order | Windows D3D12 and the web (WebGPU) first, as today; Vulkan next (Linux, Steam Deck, Android); Metal after (macOS, iOS) | [ADR 0002](adr/0002-rhi.md) |
+| A2 | Dependency policy | The policy above | [ADR 0005](adr/0005-dependency-policy.md) |
+| A3 | Scope: renderer, or renderer plus game runtime | Renderer and scene runtime first; the `world` and `scripting` layers stay declared and empty until the author puts ECS, physics and scripting in scope | [ADR 0009](adr/0009-scope.md) |
+| A4 | Editor | A verified viewer first (load glTF, render, show the certificate); an editor only after A3 | [ADR 0009](adr/0009-scope.md) |
+| A5 | Shader language | Keep the WGSL subset and its translator through the next milestone; decide on Slang with A2 when textures and permutations arrive | [ADR 0002](adr/0002-rhi.md) |
+| A6 | API stability | Hold 0.x semantics until the M3 milestone of the roadmap, then promise source compatibility within a major | [ADR 0004](adr/0004-api-abi-versioning.md) |
+
+## Where the first structural step stands
+
+Landed with this document:
+
+- the source tree split into the layers above, with forwarders at the 0.5
+  include paths;
+- `scripts/check_layers.py`, its self-test, and a CI step that runs both;
+- the RHI, extracted from the D3D12 and WebGPU backends, which before this
+  each carried their own copy of the pass setup;
+- the frame graph, which both the GPU renderer and the CPU reference now run
+  through;
+- a binding layout generated from the WGSL, which drives the graph's accesses
+  and the D3D12 root signatures;
+- `scripts/identity_matrix.py` and the golden manifest it checks in CI;
+- the D3D12 debug layer as a failing check (`RAW_NATIVE_D3D12_DEBUG=1`), with
+  debug names on every buffer and pipeline.
+
+Every certificate, receipt, channel summary and image the renderer writes is
+byte-identical before and after this step. The evidence is in the pull request
+that landed it.

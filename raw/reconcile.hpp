@@ -1,14 +1,5 @@
 #pragma once
-#include "raw/image.hpp"
-#include "raw/arena.hpp"
-#include <cstdint>
-namespace raw {
-struct ReconcileResult {
-    Buffer<float> errorMap;
-    float rmse{0}, maxError{0};
-    int pixels{0};
-    bool withinTolerance{false};
-};
-ReconcileResult reconcile(const Buffer<float>& approx, const Buffer<float>& truth,
-                          const Buffer<uint8_t>& mask, float tolerance, Arena* arena = nullptr);
-}
+// Deprecated include path, kept so code written against 0.5 still builds.
+// The header moved to raw/cert/reconcile.hpp in 0.6.0; this forwarder is
+// removed in 0.7.0 (docs/architecture/adr/0004-api-abi-versioning.md).
+#include "raw/cert/reconcile.hpp"

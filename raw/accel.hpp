@@ -1,12 +1,5 @@
 #pragma once
-#include "raw/primitives.hpp"
-#include "raw/scene.hpp"
-#include "raw/arena_allocator.hpp"
-#include <vector>
-namespace raw {
-struct LinearAccel {
-    std::vector<Tri, ArenaAllocator<Tri>> tris;
-    void build(const Scene& s, Arena* arena = nullptr);
-    bool occluded(const Ray& r, float maxDist) const;
-};
-}
+// Deprecated include path, kept so code written against 0.5 still builds.
+// The header moved to raw/renderer/accel.hpp in 0.6.0; this forwarder is
+// removed in 0.7.0 (docs/architecture/adr/0004-api-abi-versioning.md).
+#include "raw/renderer/accel.hpp"
