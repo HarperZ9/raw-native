@@ -20,7 +20,8 @@ try {
   const w = await createWorlds(host, { wgsl, world: q.get("world") || "eye" });
   const readyMs = performance.now() - t0;
   w.resize(+(q.get("w") || 1920), +(q.get("h") || 1080));
-  w.set({ quality: +(q.get("q") || 0.6) });
+  await w.set({ quality: +(q.get("q") || 0.6), threads: q.get("threads") === "1" });
+  if (q.get("threads") === "1") { await w.threadPipes(w.opts.world); await w.glowPipe; }
   const ctl = bindControls(canvas, w.cam, { onPick: (x, y) => w.focusAt(x, y) });
   window.w = w; window.host = host;
   const seconds = +(q.get("seconds") || 5), times = [];

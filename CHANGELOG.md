@@ -13,8 +13,9 @@ the day the release was published on GitHub, in UTC.
   camera (`web/camera.mjs`): wheel-click drag to orbit, wheel to zoom, shift or
   right drag to pan, WASD and Q E to fly, double-click to focus, R to reset,
   touch orbit, pinch and pan, an idle tour. All fifteen worlds, from Komorebi's
-  canopy to the Menger ice cathedral of The many. Web only; creative media, no
-  certificate.
+  canopy to the Menger ice cathedral of The many. An optional layer of light
+  threads runs along each world's surfaces behind a depth test. Web only;
+  creative media, no certificate.
 - **Web GPU host.** `web/raw-gpu.mjs` runs WGSL compute and render pipelines,
   the frame graph, per-pass GPU timing and canvas presentation on WebGPU, as
   one dependency-free ES module. `web/frame-graph.mjs` follows the C++ graph's
