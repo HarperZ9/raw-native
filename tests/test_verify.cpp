@@ -33,7 +33,7 @@ int main(){
     CHECK(verifyDir(a.string(), report) == 0);
     std::string cert = slurp(a / "certificate.json");
     CHECK(cert.find("\"schema\":\"raw-cert/2\"") != std::string::npos);
-    CHECK(cert.find("\"renderer\":\"raw-native 0.5.0\"") != std::string::npos);
+    CHECK(cert.find("\"renderer\":\"raw-native 0.5.1\"") != std::string::npos);
     CHECK(cert.find("\"samples\":{\"rt\":64,\"ss\":24}") != std::string::npos);
     CHECK(cert.find("\"mask.pgm\":\"") != std::string::npos);
 

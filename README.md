@@ -30,7 +30,7 @@ with the output digests shortened here:
  "verdict":"refuted","oracle":"raw-rt-ao-v1",
  "evidence":[["pixels","151984"],["rmse","0.1349"],["maxError","0.6406"],["tolerance","0.1200"]],
  "channels":{"ao_fidelity":0.881125,"motion_coherence":1,"hdr_headroom":0.875542},
- "schema":"raw-cert/2","renderer":"raw-native 0.5.0",
+ "schema":"raw-cert/2","renderer":"raw-native 0.5.1",
  "params":{"eye":[4,4,6],"fovy":0.899999976,"height":512,"prev_eye":null,"prev_target":null,
            "prev_up":null,"rt":true,"target":[0,1,0],"tolerance":0.119999997,"up":[0,1,0],"width":512},
  "samples":{"rt":64,"ss":24},
