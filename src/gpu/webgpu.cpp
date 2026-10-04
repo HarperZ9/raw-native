@@ -4,6 +4,7 @@
 #include "raw/gpu.hpp"
 #include "raw/reconcile.hpp"
 #include "raw_gpu_shaders.hpp"   // generated: kCommonWgsl, kPassesWgsl
+#include "frame_pack.hpp"
 #include <webgpu/webgpu.h>
 #include <cstdio>
 #include <cstring>
@@ -92,7 +93,7 @@ bool gpuInit(GpuAdapterInfo& info, std::string& err){
     if (!c.adapter){ if (c.error.empty()) c.error = "no adapter"; err = c.error; return false; }
     WGPUAdapterInfo ai = WGPU_ADAPTER_INFO_INIT;
     if (wgpuAdapterGetInfo(c.adapter, &ai) == WGPUStatus_Success){
-        c.info = GpuAdapterInfo{str(ai.vendor), str(ai.architecture), str(ai.device), str(ai.description), backendName(ai.backendType)};
+        c.info = GpuAdapterInfo{str(ai.vendor), str(ai.architecture), str(ai.device), str(ai.description), backendName(ai.backendType), ""};
         wgpuAdapterInfoFreeMembers(ai);
     }
     WGPUDeviceDescriptor dd = WGPU_DEVICE_DESCRIPTOR_INIT;
@@ -113,32 +114,7 @@ bool gpuInit(GpuAdapterInfo& info, std::string& err){
 }
 
 namespace {
-// Triangles in scene order, 24 floats each: positions, normals, albedo.
-std::vector<float> packTriangles(const Scene& scene){
-    std::vector<float> tris;
-    for (const Mesh& m : scene.meshes)
-        for (size_t i = 0; i + 2 < m.indices.size(); i += 3){
-            float t[24] = {};
-            for (int k = 0; k < 3; ++k){
-                Vec3 p = m.positions[m.indices[i + k]], n = m.normals[m.indices[i + k]];
-                t[3*k] = p.x; t[3*k+1] = p.y; t[3*k+2] = p.z;
-                t[9+3*k] = n.x; t[9+3*k+1] = n.y; t[9+3*k+2] = n.z;
-            }
-            t[18] = m.material.albedo.x; t[19] = m.material.albedo.y; t[20] = m.material.albedo.z;
-            tris.insert(tris.end(), t, t + 24);
-        }
-    return tris;
-}
-// The WGSL Params struct, 192 bytes: two matrices, light, misc, eight u32.
-void packParams(float pf[48], const Scene& scene, const Mat4& vp, const Mat4& prevVP, int w, int h,
-                uint32_t ntri, bool rtao){
-    std::memcpy(pf, vp.m, 64); std::memcpy(pf + 16, prevVP.m, 64);
-    Vec3 ld = scene.lights.empty() ? Vec3{0,-1,0} : scene.lights[0].dir;
-    pf[32] = ld.x; pf[33] = ld.y; pf[34] = ld.z; pf[35] = scene.lights.empty() ? 1.0f : scene.lights[0].intensity;
-    pf[36] = kAoRadius; pf[37] = 6.0f; pf[38] = 0; pf[39] = 0;
-    uint32_t pu[8] = {(uint32_t)w, (uint32_t)h, ntri, (uint32_t)kRtSamples, (uint32_t)kSsSamples, rtao ? 1u : 0u, 0, 0};
-    std::memcpy(pf + 40, pu, 32);
-}
+using namespace gpu_host;
 // Every buffer one render uses, released together.
 struct Frame {
     WGPUBuffer P{}, T{}, SF{}, SI{}, depth{}, pos{}, nrm{}, am{}, mot{}, ss{}, rt{}, frame{}, hdr{}, stage{};
@@ -175,30 +151,6 @@ bool mapStage(WGPUBuffer stage, uint64_t total, std::string& err){
     if (!mr.ok) err = "readback failed: " + mr.msg;
     return mr.ok;
 }
-// Copy the read-back channels into a FrameResult. f holds the nine channels in
-// the order of the read list; in frame-only mode only f[7] is present.
-void unpack(FrameResult& r, const float* const f[9], int w, int h, bool rtao, bool frameOnly){
-    const uint32_t N = (uint32_t)w * (uint32_t)h;
-    r = FrameResult();
-    r.frame.resize(w, h);
-    for (uint32_t i = 0; i < N; ++i) r.frame.px[i] = {f[7][4*i], f[7][4*i+1], f[7][4*i+2]};
-    if (frameOnly) return;
-    r.g.resize(w, h); r.aoSS.resize(w, h); r.hdr.resize(w, h);
-    if (rtao) r.aoRT.resize(w, h);
-    for (uint32_t i = 0; i < N; ++i){
-        const bool cov = f[3][4*i+3] != 0.0f;
-        r.g.depth.px[i]    = cov ? f[0][i] : std::numeric_limits<float>::infinity();
-        r.g.position.px[i] = {f[1][4*i], f[1][4*i+1], f[1][4*i+2]};
-        r.g.normal.px[i]   = {f[2][4*i], f[2][4*i+1], f[2][4*i+2]};
-        r.g.albedo.px[i]   = {f[3][4*i], f[3][4*i+1], f[3][4*i+2]};
-        r.g.mask.px[i]     = cov ? 1 : 0;
-        r.g.motion.px[i]   = {f[4][4*i], f[4][4*i+1]};
-        r.motionValid += f[4][4*i+3] != 0.0f; r.motionTotal += cov;
-        r.aoSS.px[i] = f[5][i];
-        if (rtao) r.aoRT.px[i] = f[6][i];
-        r.hdr.px[i]  = {f[8][4*i], f[8][4*i+1], f[8][4*i+2]};
-    }
-}
 // Encode every pass and the copies into the staging buffer, submit, and wait
 // for the map. Returns false with the first WebGPU error.
 bool runPasses(const std::vector<Pass>& passes, const std::vector<std::pair<WGPUBuffer, uint64_t>>& reads,
@@ -231,7 +183,7 @@ bool renderGpu(const Scene& scene, int w, int h, const Mat4& prevVP,
     float pf[48] = {};
     packParams(pf, scene, vp, prevVP, w, h, ntri, opts.rtao);
     const WGPUBufferUsage S = WGPUBufferUsage_Storage | WGPUBufferUsage_CopySrc | WGPUBufferUsage_CopyDst;
-    const uint64_t n4 = N * 4ull, n16 = N * 16ull, all = frameOnly ? 0 : 1;
+    const uint64_t n4 = N * 4ull, n16 = N * 16ull;
     Frame b;
     b.P = buffer(sizeof(float) * 48, WGPUBufferUsage_Uniform | WGPUBufferUsage_CopyDst);
     b.T = buffer(tris.size() * 4, S); b.SF = buffer(ntri * 64ull, S); b.SI = buffer(ntri * 16ull, S);
@@ -245,21 +197,19 @@ bool renderGpu(const Scene& scene, int w, int h, const Mat4& prevVP,
         {"motion", {b.P, b.pos, b.am, b.mot}, gx, gy}, {"ssao", {b.P, b.pos, b.nrm, b.am, b.ss}, gx, gy}};
     if (opts.rtao) passes.push_back({"rtao", {b.P, b.T, b.pos, b.nrm, b.am, b.rt}, gx, gy});
     passes.push_back({"shade", {b.P, b.nrm, b.am, opts.rtao ? b.rt : b.ss, b.frame, b.hdr}, gx, gy});
-    // Read-back list in unpack() order; a size of zero is skipped.
-    const std::vector<std::pair<WGPUBuffer, uint64_t>> reads = {{b.depth, n4*all}, {b.pos, n16*all}, {b.nrm, n16*all},
-        {b.am, n16*all}, {b.mot, n16*all}, {b.ss, n4*all}, {b.rt, opts.rtao ? n4*all : 0}, {b.frame, n16}, {b.hdr, n16*all}};
-    uint64_t total = 0; for (const auto& rd : reads) total += rd.second;
+    // Read-back list in unpackFrame() order; a size of zero is skipped.
+    const WGPUBuffer chan[kChannels] = {b.depth, b.pos, b.nrm, b.am, b.mot, b.ss, b.rt, b.frame, b.hdr};
+    std::vector<std::pair<WGPUBuffer, uint64_t>> reads;
+    uint64_t total = 0;
+    for (int i = 0; i < kChannels; ++i){ reads.push_back({chan[i], readBytes(i, w, h, opts.rtao, frameOnly)}); total += reads.back().second; }
     b.stage = buffer(total, WGPUBufferUsage_MapRead | WGPUBufferUsage_CopyDst);
     if (!runPasses(passes, reads, b.stage, total, err)) return false;
     const auto* bytes = (const unsigned char*)wgpuBufferGetConstMappedRange(b.stage, 0, (size_t)total);
-    const float* f[9]; uint64_t off = 0;
-    for (int i = 0; i < 9; ++i){ f[i] = (const float*)(bytes + off); off += reads[i].second; }
-    unpack(r, f, w, h, opts.rtao, frameOnly);
+    const float* f[kChannels]; uint64_t off = 0;
+    for (int i = 0; i < kChannels; ++i){ f[i] = reads[i].second ? (const float*)(bytes + off) : nullptr; off += reads[i].second; }
+    unpackFrame(r, f, w, h, vp, opts, frameOnly);
     wgpuBufferUnmap(b.stage);
-    if (frameOnly) return true;
-    if (opts.rtao) r.rec = reconcile(r.aoSS, r.aoRT, r.g.mask, opts.tolerance);
-    else r.rec.errorMap.resize(w, h);
-    r.viewProj = vp;
     return true;
 }
+const char* gpuBackendName(){ return "webgpu"; }
 }

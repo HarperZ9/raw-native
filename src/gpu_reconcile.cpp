@@ -91,7 +91,7 @@ std::string gpuCertificateJson(const GpuReconcile& r, const GpuAdapterInfo& a,
     o += ",\"params\":" + paramsJson;
     o += ",\"adapter\":{\"vendor\":" + jstr(a.vendor) + ",\"architecture\":" + jstr(a.architecture)
        + ",\"device\":" + jstr(a.device) + ",\"description\":" + jstr(a.description)
-       + ",\"backend\":" + jstr(a.backend) + "}";
+       + ",\"backend\":" + jstr(a.backend) + ",\"driver\":" + jstr(a.driver) + "}";
     o += ",\"tolerance_source\":\"raw/gpu_tolerance.hpp, committed before the first GPU run\"";
     o += ",\"coverage\":{\"covered_either\":" + std::to_string(r.coveredEither)
        + ",\"covered_both\":" + std::to_string(r.coveredBoth)

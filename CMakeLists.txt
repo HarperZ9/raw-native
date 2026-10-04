@@ -39,8 +39,10 @@ if(RAW_NATIVE_BUILD_TESTS)
     endforeach()
 endif()
 
-add_executable(raw_native_cli app/main.cpp src/gpu/gpu_none.cpp)
+add_executable(raw_native_cli app/main.cpp)
 target_link_libraries(raw_native_cli PRIVATE raw_native)
+# Adds the CLI's GPU backend: src/gpu/gpu_none.cpp by default, the D3D12 backend
+# with RAW_NATIVE_GPU_D3D12=ON on Windows. Also defines the WebGPU wasm target.
 include(cmake/gpu.cmake)
 if(EMSCRIPTEN)
     raw_native_wasm_target(raw_native_cli)

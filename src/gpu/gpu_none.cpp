@@ -3,8 +3,10 @@
 #include "raw/gpu.hpp"
 namespace raw {
 bool gpuCompiled(){ return false; }
+const char* gpuBackendName(){ return "none"; }
 bool gpuInit(GpuAdapterInfo&, std::string& err){
-    err = "this build has no GPU backend; use the raw-native-gpu WebAssembly build";
+    err = "this build has no GPU backend; build with RAW_NATIVE_GPU_D3D12=ON on Windows "
+          "or use the raw-native-gpu WebAssembly build";
     return false;
 }
 bool renderGpu(const Scene&, int, int, const Mat4&, const RenderOptions&, FrameResult&, std::string& err, bool){

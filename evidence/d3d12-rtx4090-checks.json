@@ -1,7 +1,24 @@
 {
- "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/154.0.0.0 Safari/537.36",
- "runs": 5,
- "gpu": true,
+ "backend": "d3d12",
+ "adapter": {
+  "vendor": "nvidia",
+  "architecture": "",
+  "device": "0x2684",
+  "description": "NVIDIA GeForce RTX 4090",
+  "backend": "d3d12",
+  "driver": "32.0.16.1088"
+ },
+ "host": {
+  "platform": "Windows-11-10.0.26220-SP0",
+  "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+  "binary_sha256": "a1f793f6ded15e8d1e548ee637fc88f59742a9383ce08bf1ed89540d89131943",
+  "source_commit": "2e511690d9cda7e419a0ea76cf926bc341aa0202"
+ },
+ "summary": {
+  "renders": 16,
+  "verified": 16,
+  "all_pass": true
+ },
  "checks": [
   {
    "case": "256x256",
@@ -14,7 +31,7 @@
     "oracle": "raw-gpu-cpu-v1",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       4,
       4,
@@ -41,11 +58,11 @@
     },
     "adapter": {
      "vendor": "nvidia",
-     "architecture": "lovelace",
-     "device": "",
-     "description": "",
-     "backend": "webgpu",
-     "driver": ""
+     "architecture": "",
+     "device": "0x2684",
+     "description": "NVIDIA GeForce RTX 4090",
+     "backend": "d3d12",
+     "driver": "32.0.16.1088"
     },
     "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
     "coverage": {
@@ -123,8 +140,8 @@
      "pass": true
     },
     "timing_ms": {
-     "gpu": 160.35,
-     "cpu": 336.09,
+     "gpu": 15.1778,
+     "cpu": 251.544,
      "judged": false
     },
     "does_not_prove": [
@@ -165,7 +182,7 @@
     "schema": "raw-cert/2",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       4,
       4,
@@ -285,6 +302,10 @@
      "frame_hdr.pfm": "5e598db0424414e7e37904592dbb295cbdb8623070ffb7350bd8e3ed867557db",
      "mask.pgm": "413410cd6f8755f3b234272f0c100125a38ddd89c6a8bc302fe7463170f96108"
     }
+   },
+   "verify": {
+    ".": 0,
+    "cpu": 0
    }
   },
   {
@@ -298,7 +319,7 @@
     "oracle": "raw-gpu-cpu-v1",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       4,
       4,
@@ -325,11 +346,11 @@
     },
     "adapter": {
      "vendor": "nvidia",
-     "architecture": "lovelace",
-     "device": "",
-     "description": "",
-     "backend": "webgpu",
-     "driver": ""
+     "architecture": "",
+     "device": "0x2684",
+     "description": "NVIDIA GeForce RTX 4090",
+     "backend": "d3d12",
+     "driver": "32.0.16.1088"
     },
     "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
     "coverage": {
@@ -392,8 +413,8 @@
     ],
     "ao_verdict": null,
     "timing_ms": {
-     "gpu": 24.01,
-     "cpu": 27.355,
+     "gpu": 11.6564,
+     "cpu": 29.0493,
      "judged": false
     },
     "does_not_prove": [
@@ -434,7 +455,7 @@
     "schema": "raw-cert/2",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       4,
       4,
@@ -548,6 +569,10 @@
      "frame_hdr.pfm": "639f92d90b6c1e9081fbe9998d8dfc40ae8c5f6fca55d00f43a4d12098d26eba",
      "mask.pgm": "413410cd6f8755f3b234272f0c100125a38ddd89c6a8bc302fe7463170f96108"
     }
+   },
+   "verify": {
+    ".": 0,
+    "cpu": 0
    }
   },
   {
@@ -561,7 +586,7 @@
     "oracle": "raw-gpu-cpu-v1",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       4,
       4,
@@ -588,11 +613,11 @@
     },
     "adapter": {
      "vendor": "nvidia",
-     "architecture": "lovelace",
-     "device": "",
-     "description": "",
-     "backend": "webgpu",
-     "driver": ""
+     "architecture": "",
+     "device": "0x2684",
+     "description": "NVIDIA GeForce RTX 4090",
+     "backend": "d3d12",
+     "driver": "32.0.16.1088"
     },
     "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
     "coverage": {
@@ -670,8 +695,8 @@
      "pass": true
     },
     "timing_ms": {
-     "gpu": 30.45,
-     "cpu": 1017.54,
+     "gpu": 21.2104,
+     "cpu": 992.4838,
      "judged": false
     },
     "does_not_prove": [
@@ -712,7 +737,7 @@
     "schema": "raw-cert/2",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       4,
       4,
@@ -832,6 +857,10 @@
      "frame_hdr.pfm": "f155648b496680888024e4ec021c4981f822d9fa476ee415315c17e782054c32",
      "mask.pgm": "892aacd21cae36dfd14afe157ca30befb5fa8dc576f150aa5f1bec9938d721bc"
     }
+   },
+   "verify": {
+    ".": 0,
+    "cpu": 0
    }
   },
   {
@@ -845,7 +874,7 @@
     "oracle": "raw-gpu-cpu-v1",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       4,
       4,
@@ -872,11 +901,11 @@
     },
     "adapter": {
      "vendor": "nvidia",
-     "architecture": "lovelace",
-     "device": "",
-     "description": "",
-     "backend": "webgpu",
-     "driver": ""
+     "architecture": "",
+     "device": "0x2684",
+     "description": "NVIDIA GeForce RTX 4090",
+     "backend": "d3d12",
+     "driver": "32.0.16.1088"
     },
     "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
     "coverage": {
@@ -939,8 +968,8 @@
     ],
     "ao_verdict": null,
     "timing_ms": {
-     "gpu": 27.135,
-     "cpu": 110.045,
+     "gpu": 18.7118,
+     "cpu": 115.6463,
      "judged": false
     },
     "does_not_prove": [
@@ -981,7 +1010,7 @@
     "schema": "raw-cert/2",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       4,
       4,
@@ -1095,6 +1124,10 @@
      "frame_hdr.pfm": "787985b4542834ba5bf90d290dd12999420acda995fbc94cfaa48e92821dfff4",
      "mask.pgm": "892aacd21cae36dfd14afe157ca30befb5fa8dc576f150aa5f1bec9938d721bc"
     }
+   },
+   "verify": {
+    ".": 0,
+    "cpu": 0
    }
   },
   {
@@ -1108,7 +1141,7 @@
     "oracle": "raw-gpu-cpu-v1",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       4,
       4,
@@ -1135,11 +1168,11 @@
     },
     "adapter": {
      "vendor": "nvidia",
-     "architecture": "lovelace",
-     "device": "",
-     "description": "",
-     "backend": "webgpu",
-     "driver": ""
+     "architecture": "",
+     "device": "0x2684",
+     "description": "NVIDIA GeForce RTX 4090",
+     "backend": "d3d12",
+     "driver": "32.0.16.1088"
     },
     "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
     "coverage": {
@@ -1217,8 +1250,8 @@
      "pass": true
     },
     "timing_ms": {
-     "gpu": 135.09,
-     "cpu": 4403.24,
+     "gpu": 59.3362,
+     "cpu": 5546.7701,
      "judged": false
     },
     "does_not_prove": [
@@ -1259,7 +1292,7 @@
     "schema": "raw-cert/2",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       4,
       4,
@@ -1379,6 +1412,10 @@
      "frame_hdr.pfm": "bcb62727d79976c7c6567a710edb9448badbc8be8e9d7a324e191cc8a9df6e21",
      "mask.pgm": "4db76785b0158d4ca64646d1750ba8df52aa62f6e7193650fbce0e92dc559bc7"
     }
+   },
+   "verify": {
+    ".": 0,
+    "cpu": 0
    }
   },
   {
@@ -1392,7 +1429,7 @@
     "oracle": "raw-gpu-cpu-v1",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       4,
       4,
@@ -1419,11 +1456,11 @@
     },
     "adapter": {
      "vendor": "nvidia",
-     "architecture": "lovelace",
-     "device": "",
-     "description": "",
-     "backend": "webgpu",
-     "driver": ""
+     "architecture": "",
+     "device": "0x2684",
+     "description": "NVIDIA GeForce RTX 4090",
+     "backend": "d3d12",
+     "driver": "32.0.16.1088"
     },
     "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
     "coverage": {
@@ -1486,8 +1523,8 @@
     ],
     "ao_verdict": null,
     "timing_ms": {
-     "gpu": 200.29,
-     "cpu": 483.475,
+     "gpu": 50.7294,
+     "cpu": 508.1,
      "judged": false
     },
     "does_not_prove": [
@@ -1528,7 +1565,7 @@
     "schema": "raw-cert/2",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       4,
       4,
@@ -1642,6 +1679,10 @@
      "frame_hdr.pfm": "8c16e1593660337f2f541d570e9ad13c81edcf97a9c43ecfa69694f4980fd1ab",
      "mask.pgm": "4db76785b0158d4ca64646d1750ba8df52aa62f6e7193650fbce0e92dc559bc7"
     }
+   },
+   "verify": {
+    ".": 0,
+    "cpu": 0
    }
   },
   {
@@ -1655,7 +1696,7 @@
     "oracle": "raw-gpu-cpu-v1",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       0,
       9,
@@ -1682,11 +1723,11 @@
     },
     "adapter": {
      "vendor": "nvidia",
-     "architecture": "lovelace",
-     "device": "",
-     "description": "",
-     "backend": "webgpu",
-     "driver": ""
+     "architecture": "",
+     "device": "0x2684",
+     "description": "NVIDIA GeForce RTX 4090",
+     "backend": "d3d12",
+     "driver": "32.0.16.1088"
     },
     "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
     "coverage": {
@@ -1764,8 +1805,8 @@
      "pass": true
     },
     "timing_ms": {
-     "gpu": 46.13,
-     "cpu": 1609.125,
+     "gpu": 22.2463,
+     "cpu": 1550.2708,
      "judged": false
     },
     "does_not_prove": [
@@ -1806,7 +1847,7 @@
     "schema": "raw-cert/2",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       0,
       9,
@@ -1926,6 +1967,10 @@
      "frame_hdr.pfm": "2f015fea83fba17ec3349df8ba86f54dfbaade91f08f5b813f8472a8a075c7c2",
      "mask.pgm": "d32d3fe82990b52212e212852fa88d583e49456756d990bca9d76063427a80ac"
     }
+   },
+   "verify": {
+    ".": 0,
+    "cpu": 0
    }
   },
   {
@@ -1939,7 +1984,7 @@
     "oracle": "raw-gpu-cpu-v1",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       0,
       9,
@@ -1966,11 +2011,11 @@
     },
     "adapter": {
      "vendor": "nvidia",
-     "architecture": "lovelace",
-     "device": "",
-     "description": "",
-     "backend": "webgpu",
-     "driver": ""
+     "architecture": "",
+     "device": "0x2684",
+     "description": "NVIDIA GeForce RTX 4090",
+     "backend": "d3d12",
+     "driver": "32.0.16.1088"
     },
     "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
     "coverage": {
@@ -2033,8 +2078,8 @@
     ],
     "ao_verdict": null,
     "timing_ms": {
-     "gpu": 34.575,
-     "cpu": 172.28,
+     "gpu": 17.8576,
+     "cpu": 178.6859,
      "judged": false
     },
     "does_not_prove": [
@@ -2075,7 +2120,7 @@
     "schema": "raw-cert/2",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       0,
       9,
@@ -2189,6 +2234,10 @@
      "frame_hdr.pfm": "6a280f0e0939056cf531be4b579cace90c3a576f11cad1a13811ef43eb92e65f",
      "mask.pgm": "d32d3fe82990b52212e212852fa88d583e49456756d990bca9d76063427a80ac"
     }
+   },
+   "verify": {
+    ".": 0,
+    "cpu": 0
    }
   },
   {
@@ -2202,7 +2251,7 @@
     "oracle": "raw-gpu-cpu-v1",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       6,
       1.5,
@@ -2229,11 +2278,11 @@
     },
     "adapter": {
      "vendor": "nvidia",
-     "architecture": "lovelace",
-     "device": "",
-     "description": "",
-     "backend": "webgpu",
-     "driver": ""
+     "architecture": "",
+     "device": "0x2684",
+     "description": "NVIDIA GeForce RTX 4090",
+     "backend": "d3d12",
+     "driver": "32.0.16.1088"
     },
     "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
     "coverage": {
@@ -2311,8 +2360,8 @@
      "pass": true
     },
     "timing_ms": {
-     "gpu": 39.185,
-     "cpu": 924.21,
+     "gpu": 23.3053,
+     "cpu": 898.9687,
      "judged": false
     },
     "does_not_prove": [
@@ -2353,7 +2402,7 @@
     "schema": "raw-cert/2",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       6,
       1.5,
@@ -2473,6 +2522,10 @@
      "frame_hdr.pfm": "34a6129fa46b2a8d4b162c5db487a5b842ea8b0f1203ca080f4eea1fbfd360e7",
      "mask.pgm": "0b3a47ae9503df17e0f90dfa15d9774b98a1175a1f4611778be12b439e79acc5"
     }
+   },
+   "verify": {
+    ".": 0,
+    "cpu": 0
    }
   },
   {
@@ -2486,7 +2539,7 @@
     "oracle": "raw-gpu-cpu-v1",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       6,
       1.5,
@@ -2513,11 +2566,11 @@
     },
     "adapter": {
      "vendor": "nvidia",
-     "architecture": "lovelace",
-     "device": "",
-     "description": "",
-     "backend": "webgpu",
-     "driver": ""
+     "architecture": "",
+     "device": "0x2684",
+     "description": "NVIDIA GeForce RTX 4090",
+     "backend": "d3d12",
+     "driver": "32.0.16.1088"
     },
     "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
     "coverage": {
@@ -2580,8 +2633,8 @@
     ],
     "ao_verdict": null,
     "timing_ms": {
-     "gpu": 32.175,
-     "cpu": 101.55,
+     "gpu": 17.7962,
+     "cpu": 108.188,
      "judged": false
     },
     "does_not_prove": [
@@ -2622,7 +2675,7 @@
     "schema": "raw-cert/2",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       6,
       1.5,
@@ -2736,6 +2789,10 @@
      "frame_hdr.pfm": "d7c6c39440719951162cd79fe6216c13f04c43b0665d91a3a419aa545da2b0b8",
      "mask.pgm": "0b3a47ae9503df17e0f90dfa15d9774b98a1175a1f4611778be12b439e79acc5"
     }
+   },
+   "verify": {
+    ".": 0,
+    "cpu": 0
    }
   },
   {
@@ -2749,7 +2806,7 @@
     "oracle": "raw-gpu-cpu-v1",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       2,
       2.5,
@@ -2776,11 +2833,11 @@
     },
     "adapter": {
      "vendor": "nvidia",
-     "architecture": "lovelace",
-     "device": "",
-     "description": "",
-     "backend": "webgpu",
-     "driver": ""
+     "architecture": "",
+     "device": "0x2684",
+     "description": "NVIDIA GeForce RTX 4090",
+     "backend": "d3d12",
+     "driver": "32.0.16.1088"
     },
     "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
     "coverage": {
@@ -2858,8 +2915,8 @@
      "pass": true
     },
     "timing_ms": {
-     "gpu": 44.58,
-     "cpu": 1469.43,
+     "gpu": 21.0134,
+     "cpu": 1411.2376,
      "judged": false
     },
     "does_not_prove": [
@@ -2900,7 +2957,7 @@
     "schema": "raw-cert/2",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       2,
       2.5,
@@ -3020,6 +3077,10 @@
      "frame_hdr.pfm": "cc05bc56f980b88337d21044c079ab1b049bd68f9e7ace011bacbc3bc4014379",
      "mask.pgm": "5edb061ecac6016785221bfd0d5a55617e570e9471b087171b6e8f04cd1463a9"
     }
+   },
+   "verify": {
+    ".": 0,
+    "cpu": 0
    }
   },
   {
@@ -3033,7 +3094,7 @@
     "oracle": "raw-gpu-cpu-v1",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       2,
       2.5,
@@ -3060,11 +3121,11 @@
     },
     "adapter": {
      "vendor": "nvidia",
-     "architecture": "lovelace",
-     "device": "",
-     "description": "",
-     "backend": "webgpu",
-     "driver": ""
+     "architecture": "",
+     "device": "0x2684",
+     "description": "NVIDIA GeForce RTX 4090",
+     "backend": "d3d12",
+     "driver": "32.0.16.1088"
     },
     "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
     "coverage": {
@@ -3127,8 +3188,8 @@
     ],
     "ao_verdict": null,
     "timing_ms": {
-     "gpu": 31.39,
-     "cpu": 154.16,
+     "gpu": 17.9569,
+     "cpu": 159.9319,
      "judged": false
     },
     "does_not_prove": [
@@ -3169,7 +3230,7 @@
     "schema": "raw-cert/2",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       2,
       2.5,
@@ -3283,6 +3344,10 @@
      "frame_hdr.pfm": "a88d88f2d99cbd26619c876b6154ad5f376374b79b08167424da7b30821b7d6c",
      "mask.pgm": "5edb061ecac6016785221bfd0d5a55617e570e9471b087171b6e8f04cd1463a9"
     }
+   },
+   "verify": {
+    ".": 0,
+    "cpu": 0
    }
   },
   {
@@ -3296,7 +3361,7 @@
     "oracle": "raw-gpu-cpu-v1",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       5,
       5,
@@ -3323,11 +3388,11 @@
     },
     "adapter": {
      "vendor": "nvidia",
-     "architecture": "lovelace",
-     "device": "",
-     "description": "",
-     "backend": "webgpu",
-     "driver": ""
+     "architecture": "",
+     "device": "0x2684",
+     "description": "NVIDIA GeForce RTX 4090",
+     "backend": "d3d12",
+     "driver": "32.0.16.1088"
     },
     "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
     "coverage": {
@@ -3405,8 +3470,8 @@
      "pass": true
     },
     "timing_ms": {
-     "gpu": 41.35,
-     "cpu": 577.065,
+     "gpu": 21.8893,
+     "cpu": 568.722,
      "judged": false
     },
     "does_not_prove": [
@@ -3447,7 +3512,7 @@
     "schema": "raw-cert/2",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       5,
       5,
@@ -3567,6 +3632,10 @@
      "frame_hdr.pfm": "1c4979bd74f9e80d58034260fdac68cf6635acdb77a7f5f73910d800cd0f5ac7",
      "mask.pgm": "40c9f5ac58ea678b3cb279694aa7f324660a10d7b6a370b12b6419770f55832a"
     }
+   },
+   "verify": {
+    ".": 0,
+    "cpu": 0
    }
   },
   {
@@ -3580,7 +3649,7 @@
     "oracle": "raw-gpu-cpu-v1",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       5,
       5,
@@ -3607,11 +3676,11 @@
     },
     "adapter": {
      "vendor": "nvidia",
-     "architecture": "lovelace",
-     "device": "",
-     "description": "",
-     "backend": "webgpu",
-     "driver": ""
+     "architecture": "",
+     "device": "0x2684",
+     "description": "NVIDIA GeForce RTX 4090",
+     "backend": "d3d12",
+     "driver": "32.0.16.1088"
     },
     "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
     "coverage": {
@@ -3674,8 +3743,8 @@
     ],
     "ao_verdict": null,
     "timing_ms": {
-     "gpu": 32.12,
-     "cpu": 67.02,
+     "gpu": 18.0176,
+     "cpu": 71.7031,
      "judged": false
     },
     "does_not_prove": [
@@ -3716,7 +3785,7 @@
     "schema": "raw-cert/2",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       5,
       5,
@@ -3830,6 +3899,10 @@
      "frame_hdr.pfm": "e2708eb75346e7703cecc40d37ec5c6725bb7f32feb9ef5c5e2f36b0d506a099",
      "mask.pgm": "40c9f5ac58ea678b3cb279694aa7f324660a10d7b6a370b12b6419770f55832a"
     }
+   },
+   "verify": {
+    ".": 0,
+    "cpu": 0
    }
   },
   {
@@ -3843,7 +3916,7 @@
     "oracle": "raw-gpu-cpu-v1",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       4,
       4,
@@ -3874,11 +3947,11 @@
     },
     "adapter": {
      "vendor": "nvidia",
-     "architecture": "lovelace",
-     "device": "",
-     "description": "",
-     "backend": "webgpu",
-     "driver": ""
+     "architecture": "",
+     "device": "0x2684",
+     "description": "NVIDIA GeForce RTX 4090",
+     "backend": "d3d12",
+     "driver": "32.0.16.1088"
     },
     "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
     "coverage": {
@@ -3956,8 +4029,8 @@
      "pass": true
     },
     "timing_ms": {
-     "gpu": 15.015,
-     "cpu": 255.58,
+     "gpu": 14.9215,
+     "cpu": 247.1029,
      "judged": false
     },
     "does_not_prove": [
@@ -3998,7 +4071,7 @@
     "schema": "raw-cert/2",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       4,
       4,
@@ -4126,6 +4199,10 @@
      "frame_hdr.pfm": "5e598db0424414e7e37904592dbb295cbdb8623070ffb7350bd8e3ed867557db",
      "mask.pgm": "413410cd6f8755f3b234272f0c100125a38ddd89c6a8bc302fe7463170f96108"
     }
+   },
+   "verify": {
+    ".": 0,
+    "cpu": 0
    }
   },
   {
@@ -4139,7 +4216,7 @@
     "oracle": "raw-gpu-cpu-v1",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       4,
       4,
@@ -4170,11 +4247,11 @@
     },
     "adapter": {
      "vendor": "nvidia",
-     "architecture": "lovelace",
-     "device": "",
-     "description": "",
-     "backend": "webgpu",
-     "driver": ""
+     "architecture": "",
+     "device": "0x2684",
+     "description": "NVIDIA GeForce RTX 4090",
+     "backend": "d3d12",
+     "driver": "32.0.16.1088"
     },
     "tolerance_source": "raw/gpu_tolerance.hpp, committed before the first GPU run",
     "coverage": {
@@ -4237,8 +4314,8 @@
     ],
     "ao_verdict": null,
     "timing_ms": {
-     "gpu": 13.315,
-     "cpu": 27.46,
+     "gpu": 12.4413,
+     "cpu": 28.8895,
      "judged": false
     },
     "does_not_prove": [
@@ -4279,7 +4356,7 @@
     "schema": "raw-cert/2",
     "renderer": "raw-native 0.4.0",
     "params": {
-     "backend": "webgpu",
+     "backend": "d3d12",
      "eye": [
       4,
       4,
@@ -4401,213 +4478,11 @@
      "frame_hdr.pfm": "639f92d90b6c1e9081fbe9998d8dfc40ae8c5f6fca55d00f43a4d12098d26eba",
      "mask.pgm": "413410cd6f8755f3b234272f0c100125a38ddd89c6a8bc302fe7463170f96108"
     }
+   },
+   "verify": {
+    ".": 0,
+    "cpu": 0
    }
   }
- ],
- "bench": [
-  {
-   "variant": "webgpu",
-   "renderer": "raw-native 0.4.0",
-   "backend": "webgpu",
-   "adapter": {
-    "vendor": "nvidia",
-    "architecture": "lovelace",
-    "device": "",
-    "description": "",
-    "driver": ""
-   },
-   "width": 256,
-   "height": 256,
-   "rt": true,
-   "warmup_runs": 1,
-   "runs_ms": [
-    10.99,
-    14.67,
-    11.055,
-    11.965,
-    11.52
-   ],
-   "median_ms": 11.52,
-   "frame_only_runs_ms": [
-    9.245,
-    6.045,
-    8.695,
-    8.1,
-    5.805
-   ],
-   "frame_only_median_ms": 8.1
-  },
-  {
-   "variant": "webgpu",
-   "renderer": "raw-native 0.4.0",
-   "backend": "webgpu",
-   "adapter": {
-    "vendor": "nvidia",
-    "architecture": "lovelace",
-    "device": "",
-    "description": "",
-    "driver": ""
-   },
-   "width": 256,
-   "height": 256,
-   "rt": false,
-   "warmup_runs": 1,
-   "runs_ms": [
-    12.565,
-    10.07,
-    9.975,
-    7.44,
-    10.98
-   ],
-   "median_ms": 10.07,
-   "frame_only_runs_ms": [
-    2.995,
-    3.96,
-    3.07,
-    4.07,
-    3.82
-   ],
-   "frame_only_median_ms": 3.82
-  },
-  {
-   "variant": "webgpu",
-   "renderer": "raw-native 0.4.0",
-   "backend": "webgpu",
-   "adapter": {
-    "vendor": "nvidia",
-    "architecture": "lovelace",
-    "device": "",
-    "description": "",
-    "driver": ""
-   },
-   "width": 512,
-   "height": 512,
-   "rt": true,
-   "warmup_runs": 1,
-   "runs_ms": [
-    35.17,
-    36.295,
-    32.01,
-    31.9,
-    30.815
-   ],
-   "median_ms": 32.01,
-   "frame_only_runs_ms": [
-    8.68,
-    9.45,
-    8.84,
-    12.96,
-    10.6
-   ],
-   "frame_only_median_ms": 9.45
-  },
-  {
-   "variant": "webgpu",
-   "renderer": "raw-native 0.4.0",
-   "backend": "webgpu",
-   "adapter": {
-    "vendor": "nvidia",
-    "architecture": "lovelace",
-    "device": "",
-    "description": "",
-    "driver": ""
-   },
-   "width": 512,
-   "height": 512,
-   "rt": false,
-   "warmup_runs": 1,
-   "runs_ms": [
-    27.715,
-    28.005,
-    26.81,
-    27.615,
-    26.695
-   ],
-   "median_ms": 27.615,
-   "frame_only_runs_ms": [
-    4.69,
-    5.81,
-    5.065,
-    4.94,
-    4.995
-   ],
-   "frame_only_median_ms": 4.995
-  },
-  {
-   "variant": "webgpu",
-   "renderer": "raw-native 0.4.0",
-   "backend": "webgpu",
-   "adapter": {
-    "vendor": "nvidia",
-    "architecture": "lovelace",
-    "device": "",
-    "description": "",
-    "driver": ""
-   },
-   "width": 1440,
-   "height": 900,
-   "rt": true,
-   "warmup_runs": 1,
-   "runs_ms": [
-    205.75,
-    99.175,
-    99.6,
-    95.235,
-    97.155
-   ],
-   "median_ms": 99.175,
-   "frame_only_runs_ms": [
-    24.805,
-    28.065,
-    28.905,
-    24.07,
-    23.645
-   ],
-   "frame_only_median_ms": 24.805
-  },
-  {
-   "variant": "webgpu",
-   "renderer": "raw-native 0.4.0",
-   "backend": "webgpu",
-   "adapter": {
-    "vendor": "nvidia",
-    "architecture": "lovelace",
-    "device": "",
-    "description": "",
-    "driver": ""
-   },
-   "width": 1440,
-   "height": 900,
-   "rt": false,
-   "warmup_runs": 1,
-   "runs_ms": [
-    99.705,
-    88.18,
-    92.925,
-    85.94,
-    89.595
-   ],
-   "median_ms": 89.595,
-   "frame_only_runs_ms": [
-    20.685,
-    25.145,
-    23.155,
-    22.075,
-    22.53
-   ],
-   "frame_only_median_ms": 22.53
-  }
- ],
- "adapterInfo": {
-  "vendor": "nvidia",
-  "architecture": "lovelace",
-  "device": "",
-  "description": ""
- },
- "module": {
-  "mjs": "274033274c534faeb599f607d4d62955e9f5d3b94d943ba09e53b3c7a235900b",
-  "wasm": "cfd56e6f6f867a5db6423971099e74a597dfabef48d8f6789a10f95b1609fb9a"
- },
- "version": "raw-native 0.4.0",
- "note": "Headed Chrome (Playwright, not headless) on Windows 11 with an NVIDIA RTX 4090. Bench runs include upload, every pass, and read-back through mapAsync; one untimed warm-up render compiles the pipelines."
+ ]
 }

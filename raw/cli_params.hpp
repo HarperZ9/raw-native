@@ -22,7 +22,8 @@ struct CliParams {
     bool  rtao{true};            // false: skip the ray-traced reference (--no-rt)
     int   threads{1};            // render threads; output is identical for any count
     int   bench{0};              // > 0: time this many renders, print JSON, write no files
-    bool  gpu{false};            // render on the WebGPU backend and reconcile it against the CPU
+    bool  gpu{false};            // render on the GPU backend and reconcile it against the CPU
+    std::string gpuBackend;      // the backend's name for the certificate ("webgpu", "d3d12", "none")
     // Previous camera for motion reprojection. Absent -> static frame (the
     // previous view equals the current view, so motion is honestly all-zero).
     std::optional<Vec3> prevEye;
@@ -54,7 +55,8 @@ Camera prevCameraFromParams(const CliParams& p);
 // Canonical JSON of every parameter that changes the rendered output: sorted
 // keys, floats at round-trip precision, absent previous camera as null. `out`,
 // `threads` and `bench` are excluded because they do not change the pixels.
-// A GPU render adds "backend":"webgpu"; a CPU render's JSON is unchanged.
+// A GPU render adds "backend":"<gpuBackend>" ("none" when unset); a CPU
+// render's JSON is unchanged.
 std::string canonicalParamsJson(const CliParams& p);
 
 std::optional<CliParams> parseArgs(int argc, const char* const* argv, std::string& err);

@@ -20,11 +20,12 @@ int main(){
     CHECK(same.maskMismatch == 0);
     CHECK(same.coveredBoth > 0);
     for (const auto& c : same.channels) CHECK_NEAR(c.rmse, 0.0, 0.0);
-    std::string j = gpuCertificateJson(same, GpuAdapterInfo{"nvidia", "ada", "", "test", "d3d12"}, "raw-native test", "{}", 1.0, 2.0);
+    std::string j = gpuCertificateJson(same, GpuAdapterInfo{"nvidia", "ada", "", "test", "d3d12", "32.0.15.9999"}, "raw-native test", "{}", 1.0, 2.0);
     CHECK(has(j, "\"verdict\":\"verified\""));
     CHECK(has(j, "\"schema\":\"raw-gpu-cert/1\""));
     CHECK(has(j, "\"does_not_prove\":["));
     CHECK(has(j, "\"vendor\":\"nvidia\""));
+    CHECK(has(j, "\"driver\":\"32.0.15.9999\""));
 
     // One RT AO pixel off by one ray step still passes; the max error is reported.
     FrameResult oneRay = renderDefault(64, 64, true);

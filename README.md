@@ -11,9 +11,10 @@ not. You get the picture and the evidence for it in the same run.
 It is written in C++23 with no third-party dependencies, no GPU and no graphics
 API. Every pixel comes from the standard library and the engine's own code, so
 it builds the same way on any C++23 toolchain. The same code also runs in a web
-browser as WebAssembly and writes byte-identical files. A separate WebGPU build
-renders the frame on the GPU and checks every GPU frame against this CPU path;
-the default build contains no GPU code.
+browser as WebAssembly and writes byte-identical files. Two optional builds
+render the frame on the GPU, natively through D3D12 on Windows or through
+WebGPU in a browser, and check every GPU frame against this CPU path. The
+default build contains no GPU code.
 
 | Shaded frame | Ray-traced AO (reference) | Screen-space AO (shortcut) | Error map |
 |---|---|---|---|
@@ -134,12 +135,59 @@ below.
 
 ## Render on the GPU, checked against the CPU
 
+The same frame can render on three backends. Every GPU frame ships with
+`gpu_certificate.json`, which compares it with a CPU render of the same camera
+and says whether the two agree.
+
+| Backend | Build | Runs on | Shaders | Checked on |
+|---|---|---|---|---|
+| CPU | the default build | any C++23 toolchain, and WebAssembly | none | the reference |
+| D3D12 | `-DRAW_NATIVE_GPU_D3D12=ON`, Windows only | a hardware D3D12 adapter with shader model 6.0 | HLSL generated from the WGSL, compiled by DXC | RTX 4090, driver 610.88, Windows 11 |
+| WebGPU | the `wasm-gpu` preset | a browser with WebGPU and JSPI | WGSL | RTX 4090, Chrome 154, Windows 11 |
+
+All three run the same algorithms in the same operation order: triangle setup,
+rasterization with depth, normal, position and motion channels, screen-space
+AO, ray-traced AO and shading. A build without a GPU backend answers `--gpu`
+with exit code 4 and an `unverifiable` GPU certificate that names the reason.
+
+### Native D3D12
+
+```sh
+cmake -S . -B build-d3d12 -DRAW_NATIVE_GPU_D3D12=ON
+cmake --build build-d3d12 --config Release
+build-d3d12/Release/raw_native_cli.exe --gpu --out out-gpu --width 1440 --height 900
+```
+
+It needs the Windows SDK (10.0.18362 or newer) for `dxc.exe`, `d3d12.lib` and
+`dxgi.lib`, and nothing else. The binary loads only the system `d3d12.dll` and
+`dxgi.dll`. `--gpu` writes the GPU frame's files to `out-gpu`, the CPU
+reference to `out-gpu/cpu`, and `gpu_certificate.json` beside them; both
+directories pass `raw_native_cli verify`. The certificate records the adapter
+name, PCI device id and driver version. The backend picks the first hardware
+adapter in the high-performance order and never falls back to a software
+adapter; `RAW_NATIVE_D3D12_WARP=1` selects WARP, the Windows software
+rasterizer, on purpose.
+
+There is one shader source. `scripts/wgsl_to_hlsl.py` translates the WGSL
+passes in `src/gpu/` into `src/gpu/hlsl/`, and the generated files are
+committed, so the build needs no Python. The translator accepts a strict WGSL
+subset and stops on anything outside it. CI regenerates the HLSL on every push
+and fails when it differs from the committed files, so the two shader trees
+cannot drift apart without a red build. A hand-written HLSL copy with a parity
+test would need a GPU to catch drift, and CI runners have none.
+
+On WARP the D3D12 path reproduces the CPU reference bit for bit: all 16 renders
+of the check matrix below give an RMSE of exactly 0 on every channel
+(`evidence/d3d12-warp-checks.json`). WARP is software, so this is evidence that
+the translation is exact. It is not GPU evidence. CI runs the same WARP check
+on GitHub's Windows runner, and reports the hardware test as skipped, with the
+reason, because the runner has no GPU.
+
+### WebGPU in a browser
+
 From 0.4.0 the release adds a WebGPU build, `raw-native-gpu.mjs` and
-`raw-native-gpu.wasm`. It runs the whole frame on the GPU as WGSL compute
-passes: triangle setup, rasterization with depth, normal, position and motion
-channels, screen-space AO, ray-traced AO and shading. Then it renders the same
-camera on the CPU and writes `gpu_certificate.json`, which says whether the two
-agree. A GPU frame never ships without that check.
+`raw-native-gpu.wasm`. It runs the WGSL passes in the browser, then renders the
+same camera on the CPU and writes the same `gpu_certificate.json`.
 
 ```js
 const raw = await loadRawNative({
@@ -152,12 +200,12 @@ run.gpuCertificate;   // raw-gpu-cert/1: GPU against the CPU reference
 run.files["cpu/certificate.json"];   // the CPU reference's own certificate
 ```
 
-It needs a browser with WebGPU and JSPI; it was tested in Chrome 154. The command
-line flag is `--gpu`; the native build and the CPU wasm build answer it with
-exit code 4 and an `unverifiable` GPU certificate, because they contain no GPU
-code. Build it with `cmake --preset wasm-gpu` and `cmake --build --preset wasm-gpu`.
+It needs a browser with WebGPU and JSPI; it was tested in Chrome 154. Build it
+with `cmake --preset wasm-gpu` and `cmake --build --preset wasm-gpu`.
 
-What the GPU certificate compares, over the pixels both sides cover:
+### What the GPU certificate checks
+
+Over the pixels both sides cover:
 
 | Check | Bound |
 |---|---|
@@ -170,8 +218,9 @@ What the GPU certificate compares, over the pixels both sides cover:
 
 The bounds and the reasoning behind them are in `raw/gpu_tolerance.hpp`, which
 was committed before the first line of GPU code and before any GPU output was
-seen. Maximum errors are reported and never bounded. The certificate also
-records the adapter, both render times and five `does_not_prove` lines.
+seen. Both GPU backends are judged against the same bounds. Maximum errors are
+reported and never bounded. The certificate also records the backend, the
+adapter and driver, both render times and five `does_not_prove` lines.
 
 ## Point the camera anywhere
 
@@ -197,37 +246,50 @@ pass. With no reference to compare against, the certificate says
 ## Measured results
 
 All numbers come from one machine (Intel Core i7-13700KF, 24 threads, NVIDIA
-RTX 4090, Windows 11). The CPU and wasm numbers were measured on v0.3.0, whose
-CPU render code 0.4.0 keeps unchanged; the GPU numbers on v0.4.0.
+RTX 4090, Windows 11 build 26220). The CPU and wasm numbers were measured on
+v0.3.0, whose CPU render code later versions keep unchanged. The GPU numbers
+were measured on 4 October 2026 with NVIDIA driver 610.88 (DXGI reports
+32.0.16.1088), D3D12 and WebGPU in the same session.
 
 - **Tests:** 32 of 32 CTest targets pass in Release with MSVC 19.50 and in CI
-  on GitHub's Windows and Ubuntu runners.
-- **The GPU frame matches the CPU reference.** 16 of 16 GPU certificates say
-  `verified`: three frame sizes and the five views below, each with and without
-  the ray-traced pass, plus a moving camera for motion vectors. Coverage agrees
-  on every pixel in every case. The largest RMSE on any channel is 4.2e-5
-  (ray-traced AO, low view), against a bound of 0.01; the default 256 x 256 view's
-  ray-traced AO is bit-identical. Each GPU frame's own AO verdict equals the
-  CPU's. Headed Chrome 154 on the RTX 4090. Evidence:
+  on GitHub's Windows and Ubuntu runners. The D3D12 build adds a 33rd, the
+  hardware runtime test, which CI reports as skipped because the runner has
+  no GPU.
+- **The GPU frame matches the CPU reference, on both GPU backends.** 16 of 16
+  D3D12 certificates and 16 of 16 WebGPU certificates say `verified`: three
+  frame sizes and the four other views below, each with and without the
+  ray-traced pass, plus a moving camera for motion vectors. Coverage agrees on
+  every pixel in every case. The largest RMSE on any channel is 4.2e-5
+  (ray-traced AO, low view) against a bound of 0.01, and the largest single
+  pixel error is 1/64, one hemisphere ray. Each GPU frame's own AO verdict
+  equals the CPU's. D3D12 and WebGPU report the same RMSE and maximum error on
+  all 104 compared channel values; that is equal summaries, not a per-pixel
+  comparison of the two GPU frames. Evidence:
+  `evidence/d3d12-rtx4090-checks.json` and
   `evidence/webgpu-rtx4090-chromium.json`.
 - **GPU speed.** Median of 5 renders after one untimed warm-up, in
-  milliseconds, through WebGPU in Chrome 154 on the RTX 4090. "Every channel"
-  includes reading back all nine buffers (about 140 MB at 1440 x 900) and
-  converting them for the certificate; "frame only" reads back the shaded frame.
+  milliseconds. "Every channel" includes reading back all nine buffers (about
+  140 MB at 1440 x 900) and converting them for the certificate; "frame only"
+  reads back the shaded frame. Both include creating the buffers, the upload,
+  every pass and waiting for the GPU.
 
-| Frame | Mode | WebGPU, every channel | WebGPU, frame only | wasm, one thread | native, one thread |
-|---|---|---|---|---|---|
-| 256 x 256 | Full | 6.8 | 4.0 | 252 | 258 |
-| 512 x 512 | Full | 14.3 | 4.4 | 1,013 | 1,028 |
-| 1440 x 900 | Full | 72.7 | 17.8 | 4,646 | 4,527 |
-| 256 x 256 | No RT | 6.4 | 0.8 | 27 | 29 |
-| 512 x 512 | No RT | 12.0 | 4.1 | 110 | 118 |
-| 1440 x 900 | No RT | 64.4 | 17.4 | 533 | 527 |
+| Frame | Mode | D3D12, every channel | D3D12, frame only | WebGPU, every channel | WebGPU, frame only | native, one thread |
+|---|---|---|---|---|---|---|
+| 256 x 256 | Full | 5.4 | 3.3 | 11.5 | 8.1 | 258 |
+| 512 x 512 | Full | 12.9 | 5.2 | 32.0 | 9.5 | 1,028 |
+| 1440 x 900 | Full | 53.8 | 15.2 | 99.2 | 24.8 | 4,527 |
+| 256 x 256 | No RT | 5.0 | 3.1 | 10.1 | 3.8 | 29 |
+| 512 x 512 | No RT | 11.6 | 4.5 | 27.6 | 5.0 | 118 |
+| 1440 x 900 | No RT | 42.7 | 13.4 | 89.6 | 22.5 | 527 |
 
-  These are wall times measured inside the module, so they include JavaScript
-  promise turns and browser scheduling, not only GPU work. They are one run of
-  5 on one machine; the 256 x 256 no-RT frame-only figure sits near the timer's
-  resolution. The CPU columns repeat the 0.3.0 table below.
+  The WebGPU times are measured inside the wasm module in headed Chrome 154,
+  so they include JavaScript promise turns and browser scheduling. They also
+  move between sessions: the v0.4.0 run on the same machine measured 6.8, 14.3
+  and 72.7 ms for the full frame with every channel, against 11.5, 32.0 and
+  99.2 here. Read the WebGPU columns as a range, not a point. The D3D12 times
+  are one run of 5 in one session, on one GPU, one driver and one OS build;
+  another adapter or driver may differ in either direction. The CPU column
+  repeats the 0.3.0 table below. Evidence: `evidence/bench-d3d12-rtx4090.json`.
 - **Reproducible output:** the default render's `frame.ppm` and
   `certificate.json` are byte-identical across MSVC, GCC 13.3 on Linux and the
   WebAssembly build. `frame.ppm` is also unchanged from 0.2.0.
@@ -318,14 +380,18 @@ The package sets `raw_native_LICENSE` to `FSL-1.1-MIT`.
 ```
 raw/       headers: vectors, matrices, images, scene, G-buffer, rasterizer,
            ray-traced AO, SSAO, reconcile, certificate, composite, arena, motion
-src/       implementation; src/gpu/ holds the WebGPU backend and its WGSL passes
+src/       implementation; src/gpu/ holds the GPU backends, the WGSL passes and the
+           HLSL generated from them
 app/       command-line driver
-tests/     one test executable per test_*.cpp
+tests/     one test executable per test_*.cpp; tests/gpu/ holds the D3D12
+           runtime test
 wasm/      browser loader and a Node runner for the WebAssembly build
-cmake/     WebAssembly and WebGPU build settings
-scripts/   independent recheck, render comparison, timing and release packing
+cmake/     WebAssembly, WebGPU and D3D12 build settings
+scripts/   independent recheck, render comparison, timing, the WGSL-to-HLSL
+           translator and release packing
 bench/     the browser timing pages (CPU wasm and WebGPU) and a local server
-evidence/  raw timing runs, the wasm-versus-native comparison and the GPU certificates
+evidence/  raw timing runs, the wasm-versus-native comparison and the GPU
+           certificates (D3D12, WARP and WebGPU)
 docs/      example images and certificates
 ```
 
