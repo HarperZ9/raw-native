@@ -13,10 +13,25 @@ jobs:
         os: [ubuntu-24.04, windows-latest]
     runs-on: ${{ matrix.os }}
     steps:
+      # Windows leg: check out the way a default Git for Windows install does, so a
+      # line-ending rewrite of a pinned file fails here instead of on a reader's machine.
+      - name: Use the Git for Windows line-ending default
+        if: runner.os == 'Windows'
+        run: git config --global core.autocrlf true
       - uses: actions/checkout@v4
       - name: The vendored superstack files match their pins
         shell: bash
         run: cd third_party/superstack && sha256sum -c SUPERSTACK.sha256
+      - name: Sealed files are checked out byte for byte
+        shell: bash
+        run: |
+          git ls-files -s -- ":(attr:-text)" | while read -r mode sha stage path; do
+            if [ "$(git hash-object --no-filters -- "$path")" != "$sha" ]; then
+              echo "checkout rewrote a sealed file: $path"
+              exit 1
+            fi
+          done
+          echo "every sealed file matches its committed blob"
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build

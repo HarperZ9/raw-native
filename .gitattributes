@@ -1,1 +1,12 @@
 third_party/superstack/** text eol=lf
+
+# SUPERSTACK.sha256 pins superstack.hpp, tests/run_vectors.cpp and vectors/MANIFEST.json
+# by the SHA-256 of their exact bytes, and MANIFEST.json pins every vector. The rule
+# above writes LF on checkout, but Git still converts these files on commit and
+# checkout. `-text` turns conversion off for exactly the pinned files and their lists,
+# so the bytes on disk are the committed blob under any core.autocrlf setting.
+# Later lines win, so this overrides the rule above for these paths only.
+third_party/superstack/SUPERSTACK.sha256 -text
+third_party/superstack/superstack.hpp -text
+third_party/superstack/tests/run_vectors.cpp -text
+third_party/superstack/vectors/*.json -text
