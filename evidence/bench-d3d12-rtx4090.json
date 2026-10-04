@@ -1,0 +1,280 @@
+{
+  "note": "Median of 5 renders after one untimed warm-up, per mode. runs_ms reads back every channel; frame_only_runs_ms reads back only the shaded frame. Both include buffer creation, upload, every pass and the wait for the GPU. High process priority, power throttling off.",
+  "adapter": {
+    "vendor": "nvidia",
+    "architecture": "",
+    "device": "0x2684",
+    "description": "NVIDIA GeForce RTX 4090",
+    "backend": "d3d12",
+    "driver": "32.0.16.1088"
+  },
+  "host": {
+    "platform": "Windows-11-10.0.26220-SP0",
+    "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
+    "binary_sha256": "a1f793f6ded15e8d1e548ee637fc88f59742a9383ce08bf1ed89540d89131943",
+    "source_commit": "2e511690d9cda7e419a0ea76cf926bc341aa0202"
+  },
+  "results": [
+    {
+      "renderer": "raw-native 0.4.0",
+      "backend": "d3d12",
+      "adapter": {
+        "vendor": "nvidia",
+        "architecture": "",
+        "device": "0x2684",
+        "description": "NVIDIA GeForce RTX 4090",
+        "driver": "32.0.16.1088"
+      },
+      "width": 256,
+      "height": 256,
+      "rt": true,
+      "warmup_runs": 1,
+      "runs_ms": [
+        5.341,
+        5.376,
+        5.4,
+        5.263,
+        5.371
+      ],
+      "median_ms": 5.371,
+      "frame_only_runs_ms": [
+        3.471,
+        3.316,
+        3.196,
+        3.338,
+        3.396
+      ],
+      "frame_only_median_ms": 3.338,
+      "variant": "d3d12"
+    },
+    {
+      "renderer": "raw-native 0.4.0",
+      "backend": "d3d12",
+      "adapter": {
+        "vendor": "nvidia",
+        "architecture": "",
+        "device": "0x2684",
+        "description": "NVIDIA GeForce RTX 4090",
+        "driver": "32.0.16.1088"
+      },
+      "width": 256,
+      "height": 256,
+      "rt": false,
+      "warmup_runs": 1,
+      "runs_ms": [
+        4.898,
+        5.016,
+        5.041,
+        4.974,
+        5.208
+      ],
+      "median_ms": 5.016,
+      "frame_only_runs_ms": [
+        3.584,
+        3.73,
+        3.101,
+        3.076,
+        2.998
+      ],
+      "frame_only_median_ms": 3.101,
+      "variant": "d3d12"
+    },
+    {
+      "renderer": "raw-native 0.4.0",
+      "backend": "d3d12",
+      "adapter": {
+        "vendor": "nvidia",
+        "architecture": "",
+        "device": "0x2684",
+        "description": "NVIDIA GeForce RTX 4090",
+        "driver": "32.0.16.1088"
+      },
+      "width": 512,
+      "height": 512,
+      "rt": true,
+      "warmup_runs": 1,
+      "runs_ms": [
+        12.484,
+        12.92,
+        12.601,
+        12.862,
+        13.097
+      ],
+      "median_ms": 12.862,
+      "frame_only_runs_ms": [
+        5.413,
+        5.238,
+        5.311,
+        5.134,
+        5.239
+      ],
+      "frame_only_median_ms": 5.239,
+      "variant": "d3d12"
+    },
+    {
+      "renderer": "raw-native 0.4.0",
+      "backend": "d3d12",
+      "adapter": {
+        "vendor": "nvidia",
+        "architecture": "",
+        "device": "0x2684",
+        "description": "NVIDIA GeForce RTX 4090",
+        "driver": "32.0.16.1088"
+      },
+      "width": 512,
+      "height": 512,
+      "rt": false,
+      "warmup_runs": 1,
+      "runs_ms": [
+        10.652,
+        10.872,
+        11.649,
+        11.597,
+        12.075
+      ],
+      "median_ms": 11.597,
+      "frame_only_runs_ms": [
+        6.472,
+        4.853,
+        4.386,
+        4.49,
+        4.536
+      ],
+      "frame_only_median_ms": 4.536,
+      "variant": "d3d12"
+    },
+    {
+      "renderer": "raw-native 0.4.0",
+      "backend": "d3d12",
+      "adapter": {
+        "vendor": "nvidia",
+        "architecture": "",
+        "device": "0x2684",
+        "description": "NVIDIA GeForce RTX 4090",
+        "driver": "32.0.16.1088"
+      },
+      "width": 1440,
+      "height": 900,
+      "rt": true,
+      "warmup_runs": 1,
+      "runs_ms": [
+        48.129,
+        54.005,
+        53.764,
+        51.585,
+        53.92
+      ],
+      "median_ms": 53.764,
+      "frame_only_runs_ms": [
+        17.473,
+        22.363,
+        14.968,
+        15.24,
+        14.877
+      ],
+      "frame_only_median_ms": 15.24,
+      "variant": "d3d12"
+    },
+    {
+      "renderer": "raw-native 0.4.0",
+      "backend": "d3d12",
+      "adapter": {
+        "vendor": "nvidia",
+        "architecture": "",
+        "device": "0x2684",
+        "description": "NVIDIA GeForce RTX 4090",
+        "driver": "32.0.16.1088"
+      },
+      "width": 1440,
+      "height": 900,
+      "rt": false,
+      "warmup_runs": 1,
+      "runs_ms": [
+        40.874,
+        42.639,
+        44.197,
+        42.718,
+        42.759
+      ],
+      "median_ms": 42.718,
+      "frame_only_runs_ms": [
+        13.536,
+        18.1,
+        12.963,
+        12.909,
+        13.415
+      ],
+      "frame_only_median_ms": 13.415,
+      "variant": "d3d12"
+    }
+  ],
+  "compare": {
+    "note": "Medians copied from the files named in sources. The WebGPU run was in the same session as this one; the CPU run is v0.3.0, whose CPU render code is unchanged.",
+    "sources": {
+      "webgpu": "evidence/webgpu-rtx4090-chromium.json",
+      "native": "evidence/bench-native-windows.json (variant native, one thread)"
+    },
+    "rows": [
+      {
+        "width": 256,
+        "height": 256,
+        "rt": true,
+        "d3d12_median_ms": 5.371,
+        "d3d12_frame_only_median_ms": 3.338,
+        "webgpu_median_ms": 11.52,
+        "webgpu_frame_only_median_ms": 8.1,
+        "native_1t_median_ms": 257.628
+      },
+      {
+        "width": 256,
+        "height": 256,
+        "rt": false,
+        "d3d12_median_ms": 5.016,
+        "d3d12_frame_only_median_ms": 3.101,
+        "webgpu_median_ms": 10.07,
+        "webgpu_frame_only_median_ms": 3.82,
+        "native_1t_median_ms": 28.95
+      },
+      {
+        "width": 512,
+        "height": 512,
+        "rt": true,
+        "d3d12_median_ms": 12.862,
+        "d3d12_frame_only_median_ms": 5.239,
+        "webgpu_median_ms": 32.01,
+        "webgpu_frame_only_median_ms": 9.45,
+        "native_1t_median_ms": 1027.567
+      },
+      {
+        "width": 512,
+        "height": 512,
+        "rt": false,
+        "d3d12_median_ms": 11.597,
+        "d3d12_frame_only_median_ms": 4.536,
+        "webgpu_median_ms": 27.615,
+        "webgpu_frame_only_median_ms": 4.995,
+        "native_1t_median_ms": 118.17
+      },
+      {
+        "width": 1440,
+        "height": 900,
+        "rt": true,
+        "d3d12_median_ms": 53.764,
+        "d3d12_frame_only_median_ms": 15.24,
+        "webgpu_median_ms": 99.175,
+        "webgpu_frame_only_median_ms": 24.805,
+        "native_1t_median_ms": 4527.033
+      },
+      {
+        "width": 1440,
+        "height": 900,
+        "rt": false,
+        "d3d12_median_ms": 42.718,
+        "d3d12_frame_only_median_ms": 13.415,
+        "webgpu_median_ms": 89.595,
+        "webgpu_frame_only_median_ms": 22.53,
+        "native_1t_median_ms": 526.617
+      }
+    ]
+  }
+}
