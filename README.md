@@ -217,7 +217,8 @@ cannot drift apart without a red build. A hand-written HLSL copy with a parity
 test would need a GPU to catch drift, and CI runners have none.
 
 On WARP the D3D12 path reproduces the CPU reference bit for bit: all 16 renders
-of the check matrix below give an RMSE of exactly 0 on every channel
+of the check matrix below give an RMSE of exactly 0 on every channel, and
+all 16 frames are byte-identical to the CPU frame
 (`evidence/d3d12-warp-checks.json`). WARP is software, so this is evidence that
 the translation is exact. It is not GPU evidence. CI runs the same WARP check
 on GitHub's Windows runner, and reports the hardware test as skipped, with the
@@ -304,7 +305,12 @@ were measured on 4 October 2026 with NVIDIA driver 610.88 (DXGI reports
   pixel error is 1/64, one hemisphere ray. Each GPU frame's own AO verdict
   equals the CPU's. D3D12 and WebGPU report the same RMSE and maximum error on
   all 104 compared channel values; that is equal summaries, not a per-pixel
-  comparison of the two GPU frames. Evidence:
+  comparison of the two GPU frames. The certificates also report byte
+  identity of the 8-bit frames: the GPU frame equals the CPU frame (`MATCH`) in
+  13 of 16 renders on both backends. The other 3 (`DRIFT`, still `verified`)
+  are the ray-traced renders at 512 x 512, 1440 x 900 and the low view, where
+  the ray-traced AO of a few pixels differs from the CPU by one ray (1/64).
+  Evidence:
   `evidence/d3d12-rtx4090-checks.json` and
   `evidence/webgpu-rtx4090-chromium.json`.
 - **GPU speed.** Median of 5 renders after one untimed warm-up, in
@@ -315,20 +321,22 @@ were measured on 4 October 2026 with NVIDIA driver 610.88 (DXGI reports
 
 | Frame | Mode | D3D12, every channel | D3D12, frame only | WebGPU, every channel | WebGPU, frame only | native, one thread |
 |---|---|---|---|---|---|---|
-| 256 x 256 | Full | 5.4 | 3.3 | 11.5 | 8.1 | 258 |
-| 512 x 512 | Full | 12.9 | 5.2 | 32.0 | 9.5 | 1,028 |
-| 1440 x 900 | Full | 53.8 | 15.2 | 99.2 | 24.8 | 4,527 |
-| 256 x 256 | No RT | 5.0 | 3.1 | 10.1 | 3.8 | 29 |
-| 512 x 512 | No RT | 11.6 | 4.5 | 27.6 | 5.0 | 118 |
-| 1440 x 900 | No RT | 42.7 | 13.4 | 89.6 | 22.5 | 527 |
+| 256 x 256 | Full | 5.6 | 3.9 | 11.7 | 4.9 | 258 |
+| 512 x 512 | Full | 12.2 | 5.0 | 34.5 | 8.9 | 1,028 |
+| 1440 x 900 | Full | 48.8 | 16.0 | 94.9 | 24.3 | 4,527 |
+| 256 x 256 | No RT | 5.0 | 3.1 | 9.0 | 3.0 | 29 |
+| 512 x 512 | No RT | 11.5 | 5.3 | 26.7 | 4.9 | 118 |
+| 1440 x 900 | No RT | 45.7 | 13.2 | 86.3 | 15.3 | 527 |
 
   The WebGPU times are measured inside the wasm module in headed Chrome 154,
   so they include JavaScript promise turns and browser scheduling. They also
   move between sessions: the v0.4.0 run on the same machine measured 6.8, 14.3
-  and 72.7 ms for the full frame with every channel, against 11.5, 32.0 and
-  99.2 here. Read the WebGPU columns as a range, not a point. The D3D12 times
-  are one run of 5 in one session, on one GPU, one driver and one OS build;
-  another adapter or driver may differ in either direction. The CPU column
+  and 72.7 ms for the full frame with every channel, against 11.7, 34.5 and
+  94.9 here. Read the WebGPU columns as a range, not a point. The D3D12 times
+  are one run of 5 in one session, on one GPU, one driver and one OS build,
+  and another adapter or driver may differ in either direction. Small gaps
+  between neighbouring cells, such as 512 x 512 frame only with and without
+  RT, are within run-to-run noise. The CPU column
   repeats the 0.3.0 table below. Evidence: `evidence/bench-d3d12-rtx4090.json`.
 - **Reproducible output:** the default render's `frame.ppm`,
   `certificate.json`, `channels.json` and both AO float files are

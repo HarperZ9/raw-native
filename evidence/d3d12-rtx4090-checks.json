@@ -11,8 +11,8 @@
  "host": {
   "platform": "Windows-11-10.0.26220-SP0",
   "processor": "Intel64 Family 6 Model 183 Stepping 1, GenuineIntel",
-  "binary_sha256": "a1f793f6ded15e8d1e548ee637fc88f59742a9383ce08bf1ed89540d89131943",
-  "source_commit": "2e511690d9cda7e419a0ea76cf926bc341aa0202"
+  "binary_sha256": "bf10be0055d95b9557fca640ad68fc405a203c7502d86401b4d6c33f97a2752d",
+  "source_commit": "f343fb62221d13a8ef83bdc6f3bf36f91e41150c"
  },
  "summary": {
   "renders": 16,
@@ -28,8 +28,13 @@
     "schema": "raw-gpu-cert/1",
     "claim": "the GPU frame matches the CPU reference within the committed tolerance",
     "verdict": "verified",
+    "identity": "MATCH",
+    "frame_rgb8_sha256": {
+     "gpu": "0282ef9cc07a0012da9da3217c164f44d00a3e9f7704ff719770e832c9ca6d44",
+     "cpu": "0282ef9cc07a0012da9da3217c164f44d00a3e9f7704ff719770e832c9ca6d44"
+    },
     "oracle": "raw-gpu-cpu-v1",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -140,8 +145,8 @@
      "pass": true
     },
     "timing_ms": {
-     "gpu": 15.1778,
-     "cpu": 251.544,
+     "gpu": 14.6643,
+     "cpu": 253.6442,
      "judged": false
     },
     "does_not_prove": [
@@ -180,7 +185,7 @@
      "hdr_headroom": 0.875542
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -256,7 +261,7 @@
      "hdr_headroom": 0.875542
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "eye": [
       4,
@@ -316,8 +321,13 @@
     "schema": "raw-gpu-cert/1",
     "claim": "the GPU frame matches the CPU reference within the committed tolerance",
     "verdict": "verified",
+    "identity": "MATCH",
+    "frame_rgb8_sha256": {
+     "gpu": "6541ae60797743003a1b1546a93f612194a05dc9b0b45820e3fbb6fc76df13ce",
+     "cpu": "6541ae60797743003a1b1546a93f612194a05dc9b0b45820e3fbb6fc76df13ce"
+    },
     "oracle": "raw-gpu-cpu-v1",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -413,8 +423,8 @@
     ],
     "ao_verdict": null,
     "timing_ms": {
-     "gpu": 11.6564,
-     "cpu": 29.0493,
+     "gpu": 12.5443,
+     "cpu": 28.844,
      "judged": false
     },
     "does_not_prove": [
@@ -453,7 +463,7 @@
      "hdr_headroom": 0.875542
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -526,7 +536,7 @@
      "hdr_headroom": 0.875542
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "eye": [
       4,
@@ -583,8 +593,13 @@
     "schema": "raw-gpu-cert/1",
     "claim": "the GPU frame matches the CPU reference within the committed tolerance",
     "verdict": "verified",
+    "identity": "DRIFT",
+    "frame_rgb8_sha256": {
+     "gpu": "bf85fb4deb55b8aad1fa96c8cfc5b11629f174973f7261781f1b2246899eaa61",
+     "cpu": "d4ce2e7b1786de0760522a74c0eec1972db457059ed389aa7367a40901756c89"
+    },
     "oracle": "raw-gpu-cpu-v1",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -695,8 +710,8 @@
      "pass": true
     },
     "timing_ms": {
-     "gpu": 21.2104,
-     "cpu": 992.4838,
+     "gpu": 22.0138,
+     "cpu": 1015.0398,
      "judged": false
     },
     "does_not_prove": [
@@ -735,7 +750,7 @@
      "hdr_headroom": 0.875542
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -811,7 +826,7 @@
      "hdr_headroom": 0.875542
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "eye": [
       4,
@@ -871,8 +886,13 @@
     "schema": "raw-gpu-cert/1",
     "claim": "the GPU frame matches the CPU reference within the committed tolerance",
     "verdict": "verified",
+    "identity": "MATCH",
+    "frame_rgb8_sha256": {
+     "gpu": "73ce33c793ba4446f4f3a5c600a755ada2c6c8dbe6ebba97de710da95b54eef9",
+     "cpu": "73ce33c793ba4446f4f3a5c600a755ada2c6c8dbe6ebba97de710da95b54eef9"
+    },
     "oracle": "raw-gpu-cpu-v1",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -968,8 +988,8 @@
     ],
     "ao_verdict": null,
     "timing_ms": {
-     "gpu": 18.7118,
-     "cpu": 115.6463,
+     "gpu": 19.7567,
+     "cpu": 118.361,
      "judged": false
     },
     "does_not_prove": [
@@ -1008,7 +1028,7 @@
      "hdr_headroom": 0.875542
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -1081,7 +1101,7 @@
      "hdr_headroom": 0.875542
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "eye": [
       4,
@@ -1138,8 +1158,13 @@
     "schema": "raw-gpu-cert/1",
     "claim": "the GPU frame matches the CPU reference within the committed tolerance",
     "verdict": "verified",
+    "identity": "DRIFT",
+    "frame_rgb8_sha256": {
+     "gpu": "3608a2c13493c56799691c82d85889f83622cb6518b511a08477cc953eae0f75",
+     "cpu": "0533b51a50239a64407590819ee904c475decd50674c1513c4e33107790699f3"
+    },
     "oracle": "raw-gpu-cpu-v1",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -1250,8 +1275,8 @@
      "pass": true
     },
     "timing_ms": {
-     "gpu": 59.3362,
-     "cpu": 5546.7701,
+     "gpu": 62.4808,
+     "cpu": 5657.9362,
      "judged": false
     },
     "does_not_prove": [
@@ -1290,7 +1315,7 @@
      "hdr_headroom": 0.875542
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -1366,7 +1391,7 @@
      "hdr_headroom": 0.875542
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "eye": [
       4,
@@ -1426,8 +1451,13 @@
     "schema": "raw-gpu-cert/1",
     "claim": "the GPU frame matches the CPU reference within the committed tolerance",
     "verdict": "verified",
+    "identity": "MATCH",
+    "frame_rgb8_sha256": {
+     "gpu": "a4ac8cb62298acf2eb8daf81182a3aae24242c7eac9ddf14a15d4f29a0b40508",
+     "cpu": "a4ac8cb62298acf2eb8daf81182a3aae24242c7eac9ddf14a15d4f29a0b40508"
+    },
     "oracle": "raw-gpu-cpu-v1",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -1523,8 +1553,8 @@
     ],
     "ao_verdict": null,
     "timing_ms": {
-     "gpu": 50.7294,
-     "cpu": 508.1,
+     "gpu": 50.5727,
+     "cpu": 504.911,
      "judged": false
     },
     "does_not_prove": [
@@ -1563,7 +1593,7 @@
      "hdr_headroom": 0.875542
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -1636,7 +1666,7 @@
      "hdr_headroom": 0.875542
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "eye": [
       4,
@@ -1693,8 +1723,13 @@
     "schema": "raw-gpu-cert/1",
     "claim": "the GPU frame matches the CPU reference within the committed tolerance",
     "verdict": "verified",
+    "identity": "MATCH",
+    "frame_rgb8_sha256": {
+     "gpu": "ee8211f9578e1ff80d34cab0136a32d0ed980f13e1cab81fed2f153e0c2b0998",
+     "cpu": "ee8211f9578e1ff80d34cab0136a32d0ed980f13e1cab81fed2f153e0c2b0998"
+    },
     "oracle": "raw-gpu-cpu-v1",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -1805,8 +1840,8 @@
      "pass": true
     },
     "timing_ms": {
-     "gpu": 22.2463,
-     "cpu": 1550.2708,
+     "gpu": 21.8266,
+     "cpu": 1585.7277,
      "judged": false
     },
     "does_not_prove": [
@@ -1845,7 +1880,7 @@
      "hdr_headroom": 0.875542
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -1921,7 +1956,7 @@
      "hdr_headroom": 0.875542
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "eye": [
       0,
@@ -1981,8 +2016,13 @@
     "schema": "raw-gpu-cert/1",
     "claim": "the GPU frame matches the CPU reference within the committed tolerance",
     "verdict": "verified",
+    "identity": "MATCH",
+    "frame_rgb8_sha256": {
+     "gpu": "031745be30eed437fde8e54d424beae2704c84037023643a7701a7afedb26839",
+     "cpu": "031745be30eed437fde8e54d424beae2704c84037023643a7701a7afedb26839"
+    },
     "oracle": "raw-gpu-cpu-v1",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -2078,8 +2118,8 @@
     ],
     "ao_verdict": null,
     "timing_ms": {
-     "gpu": 17.8576,
-     "cpu": 178.6859,
+     "gpu": 17.9616,
+     "cpu": 178.0365,
      "judged": false
     },
     "does_not_prove": [
@@ -2118,7 +2158,7 @@
      "hdr_headroom": 0.875542
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -2191,7 +2231,7 @@
      "hdr_headroom": 0.875542
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "eye": [
       0,
@@ -2248,8 +2288,13 @@
     "schema": "raw-gpu-cert/1",
     "claim": "the GPU frame matches the CPU reference within the committed tolerance",
     "verdict": "verified",
+    "identity": "DRIFT",
+    "frame_rgb8_sha256": {
+     "gpu": "a891c114a21d5df61d6d8fc937164e7a5a2957aff41685a6437601a3abd4e13c",
+     "cpu": "4aaf25ee943864092c96545865c42895f9bdd606e25cf739a204eae9c90c9111"
+    },
     "oracle": "raw-gpu-cpu-v1",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -2360,8 +2405,8 @@
      "pass": true
     },
     "timing_ms": {
-     "gpu": 23.3053,
-     "cpu": 898.9687,
+     "gpu": 22.3834,
+     "cpu": 914.5149,
      "judged": false
     },
     "does_not_prove": [
@@ -2400,7 +2445,7 @@
      "hdr_headroom": 0.766099
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -2476,7 +2521,7 @@
      "hdr_headroom": 0.766099
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "eye": [
       6,
@@ -2536,8 +2581,13 @@
     "schema": "raw-gpu-cert/1",
     "claim": "the GPU frame matches the CPU reference within the committed tolerance",
     "verdict": "verified",
+    "identity": "MATCH",
+    "frame_rgb8_sha256": {
+     "gpu": "7d92b190a180a6a384d46bbd80e72018d5a72cfe75c4d45b5c55395ba635682b",
+     "cpu": "7d92b190a180a6a384d46bbd80e72018d5a72cfe75c4d45b5c55395ba635682b"
+    },
     "oracle": "raw-gpu-cpu-v1",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -2633,8 +2683,8 @@
     ],
     "ao_verdict": null,
     "timing_ms": {
-     "gpu": 17.7962,
-     "cpu": 108.188,
+     "gpu": 18.055,
+     "cpu": 106.1949,
      "judged": false
     },
     "does_not_prove": [
@@ -2673,7 +2723,7 @@
      "hdr_headroom": 0.766099
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -2746,7 +2796,7 @@
      "hdr_headroom": 0.766099
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "eye": [
       6,
@@ -2803,8 +2853,13 @@
     "schema": "raw-gpu-cert/1",
     "claim": "the GPU frame matches the CPU reference within the committed tolerance",
     "verdict": "verified",
+    "identity": "MATCH",
+    "frame_rgb8_sha256": {
+     "gpu": "da5ad1e93785c9571f08711b95dde9b84048aaee47dcd18bc6d8bffaa0e82b94",
+     "cpu": "da5ad1e93785c9571f08711b95dde9b84048aaee47dcd18bc6d8bffaa0e82b94"
+    },
     "oracle": "raw-gpu-cpu-v1",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -2915,8 +2970,8 @@
      "pass": true
     },
     "timing_ms": {
-     "gpu": 21.0134,
-     "cpu": 1411.2376,
+     "gpu": 22.2508,
+     "cpu": 1442.243,
      "judged": false
     },
     "does_not_prove": [
@@ -2955,7 +3010,7 @@
      "hdr_headroom": 0.875542
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -3031,7 +3086,7 @@
      "hdr_headroom": 0.875542
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "eye": [
       2,
@@ -3091,8 +3146,13 @@
     "schema": "raw-gpu-cert/1",
     "claim": "the GPU frame matches the CPU reference within the committed tolerance",
     "verdict": "verified",
+    "identity": "MATCH",
+    "frame_rgb8_sha256": {
+     "gpu": "fb0d938b1b30eb33a65885ce1acd7b7baa7d2c9fc0565e52a0b4821d61eb0a3a",
+     "cpu": "fb0d938b1b30eb33a65885ce1acd7b7baa7d2c9fc0565e52a0b4821d61eb0a3a"
+    },
     "oracle": "raw-gpu-cpu-v1",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -3188,8 +3248,8 @@
     ],
     "ao_verdict": null,
     "timing_ms": {
-     "gpu": 17.9569,
-     "cpu": 159.9319,
+     "gpu": 18.5512,
+     "cpu": 159.3236,
      "judged": false
     },
     "does_not_prove": [
@@ -3228,7 +3288,7 @@
      "hdr_headroom": 0.875542
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -3301,7 +3361,7 @@
      "hdr_headroom": 0.875542
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "eye": [
       2,
@@ -3358,8 +3418,13 @@
     "schema": "raw-gpu-cert/1",
     "claim": "the GPU frame matches the CPU reference within the committed tolerance",
     "verdict": "verified",
+    "identity": "MATCH",
+    "frame_rgb8_sha256": {
+     "gpu": "a01cf2e13ef0cbfe0108539b749c462aa4c1a8a84f6fd2ca2b8d6af5b9a53cdc",
+     "cpu": "a01cf2e13ef0cbfe0108539b749c462aa4c1a8a84f6fd2ca2b8d6af5b9a53cdc"
+    },
     "oracle": "raw-gpu-cpu-v1",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -3470,8 +3535,8 @@
      "pass": true
     },
     "timing_ms": {
-     "gpu": 21.8893,
-     "cpu": 568.722,
+     "gpu": 24.4081,
+     "cpu": 576.4363,
      "judged": false
     },
     "does_not_prove": [
@@ -3510,7 +3575,7 @@
      "hdr_headroom": 0.875542
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -3586,7 +3651,7 @@
      "hdr_headroom": 0.875542
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "eye": [
       5,
@@ -3646,8 +3711,13 @@
     "schema": "raw-gpu-cert/1",
     "claim": "the GPU frame matches the CPU reference within the committed tolerance",
     "verdict": "verified",
+    "identity": "MATCH",
+    "frame_rgb8_sha256": {
+     "gpu": "88a17e1e71697c3a7916464c9e87e958a0eb9c1329498a307da4495197e851ca",
+     "cpu": "88a17e1e71697c3a7916464c9e87e958a0eb9c1329498a307da4495197e851ca"
+    },
     "oracle": "raw-gpu-cpu-v1",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -3743,8 +3813,8 @@
     ],
     "ao_verdict": null,
     "timing_ms": {
-     "gpu": 18.0176,
-     "cpu": 71.7031,
+     "gpu": 19.9243,
+     "cpu": 68.4924,
      "judged": false
     },
     "does_not_prove": [
@@ -3783,7 +3853,7 @@
      "hdr_headroom": 0.875542
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -3856,7 +3926,7 @@
      "hdr_headroom": 0.875542
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "eye": [
       5,
@@ -3913,8 +3983,13 @@
     "schema": "raw-gpu-cert/1",
     "claim": "the GPU frame matches the CPU reference within the committed tolerance",
     "verdict": "verified",
+    "identity": "MATCH",
+    "frame_rgb8_sha256": {
+     "gpu": "0282ef9cc07a0012da9da3217c164f44d00a3e9f7704ff719770e832c9ca6d44",
+     "cpu": "0282ef9cc07a0012da9da3217c164f44d00a3e9f7704ff719770e832c9ca6d44"
+    },
     "oracle": "raw-gpu-cpu-v1",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -4029,8 +4104,8 @@
      "pass": true
     },
     "timing_ms": {
-     "gpu": 14.9215,
-     "cpu": 247.1029,
+     "gpu": 15.7494,
+     "cpu": 261.417,
      "judged": false
     },
     "does_not_prove": [
@@ -4069,7 +4144,7 @@
      "hdr_headroom": 0.875542
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -4149,7 +4224,7 @@
      "hdr_headroom": 0.875542
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "eye": [
       4,
@@ -4213,8 +4288,13 @@
     "schema": "raw-gpu-cert/1",
     "claim": "the GPU frame matches the CPU reference within the committed tolerance",
     "verdict": "verified",
+    "identity": "MATCH",
+    "frame_rgb8_sha256": {
+     "gpu": "6541ae60797743003a1b1546a93f612194a05dc9b0b45820e3fbb6fc76df13ce",
+     "cpu": "6541ae60797743003a1b1546a93f612194a05dc9b0b45820e3fbb6fc76df13ce"
+    },
     "oracle": "raw-gpu-cpu-v1",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -4314,8 +4394,8 @@
     ],
     "ao_verdict": null,
     "timing_ms": {
-     "gpu": 12.4413,
-     "cpu": 28.8895,
+     "gpu": 12.2958,
+     "cpu": 28.7784,
      "judged": false
     },
     "does_not_prove": [
@@ -4354,7 +4434,7 @@
      "hdr_headroom": 0.875542
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "backend": "d3d12",
      "eye": [
@@ -4431,7 +4511,7 @@
      "hdr_headroom": 0.875542
     },
     "schema": "raw-cert/2",
-    "renderer": "raw-native 0.4.0",
+    "renderer": "raw-native 0.5.0",
     "params": {
      "eye": [
       4,
