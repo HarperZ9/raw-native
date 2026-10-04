@@ -30,7 +30,6 @@ struct Level {
 
 const PI: f32 = 3.14159265;
 
-fn hash1(n: f32) -> f32 { return fract(sin(n * 12.9898) * 43758.5453); }
 fn hash2(p: vec2f) -> f32 { return fract(sin(dot(p, vec2f(127.1, 311.7))) * 43758.5453); }
 fn hashu(x0: u32) -> u32 {
     var x: u32 = x0;
@@ -41,6 +40,105 @@ fn hashu(x0: u32) -> u32 {
     x = x ^ (x >> 16u);
     return x;
 }
+// The bloom pyramid: level l is max(1, size >> l) on each side. Odd levels live
+// in one buffer and even levels in another, each packed after the earlier
+// levels of the same parity, so a pass reads one buffer and writes the other.
+fn levelDim(n: u32, l: u32) -> u32 { return max(1u, n >> l); }
+fn levelBase(w: u32, h: u32, l: u32) -> u32 {
+    var o: u32 = 0u;
+    for (var j: u32 = 2u - (l % 2u); j < l; j = j + 2u) {
+        o = o + levelDim(w, j) * levelDim(h, j);
+    }
+    return o;
+}
+
+//@pass threads_init
+// Every particle starts expired, so the first step places it on the field.
+@group(0) @binding(0) var<uniform> P: Params;
+@group(0) @binding(1) var<storage, read_write> pos: array<vec4f>;
+@compute @workgroup_size(256)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    if (gid.x >= P.np) { return; }
+    pos[gid.x] = vec4f(0.0, 0.0, 0.0, f32(hashu(gid.x + P.seedbase) >> 8u) / 16777216.0);
+}
+
+//@pass threads_rd_seed
+// The reaction-diffusion field behind the Morphogen world, seeded with spots.
+@group(0) @binding(0) var<uniform> P: Params;
+@group(0) @binding(1) var<storage, read_write> dst: array<vec2f>;
+@compute @workgroup_size(16, 16)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    if (gid.x >= P.simw || gid.y >= P.simh) { return; }
+    let q: vec2f = (vec2f(f32(gid.x), f32(gid.y)) - vec2f(f32(P.simw), f32(P.simh)) * 0.5) / f32(P.simh);
+    var v: f32 = step(length(q), 0.02);
+    for (var k: i32 = 0; k < 40; k++) {
+        let fk: f32 = f32(k);
+        let sp: vec2f = vec2f(fract(sin(fk * 12.9898) * 43758.5) * 1.7 - 0.85, fract(sin(fk * 78.233) * 12345.6) - 0.5);
+        v = v + step(length(q - sp), 0.006);
+    }
+    dst[gid.y * P.simw + gid.x] = vec2f(1.0, min(v, 1.0));
+}
+
+//@pass threads_rd
+// One Gray-Scott step on a wrapping grid.
+@group(0) @binding(0) var<uniform> P: Params;
+@group(0) @binding(1) var<storage, read> src: array<vec2f>;
+@group(0) @binding(2) var<storage, read_write> dst: array<vec2f>;
+fn cell(x: i32, y: i32) -> vec2f {
+    let w: i32 = i32(P.simw);
+    let h: i32 = i32(P.simh);
+    return src[u32((((y % h) + h) % h) * w + (((x % w) + w) % w))];
+}
+@compute @workgroup_size(16, 16)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    if (gid.x >= P.simw || gid.y >= P.simh) { return; }
+    let x: i32 = i32(gid.x);
+    let y: i32 = i32(gid.y);
+    let q: vec2f = (vec2f(f32(x), f32(y)) - vec2f(f32(P.simw), f32(P.simh)) * 0.5) / f32(P.simh);
+    let s: vec2f = cell(x, y);
+    var lap: vec2f = -s;
+    lap = lap + 0.2 * (cell(x + 1, y) + cell(x - 1, y) + cell(x, y + 1) + cell(x, y - 1));
+    lap = lap + 0.05 * (cell(x + 1, y + 1) + cell(x - 1, y + 1) + cell(x + 1, y - 1) + cell(x - 1, y - 1));
+    let ph: f32 = clamp(P.simt / 40.0, 0.0, 1.0);
+    var fk: vec2f = mix(vec2f(0.029, 0.057), vec2f(0.0367, 0.0649), smoothstep(0.3, 0.45, ph));
+    fk = mix(fk, vec2f(0.0545, 0.062), smoothstep(0.55, 0.68, ph));
+    fk = mix(fk, vec2f(0.039, 0.058), smoothstep(0.78, 0.9, ph));
+    var u: f32 = s.x;
+    var v: f32 = s.y;
+    let uvv: f32 = u * v * v;
+    u = u + lap.x - uvv + fk.x * (1.0 - u);
+    v = v + 0.5 * lap.y + uvv - (fk.x + fk.y) * v;
+    let open: f32 = smoothstep(8.0, 14.0, P.simt) * (1.0 - smoothstep(34.0, 37.0, P.simt));
+    let qx: f32 = q.x / 0.42;
+    let lid: f32 = 0.16 * (1.0 - qx * qx) * open;
+    if (abs(q.y) < lid && abs(q.x) < 0.42 && length(q) > 0.07 * open) { v = v * 0.6; }
+    dst[gid.y * P.simw + gid.x] = vec2f(clamp(u, 0.0, 1.0), clamp(v, 0.0, 1.0));
+}
+
+//@pass threads_decay
+// Persistence: every accumulator cell keeps P.keep of its value.
+@group(0) @binding(0) var<uniform> P: Params;
+@group(0) @binding(1) var<storage, read_write> acc: array<u32>;
+@compute @workgroup_size(16, 16)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    if (gid.x >= P.w || gid.y >= P.h) { return; }
+    let i: u32 = (gid.y * P.w + gid.x) * 4u;
+    acc[i] = u32(f32(acc[i]) * P.keep);
+    acc[i + 1u] = u32(f32(acc[i + 1u]) * P.keep);
+    acc[i + 2u] = u32(f32(acc[i + 2u]) * P.keep);
+    acc[i + 3u] = u32(f32(acc[i + 3u]) * P.keep);
+}
+
+//@pass threads_advance
+// Every substep of one frame in one dispatch: each particle moves along its
+// level line (or respawns onto the field), then splats its light.
+@group(0) @binding(0) var<uniform> P: Params;
+@group(0) @binding(1) var<storage, read_write> pos: array<vec4f>;
+@group(0) @binding(2) var<storage, read_write> acc: array<atomic<u32>>;
+@group(0) @binding(3) var<storage, read> sim: array<vec2f>;
+// The fifteen worlds and their palettes live in this pass, the only one that
+// uses them, so the other passes compile small.
+fn hash1(n: f32) -> f32 { return fract(sin(n * 12.9898) * 43758.5453); }
 fn vnoise(p: vec2f) -> f32 {
     let i: vec2f = floor(p);
     var f: vec2f = fract(p);
@@ -336,102 +434,6 @@ fn palette(w: i32, p: vec2f, s: f32, lam: f32) -> vec3f {
     if (w == 13) { return mix(vec3f(0.35, 0.7, 0.25), vec3f(0.95, 0.92, 0.85), step(0.7, s)); }
     return spectral(lam);
 }
-// The bloom pyramid: level l is max(1, size >> l) on each side. Odd levels live
-// in one buffer and even levels in another, each packed after the earlier
-// levels of the same parity, so a pass reads one buffer and writes the other.
-fn levelDim(n: u32, l: u32) -> u32 { return max(1u, n >> l); }
-fn levelBase(w: u32, h: u32, l: u32) -> u32 {
-    var o: u32 = 0u;
-    for (var j: u32 = 2u - (l % 2u); j < l; j = j + 2u) {
-        o = o + levelDim(w, j) * levelDim(h, j);
-    }
-    return o;
-}
-
-//@pass threads_init
-// Every particle starts expired, so the first step places it on the field.
-@group(0) @binding(0) var<uniform> P: Params;
-@group(0) @binding(1) var<storage, read_write> pos: array<vec4f>;
-@compute @workgroup_size(256)
-fn main(@builtin(global_invocation_id) gid: vec3u) {
-    if (gid.x >= P.np) { return; }
-    pos[gid.x] = vec4f(0.0, 0.0, 0.0, f32(hashu(gid.x + P.seedbase) >> 8u) / 16777216.0);
-}
-
-//@pass threads_rd_seed
-// The reaction-diffusion field behind the Morphogen world, seeded with spots.
-@group(0) @binding(0) var<uniform> P: Params;
-@group(0) @binding(1) var<storage, read_write> dst: array<vec2f>;
-@compute @workgroup_size(16, 16)
-fn main(@builtin(global_invocation_id) gid: vec3u) {
-    if (gid.x >= P.simw || gid.y >= P.simh) { return; }
-    let q: vec2f = (vec2f(f32(gid.x), f32(gid.y)) - vec2f(f32(P.simw), f32(P.simh)) * 0.5) / f32(P.simh);
-    var v: f32 = step(length(q), 0.02);
-    for (var k: i32 = 0; k < 40; k++) {
-        let fk: f32 = f32(k);
-        let sp: vec2f = vec2f(fract(sin(fk * 12.9898) * 43758.5) * 1.7 - 0.85, fract(sin(fk * 78.233) * 12345.6) - 0.5);
-        v = v + step(length(q - sp), 0.006);
-    }
-    dst[gid.y * P.simw + gid.x] = vec2f(1.0, min(v, 1.0));
-}
-
-//@pass threads_rd
-// One Gray-Scott step on a wrapping grid.
-@group(0) @binding(0) var<uniform> P: Params;
-@group(0) @binding(1) var<storage, read> src: array<vec2f>;
-@group(0) @binding(2) var<storage, read_write> dst: array<vec2f>;
-fn cell(x: i32, y: i32) -> vec2f {
-    let w: i32 = i32(P.simw);
-    let h: i32 = i32(P.simh);
-    return src[u32((((y % h) + h) % h) * w + (((x % w) + w) % w))];
-}
-@compute @workgroup_size(16, 16)
-fn main(@builtin(global_invocation_id) gid: vec3u) {
-    if (gid.x >= P.simw || gid.y >= P.simh) { return; }
-    let x: i32 = i32(gid.x);
-    let y: i32 = i32(gid.y);
-    let q: vec2f = (vec2f(f32(x), f32(y)) - vec2f(f32(P.simw), f32(P.simh)) * 0.5) / f32(P.simh);
-    let s: vec2f = cell(x, y);
-    var lap: vec2f = -s;
-    lap = lap + 0.2 * (cell(x + 1, y) + cell(x - 1, y) + cell(x, y + 1) + cell(x, y - 1));
-    lap = lap + 0.05 * (cell(x + 1, y + 1) + cell(x - 1, y + 1) + cell(x + 1, y - 1) + cell(x - 1, y - 1));
-    let ph: f32 = clamp(P.simt / 40.0, 0.0, 1.0);
-    var fk: vec2f = mix(vec2f(0.029, 0.057), vec2f(0.0367, 0.0649), smoothstep(0.3, 0.45, ph));
-    fk = mix(fk, vec2f(0.0545, 0.062), smoothstep(0.55, 0.68, ph));
-    fk = mix(fk, vec2f(0.039, 0.058), smoothstep(0.78, 0.9, ph));
-    var u: f32 = s.x;
-    var v: f32 = s.y;
-    let uvv: f32 = u * v * v;
-    u = u + lap.x - uvv + fk.x * (1.0 - u);
-    v = v + 0.5 * lap.y + uvv - (fk.x + fk.y) * v;
-    let open: f32 = smoothstep(8.0, 14.0, P.simt) * (1.0 - smoothstep(34.0, 37.0, P.simt));
-    let qx: f32 = q.x / 0.42;
-    let lid: f32 = 0.16 * (1.0 - qx * qx) * open;
-    if (abs(q.y) < lid && abs(q.x) < 0.42 && length(q) > 0.07 * open) { v = v * 0.6; }
-    dst[gid.y * P.simw + gid.x] = vec2f(clamp(u, 0.0, 1.0), clamp(v, 0.0, 1.0));
-}
-
-//@pass threads_decay
-// Persistence: every accumulator cell keeps P.keep of its value.
-@group(0) @binding(0) var<uniform> P: Params;
-@group(0) @binding(1) var<storage, read_write> acc: array<u32>;
-@compute @workgroup_size(16, 16)
-fn main(@builtin(global_invocation_id) gid: vec3u) {
-    if (gid.x >= P.w || gid.y >= P.h) { return; }
-    let i: u32 = (gid.y * P.w + gid.x) * 4u;
-    acc[i] = u32(f32(acc[i]) * P.keep);
-    acc[i + 1u] = u32(f32(acc[i + 1u]) * P.keep);
-    acc[i + 2u] = u32(f32(acc[i + 2u]) * P.keep);
-    acc[i + 3u] = u32(f32(acc[i + 3u]) * P.keep);
-}
-
-//@pass threads_advance
-// Every substep of one frame in one dispatch: each particle moves along its
-// level line (or respawns onto the field), then splats its light.
-@group(0) @binding(0) var<uniform> P: Params;
-@group(0) @binding(1) var<storage, read_write> pos: array<vec4f>;
-@group(0) @binding(2) var<storage, read_write> acc: array<atomic<u32>>;
-@group(0) @binding(3) var<storage, read> sim: array<vec2f>;
 fn simV(u0: vec2f) -> f32 {
     let w: i32 = i32(P.simw);
     let h: i32 = i32(P.simh);
@@ -509,6 +511,9 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     let s: vec4f = pos[i];
     var p: vec2f = s.xy;
     var age: f32 = s.z;
+    // A static use of binding 3, so the pipeline layout keeps it when the web host
+    // compiles this pass for worlds that never read the field (web/threads.mjs).
+    if (P.simw == 0u) { p = sim[0]; }
     let seed: f32 = s.w;
     let lam: f32 = fract(seed * 7.13);
     let atm: bool = fract(seed * 41.7) < 0.3;
