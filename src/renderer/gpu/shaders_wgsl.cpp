@@ -7,7 +7,17 @@
 #include <string>
 namespace raw::gpu_shaders {
 namespace {
+// A Threads pass: its section of threads.wgsl, with the code before the first
+// marker in front of it.
+std::string threadsSource(const std::string& name){
+    const std::string all = kThreadsWgsl, mark = "//@pass " + name + "\n";
+    const size_t first = all.find("//@pass "), a = all.find(mark);
+    if (a == std::string::npos) return {};
+    const size_t b = all.find("//@pass ", a + mark.size());
+    return all.substr(0, first) + "\n" + all.substr(a, b == std::string::npos ? std::string::npos : b - a);
+}
 std::string passSource(const std::string& name){
+    if (name.rfind("threads_", 0) == 0) return threadsSource(name);
     const std::string all = kPassesWgsl, mark = "//@pass " + name + "\n";
     size_t a = all.find(mark);
     if (a == std::string::npos) return {};

@@ -126,6 +126,15 @@ swapchains, timestamp queries and more queues arrive behind the same handles
 when the renderer needs them, with Vulkan and Metal backends after the author
 sets platform priority ([ADR 0002](adr/0002-rhi.md)).
 
+### The web host
+
+On the web, `web/raw-gpu.mjs` is the same object model on `navigator.gpu`,
+written in JavaScript, with `web/frame-graph.mjs` following the graph rules
+below and tested against the C++ graph's golden output. It adds render
+pipelines, per-pass timestamps and canvas presentation, and runs creative
+modules such as Threads from the same WGSL the D3D12 build runs
+([ADR 0010](adr/0010-web-host.md)).
+
 ## The frame graph
 
 `raw/graph/frame_graph.hpp` runs every frame, on the GPU and on the CPU. Each

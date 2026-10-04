@@ -15,6 +15,7 @@
 #include "raw/tools/gpu_run.hpp"
 #include "raw/renderer/gpu.hpp"
 #include "raw/tools/receipt.hpp"
+#include "raw/tools/threads_cmd.hpp"
 #include <string>
 #include <vector>
 #include <cstdint>
@@ -58,6 +59,9 @@ static int emitOutputs(const FrameResult& o, const CliParams& p, Arena& arena){
 static const char* kUsage =
     "usage: raw_native_cli [outdir] [flags]\n"
     "       raw_native_cli verify <dir>   recheck a render's files against its certificate\n"
+    "       raw_native_cli threads [flags]  render the Threads module on the GPU backend\n"
+    "         (--world 0..14 --frames --width --height --particles --substeps --fps --persistence\n"
+    "          --exposure --spacing --levels --out); writes threads.ppm\n"
     "  --out <dir>                 output directory (default .)\n"
     "  --width <int> --height <int> frame size (default 256x256)\n"
     "  --eye x,y,z --target x,y,z --up x,y,z   camera\n"
@@ -87,6 +91,7 @@ static int infoFlags(int argc, char** argv){
 }
 int main(int argc, char** argv){
     if (int rc = infoFlags(argc, argv); rc >= 0) return rc;
+    if (argc >= 2 && std::strcmp(argv[1], "threads") == 0) return threadsCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "verify") == 0){
         if (argc != 3){ std::printf("usage: raw_native_cli verify <dir>\n"); return 2; }
         std::string report;

@@ -75,6 +75,14 @@ jobs:
           test "$rc" = 4
           grep -q '"verdict":"unverifiable"' gpu-none/gpu_certificate.json
           grep -q '"backend":"none"' gpu-none/gpu_certificate.json
+      - name: The web frame graph matches the C++ graph's golden output
+        run: node --test web/frame-graph.test.mjs
+      - name: Without a GPU backend, threads exits 4
+        shell: bash
+        run: |
+          if [ -x build/raw_native_cli ]; then cli=build/raw_native_cli; else cli=build/Release/raw_native_cli.exe; fi
+          set +e; "$cli" threads --out threads-none; rc=$?; set -e
+          test "$rc" = 4
       - name: The generated HLSL and pass layout match the WGSL
         shell: bash
         run: |
@@ -139,6 +147,14 @@ jobs:
             test "$rc" = 0 && grep -q '"verdict":"verified"' gpu-hw/gpu_certificate.json
             ! grep -q '"vendor":"microsoft"' gpu-hw/gpu_certificate.json
           fi
+      - name: Threads compiles to DXIL and answers without an adapter
+        # The Threads passes are compiled by DXC in the build step above. WARP
+        # did not finish a 160 x 90 Threads frame in ten minutes, so the run
+        # here only checks the no-adapter answer; hardware runs are in README.
+        shell: bash
+        run: |
+          set +e; build/Release/raw_native_cli.exe threads --out threads-hw --width 64 --height 36 --particles 1024 --frames 1; rc=$?; set -e
+          test "$rc" = 4 -o "$rc" = 0
       - name: The D3D12 code path on WARP (software, not a GPU) matches the CPU reference
         shell: bash
         env:
