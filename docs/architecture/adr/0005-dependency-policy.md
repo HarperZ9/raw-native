@@ -1,6 +1,6 @@
 # ADR 0005: Dependency policy for a consumer engine
 
-**Status:** Proposed. This is author decision A2. **Date:** 2026-10-04.
+**Status:** Accepted. This is author decision A2. Accepted by the author on 2026-10-04 ("approve all six engine decisions as proposed"). **Date:** 2026-10-04.
 
 ## Context
 
