@@ -1,0 +1,42 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>raw-native Worlds on the web host</title>
+<style>body{font:14px/1.5 system-ui,sans-serif;margin:16px;background:#111;color:#ddd}#c{width:100%;max-width:1280px;aspect-ratio:16/9;display:block;outline:none}pre{white-space:pre-wrap}</style>
+<canvas id="c" tabindex="0"></canvas>
+<pre id="log"></pre>
+<script type="module">
+// Query: ?world=eye&w=1920&h=1080&q=0.6&seconds=5&timer=1
+import { createHost } from "../web/raw-gpu.mjs";
+import { createWorlds } from "../web/worlds.mjs";
+import { bindControls } from "../web/camera.mjs";
+const q = new URLSearchParams(location.search);
+const log = (s) => { document.getElementById("log").textContent += s + "\n"; };
+window.worldsResult = null;
+try {
+  const canvas = document.getElementById("c");
+  const host = await createHost({ canvas });
+  const wgsl = await (await fetch("../src/renderer/gpu/shaders/worlds.wgsl")).text();
+  const t0 = performance.now();
+  const w = await createWorlds(host, { wgsl, world: q.get("world") || "eye" });
+  const readyMs = performance.now() - t0;
+  w.resize(+(q.get("w") || 1920), +(q.get("h") || 1080));
+  w.set({ quality: +(q.get("q") || 0.6) });
+  const ctl = bindControls(canvas, w.cam, { onPick: (x, y) => w.focusAt(x, y) });
+  window.w = w; window.host = host;
+  const seconds = +(q.get("seconds") || 5), times = [];
+  let last = performance.now(); const start = last;
+  const tick = q.get("timer") ? (f) => host.done().then(() => f(performance.now())) : requestAnimationFrame;
+  await new Promise((done) => tick(function loop(now) {
+    const dt = (now - last) / 1000; times.push(now - last); last = now;
+    ctl.keys(dt);
+    w.frame(1 / 60, { tour: ctl.idle() > 4000 });
+    if (now - start < seconds * 1000 || q.get("forever")) tick(loop); else done();
+  }));
+  await host.done();
+  const s = times.slice(5).sort((a, b) => a - b);
+  const out = { adapter: host.info, world: w.opts.world, render: w.renderSize(), gpu_ms: host.timings(), pipeline_ready_ms: Math.round(readyMs),
+    frame_interval_ms: { median: s[s.length >> 1], p95: s[Math.floor(s.length * 0.95)] }, frames: times.length, lost: host.lost };
+  log(JSON.stringify(out, null, 1));
+  window.worldsResult = out;
+} catch (e) { log("ERROR " + (e.stack || e)); window.worldsResult = { error: String(e) }; }
+</script>
