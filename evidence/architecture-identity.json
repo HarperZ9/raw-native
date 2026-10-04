@@ -1,0 +1,82 @@
+{
+ "what": "Before/after identity of every file the renderer writes, for the layered-architecture change. Before: main at 13c1ba5 (0.5.1). After: branch arch/engine-architecture-20261004. Hashes from scripts/identity_matrix.py; only the GPU certificate's timing_ms and the gpu_receipt fields derived from it are normalized.",
+ "date": "2026-10-04",
+ "comparisons": [
+  {
+   "build": "Windows, MSVC, default build (no GPU backend)",
+   "cases": 11,
+   "files": 119,
+   "identical": true,
+   "before_manifest_sha256": "caf10c69f93275fcd8be76ee2d80657bfd7799ec4fac7ab8171d20829ca28856",
+   "after_manifest_sha256": "caf10c69f93275fcd8be76ee2d80657bfd7799ec4fac7ab8171d20829ca28856"
+  },
+  {
+   "build": "Linux, GCC 13.3 (WSL Ubuntu 24.04), default build",
+   "cases": 11,
+   "files": 119,
+   "identical": true,
+   "before_manifest_sha256": "7f2fd3abfaeb232a82fe952f42d56f0d228909cd9da05b22135eb36b9cb1289d",
+   "after_manifest_sha256": "7f2fd3abfaeb232a82fe952f42d56f0d228909cd9da05b22135eb36b9cb1289d"
+  },
+  {
+   "build": "After: Windows MSVC against Linux GCC",
+   "left_out": [
+    "arena_certificate.json"
+   ],
+   "cases": 11,
+   "files": 109,
+   "identical": true,
+   "before_manifest_sha256": "caf10c69f93275fcd8be76ee2d80657bfd7799ec4fac7ab8171d20829ca28856",
+   "after_manifest_sha256": "7f2fd3abfaeb232a82fe952f42d56f0d228909cd9da05b22135eb36b9cb1289d"
+  },
+  {
+   "build": "D3D12 on WARP (software), debug layer on after",
+   "adapter": "Microsoft Basic Render Driver, 10.0.26100.9568",
+   "cases": 10,
+   "files": 234,
+   "identical": true,
+   "before_manifest_sha256": "367501d9dbedcd8140fa776e3c67e36c152bdf5e76d14949f6a8960b12a3a197",
+   "after_manifest_sha256": "367501d9dbedcd8140fa776e3c67e36c152bdf5e76d14949f6a8960b12a3a197"
+  },
+  {
+   "build": "WebGPU on SwiftShader (Chrome 154, software)",
+   "cases": 10,
+   "files": 234,
+   "identical": true,
+   "before_manifest_sha256": "4e70430658a531e2709779b020df0f4687354236853cfb6d449e5cd390edb7f9",
+   "after_manifest_sha256": "6f6e625eee885629ba53cea6952a6a99ffcc4842f66fd2345cf03077ac75589b"
+  },
+  {
+   "build": "D3D12 on RTX 4090",
+   "adapter": "NVIDIA GeForce RTX 4090, 0x2684, driver 32.0.16.1088",
+   "cases": 10,
+   "files": 234,
+   "identical": true,
+   "before_manifest_sha256": "69aa77a68c804971a40f85efd23a16ad11190f10747d0916c37eed34c0b718ab",
+   "after_manifest_sha256": "69aa77a68c804971a40f85efd23a16ad11190f10747d0916c37eed34c0b718ab"
+  },
+  {
+   "build": "WebGPU on RTX 4090 (Chrome 154, ANGLE D3D11 flag, Dawn picks its backend)",
+   "adapter": "nvidia lovelace",
+   "cases": 10,
+   "files": 234,
+   "identical": true,
+   "before_manifest_sha256": "5632c1e246db2269604955a8d15cac5213ddbdb0c0c0da09ef6af72410223deb",
+   "after_manifest_sha256": "ae06df36a9e6421a4650ade9eb3d4396fdd184f5e14fb9cb63caec4533fc10de"
+  }
+ ],
+ "verdicts_after": {
+  "d3d12_warp": "10 of 10 verified, identity MATCH",
+  "webgpu_swiftshader": "10 of 10 verified, identity DRIFT (same as before)",
+  "d3d12_rtx4090": "10 of 10 verified; identity MATCH 7, DRIFT 3 (same bytes as before)",
+  "webgpu_rtx4090": "10 of 10 verified; identity MATCH 7, DRIFT 3 (same bytes as before)",
+  "d3d12_rtx4090_debug_layer": "4 quick cases, exit 0, no debug-layer errors",
+  "wasm_default_render": "12 of 12 files identical before and after, and equal to native"
+ },
+ "finding": "arena_certificate.json differs between MSVC and libstdc++ (55 vs 43 allocations for the default render). It did before this change too and was never in the cross-platform identity claim.",
+ "does_not_prove": [
+  "Identity on the cases in scripts/identity_matrix.py only; other parameters were not rendered.",
+  "GPU identity holds for the named adapters and drivers only.",
+  "The 4090 WebGPU run used whichever Dawn backend Chrome chose; it is not recorded beyond the adapter info."
+ ]
+}
