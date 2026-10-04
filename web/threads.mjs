@@ -61,7 +61,7 @@ class Threads {
     this.w = w; this.h = h;
     const hb = this.host;
     for (const b of [this.acc, this.pyrA, this.pyrB, this.frameBuf]) if (b) b.destroy();
-    this.acc = hb.buffer({ size: w * h * 16, label: "threads accumulator" });
+    this.acc = hb.buffer({ size: w * h * 16, usage: ["storage", "copy-dst"], label: "threads accumulator" });
     const lv = (n, l) => Math.max(1, n >> l);
     let a = 0, b = 0;
     for (let l = 1; l < 8; l++) { const n = lv(w, l) * lv(h, l) * 16; if (l % 2) a += n; else b += n; }
