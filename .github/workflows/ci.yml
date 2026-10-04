@@ -14,6 +14,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - name: The vendored superstack files match their pins
+        shell: bash
+        run: cd third_party/superstack && sha256sum -c SUPERSTACK.sha256
       - name: Configure
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
       - name: Build
@@ -27,6 +30,7 @@ jobs:
           if [ -x build/raw_native_cli ]; then cli=build/raw_native_cli; else cli=build/Release/raw_native_cli.exe; fi
           "$cli" --out out
           grep -q '"oracle":"raw-rt-ao-v1"' out/certificate.json
+          grep -q '"schema":"superstack.receipt/1"' out/receipt.json
           grep -q '"verdict":"verified"' out/arena_certificate.json
           sha256sum out/frame.ppm out/certificate.json
       - name: Recheck the certificate from its files
@@ -36,6 +40,17 @@ jobs:
           "$cli" verify out
           if command -v python3 >/dev/null && python3 --version >/dev/null 2>&1; then py=python3; else py=python; fi
           "$py" scripts/recheck.py out
+      - name: Keep the default render for the cross-platform identity check
+        uses: actions/upload-artifact@v4
+        with:
+          name: default-render-${{ matrix.os }}
+          path: |
+            out/certificate.json
+            out/receipt.json
+            out/channels.json
+            out/frame.ppm
+            out/ao_rt.pfm
+            out/ao_ss.pfm
       - name: The default build has no GPU backend and says so
         shell: bash
         run: |
@@ -103,6 +118,9 @@ jobs:
           grep -q '"description":"Microsoft Basic Render Driver"' gpu-warp/gpu_certificate.json
           build/Release/raw_native_cli.exe verify gpu-warp
           build/Release/raw_native_cli.exe verify gpu-warp/cpu
+          grep -q '"schema":"superstack.receipt/1"' gpu-warp/gpu_receipt.json
+          grep -q '"identity":"MATCH"' gpu-warp/gpu_certificate.json
+          cat gpu-warp/gpu_receipt.json
           cat gpu-warp/gpu_certificate.json
   wasm:
     runs-on: ubuntu-24.04
@@ -146,6 +164,48 @@ jobs:
         run: |
           source "$RUNNER_TEMP/emsdk/emsdk_env.sh"
           build/raw_native_cli --out native >/dev/null
-          node wasm/run-node.mjs build-wasm/raw-native.mjs wasm-out >/dev/null
+          node wasm/run-node.mjs build-wasm/raw-native.mjs wasm-out | tee wasm-run.txt >/dev/null
+          grep -q '^receipt: not written; superstack.hpp v0.1.0 does not compile' wasm-run.txt
           python3 scripts/recheck.py wasm-out
           python3 scripts/compare_renders.py native wasm-out
+      - name: Keep the wasm default render for the cross-platform identity check
+        uses: actions/upload-artifact@v4
+        with:
+          name: default-render-wasm
+          path: |
+            wasm-out/certificate.json
+            wasm-out/receipt.json
+            wasm-out/channels.json
+            wasm-out/frame.ppm
+            wasm-out/ao_rt.pfm
+            wasm-out/ao_ss.pfm
+  identity:
+    # The default render's certificate, receipt and pixels must be the same
+    # bytes from MSVC on Windows, GCC on Linux and the WebAssembly build.
+    needs: [build-test, wasm]
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: default-render-*
+      - name: Byte-identical across Windows, Linux and wasm
+        run: |
+          set -e
+          for f in certificate.json channels.json frame.ppm ao_rt.pfm ao_ss.pfm; do
+            a=$(sha256sum "default-render-windows-latest/$f" | cut -d' ' -f1)
+            b=$(sha256sum "default-render-ubuntu-24.04/$f" | cut -d' ' -f1)
+            c=$(sha256sum "default-render-wasm/$f" | cut -d' ' -f1)
+            echo "$f windows $a linux $b wasm $c"
+            test "$a" = "$b" && test "$b" = "$c"
+          done
+          # The receipt: identical from MSVC and GCC. superstack.hpp v0.1.0 does
+          # not compile with Emscripten's libc++, so the wasm build writes none
+          # and must say so; when a fixed header is vendored this check fails
+          # and the wasm receipt joins the comparison above.
+          a=$(sha256sum default-render-windows-latest/receipt.json | cut -d' ' -f1)
+          b=$(sha256sum default-render-ubuntu-24.04/receipt.json | cut -d' ' -f1)
+          echo "receipt.json windows $a linux $b wasm none"
+          test "$a" = "$b"
+          test ! -e default-render-wasm/receipt.json
+          grep -q '"scene_sha256":"84aa884f71fc47bf3fcc0a35eb795ac59cbf679f5f398263a27fc7dcca835b36"' default-render-ubuntu-24.04/receipt.json
+          grep -q '"frame.rgb8":"0282ef9cc07a0012da9da3217c164f44d00a3e9f7704ff719770e832c9ca6d44"' default-render-ubuntu-24.04/receipt.json

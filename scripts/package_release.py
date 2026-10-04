@@ -16,7 +16,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 EPOCH = (1980, 1, 1, 0, 0, 0)
-TEXT = (".md", ".mjs", "LICENSE")
+TEXT = (".md", ".mjs", ".txt", "LICENSE")
 
 
 def read(src):
@@ -60,7 +60,9 @@ def main():
     a = ap.parse_args()
     v, dist = a.version, Path(a.dist)
     dist.mkdir(parents=True, exist_ok=True)
-    docs = [("LICENSE", ROOT / "LICENSE", 0o644), ("README.md", ROOT / "README.md", 0o644)]
+    # The CLI links superstack.hpp (MIT); its notice travels with every binary.
+    docs = [("LICENSE", ROOT / "LICENSE", 0o644), ("README.md", ROOT / "README.md", 0o644),
+            ("LICENSE-superstack.txt", ROOT / "third_party" / "superstack" / "LICENSE.txt", 0o644)]
     wasm_dir = Path(a.wasm)
     wasm_files = [("raw-native.mjs", wasm_dir / "raw-native.mjs", 0o644),
                   ("raw-native.wasm", wasm_dir / "raw-native.wasm", 0o644),

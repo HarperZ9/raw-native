@@ -16,6 +16,21 @@ void writePPM(const Buffer<Vec3>& img, const std::string& path){
         unsigned char rgb[3] = {to8(c.x), to8(c.y), to8(c.z)};
         f.write((char*)rgb, 3); }
 }
+std::string rgb8Bytes(const Buffer<Vec3>& img){
+    std::string b; b.reserve((size_t)img.w * img.h * 3);
+    for (int y=0;y<img.h;++y) for (int x=0;x<img.w;++x){
+        const Vec3& c = img.at(x,y);
+        b += (char)to8(c.x); b += (char)to8(c.y); b += (char)to8(c.z); }
+    return b;
+}
+std::string f32Bytes(const Buffer<float>& img){
+    std::string b((size_t)img.w * img.h * 4, '\0');
+    for (size_t i = 0; i < img.px.size(); ++i){
+        uint32_t u; std::memcpy(&u, &img.px[i], 4);   // little-endian whatever the host order
+        for (int k = 0; k < 4; ++k) b[4*i + k] = (char)((u >> (8*k)) & 0xFF);
+    }
+    return b;
+}
 void writePGM(const Buffer<float>& img, const std::string& path){
     std::ofstream f(path, std::ios::binary);
     f << "P5\n" << img.w << " " << img.h << "\n255\n";

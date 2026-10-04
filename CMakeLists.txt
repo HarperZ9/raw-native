@@ -15,6 +15,24 @@ target_include_directories(raw_native PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
     "$<INSTALL_INTERFACE:include>")
 target_compile_features(raw_native PUBLIC cxx_std_23)
+# superstack.hpp (MIT, vendored and pinned in third_party/superstack) builds the
+# receipt; it is private to the library and not installed.
+target_include_directories(raw_native PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third_party/superstack")
+# Receipts need the header to compile with this standard library. superstack
+# v0.1.0 builds with libstdc++ and MSVC but not with libc++ (Emscripten, Apple
+# clang): std::variant instantiates std::vector<Member> while Member is still
+# incomplete. The vendored copy must not be patched, so a toolchain where the
+# header fails builds without receipts and says so at configure and run time.
+include(CheckCXXSourceCompiles)
+set(CMAKE_REQUIRED_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/third_party/superstack")
+check_cxx_source_compiles("#include \"superstack.hpp\"
+int main(){ return superstack::canonical(superstack::Value(1)).size() == 1 ? 0 : 1; }" RAW_NATIVE_SUPERSTACK_COMPILES)
+unset(CMAKE_REQUIRED_INCLUDES)
+if(RAW_NATIVE_SUPERSTACK_COMPILES)
+    target_compile_definitions(raw_native PRIVATE RAW_NATIVE_SUPERSTACK=1)
+else()
+    message(WARNING "superstack.hpp does not compile with this standard library; receipt.json and gpu_receipt.json will not be written")
+endif()
 # Strip the build machine's source path from anything the compiler embeds, so
 # two checkouts in different directories produce the same binaries.
 target_compile_options(raw_native PUBLIC
@@ -32,11 +50,26 @@ if(RAW_NATIVE_BUILD_TESTS)
     file(GLOB TEST_SRCS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_*.cpp")
     foreach(t ${TEST_SRCS})
         get_filename_component(name ${t} NAME_WE)
+        if(name STREQUAL "test_receipt" AND NOT RAW_NATIVE_SUPERSTACK_COMPILES)
+            continue()
+        endif()
         add_executable(${name} ${t} src/gpu/gpu_none.cpp)
         target_link_libraries(${name} PRIVATE raw_native)
-        target_include_directories(${name} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/tests")
+        target_include_directories(${name} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/tests"
+            "${CMAKE_CURRENT_SOURCE_DIR}/third_party/superstack")
         add_test(NAME ${name} COMMAND ${name})
     endforeach()
+    # The superstack contract's own vectors, run against the vendored header on
+    # this compiler. Fails when the header or a vector file no longer matches.
+    if(RAW_NATIVE_SUPERSTACK_COMPILES)
+    add_executable(superstack_vectors third_party/superstack/tests/run_vectors.cpp)
+    target_include_directories(superstack_vectors PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third_party/superstack")
+    target_compile_features(superstack_vectors PRIVATE cxx_std_23)
+    if(MSVC)
+        target_compile_options(superstack_vectors PRIVATE /utf-8 /EHsc)
+    endif()
+    add_test(NAME superstack_vectors COMMAND superstack_vectors "${CMAKE_CURRENT_SOURCE_DIR}/third_party/superstack")
+    endif()
 endif()
 
 add_executable(raw_native_cli app/main.cpp)

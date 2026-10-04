@@ -26,6 +26,11 @@ void writePFM(const Buffer<Vec3>& img, const std::string& path);
 void writePFM1(const Buffer<float>& img, const std::string& path);
 // Coverage mask as 8-bit PGM: 255 where a surface covers the pixel, 0 elsewhere.
 void writeMaskPGM(const Buffer<uint8_t>& mask, const std::string& path);
+// Canonical media bytes (superstack section 2.3), rows top-down, no header:
+// the frame as RGB8 exactly as frame.ppm stores it, and a float buffer as
+// little-endian float32.
+std::string rgb8Bytes(const Buffer<Vec3>& img);
+std::string f32Bytes(const Buffer<float>& img);
 // Readers for the two formats above. They accept only what the writers emit
 // and return false on any other header, size or truncation.
 bool readPFM1(const std::string& path, Buffer<float>& out);

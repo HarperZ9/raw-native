@@ -2,6 +2,8 @@
 #include "raw/image.hpp"
 #include "raw/reconcile.hpp"
 #include "raw/sha256.hpp"
+#include "raw/receipt.hpp"
+#include <filesystem>
 #include <fstream>
 #include <iterator>
 #include <cstdlib>
@@ -100,6 +102,10 @@ int verifyDir(const std::string& dir, std::string& report){
     } else {
         t.check(verdict == "unverifiable", "verdict without reference", verdict);
     }
+    // From 0.5.0 a superstack receipt sits beside the certificate; older
+    // directories have none, which is reported and is not a mismatch.
+    if (std::filesystem::exists(dir + "/receipt.json")) t.mismatches += checkReceiptDir(dir, verdict, report);
+    else report += "ABSENT   receipt.json (written from 0.5.0)\n";
     report += t.mismatches == 0 ? "verify: all checks match\n"
                                 : "verify: " + std::to_string(t.mismatches) + " mismatch(es)\n";
     return t.mismatches == 0 ? 0 : 3;
