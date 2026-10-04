@@ -60,7 +60,7 @@ def main():
     a = ap.parse_args()
     v, dist = a.version, Path(a.dist)
     dist.mkdir(parents=True, exist_ok=True)
-    # The CLI links superstack.hpp (MIT); its notice travels with every binary.
+    # The CLI links superstack.hpp (FSL-1.1-MIT); its notice travels with every binary.
     docs = [("LICENSE", ROOT / "LICENSE", 0o644), ("README.md", ROOT / "README.md", 0o644),
             ("LICENSE-superstack.txt", ROOT / "third_party" / "superstack" / "LICENSE.txt", 0o644)]
     wasm_dir = Path(a.wasm)

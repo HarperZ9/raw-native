@@ -1,6 +1,6 @@
 #pragma once
 // superstack.receipt/1: the shared receipt of the superstack contract
-// (third_party/superstack, MIT), written beside raw-cert/2. raw-cert/2 is
+// (third_party/superstack, FSL-1.1-MIT), written beside raw-cert/2. raw-cert/2 is
 // unchanged; the receipt restates the same check in the contract's form:
 // canonical JSON v2, a seal over every field, and two verdicts reported
 // separately: identity (MATCH when the bytes equal the reference's, DRIFT

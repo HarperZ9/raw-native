@@ -17,7 +17,8 @@ static CliParams params(int w, int h, bool rt){
 static std::string tol(const ss::Value& r, const char* key){ return r.at("reconcile").at("tolerance").at(key).str(); }
 int main(){
     // The default scene is the contract's reference scene, byte for byte
-    // (superstack v0.1.0 examples/pixels/scene.json, canonical SHA-256).
+    // (superstack examples/pixels/scene.json, canonical SHA-256; the same in
+    // v0.1.0 and v0.2.0).
     const CliParams def = params(256, 256, true);
     CHECK(sha256Hex(sceneJson(def)) == "84aa884f71fc47bf3fcc0a35eb795ac59cbf679f5f398263a27fc7dcca835b36");
     CHECK(sceneJson(params(256, 256, false)) != sceneJson(def));   // a different estimator is a different scene

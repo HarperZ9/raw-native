@@ -2,6 +2,18 @@
 # the Emscripten toolchain file is in use. Every flag that changes the output
 # is pinned here so the same emsdk version produces the same bytes.
 #
+# The CMake version is pinned too. The released wasm files are built with
+# CMake 4.2.0 and emsdk 6.0.11. CMake's Emscripten platform files changed in
+# 4.2, which adds -fPIC to every compile, so a build configured with another
+# CMake (3.29, for example) gives different wasm bytes from the same source.
+# Another version still builds and still writes the same output files; it
+# warns here because its wasm will not match the release's SHA256SUMS.
+set(RAW_NATIVE_WASM_CMAKE_VERSION "4.2.0")
+if(NOT CMAKE_VERSION VERSION_EQUAL RAW_NATIVE_WASM_CMAKE_VERSION)
+    message(WARNING "The release wasm is built with CMake ${RAW_NATIVE_WASM_CMAKE_VERSION}; "
+        "this is CMake ${CMAKE_VERSION}, so raw-native.wasm will not match the released bytes")
+endif()
+#
 # Variants:
 #   RAW_NATIVE_WASM_SIMD=ON     compile with 128-bit wasm SIMD (-msimd128)
 #   RAW_NATIVE_WASM_THREADS=ON  pthreads build; needs SharedArrayBuffer, which a

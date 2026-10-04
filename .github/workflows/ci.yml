@@ -126,8 +126,24 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       EMSDK_VERSION: 6.0.11
+      # The release wasm is built with CMake 4.2.0 (cmake/wasm.cmake). 4.2
+      # adds -fPIC to Emscripten compiles, so another CMake changes the bytes.
+      CMAKE_VERSION_PIN: 4.2.0
+      CMAKE_SHA256: bbcebd4c433eab3af03a8c80bb5d84e8dfc3ff8a4ab9d01547b21240c23f7c2c
     steps:
       - uses: actions/checkout@v4
+      - name: Install the pinned CMake
+        run: |
+          cd "$RUNNER_TEMP"
+          f="cmake-$CMAKE_VERSION_PIN-linux-x86_64"
+          curl -fsSLO "https://github.com/Kitware/CMake/releases/download/v$CMAKE_VERSION_PIN/$f.tar.gz"
+          echo "$CMAKE_SHA256  $f.tar.gz" | sha256sum -c -
+          tar -xzf "$f.tar.gz"
+          echo "$RUNNER_TEMP/$f/bin" >> "$GITHUB_PATH"
+      - name: CMake is the pinned version
+        run: |
+          cmake --version
+          test "$(cmake --version | head -n1)" = "cmake version $CMAKE_VERSION_PIN"
       - name: Install emsdk
         run: |
           git clone https://github.com/emscripten-core/emsdk.git "$RUNNER_TEMP/emsdk"
@@ -141,7 +157,17 @@ jobs:
           cmake --build build
           cmake --preset wasm
           cmake --build --preset wasm
+          grep -qx 'CMAKE_CACHE_MAJOR_VERSION:INTERNAL=4' build-wasm/CMakeCache.txt
+          grep -qx 'CMAKE_CACHE_MINOR_VERSION:INTERNAL=2' build-wasm/CMakeCache.txt
+          grep -qx 'CMAKE_CACHE_PATCH_VERSION:INTERNAL=0' build-wasm/CMakeCache.txt
+          grep -qx 'RAW_NATIVE_SUPERSTACK_COMPILES:INTERNAL=1' build-wasm/CMakeCache.txt
           sha256sum build-wasm/raw-native.wasm build-wasm/raw-native.mjs
+      - name: The superstack vectors pass under Emscripten
+        run: |
+          source "$RUNNER_TEMP/emsdk/emsdk_env.sh"
+          mkdir -p build-vectors
+          em++ -std=c++23 -O1 -fexceptions -sNODERAWFS=1 -sALLOW_MEMORY_GROWTH=1             -I third_party/superstack third_party/superstack/tests/run_vectors.cpp             -o build-vectors/run_vectors.js
+          node build-vectors/run_vectors.js third_party/superstack
       - name: Keep the wasm build for comparison
         uses: actions/upload-artifact@v4
         with:
@@ -165,7 +191,9 @@ jobs:
           source "$RUNNER_TEMP/emsdk/emsdk_env.sh"
           build/raw_native_cli --out native >/dev/null
           node wasm/run-node.mjs build-wasm/raw-native.mjs wasm-out | tee wasm-run.txt >/dev/null
-          grep -q '^receipt: not written; superstack.hpp v0.1.0 does not compile' wasm-run.txt
+          ! grep -q '^receipt: not written' wasm-run.txt
+          grep -q '"schema":"superstack.receipt/1"' wasm-out/receipt.json
+          build/raw_native_cli verify wasm-out
           python3 scripts/recheck.py wasm-out
           python3 scripts/compare_renders.py native wasm-out
       - name: Keep the wasm default render for the cross-platform identity check
@@ -180,8 +208,8 @@ jobs:
             wasm-out/ao_rt.pfm
             wasm-out/ao_ss.pfm
   identity:
-    # The default render's certificate, receipt and pixels must be the same
-    # bytes from MSVC on Windows, GCC on Linux and the WebAssembly build.
+    # The default render's certificate, superstack receipt and pixels must be
+    # the same bytes from MSVC on Windows, GCC on Linux and the WebAssembly build.
     needs: [build-test, wasm]
     runs-on: ubuntu-24.04
     steps:
@@ -191,21 +219,32 @@ jobs:
       - name: Byte-identical across Windows, Linux and wasm
         run: |
           set -e
-          for f in certificate.json channels.json frame.ppm ao_rt.pfm ao_ss.pfm; do
+          for f in certificate.json receipt.json channels.json frame.ppm ao_rt.pfm ao_ss.pfm; do
             a=$(sha256sum "default-render-windows-latest/$f" | cut -d' ' -f1)
             b=$(sha256sum "default-render-ubuntu-24.04/$f" | cut -d' ' -f1)
             c=$(sha256sum "default-render-wasm/$f" | cut -d' ' -f1)
             echo "$f windows $a linux $b wasm $c"
             test "$a" = "$b" && test "$b" = "$c"
           done
-          # The receipt: identical from MSVC and GCC. superstack.hpp v0.1.0 does
-          # not compile with Emscripten's libc++, so the wasm build writes none
-          # and must say so; when a fixed header is vendored this check fails
-          # and the wasm receipt joins the comparison above.
-          a=$(sha256sum default-render-windows-latest/receipt.json | cut -d' ' -f1)
-          b=$(sha256sum default-render-ubuntu-24.04/receipt.json | cut -d' ' -f1)
-          echo "receipt.json windows $a linux $b wasm none"
-          test "$a" = "$b"
-          test ! -e default-render-wasm/receipt.json
+          # receipt.json is in the loop above: from superstack v0.2.0 the wasm
+          # build writes one too, and it must be the native receipt's bytes.
           grep -q '"scene_sha256":"84aa884f71fc47bf3fcc0a35eb795ac59cbf679f5f398263a27fc7dcca835b36"' default-render-ubuntu-24.04/receipt.json
           grep -q '"frame.rgb8":"0282ef9cc07a0012da9da3217c164f44d00a3e9f7704ff719770e832c9ca6d44"' default-render-ubuntu-24.04/receipt.json
+      - name: Pixels, AO and certificate unchanged from v0.5.0
+        # The hashes the v0.5.0 release wrote for the default render. The
+        # certificate is compared with its renderer version string removed,
+        # because that string is the one field a version bump changes.
+        run: |
+          set -e
+          d=default-render-ubuntu-24.04
+          cat > v050.sha256 <<'SUMS'
+          e276f24f4a2a23e7b43b61d2e45147446468bf8d99a75809675f2cea91edb06d  frame.ppm
+          3bd5cce0f7424363c04d17b7bf644b82a9f51338297b4666329d398e9fb886ee  ao_rt.pfm
+          66c99812f843fe487eabb77e397fbe05e08864f981fd0b1179eba6fb78f86fb3  ao_ss.pfm
+          33aaaabdbcf4e819f23e720584544ed21cb94d525cc2bce5d6a6faac12117eb3  channels.json
+          SUMS
+          sed 's/^ *//' v050.sha256 > "$d/v050.sha256"
+          (cd "$d" && sha256sum -c v050.sha256)
+          c=$(sed 's/"renderer":"raw-native [^"]*"/"renderer":"raw-native"/' "$d/certificate.json" | sha256sum | cut -d' ' -f1)
+          echo "certificate.json without its version string: $c"
+          test "$c" = fd0f81417e7d6ce807e409292fe5b5a40a581e56ba9d80156420b77d6f87e5a3
