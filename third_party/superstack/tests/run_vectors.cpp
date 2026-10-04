@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: FSL-1.1-MIT
 // Run every vector in vectors/ against superstack.hpp.
 // Build: g++ -std=c++23 -O1 -I<dir with superstack.hpp> tests/run_vectors.cpp -o run_vectors
 // Usage: run_vectors <repo root> [--summary OUT.json]

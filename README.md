@@ -9,7 +9,7 @@ reference and writes the answer into a small JSON certificate. The verdict is
 not. You get the picture and the evidence for it in the same run.
 
 It is written in C++23 with no external dependencies, no GPU and no graphics
-API. The one file it did not write itself is `superstack.hpp`, the MIT header of
+API. The one file it did not write itself is `superstack.hpp`, the FSL-1.1-MIT header of
 the shared receipt contract, vendored and pinned by hash. Every pixel comes from the standard library and the engine's own code, so
 it builds the same way on any C++23 toolchain. The same code also runs in a web
 browser as WebAssembly and writes byte-identical files. Two optional builds
@@ -55,7 +55,9 @@ raw_native_cli verify ./out
 ```
 
 Or build from source. You need CMake 3.24 or newer and a C++23 compiler
-(tested with MSVC 19.50 and GCC 13.3).
+(tested with MSVC 19.50 and GCC 13.3). The WebAssembly build is pinned to
+CMake 4.2.0 and emsdk 6.0.11, so its bytes match the release; see
+[Run it in a browser](#run-it-in-a-browser).
 
 ```sh
 cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
@@ -116,10 +118,12 @@ the tolerance verdict of `gpu_certificate.json`, which now reports the same
 subject and reference hashes recomputed from the float files, and the
 tolerance verdict against the certificate's.
 
-The WebAssembly build writes no receipt yet. superstack 0.1.0's header does not
-compile with libc++, the standard library Emscripten uses, so that build says
-`receipt: not written` and verify reports the file as absent. The certificate
-and image files of the wasm build are still byte-identical to native.
+The WebAssembly build writes the same receipt. From 0.5.1, raw-native vendors
+superstack 0.2.0, whose header compiles with libc++, the standard library
+Emscripten uses. The wasm build's `receipt.json` is byte-identical to the
+receipts from MSVC on Windows and GCC on Linux, and `raw_native_cli verify`
+passes on it. In 0.5.0 the wasm build wrote no receipt, because superstack
+0.1.0's header did not compile with libc++.
 
 ## Check a certificate without trusting the renderer
 
@@ -155,8 +159,8 @@ run.certificate;  // the same raw-cert/2 certificate the native CLI writes
 run.frame;        // { width, height, rgba }
 ```
 
-To build it yourself, install [emsdk](https://github.com/emscripten-core/emsdk),
-activate it in your shell, and run:
+To build it yourself, install [emsdk](https://github.com/emscripten-core/emsdk)
+6.0.11 and CMake 4.2.0, activate emsdk in your shell, and run:
 
 ```sh
 cmake --preset wasm
@@ -165,7 +169,16 @@ node wasm/run-node.mjs build-wasm/raw-native.mjs ./out-wasm
 python scripts/compare_renders.py ./out ./out-wasm
 ```
 
-With emsdk 6.0.11 on one host system the build is byte-for-byte repeatable:
+The release's wasm files are built with emsdk 6.0.11 and CMake 4.2.0. Both
+versions are pinned, because both change the wasm bytes. CMake 4.2 adds
+`-fPIC` to every Emscripten compile, so a build configured with CMake 3.29
+differs by bytes from one configured with 4.2.0, and still writes the same
+output files. With another CMake version, `cmake --preset wasm` prints a
+warning that the wasm will not match the released bytes. CI downloads
+CMake 4.2.0, checks its SHA-256 and checks that the wasm build was configured
+with it.
+
+With these versions on one host system the build is byte-for-byte repeatable:
 two checkouts in different directories produce the same `raw-native.wasm`. A
 build on a Linux host gives different wasm bytes than a build on a Windows host,
 and both write the same output files; CI checks the Linux build against the
@@ -341,8 +354,10 @@ were measured on 4 October 2026 with NVIDIA driver 610.88 (DXGI reports
 - **Reproducible output:** the default render's `frame.ppm`,
   `certificate.json`, `channels.json` and both AO float files are
   byte-identical across MSVC, GCC 13.3 on Linux and the WebAssembly build, and
-  `receipt.json` is byte-identical across MSVC and GCC. CI compares the three
-  builds' files on every push. `frame.ppm` is also unchanged from 0.2.0.
+  from 0.5.1 so is `receipt.json`. CI compares the three builds' files on
+  every push. It also checks the pixels, both AO files, `channels.json` and the
+  certificate (apart from its version string) against the hashes 0.5.0 wrote.
+  `frame.ppm` is also unchanged from 0.2.0.
 - **WebAssembly matches native exactly.** For all five views below at
   512 x 512, the wasm build's eight output files hash the same as the native
   build's, so RMSE, maximum error, pixel count and verdict agree with zero
@@ -444,7 +459,7 @@ evidence/  raw timing runs, the wasm-versus-native comparison and the GPU
            certificates (D3D12, WARP and WebGPU)
 docs/      example images and certificates
 third_party/superstack/  the vendored superstack header, its vectors and
-           their pins (MIT; see NOTICE.md there)
+           their pins (FSL-1.1-MIT; see NOTICE.md there)
 ```
 
 ## License
@@ -457,7 +472,10 @@ license two years after its release.
 
 Version 0.2.0 and earlier remain under the MIT license, as released.
 
-The files in `third_party/superstack/` are under the MIT license, carried in
-each file; the FSL does not apply to them.
+The files in `third_party/superstack/` are superstack 0.2.0, also under
+FSL-1.1-MIT, with the notice carried in each file and in
+`third_party/superstack/LICENSE.txt`. The public domain algorithms the header
+contains keep their own terms. raw-native 0.5.0 vendored superstack 0.1.0,
+which remains under the MIT license.
 
 Copyright 2026 Zain Dana Harper.

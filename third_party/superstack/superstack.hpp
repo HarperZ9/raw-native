@@ -1,5 +1,26 @@
-// SPDX-License-Identifier: MIT
-// Copyright (c) 2026 Zain Dana Harper
+// SPDX-License-Identifier: FSL-1.1-MIT
+// Copyright 2026 Zain Dana Harper
+//
+// Licensed under the Functional Source License, Version 1.1, MIT Future
+// License (FSL-1.1-MIT). The full text is LICENSE in the superstack
+// repository and https://fsl.software/FSL-1.1-MIT.template.md. Each release
+// becomes available under the MIT licence below on the second anniversary of
+// the date it was made available. From v0.2.0 this file is FSL-1.1-MIT;
+// releases up to and including v0.1.0 remain under the MIT licence.
+//
+// Algorithms by others, each under its own terms, which the FSL does not change:
+//   mulberry32: Tommy Ettinger, 2017, CC0 1.0 public domain dedication.
+//   xmur3: bryc (github.com/bryc/code), public domain, MIT fallback,
+//     Copyright (c) 2024 bryc.
+//   OKLab matrices: Bjorn Ottosson, 2020, public domain, MIT fallback.
+//   K-weighting constants for rates other than 48 kHz: as published in
+//     libebur128 (MIT); the 48 kHz table is ITU-R BS.1770-4's.
+// Sources and dates: docs/LICENSING.md in the superstack repository.
+//
+// MIT licence text. It applies to the parts above that use an MIT fallback,
+// and to this file once its FSL period ends:
+//
+// Copyright 2026 Zain Dana Harper
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -18,15 +39,6 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 // SOFTWARE.
-//
-// Algorithms by others, each under terms that allow this file's MIT licence:
-//   mulberry32: Tommy Ettinger, 2017, CC0 1.0 public domain dedication.
-//   xmur3: bryc (github.com/bryc/code), public domain, MIT fallback,
-//     Copyright (c) 2024 bryc.
-//   OKLab matrices: Bjorn Ottosson, 2020, public domain, MIT fallback.
-//   K-weighting constants for rates other than 48 kHz: as published in
-//     libebur128 (MIT); the 48 kHz table is ITU-R BS.1770-4's.
-// Sources and dates: docs/LICENSING.md in the superstack repository.
 // superstack contract v0, C++23 implementation. Header-only, standard library only.
 // Same rules as superstack.py and superstack.mjs; all three must pass every file in
 // vectors/. Bytes are std::vector<std::uint8_t>; JSON is superstack::Value.
@@ -55,7 +67,7 @@
 namespace superstack {
 
 inline constexpr std::string_view CONTRACT = "superstack/0";
-inline constexpr std::string_view VERSION = "0.1.0";
+inline constexpr std::string_view VERSION = "0.2.0";
 inline constexpr std::string_view RECEIPT_SCHEMA = "superstack.receipt/1";
 inline constexpr std::int64_t MAX_SAFE_INTEGER = 9007199254740991LL;
 using Bytes = std::vector<std::uint8_t>;
@@ -72,18 +84,22 @@ using Array = std::vector<Value>;
 using Object = std::vector<Member>;  // insertion order; canonical() sorts
 
 struct Value {
-  std::variant<std::nullptr_t, bool, std::int64_t, double, std::string, Array, Object> v{nullptr};
-  Value() = default;
-  Value(std::nullptr_t) {}
-  Value(bool b) : v(b) {}
-  Value(int i) : v(std::int64_t{i}) {}
-  Value(long i) : v(static_cast<std::int64_t>(i)) {}
-  Value(long long i) : v(static_cast<std::int64_t>(i)) {}
-  Value(unsigned u) : v(std::int64_t{u}) {}
-  Value(double d) : v(d) {}
-  Value(const char* s) : v(std::string(s)) {}
-  Value(std::string s) : v(std::move(s)) {}
-  Value(std::string_view s) : v(std::string(s)) {}
+  std::variant<std::nullptr_t, bool, std::int64_t, double, std::string, Array, Object> v;
+  // The constructors are declared here and defined after Member, and v has no
+  // default member initializer, so nothing builds the variant while Member is
+  // still incomplete. libc++ (Emscripten, Clang) rejects that; libstdc++ and
+  // MSVC accept it.
+  Value();
+  Value(std::nullptr_t);
+  Value(bool b);
+  Value(int i);
+  Value(long i);
+  Value(long long i);
+  Value(unsigned u);
+  Value(double d);
+  Value(const char* s);
+  Value(std::string s);
+  Value(std::string_view s);
   Value(Array a);
   Value(Object o);
 
@@ -114,6 +130,17 @@ struct Member {
   Value value;
 };
 
+inline Value::Value() : v(nullptr) {}
+inline Value::Value(std::nullptr_t) : v(nullptr) {}
+inline Value::Value(bool b) : v(b) {}
+inline Value::Value(int i) : v(std::int64_t{i}) {}
+inline Value::Value(long i) : v(static_cast<std::int64_t>(i)) {}
+inline Value::Value(long long i) : v(static_cast<std::int64_t>(i)) {}
+inline Value::Value(unsigned u) : v(std::int64_t{u}) {}
+inline Value::Value(double d) : v(d) {}
+inline Value::Value(const char* s) : v(std::string(s)) {}
+inline Value::Value(std::string s) : v(std::move(s)) {}
+inline Value::Value(std::string_view s) : v(std::string(s)) {}
 inline Value::Value(Array a) : v(std::move(a)) {}
 inline Value::Value(Object o) : v(std::move(o)) {}
 inline const Value* Value::find(std::string_view key) const {

@@ -15,14 +15,14 @@ target_include_directories(raw_native PUBLIC
     "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>"
     "$<INSTALL_INTERFACE:include>")
 target_compile_features(raw_native PUBLIC cxx_std_23)
-# superstack.hpp (MIT, vendored and pinned in third_party/superstack) builds the
-# receipt; it is private to the library and not installed.
+# superstack.hpp (FSL-1.1-MIT, vendored and pinned in third_party/superstack)
+# builds the receipt; it is private to the library and not installed.
 target_include_directories(raw_native PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/third_party/superstack")
 # Receipts need the header to compile with this standard library. superstack
-# v0.1.0 builds with libstdc++ and MSVC but not with libc++ (Emscripten, Apple
-# clang): std::variant instantiates std::vector<Member> while Member is still
-# incomplete. The vendored copy must not be patched, so a toolchain where the
-# header fails builds without receipts and says so at configure and run time.
+# v0.2.0 builds with libstdc++, MSVC and libc++ (Emscripten); v0.1.0 did not
+# build with libc++. The vendored copy must not be patched, so a toolchain where
+# the header fails builds without receipts and says so at configure and run
+# time. CI requires a receipt from every build it runs, the wasm build included.
 include(CheckCXXSourceCompiles)
 set(CMAKE_REQUIRED_INCLUDES "${CMAKE_CURRENT_SOURCE_DIR}/third_party/superstack")
 check_cxx_source_compiles("#include \"superstack.hpp\"
