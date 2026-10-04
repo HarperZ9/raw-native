@@ -1,0 +1,39 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>raw-native Threads on the web host</title>
+<style>body{font:14px/1.5 system-ui,sans-serif;margin:16px;background:#111;color:#ddd}canvas{width:100%;max-width:960px;display:block}pre{white-space:pre-wrap}</style>
+<canvas id="c"></canvas>
+<pre id="log"></pre>
+<script type="module">
+// Query: ?w=960&h=540&n=262144&world=5&seconds=6&sub=3
+import { createHost } from "../web/raw-gpu.mjs";
+import { createThreads, WORLDS } from "../web/threads.mjs";
+const q = new URLSearchParams(location.search);
+const log = (s) => { document.getElementById("log").textContent += s + "\n"; };
+window.threadsResult = null;
+try {
+  const host = await createHost({ canvas: document.getElementById("c") });
+  const wgsl = await (await fetch("../src/renderer/gpu/shaders/threads.wgsl")).text();
+  const th = await createThreads(host, { wgsl });
+  th.resize(+(q.get("w") || 960), +(q.get("h") || 540));
+  th.set({ particles: +(q.get("n") || 262144), world: +(q.get("world") || 0), substeps: +(q.get("sub") || 3) });
+  th.restart();
+  window.th = th; window.host = host;
+  const seconds = +(q.get("seconds") || 6);
+  const times = [];
+  let last = performance.now(); const t0 = last;
+  // A hidden page gets no animation frames; ?timer=1 paces by the GPU instead.
+  const tick = q.get("timer") ? (f) => host.done().then(() => f(performance.now())) : requestAnimationFrame;
+  await new Promise((done) => tick(function loop(now) {
+    times.push(now - last); last = now;
+    th.frame(1 / 60);
+    if (now - t0 < seconds * 1000) tick(loop); else done();
+  }));
+  await host.done();
+  const sorted = times.slice(5).sort((a, b) => a - b);
+  const out = { adapter: host.info, state: th.state(), gpu_ms: host.timings(),
+    frame_interval_ms: { median: sorted[sorted.length >> 1], p95: sorted[Math.floor(sorted.length * 0.95)] }, frames: times.length, lost: host.lost };
+  log(JSON.stringify(out, null, 1));
+  window.threadsResult = out;
+} catch (e) { log("ERROR " + (e.stack || e)); window.threadsResult = { error: String(e) }; }
+</script>

@@ -101,6 +101,21 @@ Exit code 0 means the frame rendered. Exit code 1 means the render tried to use
 more memory than its budget and stopped; it still writes a memory certificate,
 with the verdict `refuted`. Exit code 2 means bad input.
 
+## Threads and the web GPU host
+
+`web/raw-gpu.mjs` runs WGSL compute and render pipelines through a frame graph
+on WebGPU, with per-pass GPU timing, as one ES module with no dependency.
+`web/threads.mjs` drives Threads on it: particles that trace one of fifteen
+form fields and leave light, about 0.25 ms of GPU time per frame at 960 x 540
+with 262,144 particles on an RTX 4090. The same WGSL runs natively:
+
+```sh
+raw_native_cli threads --world 5 --frames 90 --width 960 --height 540 --out ./out   # D3D12 build
+```
+
+Threads is creative media: it has no CPU reference and writes no certificate.
+Open `bench/threads.html` through `python bench/serve.py` to time it in a browser.
+
 ## The superstack receipt
 
 From 0.5.0 every render also writes `receipt.json`, a `superstack.receipt/1`

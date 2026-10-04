@@ -6,6 +6,19 @@ the day the release was published on GitHub, in UTC.
 
 ## Unreleased
 
+- **Web GPU host.** `web/raw-gpu.mjs` runs WGSL compute and render pipelines,
+  the frame graph, per-pass GPU timing and canvas presentation on WebGPU, as
+  one dependency-free ES module. `web/frame-graph.mjs` follows the C++ graph's
+  rules and is tested against its golden output (ADR 0010).
+- **Threads.** A creative module: particles flow along the zero set of fifteen
+  form fields and leave trails tone-mapped by log density. One WGSL source runs
+  on the web host (`web/threads.mjs`) and on D3D12 (`raw_native_cli threads`).
+  It has no CPU reference and writes no certificate.
+- **Translator.** `scripts/wgsl_to_hlsl.py` translates `fract`, `mix` and
+  `atomicAdd` statements, refuses builtins it cannot map faithfully, and no
+  longer treats a comparison inside a constructor as a template bracket, which
+  had hidden the comma in `vec2f(a, select(b, c, k >= 2))`. The renderer's
+  generated HLSL is unchanged.
 - **Layered source tree.** Headers and sources move into layer directories
   (`math`, `core`, `cert`, `scene`, `rhi`, `graph`, `renderer`, `tools`), and
   `scripts/check_layers.py` checks in CI that each layer includes only the

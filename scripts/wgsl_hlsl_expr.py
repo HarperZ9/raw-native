@@ -15,7 +15,15 @@ RESERVED = {"line", "point", "triangle", "sample", "centroid", "linear", "precis
             "string", "pass", "technique", "compile", "snorm", "unorm", "static", "uniform",
             "row_major", "column_major", "groupshared", "nointerpolation", "export", "auto",
             "template", "this", "namespace", "class", "dword", "double", "min16float", "lineadj"}
-TYPE_RE = r"(?:array<\s*\w+\s*(?:,\s*\d+\s*)?>|ptr<\s*function\s*,\s*\w+\s*>|\w+)"
+TYPE_RE = r"(?:array<\s*atomic<\s*u32\s*>\s*>|array<\s*\w+\s*(?:,\s*\d+\s*)?>|ptr<\s*function\s*,\s*\w+\s*>|\w+)"
+# WGSL builtins whose HLSL spelling differs, and the ones the translator cannot
+# map faithfully (different semantics or no HLSL intrinsic): those are refused.
+RENAMED = {"fract": "frac", "mix": "lerp"}
+REFUSED = {"inverseSqrt", "fma", "modf", "frexp", "quantizeToF16", "bitcast", "arrayLength", "countOneBits",
+           "reverseBits", "extractBits", "insertBits", "pack4x8unorm", "unpack4x8unorm", "pack2x16float",
+           "unpack2x16float", "dpdx", "dpdy", "fwidth", "workgroupBarrier", "storageBarrier", "atomicLoad",
+           "atomicStore", "atomicSub", "atomicMax", "atomicMin", "atomicAnd", "atomicOr", "atomicXor",
+           "atomicExchange", "atomicCompareExchangeWeak", "textureSample", "textureLoad", "round"}
 
 
 class TranslateError(Exception):
@@ -25,6 +33,8 @@ class TranslateError(Exception):
 def htype(t):
     """A WGSL type as (HLSL element type, array suffix)."""
     t = t.strip()
+    if re.fullmatch(r"atomic<\s*u32\s*>", t):
+        return "uint", ""
     m = re.fullmatch(r"array<\s*(\w+)\s*,\s*(\d+)\s*>", t)
     if m:
         return htype(m.group(1))[0], f"[{m.group(2)}]"
@@ -37,17 +47,25 @@ def htype(t):
 
 def split_args(s):
     """Split at top-level commas, respecting (), [] and <>."""
-    out, depth, cur = [], 0, ""
+    # "<" opens a bracket only after a template name (array<f32, 4>); anywhere
+    # else it is a comparison, and so is a ">" with no template open. Counting
+    # comparisons as brackets once hid the comma in vec2f(a, select(b, c, k >= 2)).
+    out, depth, angle, cur = [], 0, 0, ""
     for ch in s:
-        if ch in "([<":
+        if ch == "<" and re.search(r"\b(array|ptr|atomic|vec[234]|mat[234]x[234])\s*$", cur):
+            angle += 1
+        elif ch == ">" and angle > 0 and not cur.endswith("-"):
+            angle -= 1
+        elif ch in "([":
             depth += 1
-        elif ch in ")]>":
+        elif ch in ")]":
             depth -= 1
-        if ch == "," and depth == 0:
+        ch_top = depth == 0 and angle == 0
+        if ch == "," and ch_top:
             out.append(cur.strip())
             cur = ""
-        else:
-            cur += ch
+            continue
+        cur += ch
     if cur.strip():
         out.append(cur.strip())
     return out
@@ -112,6 +130,15 @@ def statement(code, ptr_params):
         const = "const " if m.group(1) == "let" else ""
         return f"{const}{t} {m.group(2)}{suffix} ="
     code = re.sub(r"\b(let|var)\s+(\w+)\s*:\s*(" + TYPE_RE + r")\s*=", decl, code)
+    bad = sorted(set(re.findall(r"\b(\w+)\s*\(", code)) & REFUSED)
+    if bad:
+        raise TranslateError(f"WGSL builtins with no faithful HLSL form: {bad} in {code.strip()!r}")
+    # atomicAdd(&a[i], v) as a statement: HLSL's InterlockedAdd takes the location itself.
+    code = re.sub(r"^(\s*)atomicAdd\(\s*&", r"\1InterlockedAdd(", code)
+    if "atomicAdd" in code:
+        raise TranslateError(f"atomicAdd is translated only as a statement: {code.strip()!r}")
+    for w, h in RENAMED.items():
+        code = re.sub(r"\b" + w + r"\(", h + "(", code)
     for p in ptr_params:
         code = re.sub(r"\*" + p + r"\b", p, code)
     code = re.sub(r"([(,]\s*)&(\w+)", r"\1\2", code)   # &x as a call argument
