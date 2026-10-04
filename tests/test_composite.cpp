@@ -1,6 +1,6 @@
-#include "raw/composite.hpp"
-#include "raw/raster.hpp"
-#include "raw/ray_ao.hpp"
+#include "raw/renderer/composite.hpp"
+#include "raw/renderer/raster.hpp"
+#include "raw/renderer/ray_ao.hpp"
 #include "check.hpp"
 using namespace raw;
 int main() {

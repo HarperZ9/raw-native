@@ -1,4 +1,4 @@
-#include "raw/scene.hpp"
+#include "raw/scene/scene.hpp"
 #include "check.hpp"
 using namespace raw;
 int main() {

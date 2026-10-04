@@ -1,5 +1,5 @@
-#include "raw/gbuffer.hpp"
-#include "raw/arena.hpp"
+#include "raw/renderer/gbuffer.hpp"
+#include "raw/core/arena.hpp"
 #include "check.hpp"
 #include <array>
 #include <cstdint>

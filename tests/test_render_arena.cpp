@@ -1,10 +1,10 @@
-#include "raw/raster.hpp"
-#include "raw/accel.hpp"
-#include "raw/ray_ao.hpp"
-#include "raw/ssao.hpp"
-#include "raw/reconcile.hpp"
-#include "raw/composite.hpp"
-#include "raw/arena.hpp"
+#include "raw/renderer/raster.hpp"
+#include "raw/renderer/accel.hpp"
+#include "raw/renderer/ray_ao.hpp"
+#include "raw/renderer/ssao.hpp"
+#include "raw/cert/reconcile.hpp"
+#include "raw/renderer/composite.hpp"
+#include "raw/core/arena.hpp"
 #include "check.hpp"
 #include <vector>
 #include <cstdint>

@@ -2,8 +2,8 @@
 // digests; verify re-derives the verdict from those files alone; any changed
 // byte or edited number is caught. Also checks --threads leaves output unchanged
 // and --no-rt yields an honest "unverifiable".
-#include "raw/run.hpp"
-#include "raw/arena.hpp"
+#include "raw/tools/run.hpp"
+#include "raw/core/arena.hpp"
 #include "check.hpp"
 #include <chrono>
 #include <filesystem>

@@ -3,9 +3,9 @@
 // RAW_NATIVE_GPU_D3D12=ON. With no hardware adapter it prints the reason and
 // exits 77, which CTest reports as skipped; it never reports a pass without
 // having rendered on a GPU.
-#include "raw/gpu.hpp"
-#include "raw/gpu_reconcile.hpp"
-#include "raw/scene.hpp"
+#include "raw/renderer/gpu.hpp"
+#include "raw/renderer/gpu_reconcile.hpp"
+#include "raw/scene/scene.hpp"
 #include "check.hpp"
 #include <cstdio>
 #include <cstdlib>

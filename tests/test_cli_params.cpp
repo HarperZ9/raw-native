@@ -1,10 +1,10 @@
 // CLI render-parameter parsing + the two-way contract: params map to the right
 // camera, a JSON params file applies, and two different cameras produce two
 // different renders (so a model's steer actually changes what it perceives).
-#include "raw/cli_params.hpp"
-#include "raw/render.hpp"
-#include "raw/raster.hpp"
-#include "raw/composite.hpp"
+#include "raw/tools/cli_params.hpp"
+#include "raw/renderer/render.hpp"
+#include "raw/renderer/raster.hpp"
+#include "raw/renderer/composite.hpp"
 #include "check.hpp"
 #include <string>
 #include <vector>

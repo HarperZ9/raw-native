@@ -8,7 +8,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 option(RAW_NATIVE_BUILD_TESTS "Build the raw-native unit tests" ${PROJECT_IS_TOP_LEVEL})
 
-file(GLOB LIB_SRCS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
+# The library: every layer except the RHI backends and the shader libraries,
+# which a build picks in cmake/gpu.cmake (docs/architecture/ARCHITECTURE.md).
+# scripts/check_layers.py enforces which layer may include which.
+set(RAW_NATIVE_LIB_LAYERS core cert scene graph renderer tools)
+set(LIB_SRCS "")
+foreach(layer ${RAW_NATIVE_LIB_LAYERS})
+    file(GLOB layer_srcs CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/${layer}/*.cpp")
+    list(APPEND LIB_SRCS ${layer_srcs})
+endforeach()
+# The GPU renderer is backend-neutral: it records a frame graph on the RHI.
+list(APPEND LIB_SRCS src/renderer/gpu/gpu_renderer.cpp src/renderer/gpu/frame_pack.cpp)
 add_library(raw_native STATIC ${LIB_SRCS})
 add_library(raw_native::raw_native ALIAS raw_native)
 target_include_directories(raw_native PUBLIC
@@ -45,6 +55,12 @@ elseif(NOT WIN32)
     target_link_libraries(raw_native PUBLIC Threads::Threads)
 endif()
 
+# The RHI backend and shader library of a build without a GPU. Tests link it
+# so they build the same way in every configuration.
+set(RAW_NATIVE_NULL_BACKEND
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/rhi/null/null_device.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/renderer/gpu/shaders_none.cpp")
+
 if(RAW_NATIVE_BUILD_TESTS)
     enable_testing()
     file(GLOB TEST_SRCS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/tests/test_*.cpp")
@@ -53,7 +69,7 @@ if(RAW_NATIVE_BUILD_TESTS)
         if(name STREQUAL "test_receipt" AND NOT RAW_NATIVE_SUPERSTACK_COMPILES)
             continue()
         endif()
-        add_executable(${name} ${t} src/gpu/gpu_none.cpp)
+        add_executable(${name} ${t} ${RAW_NATIVE_NULL_BACKEND})
         target_link_libraries(${name} PRIVATE raw_native)
         target_include_directories(${name} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/tests"
             "${CMAKE_CURRENT_SOURCE_DIR}/third_party/superstack")
@@ -74,7 +90,7 @@ endif()
 
 add_executable(raw_native_cli app/main.cpp)
 target_link_libraries(raw_native_cli PRIVATE raw_native)
-# Adds the CLI's GPU backend: src/gpu/gpu_none.cpp by default, the D3D12 backend
+# Adds the CLI's RHI backend: the null backend by default, the D3D12 backend
 # with RAW_NATIVE_GPU_D3D12=ON on Windows. Also defines the WebGPU wasm target.
 include(cmake/gpu.cmake)
 if(EMSCRIPTEN)

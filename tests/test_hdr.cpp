@@ -1,7 +1,7 @@
 // HDR radiance channel: linear radiance before tonemap, plus Reinhard.
-#include "raw/composite.hpp"
-#include "raw/gbuffer.hpp"
-#include "raw/scene.hpp"
+#include "raw/renderer/composite.hpp"
+#include "raw/renderer/gbuffer.hpp"
+#include "raw/scene/scene.hpp"
 #include "check.hpp"
 #include <cmath>
 using namespace raw;

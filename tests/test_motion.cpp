@@ -1,7 +1,7 @@
 // motion-vector channel: reprojection screen-space velocity.
-#include "raw/raster.hpp"
-#include "raw/motion.hpp"
-#include "raw/mat.hpp"
+#include "raw/renderer/raster.hpp"
+#include "raw/renderer/motion.hpp"
+#include "raw/math/mat.hpp"
 #include "check.hpp"
 #include <cmath>
 using namespace raw;

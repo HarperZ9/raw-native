@@ -1,5 +1,5 @@
-#include "raw/image.hpp"
-#include "raw/arena.hpp"
+#include "raw/core/image.hpp"
+#include "raw/core/arena.hpp"
 #include "check.hpp"
 #include <array>
 #include <cstdint>
