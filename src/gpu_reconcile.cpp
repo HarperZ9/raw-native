@@ -1,6 +1,8 @@
 #include "raw/gpu_reconcile.hpp"
 #include "raw/gpu_tolerance.hpp"
 #include "raw/certificate.hpp"
+#include "raw/image.hpp"
+#include "raw/sha256.hpp"
 #include <cmath>
 #include <cstdio>
 namespace raw {
@@ -40,6 +42,8 @@ GpuReconcile reconcileGpuCpu(const FrameResult& gpu, const FrameResult& cpu, boo
     GpuReconcile r;
     r.rt = rt;
     r.width = cpu.g.w; r.height = cpu.g.h;
+    if (!gpu.frame.px.empty()) r.gpuFrameSha256 = sha256Hex(rgb8Bytes(gpu.frame));
+    if (!cpu.frame.px.empty()) r.cpuFrameSha256 = sha256Hex(rgb8Bytes(cpu.frame));
     r.sizeMatch = gpu.g.w == cpu.g.w && gpu.g.h == cpu.g.h && gpu.frame.w == cpu.frame.w && gpu.frame.h == cpu.frame.h
                   && (!rt || (gpu.aoRT.w == cpu.aoRT.w && gpu.aoRT.h == cpu.aoRT.h));
     if (!r.sizeMatch) return r;
@@ -85,6 +89,10 @@ std::string gpuCertificateJson(const GpuReconcile& r, const GpuAdapterInfo& a,
     std::string o = "{\"schema\":\"raw-gpu-cert/1\"";
     o += ",\"claim\":\"the GPU frame matches the CPU reference within the committed tolerance\"";
     o += std::string(",\"verdict\":\"") + verdict + "\"";
+    // The second verdict: are the two frames the same bytes? null when one is missing.
+    const bool both = !r.gpuFrameSha256.empty() && !r.cpuFrameSha256.empty();
+    o += ",\"identity\":" + (both ? std::string(r.gpuFrameSha256 == r.cpuFrameSha256 ? "\"MATCH\"" : "\"DRIFT\"") : std::string("null"));
+    o += ",\"frame_rgb8_sha256\":" + (both ? "{\"gpu\":" + jstr(r.gpuFrameSha256) + ",\"cpu\":" + jstr(r.cpuFrameSha256) + "}" : std::string("null"));
     o += ",\"oracle\":\"raw-gpu-cpu-v1\"";
     if (!r.reason.empty()) o += ",\"reason\":" + jstr(r.reason);
     o += ",\"renderer\":" + jstr(renderer);

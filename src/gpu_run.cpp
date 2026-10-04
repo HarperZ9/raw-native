@@ -2,6 +2,8 @@
 #include "raw/gpu.hpp"
 #include "raw/run.hpp"
 #include "raw/channels_json.hpp"
+#include "raw/receipt.hpp"
+#include "raw/sha256.hpp"
 #include "raw/version.hpp"
 #include <algorithm>
 #include <chrono>
@@ -37,12 +39,19 @@ bool writeAll(const FrameResult& o, const CliParams& p){
     for (const auto& kv : outputs) if (kv.second.empty()) return false;
     std::ofstream(p.out + "/certificate.json") << to_json(aoCertificate(o, p, outputs));
     std::ofstream(p.out + "/channels.json") << channelsJson(o, p);
-    return true;
+    return writeAoReceipt(o, p, p.gpu ? "raw-native-" + p.gpuBackend : std::string("raw-native-cpu"), outputs);
+}
+// gpu_receipt.json: superstack.receipt/1 for the GPU frame against the CPU frame,
+// written after gpu_certificate.json, whose digest it lists.
+void writeGpuReceipt(const FrameResult* g, const FrameResult* c, const GpuReconcile& r, const CliParams& p){
+    FileDigests outputs{{"gpu_certificate.json", sha256File(p.out + "/gpu_certificate.json")}};
+    std::ofstream(p.out + "/gpu_receipt.json", std::ios::binary) << gpuReceiptJson(g, c, r, p, outputs);
 }
 int noGpu(const CliParams& p, const GpuAdapterInfo& info, const std::string& why){
     GpuReconcile r; r.rt = p.rtao; r.reason = why;
     std::string cert = gpuCertificateJson(r, info, version(), canonicalParamsJson(p), 0, 0);
     std::ofstream(p.out + "/gpu_certificate.json") << cert;
+    writeGpuReceipt(nullptr, nullptr, r, p);
     std::printf("gpu: %s\ngpu-certificate: %s\n", why.c_str(), cert.c_str());
     return 4;
 }
@@ -66,6 +75,7 @@ int runGpu(const CliParams& p){
     GpuReconcile r = reconcileGpuCpu(g, c, p.rtao);
     std::string cert = gpuCertificateJson(r, info, version(), canonicalParamsJson(p), gpuMs, cpuMs);
     std::ofstream(p.out + "/gpu_certificate.json") << cert;
+    writeGpuReceipt(&g, &c, r, p);
     std::printf("gpu: %s %s%s (%s%s%s), %.1f ms; cpu reference %.1f ms\n", info.vendor.c_str(), info.architecture.c_str(),
                 info.description.c_str(), info.backend.c_str(), info.driver.empty() ? "" : ", driver ",
                 info.driver.c_str(), gpuMs, cpuMs);

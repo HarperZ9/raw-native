@@ -31,9 +31,14 @@ struct GpuReconcile {
     bool reconcilePass{false}, verdictPass{false};
     bool sizeMatch{false};
     std::string reason;     // why the comparison could not be made, when it could not
+    // Byte identity of the two frames as RGB8 (the bytes of frame.ppm without
+    // its header): SHA-256 of each, empty when that frame does not exist. The
+    // certificate reports identity (MATCH or DRIFT) beside the tolerance verdict.
+    std::string gpuFrameSha256, cpuFrameSha256;
     bool pass() const;
 };
 // Compare a GPU-rendered frame with the CPU reference for the same params.
+// Also fills the two frame hashes for the identity verdict.
 // Bounds come from raw/gpu_tolerance.hpp. With rt == false the ray-traced
 // channels are skipped and the verdict comparison is not made.
 GpuReconcile reconcileGpuCpu(const FrameResult& gpu, const FrameResult& cpu, bool rt);

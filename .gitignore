@@ -49,3 +49,4 @@ build-wasm-sums.json
 /t/
 /_inst/
 /build-*/
+!third_party/superstack/vectors/*.json

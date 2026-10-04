@@ -8,8 +8,9 @@ reference and writes the answer into a small JSON certificate. The verdict is
 `verified` when the drift stays inside the tolerance and `refuted` when it does
 not. You get the picture and the evidence for it in the same run.
 
-It is written in C++23 with no third-party dependencies, no GPU and no graphics
-API. Every pixel comes from the standard library and the engine's own code, so
+It is written in C++23 with no external dependencies, no GPU and no graphics
+API. The one file it did not write itself is `superstack.hpp`, the MIT header of
+the shared receipt contract, vendored and pinned by hash. Every pixel comes from the standard library and the engine's own code, so
 it builds the same way on any C++23 toolchain. The same code also runs in a web
 browser as WebAssembly and writes byte-identical files. Two optional builds
 render the frame on the GPU, natively through D3D12 on Windows or through
@@ -76,10 +77,49 @@ ctest --test-dir build -C Release --output-on-failure
 | `certificate.json` | Claim, verdict, oracle, evidence and the `raw-cert/2` provenance for the AO comparison |
 | `arena_certificate.json` | Proof the render stayed inside its memory budget |
 | `channels.json` | The certificate plus camera, coverage, depth, normal, motion, HDR and an 8x8 luminance readout |
+| `receipt.json` | The same AO check as a `superstack.receipt/1` receipt (from 0.5.0), described below |
 
 Exit code 0 means the frame rendered. Exit code 1 means the render tried to use
 more memory than its budget and stopped; it still writes a memory certificate,
 with the verdict `refuted`. Exit code 2 means bad input.
+
+## The superstack receipt
+
+From 0.5.0 every render also writes `receipt.json`, a `superstack.receipt/1`
+receipt from the [superstack](https://github.com/HarperZ9/superstack) contract,
+which several of the author's renderers and sound engines share. `certificate.json`
+is unchanged, byte for byte, so existing readers keep working.
+
+The receipt restates the AO check in the contract's form. It is canonical JSON
+with a SHA-256 seal over every field, and it reports two verdicts separately:
+
+- **identity**, `MATCH` when the subject's bytes equal the reference's and
+  `DRIFT` otherwise. The subject is the screen-space AO as float32 and the
+  reference is the ray-traced AO, two different estimators, so this reads
+  `DRIFT` by design.
+- **tolerance**, `verified`, `refuted` or `unverifiable` with a reason: the
+  certificate's verdict, with the same RMSE, maximum error and bound.
+
+It also records the scene in the contract's scene format, the hash of the
+frame's raw RGB8 bytes (`frame.rgb8`), the digest of every file written and
+four `does_not_prove` lines. For the default view, the scene hash and the
+frame hash equal the contract's published reference scene and pixel reference,
+and the ray-traced AO bytes equal the hash superstack's separate Python
+renderer produced.
+
+A `--gpu` run adds `gpu_receipt.json`: the GPU frame's RGB8 bytes against the
+CPU frame's, with identity (`MATCH` when the GPU drew the same 8-bit frame) and
+the tolerance verdict of `gpu_certificate.json`, which now reports the same
+`identity` beside its `verdict`.
+
+`raw_native_cli verify` checks the receipt too: the seal, every digest, the
+subject and reference hashes recomputed from the float files, and the
+tolerance verdict against the certificate's.
+
+The WebAssembly build writes no receipt yet. superstack 0.1.0's header does not
+compile with libc++, the standard library Emscripten uses, so that build says
+`receipt: not written` and verify reports the file as absent. The certificate
+and image files of the wasm build are still byte-identical to native.
 
 ## Check a certificate without trusting the renderer
 
@@ -251,8 +291,8 @@ v0.3.0, whose CPU render code later versions keep unchanged. The GPU numbers
 were measured on 4 October 2026 with NVIDIA driver 610.88 (DXGI reports
 32.0.16.1088), D3D12 and WebGPU in the same session.
 
-- **Tests:** 32 of 32 CTest targets pass in Release with MSVC 19.50 and in CI
-  on GitHub's Windows and Ubuntu runners. The D3D12 build adds a 33rd, the
+- **Tests:** 34 of 34 CTest targets pass in Release with MSVC 19.50 and in CI
+  on GitHub's Windows and Ubuntu runners. The D3D12 build adds a 35th, the
   hardware runtime test, which CI reports as skipped because the runner has
   no GPU.
 - **The GPU frame matches the CPU reference, on both GPU backends.** 16 of 16
@@ -290,9 +330,11 @@ were measured on 4 October 2026 with NVIDIA driver 610.88 (DXGI reports
   are one run of 5 in one session, on one GPU, one driver and one OS build;
   another adapter or driver may differ in either direction. The CPU column
   repeats the 0.3.0 table below. Evidence: `evidence/bench-d3d12-rtx4090.json`.
-- **Reproducible output:** the default render's `frame.ppm` and
-  `certificate.json` are byte-identical across MSVC, GCC 13.3 on Linux and the
-  WebAssembly build. `frame.ppm` is also unchanged from 0.2.0.
+- **Reproducible output:** the default render's `frame.ppm`,
+  `certificate.json`, `channels.json` and both AO float files are
+  byte-identical across MSVC, GCC 13.3 on Linux and the WebAssembly build, and
+  `receipt.json` is byte-identical across MSVC and GCC. CI compares the three
+  builds' files on every push. `frame.ppm` is also unchanged from 0.2.0.
 - **WebAssembly matches native exactly.** For all five views below at
   512 x 512, the wasm build's eight output files hash the same as the native
   build's, so RMSE, maximum error, pixel count and verdict agree with zero
@@ -393,6 +435,8 @@ bench/     the browser timing pages (CPU wasm and WebGPU) and a local server
 evidence/  raw timing runs, the wasm-versus-native comparison and the GPU
            certificates (D3D12, WARP and WebGPU)
 docs/      example images and certificates
+third_party/superstack/  the vendored superstack header, its vectors and
+           their pins (MIT; see NOTICE.md there)
 ```
 
 ## License
@@ -404,5 +448,8 @@ commercial product or service, and each version becomes available under the MIT
 license two years after its release.
 
 Version 0.2.0 and earlier remain under the MIT license, as released.
+
+The files in `third_party/superstack/` are under the MIT license, carried in
+each file; the FSL does not apply to them.
 
 Copyright 2026 Zain Dana Harper.

@@ -14,6 +14,7 @@
 #include "raw/run.hpp"
 #include "raw/gpu_run.hpp"
 #include "raw/gpu.hpp"
+#include "raw/receipt.hpp"
 #include <string>
 #include <vector>
 #include <cstdint>
@@ -41,6 +42,11 @@ static int emitOutputs(const FrameResult& o, const CliParams& p, Arena& arena){
     // The certificate plus compact channel summaries, so a caller need not
     // parse the image files. Absent channels are honest null.
     std::ofstream(out + "/channels.json") << channelsJson(o, p);
+    // superstack.receipt/1: the same AO check in the shared contract's form.
+    if (!writeAoReceipt(o, p, "raw-native-cpu", outputs)){
+        std::printf("could not write %s/receipt.json\n", out.c_str()); return 2; }
+    if (!receiptsCompiled())
+        std::printf("receipt: not written; superstack.hpp v0.1.0 does not compile with this build's standard library\n");
     std::printf("reconcile: pixels=%d rmse=%.4f maxError=%.4f verdict=%s\n",
         o.rec.pixels, o.rec.rmse, o.rec.maxError,
         o.rec.pixels == 0 ? "NO-REFERENCE" : (o.rec.withinTolerance ? "WITHIN-TOLERANCE" : "DIVERGENT"));
