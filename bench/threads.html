@@ -14,7 +14,9 @@ window.threadsResult = null;
 try {
   const host = await createHost({ canvas: document.getElementById("c") });
   const wgsl = await (await fetch("../src/renderer/gpu/shaders/threads.wgsl")).text();
-  const th = await createThreads(host, { wgsl });
+  const tReady = performance.now();
+  const th = await createThreads(host, { wgsl, world: +(q.get("world") || 0) });
+  const readyMs = performance.now() - tReady;
   th.resize(+(q.get("w") || 960), +(q.get("h") || 540));
   th.set({ particles: +(q.get("n") || 262144), world: +(q.get("world") || 0), substeps: +(q.get("sub") || 3) });
   th.restart();
@@ -32,7 +34,7 @@ try {
   await host.done();
   const sorted = times.slice(5).sort((a, b) => a - b);
   const out = { adapter: host.info, state: th.state(), gpu_ms: host.timings(),
-    frame_interval_ms: { median: sorted[sorted.length >> 1], p95: sorted[Math.floor(sorted.length * 0.95)] }, frames: times.length, lost: host.lost };
+    frame_interval_ms: { median: sorted[sorted.length >> 1], p95: sorted[Math.floor(sorted.length * 0.95)] }, frames: times.length, lost: host.lost, pipelines_ready_ms: Math.round(readyMs) };
   log(JSON.stringify(out, null, 1));
   window.threadsResult = out;
 } catch (e) { log("ERROR " + (e.stack || e)); window.threadsResult = { error: String(e) }; }

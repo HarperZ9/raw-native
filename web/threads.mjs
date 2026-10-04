@@ -21,19 +21,39 @@ const BASE_PARTICLES = 1 << 21, BASE_PIXELS = 3840 * 2160, FIXED = 4096;
 export const DEFAULTS = Object.freeze({ world: 0, tour: false, particles: 1 << 18, persistence: 0.82,
   exposure: 1, spacing: 0.011, levels: 5, substeps: 3, playing: true });
 
-export async function createThreads(host, { wgsl }) {
-  const src = wgslPasses(wgsl);
-  const names = ["threads_init", "threads_rd_seed", "threads_rd", "threads_decay", "threads_advance",
+const FORMS = ["fKomorebi", "fDroste", "fVoices", "fMorph", "fMaking", "fEye", "fStrings", "fStream", "fBelly",
+  "fDraw", "fElements", "fBurden", "fSwing", "fForest", "fMany"];
+// The advance pass for one world, or for the two worlds of a crossfade. A shader
+// that can reach all fifteen fields took 24 s to compile on D3D12 through Chrome;
+// one that reaches one or two compiles in a fraction of that, so the module builds
+// these on demand and keeps them.
+export function advanceFor(source, a, b = a) {
+  const call = (w) => (w === 9 ? "fDraw(p, t, P.ch, P.pr0, P.pr1)" : `${FORMS[w]}(p, t)`);
+  const body = a === b ? `return ${call(a)};` : `if (w == ${a}) { return ${call(a)}; } return ${call(b)};`;
+  const out = source.replace(/fn form\(w: i32, p: vec2f, t: f32\) -> f32 \{[\s\S]*?\n\}\n/, `fn form(w: i32, p: vec2f, t: f32) -> f32 { ${body} }\n`);
+  if (out === source) throw new Error("threads.wgsl: the advance pass has no form() to specialize");
+  return out;
+}
+
+export async function createThreads(host, { wgsl, world = DEFAULTS.world }) {
+  const src = wgslPasses(wgsl.replace(/\r\n/g, "\n"));
+  const names = ["threads_init", "threads_rd_seed", "threads_rd", "threads_decay",
     "threads_pyr_first", "threads_pyr_next", "threads_finish"];
   const pipes = Object.fromEntries(await Promise.all(names.map(async (n) => [n, await host.compute(n, src[n])])));
   await host.presenter();
-  return new Threads(host, pipes);
+  const th = new Threads(host, pipes, src.threads_advance);
+  th.opts.world = world;
+  await th.compileAdvance(world, world);
+  return th;
 }
 
 class Threads {
-  constructor(host, pipes) {
+  constructor(host, pipes, advanceSource) {
     this.host = host;
     this.pipes = pipes;
+    this.advanceSource = advanceSource;
+    this.advance = new Map();   // "a,b" -> pipeline, or null while it compiles
+    this.pending = null;        // a world asked for, waiting on its pipeline
     this.opts = { ...DEFAULTS };
     this.raw = new ArrayBuffer(144);
     this.f32 = new Float32Array(this.raw); this.u32 = new Uint32Array(this.raw); this.i32 = new Int32Array(this.raw);
@@ -49,7 +69,7 @@ class Threads {
     const prev = this.opts;
     this.opts = { ...prev, ...o };
     if (o.particles !== undefined && o.particles !== prev.particles && this.w) this.#particles();
-    if (o.world !== undefined && o.world !== prev.world) this.#goTo(this.opts.world);
+    if (o.world !== undefined && o.world !== prev.world) this.pending = this.opts.world;
     return this.opts;
   }
   resize(w, h) {
@@ -112,7 +132,7 @@ class Threads {
     }
     g.addPass("decay", [[par, Access.Uniform], [acc, Access.StorageWrite]], (c) => c.dispatch(P.threads_decay, [this.params, this.acc], gx, gy));
     g.addPass("advance", [[par, Access.Uniform], [pos, Access.StorageWrite], [acc, Access.StorageWrite], [sims[0], Access.StorageRead]],
-      (c) => c.dispatch(P.threads_advance, [this.params, this.pos, this.acc, this.sim[0]], Math.ceil(this.np / 256)));
+      (c) => c.dispatch(this.advPipe, [this.params, this.pos, this.acc, this.sim[0]], Math.ceil(this.np / 256)));
     for (let l = 1; l < 8; l++) {
       const dst = l % 2 ? pa : pb, srcR = l === 1 ? acc : (l % 2 ? pb : pa);
       const dstB = l % 2 ? this.pyrA : this.pyrB, srcB = l === 1 ? this.acc : (l % 2 ? this.pyrB : this.pyrA);
@@ -127,6 +147,26 @@ class Threads {
     g.markOutput(canvas);
     g.compile();
     return g;
+  }
+  #key(a, b) { return a === b ? `${a}` : `${Math.min(a, b)},${Math.max(a, b)}`; }
+  // Compile the advance pass for worlds a and b; resolves when it is ready.
+  compileAdvance(a, b) {
+    const k = this.#key(a, b);
+    if (this.advance.get(k)) return Promise.resolve(this.advance.get(k));
+    if (!this.advance.has(k)) {
+      this.advance.set(k, null);
+      this.compiling = (this.compiling || Promise.resolve()).then(() =>
+        this.host.compute("threads_advance " + k, advanceFor(this.advanceSource, a, b))).then((p) => { this.advance.set(k, p); return p; });
+      this.waits = this.waits || {};
+      this.waits[k] = this.compiling;
+    }
+    return this.waits[k];
+  }
+  #ready(a, b) {
+    const p = this.advance.get(this.#key(a, b));
+    if (p) return p;
+    this.compileAdvance(a, b).catch((e) => { this.error = String(e && e.message || e); });
+    return null;
   }
   #goTo(w) {
     if (this.xf >= 0) { this.wa = this.wb; this.ta = this.tb; }
@@ -194,11 +234,20 @@ class Threads {
       this.u = Math.min(1, this.xf / XF);
       if (this.u >= 1) { this.wa = this.wb; this.ta = this.tb; this.u = 0; this.xf = -1; }
     }
-    if (this.xf < 0 && this.ta >= SPAN + XF) {
-      const next = o.tour ? (this.wa + 1) % WORLDS.length : this.wa;
-      if (o.tour) this.opts.world = next;
-      this.#goTo(next);
+    // A new world starts its crossfade only once the pass for both worlds is
+    // ready; until then the current world keeps running.
+    if (this.xf < 0 && this.ta >= SPAN + XF && this.pending === null) {
+      this.pending = o.tour ? (this.wa + 1) % WORLDS.length : this.wa;
+      if (o.tour) this.opts.world = this.pending;
     }
+    if (this.xf < 0 && this.pending !== null && this.#ready(this.wa, this.pending)) {
+      this.#ready(this.pending, this.pending);
+      this.#goTo(this.pending);
+      this.pending = null;
+    }
+    if (o.tour && this.xf < 0 && this.ta > 5) this.#ready(this.wa, (this.wa + 1) % WORLDS.length);
+    this.advPipe = (this.u > 0 ? null : this.#ready(this.wa, this.wa)) || this.#ready(this.wa, this.wb);
+    if (!this.advPipe) return;
     if (this.needSeed) { this.needSeed = false; this.#warmSim(); }
     const morphOn = this.wa === MORPH || (this.u > 0 && this.wb === MORPH);
     if (morphOn) {
@@ -211,6 +260,8 @@ class Threads {
   }
   // Clear the trails and start the current world's clock again.
   restart() {
+    if (!this.#ready(this.opts.world, this.opts.world)) { this.pending = this.opts.world; return; }
+    this.pending = null;
     this.wa = this.wb = this.opts.world; this.ta = this.tb = 0; this.u = 0; this.xf = -1; this.time = 0;
     const enc = this.host.device.createCommandEncoder();
     enc.clearBuffer(this.acc);

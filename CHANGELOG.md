@@ -14,6 +14,10 @@ the day the release was published on GitHub, in UTC.
   form fields and leave trails tone-mapped by log density. One WGSL source runs
   on the web host (`web/threads.mjs`) and on D3D12 (`raw_native_cli threads`).
   It has no CPU reference and writes no certificate.
+- **Threads compiles per world on the web.** The world code moved into the one
+  pass that uses it, and the web host builds the advance pass for the one or
+  two worlds on screen, on demand. Time to the first frame in Chrome on D3D12
+  went from 24 s to about 0.3 to 1.3 s.
 - **Translator.** `scripts/wgsl_to_hlsl.py` translates `fract`, `mix` and
   `atomicAdd` statements, refuses builtins it cannot map faithfully, and no
   longer treats a comparison inside a constructor as a template bracket, which
