@@ -59,6 +59,15 @@ on is new in 0.3.0: the renderer version, every parameter that changes the
 pixels, the sample counts, the reconcile values at full float precision and the
 SHA-256 of every file the verdict was judged from.
 
+## See it work, step by step
+
+The [animated explainer](https://harperz9.github.io/repo-explainers/raw-native.html)
+follows one render from the G-buffer through both occlusion estimators to the
+reconcile, the certificate and `verify`. It draws a 2D slice that runs the same
+rules as `ray_ao.cpp` and `ssao.cpp`, shows the five views against the
+tolerance, and can run the WebAssembly build in the page. Its source is
+[docs/explainer/index.html](docs/explainer/index.html).
+
 ## Run it now
 
 Download a prebuilt binary from the
