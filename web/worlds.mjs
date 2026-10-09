@@ -156,14 +156,16 @@ class Worlds {
   // Ask for the depth under a point in device coordinates; the camera then
   // eases to it. The answer arrives a frame or two later.
   focusAt(x, y) { this.pick = [x, y]; }
-  frame(dt, { tour = false } = {}) {
+  // target: { view, width, height } draws into that texture view (in the
+  // host's canvas format) at that size instead of the canvas (web/motion).
+  frame(dt, { tour = false, target = null } = {}) {
     if (!this.pipe) return;
     const o = this.opts;
     if (o.playing) this.time += Math.min(dt, 0.1);
     this.cam.step(dt, { tour });
-    const [rw, rh] = this.renderSize();
+    const [rw, rh] = target ? [target.width, target.height] : this.renderSize();
     const canvas = this.host.canvas;
-    if (canvas.width !== rw || canvas.height !== rh) { canvas.width = rw; canvas.height = rh; }
+    if (!target && (canvas.width !== rw || canvas.height !== rh)) { canvas.width = rw; canvas.height = rh; }
     const q = qualitySettings(o.quality), u = this.uni;
     this.cam.uniforms(u);
     u.set([rw, rh, 1 / rw, 1 / rh, this.time, q.steps, q.shadowSteps, q.ao ? 1 : 0], 16);
@@ -176,7 +178,7 @@ class Worlds {
     if (threads) this.#particles();
     this.host.write(this.ubuf, u);
     const dev = this.host.device, enc = dev.createCommandEncoder();
-    const view = this.host.context.getCurrentTexture().createView();
+    const view = target ? target.view : this.host.context.getCurrentTexture().createView();
     const ts = this.host.timer ? (i) => this.#ts(i) : () => undefined;
     const rp = enc.beginRenderPass({ colorAttachments: [{ view, loadOp: "clear", storeOp: "store", clearValue: [0, 0, 0, 1] }], timestampWrites: ts(0) });
     rp.setPipeline(this.pipe);

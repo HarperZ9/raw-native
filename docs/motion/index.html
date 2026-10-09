@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Motion demo</title>
+<link rel="icon" href="data:,">
+<style>
+  :root { color-scheme: dark; --ink: #ece5d6; --void: #060608; }
+  body { margin: 0; background: var(--void); color: var(--ink); font: 16px/1.5 system-ui, sans-serif; }
+  main { max-width: 1100px; margin: 0 auto; padding: 24px 16px; }
+</style>
+<main>
+  <h1>Motion demo</h1>
+  <p>Text drawn on and morphed into an equation, a circle becoming a square, a plot you can change, and particles settling into a grid over the Threads layer. Drag the frequency slider during the plot.</p>
+  <div id="film"></div>
+</main>
+<script type="module">
+  import { mountPlayer } from "../../web/motion/player.mjs";
+  mountPlayer(document.getElementById("film"), {
+    sceneUrl: new URL("demo.scene.mjs", location.href).href,
+    shaders: new URL("../../src/renderer/gpu/shaders/", location.href).href,
+    label: "Motion demo: text, morphs, a live plot and particles",
+  });
+</script>
+</html>
