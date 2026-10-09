@@ -1,0 +1,106 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "M1 exit criterion 2 (docs/architecture/ROADMAP.md): colour",
+ "written": "2026-10-10, before the first run of any comparison below",
+ "inputs": {
+  "space": "scene-linear Rec.709 primaries, D65 white (the engine's working space)",
+  "cube": {
+   "axis_rule": "0, then 2^(-10 + 17*(i-1)/31) for i = 1..32, rounded to float32",
+   "axis": [
+    "0",
+    "0.0009765625",
+    "0.0014281736221164465",
+    "0.0020886322017759085",
+    "0.003054519649595022",
+    "0.004467081744223833",
+    "0.006532882805913687",
+    "0.00955401360988617",
+    "0.013972264714539051",
+    "0.020433735102415085",
+    "0.029883312061429024",
+    "0.04370284453034401",
+    "0.06391321122646332",
+    "0.09346986562013626",
+    "0.1366949826478958",
+    "0.19990955293178558",
+    "0.2923576831817627",
+    "0.42755845189094543",
+    "0.6252827644348145",
+    "0.914444625377655",
+    "1.337329387664795",
+    "1.9557770490646362",
+    "2.8602256774902344",
+    "4.182936668395996",
+    "6.117334842681885",
+    "8.946294784545898",
+    "13.083507537841797",
+    "19.13397216796875",
+    "27.982473373413086",
+    "40.9229621887207",
+    "59.8477783203125",
+    "87.52437591552734",
+    "128.0"
+   ],
+   "count": 35937
+  },
+  "grey_ramp": {
+   "rule": "R = G = B = 2^(-12 + 20*k/255) for k = 0..255, rounded to float32",
+   "count": 256
+  },
+  "saturation_ramps": {
+   "rule": "for hue h in R, Y, G, C, B, M (unit RGB with components 0 or 1), level L in {0.18, 1, 8}, t = k/32 for k = 0..32: each component is float32(L) * ((1 - t) + t*h_c), one float32 multiply",
+   "count": 594
+  },
+  "total": 36787,
+  "generator": "raw_native_cli colour grid OUT; the comparison tools and the GPU test read that file, so every implementation sees the same float32 inputs. Its SHA-256 is recorded with each result."
+ },
+ "pipelines": {
+  "clip/srgb": "clamp to [0,1], sRGB piecewise encoding",
+  "clip/display-p3": "Rec.709 to P3-D65 matrix, clamp, sRGB piecewise encoding",
+  "clip/rec2020": "Rec.709 to Rec.2020 matrix, clamp, BT.1886 inverse EOTF (pure 2.4)",
+  "pbr-neutral/srgb": "Khronos PBR Neutral tone mapper, then clip/srgb",
+  "agx/srgb": "AgX in the Filament and three.js form (inset matrix, log2 range -12.47393 to 4.026069 EV, 6th-order sigmoid polynomial, outset matrix), then clip/srgb",
+  "aces2-sdr/srgb": "Rec.709 to AP0 (Bradford), ACES 2.0 output transform at 100 nits with Rec.709 limiting primaries, clamp, sRGB piecewise encoding",
+  "aces2-sdr/display-p3": "as above with P3-D65 limiting primaries and P3-D65 encoding primaries",
+  "aces2-hdr1000/rec2100-pq": "ACES 2.0 at 1,000 nits with P3-D65 limiting primaries, clamp to peak, P3-D65 to Rec.2020 matrix, SMPTE ST 2084 encoding (1.0 = 100 nits)"
+ },
+ "references": {
+  "ocio": {
+   "version": "OpenColorIO 2.6.0 (PyPI wheel opencolorio==2.6.0), run offline; never a build dependency",
+   "mapping": {
+    "clip/srgb": "ColorSpaceTransform 'Linear Rec.709 (sRGB)' to 'sRGB Encoded Rec.709 (sRGB)' in the built-in studio-config-latest, then clamp to [0,1]",
+    "clip/display-p3": "'Linear Rec.709 (sRGB)' to 'sRGB Encoded P3-D65', then clamp",
+    "clip/rec2020": "'Linear Rec.709 (sRGB)' to CIE XYZ D65, then built-in 'DISPLAY - CIE-XYZ-D65_to_REC.1886-REC.2020', then clamp",
+    "aces2-sdr/srgb": "'Linear Rec.709 (sRGB)' to 'ACES2065-1', built-in 'ACES-OUTPUT - ACES2065-1_to_CIE-XYZ-D65 - SDR-100nit-REC709_2.0', built-in 'DISPLAY - CIE-XYZ-D65_to_sRGB'",
+    "aces2-sdr/display-p3": "same, with 'SDR-100nit-P3-D65_2.0' and 'DISPLAY - CIE-XYZ-D65_to_DisplayP3'",
+    "aces2-hdr1000/rec2100-pq": "same, with 'HDR-1000nit-P3-D65_2.0' and 'DISPLAY - CIE-XYZ-D65_to_REC.2100-PQ'"
+   },
+   "not_covered": {
+    "pbr-neutral/srgb": "OCIO 2.6.0 has no built-in PBR Neutral; checked against the Khronos specification's formula only",
+    "agx/srgb": "OCIO 2.6.0 has no built-in AgX; this is the Filament and three.js approximation, checked against its published constants only"
+   }
+  }
+ },
+ "bounds": {
+  "gpu_vs_cpp": "every channel of every input: |GPU 8-bit code - C++ 8-bit code| <= 1, after rounding each encoded value in [0,1] to round(255*v)",
+  "cpp_vs_ocio_sdr": {
+   "metric": "CIEDE2000 between the two encoded outputs, each decoded to display-linear light, converted to XYZ (D65) and CIELAB with the display white as reference white",
+   "clip": {
+    "max": 0.05
+   },
+   "aces2": {
+    "max": 0.5,
+    "p99": 0.1
+   }
+  },
+  "cpp_vs_ocio_hdr": {
+   "metric": "Delta E ITP (ITU-R BT.2124) between the two PQ outputs decoded to absolute luminance",
+   "aces2": {
+    "max": 1.0,
+    "p99": 0.25
+   }
+  },
+  "why": "A CIEDE2000 of 1 is about one just-noticeable difference. The C++ ACES 2.0 is a float32 port of OCIO's own implementation, so differences should come only from matrix rounding and OCIO's fast-pow paths; 0.5 at worst leaves room for those and fails a real porting error. Clip pipelines are matrices and curves and should agree to rounding."
+ },
+ "does_not_prove": "Agreement with OCIO on these inputs, in these pipelines. Not agreement on negative or non-finite input, not the visual quality of any tone mapper, and not that a display shows these values."
+}
