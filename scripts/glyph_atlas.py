@@ -21,7 +21,7 @@ import string
 import sys
 from pathlib import Path
 
-DEFAULT_CHARS = string.ascii_letters + string.digits + " .,:;!?'\"()[]{}-+=/%&*#@<>_" + \
+DEFAULT_CHARS = string.ascii_letters + string.digits + " .,:;!?'\"()[]{}-+=/%&*#@<>_$|~^`\\" + \
     "×÷≈·→↑≤≥−–‘’“”±∞" + \
     "αβγδθλμπστφωΔΣ√"
 

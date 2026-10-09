@@ -6,6 +6,19 @@ the day the release was published on GitHub, in UTC.
 
 ## Unreleased
 
+- **Media engine.** `raw-native media render` (`tools/media/`, ADR 0012) renders a
+  repo's videos from `docs/media/media.json` at the commit it runs at.
+  - Facts are read from the checkout: JSON values, regex matches, command output and
+    PGM or PFM images. A fact that cannot be read stops the render.
+  - Each scene renders to a video, a poster, captions, an interactive page and a
+    manifest of hashes.
+  - Walkthroughs (`web/motion/walkthrough.mjs`) record what each command really prints
+    and draw it as a guided terminal session.
+  - `.github/workflows/media.yml` is reusable. It renders on Chrome's CPU WebGPU
+    adapter, since CI has no GPU, and attaches the result to a release.
+    `raw-native media attach` replaces those files with the narrated local render.
+  - raw-native's own media: "Checking the light", from the AO maps and certificate of
+    the release's own render, and a first-run walkthrough.
 - **Motion.** A mathematical-animation layer on the web host (`web/motion/`,
   ADR 0011). Scenes are pure functions of time. Bezier and arc paths are drawn
   with analytic coverage on the GPU, binned in 16-pixel bands, and shapes,

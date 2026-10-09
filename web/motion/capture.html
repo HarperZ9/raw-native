@@ -2,6 +2,8 @@
 <meta charset="utf-8">
 <title>Motion capture</title>
 <link rel="icon" href="data:,">
+<!-- Scenes may import the engine as @raw-native/motion/... -->
+<script type="importmap">{ "imports": { "@raw-native/motion/": "./" } }</script>
 <!-- Offline renderer page for scripts/motion_render.py. It draws frames
      from..to of a scene at w x h, frame i at exactly i / fps, and sends them
      to the local server that launched it, one of two ways:
@@ -82,7 +84,9 @@ try {
   const encoded = enc ? await enc.end() : { codec: "raw" };
   cpu.sort((a, b) => a - b);
   const stats = { frames: cpu.length, frame_ms_median: cpu[cpu.length >> 1], frame_ms_p95: cpu[Math.floor(cpu.length * 0.95)],
-    gpu_ms: eng.motion.timings(), adapter: eng.host.info, last: eng.motion.stats, encoded };
+    gpu_ms: eng.motion.timings(), adapter: eng.host.info, last: eng.motion.stats, encoded,
+    duration: eng.scene.duration, title: eng.scene.title, chapters: eng.scene.chapters || [],
+    vtt: typeof eng.scene.captions === "function" ? eng.scene.captions(eng.ctx) : null };
   await post("/done", JSON.stringify(stats));
   status({ done: true, stats });
 } catch (e) {

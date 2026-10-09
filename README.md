@@ -156,6 +156,35 @@ the browser's hardware encoder. On an RTX 4090 the 24-second demo renders at
 3840 x 2160 in 30 s, about 25 ms a frame. Motion is creative media: no
 certificate (ADR 0011).
 
+## Media at every release
+
+`raw-native media render` turns a repo's `docs/media/media.json` into videos.
+It reads its numbers from the commit it runs at, so a video cannot describe a
+different build from the one it ships with. raw-native's own spec renders two
+pieces:
+- **"Checking the light"**: the reference and fast ambient occlusion maps from
+  the release's own render, their difference, and the certificate's verdict.
+- **A first-run walkthrough**: configure, build, test, render, verify,
+  recheck, each with the output those commands printed.
+
+```sh
+python tools/media/raw_native_media.py render --setup --out media-out            # GPU
+python tools/media/raw_native_media.py render --setup --out media-out --adapter swiftshader   # no GPU
+python tools/media/raw_native_media.py attach media-out --tag v0.6.0
+```
+
+`tools/media/raw-native` (and `raw-native.cmd`) wrap the same commands as
+`raw-native media ...`.
+
+Each scene gets its video, a poster, captions, `facts.json`, an interactive
+`index.html` with the engine beside it, and `media.json` with every file's
+hash.
+
+When a release is published, `.github/workflows/media.yml` renders it on a
+hosted runner with Chrome's CPU WebGPU adapter and attaches the files. Other
+repos call the same workflow. The narrated 4K render is made on the author's
+machine and replaces them (ADR 0012).
+
 ## The superstack receipt
 
 From 0.5.0 every render also writes `receipt.json`, a `superstack.receipt/1`

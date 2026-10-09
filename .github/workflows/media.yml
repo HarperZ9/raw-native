@@ -1,0 +1,55 @@
+# Render a repo's media at a release tag, on a hosted runner with no GPU, and attach it to
+# the release. Reusable: a repo calls it from its release workflow (docs/architecture/adr/0012-media-engine.md).
+#
+#   jobs:
+#     media:
+#       uses: HarperZ9/raw-native/.github/workflows/media.yml@main
+#       with: { tag: "${{ github.event.release.tag_name }}" }
+#       permissions: { contents: write }
+#
+# Visuals render on Chrome's CPU WebGPU adapter (SwiftShader) at 1920 x 1080 with captions
+# and no narration. The narrated 4K render is made on the author's machine and replaces these
+# files with `raw-native media attach`.
+name: media
+on:
+  workflow_call:
+    inputs:
+      tag: { description: "Release tag to render and attach to", required: true, type: string }
+      spec: { description: "Media spec in the calling repo", required: false, type: string, default: docs/media/media.json }
+      setup: { description: "Run the spec's setup commands (a build) first", required: false, type: boolean, default: true }
+      engine_ref: { description: "raw-native ref to render with", required: false, type: string, default: main }
+      upload: { description: "Attach the outputs to the release", required: false, type: boolean, default: true }
+      max_seconds: { description: "Render only the first N seconds (0: all)", required: false, type: number, default: 0 }
+permissions:
+  contents: write
+jobs:
+  render:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "${{ inputs.tag }}", fetch-depth: 0 }
+      - uses: actions/checkout@v4
+        with: { repository: HarperZ9/raw-native, ref: "${{ inputs.engine_ref }}", path: .raw-native }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Tools (Playwright drives the installed Chrome; ffmpeg from imageio-ffmpeg)
+        run: python -m pip install playwright==1.58.0 imageio-ffmpeg==0.6.0
+      - name: Render on the CPU WebGPU adapter
+        env:
+          SPEC: ${{ inputs.spec }}
+          SETUP: ${{ inputs.setup && '--setup' || '' }}
+          MAX: ${{ inputs.max_seconds }}
+        run: |
+          extra=""
+          if [ "$MAX" != "0" ]; then extra="--max-seconds $MAX"; fi
+          python .raw-native/tools/media/raw_native_media.py render --spec "$SPEC" $SETUP --out media-out \
+            --adapter swiftshader --width 1920 --height 1080 $extra
+      - uses: actions/upload-artifact@v4
+        with: { name: "media-${{ inputs.tag }}", path: media-out, retention-days: 30 }
+      - name: Attach to the release
+        if: ${{ inputs.upload }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+        run: python .raw-native/tools/media/raw_native_media.py attach media-out --tag "$TAG" --repo "${{ github.repository }}"
