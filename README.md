@@ -165,6 +165,17 @@ raw_native_cli threads --world 5 --frames 90 --width 960 --height 540 --out ./ou
 Threads is creative media: it has no CPU reference and writes no certificate.
 Open `bench/threads.html` through `python bench/serve.py` to time it in a browser.
 
+### Textures, compositing and one device
+
+`web/raw-gpu.mjs` also makes textures and samplers, uploads canvases, images and
+pixel rows, and shares its device with a second consumer (`host.share()`), so a
+page that runs several tools asks for one GPU device. `web/compositor.mjs` draws
+layers of textures and 2D canvases with over or add blending, opacity and a
+rectangle, onto the canvas or a texture. `composite2d()` draws the same layers
+with the canvas API alone when the browser has no WebGPU.
+`tests/web/host_textures.py` checks the GPU composite against a CPU composite
+within 1/255 in a real browser.
+
 ## Motion: mathematical animation, live and on video
 
 `web/motion/` turns the web host into an animation engine in the spirit of
