@@ -1,0 +1,8 @@
+#!/usr/bin/env sh
+# raw-native: the command-line front for raw-native's tools. Today: media.
+#   raw-native media render|facts|attach ...   (tools/media/raw_native_media.py)
+here="$(cd "$(dirname "$0")" && pwd)"
+case "$1" in
+  media) shift; exec "${PYTHON:-python3}" "$here/raw_native_media.py" "$@" ;;
+  *) echo "usage: raw-native media render|facts|attach ..." >&2; exit 2 ;;
+esac

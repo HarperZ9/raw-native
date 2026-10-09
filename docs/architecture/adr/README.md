@@ -19,6 +19,7 @@ supersedes it and both stay.
 | [0009](0009-scope.md) | Product scope: renderer or engine, and the editor | Accepted (A3, A4) |
 | [0010](0010-web-host.md) | The web GPU host in JavaScript, and creative modules without a CPU reference | Accepted |
 | [0011](0011-motion.md) | Motion: a scene and timeline layer for mathematical animation, live and offline | Accepted |
+| [0012](0012-media-engine.md) | The media engine: per-repo scene specs read from the release, one render command, a release workflow split between CI and the author's machine | Accepted |
 
 To add one, copy the shape of an existing record: status and date, context,
 decision, consequences, alternatives, and the signal that would reverse it.

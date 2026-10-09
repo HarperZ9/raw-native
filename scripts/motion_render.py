@@ -182,6 +182,8 @@ def main(argv=None) -> int:
     ap.add_argument("--quality", type=int, default=19, help="cq for NVENC, crf for x264/x265 (--transport raw)")
     ap.add_argument("--ffmpeg")
     ap.add_argument("--channel", default="chrome")
+    ap.add_argument("--adapter", choices=["gpu", "swiftshader"], default="gpu",
+                    help="swiftshader: Chrome's CPU WebGPU adapter, for machines with no GPU (CI)")
     ap.add_argument("--timeout", type=float, default=7200)
     a = ap.parse_args(argv)
 
@@ -209,7 +211,7 @@ def main(argv=None) -> int:
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     port = srv.server_address[1]
     q = (f"scene={a.scene}&w={a.width}&h={a.height}&fps={a.fps}&from={first}&warm={a.warm}"
-         f"&transport={a.transport}&codec={a.wc_codec}&qp={a.qp}")
+         f"&transport={a.transport}&codec={a.wc_codec}&qp={a.qp}&readback={1 if a.adapter == 'swiftshader' else 0}")
     if a.t1 is not None:
         q += f"&to={round(a.t1 * a.fps)}"
     if a.shaders:
@@ -220,7 +222,8 @@ def main(argv=None) -> int:
     try:
         with sync_playwright() as p:
             b = p.chromium.launch(channel=a.channel or None, headless=True,
-                                  args=["--enable-unsafe-webgpu", "--enable-gpu", "--ignore-gpu-blocklist"])
+                                  args=["--enable-unsafe-webgpu", "--enable-gpu", "--ignore-gpu-blocklist"]
+                                  + (["--enable-unsafe-swiftshader", "--use-webgpu-adapter=swiftshader"] if a.adapter == "swiftshader" else []))
             page = b.new_page()
             page.on("console", lambda m: m.type in ("error", "warning") and print("  page:", m.text, flush=True))
             page.goto(url)

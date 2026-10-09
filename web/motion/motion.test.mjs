@@ -11,6 +11,8 @@ import { text, tex, fmt } from "./text.mjs";
 import { ease, span, track, timeline, narrationCues, countUp, lerpLog, rng } from "./timeline.mjs";
 import { compile, rgba, BAND } from "./vector.mjs";
 import { frameTimes } from "./scene.mjs";
+import { sayTimeline } from "./narration.mjs";
+import { plan, wrap } from "./walkthrough.mjs";
 
 const atlas = JSON.parse(readFileSync(new URL("../../docs/motion/hanken-grotesk-500.atlas.json", import.meta.url), "utf8"));
 const near = (a, b, e = 1e-3) => assert.ok(Math.abs(a - b) <= e, `${a} != ${b} (+/- ${e})`);
@@ -147,4 +149,26 @@ test("the camera scales scene units to pixels and depth adds parallax and defocu
   const deep = compile([{ ...it, z: 1000 }], { aperture: 20 }, 1920, 1080);
   const g = new Float32Array(deep.inst.buffer, deep.inst.byteOffset, 20);
   assert.ok(g[13] > 5, "a shape off the focal plane is blurred");
+});
+
+test("narration timing: from words without a recording, from the recording with one", () => {
+  const a = sayTimeline(["one two three four five", "six"], { lead: 1 });
+  near(a.cues[0].start, 1); assert.ok(a.cues[1].start > a.cues[0].end);
+  const b = sayTimeline(["x", "y"], { timing: [{ segment: 0, start: 2, end: 3 }, { segment: 1, start: 4, end: 6.5 }] });
+  assert.equal(b.cues[1].start, 4); assert.equal(b.cues[1].end, 6.5); assert.ok(b.recorded);
+  assert.match(b.vtt(), /^WEBVTT\n\n00:00:02.000 --> 00:00:03.000\nx\n/);
+});
+
+test("walkthrough plan: steps in order, long output elided, marked lines lit", () => {
+  const spec = { title: "t", steps: [{ say: "Build it.", keep: 2 }, { say: "Run it.", highlight: "^ok" }] };
+  const cast = { steps: [{ cmd: "make", lines: [1, 2, 3, 4].map((i) => ({ t: i * 0.1, text: "line " + i })), exit: 0 },
+    { cmd: "run", lines: [{ t: 0.2, text: "ok: done" }, { t: 0.3, text: "other" }], exit: 0 }] };
+  const p = plan(spec, cast);
+  assert.equal(p.steps.length, 2);
+  assert.ok(p.steps[1].start >= p.steps[0].end);
+  assert.equal(p.steps[0].lines.length, 3);
+  assert.match(p.steps[0].lines[0].text, /2 more lines/);
+  assert.deepEqual(p.steps[1].lines.map((l) => l.lit), [true, false]);
+  assert.ok(p.duration > p.steps[1].end);
+  assert.deepEqual(wrap("aa bb cc dd", 5), ["aa bb", "cc dd"]);
 });

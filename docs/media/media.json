@@ -1,0 +1,173 @@
+{
+  "schema": "raw-native.media/1",
+  "repo": "raw-native",
+  "about": "The media raw-native renders at every release (docs/architecture/adr/0012-media-engine.md). Facts are read from the checkout at render time.",
+  "scenes_dir": "scenes",
+  "vars": {
+    "cli": [
+      "build/Release/raw_native_cli.exe",
+      "build/raw_native_cli"
+    ]
+  },
+  "setup": [
+    [
+      "cmake",
+      "-S",
+      ".",
+      "-B",
+      "build",
+      "-DCMAKE_BUILD_TYPE=Release"
+    ],
+    [
+      "cmake",
+      "--build",
+      "build",
+      "--config",
+      "Release",
+      "-j",
+      "4"
+    ]
+  ],
+  "prepare": [
+    [
+      "{cli}",
+      "--out",
+      "out/media"
+    ]
+  ],
+  "facts": {
+    "version": {
+      "text": "CMakeLists.txt",
+      "regex": "project[(]raw_native VERSION ([0-9.]+)"
+    },
+    "claim": {
+      "json": "out/media/certificate.json",
+      "pointer": "/claim"
+    },
+    "verdict": {
+      "json": "out/media/certificate.json",
+      "pointer": "/verdict"
+    },
+    "rmse": {
+      "json": "out/media/certificate.json",
+      "pointer": "/exact/rmse"
+    },
+    "tolerance": {
+      "json": "out/media/certificate.json",
+      "pointer": "/exact/tolerance"
+    },
+    "pixels": {
+      "json": "out/media/certificate.json",
+      "pointer": "/exact/pixels"
+    },
+    "rt": {
+      "json": "out/media/certificate.json",
+      "pointer": "/samples/rt"
+    },
+    "ss": {
+      "json": "out/media/certificate.json",
+      "pointer": "/samples/ss"
+    },
+    "ao_rt": {
+      "image": "out/media/ao_rt.pfm",
+      "size": 64
+    },
+    "ao_ss": {
+      "image": "out/media/ao_ss.pfm",
+      "size": 64
+    }
+  },
+  "scenes": [
+    {
+      "id": "ao-check",
+      "kind": "explainer",
+      "module": "scenes/ao-check.scene.mjs",
+      "title": "Checking the light",
+      "poster_at": 0.62
+    },
+    {
+      "id": "first-run",
+      "kind": "walkthrough",
+      "title": "raw-native: build, render, check",
+      "subtitle": "a walkthrough of the first run",
+      "poster_at": 0.7,
+      "steps": [
+        {
+          "say": "Configure the build with CMake. raw-native needs a C++23 compiler and nothing else.",
+          "run": [
+            "cmake",
+            "-S",
+            ".",
+            "-B",
+            "build",
+            "-DCMAKE_BUILD_TYPE=Release"
+          ],
+          "keep": 6,
+          "chapter": "Configure"
+        },
+        {
+          "say": "Build it: the renderer, its tests and the command-line tool.",
+          "run": [
+            "cmake",
+            "--build",
+            "build",
+            "--config",
+            "Release",
+            "-j",
+            "4"
+          ],
+          "keep": 6,
+          "chapter": "Build"
+        },
+        {
+          "say": "Run the tests.",
+          "run": [
+            "ctest",
+            "--test-dir",
+            "build",
+            "-C",
+            "Release"
+          ],
+          "keep": 5,
+          "highlight": "tests passed",
+          "chapter": "Test"
+        },
+        {
+          "say": "Render the default scene. It writes the frame, the ambient occlusion maps and a certificate with a verdict.",
+          "run": [
+            "{cli}",
+            "--out",
+            "out"
+          ],
+          "display": "raw_native_cli --out out",
+          "keep": 8,
+          "highlight": "^reconcile:",
+          "chapter": "Render"
+        },
+        {
+          "say": "Check the certificate from the files the render wrote.",
+          "run": [
+            "{cli}",
+            "verify",
+            "out"
+          ],
+          "display": "raw_native_cli verify out",
+          "keep": 8,
+          "highlight": "^verify:",
+          "chapter": "Verify"
+        },
+        {
+          "say": "And check it again with a second checker in Python that shares no code with the first.",
+          "run": [
+            "python",
+            "scripts/recheck.py",
+            "out"
+          ],
+          "keep": 6,
+          "highlight": "^recheck:",
+          "chapter": "Recheck"
+        }
+      ]
+    }
+  ]
+}

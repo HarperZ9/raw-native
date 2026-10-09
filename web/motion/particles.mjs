@@ -46,6 +46,11 @@ export class ParticleSystem {
     this.motion.host.write(this.parts, buf);
     this.loaded = key;
   }
+  // Replace one colour set (an array of colours, or packed u32s); the next frame uploads it.
+  setColors(i, colors) {
+    this.colors[i] = colors instanceof Uint32Array ? colors : Uint32Array.from(colors, packColor);
+    this.loaded = "";
+  }
   dispatch(pass, item, cam, W, H) {
     const from = item.from ?? 0, to = item.to ?? from;
     this.#upload(from, to, item.colorFrom ?? Math.min(from, this.colors.length - 1), item.colorTo ?? Math.min(to, this.colors.length - 1));
