@@ -1,4 +1,4 @@
-# Render a repo's media at a release tag, on a hosted runner with no GPU, and attach it to
+# Render a repo's media at a release tag, on hosted runners with no GPU, and attach it to
 # the release. Reusable: a repo calls it from its release workflow (docs/architecture/adr/0012-media-engine.md).
 #
 #   jobs:
@@ -7,9 +7,12 @@
 #       with: { tag: "${{ github.event.release.tag_name }}" }
 #       permissions: { contents: write }
 #
-# Visuals render on Chrome's CPU WebGPU adapter (SwiftShader) at 1280 x 720 with captions
-# and no narration. The narrated 4K render is made on the author's machine and replaces these
-# files with `raw-native media attach`.
+# Each scene renders in its own job, on Chrome's CPU WebGPU adapter (SwiftShader), at
+# 960 x 540 with captions and no narration. On the hosted runner that costs about 0.7 s a
+# frame for an explainer and 0.35 s for a walkthrough; at 1280 x 720 the v0.6.0 explainer
+# took 1.8 s a frame (42 minutes) and the two scenes in one job ran past the 90-minute
+# limit. The narrated 4K render is made on the author's machine and replaces these files
+# with `raw-native media attach`.
 name: media
 on:
   workflow_call:
@@ -20,14 +23,29 @@ on:
       engine_ref: { description: "raw-native ref to render with", required: false, type: string, default: main }
       upload: { description: "Attach the outputs to the release", required: false, type: boolean, default: true }
       max_seconds: { description: "Render only the first N seconds (0: all)", required: false, type: number, default: 0 }
-      width: { description: "Frame width", required: false, type: number, default: 1280 }
-      height: { description: "Frame height", required: false, type: number, default: 720 }
+      width: { description: "Frame width", required: false, type: number, default: 960 }
+      height: { description: "Frame height", required: false, type: number, default: 540 }
 permissions:
   contents: write
 jobs:
-  render:
+  scenes:
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    outputs:
+      ids: ${{ steps.ids.outputs.ids }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { ref: "${{ inputs.tag }}" }
+      - id: ids
+        env: { SPEC: "${{ inputs.spec }}" }
+        run: echo "ids=$(python3 -c "import json,os; print(json.dumps([s['id'] for s in json.load(open(os.environ['SPEC']))['scenes']]))")" >> "$GITHUB_OUTPUT"
+  render:
+    needs: scenes
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    strategy:
+      fail-fast: false
+      matrix:
+        scene: ${{ fromJSON(needs.scenes.outputs.ids) }}
     steps:
       - uses: actions/checkout@v4
         with: { ref: "${{ inputs.tag }}", fetch-depth: 0 }
@@ -44,13 +62,14 @@ jobs:
           MAX: ${{ inputs.max_seconds }}
           W: ${{ inputs.width }}
           H: ${{ inputs.height }}
+          SCENE: ${{ matrix.scene }}
         run: |
           extra=""
           if [ "$MAX" != "0" ]; then extra="--max-seconds $MAX"; fi
-          python .raw-native/tools/media/raw_native_media.py render --spec "$SPEC" $SETUP --out media-out \
+          python .raw-native/tools/media/raw_native_media.py render "$SCENE" --spec "$SPEC" $SETUP --out media-out \
             --adapter swiftshader --width "$W" --height "$H" $extra
       - uses: actions/upload-artifact@v4
-        with: { name: "media-${{ inputs.tag }}", path: media-out, retention-days: 30 }
+        with: { name: "media-${{ inputs.tag }}-${{ matrix.scene }}", path: media-out, retention-days: 30 }
       - name: Attach to the release
         if: ${{ inputs.upload }}
         env:

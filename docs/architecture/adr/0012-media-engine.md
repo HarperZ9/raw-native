@@ -78,8 +78,8 @@ site's narration tool, the cues follow the voice and the audio is muxed.
 
 - **Hosted, on every tag:**
   - check out the repo at the tag and raw-native at a pinned commit;
-  - run `media render --adapter swiftshader --width 1280 --height 720`
-    with no narration;
+  - run `media render --adapter swiftshader --width 960 --height 540`
+    with no narration, one job per scene;
   - upload the outputs to the release as `media-<tag>.zip`, plus each web
     MP4 and poster.
   SwiftShader is Chrome's CPU WebGPU adapter. It draws the same WGSL as a GPU,
@@ -88,8 +88,11 @@ site's narration tool, the cues follow the voice and the audio is muxed.
     ubuntu-24.04 runner, against 7 ms at 1920 x 1080 on the author's RTX 4090;
   - the walkthrough at 960 x 540 on the runner: 343 ms a frame;
   - film 1 at 1280 x 720 on SwiftShader on the author's machine: 179 ms a frame.
-  The hosted size is therefore 1280 x 720, which keeps a release's two scenes
-  inside the job's budget. The runner computed the same certificate values as
+  The first release run, for v0.6.0, rendered both scenes in one job at
+  1280 x 720. The explainer took 1.8 s a frame, 42 minutes in all, and the
+  job was cancelled at its 90-minute limit before the walkthrough finished.
+  Each scene now renders in its own job, at 960 x 540, with a 150-minute
+  limit. The runner computed the same certificate values as
   the author's Windows build (rmse 0.129436031 over 37,996 pixels).
 - **Local, after the tag, under `D:/gpu.lock.d`:**
   - narrate the scene words with the author's voice model, using the site's
