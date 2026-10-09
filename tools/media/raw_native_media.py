@@ -84,6 +84,16 @@ def bundle(spec: dict, spec_path: Path, scene: dict, out: Path, facts: dict, cas
     return f"../../scene/{name}"
 
 
+def write_script(out: Path, scene: dict, vtt: str) -> None:
+    """The words to narrate, one segment per caption cue, in the explainer-film/1 shape the
+    narration tool reads. A walkthrough's segment 0 is its title, so step k is segment k + 1."""
+    cues = [b.split("\n", 1)[1].strip() for b in vtt.replace("\r", "").split("\n\n")[1:] if "-->" in b]
+    title = [{"key": "title", "lines": [scene["title"].replace(":", ".") + "."]}] if scene["kind"] == "walkthrough" else []
+    segs = title + [{"key": f"c{k}", "lines": [c.replace("\n", " ")]} for k, c in enumerate(cues)]
+    doc = {"schema": "explainer-film/1", "slug": scene["id"], "title": scene["title"], "segments": segs}
+    (out / f"{scene['id']}.script.json").write_text(json.dumps(doc, indent=1), encoding="utf-8", newline="\n")
+
+
 def render(args) -> int:
     spec_path = Path(args.spec).resolve()
     spec = media_spec.load(spec_path)
@@ -129,6 +139,7 @@ def render(args) -> int:
                         "-frames:v", "1", "-q:v", "3", str(out / "poster.jpg")], check=True)
         if stats.get("vtt"):
             (out / f"{s['id']}.vtt").write_text(stats["vtt"], encoding="utf-8", newline="\n")
+            write_script(out, s, stats["vtt"])
         files = sorted(p for p in out.rglob("*") if p.is_file() and p.name != "media.json")
         manifest = {
             "schema": "raw-native.media-render/1", "scene": s["id"], "title": s["title"], "kind": s["kind"],
