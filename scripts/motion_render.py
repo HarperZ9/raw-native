@@ -148,7 +148,9 @@ def mux(ffmpeg: str, video: Path, out: Path, audio: str | None, score: str | Non
     # apad with -shortest can stall ffmpeg 7 once the video stream ends; pad to the exact length instead.
     pad = f"apad=whole_dur={seconds:.6f},atrim=0:{seconds:.6f}"
     if audio and score:
-        cmd += ["-filter_complex", f"[2:a]volume={score_db}dB[s];[1:a][s]amix=inputs=2:duration=longest:normalize=0,{pad}[a]", "-map", "0:v", "-map", "[a]"]
+        # A mono narration is centred in stereo so a stereo score keeps its width.
+        cmd += ["-filter_complex", f"[1:a]aformat=channel_layouts=stereo[n];[2:a]aformat=channel_layouts=stereo,volume={score_db}dB[s];"
+                f"[n][s]amix=inputs=2:duration=longest:normalize=0,{pad}[a]", "-map", "0:v", "-map", "[a]"]
     else:
         cmd += ["-filter_complex", f"[1:a]{pad}[a]", "-map", "0:v", "-map", "[a]"]
     cmd += ["-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-t", f"{seconds:.6f}", "-map_metadata", "-1", "-movflags", "+faststart", str(out)]
