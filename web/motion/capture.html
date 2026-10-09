@@ -22,12 +22,19 @@ const post = async (path, body) => { const r = await fetch(path, { method: "POST
 
 async function makeEncoder() {
   const codec = q.get("codec") || "avc1.640034", qp = +(q.get("qp") || 16);
-  const cfg = { codec, width: W, height: H, framerate: fps, hardwareAcceleration: "prefer-hardware", latencyMode: "quality" };
-  if (codec.startsWith("avc1")) { cfg.avc = { format: "annexb" }; cfg.bitrateMode = "quantizer"; }
-  else if (codec.startsWith("hvc1") || codec.startsWith("hev1")) { cfg.hevc = { format: "annexb" }; cfg.bitrate = +(q.get("bitrate") || 80e6); }
-  else cfg.bitrate = +(q.get("bitrate") || 60e6);
-  const sup = await VideoEncoder.isConfigSupported(cfg);
-  if (!sup.supported) throw new Error("encoder config not supported: " + JSON.stringify(cfg));
+  // Prefer a fixed quantizer on the hardware encoder; a machine without one (a CI runner)
+  // falls back to the software encoder at a high variable bitrate.
+  const base = { codec, width: W, height: H, framerate: fps, latencyMode: "quality" };
+  const vbr = +(q.get("bitrate") || Math.round(W * H * fps * 0.35));
+  const tries = codec.startsWith("avc1")
+    ? [{ ...base, hardwareAcceleration: "prefer-hardware", avc: { format: "annexb" }, bitrateMode: "quantizer" },
+       { ...base, hardwareAcceleration: "no-preference", avc: { format: "annexb" }, bitrateMode: "variable", bitrate: vbr }]
+    : codec.startsWith("hvc1") || codec.startsWith("hev1")
+      ? [{ ...base, hardwareAcceleration: "prefer-hardware", hevc: { format: "annexb" }, bitrate: +(q.get("bitrate") || 80e6) }]
+      : [{ ...base, bitrate: +(q.get("bitrate") || 60e6) }];
+  let cfg = null;
+  for (const c of tries) if ((await VideoEncoder.isConfigSupported(c)).supported) { cfg = c; break; }
+  if (!cfg) throw new Error("no supported encoder config among: " + JSON.stringify(tries));
   let pending = [], bytes = 0, seq = 0, failed = null, chain = Promise.resolve();
   const flush = () => {
     if (!pending.length) return chain;
@@ -48,12 +55,12 @@ async function makeEncoder() {
       if (failed) throw failed;
       const vf = new VideoFrame(canvas, { timestamp: Math.round((i * 1e6) / fps), duration: Math.round(1e6 / fps) });
       const opt = { keyFrame: i % (fps * 2) === 0 };
-      if (cfg.avc) opt.avc = { quantizer: qp };
+      if (cfg.avc && cfg.bitrateMode === "quantizer") opt.avc = { quantizer: qp };
       enc.encode(vf, opt);
       vf.close();
       while (enc.encodeQueueSize > 4) await new Promise((r) => setTimeout(r, 1));
     },
-    async end() { await enc.flush(); flush(); await chain; enc.close(); if (failed) throw failed; return { codec, qp: cfg.avc ? qp : null, bitrate: cfg.bitrate || null }; },
+    async end() { await enc.flush(); flush(); await chain; enc.close(); if (failed) throw failed; return { codec, mode: cfg.bitrateMode || "bitrate", acceleration: cfg.hardwareAcceleration || "", qp: cfg.bitrateMode === "quantizer" ? qp : null, bitrate: cfg.bitrate || null }; },
   };
 }
 
