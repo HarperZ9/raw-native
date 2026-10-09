@@ -68,6 +68,46 @@ rules as `ray_ao.cpp` and `ssao.cpp`, shows the five views against the
 tolerance, and can run the WebAssembly build in the page. Its source is
 [docs/explainer/index.html](docs/explainer/index.html).
 
+## Watch
+
+No concept film fits this tool closely yet. The walkthrough below covers it in text, with real commands and output.
+
+Video walkthrough: coming with the next release.
+
+## Walkthrough
+
+Install it, run it once, then use the main feature. Each command below is real, and so is its output.
+
+1. **Get it.** Download a binary from the [latest release](https://github.com/HarperZ9/raw-native/releases/latest) (Windows x64, Linux x64 or WebAssembly) and check it against `SHA256SUMS`.
+
+2. **First run: render and reconcile.** Render the default scene. Both occlusion estimators run, and the reconcile compares them against the tolerance.
+
+   ```text
+   $ raw_native_cli --out ./out
+   reconcile: pixels=37996 rmse=0.1294 maxError=0.6094 verdict=DIVERGENT
+   ```
+
+3. **Verify the output.** Re-check every file the render wrote.
+
+   ```text
+   $ raw_native_cli verify ./out
+   verify: all checks match
+   ```
+
+4. **Try another view.** Change the size and camera.
+
+   ```text
+   $ raw_native_cli --out ./high --width 512 --height 512 --eye 0,9,3 --target 0,0.5,0
+   ```
+
+5. **Or build from source.** CMake 3.24 or newer and a C++23 compiler.
+
+   ```text
+   $ cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+   $ cmake --build build --config Release
+   $ ctest --test-dir build -C Release --output-on-failure
+   ```
+
 ## Run it now
 
 Download a prebuilt binary from the
