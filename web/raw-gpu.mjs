@@ -47,7 +47,13 @@ const USAGE = { storage: 0x80, uniform: 0x40, "copy-src": 0x04, "copy-dst": 0x08
 export async function createHost({ canvas = null, powerPreference = "high-performance", timing = true } = {}) {
   const gpu = typeof navigator !== "undefined" && navigator.gpu;
   if (!gpu) throw new HostUnavailable("WebGPU is not available in this browser");
-  const adapter = await gpu.requestAdapter({ powerPreference });
+  // A software adapter (SwiftShader in headless Chrome on a CI runner) can answer null for
+  // a moment after the browser starts; ask a few times before giving up.
+  let adapter = null;
+  for (let i = 0; i < 6 && !adapter; i++) {
+    adapter = await gpu.requestAdapter({ powerPreference });
+    if (!adapter && i < 5) await new Promise((r) => setTimeout(r, 250 * 2 ** i));
+  }
   if (!adapter) throw new HostUnavailable("no WebGPU adapter");
   const canTime = timing && adapter.features.has("timestamp-query");
   const device = await adapter.requestDevice({

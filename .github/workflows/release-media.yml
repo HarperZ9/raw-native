@@ -6,6 +6,7 @@ on:
   workflow_dispatch:
     inputs:
       tag: { description: "Release tag", required: true, type: string }
+      engine_ref: { description: "raw-native ref to render with (default: the tag)", required: false, type: string, default: "" }
 permissions:
   contents: write
 jobs:
@@ -13,4 +14,4 @@ jobs:
     uses: ./.github/workflows/media.yml
     with:
       tag: ${{ github.event.release.tag_name || inputs.tag }}
-      engine_ref: ${{ github.event.release.tag_name || inputs.tag }}
+      engine_ref: ${{ inputs.engine_ref || github.event.release.tag_name || inputs.tag }}
