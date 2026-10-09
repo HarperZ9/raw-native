@@ -225,6 +225,36 @@ When a release is published, `.github/workflows/media.yml` renders it at
 repos call the same workflow. The narrated 4K render is made on the author's
 machine and replaces them (ADR 0012).
 
+### Add media to another repo
+
+1. Write `docs/media/media.json`. Copy raw-native's: it names
+   - the setup commands (a build);
+   - the facts to read (JSON values, regex matches, command output, images);
+   - the scenes: an explainer module in `docs/media/scenes/`, or a
+     walkthrough's steps.
+   A scene imports the engine as `@raw-native/motion/...`.
+2. Try it locally:
+   `python <raw-native>/tools/media/raw_native_media.py render --spec docs/media/media.json --setup --out media-out`.
+3. Call the workflow from the repo's release:
+
+```yaml
+on:
+  release:
+    types: [published]
+jobs:
+  media:
+    uses: HarperZ9/raw-native/.github/workflows/media.yml@v0.6.0
+    with:
+      tag: ${{ github.event.release.tag_name }}
+    permissions:
+      contents: write
+```
+
+4. Narrated, at 4K, on a machine with a GPU:
+   - render with `--narration DIR`, where DIR holds `<scene>/narration.wav`
+     and `timing.json` made from each scene's `<scene>.script.json`;
+   - then run `raw_native_media.py attach DIR --tag <tag>`.
+
 ## The superstack receipt
 
 From 0.5.0 every render also writes `receipt.json`, a `superstack.receipt/1`
