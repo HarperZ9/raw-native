@@ -14,6 +14,7 @@ const gray = (v) => { const g = Math.max(0, Math.min(1, v)); return [0.08 + 0.86
 
 export default {
   title: "Checking the light",
+  burnsCaptions: true,
   duration: 60,
   fps: 30,
   params: [{ id: "tolerance", label: "tolerance", min: 0.04, max: 0.2, step: 0.005, value: 0.12, note: "your value; raw-native's default is shown first" }],

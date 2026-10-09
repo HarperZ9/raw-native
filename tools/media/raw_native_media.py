@@ -160,7 +160,8 @@ def render(args) -> int:
         files = sorted(p for p in out.rglob("*") if p.is_file() and p.name != "media.json")
         manifest = {
             "schema": "raw-native.media-render/1", "scene": s["id"], "title": s["title"], "kind": s["kind"],
-            "commit": facts["commit"], "narrated": bool(nar), "width": args.width, "height": h, "fps": stats.get("fps", 30),
+            "commit": facts["commit"], "narrated": bool(nar), "captions_burned": bool(s.get("captions_burned")),
+            "width": args.width, "height": h, "fps": stats.get("fps", 30),
             "duration": round(stats["duration"], 3), "frames": stats["frames"], "adapter": stats.get("adapter"), "adapter_kind": args.adapter,
             "frame_ms_median": round(stats["frame_ms_median"], 2), "frame_ms_p95": round(stats["frame_ms_p95"], 2), "wall_seconds": stats["wall_seconds"],
             "chapters": stats.get("chapters", []),
@@ -168,6 +169,40 @@ def render(args) -> int:
         }
         (out / "media.json").write_text(json.dumps(manifest, indent=1), encoding="utf-8", newline="\n")
         print(f"{s['id']}: {stats['frames']} frames, median {stats['frame_ms_median']:.1f} ms, {stats['wall_seconds']} s", flush=True)
+    return 0
+
+
+def engine_commit() -> str:
+    r = subprocess.run(["git", "rev-parse", "HEAD"], cwd=ENGINE, capture_output=True, text=True)
+    return r.stdout.strip() if r.returncode == 0 else ""
+
+
+def repage(args) -> int:
+    """Refresh the interactive page and engine of rendered bundles, leaving the video, facts and
+    recordings as rendered, and rehash the manifest. For fixes to the live page after a release."""
+    root = Path(args.dir).resolve()
+    dirs = [root] if (root / "media.json").is_file() else sorted(p for p in root.iterdir() if (p / "media.json").is_file())
+    spec = {s["id"]: s for s in media_spec.load(Path(args.spec).resolve())["scenes"]} if args.spec else {}
+    for d in dirs:
+        m = json.loads((d / "media.json").read_text(encoding="utf-8"))
+        sid = m["scene"]
+        for f in ENGINE_FILES:
+            copy_lf(ENGINE / f, d / "engine" / Path(f).name)
+        for f in (ENGINE / "web" / "motion").iterdir():
+            if f.is_file() and not f.name.endswith(".test.mjs"):
+                copy_lf(f, d / "engine" / "motion" / f.name)
+        module = next((p.name for p in (d / "scene").glob(f"{sid}.scene.mjs")), None) or Path(spec[sid]["module"]).name
+        page = (HERE / "page.html").read_text(encoding="utf-8")
+        page = page.replace("{{TITLE}}", m["title"]).replace("{{SCENE}}", f"scene/{module}").replace("{{ID}}", sid)
+        (d / "index.html").write_text(page, encoding="utf-8", newline="\n")
+        if sid in spec:
+            m["captions_burned"] = bool(spec[sid].get("captions_burned"))
+        keep = {k for k in m["files"] if not (d / k).is_file()}       # masters kept only on the release
+        files = sorted(p for p in d.rglob("*") if p.is_file() and p.name != "media.json")
+        m["files"] = {**{k: m["files"][k] for k in keep}, **{str(p.relative_to(d)).replace("\\", "/"): sha(p) for p in files}}
+        m["repaged"] = {"engine_commit": engine_commit(), "note": "page and engine refreshed; video, facts and recordings as rendered"}
+        (d / "media.json").write_text(json.dumps(m, indent=1), encoding="utf-8", newline="\n")
+        print(f"repaged {sid}")
     return 0
 
 
@@ -212,6 +247,10 @@ def main(argv=None) -> int:
     p.add_argument("--tag", required=True)
     p.add_argument("--repo")
     p.set_defaults(fn=attach)
+    p = sub.add_parser("repage", help="refresh the interactive page and engine of rendered bundles")
+    p.add_argument("dir")
+    p.add_argument("--spec")
+    p.set_defaults(fn=repage)
     a = ap.parse_args(argv)
     return a.fn(a)
 
