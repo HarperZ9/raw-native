@@ -171,4 +171,6 @@ test("walkthrough plan: steps in order, long output elided, marked lines lit", (
   assert.deepEqual(p.steps[1].lines.map((l) => l.lit), [true, false]);
   assert.ok(p.duration > p.steps[1].end);
   assert.deepEqual(wrap("aa bb cc dd", 5), ["aa bb", "cc dd"]);
+  const shown = plan({ title: "t", steps: [{ say: "x", show_exit: true }] }, { steps: [{ cmd: "c", lines: [{ t: 0.1, text: "out" }], exit: 3 }] });
+  assert.equal(shown.steps[0].lines.at(-1).text, "exit 3");
 });

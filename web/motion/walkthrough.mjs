@@ -8,7 +8,8 @@
 //   import { walkthroughScene } from "./walkthrough.mjs";
 //   export default walkthroughScene({ spec: "first-run.json", cast: "first-run.cast.json", atlas: "atlas.json" });
 //
-// spec: { title, subtitle, steps: [{ say, display?, highlight?, keep?, clear? }] }
+// spec: { title, subtitle, steps: [{ say, display?, highlight?, keep?, clear?, show_exit? }] }
+//   show_exit adds the recorded exit code as the step's last line ("exit 1").
 // cast: { steps: [{ cmd, lines: [{ t, text }], exit, seconds }], commit, platform }
 // timing (optional): narration rows; step k follows the rows of segment k.
 import { rect, circle, contour } from "./path.mjs";
@@ -54,7 +55,8 @@ export function plan(spec, cast, timing = null) {
     const rec = cast.steps[k] || { cmd: "", lines: [], exit: 0, seconds: 0 };
     const cmd = s.display || rec.cmd;
     const keep = s.keep ?? 14;
-    let lines = rec.lines.filter((l) => l.text.trim() !== "" || true);
+    let lines = rec.lines.slice();
+    if (s.show_exit) lines.push({ t: (lines.length ? lines[lines.length - 1].t : 0) + 0.05, text: `exit ${rec.exit}`, exitLine: true });
     let elided = 0;
     if (lines.length > keep) { elided = lines.length - keep; lines = [{ t: lines[0].t, text: `... ${elided} more lines ...`, elision: true }, ...lines.slice(-keep)]; }
     const typing = Math.min(1.6, 0.25 + cmd.length * 0.03);
