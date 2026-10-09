@@ -13,7 +13,7 @@
 import { FrameGraph, Access } from "./frame-graph.mjs";
 
 export { FrameGraph, Access };
-export const VERSION = "0.6.0-dev";
+export const VERSION = "0.6.0";
 
 export class HostUnavailable extends Error {}
 
