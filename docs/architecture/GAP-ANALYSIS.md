@@ -7,6 +7,11 @@ claim cites a source read on 2026-10-03, listed under [Sources](#sources).
 Claims marked **[memory, unverified]** come from prior knowledge and were not
 checked against a source this time.
 
+> **9 October 2026:** a wider comparison (Filament, Bevy, Godot, Wicked Engine and
+> fifteen more renderers, web engines and media tools) is in
+> [COMPARISON.md](COMPARISON.md). It reorders the milestones in
+> [ROADMAP.md](ROADMAP.md) (ADR 0013). This file stays as the record of 3 October.
+
 ## Result
 
 raw-native leads on one axis and trails on most others. It is the only one of

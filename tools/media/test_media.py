@@ -38,6 +38,18 @@ class Facts(unittest.TestCase):
         self.assertEqual(f["echo"]["value"], "36")
         self.assertEqual(f["img"]["value"], [[0.5, 0.5], [0.5, 0.5]])
 
+    def test_exit_codes_cwd_and_stdin(self):
+        (self.dir / "sub").mkdir()
+        (self.dir / "sub" / "in.json").write_text('{"v": 5}', encoding="utf-8")
+        f = media_spec.facts(self.spec({
+            "code": {"cmd": [sys.executable, "-c", "import sys; sys.exit(3)"], "exit": True},
+            "here": {"cmd": [sys.executable, "-c", "import os; print(os.path.basename(os.getcwd()))"], "cwd": "sub"},
+            "piped": {"cmd": [sys.executable, "-c", "import json,sys; print(json.load(sys.stdin)['v'] * 2)"], "stdin": "sub/in.json"},
+        }), self.dir)["facts"]
+        self.assertEqual(f["code"]["value"], 3)
+        self.assertEqual(f["here"]["value"], "sub")
+        self.assertEqual(f["piped"]["value"], "10")
+
     def test_pfm_rows_are_flipped_to_top_down(self):
         g = media_spec._image(self.dir / "b.pfm", 4)
         self.assertEqual([r[0] for r in g], [3.0, 2.0, 1.0, 0.0])

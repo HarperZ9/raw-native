@@ -10,6 +10,9 @@
 //   g.addPass("decay", [[acc, Access.StorageWrite]], (c) => c.dispatch(pipe, [params, acc], x, y));
 //   host.frame(g);                                   // one encoder, one submit
 //   host.timings()                                   // { pass: ms } when the adapter has timestamps
+//   const tex = host.texture({ width, height });     // a sampled, renderable RGBA8 texture
+//   host.upload(tex, canvasOrImageOrBitmap);         // or a typed array of RGBA8 rows
+//   const other = host.share({ canvas: c2 });        // a second consumer on the same device
 import { FrameGraph, Access } from "./frame-graph.mjs";
 
 export { FrameGraph, Access };
@@ -42,6 +45,10 @@ struct Size { w: u32, h: u32, }
   return unpack4x8unorm(frame[y * S.w + x]);
 }`;
 
+// One count for the whole page, so a test can show two consumers share one device.
+export const hostStats = { requestDevice: 0 };
+const TEXTURE_USAGE = { "copy-src": 0x01, "copy-dst": 0x02, sampled: 0x04, storage: 0x08, render: 0x10 };
+
 const USAGE = { storage: 0x80, uniform: 0x40, "copy-src": 0x04, "copy-dst": 0x08, "map-read": 0x01, vertex: 0x20, index: 0x10 };
 
 export async function createHost({ canvas = null, powerPreference = "high-performance", timing = true } = {}) {
@@ -56,6 +63,7 @@ export async function createHost({ canvas = null, powerPreference = "high-perfor
   }
   if (!adapter) throw new HostUnavailable("no WebGPU adapter");
   const canTime = timing && adapter.features.has("timestamp-query");
+  hostStats.requestDevice++;
   const device = await adapter.requestDevice({
     requiredFeatures: canTime ? ["timestamp-query"] : [],
     requiredLimits: { maxStorageBufferBindingSize: adapter.limits.maxStorageBufferBindingSize,
@@ -100,6 +108,39 @@ class Host {
     return b;
   }
   write(buffer, data, offset = 0) { this.device.queue.writeBuffer(buffer, offset, data); }
+  // A texture: usage is a list of names ("sampled", "render", "copy-src", "copy-dst", "storage").
+  texture({ width, height, format = "rgba8unorm", usage = ["sampled", "render", "copy-dst", "copy-src"], label = "" }) {
+    let u = 0;
+    for (const n of usage) u |= TEXTURE_USAGE[n];
+    return this.device.createTexture({ label, size: [Math.max(1, width | 0), Math.max(1, height | 0)], format, usage: u });
+  }
+  // A sampler, cached by its settings: filter "linear" or "nearest", address "clamp" or "repeat".
+  sampler({ filter = "linear", address = "clamp" } = {}) {
+    const key = filter + "/" + address;
+    this.samplers = this.samplers || new Map();
+    if (!this.samplers.has(key)) {
+      const a = address === "repeat" ? "repeat" : "clamp-to-edge";
+      this.samplers.set(key, this.device.createSampler({ magFilter: filter, minFilter: filter, addressModeU: a, addressModeV: a }));
+    }
+    return this.samplers.get(key);
+  }
+  // Copy pixels into a texture: a canvas, image, ImageBitmap or VideoFrame (top-left origin),
+  // or { data, width, height } with RGBA8 rows.
+  upload(texture, src) {
+    if (src && src.data && src.width) {
+      this.device.queue.writeTexture({ texture }, src.data, { bytesPerRow: src.width * 4 }, [src.width, src.height]);
+    } else {
+      this.device.queue.copyExternalImageToTexture({ source: src }, { texture }, [texture.width, texture.height]);
+    }
+    return texture;
+  }
+  // A second consumer on this device: its own canvas, the same adapter and device, so
+  // resources made by either can be used by both (one requestDevice for the page).
+  share({ canvas = null } = {}) {
+    const h = new Host(this.adapter, this.device, canvas, !!this.timer);
+    h.parent = this;
+    return h;
+  }
   async compute(label, code) {
     const module = this.device.createShaderModule({ label, code });
     return this.device.createComputePipelineAsync({ label, layout: "auto", compute: { module, entryPoint: "main" } });
@@ -151,7 +192,8 @@ class Host {
   timings() { return this.timer ? this.timer.read() : null; }
   // Resolves when every submitted frame has finished on the GPU.
   done() { return this.device.queue.onSubmittedWorkDone(); }
-  destroy() { try { this.context && this.context.unconfigure(); } catch (_) {} this.device.destroy(); }
+  // A shared consumer lets go of its canvas only; the device belongs to the host that made it.
+  destroy() { try { this.context && this.context.unconfigure(); } catch (_) {} if (!this.parent) this.device.destroy(); }
 }
 
 // What a pass records with. Consecutive dispatches share one compute pass

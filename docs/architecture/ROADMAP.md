@@ -1,19 +1,24 @@
-# Roadmap to a consumer-quality renderer
+# Roadmap to a media-grade, professional-grade engine
 
-Milestones in order, each with exit criteria a stranger can check. There are
-no dates: a milestone is done when its criteria pass, and its evidence is
-committed under `evidence/`. Every milestone keeps the four properties in
-[ARCHITECTURE.md](ARCHITECTURE.md#what-stays-true-at-every-scale), and every
-milestone's features land in the CPU reference first or with their fast path.
+Milestones in order, each with exit criteria a stranger can check. There are no
+dates: a milestone is done when its criteria pass and their evidence is committed
+under `evidence/`. Every milestone keeps the four properties in
+[ARCHITECTURE.md](ARCHITECTURE.md#what-stays-true-at-every-scale): a CPU reference
+for every verified feature, certificates on every run, byte-identical determinism
+where the platform allows it, and visible dependencies. Creative modules (Threads,
+Worlds, Motion) keep their ruling: no certificate.
 
-Each competitor's lead from [GAP-ANALYSIS.md](GAP-ANALYSIS.md) appears below as
-a target in the milestone that closes it. Nothing is ceded; what is deferred is
-scheduled.
+This plan replaced the earlier milestone list on 9 October 2026, when the author
+accepted the capability roadmap and its five decisions (ADR 0013). The ranking puts
+the customers first: the explainer films, the Studio, and the media every release
+renders. So the colour pipeline, vector and text fidelity and dependable media output
+come before a second native backend, and Vulkan and the native window move to M4.
+The comparison behind the order, with where raw-native leads and trails each
+measured reference, is [COMPARISON.md](COMPARISON.md).
 
-"Mid-tier GPU" means the class one generation behind the current mainstream,
-named in the evidence file when measured (an RTX 4060 or RX 7600 class card in
-2026 **[memory, unverified]**). "Reference machine" means the author's RTX 4090
-workstation.
+"Reference machine" means the author's RTX 4090 workstation. "Mid-tier GPU" means
+the class one generation behind the current mainstream, named in the evidence file
+when measured. A6 holds 0.x semantics until M3, where the public API freezes.
 
 ## M0: Foundation (landed with the architecture change)
 
@@ -29,123 +34,63 @@ workstation.
    WebGPU on the reference machine.
 2. `check_layers.py` passes with its self-test in CI.
 
-## M1: Scenes from files
 
-- RHI: sampled textures, samplers, texture uploads; graph resources for
-  textures.
-- `assets` layer: glTF 2.0 import (meshes, node transforms, metallic-roughness
-  material factors and base-colour textures), PNG decode; `superstack.scene/1`
-  import and export.
-- A `render` CLI verb that takes a glTF file.
-- First vendored dependencies, if the author accepts ADR 0005, each with its
-  manifest entry.
+## M1: A media-grade host
 
-**Exit criteria**
+Scope: gaps 1, 2, 3, 4 and 10, web first (A1).
 
-1. Ten named models from the Khronos glTF sample assets (listed in
-   `evidence/m1-corpus.json` before the first run) import without error and
-   render on the CPU reference, D3D12 and WebGPU.
-2. Every GPU render of the corpus has a `raw-gpu-cert/1` verdict of `verified`
-   against tolerances committed before the first textured GPU run.
-3. The corpus's CPU outputs are added to the golden manifest and are
-   byte-identical on MSVC and GCC.
-4. The glTF parser survives one million fuzzed inputs without a crash, hang or
-   sanitizer report.
-5. **Closes:** Unity's and bgfx's lead on asset intake, for glTF.
+Exit criteria:
+1. **Studio host.** `web/raw-gpu.mjs` exposes textures, samplers, canvas-as-texture compositing and `host.share()` (the Studio's C0 pull request). A browser test composites a 2D canvas and matches a CPU composite within 1/255 on SwiftShader and on the RTX 4090. The count of `requestDevice` calls is 1 with two consumers. The no-WebGPU fallback draws.
+2. **Colour.** The tone mappers and output transforms have a C++ reference and WGSL implementations. Over a committed grid of 33 x 33 x 33 RGB values plus grey and saturation ramps, the GPU result is within 1/255 of the C++ reference at 8-bit output, and the C++ reference is within a colour-difference bound (stated in `evidence/m1-colour-bounds.json` before the first run) of an OCIO 2.6.0 result produced offline. The default build keeps no new dependency.
+3. **HDR.** The extended-range path works on a browser that offers it, and `evidence/m1-hdr-patch.json` holds a calibrate-pro measurement of a 1,000-nit patch within 5%.
+4. **Vector.** Stroke dashes, joins and caps, gradients, clip paths and image fills pass a corpus listed in `evidence/m1-vector-corpus.json` before the first run, each within the stated coverage error of the CPU reference. Node tests cover flattening, dash and join geometry.
+5. **Text and maths.** Every equation in films 1 to 5 renders from the engine's TeX subset or the documented MathJax path with no manual patch, checked by a script that lists the unsupported macros (expected: none).
+6. **Media output.** The manifest of each scene records an encoder probe for the machine. Two runs of `ao-check` on the same device class produce identical frame hashes for every frame. An offline audio mix matches the `superstack.sound/1` vectors sample for sample. The CPU-adapter smoke job stays inside a wall-clock budget stated in `media.json`.
+7. **Budgets.** Media stats files hold per-pass GPU ms where the adapter has timestamps, and a budget gate fails a local run that exceeds its file. A baseline of joules per frame exists for both media scenes, or the evidence file says the telemetry was unavailable.
+8. **Records.** ADR 0013 records this roadmap (if the author accepts it), and `GAP-ANALYSIS.md` cites it.
 
-## M2: Physically based shading
+Likely failure points: browser encoders that refuse 4K; hardware encoders that are not bit-exact (frame hashes come from raw readback, not from the encoded file); CI runners without timestamps.
 
-- Metallic-roughness BRDF following Filament's published model (GGX, Smith
-  height-correlated visibility, Schlick Fresnel, Lambert diffuse), photometric
-  light units and a physical camera.
-- Image-based lighting with prefiltered environment maps; punctual lights
-  (directional, point, spot); shadow maps; exposure and tone mapping; the HDR
-  channel kept unclamped.
-- A CPU reference for each, including a converged path-traced reference for
-  lighting at small sizes.
-- Material permutations; the shader-language decision (A5) is made here.
+## M2: Assets and materials
 
-**Exit criteria**
+Scope: gaps 5, 6, 7 (base model, IBL, punctual lights) and the texture half of gap 8.
 
-1. A white-furnace test on the CPU reference returns the input radiance within
-   1e-3 for every roughness in 0.05 steps.
-2. `MetalRoughSpheres`, `DamagedHelmet` and `Sponza` from the sample assets
-   render with GPU verdict `verified` on D3D12 and WebGPU at committed
-   tolerances.
-3. The rasterized PBR frame's error against the path-traced reference is
-   recorded per scene in a certificate, with its bound stated before the run.
-4. **Closes:** Filament's lead on a documented PBR model; Godot's on standard
-   lighting features (clustered lighting itself lands in M4).
+Exit criteria:
+1. Ten named glTF models, listed before the first run, import and render on the CPU reference, D3D12 and WebGPU; GPU verdicts `verified`; CPU outputs in the golden manifest, byte-identical on MSVC, GCC and WebAssembly.
+2. One million fuzzed glTF inputs: no crash, hang or sanitizer report.
+3. The RHI has textures, samplers, graphics pipelines and render passes on D3D12 and WebGPU; a sampled-texture identity test passes against the CPU sampler reference.
+4. The A5 spike report exists with measurements, and the author has decided.
+5. White furnace passes within 1e-3 for every roughness in 0.05 steps.
+6. `third_party/MANIFEST.md` lists every vendored library with upstream, version, SPDX licence, adapter file and hash; CI verifies the hashes.
 
-## M3: A window and a second native backend
+## M3: Lit scenes, a frozen API, a verified viewer
 
-- `platform` layer: a window, input, a swapchain surface, HDR output (scRGB
-  FP16 by default, HDR10 as an option), frame pacing.
-- Vulkan backend (or the first backend the author picks under A1).
-- RHI: graphics pipelines, render passes, timestamp queries, a validating
-  layer for debug and CI builds.
-- Frame graph: transient aliasing, history resources.
-- The verified viewer (A4): open a glTF file, render it, show the CPU
-  reference, the error map and the certificate.
+Scope: shadows, TAA and SMAA, frame-graph aliasing and history, the validating layer, the Studio viewer (A4). The API freezes here (A6).
 
-**Exit criteria**
+Exit criteria:
+1. `MetalRoughSpheres`, `DamagedHelmet` and a Sponza-class scene render with GPU verdict `verified` at committed tolerances; the rasterised frame's error against a path-traced reference is recorded per scene with its bound stated first.
+2. TAA meets its ghosting and RMSE bounds against the supersampled reference.
+3. Transient aliasing lowers peak GPU memory on the corpus by a recorded amount with byte-identical output; the validation layer catches every injected error in its negative-control suite.
+4. The Studio opens a glTF file, renders it, and shows the CPU reference, the error map and the certificate (A4).
+5. The public C++ API and the plugin C ABI are documented, an API dump is checked in CI, and source compatibility within a major is promised from the first release after M3.
 
-1. The identity matrix and the M1 and M2 corpora pass on D3D12, Vulkan and
-   WebGPU, with a golden per device class for the reference machine.
-2. The viewer presents at the display's refresh rate with no dropped frame over
-   10,000 frames of `Sponza` on the reference machine, measured by
-   presentation statistics.
-3. HDR output is measured on an HDR display: a 1,000-nit test patch reads
-   within 5% on a colorimeter.
-4. Transient aliasing lowers peak GPU memory on `Sponza` by an amount recorded
-   in evidence, with byte-identical output.
-5. **Closes:** wgpu's lead on validation; Unreal's and Unity's on graph
-   aliasing; bgfx's on backend count (partly).
+## M4: Scale and reach
 
-## M4: Performance
+Scope: Vulkan (A1), native window, swapchain and HDR output, clustered lighting, GPU culling, LOD and meshlets by compute, skeletal and morph animation, general particles, Tracy zones.
 
-- GPU timestamps per pass in every certificate; Tracy zones.
-- Clustered lighting, GPU frustum culling, async compute where a backend has a
-  second queue.
-- A job system for CPU work and parallel command recording.
+Exit criteria:
+1. The identity matrix and the M2 and M3 corpora pass on D3D12, Vulkan and WebGPU, with a golden per device class.
+2. 60 fps at 2560 x 1440 on a mid-tier GPU for a Sponza-class scene with PBR, shadows and 64 point lights: p95 at most 16.7 ms over 10,000 frames, on D3D12 and Vulkan (carried from the repository roadmap).
+3. Skinned and morphed glTF models match a CPU skinning reference within a stated RMSE.
+4. One million particles at a frame time recorded on the reference machine, with seed-determinism across runs.
+5. Frames per joule are published for the M1 scenes and the M4 scene.
 
-**Exit criteria**
+## M5: Light transport and breadth
 
-1. 60 fps at 2560 x 1440 on a mid-tier GPU for `Sponza` with PBR, shadows and
-   64 point lights: p95 frame time at most 16.7 ms over 10,000 frames, on D3D12
-   and on the second native backend.
-2. The same scene on the reference machine at p95 at most 4 ms.
-3. GPU verdicts stay `verified`; the CPU reference certifies a seeded tile set
-   of one frame in every 600 during the timed run.
-4. **Closes:** The Forge's lead on measured performance; Godot's on clustered
-   lighting.
+Scope: global illumination, screen-space reflections, an own temporal upscaler, Metal (A1), USD import if asked, packaging and crash reporting (sentry-native, MIT), and the review of A3.
 
-## M5: Consumer release
-
-- Packaging: installers, code signing, an SBOM, crash reporting with
-  minidumps (under A2).
-- Accessibility for the viewer: screen-reader names for every control, full
-  keyboard reach, UI scale from 100 to 200%, reduced motion, colour-blind-safe
-  error-map palettes.
-- Mesh LODs and texture streaming for scenes larger than GPU memory.
-- Metal backend, if A1 keeps macOS in scope.
-- The 1.0 API promise (A6) and the C ABI for binary plugins.
-
-**Exit criteria**
-
-1. Installers for every platform in A1 install, run the viewer and uninstall
-   cleanly on a fresh machine of each.
-2. The accessibility checklist passes with a screen reader on Windows (and
-   VoiceOver on macOS if in scope).
-3. A scene with twice the reference GPU's memory in textures renders without
-   an out-of-memory failure, streaming in under a stated time budget.
-4. Every third-party library is in the manifest with its licence text in the
-   release archive.
-5. **Closes:** Godot's lead on a shipped, accessible application; Unreal's on
-   streaming (partly).
-
-## After M5, if the author puts them in scope (A3, A4)
-
-- **Engine runtime:** ECS in `world`, physics behind an interface, scripting
-  through the C ABI. Closes Bevy's and Godot's lead as engines.
-- **Editor:** scene editing on top of the viewer.
+Exit criteria:
+1. A GI technique, written from its paper, matches a converged path-traced reference on a small scene within a bound stated first, and its cost is recorded.
+2. Metal passes the identity matrix.
+3. Installers, an SBOM and licence texts ship in the release archive; a crash produces a minidump with a build ID.
+4. A written review of A3 uses evidence from M2 to M4: did users ask for a runtime?
