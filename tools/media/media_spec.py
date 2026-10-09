@@ -5,6 +5,9 @@ of the commit it was rendered at. Kinds:
   {"json": "path", "pointer": "/a/0/b"}       a JSON value
   {"text": "path", "regex": "(...)"}          the first group of a regex match in a file
   {"cmd": [...], "regex": "(...)"}            a command's output (optionally a regex group)
+  {"cmd": [...], "exit": true}                the command's exit code
+  {"cmd": [...], "stdin": "path"}             (either form) with a file as its input
+A cmd fact may set "cwd", relative to the repository root.
   {"image": "path.pgm", "size": 64}           a P5 PGM or Pf/PF PFM image, averaged to size x size, values 0..1
 A fact that cannot be read fails the render.
 """
@@ -56,9 +59,11 @@ def local_exe(name: str, root: Path) -> str:
     return str(root / name) if ("/" in name or "\\" in name) and (root / name).is_file() else name
 
 
-def run(argv: list[str], root: Path, timeout: float = 1800) -> subprocess.CompletedProcess:
-    exe = local_exe(argv[0], root)
-    return subprocess.run([exe, *argv[1:]], cwd=root, capture_output=True, text=True, timeout=timeout,
+def run(argv: list[str], root: Path, timeout: float = 1800, cwd: str = "", stdin: str = "") -> subprocess.CompletedProcess:
+    where = root / cwd if cwd else root
+    exe = local_exe(argv[0], where)
+    data = (root / stdin).read_text(encoding="utf-8") if stdin else None
+    return subprocess.run([exe, *argv[1:]], cwd=where, capture_output=True, text=True, timeout=timeout, input=data,
                           env={**os.environ, "PYTHONIOENCODING": "utf-8", "NO_COLOR": "1"})
 
 
@@ -123,10 +128,13 @@ def facts(spec: dict, root: Path) -> dict:
                 v, src = m.group(1), f"{f['text']} /{f['regex']}/"
             elif "cmd" in f:
                 argv = expand(f["cmd"], vars_)
-                r = run(argv, root)
+                r = run(argv, root, cwd=f.get("cwd", ""), stdin=f.get("stdin", ""))
                 out = (r.stdout + r.stderr).strip()
-                v = re.search(f["regex"], out).group(1) if f.get("regex") else out
-                src = " ".join(argv)
+                if f.get("exit"):
+                    v = r.returncode
+                else:
+                    v = re.search(f["regex"], out, re.M).group(1) if f.get("regex") else out
+                src = (f"(in {f['cwd']}) " if f.get("cwd") else "") + " ".join(argv)
             elif "image" in f:
                 v, src = _image(root / f["image"], int(f.get("size", 64))), f"{f['image']} averaged to {f.get('size', 64)}^2"
             else:
@@ -155,9 +163,10 @@ def record(scene: dict, spec: dict, root: Path) -> dict:
     steps = []
     for st in scene["steps"]:
         argv = expand(st["run"], vars_)
-        exe = local_exe(argv[0], root)
+        where = root / st["cwd"] if st.get("cwd") else root
+        exe = local_exe(argv[0], where)
         t0 = time.monotonic()
-        p = subprocess.Popen([exe, *argv[1:]], cwd=root, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
+        p = subprocess.Popen([exe, *argv[1:]], cwd=where, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True,
                              encoding="utf-8", errors="replace", env={**os.environ, "PYTHONIOENCODING": "utf-8", "NO_COLOR": "1"})
         lines = []
         for line in p.stdout:
