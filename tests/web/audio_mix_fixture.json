@@ -1,0 +1,7 @@
+{
+ "rate": 48000,
+ "frames": 24000,
+ "note": "web/motion/audio.mjs and tools/media/audio_mix.py must both give this PCM hash for this mix. Inputs: a[i] = ((i*37) mod 65536 - 32768)/32768*0.6 (mono, gain 0.7071); b = (((i*101) mod 4096 - 2048)/2048*0.3, ((i*7) mod 1000 - 500)/500*0.25) (stereo, gain 0.5, offset 1000).",
+ "pcm_sha256": "c73beb992b451cbc195169e49aa5f10ec744a8b85b72e6ee57d926e37870bc5f",
+ "integrated_lufs": -12.824782243420971
+}

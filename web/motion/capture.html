@@ -77,7 +77,13 @@ try {
   for (let i = Math.max(0, from - (+q.get("warm") || 0)); i < from; i++) { eng.ctx.dt = 1 / fps; eng.motion.draw(eng.list(i / fps), { frame: i, time: i / fps }); }
   const enc = transport === "webcodecs" ? await makeEncoder() : null;
   const cpu = [];
-  let readback = q.get("readback") === "1";
+  // hash=1: every frame is read back and hashed (SHA-256 of its RGBA rows), so two runs can
+  // be compared frame for frame. Encoded files are outputs, not the identity: hardware
+  // encoders need not be bit-exact.
+  const hashing = q.get("hash") === "1";
+  let readback = q.get("readback") === "1" || hashing;
+  const hashes = [];
+  const hex = (buf) => Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, "0")).join("");
   for (let i = from; i < to; i++) {
     const t0 = performance.now();
     if (enc) {
@@ -92,7 +98,11 @@ try {
           done = true;
         } catch (e) { readback = true; status({ readback: String(e) }); }
       }
-      if (!done) await enc.frame(await eng.capture(i, fps), i);
+      if (!done) {
+        const img = await eng.capture(i, fps);
+        if (hashing) hashes.push(hex(await crypto.subtle.digest("SHA-256", img.data)));
+        await enc.frame(img, i);
+      }
       if (i % 8 === 0) await eng.host.done();
     } else {
       const img = await eng.capture(i, fps);
@@ -102,11 +112,21 @@ try {
     if (i % 30 === 0) status({ at: i, gpu: eng.motion.timings(), stats: eng.motion.stats });
   }
   const encoded = enc ? { ...(await enc.end()), source: readback ? "readback" : "canvas" } : { codec: "raw" };
+  // What this browser's encoders accept, recorded with every render.
+  const probe = [];
+  for (const [name, codec] of [["H.264 High", "avc1.640034"], ["HEVC Main", "hvc1.1.6.L153.B0"], ["AV1 Main", "av01.0.12M.08"], ["VP9", "vp09.00.51.08"]])
+    for (const [w, h] of [[1920, 1080], [3840, 2160]])
+      for (const accel of ["prefer-hardware", "prefer-software"]) {
+        let ok = false;
+        try { ok = (await VideoEncoder.isConfigSupported({ codec, width: w, height: h, framerate: fps, bitrate: 20e6, hardwareAcceleration: accel })).supported; } catch (_) { ok = false; }
+        probe.push({ codec: name, size: `${w}x${h}`, acceleration: accel, supported: ok });
+      }
   cpu.sort((a, b) => a - b);
   const stats = { frames: cpu.length, frame_ms_median: cpu[cpu.length >> 1], frame_ms_p95: cpu[Math.floor(cpu.length * 0.95)],
     gpu_ms: eng.motion.timings(), adapter: eng.host.info, last: eng.motion.stats, encoded,
     duration: eng.scene.duration, title: eng.scene.title, chapters: eng.scene.chapters || [],
-    vtt: typeof eng.scene.captions === "function" ? eng.scene.captions(eng.ctx) : null };
+    vtt: typeof eng.scene.captions === "function" ? eng.scene.captions(eng.ctx) : null,
+    encoder_probe: probe, user_agent: navigator.userAgent, frame_hashes: hashing ? hashes : null };
   await post("/done", JSON.stringify(stats));
   status({ done: true, stats });
 } catch (e) {

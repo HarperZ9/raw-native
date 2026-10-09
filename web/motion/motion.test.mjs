@@ -172,3 +172,34 @@ test("walkthrough plan: steps in order, long output elided, marked lines lit", (
   assert.ok(p.duration > p.steps[1].end);
   assert.deepEqual(wrap("aa bb cc dd", 5), ["aa bb", "cc dd"]);
 });
+
+test("audio: superstack.sound/1 quantize and loudness vectors, and the shared mix fixture", async () => {
+  const { quantizeS16, integratedLufs, peakDbfs, mixTracks, kWeighting } = await import("./audio.mjs");
+  const { createHash } = await import("node:crypto");
+  const V = JSON.parse(readFileSync(new URL("../../third_party/superstack/vectors/sound.json", import.meta.url), "utf8"));
+  for (const c of V.quantize) assert.equal(quantizeS16([c.in])[0], c.out, `quantize ${c.in}`);
+  for (const [rate, bq] of Object.entries(V.k_weighting))
+    kWeighting(Number(rate)).forEach((f, i) => f.forEach((x, j) => near(x, bq[i][j], V.k_tolerance * 10)));
+  for (const v of V.loudness) {
+    const n = v.frames, ch = v.channels, s = new Float64Array(n * ch);
+    for (let i = 0; i < n; i++) for (let c = 0; c < ch; c++) {
+      if (v.kind === "silence") continue;
+      let amp = v.amp[c];
+      if (v.kind === "gated" && i >= Math.floor(n / 2)) amp *= v.quiet_gain;
+      s[i * ch + c] = amp * Math.sin(2 * Math.PI * v.freq * i / v.rate);
+    }
+    const l = integratedLufs(s, v.rate, ch);
+    if (v.integrated_lufs === null) assert.equal(l, null, v.name); else near(l, v.integrated_lufs, v.tolerance_lu);
+    if (v.peak_dbfs === null) assert.equal(peakDbfs(s), null); else near(peakDbfs(s), v.peak_dbfs, 1e-9);
+  }
+  const F = JSON.parse(readFileSync(new URL("../../tests/web/audio_mix_fixture.json", import.meta.url), "utf8"));
+  const a = new Float64Array(F.frames), b = new Float64Array(F.frames * 2);
+  for (let i = 0; i < F.frames; i++) {
+    a[i] = ((i * 37) % 65536 - 32768) / 32768 * 0.6;
+    b[2 * i] = ((i * 101) % 4096 - 2048) / 2048 * 0.3; b[2 * i + 1] = ((i * 7) % 1000 - 500) / 500 * 0.25;
+  }
+  const mix = mixTracks([{ samples: a, channels: 1, gain: 0.7071 }, { samples: b, channels: 2, gain: 0.5, offset: 1000 }], { channels: 2, frames: F.frames });
+  const pcm = quantizeS16(mix);
+  assert.equal(createHash("sha256").update(Buffer.from(pcm.buffer)).digest("hex"), F.pcm_sha256, "JS mix differs from the Python mix");
+  near(integratedLufs(mix, F.rate, 2), F.integrated_lufs, 1e-9);
+});

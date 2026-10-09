@@ -171,5 +171,12 @@
       ],
       "captions_burned": true
     }
-  ]
+  ],
+  "budgets": {
+    "about": "Checked by tools/media/budget.py. Smoke: CI renders smoke.seconds of each scene on the CPU WebGPU adapter; measured on main 2026-10-09 at 43.4 s (ao-check) and 27.1 s (first-run).",
+    "smoke": {
+      "seconds": 4,
+      "wall_seconds": 120
+    }
+  }
 }

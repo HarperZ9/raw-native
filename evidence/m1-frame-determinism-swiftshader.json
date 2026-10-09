@@ -1,0 +1,23 @@
+{
+ "scene": "ao-check",
+ "commit": "908f781f544d22db02ac3f1bca7ea001a490ce24",
+ "adapter": {
+  "vendor": "google",
+  "architecture": "swiftshader",
+  "device": "",
+  "description": ""
+ },
+ "adapter_kind": "swiftshader",
+ "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+ "size": "640x360",
+ "frames": 1456,
+ "frames_second_run": 1456,
+ "identical": true,
+ "differing_frames": [],
+ "differing_count": 0,
+ "chain_sha256": [
+  "f173c03a6e1f5be49eb40d4e3f17b7983e9f65a69b4724a33e0b3d6c821c98fd",
+  "f173c03a6e1f5be49eb40d4e3f17b7983e9f65a69b4724a33e0b3d6c821c98fd"
+ ],
+ "does_not_prove": "Identity across two runs on this adapter and browser. Not across GPUs, drivers or browsers."
+}

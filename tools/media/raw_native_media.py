@@ -140,12 +140,20 @@ def render(args) -> int:
                "--adapter", args.adapter]
         if nar:
             cmd += ["--audio", str(nar / "narration.wav")]
+        if args.hash_frames:
+            cmd += ["--hash-frames"]
         if args.max_seconds:
             cmd += ["--to", str(args.max_seconds)]
         print(f"render {s['id']} at {args.width}x{h} on {args.adapter}", flush=True)
         subprocess.run(cmd, check=True)
         stats = json.loads(Path(str(video) + ".stats.json").read_text(encoding="utf-8"))
         Path(str(video) + ".stats.json").unlink()
+        frames_file = Path(str(video) + ".frames.sha256")
+        if frames_file.is_file():
+            frames_file.replace(out / "frames.sha256")
+        mixwav = video.with_suffix(".mix.wav")
+        if mixwav.is_file():
+            mixwav.unlink()     # its hash and loudness are in the manifest; the MP4 carries the audio
         if h > 1080:
             web = out / f"{s['id']}-1080p.mp4"
             subprocess.run([ff, "-y", "-loglevel", "error", "-i", str(video), "-vf", "scale=1920:1080:flags=lanczos", "-c:v", "libx264",
@@ -165,6 +173,10 @@ def render(args) -> int:
             "duration": round(stats["duration"], 3), "frames": stats["frames"], "adapter": stats.get("adapter"), "adapter_kind": args.adapter,
             "frame_ms_median": round(stats["frame_ms_median"], 2), "frame_ms_p95": round(stats["frame_ms_p95"], 2), "wall_seconds": stats["wall_seconds"],
             "chapters": stats.get("chapters", []),
+            "audio": stats.get("audio") or None,
+            "frame_chain_sha256": stats.get("frame_chain_sha256"),
+            "encoder_probe": stats.get("encoder_probe"), "user_agent": stats.get("user_agent"),
+            "gpu_ms": stats.get("gpu_ms"),
             "files": {str(p.relative_to(out)).replace("\\", "/"): sha(p) for p in files},
         }
         (out / "media.json").write_text(json.dumps(manifest, indent=1), encoding="utf-8", newline="\n")
@@ -241,6 +253,7 @@ def main(argv=None) -> int:
             p.add_argument("--adapter", choices=["gpu", "swiftshader"], default="gpu")
             p.add_argument("--narration")
             p.add_argument("--max-seconds", type=float, default=None, help="render only the first N seconds (a smoke test)")
+            p.add_argument("--hash-frames", action="store_true", help="read back and hash every frame (frames.sha256 in the bundle)")
         p.set_defaults(fn=render, facts_only=(name == "facts"))
     p = sub.add_parser("attach")
     p.add_argument("dir")
