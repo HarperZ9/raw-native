@@ -211,7 +211,7 @@ def main(argv=None) -> int:
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     port = srv.server_address[1]
     q = (f"scene={a.scene}&w={a.width}&h={a.height}&fps={a.fps}&from={first}&warm={a.warm}"
-         f"&transport={a.transport}&codec={a.wc_codec}&qp={a.qp}")
+         f"&transport={a.transport}&codec={a.wc_codec}&qp={a.qp}&readback={1 if a.adapter == 'swiftshader' else 0}")
     if a.t1 is not None:
         q += f"&to={round(a.t1 * a.fps)}"
     if a.shaders:
