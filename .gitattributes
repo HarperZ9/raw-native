@@ -10,3 +10,5 @@ third_party/superstack/SUPERSTACK.sha256 -text
 third_party/superstack/superstack.hpp -text
 third_party/superstack/tests/run_vectors.cpp -text
 third_party/superstack/vectors/*.json -text
+third_party/superstack/superstack.mjs -text
+third_party/superstack/examples/sound/* -text

@@ -54,3 +54,4 @@ build-wasm-sums.json
 /_inst/
 /build-*/
 !third_party/superstack/vectors/*.json
+!third_party/superstack/examples/sound/sound.json

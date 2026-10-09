@@ -1,0 +1,15 @@
+{
+  "kind": "superstack.sound/1",
+  "seed": "folded-light",
+  "rate": 48000,
+  "channels": 1,
+  "duration_samples": 96000,
+  "master_gain": 0.5,
+  "scale_hz": [220, 247.5, 275, 330, 366.66666666666669, 440, 495, 550],
+  "voices": 6,
+  "voice_gain": 0.2,
+  "attack_samples": 960,
+  "release_samples": 9600,
+  "note_samples": 36000,
+  "step_samples": 12000
+}
