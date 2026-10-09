@@ -16,7 +16,7 @@
 // units, and widens the coverage ramp: depth of field without a blur pass.
 
 export const BAND = 16;          // band height in pixels
-const CHUNK = 256;               // stroke-only bands split into chunks this wide
+const CHUNK = 128;               // bands split into chunks this wide (strokes, and fills of closed contours)
 export const DEFAULT_CAMERA = Object.freeze({ x: 960, y: 540, zoom: 1, distance: 1000, focus: 0, aperture: 0 });
 
 const hexCache = new Map();
@@ -88,9 +88,17 @@ export function compile(items, cam = DEFAULT_CAMERA, W = 1920, H = 1080, design 
     // Segments in pixels.
     const s0 = o.segs.n / 4;
     let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    // Each contour's x extent, for binning fills: a closed contour wholly to one side of a
+    // pixel adds nothing to its winding number (a ray to the right crosses it net zero times,
+    // or not at all), so a chunk of a band needs only the contours that overlap it.
+    const cxa = [], cxb = [], segOf = [];
+    let allClosed = true;
     for (const c of item.shape) {
       const p = c.pts, n = p.length / 2;
       if (n < 2) continue;
+      if (!c.closed) allClosed = false;
+      let ca = Infinity, cb = -Infinity;
+      const first = o.segs.n / 4;
       const m = c.closed ? n : n - 1;
       o.segs.need(4 * m);
       const A = o.segs.a;
@@ -101,7 +109,11 @@ export function compile(items, cam = DEFAULT_CAMERA, W = 1920, H = 1080, design 
         const j = o.segs.n; A[j] = ax; A[j + 1] = ay; A[j + 2] = bx; A[j + 3] = by; o.segs.n += 4;
         if (ax < x0) x0 = ax; if (bx < x0) x0 = bx; if (ax > x1) x1 = ax; if (bx > x1) x1 = bx;
         if (ay < y0) y0 = ay; if (by < y0) y0 = by; if (ay > y1) y1 = ay; if (by > y1) y1 = by;
+        if (ax < ca) ca = ax; if (bx < ca) ca = bx; if (ax > cb) cb = ax; if (bx > cb) cb = bx;
       }
+      const ci = cxa.length;
+      cxa.push(ca); cxb.push(cb);
+      for (let q = first; q < o.segs.n / 4; q++) segOf.push(ci);
     }
     const nseg = o.segs.n / 4 - s0;
     if (!nseg || x1 + pad < 0 || y1 + pad < 0 || x0 - pad > W || y0 - pad > H || (x1 - x0 + 2 * pad) < 0.2) { o.segs.n = s0 * 4; stats.culled++; continue; }
@@ -112,15 +124,18 @@ export function compile(items, cam = DEFAULT_CAMERA, W = 1920, H = 1080, design 
     if (b1 < b0) continue;
     const nb = b1 - b0 + 1;
     const cx0 = Math.max(0, Math.floor((x0 - pad) / CHUNK)), cx1 = Math.min(Math.ceil(W / CHUNK) - 1, Math.floor((x1 + pad) / CHUNK));
-    const ncx = strokeOnly ? Math.max(1, cx1 - cx0 + 1) : 1;
+    const chunked = strokeOnly || allClosed;
+    const ncx = chunked ? Math.max(1, cx1 - cx0 + 1) : 1;
     const bins = new Array(nb * ncx);
     const S = o.segs.a;
     for (let s = s0; s < s0 + nseg; s++) {
       const ya = Math.min(S[4 * s + 1], S[4 * s + 3]) - pad, yb = Math.max(S[4 * s + 1], S[4 * s + 3]) + pad;
       const ba = Math.max(b0, Math.floor(ya / BAND)), bb = Math.min(b1, Math.floor(yb / BAND));
       let ca = 0, cb = 0;
-      if (strokeOnly) {
-        const xa = Math.min(S[4 * s], S[4 * s + 2]) - pad, xb = Math.max(S[4 * s], S[4 * s + 2]) + pad;
+      if (chunked) {
+        // A stroke needs only nearby segments; a fill needs its whole contour wherever it overlaps.
+        const ci = segOf[s - s0];
+        const xa = (strokeOnly ? Math.min(S[4 * s], S[4 * s + 2]) : cxa[ci]) - pad, xb = (strokeOnly ? Math.max(S[4 * s], S[4 * s + 2]) : cxb[ci]) + pad;
         ca = Math.max(cx0, Math.floor(xa / CHUNK)) - cx0; cb = Math.min(cx1, Math.floor(xb / CHUNK)) - cx0;
       }
       for (let b = ba; b <= bb; b++) for (let c = ca; c <= cb; c++) {
@@ -135,7 +150,7 @@ export function compile(items, cam = DEFAULT_CAMERA, W = 1920, H = 1080, design 
       if (!list) continue;
       const b = b0 + Math.floor(key / ncx), c = key % ncx;
       let bx0 = x0 - pad, bx1 = x1 + pad;
-      if (strokeOnly) { bx0 = Math.max(bx0, (cx0 + c) * CHUNK); bx1 = Math.min(bx1, (cx0 + c + 1) * CHUNK); }
+      if (chunked) { bx0 = Math.max(bx0, (cx0 + c) * CHUNK); bx1 = Math.min(bx1, (cx0 + c + 1) * CHUNK); }
       const by0 = Math.max(y0 - pad, b * BAND), by1 = Math.min(y1 + pad, (b + 1) * BAND);
       bx0 = Math.max(0, bx0); bx1 = Math.min(W, bx1);
       if (bx1 <= bx0 || by1 <= by0) continue;
