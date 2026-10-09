@@ -11,11 +11,11 @@ const INK = "#ece5d6", DIM = "#958e80", HOT = "#e29472", OK = "#63d4ce";
 
 export default {
   title: "Motion demo",
-  duration: 24,
+  duration: 32,
   fps: 30,
   params: [{ id: "k", label: "frequency", min: 0.5, max: 4, step: 0.01, value: 1.5 }],
-  layers: { threads: { world: 5, particles: 1 << 17, exposure: 0.8 } },
-  chapters: [{ t: 0, title: "Text" }, { t: 6, title: "Morph" }, { t: 11, title: "Plot" }, { t: 16, title: "Scale" }],
+  layers: { threads: { world: 5, particles: 1 << 17, exposure: 0.8, warm: 120 }, worlds: { world: "eye" } },
+  chapters: [{ t: 0, title: "Text" }, { t: 6, title: "Morph" }, { t: 11, title: "Plot" }, { t: 16, title: "Scale" }, { t: 23, title: "Into a world" }],
   async load(ctx) {
     const atlas = await ctx.json("hanken-grotesk-500.atlas.json");
     const title = text("Claims and checks", { atlas, size: 120, x: 960, y: 520, anchor: "center" });
@@ -59,8 +59,14 @@ export default {
       items.push({ shape: plot((x) => Math.sin(k * x + t) * Math.exp(-0.15 * x), 0, 10 * grow + 1e-3, 400, map), stroke: HOT, width: 4, opacity: w3 });
       items.push({ shape: text(`k = ${k.toFixed(2)}`, { atlas: A.atlas, size: 40, x: 1560, y: 300, anchor: "right" }).shape, fill: INK, opacity: w3 });
     }
+    // 23-32: the grid falls away and the camera flies into a Worlds diorama.
+    if (t > 23) {
+      const u = span(t, 23, 31, ease.inOut);
+      items.unshift({ kind: "world", id: "eye", time: t, quality: 0.7, opacity: span(t, 23, 24.5),
+        camera: { target: [0, 1.15, 0], distance: 14 - 9.6 * u, yaw: 0.35 + 0.9 * u, pitch: 0.4 - 0.25 * u }, blur: 6 * (1 - span(t, 24, 27)) });
+    }
     // 16-24: particles settle into a grid; the camera pulls back through scale.
-    if (t > 15.5 && A.field) {
+    if (t > 15.5 && t < 24.5 && A.field) {
       const zoom = lerpLog(6, 0.6, span(t, 16, 23, ease.inOut));
       items.push({ kind: "particles", system: A.field, from: 0, to: 1, t: span(t, 16, 20, ease.linear), spread: 0.5, drift: 8 * (1 - span(t, 18, 21)), time: t, size: [3, 4], blend: "add" });
       return { camera: { x: 960, y: 540, zoom }, items, post: { bloom: 0.8 } };
