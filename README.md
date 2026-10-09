@@ -125,6 +125,37 @@ raw_native_cli threads --world 5 --frames 90 --width 960 --height 540 --out ./ou
 Threads is creative media: it has no CPU reference and writes no certificate.
 Open `bench/threads.html` through `python bench/serve.py` to time it in a browser.
 
+## Motion: mathematical animation, live and on video
+
+`web/motion/` turns the web host into an animation engine in the spirit of
+manim. A scene is one ES module whose `frame(t)` returns what to draw at time
+t:
+
+- Bezier and arc paths, drawn with analytic anti-aliasing on the GPU.
+- Morphs between shapes by point correspondence: a circle becomes a square,
+  a sentence becomes an equation, and holes stay holes.
+- Text and equations as paths, from glyph atlases made with
+  `scripts/glyph_atlas.py`. The equations use a small TeX subset.
+- Live plots, and GPU particle formations.
+- A camera that flies through scale with depth of field.
+- The Threads and Worlds layers underneath.
+
+The same file gives two outputs:
+
+```sh
+python scripts/motion_render.py --root . --serve 8765
+# open http://localhost:8765/docs/motion/index.html: play, scrub, step with , and .
+python scripts/motion_render.py --root . --scene ../../docs/motion/demo.scene.mjs \
+  --out demo.mp4 --width 3840 --height 2160 --audio narration.wav
+```
+
+The live player has play and pause, a scrub bar, chapters, captions and
+parameter sliders. It does not autoplay under reduced motion. The offline
+render draws frame i at exactly i / fps in headless Chrome and encodes it with
+the browser's hardware encoder. On an RTX 4090 the 24-second demo renders at
+3840 x 2160 in 30 s, about 25 ms a frame. Motion is creative media: no
+certificate (ADR 0011).
+
 ## The superstack receipt
 
 From 0.5.0 every render also writes `receipt.json`, a `superstack.receipt/1`

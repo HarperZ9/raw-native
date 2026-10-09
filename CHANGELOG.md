@@ -6,6 +6,18 @@ the day the release was published on GitHub, in UTC.
 
 ## Unreleased
 
+- **Motion.** A mathematical-animation layer on the web host (`web/motion/`,
+  ADR 0011). Scenes are pure functions of time. Bezier and arc paths are drawn
+  with analytic coverage on the GPU, binned in 16-pixel bands, and shapes,
+  text and equations morph by point correspondence. Glyph atlases come from any
+  font you may redistribute (`scripts/glyph_atlas.py`). There is a small TeX
+  subset, live plots, GPU particle formations and a camera that flies through
+  scale with depth of field. Threads and Worlds composite as layers. One scene
+  file plays live in `web/motion/player.mjs`, with scrub, step, chapters,
+  parameter sliders and reduced motion. The same file renders frame-exact to
+  4K video through `scripts/motion_render.py`, which drives headless Chrome
+  and the browser's hardware encoder and muxes narration and score. A demo is
+  at `docs/motion/`. Creative media, no certificate.
 - **Worlds.** The One Step worlds as small raymarched dioramas you can walk
   around: signed distance fields lit by sun and lamp, with soft shadows,
   ambient occlusion, reflections, fog and film tone

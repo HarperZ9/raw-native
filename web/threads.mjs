@@ -35,13 +35,16 @@ export function advanceFor(source, a, b = a) {
   return out;
 }
 
-export async function createThreads(host, { wgsl, world = DEFAULTS.world }) {
+// present: false draws into th.frameBuf (packed RGBA8, th.w x th.h) and leaves
+// the canvas alone, for a caller that composites the frame (web/motion).
+export async function createThreads(host, { wgsl, world = DEFAULTS.world, present = true }) {
   const src = wgslPasses(wgsl.replace(/\r\n/g, "\n"));
   const names = ["threads_init", "threads_rd_seed", "threads_rd", "threads_decay",
     "threads_pyr_first", "threads_pyr_next", "threads_finish"];
   const pipes = Object.fromEntries(await Promise.all(names.map(async (n) => [n, await host.compute(n, src[n])])));
-  await host.presenter();
+  if (present) await host.presenter();
   const th = new Threads(host, pipes, src.threads_advance);
+  th.present = present;
   th.opts.world = world;
   await th.compileAdvance(world, world);
   return th;
@@ -94,7 +97,7 @@ class Threads {
       new Uint32Array(d).set([w, h, i + 1]); new Float32Array(d)[3] = 1 / FIXED;
       hb.write(buf, d);
     });
-    if (hb.canvas) { hb.canvas.width = w; hb.canvas.height = h; }
+    if (hb.canvas && this.present) { hb.canvas.width = w; hb.canvas.height = h; }
     this.graphs = { plain: this.#graph(false), morph: this.#graph(true) };
     if (!this.pos || this.np !== this.opts.particles) this.#particles();
   }
@@ -120,7 +123,7 @@ class Threads {
     const sims = [g.importBuffer("simA", this.sim[0]), g.importBuffer("simB", this.sim[1])];
     const pa = g.importBuffer("bloomOdd", this.pyrA), pb = g.importBuffer("bloomEven", this.pyrB);
     const frame = g.importBuffer("frame", this.frameBuf);
-    const canvas = g.createHost("canvas");
+    const canvas = this.present ? g.createHost("canvas") : null;
     const lv = this.levels.map((b, i) => g.importBuffer("level" + (i + 1), b));
     const W = this.w, H = this.h, gx = Math.ceil(W / 16), gy = Math.ceil(H / 16);
     if (morph) {
@@ -143,8 +146,10 @@ class Threads {
     }
     g.addPass("finish", [[par, Access.Uniform], [acc, Access.StorageRead], [pa, Access.StorageRead], [pb, Access.StorageRead], [frame, Access.StorageWrite]],
       (c) => c.dispatch(P.threads_finish, [this.params, this.acc, this.pyrA, this.pyrB, this.frameBuf], gx, gy));
-    g.addPass("present", [[frame, Access.StorageRead], [canvas, Access.Attachment]], (c) => c.presentFrame(this.frameBuf, W, H));
-    g.markOutput(canvas);
+    if (canvas) {
+      g.addPass("present", [[frame, Access.StorageRead], [canvas, Access.Attachment]], (c) => c.presentFrame(this.frameBuf, W, H));
+      g.markOutput(canvas);
+    } else g.markOutput(frame);
     g.compile();
     return g;
   }
