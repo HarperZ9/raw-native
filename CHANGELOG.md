@@ -4,7 +4,7 @@ Each release's full notes, with downloads and evidence, are on the
 [releases page](https://github.com/HarperZ9/raw-native/releases). Dates are
 the day the release was published on GitHub, in UTC.
 
-## Unreleased
+## 0.6.0 (2026-10-09)
 
 - **Media engine.** `raw-native media render` (`tools/media/`, ADR 0012) renders a
   repo's videos from `docs/media/media.json` at the commit it runs at.
