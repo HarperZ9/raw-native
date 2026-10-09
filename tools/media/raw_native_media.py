@@ -48,19 +48,36 @@ def ffmpeg() -> str:
     return imageio_ffmpeg.get_ffmpeg_exe()
 
 
+TEXT_SUFFIXES = {".mjs", ".js", ".wgsl", ".json", ".html", ".css", ".vtt", ".md", ".txt"}
+
+
+def copy_lf(src: Path, dst: Path) -> None:
+    """Copy, with text files in LF whatever the checkout uses, so a bundle (and its hashes)
+    is the same from a Windows checkout and a Linux runner."""
+    data = src.read_bytes()
+    if src.suffix in TEXT_SUFFIXES:
+        data = data.replace(bytes([13, 10]), bytes([10]))
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    dst.write_bytes(data)
+
+
 def bundle(spec: dict, spec_path: Path, scene: dict, out: Path, facts: dict, cast: dict | None, narration: Path | None) -> str:
     """Lay out out/: engine/, scene/, facts and the page. Returns the scene module path relative to the capture page."""
     if out.exists():
         shutil.rmtree(out)
     (out / "engine" / "motion").mkdir(parents=True)
     for f in ENGINE_FILES:
-        shutil.copyfile(ENGINE / f, out / "engine" / Path(f).name)
+        copy_lf(ENGINE / f, out / "engine" / Path(f).name)
     for f in (ENGINE / "web" / "motion").iterdir():
         if f.is_file() and not f.name.endswith(".test.mjs"):
-            shutil.copyfile(f, out / "engine" / "motion" / f.name)
+            copy_lf(f, out / "engine" / "motion" / f.name)
     src = spec_path.parent / spec.get("scenes_dir", "scenes")
-    shutil.copytree(src, out / "scene") if src.is_dir() else (out / "scene").mkdir()
-    shutil.copyfile(ATLAS, out / "scene" / "atlas.json")
+    (out / "scene").mkdir(exist_ok=True)
+    if src.is_dir():
+        for f in src.rglob("*"):
+            if f.is_file():
+                copy_lf(f, out / "scene" / f.relative_to(src))
+    copy_lf(ATLAS, out / "scene" / "atlas.json")
     (out / "facts.json").write_text(json.dumps(facts, indent=1), encoding="utf-8", newline="\n")
     timing = None
     if narration:

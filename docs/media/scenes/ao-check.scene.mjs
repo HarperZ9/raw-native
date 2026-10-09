@@ -48,7 +48,9 @@ export default {
     const grid = (cx) => { const p = new Float32Array(2 * N * N); for (let i = 0; i < N * N; i++) { p[2 * i] = cx + ((i % N) - (N - 1) / 2) * GAP; p[2 * i + 1] = 560 + (Math.floor(i / N) - (N - 1) / 2) * GAP; } return p; };
     // Each field gathers from a loose cloud on its own side of the frame.
     const cloudAt = (cx) => { const c = new Float32Array(2 * N * N); for (let i = 0; i < N * N; i++) { const a = r() * Math.PI * 2, d = Math.sqrt(r()) * 520; c[2 * i] = cx + Math.cos(a) * d; c[2 * i + 1] = 560 + Math.sin(a) * d * 0.75; } return c; };
+    // The reference's cloud waits below the title, so the title reads while it gathers.
     const cloud = cloudAt(960), cloudR = cloudAt(1360);
+    for (let i = 1; i < cloud.length; i += 2) cloud[i] = 560 + (cloud[i] - 560) * 0.3 + 210;
     const delay = Float32Array.from({ length: N * N }, (_, i) => ((i % N) + Math.floor(i / N)) / (2 * N));
     A.forms = [cloud, grid(960), grid(560), grid(1360), cloudR];
     A.colRT = rt.map((x) => gray(norm(x))); A.colSS = ss.map((x) => gray(norm(x)));
