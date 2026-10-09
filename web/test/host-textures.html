@@ -1,0 +1,102 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Host textures and compositing test</title>
+<link rel="icon" href="data:,">
+<!-- Run by tests/web/host_textures.py. Composites a 2D canvas and two RGBA textures on
+     the GPU, reads the result back, and compares it with the same composite done on the
+     CPU in this page; checks that a shared consumer uses the same device; draws the
+     same layers with the canvas-only fallback; and times a 1920 x 1080 canvas layer. -->
+<canvas id="gpu" width="256" height="160"></canvas>
+<canvas id="gpu2" width="256" height="160"></canvas>
+<script type="module">
+import { createHost, hostStats } from "../raw-gpu.mjs";
+import { createCompositor, composite2d } from "../compositor.mjs";
+
+const W = 256, H = 160;
+const out = {};
+function canvasA() {
+  const c = document.createElement("canvas"); c.width = W; c.height = H;
+  const g = c.getContext("2d");
+  const gr = g.createLinearGradient(0, 0, W, H); gr.addColorStop(0, "#1b2a49"); gr.addColorStop(1, "#c9a26b");
+  g.fillStyle = gr; g.fillRect(0, 0, W, H);           // opaque everywhere
+  g.fillStyle = "#e29472"; g.beginPath(); g.arc(80, 80, 50, 0, 7); g.fill();
+  g.fillStyle = "#ece5d6"; g.font = "28px sans-serif"; g.fillText("raw-native", 110, 90);
+  return c;
+}
+function rgba(w, h, f) {
+  const d = new Uint8Array(w * h * 4);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) { const [r, g, b, a] = f(x, y); d.set([r, g, b, a], (y * w + x) * 4); }
+  return { data: d, width: w, height: h };
+}
+const B = rgba(W, H, (x, y) => [(x * 3) & 255, (y * 5) & 255, 128, (x + y) % 256]);            // straight alpha
+const Cimg = rgba(128, 96, (x, y) => [255, (x * 2) & 255, (y * 2) & 255, 200]);
+const layers = (canvas, tB, tC) => [
+  { source: canvas },
+  { source: tB, opacity: 0.6, premultiplied: false },
+  { source: tC, opacity: 0.5, blend: "add", premultiplied: false, rect: [64, 32, 128, 96] },
+];
+
+// The CPU composite, quantized to 8 bits after each layer as an RGBA8 target is.
+function cpuComposite(base) {
+  const dst = new Float64Array(W * H * 4);
+  const q = (v) => Math.round(Math.max(0, Math.min(1, v)) * 255) / 255;
+  const apply = (img, op, add, rx, ry) => {
+    for (let y = 0; y < img.height; y++) for (let x = 0; x < img.width; x++) {
+      const s = (y * img.width + x) * 4, t = ((y + ry) * W + (x + rx)) * 4;
+      const a = img.data[s + 3] / 255 * op;
+      for (let k = 0; k < 3; k++) {
+        const src = img.data[s + k] / 255 * a;
+        dst[t + k] = q(add ? dst[t + k] + src : src + dst[t + k] * (1 - a));
+      }
+      dst[t + 3] = q(add ? dst[t + 3] + a : a + dst[t + 3] * (1 - a));
+    }
+  };
+  apply(base, 1, false, 0, 0); apply(B, 0.6, false, 0, 0); apply(Cimg, 0.5, true, 64, 32);
+  return Uint8Array.from(dst, (v) => Math.round(v * 255));
+}
+async function readback(host, tex) {
+  const d = host.device, bpr = Math.ceil(tex.width * 4 / 256) * 256;
+  const buf = host.buffer({ size: bpr * tex.height, usage: ["map-read", "copy-dst"] });
+  const enc = d.createCommandEncoder(); enc.copyTextureToBuffer({ texture: tex }, { buffer: buf, bytesPerRow: bpr }, [tex.width, tex.height]);
+  d.queue.submit([enc.finish()]); await buf.mapAsync(1);
+  const src = new Uint8Array(buf.getMappedRange()), o = new Uint8Array(tex.width * tex.height * 4);
+  for (let y = 0; y < tex.height; y++) o.set(src.subarray(y * bpr, y * bpr + tex.width * 4), y * tex.width * 4);
+  buf.unmap(); return o;
+}
+const maxDiff = (a, b) => { let m = 0; for (let i = 0; i < a.length; i++) m = Math.max(m, Math.abs(a[i] - b[i])); return m; };
+
+try {
+  const ca = canvasA();
+  const base = { data: ca.getContext("2d").getImageData(0, 0, W, H).data, width: W, height: H };
+  const want = cpuComposite(base);
+  if (navigator.gpu && !location.search.includes("nogpu")) {
+    const host = await createHost({ canvas: document.getElementById("gpu") });
+    const other = host.share({ canvas: document.getElementById("gpu2") });
+    out.adapter = host.info;
+    for (const [name, h] of [["host", host], ["shared", other]]) {
+      const comp = await createCompositor(h, { format: "rgba8unorm" });
+      const tB = h.upload(h.texture({ width: W, height: H }), B), tC = h.upload(h.texture({ width: 128, height: 96 }), Cimg);
+      const target = h.texture({ width: W, height: H, label: "target" });
+      await comp.draw(layers(ca, tB, tC), { target });
+      out[name] = { maxDiff: maxDiff(await readback(h, target), want) };
+    }
+    out.requestDevice = hostStats.requestDevice;
+    out.sameDevice = other.device === host.device;
+    // Time a 1920 x 1080 canvas layer composited onto a 1920 x 1080 target.
+    const big = document.createElement("canvas"); big.width = 1920; big.height = 1080;
+    const bg = big.getContext("2d"); bg.fillStyle = "#334"; bg.fillRect(0, 0, 1920, 1080);
+    const comp = await createCompositor(host, { format: "rgba8unorm" });
+    const target = host.texture({ width: 1920, height: 1080 });
+    for (let i = 0; i < 60; i++) { bg.fillStyle = `hsl(${i * 6} 50% 50%)`; bg.fillRect(i * 20, 100, 40, 40); await comp.draw([{ source: big }], { target }); await host.done(); }
+    await new Promise((r) => setTimeout(r, 300));
+    out.timings = host.timings();
+  }
+  // The fallback: the canvas API alone.
+  const fb = document.createElement("canvas"); fb.width = W; fb.height = H;
+  const toCanvas = (img) => { const c = document.createElement("canvas"); c.width = img.width; c.height = img.height; c.getContext("2d").putImageData(new ImageData(new Uint8ClampedArray(img.data), img.width, img.height), 0, 0); return c; };
+  composite2d(fb.getContext("2d"), layers(ca, toCanvas(B), toCanvas(Cimg)));
+  const got = fb.getContext("2d").getImageData(0, 0, W, H).data;
+  out.fallback = { drawn: got.some((v, i) => i % 4 === 3 && v > 0), maxDiff: maxDiff(got, want) };
+} catch (e) { out.error = String(e && e.stack || e); }
+window.__result = out;
+</script>
