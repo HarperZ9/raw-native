@@ -7,7 +7,7 @@
 #       with: { tag: "${{ github.event.release.tag_name }}" }
 #       permissions: { contents: write }
 #
-# Visuals render on Chrome's CPU WebGPU adapter (SwiftShader) at 1920 x 1080 with captions
+# Visuals render on Chrome's CPU WebGPU adapter (SwiftShader) at 1280 x 720 with captions
 # and no narration. The narrated 4K render is made on the author's machine and replaces these
 # files with `raw-native media attach`.
 name: media
@@ -20,6 +20,8 @@ on:
       engine_ref: { description: "raw-native ref to render with", required: false, type: string, default: main }
       upload: { description: "Attach the outputs to the release", required: false, type: boolean, default: true }
       max_seconds: { description: "Render only the first N seconds (0: all)", required: false, type: number, default: 0 }
+      width: { description: "Frame width", required: false, type: number, default: 1280 }
+      height: { description: "Frame height", required: false, type: number, default: 720 }
 permissions:
   contents: write
 jobs:
@@ -40,11 +42,13 @@ jobs:
           SPEC: ${{ inputs.spec }}
           SETUP: ${{ inputs.setup && '--setup' || '' }}
           MAX: ${{ inputs.max_seconds }}
+          W: ${{ inputs.width }}
+          H: ${{ inputs.height }}
         run: |
           extra=""
           if [ "$MAX" != "0" ]; then extra="--max-seconds $MAX"; fi
           python .raw-native/tools/media/raw_native_media.py render --spec "$SPEC" $SETUP --out media-out \
-            --adapter swiftshader --width 1920 --height 1080 $extra
+            --adapter swiftshader --width "$W" --height "$H" $extra
       - uses: actions/upload-artifact@v4
         with: { name: "media-${{ inputs.tag }}", path: media-out, retention-days: 30 }
       - name: Attach to the release

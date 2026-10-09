@@ -78,13 +78,19 @@ site's narration tool, the cues follow the voice and the audio is muxed.
 
 - **Hosted, on every tag:**
   - check out the repo at the tag and raw-native at a pinned commit;
-  - run `media render --adapter swiftshader --width 1920 --height 1080`
+  - run `media render --adapter swiftshader --width 1280 --height 720`
     with no narration;
   - upload the outputs to the release as `media-<tag>.zip`, plus each web
     MP4 and poster.
   SwiftShader is Chrome's CPU WebGPU adapter. It draws the same WGSL as a GPU,
-  only slower: 179 ms a frame at 1280 x 720 against 6 ms on an RTX 4090,
-  measured on 9 October 2026 on the author's machine.
+  only slower. Measured on 9 October 2026:
+  - "Checking the light" at 960 x 540: a median 720 ms a frame on the hosted
+    ubuntu-24.04 runner, against 7 ms at 1920 x 1080 on the author's RTX 4090;
+  - the walkthrough at 960 x 540 on the runner: 343 ms a frame;
+  - film 1 at 1280 x 720 on SwiftShader on the author's machine: 179 ms a frame.
+  The hosted size is therefore 1280 x 720, which keeps a release's two scenes
+  inside the job's budget. The runner computed the same certificate values as
+  the author's Windows build (rmse 0.129436031 over 37,996 pixels).
 - **Local, after the tag, under `D:/gpu.lock.d`:**
   - narrate the scene words with the author's voice model, using the site's
     `tools/explainer/film/narrate.py`;
@@ -107,8 +113,7 @@ can become automatic once the author grants such a token.
 
 ## Consequences
 
-- A hosted render of a two-minute scene at 1080p takes minutes of CPU, not
-  seconds. Scenes stay short, and the 4K master is made only locally.
+- A hosted render takes tens of minutes of CPU for a minute of video. Scenes stay short, and the 4K master is made only locally.
 - A fact that fails to resolve fails the render. A video never ships a number
   it could not read.
 - Walkthrough commands run on the runner at the tag. They must be safe to run

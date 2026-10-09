@@ -180,8 +180,8 @@ Each scene gets its video, a poster, captions, `facts.json`, an interactive
 `index.html` with the engine beside it, and `media.json` with every file's
 hash.
 
-When a release is published, `.github/workflows/media.yml` renders it on a
-hosted runner with Chrome's CPU WebGPU adapter and attaches the files. Other
+When a release is published, `.github/workflows/media.yml` renders it at
+1280 x 720 on a hosted runner, using Chrome's CPU WebGPU adapter, and attaches the files. Other
 repos call the same workflow. The narrated 4K render is made on the author's
 machine and replaces them (ADR 0012).
 
