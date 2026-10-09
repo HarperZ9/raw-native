@@ -6,7 +6,7 @@
 //
 //   const sys = motion.particles({ count: 636, formations: [cloud, grid], colors: [ink, ink], delay, size });
 //   items.push({ kind: "particles", system: sys, from: 0, to: 1, t: 0.4, spread: 0.6, drift: 6,
-//                size: [3, 2.5], blur: 0, blend: "add", z: 0 });
+//                size: [3, 2.5], blur: 0, blend: "add", opacity: 1, z: 0 });
 // One system can appear once per frame.
 import { project } from "./vector.mjs";
 
@@ -55,7 +55,7 @@ export class ParticleSystem {
       P.k, P.ox, P.oy, 0,
       item.t ?? 0, item.spread ?? 0.5, item.drift ?? 0, item.time ?? 0,
       P.blur, item.glow ?? 0, this.n, this.seed,
-      (sz[0] * P.k) / 2, ((sz[1] ?? sz[0]) * P.k) / 2, 0, 0]));
+      (sz[0] * P.k) / 2, ((sz[1] ?? sz[0]) * P.k) / 2, item.opacity ?? 1, 0]));
     const pipe = this.motion.partPipe;
     pass.setPipeline(pipe);
     pass.setBindGroup(0, this.motion.host.bind(pipe, [this.uni, this.parts, this.out, this.outc]));

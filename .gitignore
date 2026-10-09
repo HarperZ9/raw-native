@@ -7,6 +7,8 @@ cmake-build-*/
 *.ppm
 *.pgm
 *.json
+# Glyph atlases are source data for web/motion (scripts/glyph_atlas.py).
+!docs/motion/*.atlas.json
 
 # CMake artifacts
 CMakeCache.txt

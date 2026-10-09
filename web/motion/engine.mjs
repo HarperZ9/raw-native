@@ -38,7 +38,11 @@ export async function createEngine({ canvas, sceneUrl, scene = null, shaders, re
       motion.resize(w, h);
       eng.size = [motion.w, motion.h];
       // History layers draw at a fraction of the frame; they are soft light, not detail.
-      if (ctx.threads) ctx.threads.resize(Math.round(motion.w * (layers.threads.scale ?? 0.5)), Math.round(motion.h * (layers.threads.scale ?? 0.5)));
+      if (ctx.threads) {
+        ctx.threads.resize(Math.round(motion.w * (layers.threads.scale ?? 0.5)), Math.round(motion.h * (layers.threads.scale ?? 0.5)));
+        // layers.threads.warm: frames run once, at a fixed step, so the field has formed by the first frame.
+        if (!eng.warmed) { eng.warmed = true; for (let i = 0; i < (layers.threads.warm || 0); i++) ctx.threads.frame(1 / (scene.fps || 30)); }
+      }
     },
     list(t) {
       const l = evaluate(scene, ctx, t);

@@ -72,7 +72,7 @@ struct P { cam: vec4f, mixv: vec4f, look: vec4f, size: vec4f, }
 // cam: scale (px per unit), offset x, offset y, unused
 // mixv: t, spread (fraction of the run each particle's move takes), drift (units), time
 // look: blur px, glow, count, seed
-// size: radius px A, radius px B, unused, unused
+// size: radius px A, radius px B, opacity, unused
 struct Part { a: vec2f, b: vec2f, ca: u32, cb: u32, k: f32, r: f32, }
 @group(0) @binding(0) var<uniform> U: P;
 @group(0) @binding(1) var<storage, read> parts: array<Part>;
@@ -98,7 +98,7 @@ fn ease(t: f32) -> f32 { let c = clamp(t, 0.0, 1.0); return c * c * c * (c * (c 
   pos = pos + amp * vec2f(sin(tt * 0.7 + ph + pos.y * 0.004), cos(tt * 0.6 + ph * 1.3 + pos.x * 0.004));
   let px = pos * U.cam.x + U.cam.yz;
   out[i] = vec4f(px, mix(U.size.x, U.size.y, u) * q.r, U.look.x);
-  outc[i] = mix(unpack4x8unorm(q.ca), unpack4x8unorm(q.cb), u);
+  outc[i] = mix(unpack4x8unorm(q.ca), unpack4x8unorm(q.cb), u) * vec4f(1.0, 1.0, 1.0, U.size.z);
 }`;
 
 export const SPRITE_WGSL = /* wgsl */ `
