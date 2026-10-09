@@ -83,7 +83,8 @@
       "kind": "explainer",
       "module": "scenes/ao-check.scene.mjs",
       "title": "Checking the light",
-      "poster_at": 0.62
+      "poster_at": 0.62,
+      "captions_burned": true
     },
     {
       "id": "first-run",
@@ -167,7 +168,8 @@
           "highlight": "^recheck:",
           "chapter": "Recheck"
         }
-      ]
+      ],
+      "captions_burned": true
     }
   ]
 }
