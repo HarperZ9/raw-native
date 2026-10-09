@@ -136,7 +136,8 @@ def encoder(ffmpeg: str, w: int, h: int, fps: int, codec: str, quality: int, out
     return cmd + ["-color_primaries", "bt709", "-color_trc", "bt709", "-colorspace", "bt709", "-movflags", "+faststart", str(out)]
 
 
-def mux(ffmpeg: str, video: Path, out: Path, audio: str | None, score: str | None, score_db: float) -> None:
+def mux(ffmpeg: str, video: Path, out: Path, audio: str | None, score: str | None, score_db: float, seconds: float) -> None:
+    """Lay the narration (and the score under it) on the video, padded or cut to exactly its length."""
     cmd = [ffmpeg, "-y", "-loglevel", "error", "-i", str(video)]
     if not audio and not score:
         shutil.copyfile(video, out)
@@ -144,11 +145,13 @@ def mux(ffmpeg: str, video: Path, out: Path, audio: str | None, score: str | Non
     inputs = [a for a in (audio, score) if a]
     for a in inputs:
         cmd += ["-i", a]
+    # apad with -shortest can stall ffmpeg 7 once the video stream ends; pad to the exact length instead.
+    pad = f"apad=whole_dur={seconds:.6f},atrim=0:{seconds:.6f}"
     if audio and score:
-        cmd += ["-filter_complex", f"[2:a]volume={score_db}dB[s];[1:a][s]amix=inputs=2:duration=first:normalize=0,apad[a]", "-map", "0:v", "-map", "[a]"]
+        cmd += ["-filter_complex", f"[2:a]volume={score_db}dB[s];[1:a][s]amix=inputs=2:duration=longest:normalize=0,{pad}[a]", "-map", "0:v", "-map", "[a]"]
     else:
-        cmd += ["-af", "apad", "-map", "0:v", "-map", "1:a"]
-    cmd += ["-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-shortest", "-map_metadata", "-1", "-movflags", "+faststart", str(out)]
+        cmd += ["-filter_complex", f"[1:a]{pad}[a]", "-map", "0:v", "-map", "[a]"]
+    cmd += ["-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-t", f"{seconds:.6f}", "-map_metadata", "-1", "-movflags", "+faststart", str(out)]
     subprocess.run(cmd, check=True)
 
 
@@ -235,7 +238,8 @@ def main(argv=None) -> int:
         subprocess.run([ffmpeg, "-y", "-loglevel", "error", "-fflags", "+genpts", "-r", str(a.fps), "-f", fmt, "-i", str(stream),
                         "-c:v", "copy", *(["-tag:v", "hvc1"] if fmt == "hevc" else []), "-movflags", "+faststart", str(silent)], check=True)
         stream.unlink()
-    mux(ffmpeg, silent, out, a.audio, a.score, a.score_db)
+    frames = int(sink.stats.get("frames") or 0)
+    mux(ffmpeg, silent, out, a.audio, a.score, a.score_db, frames / a.fps)
     silent.unlink(missing_ok=True)
     stats = {**sink.stats, "wall_seconds": round(time.time() - t0, 1), "width": a.width, "height": a.height, "fps": a.fps,
              "transport": a.transport}
