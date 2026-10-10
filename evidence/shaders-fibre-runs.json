@@ -1,0 +1,27 @@
+{
+  "what": "Every run of the fibre-network watercolour checks, failures included. Bounds file unchanged since 679f718.",
+  "deviation": "The bounds file's source line says the street's albedo is the wash colour; the implementation and parity page use the street's display image (so a wash with no transport dries to the picture). The cases and numeric bounds are as committed.",
+  "runs": [
+    {
+      "date": "2026-10-10",
+      "check": "node tests, first run",
+      "result": "5 of 5 pass"
+    },
+    {
+      "date": "2026-10-10",
+      "check": "GPU parity, SwiftShader, first run",
+      "result": "3 of 3: max 1, mean under 0.006"
+    },
+    {
+      "date": "2026-10-10",
+      "check": "look review",
+      "result": "a fully wet sheet blurred the whole picture, and flocculation 3 to 6 drew dark scratch lines where near-parallel fibres overlap",
+      "change": "Wetness gated by the image's edges (water0 = clamp(1 - edgeDry |grad L|, 0.05, 1)), so bleeding stays inside regions; flocculation lowered to 0.3 to 1.5 by preset. The drop tests pass edgeDry 0, since the drop is itself an edge. Bounds unchanged."
+    },
+    {
+      "date": "2026-10-10",
+      "check": "node tests and GPU parity after the change",
+      "result": "5 of 5; 3 of 3 at max 1, mean under 0.003"
+    }
+  ]
+}

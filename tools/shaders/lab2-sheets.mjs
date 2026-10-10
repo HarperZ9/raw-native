@@ -94,3 +94,18 @@ if (on("purity")) {
     for (const t of [0.02, 0.15, 0.4]) save(`purity-${frame}-degauss-${t}s`, enc(runPurity(resolvePurity("degauss"), src, t)));
   }
 }
+
+if (on("fibre")) {
+  const { resolveFibre, runFibre } = await import("../../web/shaders/fibre/fibre.mjs");
+  const { displayEncode8 } = await import("../../web/shaders/purity/purity.mjs");
+  const { displayLinear } = await import("../../web/shaders/lab/sources.mjs");
+  const enc = (f) => ({ width: f.width, height: f.height, data: displayEncode8(f) });
+  for (const frame of ["street", "edges"]) {
+    const src = displayLinear(frame, W, H);
+    save(`fibre-${frame}-0-source`, enc(src));
+    for (const preset of ["hot-press", "cold-press", "rough"]) {
+      const im = enc(runFibre(resolveFibre(preset, {}, { w: W, h: H }), src).out);
+      save(`fibre-${frame}-${preset}`, im); save(`fibre-${frame}-${preset}-crop`, nearest(crop(im, 220, 60, 160, 120), 4));
+    }
+  }
+}
