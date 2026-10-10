@@ -2,9 +2,25 @@
  "schema": "raw-native.evidence/1",
  "bounds": "evidence/hw-h1-2-bounds.json (committed 642b4af before any code or run; unchanged)",
  "runs": [
-  {"run": 1, "adapter": "D3D12 WARP, debug layer on", "result": "pass. Scan: both forms bit-equal to the CPU on 16,777,216 elements; the drop control differs on 16,777,152. Bilateral: fp16 within the bound on every value (worst 0.69 of it); the subnormal control exceeds it on 6,213,448 of 6,220,800 values (worst 256x). WARP timings, not a claim: wave scan 1.30x the shared scan [1.04, 1.43]; fp16 filter 0.35x of fp32 [0.32, 0.38] (WARP emulates 16-bit arithmetic)."},
-  {"run": "forced off wave_ops", "adapter": "same", "result": "pass: shared scan only"},
-  {"run": "forced off native_16bit", "adapter": "same", "result": "pass: fp32 filter only"}
- ],
- "pending": "RTX 4090 under D:/gpu.lock.d with 50 warm-up and 500 measured repeats (mission-control 2026-10-10-engine-hw/gpu/hw_h1_2_rtx_job.sh)"
+  {
+   "run": 1,
+   "adapter": "D3D12 WARP, debug layer on",
+   "result": "pass. Scan: both forms bit-equal to the CPU on 16,777,216 elements; the drop control differs on 16,777,152. Bilateral: fp16 within the bound on every value (worst 0.69 of it); the subnormal control exceeds it on 6,213,448 of 6,220,800 values (worst 256x). WARP timings, not a claim: wave scan 1.30x the shared scan [1.04, 1.43]; fp16 filter 0.35x of fp32 [0.32, 0.38] (WARP emulates 16-bit arithmetic)."
+  },
+  {
+   "run": "forced off wave_ops",
+   "adapter": "same",
+   "result": "pass: shared scan only"
+  },
+  {
+   "run": "forced off native_16bit",
+   "adapter": "same",
+   "result": "pass: fp32 filter only"
+  },
+  {
+   "run": "RTX",
+   "adapter": "RTX 4090, driver 610.88 (DXGI 32.0.16.1088), under D:/gpu.lock.d, 2026-10-10 19:47 to 19:53Z",
+   "result": "pass on every bound. Scan bit-equal in both forms; drop control differs. fp16 within bound (worst 0.47 of it); subnormal control fails. Timings (500 measured): fp16 bilateral 0.226 ms against fp32 1.62 ms, speedup 7.17 [7.16, 7.17]. The wave scan is SLOWER: 9.17 ms against 0.28 ms for the group-shared scan, ratio 0.031 [0.031, 0.051]. Cause unknown and not investigated yet; reported as a measured negative. hw-h1-2-d3d12-rtx4090.json"
+  }
+ ]
 }

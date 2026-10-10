@@ -2,17 +2,36 @@
  "schema": "raw-native.evidence/1",
  "bounds": "evidence/hw-h1-1-bounds.json (committed 6221363 before any code or run; unchanged since)",
  "runs": [
-  {"run": 1, "adapter": "D3D12 WARP (Microsoft Basic Render Driver 10.0.26100.9587), debug layer on",
+  {
+   "run": 1,
+   "adapter": "D3D12 WARP (Microsoft Basic Render Driver 10.0.26100.9587), debug layer on",
    "result": "fail on every scene. Controls fail as required on every scene (offset: 16,730 to 35,821 unexplained; rotation: 120,481 to 133,859). Main bound missed for three causes:",
    "causes": [
     "TMin defect in WARP (20 unexplained: terrain 2, hall 1, debris 17). Every sampled case (10 of 20) is a GPU hit with t below TMin 1e-4 (largest 8.7e-5). Reproduced in isolation with a scratch program: debris ray 191018 against its single triangle 11668 returns t 4.275e-5 with TMin 1e-4 and still with TMin 1e-3, while an axis-aligned ray against a single triangle respects TMin for both windings. The CPU's Moeller-Trumbore gives t 4.27487e-5 for the same pair and rejects it below its 1e-4 floor. Inferred: WARP does not apply TMin for some ray directions. Not yet checked on hardware.",
     "Coplanar geometry in the hall scene: 885 ties and 3 edges explained (2.6e-3 of the rays, bound 1e-3). Column bottom caps and stair bottoms are coplanar with the floor, so CPU and GPU pick different coincident triangles. The scene and the bound are kept as committed; the fraction bound fails on this scene by design of the scene.",
     "Two agreeing hits outside tolerance, both near-grazing: hall ray 184095 (t 1.17x, uv 1.65x of tolerance, |det| 2.9e-4) and debris ray 112564 (t 2.42x, |det| 1.6e-5). The committed tolerances have no grazing-angle conditioning term."
-   ]},
-  {"run": 2, "adapter": "same", "result": "the same code with diagnostic samples for tolerance violations added; results identical to run 1 (the comparison is deterministic). Recorded in hw-h1-1-d3d12-warp.json."},
-  {"run": 3, "adapter": "same", "result": "after splitting the command into helpers (no behaviour change): identical results."},
-  {"run": "forced off", "adapter": "same", "result": "pass: every scene takes the CPU traversal fallback (hw-h1-1-d3d12-warp-forced-off.json)"}
+   ]
+  },
+  {
+   "run": 2,
+   "adapter": "same",
+   "result": "the same code with diagnostic samples for tolerance violations added; results identical to run 1 (the comparison is deterministic). Recorded in hw-h1-1-d3d12-warp.json."
+  },
+  {
+   "run": 3,
+   "adapter": "same",
+   "result": "after splitting the command into helpers (no behaviour change): identical results."
+  },
+  {
+   "run": "forced off",
+   "adapter": "same",
+   "result": "pass: every scene takes the CPU traversal fallback (hw-h1-1-d3d12-warp-forced-off.json)"
+  },
+  {
+   "run": "RTX",
+   "adapter": "RTX 4090, driver 610.88 (DXGI 32.0.16.1088), under D:/gpu.lock.d, 2026-10-10 19:47 to 19:53Z",
+   "result": "fail, two of the three WARP causes remain and the TMin one does not: 0 unexplained disagreements on every scene (so the below-TMin hits were WARP's). Missed: hall explained ties 990 of 340,000 (2.9e-3, bound 1e-3; coplanar caps), and near-grazing agreeing hits outside tolerance (terrain 1, hall 3, debris 2; worst 1.18x in t and 1.70x in uv). Controls fail on every scene; forced-off takes the fallback. Trace medians 9 to 205 microseconds a dispatch of 80,000 to 160,000 rays: too small to time well, and with no compute baseline yet, no speed claim. hw-h1-1-d3d12-rtx4090.json"
+  }
  ],
- "not_done": "No bound changed. A future criterion for conditioning-aware tolerances or scenes without coplanar faces would be new, dated and separate; it would not replace this one.",
- "pending": "RTX 4090 run with 50 warm-up and 500 measured repeats under D:/gpu.lock.d (mission-control 2026-10-10-engine-hw/gpu/hw_h1_1_rtx_job.sh)"
+ "not_done": "No bound changed. A future criterion for conditioning-aware tolerances or scenes without coplanar faces would be new, dated and separate; it would not replace this one."
 }

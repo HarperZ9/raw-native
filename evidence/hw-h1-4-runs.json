@@ -18,7 +18,12 @@
    "adapter": "D3D12 WARP, debug layer on",
    "n": 4096,
    "result": "after moving the async branch into a helper (no behaviour change): pass, 0 mismatches, control differs on 65,536 elements. The overlap numbers in hw-h1-4-d3d12-warp.json are from this run."
+  },
+  {
+   "run": "RTX",
+   "adapter": "RTX 4090, driver 610.88 (DXGI 32.0.16.1088), under D:/gpu.lock.d, 2026-10-10 19:47 to 19:53Z",
+   "n": 262144,
+   "result": "pass: bit-equal over 210 repetitions; the wrong-wait control differs on all 65,536 elements. Overlap gain 0.999 [0.94, 1.06]: a null, no overlap measured for two identical compute kernels. hw-h1-4-d3d12-rtx4090.json"
   }
- ],
- "pending": "RTX 4090 under D:/gpu.lock.d with n = 262,144 (stated before the run; 4,096 rounds would finish in well under a millisecond on the RTX, below submission overhead): mission-control 2026-10-10-engine-hw/gpu/hw_h1_4_rtx_job.sh"
+ ]
 }

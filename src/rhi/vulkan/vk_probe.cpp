@@ -137,6 +137,8 @@ hw::Probe probeDevice(VkInstance inst, VkPhysicalDevice phys, std::vector<const 
     const bool fp16 = p.on(hw::kNative16) || p.on(hw::kCoopMatrix);
     e->v12.shaderFloat16 = fp16 && q->v12.shaderFloat16;
     e->v11.storageBuffer16BitAccess = fp16 && q->v11.storageBuffer16BitAccess;
+    // Cooperative-matrix shaders declare the VulkanMemoryModel capability (GL_KHR_memory_scope_semantics).
+    e->v12.vulkanMemoryModel = p.on(hw::kCoopMatrix) && q->v12.vulkanMemoryModel;
     e->v12.timelineSemaphore = q->v12.timelineSemaphore;
     e->v12.bufferDeviceAddress = q->v12.bufferDeviceAddress && (rq || rtp);
     if (p.on(hw::kBindless)){ e->v12.descriptorIndexing = e->v12.runtimeDescriptorArray = e->v12.descriptorBindingPartiallyBound = VK_TRUE; }
