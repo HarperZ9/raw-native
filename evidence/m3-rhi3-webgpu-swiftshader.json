@@ -1,0 +1,15 @@
+{
+ "check": "m3 rhi3 raster identity",
+ "backend": "webgpu",
+ "adapter": "",
+ "error": "",
+ "formats": [{"format": "rgba8unorm", "texels": 12288, "mismatches": 0}, {"format": "rgba16float", "texels": 12288, "mismatches": 0}, {"format": "rgba32float", "texels": 12288, "mismatches": 0}, {"format": "r32float", "texels": 3072, "mismatches": 0}],
+ "depth_order_equal": true,
+ "depth_control_differs": true,
+ "subpixel_bits": 4,
+ "gbuffer": [
+  {"scene": "built-in test scene", "size": 256, "same_triangle_pixels": 37989, "differing_pixels": 6, "explained_by_edge_or_tie": 4, "position_ratio": 0.0014, "normal_ratio": 0.0000, "distance_ratio": 0.0055, "albedo_diffs": 0, "pass": false, "unexplained": [{"x": 25, "y": 124, "gpu_tri": 2, "cpu_tri": 0, "edge_px": 0.0172, "depth_rel": -1.000e+00}, {"x": 14, "y": 128, "gpu_tri": 2, "cpu_tri": 0, "edge_px": 0.0128, "depth_rel": -1.000e+00}]}
+ ],
+ "control_moved_triangle_fails": true,
+ "pass": false
+}

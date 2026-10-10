@@ -14,6 +14,13 @@ the day the release was published on GitHub, in UTC.
     exactly, which the plain form misses by up to 27%.
   - Bakes are identical for any thread count. `raw_native_cli bake-room` renders a test room
     from its lightmaps and by path tracing.
+- **RHI version 3 and a hardware G-buffer** (roadmap M3).
+  - New: float and depth formats, four colour targets, depth testing, culling, and vertex
+    pulling from storage buffers, on D3D12 and WebGPU.
+  - The formats round-trip exactly, and the depth test makes draw order irrelevant.
+  - On D3D12 WARP the hardware G-buffer matches the CPU rasterizer on every pixel of the
+    test scene and two Khronos models, once the reference snaps vertices as the hardware does.
+  - On SwiftShader two pixels miss the committed bound, and the evidence records them.
 
 - **Lighting** (roadmap M3).
   - Punctual lights use physical units (lux and candela, after KHR_lights_punctual), with

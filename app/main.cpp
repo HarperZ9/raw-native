@@ -4,6 +4,7 @@
 #include "raw/renderer/lighting_parity.hpp"
 #include "raw/tools/gallery_cmd.hpp"
 #include "raw/tools/bake_cmd.hpp"
+#include "raw/tools/raster_cmd.hpp"
 #include "raw/rhi/rhi.hpp"
 #include "raw/renderer/raster.hpp"
 #include "raw/renderer/accel.hpp"
@@ -121,6 +122,7 @@ int main(int argc, char** argv){
     if (argc >= 2 && std::strcmp(argv[1], "colour") == 0) return colourCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "material-gallery") == 0) return galleryCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "bake-room") == 0) return bakeCommand(argc - 1, argv + 1);
+    if (argc >= 2 && std::strcmp(argv[1], "raster-identity") == 0) return rasterIdentityCommand(argc - 1, argv + 1);
     // The sampled-texture identity check on this build's GPU backend (ROADMAP M2
     // criterion 3): JSON on stdout; exit 0 when it passes, 1 when it fails, 4 without
     // a GPU backend or adapter.

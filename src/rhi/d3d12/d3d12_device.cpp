@@ -162,7 +162,7 @@ CommandList* D3d12Device::begin(std::string& err){
     if (SUCCEEDED(hr)) hr = list_->Reset(alloc_.Get(), nullptr);
     if (FAILED(hr)){ err = hrError("command list Reset", hr); return nullptr; }
     cmd_.error.clear();
-    cmd_.target = {};
+    cmd_.endRenderPass();   // no pass carries over between submissions
     srvGpu.next = 0; sampGpu.next = 0;   // the last submission finished (submitAndWait blocks)
     open_ = true;
     return &cmd_;

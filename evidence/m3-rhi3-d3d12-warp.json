@@ -1,0 +1,17 @@
+{
+ "check": "m3 rhi3 raster identity",
+ "backend": "d3d12",
+ "adapter": "Microsoft Basic Render Driver",
+ "error": "",
+ "formats": [{"format": "rgba8unorm", "texels": 12288, "mismatches": 0}, {"format": "rgba16float", "texels": 12288, "mismatches": 0}, {"format": "rgba32float", "texels": 12288, "mismatches": 0}, {"format": "r32float", "texels": 3072, "mismatches": 0}],
+ "depth_order_equal": true,
+ "depth_control_differs": true,
+ "subpixel_bits": 8,
+ "gbuffer": [
+  {"scene": "built-in test scene", "size": 256, "same_triangle_pixels": 37996, "differing_pixels": 0, "explained_by_edge_or_tie": 0, "position_ratio": 0.0286, "normal_ratio": 0.0000, "distance_ratio": 0.1454, "albedo_diffs": 0, "pass": true},
+  {"scene": "Models/Suzanne/glTF/Suzanne.gltf", "size": 256, "same_triangle_pixels": 36656, "differing_pixels": 0, "explained_by_edge_or_tie": 0, "position_ratio": 0.0286, "normal_ratio": 0.0180, "distance_ratio": 0.1454, "albedo_diffs": 0, "pass": true},
+  {"scene": "Models/SciFiHelmet/glTF/SciFiHelmet.gltf", "size": 256, "same_triangle_pixels": 36891, "differing_pixels": 0, "explained_by_edge_or_tie": 0, "position_ratio": 0.0708, "normal_ratio": 0.0506, "distance_ratio": 0.1454, "albedo_diffs": 0, "pass": true}
+ ],
+ "control_moved_triangle_fails": true,
+ "pass": true
+}

@@ -5,15 +5,20 @@
 #include <limits>
 namespace raw {
 GBuffer rasterize(const Scene& scene, int w, int h, Arena* arena, Buffer<uint16_t>* ids){
+    return rasterize(scene, w, h, arena, ids, RasterOptions{});
+}
+GBuffer rasterize(const Scene& scene, int w, int h, Arena* arena, Buffer<uint16_t>* ids, const RasterOptions& opt){
     GBuffer g(arena); g.resize(w,h);
     if (ids) ids->resize(w,h);
+    if (opt.triangleIds) opt.triangleIds->resize(w,h);
+    uint32_t triIndex = 0;
     for (auto& d : g.depth.px) d = std::numeric_limits<float>::infinity();
     Mat4 view = scene.camera.view();
     Mat4 proj = scene.camera.proj();
     Mat4 vp = mul(proj, view);
     for (size_t mi=0; mi<scene.meshes.size(); ++mi){
         const Mesh& m = scene.meshes[mi];
-        for (size_t i=0; i+2 < m.indices.size(); i+=3){
+        for (size_t i=0; i+2 < m.indices.size(); i+=3, ++triIndex){
             int i0=m.indices[i], i1=m.indices[i+1], i2=m.indices[i+2];
             Vec3 wp[3] = { m.positions[i0], m.positions[i1], m.positions[i2] };
             Vec3 wn[3] = { m.normals[i0],   m.normals[i1],   m.normals[i2]   };
@@ -33,6 +38,10 @@ GBuffer rasterize(const Scene& scene, int w, int h, Arena* arena, Buffer<uint16_
                 sp[k].x = (ndc[k].x*0.5f+0.5f)*w;
                 sp[k].y = (1.0f-(ndc[k].y*0.5f+0.5f))*h;
                 sp[k].z = cs[k].w; // view-space distance proxy (-z_view = w)
+                if (opt.subpixelBits > 0){
+                    const float q = float(1 << opt.subpixelBits);
+                    sp[k].x = std::nearbyint(sp[k].x * q) / q; sp[k].y = std::nearbyint(sp[k].y * q) / q;
+                }
             }
             int minx = std::max(0, (int)std::floor(std::min({sp[0].x,sp[1].x,sp[2].x})));
             int maxx = std::min(w-1, (int)std::ceil (std::max({sp[0].x,sp[1].x,sp[2].x})));
@@ -48,7 +57,7 @@ GBuffer rasterize(const Scene& scene, int w, int h, Arena* arena, Buffer<uint16_
                 if (w0<0||w1<0||w2<0) continue;
                 // perspective-correct interpolation
                 float iw = w0*invw[0] + w1*invw[1] + w2*invw[2];
-                float depth = (w0*sp[0].z + w1*sp[1].z + w2*sp[2].z); // screen-linear interpolation of view distance (correct for non-overlapping test scene; true depth-buffer would interpolate 1/w-deferred)
+                float depth = opt.perspectiveDepth ? 1.0f / iw : (w0*sp[0].z + w1*sp[1].z + w2*sp[2].z); // screen-linear interpolation of view distance (correct for non-overlapping test scene; true depth-buffer would interpolate 1/w-deferred)
                 if (depth >= g.depth.at(x,y)) continue;
                 auto pc = [&](Vec3 a,Vec3 b,Vec3 c){
                     Vec3 r{ (w0*a.x*invw[0]+w1*b.x*invw[1]+w2*c.x*invw[2])/iw,
@@ -60,6 +69,7 @@ GBuffer rasterize(const Scene& scene, int w, int h, Arena* arena, Buffer<uint16_
                 g.albedo.at(x,y) = m.material.albedo;
                 g.mask.at(x,y) = 1;
                 if (ids) ids->at(x,y) = uint16_t(mi + 1);
+                if (opt.triangleIds) opt.triangleIds->at(x,y) = triIndex + 1;
             }
         }
     }

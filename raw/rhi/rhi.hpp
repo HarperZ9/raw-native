@@ -13,7 +13,10 @@
 //
 // Version 1 covered buffers, compute pipelines, uploads, copies, dispatches and
 // read-back. Version 2 adds RGBA8 textures, samplers, raster pipelines and
-// render passes (ROADMAP M2 criterion 3). Swapchains, queries and multiple
+// render passes (ROADMAP M2 criterion 3). Version 3 adds float and depth formats, up to four
+// colour targets and a depth target per pass, depth testing and culling, and read-only
+// storage buffers in raster stages for vertex pulling (ROADMAP M3; evidence/m3-rhi3-bounds.json).
+// Swapchains, queries and multiple
 // queues are added behind the same handles when the renderer needs them
 // (docs/architecture/adr/0002-rhi.md).
 //
@@ -26,7 +29,7 @@
 #include <string>
 namespace raw::rhi {
 // Bumped when a backend or a caller must change to keep working.
-inline constexpr int kRhiVersion = 2;
+inline constexpr int kRhiVersion = 3;
 
 // What the adapter says about itself. Strings come from the API and are
 // recorded verbatim in certificates; empty means the API did not say.
@@ -88,8 +91,18 @@ struct ComputePipelineDesc {
     std::span<const Binding> layout;
 };
 
-// Textures: 2D, one mip level, RGBA8 (unorm, linear: no sRGB decode on sampling).
-enum class TextureFormat : uint8_t { RGBA8Unorm };
+// Textures: 2D, one mip level. RGBA8Unorm is linear (no sRGB decode on sampling). The float
+// formats and Depth32Float are render targets read back by copy; RGBA8Unorm and RGBA16Float
+// can also be sampled.
+enum class TextureFormat : uint8_t { RGBA8Unorm, RGBA16Float, RGBA32Float, R32Float, Depth32Float };
+constexpr uint32_t bytesPerTexel(TextureFormat f){
+    switch (f){
+        case TextureFormat::RGBA16Float: return 8;
+        case TextureFormat::RGBA32Float: return 16;
+        default: return 4;
+    }
+}
+constexpr bool isDepth(TextureFormat f){ return f == TextureFormat::Depth32Float; }
 enum class TextureUsage : uint32_t { None = 0, Sampled = 1u << 0, RenderTarget = 1u << 1, CopyDst = 1u << 2, CopySrc = 1u << 3 };
 constexpr TextureUsage operator|(TextureUsage a, TextureUsage b){ return TextureUsage((uint32_t)a | (uint32_t)b); }
 constexpr bool has(TextureUsage set, TextureUsage bit){ return ((uint32_t)set & (uint32_t)bit) != 0; }
@@ -101,7 +114,9 @@ struct TextureDesc {
 };
 // Rows of a texture copied into a buffer are this many bytes apart (D3D12 and
 // WebGPU both require 256-byte row alignment for texture-buffer copies).
-constexpr uint32_t textureRowPitch(uint32_t width){ return (width * 4 + 255) & ~255u; }
+constexpr uint32_t textureRowPitch(uint32_t width, TextureFormat f = TextureFormat::RGBA8Unorm){
+    return (width * bytesPerTexel(f) + 255) & ~255u;
+}
 
 enum class Filter : uint8_t { Nearest, Linear };
 enum class AddressMode : uint8_t { ClampToEdge, Repeat };
@@ -111,22 +126,35 @@ struct SamplerDesc {
     const char* label{""};
 };
 
-// A raster pipeline draws triangles from vertex indices alone (no vertex
-// buffers), into one RGBA8 target, with no depth, blending or culling. Its
-// bindings are group 0 in order, as the WGSL declares them; the layout is
-// generated from the WGSL (src/renderer/gpu/shaders/raster_layout.hpp).
-enum class RasterBinding : uint8_t { Uniform, Texture, Sampler };
+// A raster pipeline draws triangles from vertex indices alone (no vertex buffers: a
+// vertex shader pulls what it needs from read-only storage buffers), into up to four
+// colour targets and an optional Depth32Float target, with no blending. Front faces are
+// counter-clockwise. Its bindings are group 0 in order, as the WGSL declares them; the
+// layout is generated from the WGSL (src/renderer/gpu/shaders/raster_layout.hpp).
+enum class RasterBinding : uint8_t { Uniform, Texture, Sampler, StorageRead };
+enum class CompareFunc : uint8_t { Less, LessEqual, Equal, Always };
+enum class CullMode : uint8_t { None, Back, Front };
+struct DepthState { bool enabled{false}, write{true}; CompareFunc compare{CompareFunc::Less}; };
+inline constexpr uint32_t kMaxColorTargets = 4;
 struct RasterPipelineDesc {
     const char* label{""};
     ShaderCode vertex, fragment;   // WGSL: one module with entry points vs and fs, given twice
     std::span<const RasterBinding> layout;
-    TextureFormat target{TextureFormat::RGBA8Unorm};
+    TextureFormat targets[kMaxColorTargets]{TextureFormat::RGBA8Unorm, TextureFormat::RGBA8Unorm,
+                                            TextureFormat::RGBA8Unorm, TextureFormat::RGBA8Unorm};
+    uint32_t targetCount{1};
+    DepthState depth;               // enabled: the pass has a Depth32Float target
+    CullMode cull{CullMode::None};
 };
-// One binding of a draw: the field that matches its layout slot is used.
+// One binding of a draw: the field that matches its layout slot is used (a StorageRead slot
+// takes a buffer, which the caller has moved to Access::StorageRead with a barrier).
 struct RasterBind { BufferHandle buffer; TextureHandle texture; SamplerHandle sampler; };
+struct ColorAttachment { TextureHandle texture; float clear[4]{0, 0, 0, 0}; };
 struct RenderPassDesc {
-    TextureHandle target;
-    float clear[4]{0, 0, 0, 0};
+    ColorAttachment color[kMaxColorTargets];
+    uint32_t colorCount{1};
+    TextureHandle depth;            // a Depth32Float target, or invalid for none
+    float depthClear{1.0f};
 };
 
 // Records one submission. Errors are kept and reported by submitAndWait, so a
@@ -141,9 +169,9 @@ public:
                             uint64_t size) = 0;
     virtual void dispatch(PipelineHandle pipeline, std::span<const BufferHandle> binds,
                           uint32_t x, uint32_t y, uint32_t z) = 0;
-    // The whole texture from tight RGBA8 rows, top row first.
+    // The whole texture from tight rows of bytesPerTexel(format) texels, top row first.
     virtual void uploadTexture(TextureHandle dst, const void* rgba, uint32_t width, uint32_t height) = 0;
-    // The whole texture into a buffer at offset 0, rows textureRowPitch(width) apart.
+    // The whole texture into a buffer at offset 0, rows textureRowPitch(width, format) apart.
     virtual void copyTextureToBuffer(TextureHandle src, BufferHandle dst) = 0;
     // A render pass clears its target; draws go between begin and end.
     virtual void beginRenderPass(const RenderPassDesc& pass) = 0;

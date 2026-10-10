@@ -20,8 +20,17 @@ inline const char* apiName(WGPUBackendType b){
         case WGPUBackendType_Metal: return "metal"; default: return ""; }
 }
 struct PipeRec { WGPUComputePipeline pipe{}; std::size_t bindCount{0}; };
-struct TexRec { WGPUTexture tex{}; WGPUTextureView view{}; uint32_t w{0}, h{0}; };
-struct RasterRec { WGPURenderPipeline pipe{}; std::vector<RasterBinding> layout; };
+struct TexRec { WGPUTexture tex{}; WGPUTextureView view{}; uint32_t w{0}, h{0}; TextureFormat format{TextureFormat::RGBA8Unorm}; };
+inline WGPUTextureFormat wgpuFormat(TextureFormat f){
+    switch (f){
+        case TextureFormat::RGBA16Float: return WGPUTextureFormat_RGBA16Float;
+        case TextureFormat::RGBA32Float: return WGPUTextureFormat_RGBA32Float;
+        case TextureFormat::R32Float: return WGPUTextureFormat_R32Float;
+        case TextureFormat::Depth32Float: return WGPUTextureFormat_Depth32Float;
+        default: return WGPUTextureFormat_RGBA8Unorm;
+    }
+}
+struct RasterRec { WGPURenderPipeline pipe{}; std::vector<RasterBinding> layout; uint32_t targetCount{1}; bool depth{false}; };
 
 class WebGpuDevice;
 class WebGpuCommandList final : public CommandList {
@@ -37,6 +46,8 @@ public:
     void draw(RasterPipelineHandle pipeline, std::span<const RasterBind> binds, uint32_t vertexCount) override;
     void endRenderPass() override;
     WGPURenderPassEncoder pass{};   // the open render pass
+    uint32_t passTargets{0};
+    bool passDepth{false};
     void fail(const std::string& e){ if (error.empty()) error = e; }
     WebGpuDevice& dev;
     WGPUCommandEncoder enc{};
