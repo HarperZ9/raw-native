@@ -1,0 +1,40 @@
+{
+  "what": "Model-judge results for blind panels 1 and 2, recorded separately from human ratings",
+  "date": "2026-10-10",
+  "kind": "MODEL JUDGES, not human raters. No human rating exists yet for either panel; when one does, it is reported beside this and does not replace it.",
+  "authority": "The author's instruction, verbatim, 2026-10-10: \"I want you to be the blind judge\". This amends both protocols (evidence/shaders-comparison-protocol.json, evidence/shaders-lab2-panel-protocol.json), which had said model judges are not used. The amendment was written before any rating existed.",
+  "design": "Three fresh model agents per panel with no conversation context (two on the session model, one on a different tier). Each saw only anonymised images and a trials file; none saw the key, the code or any report. GIF clips were also shown as 12-frame strips. Vote files were hashed before the keys were opened. Metric and decision rule unchanged (Wilson 95%; preferred only when the lower bound is above 0.5).",
+  "panel_1": {
+    "crt_all_competitors": "218/252 = 0.87 [0.82, 0.90], preferred",
+    "crt_vs": {
+      "megatron": "36/36, preferred",
+      "beans-vga": "36/36, preferred",
+      "royale": "34/36 = 0.94, preferred",
+      "guest-ntsc": "0.89, preferred",
+      "guest": "0.86, preferred",
+      "beans-rgb": "27/36 = 0.75 [0.59, 0.86], preferred",
+      "lottes": "22/36 = 0.61 [0.45, 0.75], not distinguishable"
+    },
+    "film_vs_filmgrain": "6/6 [0.61, 1.00], preferred",
+    "dither_vs_blue_noise_ega": "12/12 [0.76, 1.00], preferred",
+    "dither_vs_bayer4_ega": "0/12 [0.00, 0.24], LOST"
+  },
+  "panel_2_technique_vs_off": {
+    "interference_glazes": "24/24 [0.86, 1.00], preferred",
+    "development_adjacency": "20/24 = 0.83 [0.64, 0.93], preferred",
+    "hysteresis_quantisation": "10/12 = 0.83 [0.55, 0.95], preferred",
+    "pigment_space_lighting": "16/24 = 0.67 [0.47, 0.82], not distinguishable (judges 8/8, 4/8, 4/8)",
+    "eht_sag": "12/18 = 0.67 [0.44, 0.84], not distinguishable (judges 4/6, 2/6, 6/6)"
+  },
+  "does_not_prove": [
+    "The intervals are too narrow: repeats are near copies and the three judges are one model family, so the effective number of independent judgements is near the number of distinct pairs.",
+    "The judges are the same model family that built the shaders; shared biases can favour the same look. A model preference is not a human preference.",
+    "Panel 2 compares each technique with itself switched off, not with any product.",
+    "Motion was judged from 12-frame strips, so the sag and hysteresis results are weak.",
+    "No claim of superiority over any product follows (the protocols' claim rule)."
+  ],
+  "follow_up_dither_loss": {
+    "finding": "Diagnosed 2026-10-10 on the panel's own scene card (EGA, bayer4). The vendored ordered dither (retro-dither.js orderedPick) picks the nearest palette colour and a far-side colour and sets the mixing fraction by projection in OKLab. A dither is averaged by the eye in linear light, so an OKLab fraction over-weights the brighter colour in the darks. Region means on the grey ramp (source -> ours): 13 -> 27 (blue cast), 20 -> 57, 32 -> 64, 48 -> 74. The competitor's per-channel Bayer keeps those near black. A linear-light fraction on the same pair cut the mean region error from 17.8 to 10.0 codes (patches and ramp, 16 regions). Saturated colours on EGA (a yellow patch went grey-green) also suffer from the two-colour pair choice, which a per-channel threshold on an RGB-cube palette like EGA avoids.",
+    "status": "Not changed. The ordered modes are bound to retro-dither.js bit for bit (M1 criterion 10), so a fix is a new mixing option with its own bounds and parity, and the choice of default is the author's. Recommended: a linear-light fraction option, then decide the default."
+  }
+}
