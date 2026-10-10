@@ -1,0 +1,167 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/hw-h1-0-bounds.json",
+ "check": "forced_off",
+ "adapter": "NVIDIA GeForce RTX 4090",
+ "backend": "vulkan 1.4.341",
+ "cases": [
+  {
+   "disable": "all",
+   "supported_after": [],
+   "every_dispatch_used_fallback": true,
+   "functional_pass": true,
+   "pass": true
+  },
+  {
+   "disable": "async_compute",
+   "changed": [
+    "async_compute"
+   ],
+   "expected_change": [
+    "async_compute"
+   ],
+   "functional_pass": true,
+   "pass": true
+  },
+  {
+   "disable": "bindless",
+   "changed": [
+    "bindless"
+   ],
+   "expected_change": [
+    "bindless"
+   ],
+   "functional_pass": true,
+   "pass": true
+  },
+  {
+   "disable": "cooperative_matrix",
+   "changed": [
+    "cooperative_matrix"
+   ],
+   "expected_change": [
+    "cooperative_matrix"
+   ],
+   "functional_pass": true,
+   "pass": true
+  },
+  {
+   "disable": "enhanced_barriers",
+   "changed": [
+    "enhanced_barriers"
+   ],
+   "expected_change": [
+    "enhanced_barriers"
+   ],
+   "functional_pass": true,
+   "pass": true
+  },
+  {
+   "disable": "int64_shader_ops",
+   "changed": [
+    "int64_shader_ops"
+   ],
+   "expected_change": [
+    "int64_shader_ops"
+   ],
+   "functional_pass": true,
+   "pass": true
+  },
+  {
+   "disable": "mesh_shader",
+   "changed": [
+    "mesh_shader"
+   ],
+   "expected_change": [
+    "mesh_shader"
+   ],
+   "functional_pass": true,
+   "pass": true
+  },
+  {
+   "disable": "native_16bit",
+   "changed": [
+    "native_16bit"
+   ],
+   "expected_change": [
+    "native_16bit"
+   ],
+   "functional_pass": true,
+   "pass": true
+  },
+  {
+   "disable": "opacity_micromap",
+   "changed": [
+    "opacity_micromap"
+   ],
+   "expected_change": [
+    "opacity_micromap"
+   ],
+   "functional_pass": true,
+   "pass": true
+  },
+  {
+   "disable": "ray_query",
+   "changed": [
+    "ray_query"
+   ],
+   "expected_change": [
+    "ray_query"
+   ],
+   "functional_pass": true,
+   "pass": true
+  },
+  {
+   "disable": "raytracing_pipeline",
+   "changed": [
+    "raytracing_pipeline"
+   ],
+   "expected_change": [
+    "raytracing_pipeline"
+   ],
+   "functional_pass": true,
+   "pass": true
+  },
+  {
+   "disable": "shader_execution_reordering",
+   "changed": [
+    "shader_execution_reordering"
+   ],
+   "expected_change": [
+    "shader_execution_reordering"
+   ],
+   "functional_pass": true,
+   "pass": true
+  },
+  {
+   "disable": "timestamps",
+   "changed": [
+    "timestamps"
+   ],
+   "expected_change": [
+    "timestamps"
+   ],
+   "functional_pass": true,
+   "pass": true
+  },
+  {
+   "disable": "wave_ops",
+   "changed": [
+    "wave_ops"
+   ],
+   "expected_change": [
+    "wave_ops"
+   ],
+   "functional_pass": true,
+   "pass": true
+  },
+  {
+   "disable": "work_graphs",
+   "changed": [],
+   "expected_change": [],
+   "functional_pass": true,
+   "pass": true
+  }
+ ],
+ "pass": true
+}

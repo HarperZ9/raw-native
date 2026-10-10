@@ -22,7 +22,16 @@
   {
    "run": "fix before the RTX run",
    "result": "found by review, not by a run: the cooperative-matrix probe shader reads float16 storage buffers and uses float16 arithmetic, but the device enabled neither storageBuffer16BitAccess nor (unless native_16bit was on) shaderFloat16. On the RTX the validation layer would have flagged it. The probe now reports cooperative_matrix supported only with both, and the device enables both when either fp16 feature is on. SwiftShader rerun: pass, validation clean. The staged RTX binary was replaced before its job took the lock."
+  },
+  {
+   "run": "RTX 1",
+   "adapter": "RTX 4090, driver 610.88 (DXGI 32.0.16.1088), under D:/gpu.lock.d, 2026-10-10 19:47 to 19:53Z",
+   "result": "fail on validation only: VUID-VkShaderModuleCreateInfo-pCode-08740, the cooperative-matrix shader declares the VulkanMemoryModel capability and the device did not enable vulkanMemoryModel. Every functional and timing bound met: subgroup scan bit-equal (32 lanes), float16 bit-equal at 16 bits, ray query and cooperative-matrix pipelines created; ratio 2.00, control 1.00. Misuse control: 11 validation errors (fails as required). Forced-off 15 of 15. Cooperative matrix configurations listed include 16x16x16 f16 x f16 + f32. hw-h1-0-vk-rtx4090.json"
+  },
+  {
+   "run": "RTX 2",
+   "adapter": "RTX 4090, driver 610.88 (DXGI 32.0.16.1088), under D:/gpu.lock.d, 2026-10-10 20:03Z",
+   "result": "pass after enabling vulkanMemoryModel whenever cooperative matrices are on: validation errors 0. hw-h1-0-vk-rtx4090-run2.json"
   }
- ],
- "pending": "RTX 4090 run under D:/gpu.lock.d (mission-control 2026-10-10-engine-hw/gpu/hw_h1_0_vk_rtx_job.sh)"
+ ]
 }

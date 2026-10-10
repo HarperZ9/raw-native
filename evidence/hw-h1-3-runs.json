@@ -2,12 +2,23 @@
  "schema": "raw-native.evidence/1",
  "bounds": "evidence/hw-h1-3-bounds.json (committed c09ad45 before any code or run; unchanged)",
  "runs": [
-  {"run": 1, "adapter": "D3D12 WARP (mesh shader tier 1), debug layer on",
+  {
+   "run": 1,
+   "adapter": "D3D12 WARP (mesh shader tier 1), debug layer on",
    "result": "fail on one control, everything else met. Identity: the triangle-index and depth targets are bit-equal between the mesh and vertex pipelines on all six views (terrain and hall, wide, close, grazing; 533,531 to 1,425,792 covered pixels). Culling is exercised: the close cameras keep 752 of 1,600 and 171 of 352 meshlets. The flipped-cone control differs on five views (106,177 to 1,425,792 pixels) and on 0 pixels in hall close, so it does not discriminate there and the bound 'pixels differ on every scene and camera' is missed.",
-   "cause_inferred": "In hall close the visible geometry is column sides, whose meshlets span normals over more than 90 degrees and carry no cone, so neither cone test can drop them; the floor and walls in view face away from that camera and are back-face culled by both pipelines. This also shows that the hall scene's floor and walls are wound inconsistently for single-sided rendering. Inferred from the scene construction, not measured meshlet by meshlet."},
-  {"run": "forced off", "adapter": "same", "result": "pass: vertex pipeline only"}
+   "cause_inferred": "In hall close the visible geometry is column sides, whose meshlets span normals over more than 90 degrees and carry no cone, so neither cone test can drop them; the floor and walls in view face away from that camera and are back-face culled by both pipelines. This also shows that the hall scene's floor and walls are wound inconsistently for single-sided rendering. Inferred from the scene construction, not measured meshlet by meshlet."
+  },
+  {
+   "run": "forced off",
+   "adapter": "same",
+   "result": "pass: vertex pipeline only"
+  },
+  {
+   "run": "RTX",
+   "adapter": "RTX 4090, driver 610.88 (DXGI 32.0.16.1088), under D:/gpu.lock.d, 2026-10-10 19:47 to 19:53Z",
+   "result": "identity bit-equal (ids and depth) on all six views; culling exercised; the cone control again changes 0 pixels in hall close (the recorded miss). Mesh over vertex speedups (500 measured draws): terrain close 1.59 [1.55, 1.61], hall close 1.31 [1.31, 1.40]; slower on the wide and grazing views, 0.69 to 0.84 with intervals below 1. hw-h1-3-d3d12-rtx4090.json"
+  }
  ],
  "timing_note": "WARP timings are in hw-h1-3-d3d12-warp.json and are not a claim.",
- "not_done": "No bound changed. A control that discriminates on every view would be a new, dated addition, not a replacement.",
- "pending": "RTX 4090 under D:/gpu.lock.d with 50 warm-up and 500 measured draws (mission-control 2026-10-10-engine-hw/gpu/hw_h1_3_rtx_job.sh)"
+ "not_done": "No bound changed. A control that discriminates on every view would be a new, dated addition, not a replacement."
 }

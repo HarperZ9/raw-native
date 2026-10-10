@@ -29,26 +29,31 @@ the day the release was published on GitHub, in UTC.
 - **Mesh and amplification shaders** (HW H1.3). `raw_native_cli hw-mesh` draws a visibility buffer
   with meshlet frustum and normal-cone culling. It matches vertex pulling bit for bit in triangle index
   and depth on six views. **Open miss:** the flipped-cone control changes nothing in one view (hall,
-  close), where every visible meshlet has no cone. RTX timings are pending.
+  close), where every visible meshlet has no cone. On the RTX 4090 the mesh path is 1.59x and 1.31x
+  faster where culling drops half the meshlets, and 0.69 to 0.84x on wide views.
 - **Wave intrinsics and native fp16** (HW H1.2). `raw_native_cli hw-wave16` runs a full prefix sum of
   16.7 million values with wave intrinsics and with group-shared memory, plus a 9 x 9 HDR bilateral
   filter in fp16 and in fp32. The scans are bit-equal to the CPU, and fp16 stays within 2^-8 of fp32.
-  A dropped lane and a subnormal-range input both fail, as they must. RTX timings are pending.
+  A dropped lane and a subnormal-range input both fail, as they must. On the RTX 4090 the fp16 filter is
+  7.17x faster than fp32 [7.16, 7.17]. The wave scan is 33x *slower* than the group-shared scan (cause
+  not yet known).
 - **Async compute** (HW H1.4). `raw_native_cli hw-async` runs a producer on a compute queue beside the
   direct queue, joined by a fence. The results are bit-equal to the serial order and the CPU. A
-  consumer that waits on the wrong fence value reads the zero sentinel, so the check can fail. The
-  RTX 4090 run, with overlap timings and a bootstrap interval, is pending.
+  consumer that waits on the wrong fence value reads the zero sentinel, so the check can fail. On the
+  RTX 4090 the overlap gain is 1.00 [0.94, 1.06]: a null.
 - **Cooperative matrix GEMM** (HW H1.7, Vulkan). `raw_native_vk_probe --gemm` multiplies fp16 matrices
   on tensor cores through `VK_KHR_cooperative_matrix` and with a shared-memory fallback. Every checked
   element must sit within K 2^-23 times the sum of |a||b| of a float64 reference. Wrong-layout and
   skipped-K controls must fail. On SwiftShader the fallback passes at 1024 and 2048, and its control
-  fails. The RTX 4090 run, with timings and a bootstrap interval on the speedup, is pending.
+  fails. On the RTX 4090 the tensor-core path is within the bound at every size and reaches 47 TFLOPS,
+  6.5 to 7.1x our fallback (intervals above 1).
 - **Inline ray query against the CPU BVH** (HW H1.1). `raw_native_cli hw-rayquery` builds DXR
   acceleration structures on the hw compute queue and traces 1,020,000 rays over three procedural
   scenes, compared hit by hit with M3's BVH. Offset and rotation controls fail on every scene, as
   they must. **Open failure on WARP:** 20 hits below TMin (a WARP defect, reproduced on a single
   triangle), coplanar ties in the hall scene above the explained-fraction bound, and two grazing hits
-  outside tolerance. The RTX 4090 run and its timings are pending.
+  outside tolerance. **On the RTX 4090:** no unexplained disagreement on any scene, so the TMin hits were
+  WARP's. The coplanar-tie and grazing-tolerance misses remain open. No speed claim yet (no compute baseline).
 - **Vulkan hardware probe** (HW H1.0, optional `RAW_NATIVE_VULKAN=ON`). `raw_native_vk_probe` reports
   the same features through Vulkan, adding cooperative matrix configurations and invocation reordering.
   It refuses any non-CPU device unless `RAW_NATIVE_VK_HW=1` is set. On SwiftShader with the validation
