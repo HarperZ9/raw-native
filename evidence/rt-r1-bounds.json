@@ -1,0 +1,46 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "RT workstream stage R1: our own triangle rasterizer, a deterministic CPU reference and a GPU compute rasterizer (binned tiles, visibility buffer), with retro modes",
+ "written": "2026-10-10, before the implementation and the first run",
+ "specification": {
+  "screen": "pixel x = (ndc.x * 0.5 + 0.5) * W, y = (1 - (ndc.y * 0.5 + 0.5)) * H, y down; samples at pixel centres; W and H at most 2048",
+  "fixed_point": "24.8: 8 sub-pixel bits. A vertex snaps to a grid of 2^s units of 1/256 px (s = 0 by default; s = 8 is whole pixels; s = 9 and 10 are 2 and 4 px): q = floor(x * 2^(8-s) + 0.5) in float32, fixed = q * 2^s",
+  "clipping": "Sutherland-Hodgman in clip space against near (z + w >= 0), far (w - z >= 0) and a guard band |x|, |y| <= 16 w, in that plane order; the polygon (at most 9 vertices) is fanned from its first vertex into at most 7 triangles that keep the source triangle's index",
+  "edges": "E_ij(p) = (xj - xi)(py - yi) - (yj - yi)(px - xi), exact in 64-bit integers (the GPU carries hi and lo 32-bit words). Triangles are oriented so the area E_01(v2) > 0; area 0 is dropped; back-face culling, when on, drops triangles counter-clockwise in screen space (clockwise in NDC)",
+  "fill_rule": "a pixel is covered when every E > 0, or E = 0 on a top edge (dy = 0, dx > 0) or a left edge (dy < 0)",
+  "weights": "w0 = f(E_12) / area, w1 = f(E_20) / area, w2 = f(E_01) / area in float32, f(E) = (float(hi) * 2^32 + float(lo >> 16) * 2^16) + float(lo & 0xffff) so every conversion is exact; 1 / f(area) is computed once at setup",
+  "depth": "z/w per vertex, interpolated as z0 + w1 (z1 - z0) + w2 (z2 - z0); test strictly less, so equal depths keep the lower triangle index. Dithered depth (retro): floor(clamp(z * 0.5 + 0.5, 0, 1) * (2^D - 1) + B(x, y) / 16) with the 4 x 4 Bayer matrix B, compared as an integer",
+  "interpolation": "perspective-correct: weights w_k / w_clip_k renormalised; affine (retro): w_k renormalised; clipped vertices carry their weights in the source triangle",
+  "texturing": "nearest texel with wrap, from procedural RGBA8 textures; colour = texel * (0.35 + 0.65 max(0, n . L)), rounded to 8 bits"
+ },
+ "checks": {
+  "C1_watertight": {
+   "what": "CPU reference coverage counts on screen-space meshes with shared edges: a 24 x 24 grid of quads with vertices on pixel centres, the same grid with vertices jittered to random sub-pixel positions, and a 64-triangle fan around a vertex on a pixel centre, at 256 x 256",
+   "bound": "every pixel inside the mesh is covered exactly once and every pixel outside it 0 times",
+   "controls": "the inclusive rule (E >= 0 on every edge) must give at least one double hit; the exclusive rule (E > 0) must give at least one hole"
+  },
+  "C2_visibility": {
+   "what": "the CPU reference's triangle id per pixel against the closest hit of a ray through the pixel centre, cast with the M3 BVH (raw/renderer/bvh.hpp) on the unsnapped float geometry, for the owned scenes at 256 x 256",
+   "bound": "0 mismatching pixels, after exempting pixels within 1 px of an edge of either triangle (counted), pixels where the two hits' view depths differ by at most 1e-4 relative (counted), and pixels whose ray hit lies nearer than the near plane (counted)",
+   "control": "the same comparison with the depth test off (last triangle drawn wins) must show mismatches outside the exemptions"
+  },
+  "C3_perspective": {
+   "what": "UV of every pixel of a textured floor quad seen at a grazing angle (two triangles), against the float64 ray-plane intersection through the pixel centre",
+   "bound": "max |uv error| <= 1e-3 and median <= 1e-4 (UV spans 0..1 over the quad)",
+   "control": "affine mode must exceed the max bound"
+  },
+  "C4_gpu_identity": {
+   "what": "the GPU compute rasterizer (bin count, scan, fill, tile visibility, resolve) fed the CPU reference's setup records, against the CPU reference, on every owned scene and the C1 meshes, in four modes: modern; affine; vertex snap to whole pixels at 320 x 240; dithered 12-bit depth",
+   "bound": "on every pixel: the same triangle id and bit-identical depth; where both cover: |uv difference| <= 1e-5 (1 + |uv|) per component; the same texel, except where the CPU's texel coordinate lies within 1e-3 texel of a texel boundary (counted); colour within 1 code value when the texel is the same",
+   "controls": "the GPU with the fill rule's tie flipped (bottom-right) must differ on at least one pixel of the C1 grid; the GPU fed setup with one vertex of one visible triangle moved by one sub-pixel unit must differ on at least one pixel"
+  },
+  "C5_gpu_end_to_end": {
+   "what": "the GPU does its own transform, clipping, snapping and setup, from the same vertex and index buffers, on the owned scenes in the four modes",
+   "bound": "the same set of valid setup slots; every fixed-point coordinate within one grid step of the CPU's; at most 1% of valid slots differ at all; a pixel's triangle id may differ only where a covering slot on either side differs from the CPU's (counted); where ids agree and the slot is identical, depth is bit-identical; where ids agree and the slot differs, |depth difference| <= 1e-6",
+   "control": "a GPU setup with the guard band at 8 w instead of 16 w must change the valid slot set on the clipping scene"
+  }
+ },
+ "scenes": "procedural, built in raw/renderer/swr_scenes (no external file): retro_room (a BRender-era room: tiled floor receding past the near plane, brick walls, pillars, stairs, a low-poly figure), iso_street (a narrow-FOV isometric street: tile blocks, facades, lamp posts), clip_stress (a large floor crossing the near plane and every guard-band plane), and the C1 screen-space meshes; textures are procedural RGBA8 (brick, tiles, planks, checker)",
+ "backends": "D3D12 WARP (debug layer on) and WebGPU SwiftShader for the gates; the RTX 4090 only under D:/gpu.lock.d, reported separately",
+ "does_not_prove": "Frame times or scaling (the binning is O(bins x triangles) and is not a performance claim); anti-aliasing (one sample a pixel); that any console or historical renderer behaved exactly so (the retro modes are our specification of the look); identity on hardware not run."
+}
