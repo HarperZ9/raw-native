@@ -8,6 +8,7 @@
 //   mo.resize(1920, 1080);
 //   mo.draw(list, { frame: 0 });                 // to the canvas
 //   const rgba = await mo.capture(list, { frame: 0 });   // to memory, RGBA8 rows
+//   const f = await mo.capture(list, { frame: 0, float: true });   // Float32 RGBA rows, values may pass 1
 import { compile, DEFAULT_CAMERA } from "./vector.mjs";
 import { VECTOR_WGSL, PARTICLE_WGSL, SPRITE_WGSL, LAYER_BUFFER_WGSL, LAYER_TEXTURE_WGSL, POST_WGSL } from "./shaders.mjs";
 import { ParticleSystem } from "./particles.mjs";
@@ -207,7 +208,7 @@ class Motion {
     full(this.glowA.createView(), this.bright, pb.bright, "bloom");
     full(this.glowB.createView(), this.blurx, pb.blurx, null);
     full(this.glowA.createView(), this.blury, pb.blury, null);
-    const outFmt = capture ? "rgba8unorm" : this.outFormat;
+    const outFmt = capture ? capture : this.outFormat;
     const tex2 = (key) => {
       const t = this[key];
       if (t && t.width === W && t.height === H) return t;
@@ -224,12 +225,14 @@ class Motion {
     } else if (displayPasses.length) {
       full(tex2("dispTex").createView(), this.finishHDR, pb.finishHDR, "finish");
       this.post.run(enc, displayPasses, this.dispTex, W, H, frame, time, { view: target, format: outFmt }, "display", scenePasses.length);
-    } else full(target, capture ? this.finishCapture : this.finishCanvas, capture ? pb.finishCapture : pb.finishCanvas, "finish");
+    } else if (capture === HDR) full(target, this.finishHDR, pb.finishHDR, "finish");
+    else full(target, capture ? this.finishCapture : this.finishCanvas, capture ? pb.finishCapture : pb.finishCanvas, "finish");
     let read = null;
     if (capture) {
-      const bpr = Math.ceil((W * 4) / 256) * 256;
+      const px = capture === HDR ? 8 : 4, tex = capture === HDR ? this.capTexF : this.capTex;
+      const bpr = Math.ceil((W * px) / 256) * 256;
       read = this.#ensure("readback", bpr * H, ["map-read", "copy-dst"]);
-      enc.copyTextureToBuffer({ texture: this.capTex }, { buffer: read, bytesPerRow: bpr }, [W, H]);
+      enc.copyTextureToBuffer({ texture: tex }, { buffer: read, bytesPerRow: bpr }, [W, H]);
       read = { buf: read, bpr };
     }
     if (host.timer) host.timer.resolve(enc, timed);
@@ -256,8 +259,10 @@ class Motion {
   }
   // Draw off screen and return { width, height, data: Uint8Array RGBA rows }.
   async capture(list, opts = {}) {
+    await this.post.prepare((list.post && list.post.passes) || [], this.w, this.h);
+    if (opts.float) return this.#captureFloat(list, opts);
     if (!this.capTex) this.capTex = this.device.createTexture({ label: "motion capture", size: [this.w, this.h], format: "rgba8unorm", usage: TEX.RENDER | TEX.COPY_SRC });
-    const r = this.#frame(list, opts, this.capTex.createView(), true);
+    const r = this.#frame(list, opts, this.capTex.createView(), "rgba8unorm");
     await r.buf.mapAsync(1);
     const src = new Uint8Array(r.buf.getMappedRange()), W = this.w, H = this.h, row = W * 4;
     const data = new Uint8Array(row * H);
@@ -266,10 +271,26 @@ class Motion {
     r.buf.unmap();
     return { width: W, height: H, data };
   }
+  // The frame in rgba16float, before any 8-bit rounding: for extended-range output.
+  async #captureFloat(list, opts) {
+    if (!this.capTexF || this.capTexF.width !== this.w || this.capTexF.height !== this.h) {
+      if (this.capTexF) this.capTexF.destroy();
+      this.capTexF = this.device.createTexture({ label: "motion capture float", size: [this.w, this.h], format: HDR, usage: TEX.RENDER | TEX.COPY_SRC });
+    }
+    const r = this.#frame(list, opts, this.capTexF.createView(), HDR);
+    await r.buf.mapAsync(1);
+    const src = new Uint16Array(r.buf.getMappedRange()), W = this.w, H = this.h, data = new Float32Array(W * H * 4);
+    for (let y = 0; y < H; y++) for (let x = 0; x < W * 4; x++) {
+      const h = src[(y * r.bpr) / 2 + x], e = (h >> 10) & 31, f = h & 1023, s = h & 0x8000 ? -1 : 1;
+      data[y * W * 4 + x] = e === 0 ? s * f * 2 ** -24 : e === 31 ? s * Infinity : s * (1 + f / 1024) * 2 ** (e - 15);
+    }
+    r.buf.unmap();
+    return { width: W, height: H, data };
+  }
   timings() { return this.host.timings(); }
   destroy() {
     for (const b of Object.values(this.gpu)) b.destroy();
-    for (const t of [this.accum, this.glowA, this.glowB, this.capTex, this.worldTex, this.atlasTex, this.dispTex, this.linTex]) if (t) t.destroy();
+    for (const t of [this.accum, this.glowA, this.glowB, this.capTex, this.worldTex, this.atlasTex, this.dispTex, this.linTex, this.capTexF]) if (t) t.destroy();
     this.post.destroy();
     this.colour.destroy();
   }

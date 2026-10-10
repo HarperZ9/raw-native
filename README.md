@@ -70,9 +70,15 @@ tolerance, and can run the WebAssembly build in the page. Its source is
 
 ## Watch
 
-No concept film fits this tool closely yet. The walkthrough below covers it in text, with real commands and output.
+Rendered by this repository's v0.6.0 release from its own output, so every number on screen is one that release produced.
 
-Video walkthrough: coming with the next release.
+[![Checking the light: a film rendered by the v0.6.0 release](https://harperz9.github.io/media/releases/raw-native/v0.6.0/ao-check/poster.jpg)](https://harperz9.github.io/media/releases/raw-native/v0.6.0/ao-check/index.html)
+
+**[Checking the light](https://harperz9.github.io/media/releases/raw-native/v0.6.0/ao-check/index.html)** (53 s). Rendered from values read at commit 158afa8: [facts.json](https://harperz9.github.io/media/releases/raw-native/v0.6.0/ao-check/facts.json). The narration is a synthesized version of the author's voice.
+
+[![raw-native: build, render, check: a film rendered by the v0.6.0 release](https://harperz9.github.io/media/releases/raw-native/v0.6.0/first-run/poster.jpg)](https://harperz9.github.io/media/releases/raw-native/v0.6.0/first-run/index.html)
+
+**[raw-native: build, render, check](https://harperz9.github.io/media/releases/raw-native/v0.6.0/first-run/index.html)** (37 s). Rendered from values read at commit 158afa8: [facts.json](https://harperz9.github.io/media/releases/raw-native/v0.6.0/first-run/facts.json). The narration is a synthesized version of the author's voice.
 
 ## Walkthrough
 
@@ -248,6 +254,13 @@ With `post.colour` set to a colour pipeline, such as `"aces2-sdr/srgb"`, a scene
 colours are scene-linear Rec.709 light. The finish keeps them linear, and the
 frame is tone-mapped and encoded by the same WGSL the colour tests hold to the C++
 reference. Without it, colours stay display values, as before.
+
+For HDR displays, `createHost({ canvas, hdr: true })` asks for an rgba16float canvas
+in extended tone-mapping mode. `host.hdr` says whether the browser granted it. The
+pipeline `aces2-hdr1000/srgb-extended` then carries light above SDR white to the
+screen: on the canvas, 1.0 is SDR white and brighter values use the display's
+headroom. `tests/web/hdr_output.py` checks this end to end against the C++
+reference. A colorimeter reading of what a display shows is still to come.
 
 A display list can name post passes in `post.passes`. Scene passes run in linear
 light before bloom, and display passes run after the finish. The shader library

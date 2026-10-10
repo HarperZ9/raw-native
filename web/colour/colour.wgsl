@@ -9,7 +9,8 @@
 // colour.mjs, offsets below) and calls colour_apply(rgb).
 
 struct ColourParams { tone: u32, output: u32, pad0: u32, pad1: u32 };
-// tone: 0 clip, 1 pbr-neutral, 2 agx, 3 aces2. output: 0 srgb, 1 display-p3, 2 rec2020, 3 rec2100-pq.
+// tone: 0 clip, 1 pbr-neutral, 2 agx, 3 aces2. output: 0 srgb, 1 display-p3, 2 rec2020, 3 rec2100-pq,
+// 4 srgb-extended (sign-extended sRGB curve, unclamped; for a canvas in extended tone-mapping mode).
 
 const O_TO_AP0 = 0u; const O_AP0_TO_AP1 = 9u; const O_AP1_TO_AP0 = 18u; const O_AP1_UPPER = 27u;
 const O_OUT_M = 28u; const O_PEAK = 37u; const O_CAM_IN = 38u; const O_CAM_OUT = 79u;
@@ -34,6 +35,10 @@ fn srgb_encode(x: f32) -> f32 {
   let v = clamp(x, 0.0, 1.0);
   return select(1.055 * powp(v, 1.0 / 2.4) - 0.055, 12.92 * v, v <= 0.0031308);
 }
+fn srgb_ext(x: f32) -> f32 {
+  let a = abs(x);
+  return sign(x) * select(1.055 * powp(a, 1.0 / 2.4) - 0.055, 12.92 * a, a <= 0.0031308);
+}
 fn pq_encode(linear100: f32) -> f32 {
   let p = powp(max(linear100, 0.0) / 100.0, 2610.0 / 16384.0);
   return powp((3424.0 / 4096.0 + 2413.0 / 128.0 * p) / (1.0 + 2392.0 / 128.0 * p), 2523.0 / 32.0);
@@ -41,6 +46,7 @@ fn pq_encode(linear100: f32) -> f32 {
 fn encode(o: u32, v: vec3f) -> vec3f {
   if (o == 2u) { return vec3f(powp(min(v.x, 1.0), 1.0 / 2.4), powp(min(v.y, 1.0), 1.0 / 2.4), powp(min(v.z, 1.0), 1.0 / 2.4)); }
   if (o == 3u) { return vec3f(pq_encode(v.x), pq_encode(v.y), pq_encode(v.z)); }
+  if (o == 4u) { return vec3f(srgb_ext(v.x), srgb_ext(v.y), srgb_ext(v.z)); }
   return vec3f(srgb_encode(v.x), srgb_encode(v.y), srgb_encode(v.z));
 }
 

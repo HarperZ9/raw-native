@@ -53,7 +53,7 @@ const TEXTURE_USAGE = { "copy-src": 0x01, "copy-dst": 0x02, sampled: 0x04, stora
 
 const USAGE = { storage: 0x80, uniform: 0x40, "copy-src": 0x04, "copy-dst": 0x08, "map-read": 0x01, vertex: 0x20, index: 0x10 };
 
-export async function createHost({ canvas = null, powerPreference = "high-performance", timing = true } = {}) {
+export async function createHost({ canvas = null, powerPreference = "high-performance", timing = true, hdr = false } = {}) {
   const gpu = typeof navigator !== "undefined" && navigator.gpu;
   if (!gpu) throw new HostUnavailable("WebGPU is not available in this browser");
   // A software adapter (SwiftShader in headless Chrome on a CI runner) can answer null for
@@ -71,11 +71,13 @@ export async function createHost({ canvas = null, powerPreference = "high-perfor
     requiredLimits: { maxStorageBufferBindingSize: adapter.limits.maxStorageBufferBindingSize,
       maxBufferSize: adapter.limits.maxBufferSize },
   });
-  return new Host(adapter, device, canvas, canTime);
+  return new Host(adapter, device, canvas, canTime, hdr);
 }
 
 class Host {
-  constructor(adapter, device, canvas, canTime) {
+  constructor(adapter, device, canvas, canTime, hdr = false) {
+    this.wantHdr = hdr;
+    this.hdr = false;
     this.adapter = adapter;
     this.device = device;
     this.info = adapter.info ? { vendor: adapter.info.vendor, architecture: adapter.info.architecture,
@@ -98,6 +100,17 @@ class Host {
     this.canvas = canvas;
     this.context = canvas.getContext("webgpu");
     this.format = navigator.gpu.getPreferredCanvasFormat();
+    this.hdr = false;
+    if (this.wantHdr) {
+      // Extended range: rgba16float in extended tone-mapping mode, where 1.0 is SDR white
+      // and brighter values reach the display's headroom. A browser without the mode keeps
+      // standard output; host.hdr says which one the canvas got.
+      try {
+        this.context.configure({ device: this.device, format: "rgba16float", alphaMode: "opaque", colorSpace: "srgb", toneMapping: { mode: "extended" } });
+        const c = this.context.getConfiguration ? this.context.getConfiguration() : null;
+        if (c && c.toneMapping && c.toneMapping.mode === "extended") { this.format = "rgba16float"; this.hdr = true; this.present = null; return; }
+      } catch (_) { /* fall back to standard output below */ }
+    }
     this.context.configure({ device: this.device, format: this.format, alphaMode: "opaque" });
     this.present = null;
   }
@@ -179,17 +192,23 @@ class Host {
   // Run one frame of a compiled graph: one command encoder, one submit.
   frame(g) {
     const enc = this.device.createCommandEncoder();
-    const ctx = new PassContext(this, enc);
-    for (const s of (g.compiled ? g.plan : g.compile())) {
-      ctx.name = g.passes[s.pass].name;
-      g.passes[s.pass].fn(ctx, g);
-      if (this.timer) ctx.endPass();
-    }
-    ctx.endPass();
-    if (this.timer) this.timer.resolve(enc, ctx.timed);
+    this.record(g, enc);
     this.device.queue.submit([enc.finish()]);
     if (this.timer) this.timer.collect();
     this.cpuFrame++;
+  }
+  // Record a compiled graph into an encoder the caller owns and submits (a post effect
+  // inside the Motion frame). With timed false the graph takes no timestamps, so it
+  // leaves the caller's own timing alone.
+  record(g, enc, timed = true) {
+    const ctx = new PassContext(this, enc, timed && !!this.timer);
+    for (const s of (g.compiled ? g.plan : g.compile())) {
+      ctx.name = g.passes[s.pass].name;
+      g.passes[s.pass].fn(ctx, g);
+      if (ctx.timing) ctx.endPass();
+    }
+    ctx.endPass();
+    if (ctx.timing) this.timer.resolve(enc, ctx.timed);
   }
   timings() { return this.timer ? this.timer.read() : null; }
   // Resolves when every submitted frame has finished on the GPU.
@@ -201,10 +220,10 @@ class Host {
 // What a pass records with. Consecutive dispatches share one compute pass
 // unless the host times passes, when each graph pass gets its own.
 class PassContext {
-  constructor(host, enc) { this.host = host; this.enc = enc; this.cpass = null; this.timed = []; this.name = ""; }
+  constructor(host, enc, timing = !!host.timer) { this.host = host; this.enc = enc; this.cpass = null; this.timed = []; this.name = ""; this.timing = timing; }
   #writes() {
     const t = this.host.timer;
-    if (!t || this.timed.length >= t.capacity) return undefined;
+    if (!this.timing || !t || this.timed.length >= t.capacity) return undefined;
     const i = this.timed.length;
     this.timed.push(this.name);
     return { querySet: t.set, beginningOfPassWriteIndex: 2 * i, endOfPassWriteIndex: 2 * i + 1 };

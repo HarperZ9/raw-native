@@ -1,0 +1,27 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "M1 exit criterion 3 (HDR), the colour half: the extended-range output pipeline",
+ "written": "2026-10-10, before the first run of the pipeline below",
+ "extends": "evidence/m1-colour-bounds.json (same grid, same metric definitions)",
+ "pipelines": {
+  "aces2-hdr1000/srgb-extended": "ACES 2.0 at 1,000 nits with P3-D65 limiting primaries, clamp to peak, P3-D65 to Rec.709 matrix, then the sRGB curve extended by sign and unclamped above 1, with 1.0 = SDR white = 100 nits (a browser canvas in extended tone-mapping mode, rgba16float)"
+ },
+ "references": {
+  "ocio": {
+   "version": "OpenColorIO 2.6.0, offline",
+   "mapping": {
+    "aces2-hdr1000/srgb-extended": "'Linear Rec.709 (sRGB)' to 'ACES2065-1', built-in 'ACES-OUTPUT - ACES2065-1_to_CIE-XYZ-D65 - HDR-1000nit-P3-D65_2.0', built-in 'DISPLAY - CIE-XYZ-D65_to_sRGB - MIRROR NEGS'"
+   }
+  }
+ },
+ "bounds": {
+  "gpu_vs_cpp": "every channel of every input within 1/255 of the C++ value after both are clamped to [0, 1]; above 1, within 0.5% relative",
+  "cpp_vs_ocio": {
+   "metric": "Delta E ITP between the two outputs decoded to absolute luminance with 1.0 = 100 nits",
+   "max": 1.0,
+   "p99": 0.25
+  }
+ },
+ "screen": "Criterion 3's measured half (a 1,000-nit patch within 5% on a colorimeter, through calibrate-pro) needs the author's display and colorimeter; it is not part of this file.",
+ "does_not_prove": "What any display shows, or that a browser maps 1.0 to 100 nits: the canvas maps 1.0 to the system's SDR white, which the viewer sets."
+}
