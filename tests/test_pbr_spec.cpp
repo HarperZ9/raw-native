@@ -3,6 +3,7 @@
 // and KHR_materials_iridescence write them, checked against the formulas written out here.
 #include "raw/renderer/pbr.hpp"
 #include "check.hpp"
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
