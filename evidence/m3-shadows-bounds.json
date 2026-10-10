@@ -9,13 +9,42 @@
   "reference": "Ray casts on raw/renderer/bvh.hpp from each receiver point (offset by the same normal offset) toward the light: one ray for hard visibility; for the soft light, the fraction of 256 stratified directions over the sun's disc that reach it."
  },
  "checks": {
-  "shadow_map_identity": {"what": "each cascade's hardware shadow map against a CPU rasterization of the same light-space triangles (snapped at the precision the RHI v3 probe measures)", "bound": "same coverage except within 0.01 px of an edge; normalised depth within 1e-5 where both cover the same triangle"},
-  "stability": {"what": "4,096 seeded receiver points; the camera pans over 32 positions in steps of 0.37 shadow-map texels, then turns through 16 yaw steps of 0.25 degrees; the hard shadow result at every point and position", "bound": "results that change across the path <= 0.1% of point-positions; the control (no texel snapping, a frustum-tight fit) changes > 1%"},
-  "hard_visibility": {"what": "hard CSM shadows at the G-buffer pixels of the test scene, Suzanne and the helmet role's model at 256 x 256, against the one-ray reference, on interior pixels (where the reference agrees at the pixel's point and at 8 points two shadow-map texels away on the receiver)", "bound": "mismatches <= 0.1% of interior pixels"},
-  "pcss_soft": {"what": "PCSS against the 256-direction soft reference for a sun of 1.5 degrees angular radius, same pixels", "bound": "mean |difference| <= 0.05, 95th percentile <= 0.20 (PCSS is an approximation; this records how good it is)"},
-  "gpu_lookup_parity": {"what": "the WGSL shadow lookup (hard, PCF and PCSS) against the CPU lookup on the same read-back shadow maps and G-buffer", "bound": "|gpu - cpu| <= 1e-3 on all but 0.1% of pixels (depth comparisons at exact ties may flip between float32 and float64)"},
-  "contact_parity": {"what": "the WGSL contact-shadow march against the CPU march on the same depth buffer", "bound": "differing pixels <= 0.1%"},
-  "controls": {"what": "one shadow caster moved on the GPU side; the stability control above", "bound": "each fails its check"}
+  "shadow_map_identity": {
+   "what": "each cascade's hardware shadow map against a CPU rasterization of the same light-space triangles (snapped at the precision the RHI v3 probe measures)",
+   "bound": "same coverage except within 0.01 px of an edge; normalised depth within 1e-5 where both cover the same triangle"
+  },
+  "stability": {
+   "what": "4,096 seeded receiver points; the camera pans over 32 positions in steps of 0.37 shadow-map texels, then turns through 16 yaw steps of 0.25 degrees; the hard shadow result at every point and position",
+   "bound": "results that change across the path <= 0.1% of point-positions; the control (no texel snapping, a frustum-tight fit) changes > 1%"
+  },
+  "hard_visibility": {
+   "what": "hard CSM shadows at the G-buffer pixels of the test scene, Suzanne and the helmet role's model at 256 x 256, against the one-ray reference, on interior pixels (where the reference agrees at the pixel's point and at 8 points two shadow-map texels away on the receiver)",
+   "bound": "mismatches <= 0.1% of interior pixels"
+  },
+  "pcss_soft": {
+   "what": "PCSS against the 256-direction soft reference for a sun of 1.5 degrees angular radius, same pixels",
+   "bound": "mean |difference| <= 0.05, 95th percentile <= 0.20 (PCSS is an approximation; this records how good it is)"
+  },
+  "gpu_lookup_parity": {
+   "what": "the WGSL shadow lookup (hard, PCF and PCSS) against the CPU lookup on the same read-back shadow maps and G-buffer",
+   "bound": "|gpu - cpu| <= 1e-3 on all but 0.1% of pixels (depth comparisons at exact ties may flip between float32 and float64)"
+  },
+  "contact_parity": {
+   "what": "the WGSL contact-shadow march against the CPU march on the same depth buffer",
+   "bound": "differing pixels <= 0.1%"
+  },
+  "controls": {
+   "what": "one shadow caster moved on the GPU side; the stability control above",
+   "bound": "each fails its check"
+  }
  },
- "does_not_prove": "Shadows from point and spot lights (cube or perspective maps come later); transparency and alpha-tested casters; frame times; that the stand-in scenes show every shadowing case of a Sponza-class level."
+ "does_not_prove": "Shadows from point and spot lights (cube or perspective maps come later); transparency and alpha-tested casters; frame times; that the stand-in scenes show every shadowing case of a Sponza-class level.",
+ "method_note_2026_10_10": {
+  "written": "2026-10-10, after the first CPU run and before any change to the checks or the scenes",
+  "first_run": "The first CPU run (stable 0 changes, control 0.008%; hard mismatches 0, 1, 0; PCSS mean 0.0004 to 0.0025) is not a result. The test scene's light travels away from the camera, so the box hides its own shadow: 35 of 37,734 sampled pixels were shadowed in the test scene, 484 for Suzanne, 358 for the helmet. A check over almost no shadow passes for any shadow map. The stability control failed to reach its bound for the same reason and one more: at these cascade sizes a shadow-map texel is about a third of a screen pixel, so few receiver points sit close enough to an edge to flip.",
+  "scene_change": "The shadow checks set the scene's sun to travel along normalize(0.55, -0.45, 0.35) (35 degrees elevation, toward the camera's side), so every model casts a long shadow the camera sees. Other tests keep the scene's own light.",
+  "coverage_bound": "Each scene must have at least 2,000 shadowed pixels (one-ray reference) and at least 300 penumbra pixels (soft reference strictly between 0 and 1) at full sampling, or its hard and soft checks count as failed.",
+  "stability_original": "The stability check above stays as written and is reported. If its control again stays at or under 1%, that is recorded as the check failing to discriminate, and the gate uses the addition below.",
+  "texel_registration": "Dated addition 9 (2026-10-10). Swimming is measured directly: for each of the 4,096 points and each consecutive pair of path positions where the point stays in the same cascade, the change counts if the cascade's texel size changes or the point's sub-texel position in the map moves by more than 1e-3 texel on either axis. Bound: changes <= 0.1% of such point-position pairs; the control (no snapping, frustum-tight fit) must exceed 1%."
+ }
 }
