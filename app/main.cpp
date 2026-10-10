@@ -145,14 +145,16 @@ int main(int argc, char** argv){
         + 3*sizeof(float) + 2*sizeof(Vec3);                     // aoRT + aoSS + errorMap + frame + hdr
     // The per-pixel bound covers the built-in scene. A --model scene also holds the model's
     // geometry and its acceleration structure, so the measure slab doubles until the
-    // render fits (up to 4 GiB); pass 2 still runs in exactly the measured footprint.
+    // render fits (up to 4 GiB, 2 GiB on WebAssembly); pass 2 still runs in exactly the measured footprint.
     std::size_t slabUB = (std::size_t)W*H*PER_PIXEL_UPPER*2 + (1u<<20), Hbytes = 0;
     for (;;){
         std::vector<std::uint8_t> slab1(slabUB);
         Arena measure(slab1.data(), slabUB);
         try { (void)renderFromParams(p, &measure); Hbytes = measure.stats().high_water; break; }
         catch (const std::bad_alloc&){
-            if (p.model.empty() || slabUB >= (std::size_t(1) << 32)){
+            // The cap: 4 GiB, or 2 GiB where size_t is 32 bits (WebAssembly), where 1 << 32 would wrap to 0.
+            constexpr std::size_t CAP = sizeof(std::size_t) > 4 ? std::size_t(1) << (sizeof(std::size_t) > 4 ? 32 : 0) : std::size_t(1) << 31;
+            if (p.model.empty() || slabUB >= CAP / 2){
                 std::printf("measure pass overflowed slab - raise PER_PIXEL_UPPER\n"); return 2; }
             slabUB *= 2;
         }
