@@ -133,5 +133,12 @@
   "diagnosis": "SSR: the march's end is clipped 1e-6 pixels inside the screen. In float32 at x = 256 that margin rounds away, the GPU's end lands on x = 256, and its last steps leave the screen, so it misses hits at the right border that the float64 march finds.",
   "change": "The clip margin becomes 1e-3 pixels on both sides. TAA: unchanged; its differences are traced in the next run's record before any change.",
   "bounds": "Unchanged."
+ },
+ "method_note_8_2026_10_10": {
+  "written": "2026-10-10, after the second and third GPU parity runs on WARP and before any further change is run",
+  "second_gpu_run": "After note 7: SSR still 293 to 3,380 differing pixels. Note 7's diagnosis was only a small part: my parity code passed GTAO's 16 steps to the SSR pass, which marches 64. Fixed in the parity code (SSR gets its own step count); no model change.",
+  "third_gpu_run": "SSR parity passes on all six scenes (at most 11 differing pixels, 0.02%). GTAO passes. TAA still fails: the pixels off by more than 1e-3 grow from 0 at frame 2 to 32 at frame 31 (bound 16). Probes (not checked runs): with the colour clip off, 0 pixels differ at frame 31; with the depth test off and the clip on, 26.",
+  "diagnosis": "The clip's standard deviation is computed as sqrt(E[x^2] - E[x]^2). In float32 that cancels badly in flat regions, where the true deviation is about 0, so the GPU's clip box is wider than the CPU's by about 1e-4 and the two histories drift apart.",
+  "change": "Both sides compute the neighbourhood's deviation in two passes (the mean first, then the mean squared difference). Bounds unchanged."
  }
 }
