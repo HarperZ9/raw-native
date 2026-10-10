@@ -1,0 +1,10 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "RT stage R3, M1: sphere tracing against analytic intersections",
+ "pass": true,
+ "results": [
+  {"check": "M1", "primitive": "sphere", "rays": 65536, "hits": 25324, "misses": 40168, "disagree": 0, "grazing_exempt": 44, "t_over_bound": 0, "worst_t_ratio": 0.0413, "control_eps_1e-2_unrefined_worst_t_ratio": 250.93},
+  {"check": "M1", "primitive": "box", "rays": 65536, "hits": 21830, "misses": 43680, "disagree": 0, "grazing_exempt": 26, "t_over_bound": 0, "worst_t_ratio": 0.5234, "control_eps_1e-2_unrefined_worst_t_ratio": 242.29},
+  {"check": "M1", "primitive": "torus", "rays": 65536, "hits": 27518, "misses": 37969, "disagree": 0, "grazing_exempt": 49, "t_over_bound": 0, "worst_t_ratio": 0.0000, "control_eps_1e-2_unrefined_worst_t_ratio": 227.23}
+ ]
+}

@@ -25,6 +25,14 @@
    "checks": "M1 (method notes 1 and 2)",
    "result": "not a pass: t within the bound on all three primitives (worst 0.041, 0.523, 0.000), hit/miss agree; but the sphere's control passed (worst 0.0), so the check did not discriminate there",
    "diagnosis": "See method note 3."
+  },
+  {
+   "run": 4,
+   "when": "2026-10-10 19:08Z",
+   "backend": "CPU (MSVC, Release)",
+   "checks": "M1 (method notes 1 to 3)",
+   "result": "pass: hit/miss agree on all 65,536 rays a primitive (grazing exempt 44, 26, 49); t within the bound on every hit (worst ratios 0.041 sphere, 0.523 box, 0.000 torus); the control (d < 1e-2, no refinement) exceeds the bound on all three (251, 242, 227)",
+   "evidence": "evidence/rt-r3-m1-cpu.json"
   }
  ]
 }
