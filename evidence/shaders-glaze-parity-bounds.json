@@ -1,0 +1,23 @@
+{
+  "what": "Interference glazes (web/shaders/glaze/): GPU passes against the float64 CPU reference, and the falsification tests",
+  "fixed_before_first_run": "2026-10-10",
+  "source": "fixtures/street.mjs streetScene(320, 200, 0) albedo, irradiance, normals and camera",
+  "output": { "width": 320, "height": 200 },
+  "cases": [
+    { "id": "street-beetle", "preset": "beetle", "frame": "street" },
+    { "id": "street-oil-slick", "preset": "oil-slick", "frame": "street" },
+    { "id": "street-bruise", "preset": "bruise", "frame": "street" },
+    { "id": "day-beetle", "preset": "beetle", "frame": "day" }
+  ],
+  "bounds": { "max_abs_code": 2, "p999_abs_code": 1, "mean_abs_code": 0.05 },
+  "tests": {
+    "normal_incidence_peak_nm_tolerance": 5,
+    "angle_45_peak_nm_tolerance": 5,
+    "peak_test": { "film_n": 2.4, "medium_n": 1.5, "substrate_n": 1.58, "thickness_nm": 61.25, "dispersion": false },
+    "zero_coverage_equals_body_max_dev": 1e-12,
+    "zero_thickness_max_dev_from_body": 0.005,
+    "reflectance_max": 1.0
+  },
+  "rules": "No criterion uses a measured display reading or calibrate-pro (author, 2026-10-10).",
+  "why": "Per-pixel spectral arithmetic on 31 wavelengths; f32 cos and sqrt in the Airy phase differ from f64 by rounding."
+}

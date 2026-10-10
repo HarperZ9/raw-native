@@ -1,0 +1,13 @@
+{
+  "what": "Every run of the pigment-space lighting checks, failures included. Bounds file unchanged since 5d0dfb1.",
+  "runs": [
+    { "date": "2026-10-10", "check": "node tests, first run", "result": "3 of 4 pass",
+      "failure": "yellow-in-shadow hue shift read as -279.1 degrees",
+      "diagnosis": "Two problems. A test bug: the hue difference was not wrapped, so +80.9 degrees read as -279.1. And a design problem the bug hid: +80.9 degrees is teal, not olive. At value 0.1 the old disco preset (strength 0.85, shape 1, shadow 25% magenta and 75% phthalo blue) mixed 68% shadow pigment into the albedo, and the phthalo dominated.",
+      "fix": "Test: hue differences wrap to (-180, 180]; a stricter check added that the shift stays under 40 degrees (not in the bounds file, which keeps its minimum of 5). Preset: disco now strength 0.5, shape 1.5, shadow 45% magenta and 55% phthalo; yellow in shadow lands at +16 degrees (0.29, 0.35, 0.15), an olive. Complement preset: complement pigment peak 0.6 to 0.3, since a neutral light's complement was a light grey that washed shadows out." },
+    { "date": "2026-10-10", "check": "node tests after the fix", "result": "4 of 4 pass" },
+    { "date": "2026-10-10", "check": "GPU parity, SwiftShader, first attempt", "result": "shader did not compile: target is a reserved word in WGSL. Renamed; no arithmetic change." },
+    { "date": "2026-10-10", "check": "GPU parity, SwiftShader", "result": "4 of 4 pass: max 1, p99.9 0, mean under 4e-5 codes" }
+  ],
+  "note": "The monotonicity test holds by construction (luminance comes from the light); it guards against regressions and is not evidence of the look."
+}

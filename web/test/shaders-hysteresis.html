@@ -1,0 +1,37 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Hysteresis quantisation: GPU against the CPU reference</title>
+<link rel="icon" href="data:,">
+<!-- Run by tests/web/shaders_parity.py --shader hysteresis. Each case of
+     evidence/shaders-hysteresis-parity-bounds.json runs its frame sequence through hysteresis.mjs
+     (CPU, float64) and hysteresis/gpu.mjs; every frame's decisions and 8-bit output are compared. -->
+<script type="module">
+import { createHost } from "../raw-gpu.mjs";
+import { resolveHysteresis, step } from "../shaders/hysteresis/hysteresis.mjs";
+import { createGpuHysteresis } from "../shaders/hysteresis/gpu.mjs";
+import { sequence } from "../shaders/hysteresis/sequences.mjs";
+import { codeStats } from "../shaders/lab/gpu-kit.mjs";
+const q = new URLSearchParams(location.search);
+try {
+  const host = await createHost({ timing: false });
+  const gpuErrors = []; host.device.onuncapturederror = (e) => gpuErrors.push(e.error.message);
+  const bounds = await (await fetch("../../evidence/shaders-hysteresis-parity-bounds.json")).json(), { width: W, height: H } = bounds.output;
+  const cases = [];
+  for (const c of bounds.cases) {
+    if (q.get("case") && q.get("case") !== c.id) continue;
+    const frames = sequence(c.sequence, W, H, c.frames), plan = resolveHysteresis(c.preset, {}, { w: W, h: H });
+    const g = await createGpuHysteresis(host, c.preset, {}, { w: W, h: H });
+    let state = null, mism = 0, total = 0, over2 = 0, sum = 0, vals = 0, max = 0;
+    for (const f of frames) {
+      const r = step(plan, f.frame, f.motion, f.dist, state); state = r.state;
+      g.frame(f.frame.data, f.motion, f.dist); const got = await g.read();
+      for (let i = 0; i < r.idx.length; i++) { total++; if (r.idx[i] !== got.idx[i]) mism++; }
+      const st = codeStats(r.out, got.packed); over2 += st.over2; sum += st.mean * st.n; vals += st.n; max = Math.max(max, st.max);
+    }
+    g.destroy();
+    cases.push({ id: c.id, frames: c.frames, decisionMismatch: mism, decisions: total, mismatch_fraction: mism / total, over2_fraction: over2 / vals, mean: sum / vals, max });
+  }
+  await host.done();
+  window.__result = { bounds: bounds.bounds, cases, adapter: host.info, gpuErrors };
+} catch (e) { window.__result = { error: String(e && e.stack || e) }; }
+</script>

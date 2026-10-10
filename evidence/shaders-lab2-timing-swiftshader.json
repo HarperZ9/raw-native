@@ -1,0 +1,91 @@
+{
+  "rows": [
+    {
+      "shader": "adjacency",
+      "preset": "eberhard",
+      "width": 960,
+      "height": 540,
+      "frames": 10,
+      "median_ms": 356.5,
+      "p90_ms": 369.29999999701977,
+      "steps": 42,
+      "scale": 6
+    },
+    {
+      "shader": "adjacency",
+      "preset": "exhausted",
+      "width": 960,
+      "height": 540,
+      "frames": 10,
+      "median_ms": 272.0999999977648,
+      "p90_ms": 286.19999999925494,
+      "steps": 34,
+      "scale": 12
+    },
+    {
+      "shader": "sag",
+      "preset": "consumer",
+      "width": 960,
+      "height": 540,
+      "frames": 10,
+      "median_ms": 46.19999999925494,
+      "p90_ms": 52.099999997764826
+    },
+    {
+      "shader": "sag",
+      "preset": "thriller",
+      "width": 960,
+      "height": 540,
+      "frames": 10,
+      "median_ms": 63.80000000074506,
+      "p90_ms": 72.89999999850988
+    },
+    {
+      "shader": "lightpaint",
+      "preset": "disco",
+      "width": 960,
+      "height": 540,
+      "frames": 10,
+      "median_ms": 125,
+      "p90_ms": 131.19999999925494
+    },
+    {
+      "shader": "glaze",
+      "preset": "oil-slick",
+      "width": 960,
+      "height": 540,
+      "frames": 10,
+      "median_ms": 124,
+      "p90_ms": 140.09999999776483
+    },
+    {
+      "shader": "hysteresis",
+      "preset": "bands6",
+      "width": 960,
+      "height": 540,
+      "frames": 10,
+      "median_ms": 22.100000001490116,
+      "p90_ms": 24.300000000745058,
+      "note": "includes the per-frame upload of the frame and motion buffers"
+    },
+    {
+      "shader": "hysteresis",
+      "preset": "pico8",
+      "width": 960,
+      "height": 540,
+      "frames": 10,
+      "median_ms": 38.30000000074506,
+      "p90_ms": 44,
+      "note": "includes the per-frame upload of the frame and motion buffers"
+    }
+  ],
+  "adapter": {
+    "vendor": "google",
+    "architecture": "swiftshader",
+    "device": "",
+    "description": ""
+  },
+  "gpuErrors": [],
+  "method": "wall time per frame, submit to onSubmittedWorkDone, 3 warm-up frames dropped",
+  "adapter_kind": "swiftshader"
+}

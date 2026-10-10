@@ -61,6 +61,9 @@ def check(res: dict) -> list[str]:
     if res.get("gpuErrors"):
         return ["WebGPU error: " + m for m in res["gpuErrors"]]
     b, problems = res["bounds"], []
+    if "max_decision_mismatch_fraction" in b:
+        return [f"{c['id']}: decisions {100 * c['mismatch_fraction']:.4f}% differ, {100 * c['over2_fraction']:.4f}% of values over 2 codes, mean {c['mean']:.4f} (bounds {b})"
+                for c in res["cases"] if c["mismatch_fraction"] > b["max_decision_mismatch_fraction"] or c["over2_fraction"] > b["over2_fraction"] or c["mean"] > b["mean_abs_code"]]
     if "over2_fraction" in b:
         return [f"{c['id']}: {100 * c['over2_fraction']:.2f}% of values off by more than 2 codes, mean {c['mean']:.3f} (bounds {b})"
                 for c in res["cases"] if c["over2_fraction"] > b["over2_fraction"] or c["mean"] > b["mean_abs_code"]]
@@ -78,7 +81,7 @@ def check(res: dict) -> list[str]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--shader", choices=["crt", "film", "dither", "classic", "paint", "pixel", "vhs"], required=True)
+    ap.add_argument("--shader", choices=["crt", "film", "dither", "classic", "paint", "pixel", "vhs", "adjacency", "sag", "lightpaint", "glaze", "hysteresis"], required=True)
     ap.add_argument("--adapter", choices=["gpu", "swiftshader"], default="swiftshader")
     ap.add_argument("--case")
     ap.add_argument("--exhaustive", help="dither only: palette:mode over all 16,777,216 colours")

@@ -1,0 +1,31 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Development adjacency: GPU against the CPU reference</title>
+<link rel="icon" href="data:,">
+<!-- Run by tests/web/shaders_parity.py --shader adjacency. Each case of
+     evidence/shaders-adjacency-parity-bounds.json through adjacency.mjs (CPU, float64) and
+     adjacency/gpu.mjs, compared as 8-bit display codes. -->
+<script type="module">
+import { createHost } from "../raw-gpu.mjs";
+import { resolveAdjacency, develop } from "../shaders/adjacency/adjacency.mjs";
+import { createGpuAdjacency } from "../shaders/adjacency/gpu.mjs";
+import { labSource } from "../shaders/lab/sources.mjs";
+import { labEncode8, codeStats } from "../shaders/lab/gpu-kit.mjs";
+const q = new URLSearchParams(location.search);
+try {
+  const host = await createHost({ timing: false });
+  const gpuErrors = []; host.device.onuncapturederror = (e) => gpuErrors.push(e.error.message);
+  const bounds = await (await fetch("../../evidence/shaders-adjacency-parity-bounds.json")).json(), { width: W, height: H } = bounds.output;
+  const cases = [];
+  for (const c of bounds.cases) {
+    if (q.get("case") && q.get("case") !== c.id) continue;
+    const src = labSource(c.frame, W, H), size = { w: W, h: H };
+    const want = labEncode8(develop(resolveAdjacency(c.preset, {}, size), src).out);
+    const g = await createGpuAdjacency(host, c.preset, {}, size); g.frame(src.data);
+    const got = (await g.read()).packed; g.destroy();
+    cases.push({ id: c.id, steps: g.plan.steps, ...codeStats(want, got) });
+  }
+  await host.done();
+  window.__result = { bounds: bounds.bounds, cases, adapter: host.info, gpuErrors };
+} catch (e) { window.__result = { error: String(e && e.stack || e) }; }
+</script>

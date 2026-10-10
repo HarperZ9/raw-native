@@ -1,0 +1,23 @@
+{
+  "what": "Scan-causal EHT sag (web/shaders/sag/): GPU passes against the float64 CPU reference, and the falsification tests",
+  "fixed_before_first_run": "2026-10-10",
+  "source": "fixtures/street.mjs streetScene(320, 240, 0) as R'G'B' signal, fixtures/game.mjs gameFrame(256, 224, 1), and a white-box plate",
+  "output": { "width": 320, "height": 240 },
+  "cases": [
+    { "id": "street-consumer", "preset": "consumer", "frame": "street" },
+    { "id": "street-thriller", "preset": "thriller", "frame": "street" },
+    { "id": "game-consumer", "preset": "consumer", "frame": "game" },
+    { "id": "box-thriller", "preset": "thriller", "frame": "box" }
+  ],
+  "bounds": { "max_abs_code": 2, "p999_abs_code": 1, "mean_abs_code": 0.05 },
+  "tests": {
+    "black_frame_identity_max_dev": 1e-12,
+    "lines_above_box_max_dev": 0,
+    "steady_state_scale_max_rel_error": 1e-6,
+    "recovery_lines_tolerance": 1,
+    "recovery_ratio_for_2x_tau": [1.9, 2.1],
+    "line_positions_strictly_increasing": true
+  },
+  "rules": "No criterion uses a measured display reading or calibrate-pro (author, 2026-10-10).",
+  "why": "The recurrence over lines runs in the same order on both sides; per-line currents are sums of the same terms. Resampling positions differ by f32 rounding only."
+}

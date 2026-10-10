@@ -1,0 +1,10 @@
+{
+  "what": "Every run of the EHT sag checks, failures included. Bounds file unchanged since 5d0dfb1.",
+  "runs": [
+    { "date": "2026-10-10", "check": "node tests, first run", "result": "4 of 5 pass; the causality criterion itself passed (rows above the box unchanged, deviation 0)",
+      "failure": "the test's own control: row 200 changed by 6.1e-5, under the 1e-3 the control asks for",
+      "diagnosis": "Row 200 lies 60 lines below the box; with tau about 13 lines the sag there has decayed by e^-4.6, and a uniform grey field cannot show a geometric shift. The control sampled the wrong place.",
+      "fix": "Control moved to rows 140 to 170, just below the box. Bounds unchanged. Then 5 of 5." },
+    { "date": "2026-10-10", "check": "GPU parity, SwiftShader, first run", "result": "4 of 4 pass: max 1, p99.9 0, mean under 3e-5 codes; box-thriller bit-equal" }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "bounds": {
+    "max_abs_code": 2,
+    "p999_abs_code": 1,
+    "mean_abs_code": 0.05
+  },
+  "cases": [
+    {
+      "id": "street-beetle",
+      "max": 1,
+      "p999": 0,
+      "mean": 0.000109375,
+      "over1": 0,
+      "over2": 0,
+      "n": 192000
+    },
+    {
+      "id": "street-oil-slick",
+      "max": 1,
+      "p999": 0,
+      "mean": 0.000125,
+      "over1": 0,
+      "over2": 0,
+      "n": 192000
+    },
+    {
+      "id": "street-bruise",
+      "max": 1,
+      "p999": 0,
+      "mean": 0.00013020833333333333,
+      "over1": 0,
+      "over2": 0,
+      "n": 192000
+    },
+    {
+      "id": "day-beetle",
+      "max": 1,
+      "p999": 0,
+      "mean": 3.6458333333333336e-05,
+      "over1": 0,
+      "over2": 0,
+      "n": 192000
+    }
+  ],
+  "adapter": {
+    "vendor": "google",
+    "architecture": "swiftshader",
+    "device": "",
+    "description": ""
+  },
+  "gpuErrors": [],
+  "adapter_kind": "swiftshader"
+}

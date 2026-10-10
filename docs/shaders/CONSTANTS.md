@@ -110,3 +110,47 @@ Each physical number the CRT and film shaders use, where it comes from, and how 
 | Head switch | about 6 lines before vertical sync | VHS transports, recalled | moderate |
 | Noise, jitter, dropout rates | per preset | chosen by eye | choice |
 | Generations | bandwidth / sqrt(g), noise power x g | a simple model of re-recording | low |
+
+## Development adjacency (`web/shaders/adjacency/`)
+
+| Constant | Value | Source | Confidence |
+|---|---|---|---|
+| Model | developer and bromide diffusion with consumption and restraint | Rajkowski and Nowak, Optica Applicata 31(2), 2001; Nelson's chemical spread functions | moderate (physics) |
+| Diffusion lengths | 0.3 to 0.8 mm by preset | Eberhard effect reported within about 1 mm (secondary source); no measured length found | low |
+| Rates (k, eta, r, beta, etaB, rB) | per preset, in units of the development time | chosen for the look | choice |
+| Frame width on film | 24.9 mm (Super 35) | standard | high |
+| Chemistry grid | longer length spans about 2.5 cells | engineered for a fixed step count | engineered |
+
+## Scan-causal EHT sag (`web/shaders/sag/`)
+
+| Constant | Value | Source | Confidence |
+|---|---|---|---|
+| Deflection gain | 1 / sqrt(1 - v), v the relative anode-voltage sag | magnetic deflection in 1/sqrt(Va), US 4297618 | moderate |
+| Sag at full white, S | 0.02 consumer, 0.08 thriller | estimate from about 1 MOhm, 25 kV, 1 mA; no published figure found | low |
+| Time constant | 0.1 and 0.05 of a frame | not found | choice |
+| Blanking | 8% of the lines | NTSC and PAL blank about 8% of lines | moderate |
+| Focus and brightness | sigma0 + focus v; (1 - v)^bright | chosen | choice |
+
+## Pigment-space lighting (`web/shaders/lightpaint/`)
+
+| Constant | Value | Source | Confidence |
+|---|---|---|---|
+| Pigments | the painterly shader's four parametric pigments | see Paint | low |
+| Shadow and light mixtures, strengths, pivots | per preset | chosen by eye; disco tuned so yellow in shadow lands on olive | choice |
+
+## Interference glazes (`web/shaders/glaze/`)
+
+| Constant | Value | Source | Confidence |
+|---|---|---|---|
+| Film index | Cauchy 2.2 + 0.08 um^2 / lambda^2 (about 2.46 at 550 nm) | rutile-like, recalled | low |
+| Binder and mica indices | 1.5 and 1.58 | typical, recalled | moderate |
+| Thickness, coverage, noise scale | per preset | chosen | choice |
+
+## Hysteresis quantisation (`web/shaders/hysteresis/`)
+
+| Constant | Value | Source | Confidence |
+|---|---|---|---|
+| Band margin | 0.3 band | chosen; must stay under 0.5 for the one-band lag bound | choice |
+| Palette margin | 0.03 Oklab | chosen | choice |
+| Persistence | 0.2 s | swept on the 24 fps test sequences, checked on a held-out 30 fps sequence | engineered |
+| Disocclusion | view distance within 3% | chosen | choice |
