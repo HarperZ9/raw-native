@@ -128,11 +128,43 @@ Presets: `500t-print`, `500t-no-remjet` (CineStill-style halation), `250d-print`
 
 Because grain lives on the film plane, the same negative shows larger, sharper grain at 4K and less at HD, as a real scan does. The node tests check Selwyn's law and the mean.
 
+## Development adjacency (`web/shaders/adjacency/`)
+
+Film edges as a darkroom makes them. While a negative develops, developer diffuses through the emulsion and is used up where the exposure is high, and the bromide that development releases diffuses too and holds development back. The pass integrates those two fields on a grid, coupled to the three layers' development. One rate law gives the Eberhard effect (a dense area develops more at its edge), Mackie lines (a dark rim on the thin side), the small-area effect (a small bright spot ends denser than a large one) and developer exhaustion in big bright areas. Presets: `eberhard`, `mackie`, `exhausted`. Lengths are film-plane micrometres; the chemistry grid coarsens itself so a frame takes about 34 steps at any size. The physics follows Rajkowski and Nowak (Optica Applicata, 2001); a dated literature check found no real-time rendering of it, so it is new to us and recorded as such.
+
+Checks: a flat field stays flat; an edge overshoots on the dense side and undershoots on the thin side; with diffusion off nothing overshoots; the edge width scales with the square root of the diffusivity (ratio 1.85 for 4x, converging to 2 with resolution); developer and bromide are conserved to 1e-9 when the bath is cut off; a small spot develops more than a large one.
+
+## Scan-causal EHT sag (`web/shaders/sag/`)
+
+A tube's high voltage sags while the beam draws current and recovers with a time constant. Deflection goes as 1/sqrt(V), so the raster grows and the spot softens and dims. The pass walks the lines in scan order, so a line's geometry depends only on what was drawn before it: a bright window bows the lines below it and leaves the lines above alone. Output is R'G'B' signal for the tube's input. Presets: `consumer` (about 1% growth at full white), `thriller`. Shaders that model "raster bloom" scale the whole frame by its average brightness; this pass is causal within the frame.
+
+Checks: zero current gives the identity raster; no line above a bright box moves (a line just below it does); a white field settles at 1 / sqrt(1 - S); recovery takes tau lines and twice as long at twice tau; line positions stay strictly increasing.
+
+## Pigment-space lighting (`web/shaders/lightpaint/`)
+
+Light decides what a painter would mix into the local colour. Each lit pixel's albedo becomes the paint's Kubelka-Munk latent; irradiance sets how much shadow pigment or light pigment is mixed into it. Yellow in shadow goes olive, red goes maroon, highlights take a warm or sickly white. The paint sets the chromaticity and the light keeps the luminance, so relighting keeps its energy. Presets: `disco` (violet-blue shadows, warm whites), `grotesque`, `complement` (each shadow takes the complement of its light). Inputs: albedo, irradiance, fog and pixel kind, as a G-buffer provides them. The nearest prior work (Lei and Chang, 2004) precomputes one hand-painted KM colour band per object; here the mix runs per pixel for any albedo.
+
+Checks: at strength 0 the result is albedo times irradiance (to 1e-12); a yellow albedo in shadow turns 16 degrees toward green in Oklab, between the committed 5 and a stricter 40, while an RGB multiply keeps its hue; paint stays a reflectance in [0, 1].
+
+## Interference glazes (`web/shaders/glaze/`)
+
+Pearlescent paint inside the painterly model. Flakes of mica coated with a titanium-dioxide film reflect by thin-film interference (Airy, s and p, on the paint's 31 wavelengths); what they pass reaches the pixel's own KM body colour and returns, by Kubelka's two-layer formula. The colour slides toward blue as the surface turns away. Film thickness is a field on the surface's world position. Presets: `beetle`, `oil-slick`, `bruise`. Interference shows strongly over dark grounds and faintly over light ones, as real pearlescent paint does.
+
+Checks: the normal-incidence peak sits at 4nd and the 45-degree peak at 4d sqrt(n^2 - sin^2) (within 5 nm, by search on the continuous function); zero coverage returns the albedo; zero thickness changes it by under 0.005; spectral reflectance never exceeds 1.
+
+## Hysteresis quantisation (`web/shaders/hysteresis/`)
+
+Bands and palette snapping that hold still. Posterised light and toon bands boil when a surface sits near a threshold and the light flickers or the camera drifts. Each pixel keeps the last frame's decision, found through the motion vectors, and changes it when the input leaves that decision's interval by a margin (in Oklab lightness), or when the plain decision has disagreed with it for 0.2 s. A different surface under the reprojection (by view distance) starts fresh. Presets: `bands6`, `pico8`.
+
+Checks: zero margin and static input give the plain decisions exactly; under the street's flickering lamp, decisions toggle at 0.02 to 0.03 of the plain rate (bound 0.25), and a held-out sequence at 30 fps gives 0.044; a held band is never more than one band from the plain one; under a lamp that doubles, at least 0.9 of the plain band changes still happen; under a camera orbit, reprojected memory toggles less than plain.
+
 ## Measurements
 
 GPU parity against the CPU reference (8-bit, bounds committed before the first run in `evidence/shaders-*-parity-bounds.json`). On SwiftShader, every case has max difference 1, p99.9 at most 1, and mean at most 0.004 codes: 9 tube cases at 640 x 480 and 6 film cases at 480 x 270. Two first-run failures were fixed in the shaders, not the bounds:
 - the delta mask's binary dot test flipped between f32 and f64 (max 57);
 - a float Poisson threshold flipped one dye cloud (max 30).
+
+Lab 2 techniques, same method (bounds in `evidence/shaders-{adjacency,sag,lightpaint,glaze,hysteresis}-parity-bounds.json`, every run including failures in `evidence/shaders-*-runs.json`): every case max 1 code on SwiftShader; hysteresis decisions identical on 2,048,000 of 2,048,000.
 
 Frame time, median wall per frame, SwiftShader (CPU WebGPU) in headless Chrome:
 
@@ -152,4 +184,5 @@ RTX 4090 frame times at 4K are in `evidence/shaders-timing-rtx4090.json` once me
 - The halo kernel ignores the curvature's distortion of the kernel across the face.
 - Grain in the small-cloud regime is white at pixel scale (its correlation length is below a pixel).
 - The pigment spectra are parametric shapes, not measured pigments, and the painterly looks were tuned by eye on one test scene; the author's reference frames for template (a) will retune them.
+- Lab 2 constants are mostly choices or low confidence: no measured adjacency diffusion length and no EHT source impedance or time constant were found, and the rutile index is recalled. The novelty records are dated web searches, not a full ACM DL and Scholar search, so the techniques are new to us until that is done.
 - No comparison against existing shaders has run. The protocol is fixed in `evidence/shaders-comparison-protocol.json`. Until it runs, no claim of being better than any shader is made.

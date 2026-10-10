@@ -442,6 +442,16 @@ jobs:
         run: python tests/web/shaders_parity.py --shader pixel --adapter swiftshader --out media-out/shaders-pixel-parity.json
       - name: Shader library, VHS, GPU against the CPU reference within the committed bounds, on the CPU adapter
         run: python tests/web/shaders_parity.py --shader vhs --adapter swiftshader --out media-out/shaders-vhs-parity.json
+      - name: Shader lab 2, development adjacency, GPU against the CPU reference within the committed bounds, on the CPU adapter
+        run: python tests/web/shaders_parity.py --shader adjacency --adapter swiftshader --out media-out/shaders-adjacency-parity.json
+      - name: Shader lab 2, scan-causal EHT sag, GPU against the CPU reference within the committed bounds, on the CPU adapter
+        run: python tests/web/shaders_parity.py --shader sag --adapter swiftshader --out media-out/shaders-sag-parity.json
+      - name: Shader lab 2, pigment-space lighting, GPU against the CPU reference within the committed bounds, on the CPU adapter
+        run: python tests/web/shaders_parity.py --shader lightpaint --adapter swiftshader --out media-out/shaders-lightpaint-parity.json
+      - name: Shader lab 2, interference glazes, GPU against the CPU reference within the committed bounds, on the CPU adapter
+        run: python tests/web/shaders_parity.py --shader glaze --adapter swiftshader --out media-out/shaders-glaze-parity.json
+      - name: Shader lab 2, hysteresis quantisation, GPU against the CPU reference within the committed bounds, on the CPU adapter
+        run: python tests/web/shaders_parity.py --shader hysteresis --adapter swiftshader --out media-out/shaders-hysteresis-parity.json
       - name: The sound engine's live path (AudioWorklet in Chrome) matches its offline render within the PCM tolerance
         run: |
           node web/sound/smoke.mjs build/sound-smoke
