@@ -6,7 +6,9 @@
 //   <scene>-retro.png      320 x 240, whole-pixel vertex snap, affine UVs, 12-bit dithered depth
 //   <scene>-ids.png        640 x 480, the visibility buffer's triangle ids as colours
 // and, with a GPU backend and an adapter, the same frames from the compute rasterizer
-// (<scene>-modern-gpu.png, <scene>-retro-gpu.png) with their pixel differences in swr.json.
+// (<scene>-modern-gpu.png, <scene>-retro-gpu.png) with their pixel differences in swr.json, and
+//   <scene>-hybrid.png     640 x 480, retro_room and iso_street: the GPU raster with ray-traced
+//                          sun shadows and reflections (RT stage R2)
 // Exit 0 done, 2 bad arguments or an unwritable directory.
 namespace raw {
 int swrRenderCommand(int argc, char** argv);

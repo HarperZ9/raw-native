@@ -108,6 +108,22 @@
    "checks": "H1, H2",
    "result": "H1 and H2 within bounds on retro_room and iso_street with 0 shadow and 0 reflection differences; H1 control (no origin offset) fails through its grazing clause only (4 and 13 non-grazing differences; weak); H2 control (negated normal) agrees on every pixel, so H2 is NON-DISCRIMINATING in this run",
    "diagnosis": "Reflection about -n equals reflection about n; the control was ill-posed. See addendum 2, H2 method note 1."
+  },
+  {
+   "run": 13,
+   "when": "2026-10-10 18:57Z",
+   "backend": "D3D12 WARP (debug layer)",
+   "checks": "H1, H2 (H2 method note 1)",
+   "result": "pass: retro_room and iso_street, 0 shadow differences and 0 reflection differences over 65,536 and 37,222 covered pixels; controls: no origin offset breaks H1 (4 and 13 non-grazing differences; weak but outside the bound's clause) and H2 (129 and 38 unexplained reflections); the tilted normal breaks H2 (23,615 and 7,399 unexplained)",
+   "evidence": "evidence/rt-r2-hybrid-gpu-d3d12-warp.json"
+  },
+  {
+   "run": 14,
+   "when": "2026-10-10 18:58Z",
+   "backend": "WebGPU SwiftShader (Chrome, local wasm build)",
+   "checks": "H1, H2",
+   "result": "identical counts to run 13 on every case",
+   "evidence": "evidence/rt-r2-hybrid-gpu-webgpu-swiftshader.json"
   }
  ]
 }

@@ -263,6 +263,13 @@ jobs:
         run: |
           build/Release/gpu_rt_pt_parity.exe rt-pt-warp.json > /dev/null || true
           python tests/gpu/pt_gate.py rt-pt-warp.json
+      - name: Hybrid ray-traced sun shadows and reflections over the R1 visibility buffer on WARP match CPU rays (RT stage R2, H1 and H2)
+        shell: bash
+        env:
+          RAW_NATIVE_D3D12_WARP: "1"
+        run: |
+          build/Release/gpu_rt_hybrid_parity.exe rt-hybrid-warp.json > /dev/null
+          grep -q '"pass": true' rt-hybrid-warp.json
       - name: Textures, samplers and raster passes on WARP match the CPU sampler reference (M2 criterion 3)
         shell: bash
         env:
@@ -403,6 +410,8 @@ jobs:
         run: |
           python tests/web/rhi_texture.py --command rt-pt-parity --args=--quick --dir build-wasm-gpu --adapter swiftshader --out rt-pt-webgpu.json || true
           python tests/gpu/pt_gate.py rt-pt-webgpu.json
+      - name: Hybrid ray-traced shadows and reflections in Chrome on SwiftShader match CPU rays (RT stage R2, H1 and H2)
+        run: python tests/web/rhi_texture.py --command rt-hybrid-parity --dir build-wasm-gpu --adapter swiftshader --out rt-hybrid-webgpu.json
       - name: The WebGPU build's material model matches its float64 reference in Chrome on SwiftShader (M3 materials)
         run: python tests/web/rhi_texture.py --command pbr-parity --dir build-wasm-gpu --adapter swiftshader --out pbr-webgpu.json
       - name: The default native build carries no GPU code

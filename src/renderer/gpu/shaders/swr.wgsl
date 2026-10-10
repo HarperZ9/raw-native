@@ -442,3 +442,52 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     OU[p * 2u] = tx | (ty << 12u) | (tex << 24u);
     OU[p * 2u + 1u] = 0xff000000u | channel(c, 0u, shade) | channel(c, 1u, shade) | channel(c, 2u, shade);
 }
+
+//@pass swr_gbuffer
+// One invocation per pixel: world position, geometric and shading normal of the visible slot,
+// by the perspective-correct source weights of swr_resolve (RT stage R2, hybrid rays).
+// VP: positions, 9 floats a source triangle; A: swr_resolve's attributes; G: 12 floats a
+// pixel (position, geometric normal, shading normal, 1 when covered, pad 2).
+@group(0) @binding(0) var<uniform> P: SwrParams;
+@group(0) @binding(1) var<storage, read> SI: array<i32>;
+@group(0) @binding(2) var<storage, read> SF: array<f32>;
+@group(0) @binding(3) var<storage, read> B: array<u32>;
+@group(0) @binding(4) var<storage, read> VP: array<f32>;
+@group(0) @binding(5) var<storage, read> A: array<f32>;
+@group(0) @binding(6) var<storage, read_write> G: array<f32>;
+
+fn vp(t: u32, k: u32) -> vec3f {
+    return vec3f(VP[t * 9u + k * 3u], VP[t * 9u + k * 3u + 1u], VP[t * 9u + k * 3u + 2u]);
+}
+
+@compute @workgroup_size(8, 8)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    if (gid.x >= P.w || gid.y >= P.h) { return; }
+    let p: u32 = gid.y * P.w + gid.x;
+    for (var z: u32 = 0u; z < 12u; z++) { G[p * 12u + z] = 0.0; }
+    let slot1: u32 = B[p * 2u];
+    if (slot1 == 0u) { return; }
+    let s: u32 = slot1 - 1u;
+    let i: u32 = s * SI_N;
+    let f: u32 = s * SF_N;
+    let e: vec4f = cover_edges(SI[i], SI[i + 1u], SI[i + 2u], SI[i + 3u], SI[i + 4u], SI[i + 5u], i32(gid.x) * 256 + 128, i32(gid.y) * 256 + 128, 2u);
+    let q0: f32 = e.x * SF[f + 6u] * SF[f + 3u];
+    let q1: f32 = e.y * SF[f + 6u] * SF[f + 4u];
+    let q2: f32 = e.z * SF[f + 6u] * SF[f + 5u];
+    let den: f32 = q0 + q1 + q2;
+    let l0: f32 = q0 / den;
+    let l1: f32 = q1 / den;
+    let l2: f32 = q2 / den;
+    let b1: f32 = l0 * SF[f + 7u] + l1 * SF[f + 9u] + l2 * SF[f + 11u];
+    let b2: f32 = l0 * SF[f + 8u] + l1 * SF[f + 10u] + l2 * SF[f + 12u];
+    let b0: f32 = (1.0 - b1) - b2;
+    let t: u32 = u32(SI[i + 6u] - 1);
+    let pos: vec3f = vp(t, 0u) * b0 + vp(t, 1u) * b1 + vp(t, 2u) * b2;
+    let ng: vec3f = normalize(cross(vp(t, 1u) - vp(t, 0u), vp(t, 2u) - vp(t, 0u)));
+    let a: u32 = t * 16u;
+    let n: vec3f = normalize(vec3f(A[a + 2u] * b0 + A[a + 7u] * b1 + A[a + 12u] * b2, A[a + 3u] * b0 + A[a + 8u] * b1 + A[a + 13u] * b2, A[a + 4u] * b0 + A[a + 9u] * b1 + A[a + 14u] * b2));
+    G[p * 12u] = pos.x; G[p * 12u + 1u] = pos.y; G[p * 12u + 2u] = pos.z;
+    G[p * 12u + 3u] = ng.x; G[p * 12u + 4u] = ng.y; G[p * 12u + 5u] = ng.z;
+    G[p * 12u + 6u] = n.x; G[p * 12u + 7u] = n.y; G[p * 12u + 8u] = n.z;
+    G[p * 12u + 9u] = 1.0;
+}

@@ -369,3 +369,102 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     O[o + 14u] = 0.0;
     O[o + 15u] = 0.0;
 }
+
+//@pass pt_hybrid
+// One invocation per pixel of a raster G-buffer (swr_gbuffer): a sun shadow ray (any hit) and
+// one mirror reflection ray about the shading normal (closest hit) through the BVH. P.flags
+// bit 32 drops the origin offset (H1 control), bit 64 tilts the shading normal by 0.05 rad (H2 control).
+// O: 4 floats a pixel: 1 lit / 0 shadowed (-1 uncovered), reflected triangle (-1 none), its t, pad.
+@group(0) @binding(0) var<uniform> P: PtParams;
+@group(0) @binding(1) var<storage, read> NI: array<i32>;
+@group(0) @binding(2) var<storage, read> NB: array<f32>;
+@group(0) @binding(3) var<storage, read> T: array<f32>;
+@group(0) @binding(4) var<storage, read> G: array<f32>;
+@group(0) @binding(5) var<storage, read_write> O: array<f32>;
+
+fn vtx(t: u32, k: u32) -> vec3f {
+    return vec3f(T[t * 9u + k * 3u], T[t * 9u + k * 3u + 1u], T[t * 9u + k * 3u + 2u]);
+}
+fn hit_tri(t: u32, o: vec3f, d: vec3f) -> vec4f {
+    let a: vec3f = vtx(t, 0u);
+    let e1: vec3f = vtx(t, 1u) - a;
+    let e2: vec3f = vtx(t, 2u) - a;
+    let p: vec3f = vec3f(d.y * e2.z - d.z * e2.y, d.z * e2.x - d.x * e2.z, d.x * e2.y - d.y * e2.x);
+    let det: f32 = e1.x * p.x + e1.y * p.y + e1.z * p.z;
+    if (det > -1e-7 && det < 1e-7) { return vec4f(0.0); }
+    let inv: f32 = 1.0 / det;
+    let tv: vec3f = o - a;
+    let u: f32 = (tv.x * p.x + tv.y * p.y + tv.z * p.z) * inv;
+    if (u < 0.0 || u > 1.0) { return vec4f(0.0); }
+    let q: vec3f = vec3f(tv.y * e1.z - tv.z * e1.y, tv.z * e1.x - tv.x * e1.z, tv.x * e1.y - tv.y * e1.x);
+    let v: f32 = (d.x * q.x + d.y * q.y + d.z * q.z) * inv;
+    if (v < 0.0 || u + v > 1.0) { return vec4f(0.0); }
+    let tt: f32 = (e2.x * q.x + e2.y * q.y + e2.z * q.z) * inv;
+    return vec4f(tt, u, v, select(0.0, 1.0, tt > 1e-4));
+}
+fn inv_c(x: f32) -> f32 {
+    if (x != 0.0) { return 1.0 / x; }
+    return select(-BIG, BIG, x >= 0.0);
+}
+fn trace(o: vec3f, d: vec3f, tMax: f32, anyHit: bool) -> vec4f {
+    let iv: vec3f = vec3f(inv_c(d.x), inv_c(d.y), inv_c(d.z));
+    var best: vec4f = vec4f(tMax, 0.0, 0.0, -1.0);
+    var stack: array<u32, 64>;
+    var sp: u32 = 1u;
+    stack[0] = P.root;
+    for (var guard: u32 = 0u; guard < 1000000u; guard++) {
+        if (sp == 0u) { break; }
+        sp = sp - 1u;
+        let n: u32 = stack[sp];
+        let lo: vec3f = (vec3f(NB[n * 8u], NB[n * 8u + 1u], NB[n * 8u + 2u]) - o) * iv;
+        let hi: vec3f = (vec3f(NB[n * 8u + 3u], NB[n * 8u + 4u], NB[n * 8u + 5u]) - o) * iv;
+        let mn: vec3f = min(lo, hi);
+        let mx: vec3f = max(lo, hi);
+        let t0: f32 = max(max(max(0.0, mn.x), mn.y), mn.z);
+        let t1: f32 = min(min(min(best.x, mx.x), mx.y), mx.z);
+        if (!(t0 <= t1 * SLAB)) { continue; }
+        let leaf: i32 = NI[n * 4u + 2u];
+        if (leaf >= 0) {
+            let h: vec4f = hit_tri(u32(leaf), o, d);
+            if (h.w > 0.0 && (h.x < best.x || (best.w >= 0.0 && h.x == best.x && f32(leaf) < best.w))) {
+                best = vec4f(h.x, h.y, h.z, f32(leaf));
+                if (anyHit) { break; }
+            }
+            continue;
+        }
+        if (sp + 2u > 64u) { break; }
+        stack[sp] = u32(NI[n * 4u + 1u]);
+        stack[sp + 1u] = u32(NI[n * 4u]);
+        sp = sp + 2u;
+    }
+    return best;
+}
+fn offset_h(p: vec3f, ng: vec3f, dir: vec3f) -> vec3f {
+    if ((P.flags & 32u) != 0u) { return p; }
+    let e: f32 = 2e-4 * (1.0 + max(abs(p.x), max(abs(p.y), abs(p.z))));
+    return p + ng * select(-e, e, dot(ng, dir) > 0.0);
+}
+
+@compute @workgroup_size(8, 8)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    if (gid.x >= P.w || gid.y >= P.h) { return; }
+    let p: u32 = gid.y * P.w + gid.x;
+    O[p * 4u] = -1.0;
+    O[p * 4u + 1u] = -1.0;
+    O[p * 4u + 2u] = 0.0;
+    O[p * 4u + 3u] = 0.0;
+    if (G[p * 12u + 9u] == 0.0) { return; }
+    let pos: vec3f = vec3f(G[p * 12u], G[p * 12u + 1u], G[p * 12u + 2u]);
+    let d: vec3f = normalize(pos - P.eye.xyz);
+    var ng: vec3f = vec3f(G[p * 12u + 3u], G[p * 12u + 4u], G[p * 12u + 5u]);
+    var n: vec3f = vec3f(G[p * 12u + 6u], G[p * 12u + 7u], G[p * 12u + 8u]);
+    if (dot(ng, d) > 0.0) { ng = -ng; }
+    if (dot(n, ng) < 0.0) { n = -n; }
+    if ((P.flags & 64u) != 0u) { n = normalize(n + basis_t(n) * 0.05); }
+    let l: vec3f = P.sun.xyz;
+    O[p * 4u] = select(0.0, 1.0, trace(offset_h(pos, ng, l), l, BIG, true).w < 0.0);
+    let r: vec3f = d - n * (2.0 * dot(d, n));
+    let h: vec4f = trace(offset_h(pos, ng, r), r, BIG, false);
+    O[p * 4u + 1u] = h.w;
+    O[p * 4u + 2u] = select(0.0, h.x, h.w >= 0.0);
+}
