@@ -6,6 +6,17 @@ the day the release was published on GitHub, in UTC.
 
 ## Unreleased
 
+- **Cascaded shadow maps** (roadmap M3). Four stable cascades for the sun, with hard, PCF and
+  PCSS filtering and screen-space contact shadows, on the CPU, D3D12 and WebGPU.
+  - Against BVH ray casts toward the sun, hard shadows disagree on at most 2 of about 36,000
+    interior pixels, and PCSS is within 0.006 on average of a 256-ray soft reference.
+  - The cascades do not swim: no fixed point moves within its texel across a 48-step camera
+    path, where an unsnapped fit moves every point.
+  - The GPU lookups and contact march match the CPU on WARP and SwiftShader.
+  - Open failure: the GPU shadow maps differ from the CPU rasterizer on 3 texels on WARP and
+    about 11 on SwiftShader, outside the committed bound. It stays open until the RTX 4090 run
+    is in; `evidence/m3-shadows-runs.json` records each texel's cause.
+  - `raw_native_cli shadow-parity` runs the GPU checks.
 - **M3 models by role.** `evidence/m3-scene-models.json` lists the criterion's models with their
   licences and git blob hashes. One `use` field per role picks FlightHelmet or DamagedHelmet, and a
   stand-in or Sponza. `--model-role` and `fetch_gltf.py --manifest` read it.

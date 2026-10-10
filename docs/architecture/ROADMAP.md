@@ -120,6 +120,24 @@ Dated additions (2026-10-10). They add checks and never loosen the five above:
    (Mitchell, McTaggart and Green 2006) as an optional path, baked by the CPU ray tracer, with the
    bake's error against a converged path trace recorded.
 
+Status of the M3 criteria (2026-10-10). A row passes only when every check behind it passes on
+every backend it names.
+
+| Criterion | Status | Evidence |
+|---|---|---|
+| 1. Scenes verified, path-traced error recorded | Open: not started; the model substitution waits on the author | `evidence/m3-scene-models.json` |
+| 2. TAA ghosting and RMSE | Open: not started | |
+| 3. Aliasing and the validation layer | Open: not started | |
+| 4. The Studio viewer (A4) | Open: not started | |
+| 5. API snapshot | Open: not started | |
+| 6. Materials | Passes on WARP, SwiftShader and the RTX 4090 | `evidence/m3-materials-*.json` |
+| 7. Lighting | Passes on WARP and SwiftShader; the RTX run is queued | `evidence/m3-lighting-*.json` |
+| 8. Shadows: CPU checks against ray casts | Passes | `evidence/m3-shadows-cpu-run.json` |
+| 8. Shadows: GPU lookups and contact march | Passes on WARP and SwiftShader | `evidence/m3-shadows-gpu-*.json` |
+| 8. Shadows: GPU shadow map against the CPU rasterizer | **Open failure**: 3 texels on WARP, about 11 on SwiftShader; the RTX run is queued | `evidence/m3-shadows-runs.json` |
+| 8. GTAO, SSR, TAA | Open: not started | |
+| 9. Baked lighting | Passes | `evidence/m3-bake-*.json` |
+
 Licence note on criterion 1 (2026-10-10). `DamagedHelmet` derives from a CC-BY-NC-4.0 model and the
 Khronos `Sponza` is under the CRYENGINE agreement, so neither can ship in this repository's evidence
 or media. The proposal, for the author's decision, keeps the criterion's difficulty: `FlightHelmet`

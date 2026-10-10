@@ -1,0 +1,11 @@
+{
+ "stability": {"checks": 192512, "changes": 0, "rate": 0.00000, "control_rate": 0.00108, "control_discriminates": false},
+ "texel_registration": {"pairs": 192415, "changes": 0, "rate": 0.00000, "control_pairs": 192415, "control_rate": 1.00000},
+ "scenes": [
+  {"scene": "built-in test scene", "interior_pixels": 37125, "hard_mismatches": 0, "soft_pixels": 37996, "shadowed": 15390, "penumbra": 1970, "cascade0_pixels": 0, "pcss_mean_abs": 0.0058, "pcss_p95_abs": 0.0159, "pcss_penumbra_mean_abs": 0.0739},
+  {"scene": "test scene, near camera", "interior_pixels": 64618, "hard_mismatches": 0, "soft_pixels": 65536, "shadowed": 49285, "penumbra": 1702, "cascade0_pixels": 10749, "pcss_mean_abs": 0.0027, "pcss_p95_abs": 0.0000, "pcss_penumbra_mean_abs": 0.0774},
+  {"scene": "Suzanne", "interior_pixels": 36094, "hard_mismatches": 2, "soft_pixels": 36656, "shadowed": 2928, "penumbra": 612, "cascade0_pixels": 0, "pcss_mean_abs": 0.0032, "pcss_p95_abs": 0.0000, "pcss_penumbra_mean_abs": 0.0736},
+  {"scene": "helmet role", "interior_pixels": 35812, "hard_mismatches": 0, "soft_pixels": 36787, "shadowed": 2775, "penumbra": 1034, "cascade0_pixels": 0, "pcss_mean_abs": 0.0051, "pcss_p95_abs": 0.0000, "pcss_penumbra_mean_abs": 0.0884}
+ ],
+ "failures": 0
+}

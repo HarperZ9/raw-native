@@ -1,0 +1,142 @@
+{
+ "check": "m3 shadows gpu parity",
+ "backend": "webgpu",
+ "adapter": "",
+ "error": "",
+ "subpixel_bits": 4,
+ "scenes": [
+  {
+   "scene": "built-in test scene",
+   "maps": [
+    {
+     "cascade": 0,
+     "same_triangle_texels": 0,
+     "differing_texels": 0,
+     "explained": 0,
+     "worst_depth": 0.0,
+     "depth_over_1e-5": 0,
+     "depth_ties": 0
+    },
+    {
+     "cascade": 1,
+     "same_triangle_texels": 427156,
+     "differing_texels": 2,
+     "explained": 2,
+     "worst_depth": 3.576e-07,
+     "depth_over_1e-5": 0,
+     "depth_ties": 1
+    },
+    {
+     "cascade": 2,
+     "same_triangle_texels": 136308,
+     "differing_texels": 0,
+     "explained": 0,
+     "worst_depth": 2.98e-07,
+     "depth_over_1e-5": 0,
+     "depth_ties": 0
+    },
+    {
+     "cascade": 3,
+     "same_triangle_texels": 16308,
+     "differing_texels": 0,
+     "explained": 0,
+     "worst_depth": 2.384e-07,
+     "depth_over_1e-5": 0,
+     "depth_ties": 0
+    }
+   ],
+   "points": 37996,
+   "per_cascade": [
+    0,
+    16606,
+    21390,
+    0
+   ],
+   "outside_1e-3": {
+    "hard": 0,
+    "pcf": 13,
+    "pcss": 1
+   },
+   "worst": {
+    "hard": 0.0,
+    "pcf": 0.07407,
+    "pcss": 0.04
+   },
+   "contact_pixels": 37996,
+   "contact_diffs": 0,
+   "pass": true
+  },
+  {
+   "scene": "test scene, near camera",
+   "maps": [
+    {
+     "cascade": 0,
+     "same_triangle_texels": 375981,
+     "differing_texels": 15,
+     "explained": 5,
+     "worst_depth": 2.384e-07,
+     "depth_over_1e-5": 0,
+     "depth_ties": 11
+    },
+    {
+     "cascade": 1,
+     "same_triangle_texels": 586851,
+     "differing_texels": 6,
+     "explained": 5,
+     "worst_depth": 2.384e-07,
+     "depth_over_1e-5": 0,
+     "depth_ties": 0
+    },
+    {
+     "cascade": 2,
+     "same_triangle_texels": 136308,
+     "differing_texels": 0,
+     "explained": 0,
+     "worst_depth": 2.98e-07,
+     "depth_over_1e-5": 0,
+     "depth_ties": 0
+    },
+    {
+     "cascade": 3,
+     "same_triangle_texels": 16308,
+     "differing_texels": 0,
+     "explained": 0,
+     "worst_depth": 1.788e-07,
+     "depth_over_1e-5": 0,
+     "depth_ties": 0
+    }
+   ],
+   "points": 65536,
+   "per_cascade": [
+    10749,
+    54787,
+    0,
+    0
+   ],
+   "outside_1e-3": {
+    "hard": 0,
+    "pcf": 2,
+    "pcss": 1
+   },
+   "worst": {
+    "hard": 0.0,
+    "pcf": 0.02469,
+    "pcss": 0.04
+   },
+   "contact_pixels": 65536,
+   "contact_diffs": 0,
+   "pass": false
+  }
+ ],
+ "controls_fail": {
+  "map": true,
+  "lookup": true,
+  "contact": true
+ },
+ "controls_changed": {
+  "map_unexplained_texels": 18860,
+  "lookup_values": 10208,
+  "contact_pixels": 797
+ },
+ "pass": false
+}

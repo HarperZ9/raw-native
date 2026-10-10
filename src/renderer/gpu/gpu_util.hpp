@@ -63,6 +63,32 @@ struct Gpu {
         return true;
     }
 };
+// Runs `body` after the uploads in one submission, then reads `bytes` of the storage buffer
+// `out` (left in StorageWrite) into `dst`.
+inline bool runBuffer(Gpu& g, const Record& body, rhi::BufferHandle out, uint64_t bytes, void* dst) {
+    if (!g.err.empty()) return false;
+    const rhi::BufferHandle rb = g.make(bytes, rhi::BufferUsage::MapRead | rhi::BufferUsage::CopyDst, "readback");
+    rhi::CommandList* c = g.err.empty() ? g.dev.begin(g.err) : nullptr;
+    if (!c) return false;
+    for (auto& f : g.pre) f(*c);
+    g.pre.clear();
+    body(*c);
+    const rhi::BufferBarrier bb[2] = {{out, rhi::Access::StorageWrite, rhi::Access::CopySrc}, {rb, rhi::Access::Undefined, rhi::Access::CopyDst}};
+    c->barrier(bb);
+    c->copyBuffer(out, 0, rb, 0, bytes);
+    if (!g.dev.submitAndWait(g.err)) return false;
+    const void* p = g.dev.mapRead(rb, bytes, g.err);
+    if (!p) return false;
+    std::memcpy(dst, p, bytes);
+    g.dev.unmap(rb);
+    return true;
+}
+// A compute pipeline for pass `name` with its binding layout.
+inline rhi::PipelineHandle compute(rhi::Device& dev, const char* name, const rhi::Binding* binds, int count, std::string& err) {
+    const rhi::ShaderCode code = gpu_shaders::find(name, dev.shaderFormat());
+    if (!code.bytes) { err = std::string("this build carries no ") + name + " shader"; return {}; }
+    return dev.createComputePipeline({name, code, std::span(binds, std::size_t(count))}, err);
+}
 // A raster pipeline from raster_layout.hpp's entry `name`.
 template<class Layouts>
 rhi::RasterPipelineHandle raster(rhi::Device& dev, const Layouts& layouts, const char* name, rhi::RasterPipelineDesc desc, std::string& err) {

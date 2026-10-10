@@ -265,6 +265,30 @@ path, the way the CPU renderer is the oracle for frames.
   a furnace test of the path tracer itself. `raw_native_cli bake-room` renders the showcase
   room both ways. Bounds and every run: `evidence/m3-bake-*.json`.
 
+## Shadows
+
+`raw/renderer/shadows.hpp` holds cascaded shadow maps for the directional light, with the
+CPU reference of each GPU pass.
+
+- **Cascades.** Four cascades cover the first 40 units of the view, split by the practical
+  scheme (lambda 0.75). Each is an orthographic box around the bounding sphere of its slice,
+  so its size never changes as the camera turns, and its origin snaps to whole texels in
+  light space, so shadows do not swim. The maps are 1024 square, drawn by the raster pass
+  `shadow_depth` with a hardware depth test.
+- **Filtering.** Hard shadows take one compare, a one-texel normal offset and a slope bias.
+  PCF is a 5 x 5 tent. PCSS searches for blockers over the sun's angular radius (1.5
+  degrees), then sizes its kernel by the estimated penumbra; both use Vogel-disc taps.
+- **Contact shadows** march 16 steps toward the light over the view depth, up to 0.5 units.
+  The compute passes `shadow_lookup` and `shadow_contact` run them on the GPU.
+- **Checks.** `tests/test_shadows.cpp` measures swimming directly (where a fixed point lands
+  in its texel), and compares hard shadows and PCSS with BVH ray casts toward the sun.
+  `raw_native_cli shadow-parity` compares each GPU map, lookup and march with the CPU on
+  the same inputs. The lookups and the march pass on WARP and SwiftShader. The map identity
+  fails on a few texels per backend: far-plane ties, a sub-texel triangle's depth on WARP,
+  and SwiftShader's 4-bit edges. CI gates the parts that pass and prints the rest. Bounds,
+  method notes and every run: `evidence/m3-shadows-*.json`.
+- **Not yet:** point and spot light shadows, alpha-tested casters, and frame times.
+
 ## Verification as the engine grows
 
 - **Every feature has a reference.** The CPU renderer is a layer of the engine,
