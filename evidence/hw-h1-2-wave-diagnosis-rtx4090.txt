@@ -1,0 +1,6 @@
+NVIDIA GeForce RTX 4090
+shared.cso       median 0.1428 ms
+base.cso         median 0.1430 ms
+prefix_only.cso  median 0.1428 ms
+l32.cso          median 0.1429 ms
+nogis.cso        median 0.1429 ms

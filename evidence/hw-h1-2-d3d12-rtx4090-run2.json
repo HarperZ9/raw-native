@@ -1,0 +1,11 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/hw-h1-2-bounds.json",
+ "adapter": "NVIDIA GeForce RTX 4090",
+ "disable": "",
+ "warmup": 50,
+ "repeats": 500,
+ "scan": {"elements":16777216,"forced_off":false,"shared_mismatches":0,"wave_mismatches":0,"control_mismatches":16777152,"error":"","shared_time":{"n":500,"median_ms":0.28224,"p5_ms":0.279168,"p95_ms":0.284096,"p99_ms":0.284928,"iqr_ms":0.002656},"wave_time":{"n":500,"median_ms":0.28,"p5_ms":0.2784,"p95_ms":0.28128,"p99_ms":0.281825,"iqr_ms":0.001024},"wave_speedup":{"median_ratio":1.008,"ci95":[1.00697,1.00863]},"pass":true},
+ "bilateral": {"pixels":2073600,"forced_off":false,"fp16_over_bound":0,"fp16_worst_over_tol":0.467075,"control_over_bound":6194076,"control_worst_over_tol":255.861,"error":"","fp32_time":{"n":500,"median_ms":0.22224,"p5_ms":0.220574,"p95_ms":0.224258,"p99_ms":0.224704,"iqr_ms":0.002208},"fp16_time":{"n":500,"median_ms":0.226304,"p5_ms":0.225152,"p95_ms":0.227648,"p99_ms":0.228353,"iqr_ms":0.001032},"fp16_speedup":{"median_ratio":0.982042,"ci95":[0.980769,0.984163]},"pass":true},
+ "pass": true
+}

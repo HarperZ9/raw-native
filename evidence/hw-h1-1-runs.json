@@ -31,6 +31,10 @@
    "run": "RTX",
    "adapter": "RTX 4090, driver 610.88 (DXGI 32.0.16.1088), under D:/gpu.lock.d, 2026-10-10 19:47 to 19:53Z",
    "result": "fail, two of the three WARP causes remain and the TMin one does not: 0 unexplained disagreements on every scene (so the below-TMin hits were WARP's). Missed: hall explained ties 990 of 340,000 (2.9e-3, bound 1e-3; coplanar caps), and near-grazing agreeing hits outside tolerance (terrain 1, hall 3, debris 2; worst 1.18x in t and 1.70x in uv). Controls fail on every scene; forced-off takes the fallback. Trace medians 9 to 205 microseconds a dispatch of 80,000 to 160,000 rays: too small to time well, and with no compute baseline yet, no speed claim. hw-h1-1-d3d12-rtx4090.json"
+  },
+  {
+   "run": "RTX rerun",
+   "result": "20:38Z: same correctness picture (0 unexplained; the same coplanar-tie and grazing-tolerance misses). Trace timings not used for any statement (no compute baseline yet; tiny dispatches)."
   }
  ],
  "not_done": "No bound changed. A future criterion for conditioning-aware tolerances or scenes without coplanar faces would be new, dated and separate; it would not replace this one."

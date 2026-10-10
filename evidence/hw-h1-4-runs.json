@@ -24,6 +24,11 @@
    "adapter": "RTX 4090, driver 610.88 (DXGI 32.0.16.1088), under D:/gpu.lock.d, 2026-10-10 19:47 to 19:53Z",
    "n": 262144,
    "result": "pass: bit-equal over 210 repetitions; the wrong-wait control differs on all 65,536 elements. Overlap gain 0.999 [0.94, 1.06]: a null, no overlap measured for two identical compute kernels. hw-h1-4-d3d12-rtx4090.json"
+  },
+  {
+   "run": "RTX reruns",
+   "n": 262144,
+   "result": "Timing note (2026-10-10, after the reruns): the first RTX window (19:47 to 19:53Z) was disturbed by GPU use outside the lock protocol (inferred: the H1.2 shared scan's own distribution turned bimodal mid-run, p95 9.3 ms against a 0.28 ms median, while no lock holder overlapped). Its timings are kept and marked unreliable; they are not used for any statement. Quiet reruns: overlap gain 0.985 [0.978, 0.999] and 0.994 [0.987, 0.997]: async is about 1% slower than serial for two identical compute kernels; no overlap gain. Correctness and the control passed in every run."
   }
  ]
 }
