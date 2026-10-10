@@ -64,10 +64,15 @@ inline double msWhite(const Setup& s, const Tables& t, D3 o, D3 i) {
     split(s, t, o, ao, bo); split(s, t, i, ai, bi);
     return (1.0 - ao - bo) * (1.0 - ai - bi) / (kPi * (1.0 - s.ebar));
 }
+// The material's thin-film Fresnel, with the harmonic count its mode asks for.
+inline Rgb irid(const Material& m, Rgb f0, double cosine) {
+    return iridescentFresnel(1.0, m.iridescenceIor, m.iridescenceThickness, f0, cosine,
+                             m.specExact ? kIridescenceHarmonicsSpec : kIridescenceHarmonics);
+}
 inline Rgb fresnel(const Material& m, Rgb f0, double f90, double voh) {
     const Rgb f = each([&](int k) { return schlick(ch(f0, k), f90, voh); });
     if (m.iridescence <= 0.0) return f;
-    const Rgb fi = iridescentFresnel(1.0, m.iridescenceIor, m.iridescenceThickness, f0, voh);
+    const Rgb fi = irid(m, f0, voh);
     return f * (1.0 - m.iridescence) + fi * m.iridescence;
 }
 

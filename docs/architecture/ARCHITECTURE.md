@@ -214,7 +214,10 @@ path, the way the CPU renderer is the oracle for frames.
 - **Two deliberate departures from the extension texts:** iridescence sums eight harmonics
   (the specification sums two, which leaves a 0.32 error on reflective bases at grazing angles),
   and the clearcoat and transmission weights are symmetric (the texts weight by the view angle
-  alone, which breaks reciprocity). Bounds and every run, failures included:
+  alone, which breaks reciprocity). `Material::specExact` switches a material to the texts'
+  iridescence and clearcoat forms, on the CPU and the GPU alike, while the author decides
+  which forms are the default (`tests/test_pbr_spec.cpp`). The transmission weight has no
+  flag yet. Bounds and every run, failures included:
   `evidence/m3-materials-*.json`.
 
 ## Lighting

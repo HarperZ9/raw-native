@@ -63,7 +63,7 @@ void cmf(double l, double& x, double& y, double& z) {
 }
 }  // namespace
 
-Rgb iridescentFresnel(double outsideIor, double filmIor, double d, Rgb baseF0, double cos1) {
+Rgb iridescentFresnel(double outsideIor, double filmIor, double d, Rgb baseF0, double cos1, int harmonics) {
     Film f;
     if (!film(outsideIor, filmIor, d, baseF0, cos1, f)) return {1, 1, 1};
     Rgb out;
@@ -77,7 +77,7 @@ Rgb iridescentFresnel(double outsideIor, double filmIor, double d, Rgb baseF0, d
         setCh(out, k, f.r12 + rs);
         cm[k] = rs - f.t121;
     }
-    for (int m = 1; m <= kIridescenceHarmonics; ++m) {
+    for (int m = 1; m <= harmonics; ++m) {
         const double shift[3] = {m * phi[0], m * phi[1], m * phi[2]};
         const Rgb sm = evalSensitivity(m * f.opd, shift);
         for (int k = 0; k < 3; ++k) { cm[k] *= r123[k]; setCh(out, k, ch(out, k) + cm[k] * 2.0 * ch(sm, k)); }

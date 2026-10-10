@@ -22,8 +22,8 @@ Terms base(const Material& m, const Tables& t, const Setup& s, D3 o, D3 i) {
         out.smooth = (s.kmsMetal * mt + s.kmsDiel * (1.0 - mt)) * ms;
         Rgb w = each([&](int k) { return (1.0 - ch(esO, k)) * (1.0 - ch(esI, k)) / (1.0 - ch(s.esAvg, k)); });
         if (m.iridescence > 0.0) {
-            const double mo = iridescentFresnel(1.0, m.iridescenceIor, m.iridescenceThickness, s.f0d, o.z).max3();
-            const double mi = iridescentFresnel(1.0, m.iridescenceIor, m.iridescenceThickness, s.f0d, i.z).max3();
+            const double mo = irid(m, s.f0d, o.z).max3();
+            const double mi = irid(m, s.f0d, i.z).max3();
             w = w * (1.0 - m.iridescence) + rgb((1.0 - mo) * (1.0 - mi) * m.iridescence);
         }
         out.smooth = out.smooth + m.baseColor * w * ((1.0 - mt) * (1.0 - tr) / kPi);
@@ -76,7 +76,8 @@ Terms evalTerms(const Material& m, const Tables& t, D3 wo, D3 wi) {
     const double co = std::max(mo, 0.0), ci = wi.z > 0.0 ? std::max(mi, 0.0) : std::fabs(mi);
     const double kc = kms(0.04 + 0.96 / 21.0, t.Eavg(rc));
     const auto ec = [&](double mu) { const double e = t.E(mu, rc); return 0.04 * t.A(mu, rc) + t.B(mu, rc) + (1.0 - e) * kc; };
-    const double aCoat = (1.0 - c * ec(co)) * (1.0 - c * ec(ci));
+    const double frV = schlick(0.04, 1.0, co);                     // spec-exact: Fresnel at the view alone
+    const double aCoat = m.specExact ? 1.0 - c * frV : (1.0 - c * ec(co)) * (1.0 - c * ec(ci));
     out = {out.specular * aCoat, {}, out.smooth * aCoat, out.transmission * aCoat};
     if (mo > 0.0 && mi > 0.0 && wi.z > 0.0) {
         const D3 h = norm({wo.x + wi.x, wo.y + wi.y, wo.z + wi.z});
@@ -84,6 +85,7 @@ Terms evalTerms(const Material& m, const Tables& t, D3 wo, D3 wi) {
         const double s2 = cx * cx + cy * cy + cz * cz, den = s2 + a * a * hn * hn;
         const double d = hn > 0.0 ? a * a / (kPi * den * den) : 0.0;
         const double v = 0.5 / (mi * sqrt(mo * mo * (1.0 - a * a) + a * a) + mo * sqrt(mi * mi * (1.0 - a * a) + a * a));
+        if (m.specExact) { out.coat = rgb(c * frV * d * v); return out; }
         out.coat = rgb(c * d * v * schlick(0.04, 1.0, dot(wo, h)));
         const double ms = (1.0 - t.E(mo, rc)) * (1.0 - t.E(mi, rc)) / (kPi * (1.0 - t.Eavg(rc)));
         out.smooth = out.smooth + rgb(c * kc * ms);

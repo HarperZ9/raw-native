@@ -25,6 +25,7 @@ const AN_PHI: u32 = 8u;
 const AN_ROUGH: u32 = 24u;
 const AN_K: u32 = 12u;
 const HARMONICS: u32 = 8u;
+const HARMONICS_SPEC: u32 = 2u;
 // Offsets of each table in the one table buffer (floats); raw/renderer/pbr_parity.hpp packs them.
 const OFF_A: u32 = 0u;
 const OFF_B: u32 = 16384u;
@@ -178,7 +179,7 @@ fn sensitivity(opd: f32, shift: vec3f) -> vec3f {
     return xyz_to_709(xyz.x, xyz.y, xyz.z);
 }
 fn ior_to_f0(t: f32, i: f32) -> f32 { let q: f32 = (t - i) / (t + i); return q * q; }
-fn irid_f(film: f32, d: f32, f0: vec3f, cos1: f32) -> vec3f {
+fn irid_f(film: f32, d: f32, f0: vec3f, cos1: f32, harmonics: u32) -> vec3f {
     let s2: f32 = (1.0 / film) * (1.0 / film) * (1.0 - cos1 * cos1);
     let c2sq: f32 = 1.0 - s2;
     if (c2sq < 0.0) { return vec3f(1.0); }
@@ -196,7 +197,7 @@ fn irid_f(film: f32, d: f32, f0: vec3f, cos1: f32) -> vec3f {
     let rs: vec3f = t121 * t121 * r23 / (vec3f(1.0) - r123sq);
     var acc: vec3f = vec3f(r12) + rs;
     var cm: vec3f = rs - vec3f(t121);
-    for (var m: u32 = 1u; m <= HARMONICS; m++) {
+    for (var m: u32 = 1u; m <= harmonics; m++) {
         cm = cm * r123;
         acc = acc + cm * 2.0 * sensitivity(f32(m) * opd, f32(m) * phi);
     }
@@ -204,6 +205,10 @@ fn irid_f(film: f32, d: f32, f0: vec3f, cos1: f32) -> vec3f {
 }
 // Material evaluation from a case or sample buffer C (every pass of this module binds the
 // uniform P as 0, the material buffer C as 1 and the tables T as 2).
+// Slot 20 holds the flags: 1 volume, 2 the extension texts' forms (raw::pbr::Material::specExact).
+fn is_volume(b: u32) -> bool { return (u32(C[b + 20u]) & 1u) != 0u; }
+fn spec_exact(b: u32) -> bool { return (u32(C[b + 20u]) & 2u) != 0u; }
+fn harm(b: u32) -> u32 { return select(HARMONICS, HARMONICS_SPEC, spec_exact(b)); }
 fn cv3(b: u32, k: u32) -> vec3f { return vec3f(C[b + k], C[b + k + 1u], C[b + k + 2u]); }
 fn kms(favg: f32, ebar: f32) -> f32 { return favg * favg * ebar / (1.0 - favg * (1.0 - ebar)); }
 fn kms3(f0: vec3f, f90: f32, ebar: f32) -> vec3f {
@@ -226,7 +231,7 @@ fn fresnel3(f0: vec3f, f90: f32, voh: f32, b: u32) -> vec3f {
     let f: vec3f = vec3f(schlick(f0.x, f90, voh), schlick(f0.y, f90, voh), schlick(f0.z, f90, voh));
     let iri: f32 = C[b + 28u];
     if (iri <= 0.0) { return f; }
-    return f * (1.0 - iri) + irid_f(C[b + 29u], C[b + 30u], f0, voh) * iri;
+    return f * (1.0 - iri) + irid_f(C[b + 29u], C[b + 30u], f0, voh, harm(b)) * iri;
 }
 // Sheen and clearcoat over the base result fb (raw::pbr::evalTerms).
 fn layers(b: u32, wo: vec3f, wi: vec3f, fb: vec3f, ms_on: f32) -> vec3f {
@@ -251,7 +256,8 @@ fn layers(b: u32, wo: vec3f, wi: vec3f, fb: vec3f, ms_on: f32) -> vec3f {
     let kc: f32 = kms(0.04 + 0.96 / 21.0, tab_eavg(rc));
     let eco: f32 = 0.04 * read2(OFF_A, N_THETA, N_ROUGH, co, rc) + read2(OFF_B, N_THETA, N_ROUGH, co, rc) + (1.0 - tab_e(co, rc)) * kc;
     let eci: f32 = 0.04 * read2(OFF_A, N_THETA, N_ROUGH, ci, rc) + read2(OFF_B, N_THETA, N_ROUGH, ci, rc) + (1.0 - tab_e(ci, rc)) * kc;
-    f = f * ((1.0 - c * eco) * (1.0 - c * eci));
+    let fr_v: f32 = schlick(0.04, 1.0, co);
+    f = f * select((1.0 - c * eco) * (1.0 - c * eci), 1.0 - c * fr_v, spec_exact(b));
     if (mo > 0.0 && mi > 0.0 && wi.z > 0.0) {
         let h: vec3f = pnorm(wo + wi);
         let hn: f32 = pdot(h, nc);
@@ -263,6 +269,7 @@ fn layers(b: u32, wo: vec3f, wi: vec3f, fb: vec3f, ms_on: f32) -> vec3f {
         let d: f32 = select(0.0, a * a / (PI * den * den), hn > 0.0);
         let v: f32 = 0.5 / (mi * sqrt(mo * mo * (1.0 - a * a) + a * a) + mo * sqrt(mi * mi * (1.0 - a * a) + a * a));
         let ms: f32 = (1.0 - tab_e(mo, rc)) * (1.0 - tab_e(mi, rc)) / (PI * (1.0 - tab_eavg(rc)));
+        if (spec_exact(b)) { return f + vec3f(c * fr_v * d * v); }
         f = f + vec3f(c * d * v * schlick(0.04, 1.0, pdot(wo, h)) + c * kc * ms * ms_on);
     }
     return f;
@@ -308,13 +315,13 @@ fn eval_case(b: u32, wo: vec3f, wi: vec3f) -> vec3f {
         var w: vec3f = (vec3f(1.0) - es_o) * (vec3f(1.0) - es_i) / (vec3f(1.0) - es_avg);
         let iri: f32 = C[b + 28u];
         if (iri > 0.0) {
-            let mo: f32 = pmax3(irid_f(C[b + 29u], C[b + 30u], f0d, o.z));
-            let mi: f32 = pmax3(irid_f(C[b + 29u], C[b + 30u], f0d, i.z));
+            let mo: f32 = pmax3(irid_f(C[b + 29u], C[b + 30u], f0d, o.z, harm(b)));
+            let mi: f32 = pmax3(irid_f(C[b + 29u], C[b + 30u], f0d, i.z, harm(b)));
             w = w * (1.0 - iri) + vec3f((1.0 - mo) * (1.0 - mi) * iri);
         }
         f = f + base * w * ((1.0 - mt) * (1.0 - tr) / PI);
     } else if (tr > 0.0 && mt < 1.0) {
-        if (C[b + 20u] == 0.0) {
+        if (!is_volume(b)) {
             let im: vec3f = vec3f(i.x, i.y, -i.z);
             let h: vec3f = pnorm(o + im);
             let abm: vec2f = split_ab(im, rr, ak);
@@ -456,7 +463,7 @@ fn spec_w(b: u32, f0: vec3f, f90: f32, a: f32, bb: f32, mu: f32) -> vec3f {
     let w: vec3f = f0 * a + vec3f(f90 * bb);
     let iri: f32 = C[b + 28u];
     if (iri <= 0.0) { return w; }
-    return w * (1.0 - iri) + irid_f(C[b + 29u], C[b + 30u], f0, mu) * ((a + bb) * iri);
+    return w * (1.0 - iri) + irid_f(C[b + 29u], C[b + 30u], f0, mu, harm(b)) * ((a + bb) * iri);
 }
 // raw::pbr::iblResponse and raw::lighting::shadeIbl for one sample.
 fn ibl(b: u32, wo: vec3f, n: vec3f, t: vec3f, v: vec3f) -> vec3f {
@@ -482,12 +489,12 @@ fn ibl(b: u32, wo: vec3f, n: vec3f, t: vec3f, v: vec3f) -> vec3f {
     var spec: vec3f = spec_w(b, base, 1.0, ab.x, ab.y, o.z) * mt + spec_w(b, f0d, f90, ab.x, ab.y, o.z) * (1.0 - mt);
     var under: vec3f = vec3f(1.0) - es_o;
     let iri: f32 = C[b + 28u];
-    if (iri > 0.0) { under = under * (1.0 - iri) + vec3f((1.0 - pmax3(irid_f(C[b + 29u], C[b + 30u], f0d, o.z))) * iri); }
+    if (iri > 0.0) { under = under * (1.0 - iri) + vec3f((1.0 - pmax3(irid_f(C[b + 29u], C[b + 30u], f0d, o.z, harm(b)))) * iri); }
     var irr: vec3f = (km * mt + kd * (1.0 - mt)) * (1.0 - e) + base * under * ((1.0 - mt) * (1.0 - tr));
     var trans: vec3f = vec3f(0.0);
     if (tr > 0.0 && mt < 1.0) {
         var att: vec3f = vec3f(1.0);
-        if (C[b + 20u] != 0.0 && C[b + 22u] > 0.0 && C[b + 21u] > 0.0) { att = exp(log(max(cv3(b, 23u), vec3f(1e-30))) / C[b + 22u] * C[b + 21u]); }
+        if (is_volume(b) && C[b + 22u] > 0.0 && C[b + 21u] > 0.0) { att = exp(log(max(cv3(b, 23u), vec3f(1e-30))) / C[b + 22u] * C[b + 21u]); }
         trans = base * att * under * (tr * (1.0 - mt));
     }
     let shc: vec3f = cv3(b, 15u);
@@ -507,15 +514,15 @@ fn ibl(b: u32, wo: vec3f, n: vec3f, t: vec3f, v: vec3f) -> vec3f {
         let ac: f32 = read2(OFF_A, N_THETA, N_ROUGH, mu, rc);
         let bc: f32 = read2(OFF_B, N_THETA, N_ROUGH, mu, rc);
         let ec: f32 = 0.04 * ac + bc + (1.0 - ac - bc) * kc;
-        let keep: f32 = (1.0 - c * ec) * (1.0 - c * ec);
+        let keep: f32 = select((1.0 - c * ec) * (1.0 - c * ec), 1.0 - c * schlick(0.04, 1.0, mu), spec_exact(b));
         spec = spec * keep; irr = irr * keep; trans = trans * keep;
         coat = c * (0.04 * ac + bc);
-        irr = irr + vec3f(c * kc * (1.0 - ac - bc));
+        if (!spec_exact(b)) { irr = irr + vec3f(c * kc * (1.0 - ac - bc)); }
     }
     var acc: vec3f = spec * env_rough(rr, dominant(n, v, rr)) + irr * sh_irr(n);
     if (pmax3(trans) > 0.0) {
         var td: vec3f = -v;
-        if (C[b + 20u] != 0.0) {
+        if (is_volume(b)) {
             let eta: f32 = 1.0 / C[b + 5u];
             let cs: f32 = dot(n, v);
             let k: f32 = 1.0 - eta * eta * (1.0 - cs * cs);
