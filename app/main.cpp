@@ -5,6 +5,7 @@
 #include "raw/renderer/swr_parity.hpp"
 #include "raw/renderer/rt_gpu.hpp"
 #include "raw/renderer/rt_pt_gpu.hpp"
+#include "raw/renderer/rt_hybrid.hpp"
 #include "raw/tools/gallery_cmd.hpp"
 #include "raw/tools/bake_cmd.hpp"
 #include "raw/tools/raster_cmd.hpp"
@@ -210,6 +211,16 @@ int main(int argc, char** argv){
         raw::rhi::Device* dev = raw::rhi::device(why);
         if (!dev){ std::printf("{\n \"error\": \"%s\"\n}\n", why.c_str()); return 4; }
         const raw::gpu_check::RtPtParity r = raw::gpu_check::rtPtParity(*dev, argc >= 3 && std::strcmp(argv[2], "--quick") == 0);
+        std::fputs(r.json().c_str(), stdout);
+        return r.pass() ? 0 : 1;
+    }
+    // Hybrid ray-traced shadows and reflections over the R1 visibility buffer (RT stage R2,
+    // evidence/rt-r2-bounds.json, checks H1 and H2): same exit codes.
+    if (argc >= 2 && std::strcmp(argv[1], "rt-hybrid-parity") == 0){
+        std::string why;
+        raw::rhi::Device* dev = raw::rhi::device(why);
+        if (!dev){ std::printf("{\n \"error\": \"%s\"\n}\n", why.c_str()); return 4; }
+        const raw::gpu_check::RtHybridParity r = raw::gpu_check::rtHybridParity(*dev);
         std::fputs(r.json().c_str(), stdout);
         return r.pass() ? 0 : 1;
     }

@@ -3,6 +3,10 @@
 #include "raw/renderer/swr.hpp"
 #include "raw/renderer/swr_parity.hpp"
 #include "raw/renderer/swr_scenes.hpp"
+#include "raw/renderer/rt_hybrid.hpp"
+#include "raw/renderer/rt_scenes.hpp"
+#include <algorithm>
+#include <cmath>
 #include "raw/tools/image_out.hpp"
 #include <chrono>
 #include <cstdio>
@@ -37,6 +41,45 @@ long differing(const swr::Visibility& a, const swr::Resolved& ra, const swr::Vis
     long d = 0;
     for (std::size_t p = 0; p < a.slot.size(); ++p) d += a.slot[p] != b.slot[p] || (a.slot[p] && ra.colour[p] != rb.colour[p]);
     return d;
+}
+// The hybrid showcase: the GPU raster colour, darkened where the ray-traced sun shadow falls,
+// with a mirror term on the tiles (0.25) and brass (0.5) from the ray-traced reflection, the
+// reflected texel fetched on the host from the hit point. Showcase only; H1 and H2 check the rays.
+std::vector<std::uint8_t> hybridImage(rhi::Device& dev, const rt::PtScene& ps, const swr::Scene& base, int w, int h) {
+    const gpu_check::HybridFrame hy = gpu_check::hybridGpu(dev, ps, base, w, h);
+    const gpu_check::SwrFrame f = gpu_check::swrGpu(dev, ps.geo, ps.tex, base.light, base.viewProj(w, h), w, h, swr::Options{}, nullptr);
+    std::vector<std::uint8_t> px(std::size_t(w) * std::size_t(h) * 3, 0);
+    if (!hy.error.empty() || !f.error.empty()) return px;
+    const std::vector<Tri> tris = rt::trianglesOf(ps.geo);
+    const swr::Geometry& g = ps.geo;
+    for (std::size_t p = 0; p < f.vis.slot.size(); ++p) {
+        std::uint32_t c = f.vis.slot[p] ? f.res.colour[p] : 0x00281e1au;
+        float rgb[3] = {float(c & 255u), float((c >> 8) & 255u), float((c >> 16) & 255u)};
+        if (f.vis.slot[p]) {
+            const float shade = hy.lit[p] > 0.5f ? 1.0f : 0.45f;
+            for (float& v : rgb) v *= shade;
+            const std::uint32_t tex = f.res.texel[p] >> 24;
+            const float k = tex == swr::kTiles ? 0.25f : tex == swr::kBrass ? 0.5f : 0.0f;
+            if (k > 0.0f && hy.reflTri[p] >= 0) {
+                const Vec3 pos{hy.gbuffer[p * 12], hy.gbuffer[p * 12 + 1], hy.gbuffer[p * 12 + 2]};
+                const Vec3 n{hy.gbuffer[p * 12 + 6], hy.gbuffer[p * 12 + 7], hy.gbuffer[p * 12 + 8]};
+                const Vec3 d = normalize(pos - base.eye), r = d - n * (2.0f * dot(d, n));
+                const std::size_t t = std::size_t(hy.reflTri[p]);
+                float tt, u, v;
+                if (intersectTri({pos + r * 1e-3f, r}, tris[t], tt, u, v)) {
+                    const std::uint32_t i0 = g.idx[t * 3], i1 = g.idx[t * 3 + 1], i2 = g.idx[t * 3 + 2];
+                    const float w0 = 1.0f - u - v, su = g.uv[i0].x * w0 + g.uv[i1].x * u + g.uv[i2].x * v, sv = g.uv[i0].y * w0 + g.uv[i1].y * u + g.uv[i2].y * v;
+                    const swr::TextureSet::Entry& e = ps.tex.entries[g.triTexture[t]];
+                    const std::uint32_t q = ps.tex.texels[e.offset + (std::uint32_t(std::int32_t(std::floor(sv * float(e.height)))) & (e.height - 1)) * e.width +
+                                                          (std::uint32_t(std::int32_t(std::floor(su * float(e.width)))) & (e.width - 1))];
+                    const float m[3] = {float(q & 255u), float((q >> 8) & 255u), float((q >> 16) & 255u)};
+                    for (int j = 0; j < 3; ++j) rgb[j] = rgb[j] * (1.0f - k) + m[j] * k;
+                }
+            }
+        }
+        for (int j = 0; j < 3; ++j) px[p * 3 + std::size_t(j)] = std::uint8_t(std::min(255.0f, rgb[j] + 0.5f));
+    }
+    return px;
 }
 }  // namespace
 
@@ -88,6 +131,10 @@ int swrRenderCommand(int argc, char** argv) {
             first = false;
             std::printf("%s\n", b);
         }
+    if (dev) {   // hybrid frames: raster plus ray-traced shadows and reflections
+        const std::pair<rt::PtScene, swr::Scene> hs[2] = {{rt::ptRetroRoom(), swr::retroRoom()}, {rt::ptIsoStreet(), swr::isoStreet()}};
+        for (const auto& [ps, base] : hs) writePng(out + "/" + base.name + "-hybrid.png", 640, 480, hybridImage(*dev, ps, base, 640, 480));
+    }
     std::ofstream(out + "/swr.json") << js << "\n ]\n}\n";
     return 0;
 }

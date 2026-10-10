@@ -98,10 +98,10 @@ function(raw_native_d3d12_shaders gen out_header)
     set(passes setup raster motion ssao rtao shade
         threads_init threads_rd_seed threads_rd threads_decay threads_advance threads_pyr_first threads_pyr_next threads_finish
         pbr_eval pbr_shade light_cluster light_prefilter shadow_lookup shadow_contact post_gtao post_ssr post_taa
-        swr_setup swr_bin_count swr_bin_scan swr_bin_fill swr_tile swr_resolve
+        swr_setup swr_bin_count swr_bin_scan swr_bin_fill swr_tile swr_resolve swr_gbuffer
         rt_bounds_chunk rt_bounds_final rt_morton rt_sort_step rt_leaves rt_ploc_nn rt_ploc_flags
         rt_scan_chunk rt_scan_top rt_scan_add rt_ploc_merge rt_trace
-        pt_trace pt_finish)
+        pt_trace pt_finish pt_hybrid)
     set(headers "")
     set(includes "")
     set(table "")
@@ -274,6 +274,11 @@ if(RAW_NATIVE_GPU_D3D12)
         target_link_libraries(gpu_rt_pt_parity PRIVATE raw_native_d3d12)
         add_test(NAME gpu_rt_pt_parity COMMAND gpu_rt_pt_parity)
         set_tests_properties(gpu_rt_pt_parity PROPERTIES SKIP_RETURN_CODE 77)
+        # Hybrid ray-traced shadows and reflections over the R1 visibility buffer (RT stage R2, H1 and H2).
+        add_executable(gpu_rt_hybrid_parity tests/gpu/rt_hybrid_parity.cpp)
+        target_link_libraries(gpu_rt_hybrid_parity PRIVATE raw_native_d3d12)
+        add_test(NAME gpu_rt_hybrid_parity COMMAND gpu_rt_hybrid_parity)
+        set_tests_properties(gpu_rt_hybrid_parity PROPERTIES SKIP_RETURN_CODE 77)
     endif()
     message(STATUS "raw-native: D3D12 backend on, shaders compiled by ${RAW_NATIVE_DXC}")
 else()

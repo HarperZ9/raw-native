@@ -1,0 +1,16 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "RT stage R2, hybrid ray-traced shadows and reflections over the R1 visibility buffer: H1, H2 (evidence/rt-r2-bounds.json)",
+ "backend": "d3d12",
+ "adapter": "Microsoft Basic Render Driver",
+ "error": "",
+ "pass": true,
+ "results": [
+  {"scene": "retro_room", "case": "hybrid against cpu", "covered": 65536, "shadow_differences": 0, "shadow_not_grazing": 0, "h1_within": true, "reflection_agree": 65536, "reflection_differences": 0, "reflection_edge_exempt": 0, "reflection_tie_exempt": 0, "reflection_unexplained": 0, "h2_within": true},
+  {"scene": "retro_room", "case": "control: no origin offset", "covered": 65536, "shadow_differences": 4, "shadow_not_grazing": 4, "h1_within": false, "reflection_agree": 65357, "reflection_differences": 179, "reflection_edge_exempt": 50, "reflection_tie_exempt": 0, "reflection_unexplained": 129, "h2_within": false},
+  {"scene": "retro_room", "case": "control: normal tilted 0.05 rad", "covered": 65536, "shadow_differences": 0, "shadow_not_grazing": 0, "h1_within": true, "reflection_agree": 35327, "reflection_differences": 30209, "reflection_edge_exempt": 6594, "reflection_tie_exempt": 0, "reflection_unexplained": 23615, "h2_within": false},
+  {"scene": "iso_street", "case": "hybrid against cpu", "covered": 37222, "shadow_differences": 0, "shadow_not_grazing": 0, "h1_within": true, "reflection_agree": 37222, "reflection_differences": 0, "reflection_edge_exempt": 0, "reflection_tie_exempt": 0, "reflection_unexplained": 0, "h2_within": true},
+  {"scene": "iso_street", "case": "control: no origin offset", "covered": 37222, "shadow_differences": 13, "shadow_not_grazing": 13, "h1_within": false, "reflection_agree": 37170, "reflection_differences": 52, "reflection_edge_exempt": 14, "reflection_tie_exempt": 0, "reflection_unexplained": 38, "h2_within": false},
+  {"scene": "iso_street", "case": "control: normal tilted 0.05 rad", "covered": 37222, "shadow_differences": 0, "shadow_not_grazing": 0, "h1_within": true, "reflection_agree": 27254, "reflection_differences": 9968, "reflection_edge_exempt": 2567, "reflection_tie_exempt": 2, "reflection_unexplained": 7399, "h2_within": false}
+ ]
+}
