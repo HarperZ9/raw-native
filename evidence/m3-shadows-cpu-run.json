@@ -1,0 +1,10 @@
+{
+ "stability": {"checks": 192512, "changes": 0, "rate": 0.00000, "control_rate": 0.00108, "control_discriminates": false},
+ "texel_registration": {"pairs": 192415, "changes": 0, "rate": 0.00000, "control_pairs": 192415, "control_rate": 1.00000},
+ "scenes": [
+  {"scene": "built-in test scene", "interior_pixels": 36783, "hard_mismatches": 0, "soft_pixels": 37996, "shadowed": 15333, "penumbra": 1970, "pcss_mean_abs": 0.0047, "pcss_p95_abs": 0.0194, "pcss_penumbra_mean_abs": 0.0466},
+  {"scene": "Suzanne", "interior_pixels": 36021, "hard_mismatches": 2, "soft_pixels": 36656, "shadowed": 2908, "penumbra": 601, "pcss_mean_abs": 0.0027, "pcss_p95_abs": 0.0000, "pcss_penumbra_mean_abs": 0.0631},
+  {"scene": "helmet role", "interior_pixels": 35683, "hard_mismatches": 0, "soft_pixels": 36787, "shadowed": 2755, "penumbra": 1014, "pcss_mean_abs": 0.0045, "pcss_p95_abs": 0.0000, "pcss_penumbra_mean_abs": 0.0656}
+ ],
+ "failures": 0
+}
