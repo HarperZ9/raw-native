@@ -23,7 +23,8 @@ list(APPEND LIB_SRCS src/renderer/gpu/gpu_renderer.cpp src/renderer/gpu/frame_pa
     src/renderer/gpu/raster_identity.cpp src/renderer/gpu/gbuffer_identity.cpp
     src/renderer/gpu/shadow_parity.cpp src/renderer/gpu/shadow_parity_gpu.cpp
     src/renderer/gpu/post_parity.cpp
-    src/renderer/gpu/swr_gpu.cpp src/renderer/gpu/swr_parity.cpp)
+    src/renderer/gpu/swr_gpu.cpp src/renderer/gpu/swr_parity.cpp
+    src/renderer/gpu/rt_gpu.cpp src/renderer/gpu/rt_bvh_parity.cpp)
 add_library(raw_native STATIC ${LIB_SRCS})
 add_library(raw_native::raw_native ALIAS raw_native)
 target_include_directories(raw_native PUBLIC
