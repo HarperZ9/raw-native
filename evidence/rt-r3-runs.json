@@ -33,6 +33,15 @@
    "checks": "M1 (method notes 1 to 3)",
    "result": "pass: hit/miss agree on all 65,536 rays a primitive (grazing exempt 44, 26, 49); t within the bound on every hit (worst ratios 0.041 sphere, 0.523 box, 0.000 torus); the control (d < 1e-2, no refinement) exceeds the bound on all three (251, 242, 227)",
    "evidence": "evidence/rt-r3-m1-cpu.json"
+  },
+  {
+   "run": 5,
+   "when": "2026-10-10 19:15Z",
+   "backend": "D3D12 WARP",
+   "checks": "M2 to M7",
+   "result": "fail: M2 passes on garden (t 39,024 of 39,024), menger_tower (29,239 of 29,240) and arcade (55,468 of 55,468) and FAILS on bulb (t within on 93.3% of hits against 99.5%, normals 57.3% against 99%); M3 passes on all four (worst mean 5.5e-4, p99 8.4e-3 on the bulb's shadow); M4 FAILS (height fog worst relative 1.0); M5 passes (2 and 1 pixels outside 1e-3, each with a differing shadow sample count); M6 passes (0 disagreements); M7 bit-identical. Controls: smooth k halved breaks M2; k = 3 breaks M3; visibility 1 breaks M5 (65,536 and 1,447 pixels over 5%); SDF in front breaks M6 (107 unexplained)",
+   "diagnosis_m2_bulb": "Float32 precision in the Mandelbulb's iteration, inferred: the same estimator evaluated in float32 on the CPU, with no GPU involved, agrees with float64 on only 67.9% of hits. The bound is not loosened and the scene is not changed; this stays an open failure.",
+   "diagnosis_m4": "See method note 4: 113 cases underflow float32."
   }
  ]
 }

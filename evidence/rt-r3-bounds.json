@@ -63,5 +63,10 @@
   "written": "2026-10-10 19:08Z, after M1's third run and before its fourth",
   "finding": "With method note 2 every primitive meets the t bound (worst ratios 0.041, 0.523, 0.000), but the sphere's control (stop at d < 1e-2) now passes as well: the refinement repairs a coarse stop too, so that control no longer discriminates. Run 3 is therefore not a pass.",
   "change": "M1's control becomes the coarse march (d < 1e-2) with the refinement off, which must exceed the t bound on every primitive. The bound is unchanged."
+ },
+ "method_note_4": {
+  "written": "2026-10-10 19:17Z, after the first GPU run (run 5) and before the second",
+  "finding": "M4 failed with worst relative errors of 1.0 for the height fog. 113 of its 4,096 seeded cases run far below the ground, where this fog's density grows as exp(-b y); their float64 transmittance is below 1e-30, down to 7.4e-298, which float32 cannot represent, so a relative error is undefined there.",
+  "change": "M4 compares the cases whose float64 transmittance is at least 1e-30 and reports how many it excludes. The bounds are unchanged. M2's failure on the Mandelbulb is not touched by this note: it stays an open failure (see evidence/rt-r3-runs.json, run 5)."
  }
 }
