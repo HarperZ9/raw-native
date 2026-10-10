@@ -18,7 +18,8 @@ foreach(layer ${RAW_NATIVE_LIB_LAYERS})
     list(APPEND LIB_SRCS ${layer_srcs})
 endforeach()
 # The GPU renderer is backend-neutral: it records a frame graph on the RHI.
-list(APPEND LIB_SRCS src/renderer/gpu/gpu_renderer.cpp src/renderer/gpu/frame_pack.cpp src/renderer/gpu/texture_identity.cpp src/renderer/gpu/pbr_parity.cpp)
+list(APPEND LIB_SRCS src/renderer/gpu/gpu_renderer.cpp src/renderer/gpu/frame_pack.cpp src/renderer/gpu/texture_identity.cpp src/renderer/gpu/pbr_parity.cpp
+    src/renderer/gpu/lighting_parity.cpp src/renderer/gpu/lighting_parity_pack.cpp)
 add_library(raw_native STATIC ${LIB_SRCS})
 add_library(raw_native::raw_native ALIAS raw_native)
 target_include_directories(raw_native PUBLIC

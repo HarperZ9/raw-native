@@ -51,6 +51,31 @@ void albedoSplit(double mu, double a, int n, double& outA, double& outB) {
     outA = sa / n; outB = sb / n;
 }
 
+// Sum of l * G2 / G1 over VNDF samples (view in the xz plane at +x): the centroid of f cos.
+void lobeCentroid(double mu, double a, int n, double& cx, double& cz) {
+    const D3 v{std::sqrt(std::max(0.0, 1.0 - mu * mu)), 0.0, mu};
+    const double lv = std::sqrt(a * a * v.x * v.x + v.z * v.z);
+    const D3 vn{a * v.x / lv, 0.0, v.z / lv};
+    const D3 t1{0.0, 1.0, 0.0};
+    const D3 t2{vn.y * t1.z - vn.z * t1.y, vn.z * t1.x - vn.x * t1.z, vn.x * t1.y - vn.y * t1.x};
+    const double g1 = 1.0 / (1.0 + lambda(mu, a));
+    for (int k = 0; k < n; ++k) {
+        const double u1 = (k + 0.5) / n, u2 = radicalInverse(std::uint32_t(k));
+        const double r = std::sqrt(u1), phi = 2.0 * kPi * u2, s = 0.5 * (1.0 + vn.z);
+        const double p1 = r * std::cos(phi), p2 = (1.0 - s) * std::sqrt(1.0 - p1 * p1) + s * r * std::sin(phi);
+        const double p3 = std::sqrt(std::max(0.0, 1.0 - p1 * p1 - p2 * p2));
+        D3 m{t1.x * p1 + t2.x * p2 + vn.x * p3, t1.y * p1 + t2.y * p2 + vn.y * p3, t1.z * p1 + t2.z * p2 + vn.z * p3};
+        m = {a * m.x, a * m.y, std::max(1e-12, m.z)};
+        const double lm = std::sqrt(m.x * m.x + m.y * m.y + m.z * m.z);
+        m = {m.x / lm, m.y / lm, m.z / lm};
+        const double vom = v.x * m.x + v.y * m.y + v.z * m.z;
+        const D3 l{2.0 * vom * m.x - v.x, 2.0 * vom * m.y - v.y, 2.0 * vom * m.z - v.z};
+        if (l.z <= 0.0) continue;
+        const double w = (1.0 / (1.0 + lambda(mu, a) + lambda(l.z, a))) / g1;
+        cx += w * l.x; cz += w * l.z;
+    }
+}
+
 // The white sheen lobe's albedo by Gauss-Legendre over the incident hemisphere.
 double sheenAlbedo(double mu, double rs, const std::vector<double>& x, const std::vector<double>& w) {
     const D3 o{std::sqrt(std::max(0.0, 1.0 - mu * mu)), 0.0, mu};
@@ -125,8 +150,25 @@ Tables::Tables()
             sh_[std::size_t(i) * kSheenMu + j] = sheenAlbedo(std::max(sheenMu(j), 1e-4), gridRough(i, kSheenRough), gx, gw);
     });
     buildAnisotropic();
+    buildDominant();
 }
 double Tables::A(double mu, double r) const { return read2(a_, kTheta, kRough, mu, r); }
+double Tables::Dom(double mu, double r) const { return read2(dom_, kDomMu, kDomRough, mu, r); }
+
+// The lobe centroid's elevation: VNDF samples of the white lobe, each weighted by its
+// estimator G2 / G1 (f cos / pdf), summed as vectors.
+void Tables::buildDominant() {
+    dom_.assign(std::size_t(kDomRough) * kDomMu, 0.0);
+    parallelRows(kDomRough, int(std::max(1u, std::thread::hardware_concurrency())), [&](int i) {
+        const double a = std::max(gridRough(i, kDomRough) * gridRough(i, kDomRough), 1e-4);
+        for (int j = 0; j < kDomMu; ++j) {
+            const double th = std::clamp(gridTheta(j, kDomMu), 0.0, kPi / 2 - 1e-4), mu = std::cos(th);
+            double cx = 0.0, cz = 0.0;
+            lobeCentroid(mu, a, 1 << 11, cx, cz);
+            dom_[std::size_t(i) * kDomMu + j] = std::atan2(-cx, cz);
+        }
+    });
+}
 double Tables::B(double mu, double r) const { return read2(b_, kTheta, kRough, mu, r); }
 double Tables::Aavg(double r) const { return read1(aavg_, r); }
 double Tables::Bavg(double r) const { return read1(bavg_, r); }

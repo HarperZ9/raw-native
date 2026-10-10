@@ -1,0 +1,12 @@
+{
+ "check": "m3 lighting gpu parity",
+ "backend": "d3d12",
+ "adapter": "Microsoft Basic Render Driver",
+ "error": "",
+ "seed": 20261010,
+ "ev100": 9.0,
+ "clusters": {"scenes": 8, "lights_each": 256, "differences_off_boundary": 0, "boundary_differences": 1, "points": 55270, "gpu_list_misses": 0},
+ "prefilter": {"bound": "|gpu - ref| <= 1e-3 |ref| + 1e-6", "worst_ratio_to_bound": 0.0030, "control_half_samples_ratio": 1073.894},
+ "shading": {"samples": 4096, "bound": "|gpu - ref| <= 2e-3 |ref| + 1e-5 (exposed)", "worst_ratio_to_bound": 0.5865, "worst_abs": 8.618e-04, "worst_sample": 2233, "values_outside": 0, "control_lights_dropped_ratio": 499.178},
+ "pass": true
+}

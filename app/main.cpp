@@ -1,6 +1,8 @@
 #include "raw/assets/json.hpp"
 #include "raw/renderer/texture_identity.hpp"
 #include "raw/renderer/pbr_parity.hpp"
+#include "raw/renderer/lighting_parity.hpp"
+#include "raw/tools/gallery_cmd.hpp"
 #include "raw/rhi/rhi.hpp"
 #include "raw/renderer/raster.hpp"
 #include "raw/renderer/accel.hpp"
@@ -67,11 +69,17 @@ static const char* kUsage =
     "       raw_native_cli threads [flags]  render the Threads module on the GPU backend\n"
     "         (--world 0..14 --frames --width --height --particles --substeps --fps --persistence\n"
     "          --exposure --spacing --levels --out); writes threads.ppm\n"
+    "       raw_native_cli material-gallery [--out DIR] [--size N] [--spp K] [--cpu-only]\n"
+    "         the M3 material gallery: 49 spheres, seven material families, from the float64\n"
+    "         reference and (with a GPU backend) the GPU shading pass; PNG, PFM and JSON\n"
     "       raw_native_cli colour list | grid OUT | apply PIPELINE IN OUT | tables PIPELINE OUT.json\n"
     "         the colour reference: tone mappers and display encodings on float32 RGB\n"
     "       raw_native_cli texture-identity\n"
     "         sample a texture through four samplers on the GPU backend and compare with the CPU\n"
     "         sampler reference (JSON on stdout; exit 0 pass, 1 fail, 4 no GPU backend or adapter)\n"
+    "       raw_native_cli lighting-parity\n"
+    "         clusters, the environment prefilter and lit shading on the GPU backend against the\n"
+    "         float64 reference (same output and exit codes)\n"
     "       raw_native_cli pbr-parity\n"
     "         evaluate the glTF material model on the GPU backend and compare with the float64\n"
     "         reference (JSON on stdout; exit 0 pass, 1 fail, 4 no GPU backend or adapter)\n"
@@ -107,6 +115,7 @@ int main(int argc, char** argv){
     if (int rc = infoFlags(argc, argv); rc >= 0) return rc;
     if (argc >= 2 && std::strcmp(argv[1], "threads") == 0) return threadsCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "colour") == 0) return colourCommand(argc - 1, argv + 1);
+    if (argc >= 2 && std::strcmp(argv[1], "material-gallery") == 0) return galleryCommand(argc - 1, argv + 1);
     // The sampled-texture identity check on this build's GPU backend (ROADMAP M2
     // criterion 3): JSON on stdout; exit 0 when it passes, 1 when it fails, 4 without
     // a GPU backend or adapter.
@@ -125,6 +134,15 @@ int main(int argc, char** argv){
         raw::rhi::Device* dev = raw::rhi::device(why);
         if (!dev){ std::printf("{\n \"error\": \"%s\"\n}\n", why.c_str()); return 4; }
         const raw::gpu_check::PbrParity r = raw::gpu_check::pbrParity(*dev);
+        std::fputs(r.json().c_str(), stdout);
+        return r.pass() ? 0 : 1;
+    }
+    // The lighting's GPU parity (M3, evidence/m3-lighting-bounds.json): same exit codes.
+    if (argc >= 2 && std::strcmp(argv[1], "lighting-parity") == 0){
+        std::string why;
+        raw::rhi::Device* dev = raw::rhi::device(why);
+        if (!dev){ std::printf("{\n \"error\": \"%s\"\n}\n", why.c_str()); return 4; }
+        const raw::gpu_check::LightingParity r = raw::gpu_check::lightingParity(*dev);
         std::fputs(r.json().c_str(), stdout);
         return r.pass() ? 0 : 1;
     }

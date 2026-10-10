@@ -38,11 +38,12 @@ jobs:
         run: cmake --build build --config Release
       - name: Test
         run: ctest --test-dir build -C Release --output-on-failure
-      - name: The material furnaces on their full committed grid (M3)
+      - name: The material furnaces and the lighting checks on their full committed grids (M3)
         shell: bash
         run: |
           if [ -x build/test_pbr_energy ]; then d=build; else d=build/Release; fi
           "$d/test_pbr_energy" --full
+          "$d/test_lighting" --full
       - name: Render and check the default certificate
         shell: bash
         run: |
@@ -196,6 +197,15 @@ jobs:
         run: |
           build/Release/gpu_pbr_parity.exe pbr-warp.json
           build/Release/raw_native_cli.exe pbr-parity | grep -q '"pass": true'
+      - name: Clusters, the environment prefilter and lit shading on WARP match the float64 reference (M3 lighting)
+        shell: bash
+        env:
+          RAW_NATIVE_D3D12_WARP: "1"
+        run: |
+          build/Release/gpu_lighting_parity.exe lighting-warp.json
+          build/Release/raw_native_cli.exe material-gallery --out gallery-warp --size 64 --spp 1
+          grep -q '"backend": "d3d12"' gallery-warp/gallery.json
+          test -s gallery-warp/gallery-gpu.png && test -s gallery-warp/gallery-cpu.pfm
       - name: Textures, samplers and raster passes on WARP match the CPU sampler reference (M2 criterion 3)
         shell: bash
         env:
@@ -314,6 +324,8 @@ jobs:
         run: |
           python tools/assets/fetch_gltf.py gltf-models
           python tests/web/gpu_models.py gltf-models --dir build-wasm-gpu --adapter swiftshader --out gltf-webgpu.json
+      - name: The WebGPU build's clusters, prefilter and lit shading match the float64 reference in Chrome on SwiftShader (M3 lighting)
+        run: python tests/web/rhi_texture.py --command lighting-parity --dir build-wasm-gpu --adapter swiftshader --out lighting-webgpu.json
       - name: The WebGPU build's material model matches its float64 reference in Chrome on SwiftShader (M3 materials)
         run: python tests/web/rhi_texture.py --command pbr-parity --dir build-wasm-gpu --adapter swiftshader --out pbr-webgpu.json
       - name: The default native build carries no GPU code

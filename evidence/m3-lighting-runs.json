@@ -1,0 +1,25 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "M3 lighting (dated addition 7, 2026-10-10): the record of every run against evidence/m3-lighting-bounds.json, failures included",
+ "written": "2026-10-10, after the runs, in the order they happened",
+ "bounds_changed": false,
+ "runs": [
+  {"what": "CPU checks, first run", "result": "units exact; IBL furnace 1.1e-15; clusters FAILED (19 lights missing from their cluster lists over 65,536 points, shading off by 3.6%); split sum FAILED (median 0.021, p95 0.401)",
+   "cause": "clusters: every miss came from the 128-light cap per cluster (12 entries cut where many lights met near the camera). Split sum: the mirror direction, on rough metals with near-horizontal normals",
+   "fix": "the cap is 256, the clustered path's per-scene light limit, so a list holds every light (0 misses, 0 cut, clustered shading identical to brute force); the lookup direction moved to the Frostbite dominant-direction fit (Lagarde and de Rousiers 2014): p95 0.181"},
+  {"what": "first material gallery (a showcase, not a check)", "result": "hard seams on the roughest gold spheres",
+   "cause": "levels 4 and 5 of the 32-texel cube had 2 and 1 texels a face, and the sampler clamped at face edges",
+   "fix": "levels stop at 8 texels a face. The split-sum p95 then read 0.209, outside its bound: the 1-texel faces had happened to average some of the split sum's error away"},
+  {"what": "split sum, after the 8-texel floor", "result": "FAILED: p95 0.209 (bound 0.20)",
+   "fix": "the lookup direction is now the centroid of the BRDF's own lobe, tabulated from the model by VNDF sampling (pbr::Tables::Dom), replacing the fitted formula; p95 0.171, median 0.016"},
+  {"what": "GPU lighting parity on SwiftShader, after the 8-texel floor", "result": "FAILED: prefilter worst 1.18x its bound",
+   "cause": "in-shader sin and cos of the sample directions carry about 1e-6 error on SwiftShader, and the sun's 1e5 nits amplified it",
+   "fix": "the prefilter's half-vector samples are computed on the host in double and uploaded"},
+  {"what": "second material gallery, GPU against the reference", "result": "one pixel 52% off (a thin-film sphere)",
+   "cause": "the dominant direction landed on a cube face seam; float32 and float64 chose different faces, and clamped sampling is discontinuous there",
+   "fix": "seamless sampling: a bilinear tap past a face edge goes through its texel-centre direction to the neighbouring face, on the CPU and in both WGSL samplers. Prefilter parity went from 0.08 to 0.003 of its bound; split sum p95 0.169"},
+  {"what": "final runs", "result": "CPU: units exact, IBL furnace 1.3e-15, split sum median 0.016 and p95 0.169 over 1,952 samples (reference noise at most 0.019), clusters 0 misses over 55,270 in-frustum points of 65,536 drawn. D3D12 WARP: cluster lists identical off the boundary (1 boundary case), prefilter 0.003, shading 0.587 of the bound. WebGPU SwiftShader: identical off the boundary (2 boundary cases), prefilter 0.003, shading 0.49. Controls fail at 1,074x (prefilter) and 499x (shading)."},
+  {"what": "material gallery, 512 px, 4 samples a pixel, GPU (WARP) against the float64 reference (informative, no bound)", "result": "RMSE 5.6e-5 and worst 0.029 in exposed units; the worst samples sit at near-mirror roughness on the sun's edge, where the environment's gradient is largest"}
+ ],
+ "does_not_prove": "Anything under does_not_prove in the bounds file. The 65,536 points of the cluster check were drawn, of which 55,270 fell inside the frustum and were checked."
+}

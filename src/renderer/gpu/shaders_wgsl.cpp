@@ -2,19 +2,19 @@
 // Each pass is its "//@pass <name>" section of passes.wgsl with common.wgsl in
 // front of it.
 #include "shader_library.hpp"
-#include "raw_gpu_shaders.hpp"   // generated: kCommonWgsl, kPassesWgsl, kThreadsWgsl, kRasterWgsl, kPbrWgsl
+#include "raw_gpu_shaders.hpp"   // generated: kCommonWgsl, kPassesWgsl, kThreadsWgsl, kRasterWgsl, kPbrWgsl, kCubeWgsl, kLightWgsl
 #include <map>
 #include <string>
 namespace raw::gpu_shaders {
 namespace {
 // A pass of a module with its own shared code (threads.wgsl, pbr.wgsl): its section,
 // with the code before the module's first marker in front of it.
-std::string moduleSource(const char* text, const std::string& name){
+std::string moduleSource(const char* text, const std::string& name, const char* prelude = ""){
     const std::string all = text, mark = "//@pass " + name + "\n";
     const size_t first = all.find("//@pass "), a = all.find(mark);
     if (a == std::string::npos) return {};
     const size_t b = all.find("//@pass ", a + mark.size());
-    return all.substr(0, first) + "\n" + all.substr(a, b == std::string::npos ? std::string::npos : b - a);
+    return std::string(prelude) + "\n" + all.substr(0, first) + "\n" + all.substr(a, b == std::string::npos ? std::string::npos : b - a);
 }
 // A raster pass: its section of raster.wgsl alone (one module, entry points vs and
 // fs). "<name>.vs" and "<name>.fs" both name it, matching the D3D12 build's DXIL.
@@ -29,7 +29,8 @@ std::string rasterSource(std::string name){
 }
 std::string passSource(const std::string& name){
     if (name.rfind("threads_", 0) == 0) return moduleSource(kThreadsWgsl, name);
-    if (name.rfind("pbr_", 0) == 0) return moduleSource(kPbrWgsl, name);
+    if (name.rfind("pbr_", 0) == 0) return moduleSource(kPbrWgsl, name, kCubeWgsl);
+    if (name.rfind("light_", 0) == 0) return moduleSource(kLightWgsl, name, kCubeWgsl);
     if (std::string r = rasterSource(name); !r.empty()) return r;
     const std::string all = kPassesWgsl, mark = "//@pass " + name + "\n";
     size_t a = all.find(mark);

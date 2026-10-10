@@ -6,7 +6,10 @@
 // line, no struct values (materials are read from the case buffer by index).
 
 struct PbrParams {
-    count: u32, flags: u32, pad0: u32, pad1: u32,
+    count: u32, flags: u32, nlights: u32, env_size: u32,
+    env_levels: u32, sh_off: u32, pad0: u32, pad1: u32,
+    grid: vec4f,
+    misc: vec4f,
 }
 
 const PI: f32 = 3.14159265358979;
@@ -32,6 +35,8 @@ const OFF_A4: u32 = 37120u;
 const OFF_B4: u32 = 110848u;
 const OFF_AAVG2: u32 = 184576u;
 const OFF_BAVG2: u32 = 184864u;
+const OFF_DOM: u32 = 185152u;
+const N_DOM: u32 = 64u;
 // A case: 44 floats. Material fields in pbr.hpp order, then wo and wi; the anisotropy
 // rotation arrives as its cosine (27) and sine (35), computed on the host.
 const CASE: u32 = 44u;
@@ -197,14 +202,8 @@ fn irid_f(film: f32, d: f32, f0: vec3f, cos1: f32) -> vec3f {
     }
     return max(acc, vec3f(0.0));
 }
-//@pass pbr_eval
-// Evaluates f * |cos theta_i| and the emission for each case (raw::pbr::eval and emission).
-// One invocation per case.
-@group(0) @binding(0) var<uniform> P: PbrParams;
-@group(0) @binding(1) var<storage, read> C: array<f32>;
-@group(0) @binding(2) var<storage, read> T: array<f32>;
-@group(0) @binding(3) var<storage, read_write> R: array<f32>;
-
+// Material evaluation from a case or sample buffer C (every pass of this module binds the
+// uniform P as 0, the material buffer C as 1 and the tables T as 2).
 fn cv3(b: u32, k: u32) -> vec3f { return vec3f(C[b + k], C[b + k + 1u], C[b + k + 2u]); }
 fn kms(favg: f32, ebar: f32) -> f32 { return favg * favg * ebar / (1.0 - favg * (1.0 - ebar)); }
 fn kms3(f0: vec3f, f90: f32, ebar: f32) -> vec3f {
@@ -333,6 +332,14 @@ fn eval_case(b: u32, wo: vec3f, wi: vec3f) -> vec3f {
     return layers(b, wo, wi, f, ms_on);
 }
 
+//@pass pbr_eval
+// Evaluates f * |cos theta_i| and the emission for each case (raw::pbr::eval and emission).
+// One invocation per case.
+@group(0) @binding(0) var<uniform> P: PbrParams;
+@group(0) @binding(1) var<storage, read> C: array<f32>;
+@group(0) @binding(2) var<storage, read> T: array<f32>;
+@group(0) @binding(3) var<storage, read_write> R: array<f32>;
+
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
     let k: u32 = gid.x;
@@ -345,4 +352,211 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     let o: u32 = k * 6u;
     R[o] = f.x; R[o + 1u] = f.y; R[o + 2u] = f.z;
     R[o + 3u] = e.x; R[o + 4u] = e.y; R[o + 5u] = e.z;
+}
+
+//@pass pbr_shade
+// Shades surface samples (raw::lighting::shadePunctual over the sample's cluster list, plus
+// raw::lighting::shadeIbl), multiplied by the exposure. One invocation per sample.
+@group(0) @binding(0) var<uniform> P: PbrParams;
+@group(0) @binding(1) var<storage, read> C: array<f32>;
+@group(0) @binding(2) var<storage, read> T: array<f32>;
+@group(0) @binding(3) var<storage, read> L: array<f32>;
+@group(0) @binding(4) var<storage, read> K: array<u32>;
+@group(0) @binding(5) var<storage, read> E: array<f32>;
+@group(0) @binding(6) var<storage, read_write> R: array<f32>;
+
+// A sample: the 36 material floats, then position, normal, tangent and the unit view vector.
+const SAMPLE: u32 = 48u;
+const NCLUSTERS: u32 = 3456u;
+const MAX_PER_CLUSTER: u32 = 256u;
+
+fn env_texel(level: u32, f: u32, y: i32, x: i32) -> vec3f {
+    let n: u32 = cube_level_size(P.env_size, level);
+    let t: vec3u = cube_tap(n, f, y, x);
+    let i: u32 = cube_level_offset(P.env_size, level) + ((t.x * n + t.y) * n + t.z) * 3u;
+    return vec3f(E[i], E[i + 1u], E[i + 2u]);
+}
+fn env_sample(level: u32, d: vec3f) -> vec3f {
+    let n: u32 = cube_level_size(P.env_size, level);
+    let fu: vec3f = cube_face(d);
+    let f: u32 = u32(fu.x);
+    let fx: f32 = fu.y * f32(n) - 0.5;
+    let fy: f32 = fu.z * f32(n) - 0.5;
+    let x0: i32 = i32(floor(fx));
+    let y0: i32 = i32(floor(fy));
+    let ax: f32 = fx - f32(x0);
+    let ay: f32 = fy - f32(y0);
+    let a: vec3f = env_texel(level, f, y0, x0);
+    let b: vec3f = env_texel(level, f, y0, x0 + 1);
+    let c: vec3f = env_texel(level, f, y0 + 1, x0);
+    let e: vec3f = env_texel(level, f, y0 + 1, x0 + 1);
+    return (a * (1.0 - ax) + b * ax) * (1.0 - ay) + (c * (1.0 - ax) + e * ax) * ay;
+}
+fn env_rough(r: f32, d: vec3f) -> vec3f {
+    let l: f32 = clamp(r, 0.0, 1.0) * f32(P.env_levels - 1u);
+    let l0: u32 = min(u32(l), P.env_levels - 1u);
+    let l1: u32 = min(l0 + 1u, P.env_levels - 1u);
+    let f: f32 = l - f32(l0);
+    return env_sample(l0, d) * (1.0 - f) + env_sample(l1, d) * f;
+}
+// Irradiance / pi from the order-2 harmonics stored at E[P.sh_off] (9 RGB, raw::lighting::shIrradiance).
+fn sh_irr(n: vec3f) -> vec3f {
+    var y: array<f32, 9>;
+    y[0] = 0.282094791773878;
+    y[1] = 0.488602511902920 * n.y; y[2] = 0.488602511902920 * n.z; y[3] = 0.488602511902920 * n.x;
+    y[4] = 1.092548430592079 * n.x * n.y; y[5] = 1.092548430592079 * n.y * n.z;
+    y[6] = 0.315391565252520 * (3.0 * n.z * n.z - 1.0);
+    y[7] = 1.092548430592079 * n.x * n.z; y[8] = 0.546274215296040 * (n.x * n.x - n.y * n.y);
+    var e: vec3f = vec3f(0.0);
+    for (var k: u32 = 0u; k < 9u; k++) {
+        let band: f32 = select(select(0.25, 2.0 / 3.0, k < 4u), 1.0, k == 0u);
+        let o: u32 = P.sh_off + k * 3u;
+        e = e + vec3f(E[o], E[o + 1u], E[o + 2u]) * (band * y[k]);
+    }
+    return max(e, vec3f(0.0));
+}
+// raw::lighting::illuminance: lux per channel arriving at p, and the unit direction to the light.
+fn illum(i: u32, p: vec3f, to_light: ptr<function, vec3f>) -> vec3f {
+    let b: u32 = i * 16u;
+    let col: vec3f = vec3f(L[b + 7u], L[b + 8u], L[b + 9u]);
+    if (L[b] == 0.0) {
+        *to_light = -vec3f(L[b + 4u], L[b + 5u], L[b + 6u]);
+        return col * L[b + 10u];
+    }
+    let d: vec3f = vec3f(L[b + 1u], L[b + 2u], L[b + 3u]) - p;
+    let d2: f32 = dot(d, d);
+    let dist: f32 = sqrt(d2);
+    if (dist <= 0.0) { *to_light = vec3f(0.0, 0.0, 1.0); return vec3f(0.0); }
+    *to_light = d / dist;
+    var att: f32 = 1.0 / d2;
+    let range: f32 = L[b + 11u];
+    if (range > 0.0) {
+        let q: f32 = dist / range;
+        let w: f32 = clamp(1.0 - q * q * q * q, 0.0, 1.0);
+        att = att * w * w;
+    }
+    if (L[b] == 2.0) {
+        let cd: f32 = -dot(vec3f(L[b + 4u], L[b + 5u], L[b + 6u]), *to_light);
+        let a: f32 = clamp(cd * L[b + 12u] + L[b + 13u], 0.0, 1.0);
+        att = att * a * a;
+    }
+    return col * (L[b + 10u] * att);
+}
+// The lobe centroid's direction (raw::lighting dominant(), Tables::Dom).
+fn dominant(n: vec3f, v: vec3f, rough: f32) -> vec3f {
+    let nv: f32 = clamp(dot(n, v), 0.0, 1.0);
+    let e: f32 = read2(OFF_DOM, N_DOM, N_DOM, nv, rough);
+    let r: vec3f = 2.0 * nv * n - v;
+    let p: vec3f = r - dot(r, n) * n;
+    let pl: f32 = sqrt(dot(p, p));
+    if (pl < 1e-12) { return n; }
+    return n * cos(e) + p * (sin(e) / pl);
+}
+fn spec_w(b: u32, f0: vec3f, f90: f32, a: f32, bb: f32, mu: f32) -> vec3f {
+    let w: vec3f = f0 * a + vec3f(f90 * bb);
+    let iri: f32 = C[b + 28u];
+    if (iri <= 0.0) { return w; }
+    return w * (1.0 - iri) + irid_f(C[b + 29u], C[b + 30u], f0, mu) * ((a + bb) * iri);
+}
+// raw::pbr::iblResponse and raw::lighting::shadeIbl for one sample.
+fn ibl(b: u32, wo: vec3f, n: vec3f, t: vec3f, v: vec3f) -> vec3f {
+    let base: vec3f = cv3(b, 0u);
+    let mt: f32 = clamp(C[b + 3u], 0.0, 1.0);
+    let tr: f32 = clamp(C[b + 19u], 0.0, 1.0);
+    let rr: f32 = clamp(C[b + 4u], MIN_ROUGH, 1.0);
+    let ak: f32 = clamp(C[b + 26u], 0.0, 1.0);
+    let abar: f32 = select(read1(OFF_AAVG, N_ROUGH, rr), read2rk(OFF_AAVG2, rr, ak), ak > 0.0);
+    let bbar: f32 = select(read1(OFF_BAVG, N_ROUGH, rr), read2rk(OFF_BAVG2, rr, ak), ak > 0.0);
+    let ebar: f32 = abar + bbar;
+    let q: f32 = (C[b + 5u] - 1.0) / (C[b + 5u] + 1.0);
+    let f90: f32 = C[b + 6u];
+    let f0d: vec3f = min(q * q * cv3(b, 7u), vec3f(1.0)) * f90;
+    let km: vec3f = kms3(base, 1.0, ebar);
+    let kd: vec3f = kms3(f0d, f90, ebar);
+    let cr: f32 = C[b + 27u];
+    let sr: f32 = C[b + 35u];
+    let o: vec3f = vec3f(cr * wo.x + sr * wo.y, -sr * wo.x + cr * wo.y, wo.z);
+    let ab: vec2f = split_ab(o, rr, ak);
+    let e: f32 = ab.x + ab.y;
+    let es_o: vec3f = es_at(ab, f0d, f90, kd);
+    var spec: vec3f = spec_w(b, base, 1.0, ab.x, ab.y, o.z) * mt + spec_w(b, f0d, f90, ab.x, ab.y, o.z) * (1.0 - mt);
+    var under: vec3f = vec3f(1.0) - es_o;
+    let iri: f32 = C[b + 28u];
+    if (iri > 0.0) { under = under * (1.0 - iri) + vec3f((1.0 - pmax3(irid_f(C[b + 29u], C[b + 30u], f0d, o.z))) * iri); }
+    var irr: vec3f = (km * mt + kd * (1.0 - mt)) * (1.0 - e) + base * under * ((1.0 - mt) * (1.0 - tr));
+    var trans: vec3f = vec3f(0.0);
+    if (tr > 0.0 && mt < 1.0) {
+        var att: vec3f = vec3f(1.0);
+        if (C[b + 20u] != 0.0 && C[b + 22u] > 0.0 && C[b + 21u] > 0.0) { att = exp(log(max(cv3(b, 23u), vec3f(1e-30))) / C[b + 22u] * C[b + 21u]); }
+        trans = base * att * under * (tr * (1.0 - mt));
+    }
+    let shc: vec3f = cv3(b, 15u);
+    let sh: f32 = pmax3(shc);
+    if (sh > 0.0) {
+        let e_sh: f32 = read_sh(wo.z, C[b + 18u]);
+        let keep: f32 = 1.0 - sh * e_sh;
+        spec = spec * keep; irr = irr * keep; trans = trans * keep;
+        irr = irr + shc * e_sh;
+    }
+    let c: f32 = clamp(C[b + 10u], 0.0, 1.0);
+    var coat: f32 = 0.0;
+    let rc: f32 = clamp(C[b + 11u], MIN_ROUGH, 1.0);
+    if (c > 0.0) {
+        let mu: f32 = max(dot(pnorm(cv3(b, 12u)), wo), 0.0);
+        let kc: f32 = kms(0.04 + 0.96 / 21.0, tab_eavg(rc));
+        let ac: f32 = read2(OFF_A, N_THETA, N_ROUGH, mu, rc);
+        let bc: f32 = read2(OFF_B, N_THETA, N_ROUGH, mu, rc);
+        let ec: f32 = 0.04 * ac + bc + (1.0 - ac - bc) * kc;
+        let keep: f32 = (1.0 - c * ec) * (1.0 - c * ec);
+        spec = spec * keep; irr = irr * keep; trans = trans * keep;
+        coat = c * (0.04 * ac + bc);
+        irr = irr + vec3f(c * kc * (1.0 - ac - bc));
+    }
+    var acc: vec3f = spec * env_rough(rr, dominant(n, v, rr)) + irr * sh_irr(n);
+    if (pmax3(trans) > 0.0) {
+        var td: vec3f = -v;
+        if (C[b + 20u] != 0.0) {
+            let eta: f32 = 1.0 / C[b + 5u];
+            let cs: f32 = dot(n, v);
+            let k: f32 = 1.0 - eta * eta * (1.0 - cs * cs);
+            td = select(eta * (-v) + (eta * cs - sqrt(max(k, 0.0))) * n, -v + 2.0 * cs * n, k < 0.0);
+        }
+        acc = acc + trans * env_rough(rr, td);
+    }
+    if (coat > 0.0) {
+        let bt: vec3f = cross(n, t);
+        let cl: vec3f = cv3(b, 12u);
+        let cn: vec3f = pnorm(t * cl.x + bt * cl.y + n * cl.z);
+        acc = acc + vec3f(coat) * env_rough(rc, dominant(cn, v, rc));
+    }
+    return acc;
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let k: u32 = gid.x;
+    if (k >= P.count) { return; }
+    let b: u32 = k * SAMPLE;
+    let p: vec3f = cv3(b, 36u);
+    let n: vec3f = cv3(b, 39u);
+    let t: vec3f = cv3(b, 42u);
+    let v: vec3f = cv3(b, 45u);
+    let bt: vec3f = cross(n, t);
+    let wo: vec3f = vec3f(dot(v, t), dot(v, bt), dot(v, n));
+    var sum: vec3f = cv3(b, 31u) * C[b + 34u];
+    let c: i32 = cluster_of(p, P.grid);
+    if (c >= 0) {
+        let cnt: u32 = K[u32(c)];
+        for (var j: u32 = 0u; j < cnt; j++) {
+            let li: u32 = K[NCLUSTERS + u32(c) * MAX_PER_CLUSTER + j];
+            var dl: vec3f = vec3f(0.0);
+            let e: vec3f = illum(li, p, &dl);
+            if (e.x == 0.0 && e.y == 0.0 && e.z == 0.0) { continue; }
+            let wi: vec3f = vec3f(dot(dl, t), dot(dl, bt), dot(dl, n));
+            sum = sum + eval_case(b, wo, wi) * e * abs(wi.z);
+        }
+    }
+    let o: vec3f = (sum + ibl(b, wo, n, t, v)) * P.misc.x;
+    let r: u32 = k * 3u;
+    R[r] = o.x; R[r + 1u] = o.y; R[r + 2u] = o.z;
 }
