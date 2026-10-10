@@ -51,5 +51,10 @@
   "written": "2026-10-10, after the first GPU runs and before this scene's first run",
   "gap": "No scene in the checks reaches cascade 0 (view depth under about 2.9 units): the cameras sit 7 or more units from the models. The near cascade's lookups were untested.",
   "addition": "A fourth scene for the hard, soft, coverage and GPU parity checks: the built-in test scene seen from eye (1.6, 1.4, 2.4) toward (0, 0.6, 0), so the box and its shadow fall in cascades 0 and 1. Same bounds; it must also put at least 2,000 G-buffer pixels in cascade 0."
+ },
+ "method_note_3_2026_10_10": {
+  "written": "2026-10-10, after the near scene's first run and before the new camera's first run",
+  "result_of_note_2": "The near scene failed the coverage bound: its camera faced the box's unlit side, so 54,201 of 54,224 pixels were shadowed and 3 were penumbra (bound 300). Hard 0 mismatches, cascade 0 held 52,425 pixels. Recorded as a failed run.",
+  "change": "The near scene's camera moves to the lit side: eye (-1.5, 1.6, 2.4) toward (0.6, 0.4, 0.6). The bounds and the cascade-0 requirement stay."
  }
 }
