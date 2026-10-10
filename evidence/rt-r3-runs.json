@@ -79,6 +79,14 @@
     "evidence/rt-r3-sdf-gpu-d3d12-warp.json",
     "evidence/rt-r3-sdf-gpu-webgpu-swiftshader.json"
    ]
+  },
+  {
+   "run": 10,
+   "when": "2026-10-10 19:56Z (lock held 19:56:21Z to 19:56:41Z)",
+   "backend": "D3D12 on the RTX 4090 (driver 610.88), under D:/gpu.lock.d, binaries at 669db8c",
+   "checks": "M2 to M7",
+   "result": "as on WARP, with the same two open failures; the Mandelbulb comes much closer on the RTX (t within on 52,667 of 52,951 hits, 99.46% against 99.5%; normals 98.2% against 99%) than on WARP (93.3%, 57%), consistent with float32 precision being the limit; the fog march 1.326e-3; M5 2 pixels outside, each explained by a differing shadow sample; M6 0 disagreements; M7 bit-identical; controls fail",
+   "evidence": "evidence/rt-r3-sdf-gpu-d3d12-rtx4090.json"
   }
  ]
 }
