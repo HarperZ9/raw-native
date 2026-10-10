@@ -6,6 +6,9 @@ the day the release was published on GitHub, in UTC.
 
 ## Unreleased
 
+- **Spec-exact material forms behind a flag.** `Material::specExact` gives KHR_materials_clearcoat's
+  view-weighted coat and KHR_materials_iridescence's two-harmonic sum, on the CPU and the GPU, so either
+  form can be the default once decided.
 - **Source-style baked lighting** (roadmap M3, S10). Radiosity normal maps and ambient cubes
   (Valve, SIGGRAPH 2006), baked by a CPU path tracer on a new BVH.
   - Against converged path tracing, a flat normal is within 1.7% (median) and a bumped normal

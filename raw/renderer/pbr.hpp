@@ -50,6 +50,11 @@ struct Material {
     double iridescence{0}, iridescenceIor{1.3};        // KHR_materials_iridescence
     double iridescenceThickness{400};                  //   nanometres
     Rgb emissive{0, 0, 0}; double emissiveStrength{1}; // KHR_materials_emissive_strength
+    // The extension texts' forms where raw-native departs from them (pending the author's
+    // decision, 2026-10-10): iridescence summed to the second harmonic, and the clearcoat
+    // weighted by Fresnel at the view alone, base * (1 - c F(n.v)) + c F(n.v) D V, with no
+    // multiple scattering in the coat. Neither form is reciprocal or energy-checked here.
+    bool specExact{false};
 };
 
 // Tabulated energies, built once by deterministic quadrature and VNDF sampling.
@@ -154,7 +159,9 @@ double walterBtdf(D3 in, double etaIn, D3 out, double etaOut, double ax, double 
 // agree to 1e-7). Below about cos 0.3 on metals this renders closer to the physics than
 // the Khronos sample viewer does, by design.
 inline constexpr int kIridescenceHarmonics = 8;
-Rgb iridescentFresnel(double outsideIor, double filmIor, double thicknessNm, Rgb baseF0, double cosTheta1);
+Rgb iridescentFresnel(double outsideIor, double filmIor, double thicknessNm, Rgb baseF0, double cosTheta1,
+                      int harmonics = kIridescenceHarmonics);
+inline constexpr int kIridescenceHarmonicsSpec = 2;       // the KHR_materials_iridescence text
 // The float64 spectral reference for it: the Airy reflectance with the same interface
 // terms, integrated over 380 to 780 nm against CIE 1931 (Wyman, Sloan, Shirley 2013),
 // in linear Rec.709, scaled so a constant spectrum maps to grey.

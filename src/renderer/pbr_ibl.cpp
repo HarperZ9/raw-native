@@ -12,7 +12,7 @@ namespace {
 Rgb specWeight(const Material& m, Rgb f0, double f90, double a, double b, double muO) {
     const Rgb w = each([&](int k) { return ch(f0, k) * a + f90 * b; });
     if (m.iridescence <= 0.0) return w;
-    const Rgb fi = iridescentFresnel(1.0, m.iridescenceIor, m.iridescenceThickness, f0, muO);
+    const Rgb fi = irid(m, f0, muO);
     return w * (1.0 - m.iridescence) + fi * ((a + b) * m.iridescence);
 }
 }  // namespace
@@ -29,7 +29,7 @@ IblResponse iblResponse(const Material& m, const Tables& t, D3 wo) {
     r.specular = specWeight(m, m.baseColor, 1.0, a, b, o.z) * mt + specWeight(m, s.f0d, s.f90, a, b, o.z) * (1.0 - mt);
     Rgb under = each([&](int k) { return 1.0 - ch(esO, k); });
     if (m.iridescence > 0.0) {
-        const double mo = iridescentFresnel(1.0, m.iridescenceIor, m.iridescenceThickness, s.f0d, o.z).max3();
+        const double mo = irid(m, s.f0d, o.z).max3();
         under = under * (1.0 - m.iridescence) + rgb((1.0 - mo) * m.iridescence);
     }
     r.irradiance = (s.kmsMetal * mt + s.kmsDiel * (1.0 - mt)) * (1.0 - e) + m.baseColor * under * ((1.0 - mt) * (1.0 - tr));
@@ -50,11 +50,12 @@ IblResponse iblResponse(const Material& m, const Tables& t, D3 wo) {
     if (c > 0.0) {
         const double rc = std::clamp(m.clearcoatRoughness, kMinRoughness, 1.0), mu = std::max(dot(norm(m.coatNormal), wo), 0.0);
         const double kc = kms(0.04 + 0.96 / 21.0, t.Eavg(rc)), ac = t.A(mu, rc), bc = t.B(mu, rc);
-        const double ec = 0.04 * ac + bc + (1.0 - ac - bc) * kc, keep = (1.0 - c * ec) * (1.0 - c * ec);
+        const double ec = 0.04 * ac + bc + (1.0 - ac - bc) * kc;
+        const double keep = m.specExact ? 1.0 - c * schlick(0.04, 1.0, mu) : (1.0 - c * ec) * (1.0 - c * ec);
         r.specular = r.specular * keep; r.irradiance = r.irradiance * keep; r.transmission = r.transmission * keep;
         r.coat = rgb(c * (0.04 * ac + bc));
         r.coatRoughness = rc;
-        r.irradiance = r.irradiance + rgb(c * kc * (1.0 - ac - bc));
+        if (!m.specExact) r.irradiance = r.irradiance + rgb(c * kc * (1.0 - ac - bc));
     }
     return r;
 }

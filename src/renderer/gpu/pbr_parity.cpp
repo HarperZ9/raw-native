@@ -24,13 +24,15 @@ constexpr int kFamilies = 10;
 void family(pbr::Material& m, Rng& r, int f) {
     switch (f) {
     case 1: m.metallic = 0.0; break;
-    case 2: m.clearcoat = r.next(); m.clearcoatRoughness = r.next(); m.coatNormal = {0.3 * (r.next() - 0.5), 0.3 * (r.next() - 0.5), 1.0}; break;
+    case 2: m.clearcoat = r.next(); m.clearcoatRoughness = r.next(); m.coatNormal = {0.3 * (r.next() - 0.5), 0.3 * (r.next() - 0.5), 1.0};
+            m.specExact = r.next() < 0.5; break;
     case 3: m.sheenColor = col(r); m.sheenRoughness = r.next(); break;
     case 4: m.metallic *= 0.5; m.transmission = r.next(); break;
     case 5: m.metallic *= 0.5; m.transmission = r.next(); m.volume = true; m.thickness = 2.0 * r.next();
             m.attenuationDistance = 0.2 + 2.0 * r.next(); m.attenuationColor = col(r, 0.05); break;
     case 6: m.anisotropy = r.next(); m.anisotropyRotation = 2.0 * pbr::kPi * r.next(); break;
-    case 7: m.iridescence = r.next(); m.iridescenceIor = 1.2 + 0.8 * r.next(); m.iridescenceThickness = 100.0 + 900.0 * r.next(); break;
+    case 7: m.iridescence = r.next(); m.iridescenceIor = 1.2 + 0.8 * r.next(); m.iridescenceThickness = 100.0 + 900.0 * r.next();
+            m.specExact = r.next() < 0.5; break;
     case 8: m.clearcoat = r.next(); m.sheenColor = col(r); m.anisotropy = r.next(); m.iridescence = r.next(); m.transmission = r.next(); break;
     case 9: m.emissive = col(r); m.emissiveStrength = 10.0 * r.next(); break;
     default: break;
@@ -64,7 +66,7 @@ void packCase(PbrCase& c, float* o) {
     put3(o + 0, m.baseColor); put(o + 3, m.metallic); put(o + 4, m.roughness); put(o + 5, m.ior);
     put(o + 6, m.specular); put3(o + 7, m.specularColor); put(o + 10, m.clearcoat); put(o + 11, m.clearcoatRoughness);
     put3(o + 12, m.coatNormal); put3(o + 15, m.sheenColor); put(o + 18, m.sheenRoughness); put(o + 19, m.transmission);
-    o[20] = m.volume ? 1.0f : 0.0f;
+    o[20] = float((m.volume ? 1 : 0) | (m.specExact ? 2 : 0));   // flags: 1 volume, 2 spec-exact forms
     put(o + 21, m.thickness); put(o + 22, m.attenuationDistance); put3(o + 23, m.attenuationColor);
     // The anisotropy direction goes as (cos, sin), computed here in double, as a material
     // constant would be: a narrow anisotropic lobe turns an in-shader sin and cos with

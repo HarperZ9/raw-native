@@ -4,22 +4,48 @@
  "written": "2026-10-10, after the runs, in the order they happened",
  "bounds_changed": false,
  "runs": [
-  {"what": "CPU furnaces and conservation, first run", "result": "metal 2.87e-4 and dielectric 4.73e-4 within 1e-3; anisotropic furnace FAILED (worst |albedo - 1| 0.466); volume conservation FAILED (34x)",
+  {
+   "what": "CPU furnaces and conservation, first run",
+   "result": "metal 2.87e-4 and dielectric 4.73e-4 within 1e-3; anisotropic furnace FAILED (worst |albedo - 1| 0.466); volume conservation FAILED (34x)",
    "cause": "anisotropic: the compensation read the isotropic albedo at the azimuth-projected roughness, which misses the masking of light leaving along the wide axis. Volume: the test's quadrature used the refraction Jacobian inverted (Walter et al. 2007 eq. 17 gives d omega_h / d omega_o), and the furnace for light arriving from outside needs the ior^2 of generalized reciprocity",
-   "fix": "a 4-D table of the true anisotropic split albedo (view cosine, view azimuth, roughness, anisotropy; VNDF sampled); the Jacobian and the ior^2 factor in tests/pbr_quadrature.hpp"},
-  {"what": "CPU furnaces and conservation, second run", "result": "every family within its bound; anisotropic 3.35e-3 (bound 2e-2); rough interface R + T within 4.3e-5 of 1"},
-  {"what": "iridescence against the spectral reference, first run", "result": "FAILED: worst 0.322 per channel (gold-like base, film ior 1.8, 100 nm, cos 0.1)",
+   "fix": "a 4-D table of the true anisotropic split albedo (view cosine, view azimuth, roughness, anisotropy; VNDF sampled); the Jacobian and the ior^2 factor in tests/pbr_quadrature.hpp"
+  },
+  {
+   "what": "CPU furnaces and conservation, second run",
+   "result": "every family within its bound; anisotropic 3.35e-3 (bound 2e-2); rough interface R + T within 4.3e-5 of 1"
+  },
+  {
+   "what": "iridescence against the spectral reference, first run",
+   "result": "FAILED: worst 0.322 per channel (gold-like base, film ior 1.8, 100 nm, cos 0.1)",
    "cause": "the KHR_materials_iridescence text sums the Fourier series to the second harmonic; with a reflective base at grazing angles the series converges slowly. Confirmed by an independent Python mirror of both paths: 2, 4, 8, 12 and 24 harmonics give 0.322, 0.140, 0.048, 0.048, 0.048",
-   "fix": "eight harmonics (raw::pbr::kIridescenceHarmonics), a deliberate deviation from the specification toward the physics; the residual 0.048 is the Gaussian fit to the colour matching functions"},
-  {"what": "GPU parity on D3D12 WARP, first run", "result": "FAILED: 23 of 24,576 values outside, worst 13x the bound",
+   "fix": "eight harmonics (raw::pbr::kIridescenceHarmonics), a deliberate deviation from the specification toward the physics; the residual 0.048 is the Gaussian fit to the colour matching functions"
+  },
+  {
+   "what": "GPU parity on D3D12 WARP, first run",
+   "result": "FAILED: 23 of 24,576 values outside, worst 13x the bound",
    "cause": "the float64 model itself returned negative values: the Neubelt sheen visibility first chosen is not energy-bounded (KHR_materials_sheen says so), its albedo passed 1 at grazing views and the sheen albedo scaling went negative; the f32 path then differed in sign-cancelling sums",
-   "fix": "the specification's Charlie visibility; the conservation grid gained the grazing views mu 0.02 and 0.05 (a tightening); at mu 0.02 the sheen table on a theta axis then read 1.049, so the sheen table moved to a sqrt(mu) axis"},
-  {"what": "GPU parity on WebGPU (SwiftShader in Chrome), first run", "result": "FAILED: 2 values outside, worst 1.17x the bound, a narrow anisotropic lobe (roughness 0.048)",
+   "fix": "the specification's Charlie visibility; the conservation grid gained the grazing views mu 0.02 and 0.05 (a tightening); at mu 0.02 the sheen table on a theta axis then read 1.049, so the sheen table moved to a sqrt(mu) axis"
+  },
+  {
+   "what": "GPU parity on WebGPU (SwiftShader in Chrome), first run",
+   "result": "FAILED: 2 values outside, worst 1.17x the bound, a narrow anisotropic lobe (roughness 0.048)",
    "cause": "in-shader sin and cos of the anisotropy rotation carry about 1e-6 error on SwiftShader, which the lobe amplifies; WARP's were accurate enough (0.03x on the same case)",
-   "fix": "the anisotropy direction arrives as a host-computed (cos, sin) material constant, as a production material system would pass it"},
-  {"what": "final runs", "result": "CPU: every check within bound (m3-materials-energy-cpu.json, m3-materials-reciprocity-cpu.json); D3D12 WARP worst 0.459 of the bound; WebGPU SwiftShader worst 0.456; the control fails at 814x on both"},
-  {"what": "unplanned run on the RTX 4090", "result": "worst 0.024 of the bound; informative only, not evidence",
-   "note": "ctest on the D3D12 build ran without RAW_NATIVE_D3D12_WARP=1 and picked the hardware adapter for about 10 s while another session held the GPU lock. A protocol breach by this session, recorded here; the measured run goes through the lock queue."}
+   "fix": "the anisotropy direction arrives as a host-computed (cos, sin) material constant, as a production material system would pass it"
+  },
+  {
+   "what": "final runs",
+   "result": "CPU: every check within bound (m3-materials-energy-cpu.json, m3-materials-reciprocity-cpu.json); D3D12 WARP worst 0.459 of the bound; WebGPU SwiftShader worst 0.456; the control fails at 814x on both"
+  },
+  {
+   "what": "unplanned run on the RTX 4090",
+   "result": "worst 0.024 of the bound; informative only, not evidence",
+   "note": "ctest on the D3D12 build ran without RAW_NATIVE_D3D12_WARP=1 and picked the hardware adapter for about 10 s while another session held the GPU lock. A protocol breach by this session, recorded here; the measured run goes through the lock queue."
+  },
+  {
+   "what": "spec-exact forms behind raw::pbr::Material::specExact (2026-10-10, coordinator's direction while the author decides)",
+   "result": "tests/test_pbr_spec.cpp: the flagged clearcoat matches base * (1 - c F(n.v)) + c F(n.v) D V to 8.5e-16 and the flagged iridescence matches the two-harmonic sum exactly; the GPU parity case set now flags half of the clearcoat and iridescence cases (a dated change to the seeded set, bound unchanged): WARP worst 0.621, SwiftShader 0.620 of the bound",
+   "note": "the RTX 4090 record (worst 0.024) predates the flag and covers the default forms only"
+  }
  ],
  "does_not_prove": "Anything the bounds file lists under does_not_prove; that the tables would pass at a finer test grid than the one committed."
 }
