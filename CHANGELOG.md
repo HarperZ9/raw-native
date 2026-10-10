@@ -26,6 +26,12 @@ the day the release was published on GitHub, in UTC.
   - `RAW_NATIVE_HW_DISABLE` forces any feature off, and the fallbacks run and match.
   - Shader execution reordering and cooperative matrices have no query in the Windows SDK
     10.0.26100 headers, so they go through Vulkan.
+- **Inline ray query against the CPU BVH** (HW H1.1). `raw_native_cli hw-rayquery` builds DXR
+  acceleration structures on the hw compute queue and traces 1,020,000 rays over three procedural
+  scenes, compared hit by hit with M3's BVH. Offset and rotation controls fail on every scene, as
+  they must. **Open failure on WARP:** 20 hits below TMin (a WARP defect, reproduced on a single
+  triangle), coplanar ties in the hall scene above the explained-fraction bound, and two grazing hits
+  outside tolerance. The RTX 4090 run and its timings are pending.
 - **Vulkan hardware probe** (HW H1.0, optional `RAW_NATIVE_VULKAN=ON`). `raw_native_vk_probe` reports
   the same features through Vulkan, adding cooperative matrix configurations and invocation reordering.
   It refuses any non-CPU device unless `RAW_NATIVE_VK_HW=1` is set. On SwiftShader with the validation
