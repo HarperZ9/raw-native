@@ -83,7 +83,34 @@
    "what": "post-parity in Chrome on SwiftShader, the two built-in scenes",
    "result": "Same pattern: GTAO and SSR pass; TAA parity open failure (31; one-step 1); controls fail.",
    "evidence": "evidence/m3-post-gpu-webgpu-swiftshader.json"
+  },
+  {
+   "run": "cpu-owned-1",
+   "date": "2026-10-10",
+   "what": "test_post --json on the owned scenes (method note 9), drapery one-sided",
+   "result": "superseded: the gallery camera saw the drapery from behind, where its single sheet's normal faced away, so GTAO read it dark (mean 0.262, worse than the control's 0.110). The hall's drapery became two-sided (asset run 4)."
+  },
+  {
+   "run": "cpu-owned-2",
+   "date": "2026-10-10",
+   "what": "test_post --json on the owned scenes, final hall",
+   "result": "fail, open failures named: GTAO passes on the near test scene and raw-hall nave (mean 0.0034 and 0.0170); on raw-hall gallery mean 0.073 and p95 0.634 against 0.05 and 0.15 (the control 0.108, 0.369). SSR passes on both test-scene views (98.3%, 96.5%) and fails on raw-hall nave (68.3% correct, 11.8% false hits) and gallery (65.1%, 6.1%). raw-hero is below both coverage bounds (1,094 occluded, 1,960 resolvable) and is reported: GTAO mean 0.0068, SSR 92.4%. Inferred causes: GTAO treats every visible surface as infinitely thick and the folds of thin drapery as solid; SSR's 0.2-unit thickness and 20-unit reach are short for a hall measured in metres. ctest names raw-hall nave and gallery as open failures; --json and --strict gate them.",
+   "evidence": "evidence/m3-post-cpu-run.json"
+  },
+  {
+   "run": "gpu-warp-owned",
+   "date": "2026-10-10",
+   "what": "gpu_post_parity, WARP, debug layer, five scenes",
+   "result": "GTAO and SSR parity pass on all five (at most 12 and 11 pixels); TAA parity open failure as before (31; one step 1); controls fail.",
+   "evidence": "evidence/m3-post-gpu-d3d12-warp.json"
+  },
+  {
+   "run": "swiftshader-owned",
+   "date": "2026-10-10",
+   "what": "post-parity in Chrome on SwiftShader, five scenes (the owned assets are built in)",
+   "result": "GTAO and SSR parity pass on all five; TAA parity open failure (31; one step 1); controls fail.",
+   "evidence": "evidence/m3-post-gpu-webgpu-swiftshader.json"
   }
  ],
- "status": "Open failures, not loosened: GTAO and SSR accuracy on the interior close-up; TAA RMSE under the pan (0.735 against 0.5); TAA GPU parity with each side's own history (31 of 16,384 pixels against 16). Passing: GTAO and SSR accuracy on every other gated scene, TAA ghosting, GTAO and SSR GPU parity on WARP and SwiftShader, every control. Candidates, each in a method note before it runs: a thickness heuristic for GTAO and SSR; a motion-aware blend and history sharpening for TAA."
+ "status": "Open failures, not loosened: GTAO on raw-hall gallery; SSR on raw-hall nave and gallery; TAA RMSE under the pan (0.735 against 0.5); TAA GPU parity with each side's own history (31 of 16,384 against 16). Passing: GTAO on the near test scene and raw-hall nave, SSR on both test-scene views, TAA ghosting, GTAO and SSR GPU parity on WARP and SwiftShader on five scenes, every control."
 }

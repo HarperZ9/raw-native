@@ -135,7 +135,7 @@ every backend it names.
 | 8. Shadows: CPU checks against ray casts | Passes | `evidence/m3-shadows-cpu-run.json` |
 | 8. Shadows: GPU lookups and contact march | Passes on WARP and SwiftShader | `evidence/m3-shadows-gpu-*.json` |
 | 8. Shadows: GPU shadow map against the CPU rasterizer | **Open failure**: 3 texels on WARP, about 11 on SwiftShader; the RTX run is queued | `evidence/m3-shadows-runs.json` |
-| 8. GTAO and SSR against ray casts | GTAO passes on the near scene and is within bounds on four scenes too sparse to gate; SSR passes on the two test-scene views. **Open failure** on the interior close-up (GTAO mean 0.104, SSR 80% correct, 17.6% false hits); ungated, SSR reaches 84% on the helmet and 65% on the interior model | `evidence/m3-post-cpu-run.json` |
+| 8. GTAO and SSR against ray casts | GTAO passes on the near test scene and raw-hall nave; SSR passes on both test-scene views. **Open failure**: GTAO in raw-hall gallery (mean 0.073, p95 0.634); SSR in raw-hall nave and gallery (68% and 65% correct) | `evidence/m3-post-cpu-run.json` |
 | 8. GTAO and SSR GPU parity | Passes on WARP and SwiftShader | `evidence/m3-post-gpu-*.json` |
 | 9. Baked lighting | Passes | `evidence/m3-bake-*.json` |
 

@@ -56,12 +56,17 @@ void arch(Part& p, double x0, double x1, double y, double z0, double z1, double 
     grid(p, [&](double u, double v) { return ring(ro, kPi * u, z0 + (z1 - z0) * v); }, 64, 4, false, false);   // extrados
 }
 // A drapery panel hung from (x0, top, z) across width w and drop h, folds growing downward.
+// Cloth has two sides: the face toward the nave and, 4 mm behind it, the face toward the aisle,
+// so every view sees a surface whose normal faces it.
 void drape(Part& p, double x0, double top, double z, double w, double h, double side) {
-    grid(p, [=](double u, double v) {
-        const double x = x0 + w * u, y = top - h * v;
-        const double fold = 0.09 * (0.35 + 0.65 * v) * dsin(2.0 * kPi * 5.0 * u + 0.6 * v);
-        return P3{x, y, z + side * fold};
-    }, 64, 96, false, side > 0);
+    for (int face = 0; face < 2; ++face) {
+        const double back = face == 0 ? 0.0 : -0.004 * side;
+        grid(p, [=](double u, double v) {
+            const double x = x0 + w * u, y = top - h * v;
+            const double fold = 0.09 * (0.35 + 0.65 * v) * dsin(2.0 * kPi * 5.0 * u + 0.6 * v);
+            return P3{x, y, z + side * fold + back};
+        }, 64, 96, false, face == 0 ? side > 0 : side < 0);
+    }
 }
 }  // namespace
 

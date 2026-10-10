@@ -22,6 +22,13 @@
    "what": "after cutting the hall's long boxes at every bay line (a defect the RHI v3 and shadow checks exposed: the CPU rasterizer drops triangles that cross the near plane)",
    "result": "pass on MSVC: raw-hall 488,120 triangles; everything else as run 2; hashes rewritten.",
    "evidence": "evidence/m3-assets.json"
+  },
+  {
+   "run": "assets-4",
+   "date": "2026-10-10",
+   "what": "the drapery made two-sided (a 4 mm back sheet), after the GTAO check viewed it from behind and its single sheet's normal faced away from the camera",
+   "result": "pass on MSVC: raw-hall 586,424 triangles (196,608 in the drapery); everything else as before; hashes rewritten.",
+   "evidence": "evidence/m3-assets.json"
   }
  ]
 }

@@ -19,9 +19,9 @@ int shadowParityCommand(int argc, char** argv);
 }
 // raw_native_cli post-parity: GTAO, SSR and the TAA resolve on this build's GPU backend against
 // the CPU (raw/renderer/post_parity.hpp).
-//   post-parity [--models DIR] [--out FILE]
-// Scenes as test_post: the built-in test scene from two cameras, and with --models Suzanne, the
-// helmet role, the interior role and its close-up. Same output and exit codes as raster-identity.
+//   post-parity [--out FILE]
+// Scenes as test_post: the built-in test scene from two cameras, raw-hero in it, and raw-hall
+// from its nave and its gallery. Same output and exit codes as raster-identity.
 namespace raw {
 int postParityCommand(int argc, char** argv);
 }

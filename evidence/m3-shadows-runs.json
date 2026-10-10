@@ -98,20 +98,41 @@
    "date": "2026-10-10",
    "what": "test_shadows --json, owned scenes, hall cut at bay lines",
    "result": "pass. Hard mismatches 0, 0, 6, 1; PCSS mean 0.0071 at worst; raw-hall coverage 47,122 shadowed, 2,673 penumbra pixels.",
-   "evidence": "evidence/m3-shadows-cpu-run.json"
+   "superseded": "by the -3 runs: the hall's drapery became two-sided (asset run 4); the nave camera sees the same faces, and the numbers barely move"
   },
   {
    "run": "warp-owned-2",
    "date": "2026-10-10",
    "what": "gpu_shadow_parity on WARP, debug layer",
    "result": "Lookups and contact within bounds on all four scenes; controls fail. Map identity: raw-hero passes; raw-hall fails (cascade 2: 2 texels not explained by an edge and depth 1.1e-5 against 1e-5; cascade 3: 1 texel), at depth ties; the near test scene keeps its 2 far-plane texels.",
-   "evidence": "evidence/m3-shadows-gpu-d3d12-warp.json"
+   "superseded": "by the -3 runs: the hall's drapery became two-sided (asset run 4); the nave camera sees the same faces, and the numbers barely move"
   },
   {
    "run": "swiftshader-owned-2",
    "date": "2026-10-10",
    "what": "shadow-parity in Chrome on SwiftShader, all four scenes",
    "result": "Lookups and contact within bounds; controls fail. Map identity: raw-hero passes; raw-hall fails (71, 50 and 0 unexplained texels in cascades 1 to 3; depth up to 3.2e-5).",
+   "superseded": "by the -3 runs: the hall's drapery became two-sided (asset run 4); the nave camera sees the same faces, and the numbers barely move"
+  },
+  {
+   "run": "cpu-owned-3",
+   "date": "2026-10-10",
+   "what": "test_shadows --json, final hall",
+   "result": "pass. raw-hall nave: 0 hard mismatches, PCSS mean 0.0071; the other scenes as cpu-owned-2.",
+   "evidence": "evidence/m3-shadows-cpu-run.json"
+  },
+  {
+   "run": "warp-owned-3",
+   "date": "2026-10-10",
+   "what": "gpu_shadow_parity, WARP, debug layer, final hall",
+   "result": "As warp-owned-2: lookups, contact and controls pass; map identity an open failure on raw-hall (3 texels at depth ties, depth 1.1e-5) and the near test scene (2 far-plane texels).",
+   "evidence": "evidence/m3-shadows-gpu-d3d12-warp.json"
+  },
+  {
+   "run": "swiftshader-owned-3",
+   "date": "2026-10-10",
+   "what": "shadow-parity, SwiftShader, final hall",
+   "result": "As swiftshader-owned-2: map identity an open failure on raw-hall (71, 50 and 0 unexplained texels in cascades 1 to 3).",
    "evidence": "evidence/m3-shadows-gpu-webgpu-swiftshader.json"
   },
   {

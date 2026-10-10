@@ -46,13 +46,13 @@
      "files": [
       {
        "path": "raw-hall.gltf",
-       "sha256": "e80d838b7185a506fceef6824020428ab641e8ca87942dd6a1b37b6eccbe90ef",
-       "bytes": 7335
+       "sha256": "f6a0afab7132e62da9cfd496fa40a661a5e2b88c5f4e1a25d0ce814e19cb78fc",
+       "bytes": 7339
       },
       {
        "path": "raw-hall.bin",
-       "sha256": "06d4b1ff505b3b08f8a727ee0472d470c9f9bdc6cc9586a9ea8db47263c3efdf",
-       "bytes": 12637056
+       "sha256": "fabf0c022436624909ade5440925b2b649acd4599cc7a304387676dba6f9d3d8",
+       "bytes": 15027264
       }
      ]
     }

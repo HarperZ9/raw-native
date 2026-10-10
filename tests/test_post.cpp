@@ -1,10 +1,11 @@
 // GTAO and SSR against ray casts (evidence/m3-post-bounds.json), on the CPU.
-//   test_post [--json] [--models DIR]
-// --models adds Suzanne and the helmet role's model to the built-in test scene's two cameras.
+//   test_post [--json] [--strict] [--scene-stats]
+// Scenes (method note 9): the test scene from two cameras, raw-hero in it, raw-hall from its nave
+// and from its gallery.
 #include "raw/renderer/post.hpp"
 #include "raw/renderer/raster.hpp"
 #include "raw/tools/model_scene.hpp"
-#include "raw/tools/model_manifest.hpp"
+#include "raw/tools/owned_assets.hpp"
 #include "check.hpp"
 #include <algorithm>
 #include <cmath>
@@ -15,6 +16,7 @@
 using namespace raw;
 
 namespace {
+const std::string kOpen[] = {"raw-hall nave", "raw-hall gallery"};   // named by run cpu-owned-2 (evidence/m3-post-runs.json)
 GBuffer gbufferOf(const Scene& s) {
     RasterOptions ro; ro.perspectiveDepth = true;
     return rasterize(s, 256, 256, nullptr, nullptr, ro);
@@ -80,44 +82,22 @@ Ssr ssrCheck(const Scene& s, const GBuffer& g, const post::ViewGBuffer& v) {
 
 int main(int argc, char** argv) {
     bool json = false, stats = false, strict = false;
-    std::string models;
     for (int i = 1; i < argc; ++i) {
         json = json || !std::strcmp(argv[i], "--json");
         stats = stats || !std::strcmp(argv[i], "--scene-stats");
         strict = strict || json || !std::strcmp(argv[i], "--strict");
-        if (!std::strcmp(argv[i], "--models") && i + 1 < argc) models = argv[++i];
     }
     CliParams p; p.width = p.height = 256;
     std::vector<std::pair<std::string, Scene>> scenes{{"built-in test scene", sceneFromParams(p, nullptr)}};
     scenes.push_back({"test scene, near camera", scenes[0].second});
     scenes[1].second.camera.eye = {1.8f, 3.2f, 2.4f}; scenes[1].second.camera.center = {0.8f, 0.2f, 1.0f};
-    if (!models.empty()) {
-        std::string err;
-        p.model = models + "/Models/Suzanne/glTF/Suzanne.gltf";
-        scenes.push_back({"Suzanne", sceneFromParams(p, nullptr)});
-        const std::string manifest = std::string(RAW_SOURCE_DIR) + "/evidence/m3-scene-models.json";
-        p.model = resolveModelRole(manifest, "helmet", models, err);
-        if (!p.model.empty()) scenes.push_back({"helmet role", sceneFromParams(p, nullptr)});
-        // Method note 2: the interior role's model, with Suzanne's camera.
-        p.model = resolveModelRole(manifest, "interior", models, err);
-        scenes.push_back({"interior role", sceneFromParams(p, nullptr)});
-    }
-    if (!stats && !models.empty()) {   // method note 4: the interior close-up
-        Scene c = scenes.back().second;
-        c.camera.eye = {0.9f, 1.2f, 1.6f}; c.camera.center = {0.0f, 0.3f, 0.0f};
-        scenes.push_back({"interior close-up", c});
-    }
-    if (stats) {   // scene design only (method note 3): the references' coverage, no GTAO or SSR result
-        std::vector<std::pair<std::string, Scene>> all = scenes;
-        if (!models.empty()) {
-            const Vec3 eyes[3] = {{0.9f, 1.2f, 1.6f}, {0.7f, 1.0f, 1.2f}, {0.5f, 0.8f, 0.9f}};
-            for (const Vec3& e : eyes) {
-                Scene c = scenes.back().second;
-                c.camera.eye = e; c.camera.center = {0.0f, 0.3f, 0.0f};
-                char n[96]; std::snprintf(n, sizeof n, "interior close (%.1f, %.1f, %.1f)", e.x, e.y, e.z);
-                all.push_back({n, c});
-            }
-        }
+    // Method note 9: the owned assets (author's decision, 2026-10-10).
+    scenes.push_back({"raw-hero", owned::inTestScene(owned::hero(), 256, 256)});
+    const owned::Asset hall = owned::hall();
+    scenes.push_back({"raw-hall nave", owned::hallScene(hall)});
+    scenes.push_back({"raw-hall gallery", owned::hallScene(hall, true)});
+    if (stats) {   // scene design only: the references' coverage, no GTAO or SSR result
+        const auto& all = scenes;
         for (const auto& s : all) {
             const GBuffer g = gbufferOf(s.second);
             const post::ViewGBuffer v = post::viewGBuffer(g, s.second.camera);
@@ -159,9 +139,9 @@ int main(int argc, char** argv) {
         // Method note 2: a scene that misses a coverage bound is reported, not gated, for that metric.
         const bool aoGated = a.occluded >= 2000, ssrGated = r.resolvable >= 2000;
         aoScenes += aoGated; ssrScenes += ssrGated;
-        // The interior close-up's accuracy bounds are open failures (evidence/m3-post-runs.json): --json
+        // Scenes whose accuracy bounds are recorded open failures (evidence/m3-post-runs.json): --json
         // and --strict gate them, ctest prints them. The controls are always gated.
-        const bool open = !strict && s.first == "interior close-up";
+        const bool open = !strict && std::find(std::begin(kOpen), std::end(kOpen), s.first) != std::end(kOpen);
         const bool aoOk = a.mean <= 0.05 && a.p95 <= 0.15;
         const bool ssrOk = double(r.correct) >= 0.9 * double(r.resolvable) && double(r.falseHits) <= 0.1 * double(r.other);
         if (aoGated) {
@@ -183,8 +163,7 @@ int main(int argc, char** argv) {
                       r.resolvable ? double(r.ctlCorrect) / double(r.resolvable) : 0.0, aoGated ? "true" : "false", ssrGated ? "true" : "false");
         rows += b;
     }
-    if (!models.empty()) CHECK(aoScenes >= 2 && ssrScenes >= 2);   // method note 2: each metric gated on at least two scenes
-    else std::printf("note: the two-scene gate needs --models; built-in scenes gate GTAO on %d and SSR on %d\n", aoScenes, ssrScenes);
+    CHECK(aoScenes >= 2 && ssrScenes >= 2);   // method note 2: each metric gated on at least two scenes
     std::printf("{\n \"plane_gtao_worst_abs_from_1\": %.5f,\n \"scenes\": [\n%s\n ],\n \"failures\": %d\n}\n", planeWorst, rows.c_str(), raw_test_failures());
     return json ? (raw_test_failures() ? 1 : 0) : raw_test_summary();
 }

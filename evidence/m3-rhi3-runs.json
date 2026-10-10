@@ -38,6 +38,11 @@
    "what": "WebGPU SwiftShader, owned scenes",
    "result": "FAILED, open, as before on SwiftShader: 4-bit precision; 2, 2 and 4 unexplained pixels on the test scene, raw-hero and raw-hall (of 6, 208 and 1,207 differing). Formats, depth and the control pass.",
    "evidence": "evidence/m3-rhi3-webgpu-swiftshader.json"
+  },
+  {
+   "what": "WARP and SwiftShader, final hall (two-sided drapery)",
+   "result": "Unchanged from the previous owned-scene runs: WARP raw-hall nave 4 normal pixels (open failure); SwiftShader 2, 2 and 4 unexplained pixels (open failure).",
+   "evidence": "evidence/m3-rhi3-d3d12-warp.json, evidence/m3-rhi3-webgpu-swiftshader.json"
   }
  ],
  "does_not_prove": "Anything under does_not_prove in the bounds file."
