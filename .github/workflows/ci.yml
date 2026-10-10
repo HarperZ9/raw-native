@@ -181,6 +181,22 @@ jobs:
           n=$(grep -l '"verdict":"verified"' warp-out/*/gpu_certificate.json | wc -l)
           echo "verified GPU certificates: $n of 4"
           test "$n" = 4
+  fuzz-sanitizers:
+    # ROADMAP M2 criterion 2: one million fuzzed glTF inputs under AddressSanitizer and
+    # UndefinedBehaviorSanitizer; any report, other exception or slow input fails the job.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the glTF fuzzer with the sanitizers
+        run: |
+          cmake -S . -B build-san -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
+          cmake --build build-san --target fuzz_gltf -j 4
+      - name: One million inputs
+        run: build-san/fuzz_gltf 1000000 1 1000 gltf-fuzz.json
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with: { name: gltf-fuzz, path: gltf-fuzz.json, retention-days: 30 }
   wasm:
     runs-on: ubuntu-24.04
     env:
@@ -354,6 +370,8 @@ jobs:
         run: |
           node tools/fuzz/tiles_fuzz.mjs --n 50000 > /dev/null
           python tests/web/tiles_check.py --adapter swiftshader
+      - name: The style template scaffolds render, the same twice (ADR 0016)
+        run: python tests/web/templates_check.py --adapter swiftshader --seconds 1
       - name: Low-resolution frames scale to the output exactly, and a slow pan moves edges smoothly (M2 criterion 7)
         run: python tests/web/pixel_scaling.py --adapter swiftshader
       - name: Every scene wrote a video, a poster, captions and a manifest, from this commit
