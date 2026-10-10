@@ -2,7 +2,7 @@
 
 ROADMAP M2 criterion 4 asks for this report, with measurements, followed by the author's decision. [ADR 0002](adr/0002-rhi.md) sets out A5. [ADR 0013](adr/0013-media-grade-roadmap.md) limits it to the native translator: WGSL that the web host runs as written does not trigger it.
 
-**State: half measured.** The translator side is measured below. The Slang side is not measured, because measuring it needs a download that waits for the author's approval (see "What the Slang half needs").
+**State: both halves measured; the decision is the author's.** The author approved the Slang download on 2026-10-10. The Slang half below was measured with slangc 2026.19, whose zip matched GitHub's published sha256 (`fc922f21...`), installed outside the repository.
 
 ## What the translator had to grow for M2
 
@@ -46,18 +46,28 @@ The PBR base model (M2 gap 5) and M3's lit scenes need constructs the subset ref
 
 The rough sum: the translator could double again, to about 1,100 lines, by the end of M3. The riskiest single item is matrix layout. Its failure mode is a plausible wrong picture, and the identity tests catch that only if a test exercises it.
 
-## What the Slang half needs
+## The Slang half, measured (slangc 2026.19, 2026-10-10)
 
-- **Download:** `slang-2026.19-windows-x86_64.zip`, 63,221,930 bytes, from the shader-slang/slang GitHub release v2026.19 (published 2026-09-29). Licence: Apache-2.0 with LLVM exception (ADR 0002). It goes outside the repository, at `D:/tools/slang/`, and nothing is vendored until the decision.
-- **Measurements to take:**
-  1. Port the texture-identity raster pass and two compute passes (`ssao`, `shade`) to Slang, and record the lines.
-  2. Compile each to DXIL and to WGSL with `slangc`, and record the times.
-  3. Run the existing identity tests on Slang's output: the D3D12 path on WARP and the WebGPU path in the browser. Slang's WGSL is what the web would run, so the web host's "WGSL as written" rule would change.
-  4. Record the binary size added to a build and to CI setup time.
-- **What a fair comparison must count:**
-  - Slang adds a 63 MB toolchain and a dependency of the engine's build.
-  - It removes the translator's maintenance, and the class of bug where the translator is silently wrong.
-  - It changes the web path from hand-written WGSL to generated WGSL.
+**1. The texture-identity raster pass, ported by hand** (`docs/architecture/a5/texture_identity.slang`, 26 lines; the WGSL section is 25).
+
+| Target | Compile time | Result |
+|---|---|---|
+| DXIL vs_6_0 / ps_6_0 | 789 ms / 212 ms (2,860 / 4,188 bytes) | **The D3D12 identity check on WARP passes, identical to the translator's DXIL:** nearest 0 codes, linear 1, control fails |
+| WGSL | 196 ms | **Renders pixel-identical** to the translator-path WGSL in Chrome on SwiftShader: 0 differing values in all four sampler cases |
+
+Slang's WGSL is generated code. It wraps the uniform in a std140 struct (`@align(16)`), suffixes every identifier (`size_0`) and returns through output structs. It runs, but it is not WGSL anyone would hand-write or read in a frame debugger.
+
+**2. Every existing generated HLSL pass, through slangc unchanged** (Slang accepts HLSL), to DXIL and to WGSL:
+
+- 13 of 15 compute passes compile to both targets, about 0.2 s each.
+- 2 fail: `setup` and `threads_advance`, with "ambiguous reference to 'k'". Slang applies the old HLSL rule that a `for` loop's variable belongs to the enclosing block, so two loops in one function that both declare `k` collide. dxc with `-HV 2021` scopes the variable to the loop. The fix is mechanical: unique loop variable names, or a block around each loop, in the translator or the WGSL.
+
+**Not measured:** running the compute passes' Slang output through the full GPU renderer's identity matrix. That needs the shader library to load compiled code from files, which this spike did not build. The raster pass is the only one run end to end.
+
+**Costs, measured:**
+
+- The toolchain is 63,221,930 bytes zipped, a build dependency of the engine. It is Apache-2.0 with LLVM exception, which ADR 0005 permits.
+- A pass takes 0.2 to 0.8 s to compile, against dxc's 0.12 s.
 
 ## Options for the author
 
@@ -65,4 +75,11 @@ The rough sum: the translator could double again, to about 1,100 lines, by the e
 2. **Adopt Slang now**, after the measurement above. One source language covers DXIL, SPIR-V (Vulkan in M4), Metal and WGSL. The cost is the toolchain, and the web shaders stop being hand-written WGSL.
 3. **Hybrid:** the translator stays for compute passes, and Slang handles material permutations only. The cost is two paths to keep.
 
-**Provisional reading (mine, on half the evidence):** option 1 holds through M2. The measured cost is small, and the identity tests catch translation errors. Matrix support and permutations are the signal to measure Slang, before M3's lit scenes. This is not a recommendation to skip the Slang measurement: criterion 4 asks for the author's decision with both halves measured.
+**My reading, now on both halves:**
+
+- Slang is a working, lower-risk path off the translator. The raster pass is identical on both backends, 13 of 15 existing passes compile untouched, and the other two need a rename.
+- What Slang costs is the web's hand-written WGSL: the web would run generated code.
+- So option 3, the hybrid, fits the evidence best. The native compute and raster passes move to Slang when matrices and permutations arrive (M3), and the web host keeps hand-written WGSL where it runs WGSL as written today.
+- Option 1 remains defensible through M2.
+
+The decision is the author's.
