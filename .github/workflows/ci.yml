@@ -114,6 +114,18 @@ jobs:
           if command -v python3 >/dev/null && python3 --version >/dev/null 2>&1; then py=python3; else py=python; fi
           "$py" scripts/identity_matrix.py run "$cli" identity.json identity-out --no-gpu-build
           "$py" scripts/identity_matrix.py compare evidence/identity-golden.json identity.json --except arena_certificate.json
+      - name: Fetch the glTF models of M2 criterion 1 (pinned commit, verified by git blob hash)
+        shell: bash
+        run: |
+          if command -v python3 >/dev/null && python3 --version >/dev/null 2>&1; then py=python3; else py=python; fi
+          "$py" tools/assets/fetch_gltf.py gltf-models
+      - name: The ten glTF models render byte-identically to the golden (M2 criterion 1)
+        shell: bash
+        run: |
+          if [ -x build/raw_native_cli ]; then cli=build/raw_native_cli; else cli=build/Release/raw_native_cli.exe; fi
+          if command -v python3 >/dev/null && python3 --version >/dev/null 2>&1; then py=python3; else py=python; fi
+          "$py" scripts/identity_matrix.py run "$cli" gltf.json gltf-out --models gltf-models
+          "$py" scripts/identity_matrix.py compare evidence/m2-gltf-golden.json gltf.json --except arena_certificate.json
   d3d12:
     # Builds the native D3D12 backend with the Windows SDK's DXC. The runner has
     # no GPU: the hardware runtime test must report itself skipped with its
@@ -194,6 +206,16 @@ jobs:
           n=$(grep -l '"verdict":"verified"' warp-out/*/gpu_certificate.json | wc -l)
           echo "verified GPU certificates: $n of 4"
           test "$n" = 4
+      - name: The ten glTF models render on D3D12 (WARP) with verified GPU certificates (M2 criterion 1)
+        shell: bash
+        env:
+          RAW_NATIVE_D3D12_WARP: "1"
+        run: |
+          python tools/assets/fetch_gltf.py gltf-models
+          python scripts/identity_matrix.py run build/Release/raw_native_cli.exe gltf-warp.json gltf-warp --models gltf-models --gpu
+          n=$(grep -l '"verdict":"verified"' gltf-warp/*/gpu_certificate.json | wc -l)
+          echo "verified GPU certificates: $n of 10"
+          test "$n" = 10
   fuzz-sanitizers:
     # ROADMAP M2 criterion 2: one million fuzzed glTF inputs under AddressSanitizer and
     # UndefinedBehaviorSanitizer; any report, other exception or slow input fails the job.
@@ -276,6 +298,10 @@ jobs:
         run: |
           python -m pip install playwright==1.58.0
           python tests/web/rhi_texture.py --dir build-wasm-gpu --adapter swiftshader --out texture-webgpu.json
+      - name: The ten glTF models render on the WebGPU build in Chrome on SwiftShader with verified GPU certificates (M2 criterion 1)
+        run: |
+          python tools/assets/fetch_gltf.py gltf-models
+          python tests/web/gpu_models.py gltf-models --dir build-wasm-gpu --adapter swiftshader --out gltf-webgpu.json
       - name: The default native build carries no GPU code
         run: |
           ! grep -q "emdawnwebgpu\|wgpu" build/raw_native_cli
@@ -290,6 +316,12 @@ jobs:
           build/raw_native_cli verify wasm-out
           python3 scripts/recheck.py wasm-out
           python3 scripts/compare_renders.py native wasm-out
+      - name: The ten glTF models render under WebAssembly byte-identically to the golden (M2 criterion 1)
+        run: |
+          source "$RUNNER_TEMP/emsdk/emsdk_env.sh"
+          python3 tools/assets/fetch_gltf.py gltf-models
+          python3 scripts/identity_matrix.py run build-wasm/raw-native.mjs gltf-wasm.json gltf-wasm --models gltf-models
+          python3 scripts/identity_matrix.py compare evidence/m2-gltf-golden.json gltf-wasm.json --except arena_certificate.json
       - name: Keep the wasm default render for the cross-platform identity check
         uses: actions/upload-artifact@v4
         with:

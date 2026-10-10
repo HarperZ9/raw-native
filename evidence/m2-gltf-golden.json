@@ -1,0 +1,236 @@
+{
+ "cases": {
+  "model-Avocado": {
+   "args": [
+    "--model",
+    "<models>/Models/Avocado/glTF-Binary/Avocado.glb",
+    "--width",
+    "128",
+    "--height",
+    "128",
+    "--no-rt"
+   ],
+   "exit": 0,
+   "files": {
+    "ao_ss.pfm": "9d8c3449bb676f71b64a69c66dfee288e683b501baf07db8eaa2c75988239e6f",
+    "ao_ss.pgm": "92f14e45d692bb700e044f8bab5447c0bcce3a93b25649cb0906c94483d2a5b5",
+    "arena_certificate.json": "a684896aa7fdfe5e82cc5460b7c98b530f81325e460172256783c0e5eda45f3e",
+    "certificate.json": "3bbb5a683d32bcd3cd0d1302f6c2621f676a7e90791ac1f3a1975735c2c50758",
+    "channels.json": "46c94fa3316c4d21e794d547a6166d7ca92052f52e6b7bd0a2849d5d07d8ebeb",
+    "frame.ppm": "bd0ed5934c44323049513980b1d086e411ce8e05ddc0635d3904b1f912c2a190",
+    "frame_hdr.pfm": "fd9c6a6cf2ca131db2c8fa9d3719eb936791da18a3cb5298ce9c33ae724a9349",
+    "mask.pgm": "36ddf673ce6168fcd037d06f3bb4d45a9515fb9cd1d55aa16c97a0b7c69de725",
+    "receipt.json": "d43a8608ef75d1d8809081ebac052640daf430b976d61ae895655d09aafd4e19"
+   }
+  },
+  "model-BarramundiFish": {
+   "args": [
+    "--model",
+    "<models>/Models/BarramundiFish/glTF-Binary/BarramundiFish.glb",
+    "--width",
+    "128",
+    "--height",
+    "128",
+    "--no-rt"
+   ],
+   "exit": 0,
+   "files": {
+    "ao_ss.pfm": "182cfb91931c776672c02419b3e2cf284f8d80c5b842135a5cf09a7aefb003cb",
+    "ao_ss.pgm": "6ecffcb64022144ec1edd8d4ff60ac0be341780153298d1eff3ab5cb4f0606db",
+    "arena_certificate.json": "8e82e0231d121eff178d2a3dcc01f222f43be0053ad4110d438f9599fbccd5d3",
+    "certificate.json": "2d2760b15ccfc4962fc9c1f488792559d9110058c9cd305556caf3617bb715d4",
+    "channels.json": "df57aa2bc5113c82d236f6970423092d0a4d53f483da52e7e15d531bd3b87778",
+    "frame.ppm": "b744e737a5be50f1422a661b6c572a574294752fd663e54057964f948b80c5e2",
+    "frame_hdr.pfm": "e5f05ca4fa4c9b135e1e687f1078e32820ab76a3a2ac2b9fc8642d3105bd9b7c",
+    "mask.pgm": "2919de04a772a7a17fa24f652f82a36fe31ed17026f9c1785871b16d01d7e19e",
+    "receipt.json": "f5798176570829f3d6dcb160ac1a7184412b7150a747e4a86f957c1d014935a1"
+   }
+  },
+  "model-Box": {
+   "args": [
+    "--model",
+    "<models>/Models/Box/glTF-Embedded/Box.gltf",
+    "--width",
+    "128",
+    "--height",
+    "128",
+    "--no-rt"
+   ],
+   "exit": 0,
+   "files": {
+    "ao_ss.pfm": "797f08bb932b8640667a06c729c4cd49057727c73f41b773c687ff0e4e64c606",
+    "ao_ss.pgm": "10f79b568fe3091ac5fbb3103b08e3bdb4d039cd64742e2a6b930cda84a9f092",
+    "arena_certificate.json": "7a272d04fcdfdb778f842b63a5933fdf195f6fe172acd7a3bc57ac863bdac417",
+    "certificate.json": "79ec0f65777aeb5cb93f17702038a2dfe62e01e7d0e7ec0352831968196930ab",
+    "channels.json": "06c7268a14c0a3fc52e446b78f91d0294cb458e769058d9b06dabe40121f089f",
+    "frame.ppm": "f9f7092fe60b5acd361aa21bfd69c40323e80b22fea27f309ee0c67383099359",
+    "frame_hdr.pfm": "f2d6aa662c072b31f6b9b11858a279b359ea510f39f8f0fa9dc14a57e93dd5ac",
+    "mask.pgm": "2fa27df0de3ed4bc98cccdfceed33a52e9cf0dbe106e6023a82775ed32c8cb6a",
+    "receipt.json": "5497efa67d824dda9a5d6ef99bb65a10e6467ac000f8ff3110ba7ebdb72950f5"
+   }
+  },
+  "model-BoxInterleaved": {
+   "args": [
+    "--model",
+    "<models>/Models/BoxInterleaved/glTF-Binary/BoxInterleaved.glb",
+    "--width",
+    "128",
+    "--height",
+    "128",
+    "--no-rt"
+   ],
+   "exit": 0,
+   "files": {
+    "ao_ss.pfm": "797f08bb932b8640667a06c729c4cd49057727c73f41b773c687ff0e4e64c606",
+    "ao_ss.pgm": "10f79b568fe3091ac5fbb3103b08e3bdb4d039cd64742e2a6b930cda84a9f092",
+    "arena_certificate.json": "7a272d04fcdfdb778f842b63a5933fdf195f6fe172acd7a3bc57ac863bdac417",
+    "certificate.json": "173570de2405f14793826bc169f9f021ec24d702943bfadf79b06c7f529f30e3",
+    "channels.json": "06c7268a14c0a3fc52e446b78f91d0294cb458e769058d9b06dabe40121f089f",
+    "frame.ppm": "f9f7092fe60b5acd361aa21bfd69c40323e80b22fea27f309ee0c67383099359",
+    "frame_hdr.pfm": "f2d6aa662c072b31f6b9b11858a279b359ea510f39f8f0fa9dc14a57e93dd5ac",
+    "mask.pgm": "2fa27df0de3ed4bc98cccdfceed33a52e9cf0dbe106e6023a82775ed32c8cb6a",
+    "receipt.json": "d3172707af2a1f015eeb3d60e921875453845025deb2c01688753d4cfb2fad3a"
+   }
+  },
+  "model-Fox": {
+   "args": [
+    "--model",
+    "<models>/Models/Fox/glTF-Binary/Fox.glb",
+    "--width",
+    "128",
+    "--height",
+    "128",
+    "--no-rt"
+   ],
+   "exit": 0,
+   "files": {
+    "ao_ss.pfm": "c4eea318d432afcff8a719199284864008e9799e2ffa0fa40cc2b7787dd1b1a0",
+    "ao_ss.pgm": "03a5b527a594d6ccbc5b61c52b6abf32bddc62fbd6de45f2f0b2c1c3c17306d9",
+    "arena_certificate.json": "6a8aca27a94fb84d0e55f047fa94664a99afe2300beedec3945abcde788cf864",
+    "certificate.json": "65f5d27769cae2a98d4a3183c9ad9a02c42fb97a51d3fb8215752d60794211ae",
+    "channels.json": "e626c245e95a44a11ba5fd2c3d054b9dbf9766743210fc78ac32cb11375f4ed1",
+    "frame.ppm": "30da5966f81dfcd86d2f73686f9276e5cfe27825d38911d1421363e66b2fbf58",
+    "frame_hdr.pfm": "84b6f3f997ea4bde575a9a25cf5fc9107afbdaeeaa826e02453df145b1d37f3d",
+    "mask.pgm": "2919de04a772a7a17fa24f652f82a36fe31ed17026f9c1785871b16d01d7e19e",
+    "receipt.json": "60043aee34155313d38139bb3bcbfb0b149dd11696cc3e32770b6b2511fce42a"
+   }
+  },
+  "model-Lantern": {
+   "args": [
+    "--model",
+    "<models>/Models/Lantern/glTF-Binary/Lantern.glb",
+    "--width",
+    "128",
+    "--height",
+    "128",
+    "--no-rt"
+   ],
+   "exit": 0,
+   "files": {
+    "ao_ss.pfm": "1e3937b8d4b2fe3bdf8caab6e1565f51f37793deff9076d2abc7b0408fa82960",
+    "ao_ss.pgm": "3c4794fb40cfae84faf2ea8287aada10dbe64044ff6d47b1f1ca2e0209ad9115",
+    "arena_certificate.json": "fdf92f164488d5ae01e8ff7f86f6ae9034851528fc4e0f826c3cc626daca235f",
+    "certificate.json": "e464b37d1348793b74a82407496918847d8c3b91bce51ce8981e6785a5e855d2",
+    "channels.json": "c8b82c821af8f437089ea2e3ed6835b9e86f9313ba1e877aef8bfe4a6679c732",
+    "frame.ppm": "e50df97a4742156214e1c6181284e42652380d8cd2fa904276d046a2224f8150",
+    "frame_hdr.pfm": "a25f85080424a3b90d1682d9c351365e863645ebd16341c08422aa346749e63d",
+    "mask.pgm": "47f501f9662398d513ec1e008333825c0f539fd3bb00adb671f67a9900a0721d",
+    "receipt.json": "88d3112b9ef6630d30c51bf3705be8c1051661f1143f8f85f4d4cc08c69112b3"
+   }
+  },
+  "model-SciFiHelmet": {
+   "args": [
+    "--model",
+    "<models>/Models/SciFiHelmet/glTF/SciFiHelmet.gltf",
+    "--width",
+    "128",
+    "--height",
+    "128",
+    "--no-rt"
+   ],
+   "exit": 0,
+   "files": {
+    "ao_ss.pfm": "f47eea25feca701a3822381a44daa5e4d70dc9537bfc4d0faed8e59112d0df6d",
+    "ao_ss.pgm": "a47c0e75e825818524fda5b44596d4dd39a425ad7feffdbd3a8785f38b368de7",
+    "arena_certificate.json": "dcf9eda8b77dd892146187bd50028ebe42d232d2ff96cfa75859de7b0228d9e5",
+    "certificate.json": "13f1d3f00986950141b6f3d7acdd7c648716ebb7ea49cc2029da7604e1f26498",
+    "channels.json": "717ce689992418bda63d8b0a3d37d79f91b5710c1683bd1f1ffaa30575e92a08",
+    "frame.ppm": "11820ed3a40d13308ee6829f141cb691f0a78c1c82e9a2b3a9c34b18ed616d64",
+    "frame_hdr.pfm": "e7ad434156921eb768448d68abc9c23ed1c8018acc0b9f9ec4f41874c88147b5",
+    "mask.pgm": "ad47bf634abdd60b1db41fe4a85a8c717b1bd377fe48b13763623acfbb47c994",
+    "receipt.json": "c2fcab8abaab55150ffc19a66c0e7f7498c4752de395b57dbee82b28dd798d2c"
+   }
+  },
+  "model-Suzanne": {
+   "args": [
+    "--model",
+    "<models>/Models/Suzanne/glTF/Suzanne.gltf",
+    "--width",
+    "128",
+    "--height",
+    "128",
+    "--no-rt"
+   ],
+   "exit": 0,
+   "files": {
+    "ao_ss.pfm": "fa834c022a4c94bbc6cfd8e1f032559d92917c511a64db935b2c4110a4e3ace6",
+    "ao_ss.pgm": "7e0c0df5ca5287dd0d5420e0779324987f6e4ded1218f507260f8056707fe551",
+    "arena_certificate.json": "1fa866900d6243369c9d94ee1ab01d5424e495a6c3bf0bfc79551da0e782fe01",
+    "certificate.json": "bd17a6671000ee0ebe6872dddb8b58a05e472c622fdbca8a62c93ce117088293",
+    "channels.json": "3158b53800a77cfab2711a48d072fa8901e61825e589cef80bd4db8aff388c4e",
+    "frame.ppm": "6c6454394403716e3620bd16d798caa2248a40f254ec31a72bcd2edfc4a80115",
+    "frame_hdr.pfm": "494af59151d171cac7094f0c77ba2a81669170191439bf5009b676f642a49ab6",
+    "mask.pgm": "2919de04a772a7a17fa24f652f82a36fe31ed17026f9c1785871b16d01d7e19e",
+    "receipt.json": "4badc25c2bb3ab939796f0f626653601af19318d26b752ebb98b5deec990d845"
+   }
+  },
+  "model-ToyCar": {
+   "args": [
+    "--model",
+    "<models>/Models/ToyCar/glTF-Binary/ToyCar.glb",
+    "--width",
+    "128",
+    "--height",
+    "128",
+    "--no-rt"
+   ],
+   "exit": 0,
+   "files": {
+    "ao_ss.pfm": "2d3fcb3bb841eb717ab5c2a3c5a240d157ab90439c4716809bd0997356d8e4d2",
+    "ao_ss.pgm": "9cfd249a1f2464946074412654ce5dbf4f7b93a7bb039f4000f5970004050c3f",
+    "arena_certificate.json": "c1e9c5c5d95048670a93df7da6a51992428c17c6d673a7f32e66020c1e52b31e",
+    "certificate.json": "25f9b517dc26397f9d0bdae09731b8ed44236d981155e7f2fc087e7cf3499fca",
+    "channels.json": "4e54b01f192192b846cf4193e930ae067d83e4f75376adb2a7a72a420bd45667",
+    "frame.ppm": "45650c5e6da24e455addb13d01a432d59ac823f4204c42a3fb4d22843b798836",
+    "frame_hdr.pfm": "147a69d20dcdecbdd70aacc24477e3c9619ef2a9778ae0610873c5fc1dcb5c6e",
+    "mask.pgm": "2919de04a772a7a17fa24f652f82a36fe31ed17026f9c1785871b16d01d7e19e",
+    "receipt.json": "0fcc9130f002fb1cd09dbd2b1feed6c407a510671d393e4b6230cdf64d4dc3e3"
+   }
+  },
+  "model-WaterBottle": {
+   "args": [
+    "--model",
+    "<models>/Models/WaterBottle/glTF-Binary/WaterBottle.glb",
+    "--width",
+    "128",
+    "--height",
+    "128",
+    "--no-rt"
+   ],
+   "exit": 0,
+   "files": {
+    "ao_ss.pfm": "68c422aad8bae5a4ccf89d3ed09c947d9d56d3e4e414b5db32cc08a35f9587fe",
+    "ao_ss.pgm": "cf2a2691ecfe756db305decf6538dc306795391db432869b9230276d80df299e",
+    "arena_certificate.json": "ac479174d78372b461a38b1c87a9915befabb3c4b63198fa0bd725321d578e92",
+    "certificate.json": "7405a1968063c1347845a8628574c5401545d30cfabf40e126e65e2cf616f2f7",
+    "channels.json": "f9df8ff1dc5c10d2abb9634254b86d06e839d46c6aa179523b9daca2e3c0c3fd",
+    "frame.ppm": "bb56a38cd462113482a1d39792f21a3bf55b23a0e200f12f1055e6fb8467e358",
+    "frame_hdr.pfm": "ac90f3bafe064d57beba14f2e6ae933469dc80e989ad9227df6d7ce8b0af15ca",
+    "mask.pgm": "f195804fa709242574432e9df53349a8702ed022c7b0bb4fd1d491ec8c615b25",
+    "receipt.json": "7f2e22962ff5758fce1a372090aa1393c21a5ca98e657bedd9ec826f454753b1"
+   }
+  }
+ },
+ "cli_version": "raw-native 0.6.0",
+ "gpu": false
+}

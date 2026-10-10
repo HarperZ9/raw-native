@@ -1,4 +1,5 @@
 #include "raw/tools/run.hpp"
+#include "raw/tools/model_scene.hpp"
 #include "raw/renderer/composite.hpp"
 #include "raw/core/image.hpp"
 #include "raw/core/sha256.hpp"
@@ -9,7 +10,7 @@
 #include <optional>
 namespace raw {
 FrameResult renderFromParams(const CliParams& p, Arena* arena){
-    Scene s = buildTestScene(p.width, p.height, arena);
+    Scene s = sceneFromParams(p, arena);
     s.camera = cameraFromParams(p);
     Mat4 curVP  = mul(s.camera.proj(), s.camera.view());
     Mat4 prevVP = curVP;                       // static frame -> honest zero motion

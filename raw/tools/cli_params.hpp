@@ -24,6 +24,10 @@ struct CliParams {
     int   bench{0};              // > 0: time this many renders, print JSON, write no files
     bool  gpu{false};            // render on the GPU backend and reconcile it against the CPU
     std::string gpuBackend;      // the backend's name for the certificate ("webgpu", "d3d12", "none")
+    // A glTF model (--model) in place of the built-in box, set on the same ground plane
+    // (raw/tools/model_scene.hpp). The certificate records its file name and SHA-256.
+    std::string model;
+    std::string modelSha256;     // filled in when --model is parsed
     // Previous camera for motion reprojection. Absent -> static frame (the
     // previous view equals the current view, so motion is honestly all-zero).
     std::optional<Vec3> prevEye;

@@ -1,3 +1,4 @@
+#include "raw/assets/json.hpp"
 #include "raw/renderer/texture_identity.hpp"
 #include "raw/rhi/rhi.hpp"
 #include "raw/renderer/raster.hpp"
@@ -79,6 +80,7 @@ static const char* kUsage =
     "  --no-rt                     skip the ray-traced reference; verdict is unverifiable\n"
     "  --threads <n>               render threads (default 1); output is identical for any n\n"
     "  --bench <runs>              time <runs> renders, print JSON, write no files\n"
+    "  --model <file.gltf|.glb>    render a glTF model on the ground plane in place of the box\n"
     "  --gpu                       render on the GPU backend (D3D12 or WebGPU builds only) and\n"
     "                              write gpu_certificate.json against the CPU reference in <out>/cpu\n"
     "  --params <file.json>        load parameters first; later flags override\n"
@@ -141,12 +143,23 @@ int main(int argc, char** argv){
         sizeof(float) + 3*sizeof(Vec3) + sizeof(std::uint8_t)   // gbuffer: depth+nrm/pos/alb+mask
         + sizeof(Vec2)                                          // gbuffer: motion plane
         + 3*sizeof(float) + 2*sizeof(Vec3);                     // aoRT + aoSS + errorMap + frame + hdr
-    std::size_t slabUB = (std::size_t)W*H*PER_PIXEL_UPPER*2 + (1u<<20);
-    std::vector<std::uint8_t> slab1(slabUB);
-    Arena measure(slab1.data(), slabUB);
-    try { (void)renderFromParams(p, &measure); }
-    catch (const std::bad_alloc&){ std::printf("measure pass overflowed slab - raise PER_PIXEL_UPPER\n"); return 2; }
-    std::size_t Hbytes = measure.stats().high_water;
+    // The per-pixel bound covers the built-in scene. A --model scene also holds the model's
+    // geometry and its acceleration structure, so the measure slab doubles until the
+    // render fits (up to 4 GiB, 2 GiB on WebAssembly); pass 2 still runs in exactly the measured footprint.
+    std::size_t slabUB = (std::size_t)W*H*PER_PIXEL_UPPER*2 + (1u<<20), Hbytes = 0;
+    for (;;){
+        std::vector<std::uint8_t> slab1(slabUB);
+        Arena measure(slab1.data(), slabUB);
+        try { (void)renderFromParams(p, &measure); Hbytes = measure.stats().high_water; break; }
+        catch (const std::bad_alloc&){
+            // The cap: 4 GiB, or 2 GiB where size_t is 32 bits (WebAssembly), where 1 << 32 would wrap to 0.
+            constexpr std::size_t CAP = sizeof(std::size_t) > 4 ? std::size_t(1) << (sizeof(std::size_t) > 4 ? 32 : 0) : std::size_t(1) << 31;
+            if (p.model.empty() || slabUB >= CAP / 2){
+                std::printf("measure pass overflowed slab - raise PER_PIXEL_UPPER\n"); return 2; }
+            slabUB *= 2;
+        }
+        catch (const raw::assets::AssetError& e){ std::printf("cannot load --model: %s\n", e.what()); return 2; }
+    }
 
     // PASS 2 - render within a budget of EXACTLY the measured footprint.
     std::vector<std::uint8_t> slab2(Hbytes);
