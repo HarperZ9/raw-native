@@ -138,7 +138,7 @@ endfunction()
 # each with its own profile and flags, embedded in raw_hw_dxil.hpp for src/rhi/d3d12/hw_*.cpp.
 function(raw_native_hw_shaders gen out_header)
     set(dir "${CMAKE_CURRENT_SOURCE_DIR}/src/rhi/d3d12/hw_shaders")
-    # name|source|profile|extra flags (semicolons in flags are spaces here)
+    # name|source|profile|extra flags|entry point (flags are space-separated; entry defaults to main)
     set(entries
         "hw_scan_wave|hw_scan_wave|cs_6_0|"
         "hw_scan_shared|hw_scan_shared|cs_6_0|"
@@ -149,6 +149,8 @@ function(raw_native_hw_shaders gen out_header)
         "hw_scan_level_shared|hw_scan_level|cs_6_0|-DMODE=0 -DDROP=0" "hw_scan_level_wave|hw_scan_level|cs_6_0|-DMODE=1 -DDROP=0"
         "hw_scan_level_drop|hw_scan_level|cs_6_0|-DMODE=1 -DDROP=1" "hw_scan_add|hw_scan_add|cs_6_0|"
         "hw_bilateral_fp32|hw_bilateral|cs_6_0|-DMODE=0" "hw_bilateral_fp16|hw_bilateral|cs_6_2|-enable-16bit-types -DMODE=1"
+        "hw_mesh_vs|hw_mesh|vs_6_5||vs" "hw_mesh_as|hw_mesh|as_6_5||as" "hw_mesh_as_flip|hw_mesh|as_6_5|-DCONE_FLIP=1|as"
+        "hw_mesh_ms|hw_mesh|ms_6_5||ms" "hw_mesh_ps|hw_mesh|ps_6_5||ps"
         "hw_async_p|hw_async|cs_6_0|-DMODE=0" "hw_async_w|hw_async|cs_6_0|-DMODE=1" "hw_async_c|hw_async|cs_6_0|-DMODE=2"
         "hw_busy|hw_busy|cs_6_0|-DFLAT=0"
         "hw_busy_flat|hw_busy|cs_6_0|-DFLAT=1")
@@ -166,9 +168,13 @@ function(raw_native_hw_shaders gen out_header)
             list(GET f 3 extra)
             separate_arguments(extra)
         endif()
+        set(entry main)   # optional fifth field: the entry point
+        if(nf GREATER 4)
+            list(GET f 4 entry)
+        endif()
         set(h "${gen}/hwdxil_${name}.h")
         add_custom_command(OUTPUT "${h}"
-            COMMAND "${RAW_NATIVE_DXC}" -T ${profile} -E main -HV 2021 -Gis -O3 -Qstrip_debug -Qstrip_reflect ${extra}
+            COMMAND "${RAW_NATIVE_DXC}" -T ${profile} -E ${entry} -HV 2021 -Gis -O3 -Qstrip_debug -Qstrip_reflect ${extra}
                     -Fh "${h}" -Vn "kHwDxil_${name}" "${dir}/${src}.hlsl"
             DEPENDS "${dir}/${src}.hlsl" VERBATIM
             COMMENT "dxc ${src}.hlsl (${name})")
@@ -203,7 +209,7 @@ if(RAW_NATIVE_GPU_D3D12)
     add_library(raw_native_d3d12 STATIC src/rhi/d3d12/d3d12_device.cpp src/rhi/d3d12/d3d12_commands.cpp
         src/rhi/d3d12/d3d12_raster.cpp src/rhi/d3d12/d3d12_texture.cpp
         src/renderer/gpu/shaders_dxil.cpp
-        src/rhi/d3d12/hw_queue.cpp src/rhi/d3d12/hw_probe.cpp src/rhi/d3d12/hw_checks.cpp src/rhi/d3d12/hw_rayquery.cpp src/rhi/d3d12/hw_async.cpp src/rhi/d3d12/hw_wave16.cpp
+        src/rhi/d3d12/hw_queue.cpp src/rhi/d3d12/hw_probe.cpp src/rhi/d3d12/hw_checks.cpp src/rhi/d3d12/hw_rayquery.cpp src/rhi/d3d12/hw_async.cpp src/rhi/d3d12/hw_wave16.cpp src/rhi/d3d12/hw_mesh.cpp
         ${RAW_NATIVE_DXIL_HEADERS} ${RAW_NATIVE_HW_DXIL_HEADERS})
     target_include_directories(raw_native_d3d12 PRIVATE "${gen}")
     target_link_libraries(raw_native_d3d12 PUBLIC raw_native d3d12 dxgi)

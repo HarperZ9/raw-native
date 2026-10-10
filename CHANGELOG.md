@@ -26,6 +26,10 @@ the day the release was published on GitHub, in UTC.
   - `RAW_NATIVE_HW_DISABLE` forces any feature off, and the fallbacks run and match.
   - Shader execution reordering and cooperative matrices have no query in the Windows SDK
     10.0.26100 headers, so they go through Vulkan.
+- **Mesh and amplification shaders** (HW H1.3). `raw_native_cli hw-mesh` draws a visibility buffer
+  with meshlet frustum and normal-cone culling. It matches vertex pulling bit for bit in triangle index
+  and depth on six views. **Open miss:** the flipped-cone control changes nothing in one view (hall,
+  close), where every visible meshlet has no cone. RTX timings are pending.
 - **Wave intrinsics and native fp16** (HW H1.2). `raw_native_cli hw-wave16` runs a full prefix sum of
   16.7 million values with wave intrinsics and with group-shared memory, plus a 9 x 9 HDR bilateral
   filter in fp16 and in fp32. The scans are bit-equal to the CPU, and fp16 stays within 2^-8 of fp32.

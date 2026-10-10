@@ -42,3 +42,8 @@ KernelRun bilateral(Device&, const std::vector<float>&, uint32_t, uint32_t, bool
     KernelRun r; r.error = "no hardware kernels on this backend"; return r;
 }
 }
+namespace raw::rhi::hw {
+VisDraw drawVisibility(Device&, const VisInput&, GeomPath, int, int){
+    VisDraw r; r.error = "no graphics pipelines beyond the RHI on this backend"; return r;
+}
+}

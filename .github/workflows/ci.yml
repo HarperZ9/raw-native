@@ -256,6 +256,12 @@ jobs:
         run: |
           RAW_NATIVE_D3D12_WARP=1 RAW_NATIVE_D3D12_DEBUG=1 build/Release/raw_native_cli.exe hw-wave16 --warmup 0 --repeats 1 --out hw-wave16.json > /dev/null
           RAW_NATIVE_D3D12_WARP=1 RAW_NATIVE_HW_DISABLE=wave_ops,native_16bit build/Release/raw_native_cli.exe hw-wave16 --warmup 0 --repeats 1 --out hw-wave16-off.json > /dev/null
+      - name: Mesh and amplification shaders on WARP draw the same visibility buffer as vertex pulling; the cone control is a recorded miss on one view (evidence/hw-h1-3-runs.json) (HW H1.3)
+        shell: bash
+        run: |
+          set +e; RAW_NATIVE_D3D12_WARP=1 RAW_NATIVE_D3D12_DEBUG=1 build/Release/raw_native_cli.exe hw-mesh --warmup 0 --repeats 1 --out hw-mesh.json > /dev/null; set -e
+          RAW_NATIVE_D3D12_WARP=1 RAW_NATIVE_HW_DISABLE=mesh_shader build/Release/raw_native_cli.exe hw-mesh --warmup 0 --repeats 1 --out hw-mesh-off.json > /dev/null
+          python scripts/hw_mesh_gate.py hw-mesh.json hw-mesh-off.json
       - name: Textures, samplers and raster passes on WARP match the CPU sampler reference (M2 criterion 3)
         shell: bash
         env:

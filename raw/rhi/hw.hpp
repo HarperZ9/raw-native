@@ -158,6 +158,28 @@ KernelRun scanFull(Device& dev, const std::vector<uint32_t>& in, ScanForm form, 
 // rgb: 3 floats a pixel. fp16: the native 16-bit form (needs native_16bit), else fp32.
 KernelRun bilateral(Device& dev, const std::vector<float>& rgb, uint32_t w, uint32_t h, bool fp16, int warmup, int repeats);
 
+// H1.3 (bounds in evidence/hw-h1-3-bounds.json): a visibility buffer drawn by vertex pulling or by
+// amplification and mesh shaders. Meshlets are 12 words each: first triangle, count, two pad
+// words, centre xyz, radius, cone axis xyz, cone half-angle (negative: no cone). Constants are
+// 48 words: view-projection rows (16), six frustum planes (24), eye xyz and a pad (4), meshlet
+// count and three pads (4), as src/rhi/d3d12/hw_shaders/hw_mesh.hlsl declares them.
+enum class GeomPath : uint8_t { Vertex, Mesh, MeshConeFlipControl };
+struct VisInput {
+    std::vector<float> triangles;       // 9 floats a triangle
+    std::vector<uint32_t> meshlets;     // 12 words a meshlet
+    uint32_t constants[48]{};
+    uint32_t width{0}, height{0};
+};
+struct VisDraw {
+    bool ran{false};
+    std::string error;
+    std::vector<uint32_t> ids;          // triangle index per pixel, 0xFFFFFFFF where nothing was drawn
+    std::vector<float> depth;
+    uint32_t keptMeshlets{0};           // mesh paths: survivors of the amplification shader (first draw)
+    std::vector<double> ms;
+};
+VisDraw drawVisibility(Device& dev, const VisInput& in, GeomPath path, int warmup, int repeats);
+
 // Triangles are 9 floats each (a, b, c). Hits are written for every ray.
 TraceResult traceRayQuery(Device& dev, const std::vector<float>& triangles, const std::vector<RayIn>& rays,
                           const TraceOptions& opt, std::vector<HitOut>& hits);
