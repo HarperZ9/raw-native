@@ -1,0 +1,70 @@
+{
+  "bounds": {
+    "max_abs_code": 6,
+    "p999_abs_code": 1,
+    "mean_abs_code": 0.05
+  },
+  "cases": [
+    {
+      "id": "500t-print",
+      "max": 1,
+      "p999": 0,
+      "mean": 7.716049382716049e-05,
+      "over1": 0,
+      "worstPixel": 3715,
+      "cpu_ms": 593
+    },
+    {
+      "id": "no-remjet-halation",
+      "max": 1,
+      "p999": 0,
+      "mean": 6.17283950617284e-05,
+      "over1": 0,
+      "worstPixel": 2453,
+      "cpu_ms": 597
+    },
+    {
+      "id": "bleach-bypass",
+      "max": 1,
+      "p999": 0,
+      "mean": 8.487654320987654e-05,
+      "over1": 0,
+      "worstPixel": 1556,
+      "cpu_ms": 586
+    },
+    {
+      "id": "250d-timed-overexposed",
+      "max": 1,
+      "p999": 0,
+      "mean": 6.944444444444444e-05,
+      "over1": 0,
+      "worstPixel": 8267,
+      "cpu_ms": 577
+    },
+    {
+      "id": "underexposed",
+      "max": 1,
+      "p999": 0,
+      "mean": 3.3436213991769545e-05,
+      "over1": 0,
+      "worstPixel": 8176,
+      "cpu_ms": 579
+    },
+    {
+      "id": "grain-monte-carlo-weave",
+      "max": 1,
+      "p999": 0,
+      "mean": 0.00051440329218107,
+      "over1": 0,
+      "worstPixel": 267,
+      "cpu_ms": 2748
+    }
+  ],
+  "adapter": {
+    "vendor": "google",
+    "architecture": "swiftshader",
+    "device": "",
+    "description": ""
+  },
+  "adapter_kind": "swiftshader"
+}
