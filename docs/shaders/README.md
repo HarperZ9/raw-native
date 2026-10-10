@@ -61,6 +61,23 @@ q.frame(plateRGBA8);   // q.packed: RGBA8 palette colours; await q.read() -> { i
 
 The Studio's tube stage (`retro-crt.js`) ported to the GPU pass for pass: beam scanlines and masks in 8.8 fixed point, bloom and halation in linear light, then warp, bezel, colour separation and vignette. On the committed frame set it is within one 8-bit code of `retro-crt.js`, and bit-equal where only integer paths run. Use it where a render must match the Studio exactly; use the physical tube for everything else.
 
+## Pixel art (`web/shaders/pixel/`)
+
+3D pixel art that stays still while the camera turns, orbits and dollies, for template (b). The method follows Ebert's "Texel Splatting: Perspective-Stable 3D Pixel Art" (arXiv 2603.14587, CC BY 4.0), reimplemented from the paper. The paper's demo code has no stated licence and was not read.
+
+| Pass | What it does |
+|---|---|
+| `capture` | A cubemap of the scene (N texels per face) from a probe at the camera position snapped to a world grid (`cell`). Each texel keeps its hit's Chebyshev distance, normal, material and object. |
+| `shade` | Each texel shaded once, independently of the camera: posterised OKLab lightness (`bands`), and selective outlines, a darker shade of the object's own colour, where a texel borders a farther object (`outline`) or a crease (`crease`). |
+| `splatz`, `splatid` | Every texel splatted as a world-space quad (corners at the texel's corner directions, at its depth, expanded by `expand`) into a visibility buffer. One pass finds the nearest depth key with atomics, the next the lowest texel index at that key. |
+| `resolve` | The texel's colour, or an eye ray for pixels no texel reaches. On a cell change a 4 x 4 Bayer threshold crossfades from the previous probe. The blend advances each frame by the larger of 1 / `fadeFrames` and the distance moved over `fadeCells` of a cell. The paper leaves the timing open, so this rule is this library's choice. |
+
+Within a cell, a texel keeps its colour as the view changes. Measured by reprojection (`pixel/stability.mjs`): on a small orbit, turn and dolly, 0.00% of compared pixels change colour with texel splatting, against 5.5%, 12.2% and 19.2% for naive pixelisation (the same shading rendered at low resolution and upscaled). At a cell change the probe moves, and texels shift. Slow cameras crossfade; fast ones switch within a frame.
+
+Limits: the scene is a raymarched SDF diorama (`pixel/scene.mjs`, with a WGSL twin), because raw-native has no mesh rasteriser yet. Geometry the probe cannot see is filled by eye rays, which can shimmer. Outlines stop at cube-face seams.
+
+`pixel/scale.mjs` covers roadmap S3. Integer upscaling is bit-equal to nearest neighbour on the GPU. Sharp-bilinear keeps texel interiors exact, blends one output pixel at each seam, and takes the subpixel camera offset of a snapped low-resolution render.
+
 ## Paint (`web/shaders/paint/`)
 
 Turns a rendered frame into a painting. Presets are media: `oil-grotesque` (template (a): thick, warped, outlined, broken colour, violet shadows against hansa lights), `oil`, `gouache` and `watercolour`.

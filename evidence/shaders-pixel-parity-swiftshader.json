@@ -1,0 +1,80 @@
+{
+  "bounds": {
+    "over2_fraction": 0.03,
+    "mean_abs_code": 2
+  },
+  "cases": [
+    {
+      "id": "orbit-front",
+      "over2_fraction": 0,
+      "mean": 0,
+      "max": 0,
+      "cpu_ms": 90,
+      "blend": 1
+    },
+    {
+      "id": "orbit-back",
+      "over2_fraction": 0,
+      "mean": 0,
+      "max": 0,
+      "cpu_ms": 74,
+      "blend": 1
+    },
+    {
+      "id": "turned-and-close",
+      "over2_fraction": 0.0005277777777777777,
+      "mean": 0.02146296296296296,
+      "max": 45,
+      "cpu_ms": 133,
+      "blend": 1
+    },
+    {
+      "id": "cell-crossfade",
+      "over2_fraction": 0,
+      "mean": 0,
+      "max": 0,
+      "cpu_ms": 205,
+      "blend": 1
+    },
+    {
+      "id": "slow-crossfade",
+      "over2_fraction": 0,
+      "mean": 0,
+      "max": 0,
+      "cpu_ms": 962,
+      "blend": 0.25
+    },
+    {
+      "id": "scale-integer-x3",
+      "over2_fraction": 0,
+      "mean": 0,
+      "max": 0
+    },
+    {
+      "id": "scale-integer-x7",
+      "over2_fraction": 0,
+      "mean": 0,
+      "max": 0
+    },
+    {
+      "id": "scale-sharp-2.37-offset",
+      "over2_fraction": 0,
+      "mean": 0,
+      "max": 1
+    },
+    {
+      "id": "scale-sharp-5.1",
+      "over2_fraction": 0,
+      "mean": 0,
+      "max": 1
+    }
+  ],
+  "adapter": {
+    "vendor": "google",
+    "architecture": "swiftshader",
+    "device": "",
+    "description": ""
+  },
+  "gpuErrors": [],
+  "adapter_kind": "swiftshader"
+}

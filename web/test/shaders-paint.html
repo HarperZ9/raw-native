@@ -56,8 +56,10 @@ async function timing(host) {
 }
 try {
   const host = await createHost({ timing: true });
+  const gpuErrors = []; host.device.onuncapturederror = (e) => gpuErrors.push(e.error.message);   // a validation error names itself instead of showing up as wrong pixels
   const res = q.get("timing") ? await timing(host) : await parity(host);
   res.adapter = host.info;
+  await host.done(); res.gpuErrors = gpuErrors;
   window.__result = res;
 } catch (e) { window.__result = { error: String(e && e.stack || e) }; }
 </script>
