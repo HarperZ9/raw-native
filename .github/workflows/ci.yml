@@ -439,6 +439,29 @@ jobs:
           c=$(sed 's/"renderer":"raw-native [^"]*"/"renderer":"raw-native"/' "$d/certificate.json" | sha256sum | cut -d' ' -f1)
           echo "certificate.json without its version string: $c"
           test "$c" = fd0f81417e7d6ce807e409292fe5b5a40a581e56ba9d80156420b77d6f87e5a3
+  shader-lab-2:
+    # Shader lab 2 techniques, GPU against their float64 CPU references on Chrome's CPU WebGPU
+    # adapter. Its own job, so the media-smoke time budget is unchanged.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Tools (Playwright drives the installed Chrome)
+        run: python -m pip install playwright==1.58.0
+      - name: Shader lab 2, development adjacency, GPU against the CPU reference within the committed bounds, on the CPU adapter
+        run: python tests/web/shaders_parity.py --shader adjacency --adapter swiftshader --out media-out/shaders-adjacency-parity.json
+      - name: Shader lab 2, scan-causal EHT sag, GPU against the CPU reference within the committed bounds, on the CPU adapter
+        run: python tests/web/shaders_parity.py --shader sag --adapter swiftshader --out media-out/shaders-sag-parity.json
+      - name: Shader lab 2, pigment-space lighting, GPU against the CPU reference within the committed bounds, on the CPU adapter
+        run: python tests/web/shaders_parity.py --shader lightpaint --adapter swiftshader --out media-out/shaders-lightpaint-parity.json
+      - name: Shader lab 2, interference glazes, GPU against the CPU reference within the committed bounds, on the CPU adapter
+        run: python tests/web/shaders_parity.py --shader glaze --adapter swiftshader --out media-out/shaders-glaze-parity.json
+      - name: Shader lab 2, hysteresis quantisation, GPU against the CPU reference within the committed bounds, on the CPU adapter
+        run: python tests/web/shaders_parity.py --shader hysteresis --adapter swiftshader --out media-out/shaders-hysteresis-parity.json
+      - name: Frame times on the CPU adapter, for the record (not a gate)
+        run: python tests/web/lab2_timing.py --adapter swiftshader --width 480 --height 300 --frames 5 --out media-out/shaders-lab2-timing.json
   media-smoke:
     # The release media path on a runner with no GPU: build, read the facts, record the
     # walkthrough, and render the first seconds of each scene on Chrome's CPU WebGPU adapter.
@@ -468,16 +491,6 @@ jobs:
         run: python tests/web/shaders_parity.py --shader pixel --adapter swiftshader --out media-out/shaders-pixel-parity.json
       - name: Shader library, VHS, GPU against the CPU reference within the committed bounds, on the CPU adapter
         run: python tests/web/shaders_parity.py --shader vhs --adapter swiftshader --out media-out/shaders-vhs-parity.json
-      - name: Shader lab 2, development adjacency, GPU against the CPU reference within the committed bounds, on the CPU adapter
-        run: python tests/web/shaders_parity.py --shader adjacency --adapter swiftshader --out media-out/shaders-adjacency-parity.json
-      - name: Shader lab 2, scan-causal EHT sag, GPU against the CPU reference within the committed bounds, on the CPU adapter
-        run: python tests/web/shaders_parity.py --shader sag --adapter swiftshader --out media-out/shaders-sag-parity.json
-      - name: Shader lab 2, pigment-space lighting, GPU against the CPU reference within the committed bounds, on the CPU adapter
-        run: python tests/web/shaders_parity.py --shader lightpaint --adapter swiftshader --out media-out/shaders-lightpaint-parity.json
-      - name: Shader lab 2, interference glazes, GPU against the CPU reference within the committed bounds, on the CPU adapter
-        run: python tests/web/shaders_parity.py --shader glaze --adapter swiftshader --out media-out/shaders-glaze-parity.json
-      - name: Shader lab 2, hysteresis quantisation, GPU against the CPU reference within the committed bounds, on the CPU adapter
-        run: python tests/web/shaders_parity.py --shader hysteresis --adapter swiftshader --out media-out/shaders-hysteresis-parity.json
       - name: The sound engine's live path (AudioWorklet in Chrome) matches its offline render within the PCM tolerance
         run: |
           node web/sound/smoke.mjs build/sound-smoke
