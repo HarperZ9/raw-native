@@ -1,0 +1,33 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "M3 dated addition 6 (materials), second stage, by the author's decision of 2026-10-10: \"keep engine versions, and improve them.\" The 8-harmonic iridescence and the symmetric clearcoat and transmission weights stay the default; the specification's forms stay behind Material::specExact only as a comparison control. This file sets bounds on where the engine's forms still err, against references closer to the physics than the existing ones.",
+ "written": "2026-10-10, after exploration probes (recorded below as exploration, not results) and before any change to the material model",
+ "exploration": {
+  "iridescence": "Against an exact polarized Airy reference (dielectric base, real indices, s and p averaged, CIE 1931 by the Wyman-Sloan-Shirley fit, white-balanced), the fast path errs by up to 0.16 to 0.26 per channel at cos 0.1 to 0.3, and by 0.02 to 0.03 at normal incidence. The existing spectral reference shares the fast path's Schlick interfaces, so it agrees with the fast path to 0.03 and misses this.",
+  "clearcoat": "A white metal (isotropic or anisotropic) under a clear coat loses up to 23% of its energy with the default coat (0.13 with the specification's form): light the coat reflects back down is never returned. The worst case is at grazing view under a smooth coat.",
+  "volume": "Beer-Lambert attenuation is applied as exp(-thickness / distance * ln c) for every direction; the path through the medium is thickness / |cos theta_t|, so oblique and rough transmission is attenuated too little."
+ },
+ "checks": {
+  "iridescence_exact": {
+   "what": "the iridescent Fresnel against a float64 exact reference: polarized Airy summation of a film on a dielectric base (indices 1.33, 1.5 and 2.0), film ior 1.2 to 2.0 by 0.2, thickness 100 to 1000 nm by 50, cos theta 0.02, 0.05, 0.1, 0.2, 0.3, 0.5, 0.7 and 1, 380 to 780 nm by 1 nm, the same colour matching fit, white-balanced so a constant spectrum stays grey",
+   "bound": "max |difference| per channel <= 0.04",
+   "control": "the present fast path (Schlick interfaces) and the specification's two-harmonic form must both fail it"
+  },
+  "clearcoat_energy": {
+   "what": "white metal, anisotropy 0, 0.3, 0.6 and 1.0, base roughness 0.2, 0.6 and 1.0, under clearcoat 0.5 and 1 with coat roughness 0.05, 0.3 and 1.0, view cosine 0.05, 0.2, 0.5 and 1, azimuth 0, 45 and 90 degrees from the anisotropy direction, albedo by the test_pbr_energy quadrature",
+   "bound": "|albedo - 1| <= 2e-2 (the anisotropic furnace's bound) and albedo <= 1 + 1e-3",
+   "control": "the specification's coat (specExact) must fail it"
+  },
+  "volume_path_length": {
+   "what": "energy transmitted into a volume and carried to the depth of its thickness: the rough dielectric interface's transmission (ior 1.5, roughness 0.05, 0.25, 0.5 and 1, view cosine 0.1 to 1 by 0.1) with Beer-Lambert attenuation along each refracted direction's own path, thickness / |cos theta_t|, integrated by quadrature over the refracted directions (the reference); attenuation colour 0.5 at distances giving thickness / distance = 0.25, 1 and 2",
+   "bound": "|model - reference| <= 5e-3 absolute, per channel, at every point",
+   "control": "attenuation applied without the path-length term (the present model) must fail it"
+  },
+  "no_regression": {
+   "what": "test_pbr_energy --full, test_pbr_reciprocity and the GPU material parity on WARP and SwiftShader after the changes",
+   "bound": "every existing bound still met"
+  }
+ },
+ "not_covered_yet": "Thin-walled transmission against a path-traced thin slab (two rough interfaces with internal bounces), and iridescence on metal bases against complex indices. Both are named here so they are not forgotten; each gets bounds before its own first run.",
+ "does_not_prove": "That the forms match other renderers or the Khronos sample viewer; perceptual differences; anything about textures or normal maps."
+}
