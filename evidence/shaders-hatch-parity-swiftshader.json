@@ -1,0 +1,46 @@
+{
+  "bounds": {
+    "over2_fraction": 0.005,
+    "mean_abs_code": 0.5
+  },
+  "cases": [
+    {
+      "id": "stilllife-engraving",
+      "max": 1,
+      "p999": 0,
+      "mean": 0.0007239583333333333,
+      "over1": 0,
+      "over2": 0,
+      "n": 192000,
+      "over2_fraction": 0
+    },
+    {
+      "id": "stilllife-crosshatch",
+      "max": 2,
+      "p999": 0,
+      "mean": 0.000625,
+      "over1": 1,
+      "over2": 0,
+      "n": 192000,
+      "over2_fraction": 0
+    },
+    {
+      "id": "stilllife-ink",
+      "max": 2,
+      "p999": 0,
+      "mean": 0.001,
+      "over1": 3,
+      "over2": 0,
+      "n": 192000,
+      "over2_fraction": 0
+    }
+  ],
+  "adapter": {
+    "vendor": "google",
+    "architecture": "swiftshader",
+    "device": "",
+    "description": ""
+  },
+  "gpuErrors": [],
+  "adapter_kind": "swiftshader"
+}
