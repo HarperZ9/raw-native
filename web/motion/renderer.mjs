@@ -13,6 +13,7 @@ import { VECTOR_WGSL, PARTICLE_WGSL, SPRITE_WGSL, LAYER_BUFFER_WGSL, LAYER_TEXTU
 import { ParticleSystem } from "./particles.mjs";
 import { PostRunner } from "./post_run.mjs";
 import { getPass } from "./post.mjs";
+import { ColourFinish } from "./colour_finish.mjs";
 
 const HDR = "rgba16float";
 const OVER = { color: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }, alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" } };
@@ -41,12 +42,12 @@ class Motion {
     const post = (fs, format) => rp("motion " + fs, POST_WGSL, fs, format, undefined, "triangle-list");
     const outFormat = this.host.format || "rgba8unorm";
     [this.vecOver, this.vecAdd, this.spriteAdd, this.spriteOver, this.layerBuf, this.layerTex, this.bright, this.blurx, this.blury,
-      this.finishCanvas, this.finishCapture, this.finishHDR, this.partPipe] = await Promise.all([
+      this.finishCanvas, this.finishCapture, this.finishHDR, this.finishLinear, this.partPipe] = await Promise.all([
       rp("motion vector over", VECTOR_WGSL, "fs", HDR, OVER), rp("motion vector add", VECTOR_WGSL, "fs", HDR, ADD),
       rp("motion sprite add", SPRITE_WGSL, "fs", HDR, ADD), rp("motion sprite over", SPRITE_WGSL, "fs", HDR, OVER),
       rp("motion layer buffer", LAYER_BUFFER_WGSL, "fs", HDR, OVER, "triangle-list"),
       rp("motion layer texture", LAYER_TEXTURE_WGSL, "fs", HDR, OVER, "triangle-list"),
-      post("bright", HDR), post("blurx", HDR), post("blury", HDR), post("finish", outFormat), post("finish", "rgba8unorm"), post("finish", HDR),
+      post("bright", HDR), post("blurx", HDR), post("blury", HDR), post("finish", outFormat), post("finish", "rgba8unorm"), post("finish", HDR), post("finishLinear", HDR),
       d.createComputePipelineAsync({ label: "motion particles", layout: "auto", compute: { module: mod(PARTICLE_WGSL, "particles"), entryPoint: "main" } }),
     ]);
     this.outFormat = outFormat;
@@ -56,6 +57,8 @@ class Motion {
     this.sampler = d.createSampler({ magFilter: "linear", minFilter: "linear", addressModeU: "clamp-to-edge", addressModeV: "clamp-to-edge" });
     this.images = {};
     this.post = new PostRunner(this.host, this.sampler);
+    this.colour = new ColourFinish(d);
+    await this.colour.load();
     this.#atlas(1);
   }
   // The image atlas that image paints sample: one rgba8unorm texture, filled in shelves.
@@ -109,6 +112,7 @@ class Motion {
       bright: b(this.bright, this.postU[0], this.accum), blurx: b(this.blurx, this.postU[1], this.glowA), blury: b(this.blury, this.postU[2], this.glowB),
       finishCanvas: b(this.finishCanvas, this.postU[3], this.accum, this.glowA), finishCapture: b(this.finishCapture, this.postU[3], this.accum, this.glowA),
       finishHDR: b(this.finishHDR, this.postU[3], this.accum, this.glowA),
+      finishLinear: b(this.finishLinear, this.postU[3], this.accum, this.glowA),
     };
     return this.postBind;
   }
@@ -203,13 +207,23 @@ class Motion {
     full(this.glowA.createView(), this.bright, pb.bright, "bloom");
     full(this.glowB.createView(), this.blurx, pb.blurx, null);
     full(this.glowA.createView(), this.blury, pb.blury, null);
-    if (displayPasses.length) {
-      if (!this.dispTex || this.dispTex.width !== W || this.dispTex.height !== H) {
-        if (this.dispTex) this.dispTex.destroy();
-        this.dispTex = d.createTexture({ label: "motion display", size: [W, H], format: HDR, usage: TEX.RENDER | TEX.BIND | TEX.COPY_SRC });
-      }
-      full(this.dispTex.createView(), this.finishHDR, pb.finishHDR, "finish");
-      this.post.run(enc, displayPasses, this.dispTex, W, H, frame, time, { view: target, format: capture ? "rgba8unorm" : this.outFormat }, "display", scenePasses.length);
+    const outFmt = capture ? "rgba8unorm" : this.outFormat;
+    const tex2 = (key) => {
+      const t = this[key];
+      if (t && t.width === W && t.height === H) return t;
+      if (t) t.destroy();
+      return (this[key] = d.createTexture({ label: "motion " + key, size: [W, H], format: HDR, usage: TEX.RENDER | TEX.BIND | TEX.COPY_SRC }));
+    };
+    if (post.colour) {
+      // Colour-managed: a linear finish, the tone mapper and encoding, then display passes.
+      full(tex2("linTex").createView(), this.finishLinear, pb.finishLinear, "finish");
+      if (displayPasses.length) {
+        this.colour.run(enc, post.colour, this.linTex, tex2("dispTex").createView(), HDR);
+        this.post.run(enc, displayPasses, this.dispTex, W, H, frame, time, { view: target, format: outFmt }, "display", scenePasses.length);
+      } else this.colour.run(enc, post.colour, this.linTex, target, outFmt);
+    } else if (displayPasses.length) {
+      full(tex2("dispTex").createView(), this.finishHDR, pb.finishHDR, "finish");
+      this.post.run(enc, displayPasses, this.dispTex, W, H, frame, time, { view: target, format: outFmt }, "display", scenePasses.length);
     } else full(target, capture ? this.finishCapture : this.finishCanvas, capture ? pb.finishCapture : pb.finishCanvas, "finish");
     let read = null;
     if (capture) {
@@ -255,7 +269,8 @@ class Motion {
   timings() { return this.host.timings(); }
   destroy() {
     for (const b of Object.values(this.gpu)) b.destroy();
-    for (const t of [this.accum, this.glowA, this.glowB, this.capTex, this.worldTex, this.atlasTex, this.dispTex]) if (t) t.destroy();
+    for (const t of [this.accum, this.glowA, this.glowB, this.capTex, this.worldTex, this.atlasTex, this.dispTex, this.linTex]) if (t) t.destroy();
     this.post.destroy();
+    this.colour.destroy();
   }
 }

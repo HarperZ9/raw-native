@@ -244,6 +244,11 @@ the browser's hardware encoder. On an RTX 4090 the 24-second demo renders at
 3840 x 2160 in 30 s, about 25 ms a frame. Motion is creative media: no
 certificate (ADR 0011).
 
+With `post.colour` set to a colour pipeline, such as `"aces2-sdr/srgb"`, a scene's
+colours are scene-linear Rec.709 light. The finish keeps them linear, and the
+frame is tone-mapped and encoded by the same WGSL the colour tests hold to the C++
+reference. Without it, colours stay display values, as before.
+
 A display list can name post passes in `post.passes`. Scene passes run in linear
 light before bloom, and display passes run after the finish. The shader library
 registers the looks (CRT, film, dither) through `registerPass()` in
