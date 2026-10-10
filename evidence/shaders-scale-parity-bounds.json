@@ -1,0 +1,13 @@
+{
+  "what": "GPU pixel-perfect scaling (SCALE_WGSL in web/shaders/pixel/scale.mjs) against its CPU reference",
+  "fixed_before_first_run": "2026-10-10",
+  "roadmap": "S3: integer upscale bit-equal to a nearest-neighbour reference",
+  "source": "fixtures/plates.mjs gradientPlate(80, 45)",
+  "cases": [
+    { "id": "integer-x3", "mode": "integer", "w": 240, "h": 135 },
+    { "id": "integer-x7", "mode": "integer", "w": 560, "h": 315 },
+    { "id": "sharp-2.37-offset", "mode": "sharp", "w": 190, "h": 107, "offX": 0.3, "offY": -0.45 },
+    { "id": "sharp-5.1", "mode": "sharp", "w": 408, "h": 229, "offX": 0, "offY": 0 }
+  ],
+  "bounds": { "integer_max_abs_code": 0, "sharp_max_abs_code": 1 }
+}
