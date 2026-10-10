@@ -15,6 +15,7 @@ import { ParticleSystem } from "./particles.mjs";
 import { PostRunner } from "./post_run.mjs";
 import { getPass } from "./post.mjs";
 import { ColourFinish } from "./colour_finish.mjs";
+import { TileDraw } from "./tiles_gpu.mjs";
 
 const HDR = "rgba16float";
 const OVER = { color: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }, alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" } };
@@ -59,6 +60,7 @@ class Motion {
     this.images = {};
     this.post = new PostRunner(this.host, this.sampler);
     this.colour = new ColourFinish(d);
+    this.tiles = new TileDraw(d, HDR, OVER);
     await this.colour.load();
     this.#atlas(1);
   }
@@ -140,7 +142,7 @@ class Motion {
     const paints = this.#ensure("paints", c.paints.byteLength);
     if (c.paints.byteLength) host.write(paints, c.paints);
     // Layers that render with their own submits go first.
-    let li = 0;
+    let li = 0, tslot = 0;
     for (const r of c.runs) {
       if (r.kind === "threads" && this.threads) this.threads.frame(r.item.dt ?? 1 / 30);
       if (r.kind === "world" && this.worlds) this.#drawWorld(r.item, W, H);
@@ -175,6 +177,8 @@ class Motion {
         rp.setPipeline(this.layerBuf);
         rp.setBindGroup(0, host.bind(this.layerBuf, [u, th.frameBuf]));
         rp.draw(3);
+      } else if (r.kind === "tilemap") {
+        tslot = this.tiles.draw(rp, r.item, cam, W, H, this.design, this.images, this.atlasView, tslot);
       } else if (r.kind === "world" && this.worldTex) {
         const u = this.layerU[li++ % 4];
         host.write(u, new Float32Array([W, H, 0, 0, W, H, 0, 0, r.item.opacity ?? 1, (r.item.blur || 0) * W / this.design[0], 0, 0]));

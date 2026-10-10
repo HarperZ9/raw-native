@@ -19,6 +19,7 @@ function bytesUp(f, k) {
 }
 try {
   const host = await createHost({ timing: false });
+  const gpuErrors = []; host.device.onuncapturederror = (e) => gpuErrors.push(e.error.message);   // a validation error names itself instead of showing up as wrong pixels
   const bounds = await (await fetch("../../evidence/shaders-crt-classic-parity-bounds.json")).json();
   const frames = { card4: bytesUp(testCard(240, 150), 4), card3: bytesUp(testCard(320, 200), 3), gradient: gradientPlate(960, 600) };
   const cases = [];
@@ -30,6 +31,7 @@ try {
     for (let i = 0; i < want.length; i++) { if ((i & 3) === 3) continue; const d = Math.abs(want[i] - got[i]); if (d > max) { max = d; at = i >> 2; } if (d > 1) over++; }
     cases.push({ id: c.id, max, over1: over, worstPixel: at, p999: 0, mean: 0 });
   }
-  window.__result = { bounds: { max_abs_code: bounds.bounds.max_abs_code, p999_abs_code: 255, mean_abs_code: 255 }, cases, adapter: host.info };
+  await host.done();
+  window.__result = { bounds: { max_abs_code: bounds.bounds.max_abs_code, p999_abs_code: 255, mean_abs_code: 255 }, cases, adapter: host.info, gpuErrors };
 } catch (e) { window.__result = { error: String(e && e.stack || e) }; }
 </script>
