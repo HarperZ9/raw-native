@@ -78,6 +78,11 @@
   "written": "2026-10-10 18:54Z, before any hybrid code or run",
   "method": "A GPU pass (swr_gbuffer) turns the R1 GPU visibility buffer into world position, geometric normal and shading normal, by the perspective-correct source weights of R1's resolve. A second pass (pt_hybrid) casts from each covered pixel: a sun shadow ray (any hit, unbounded) and one mirror reflection ray about the shading normal (closest hit). Rays start at the position offset along the geometric normal by the path tracer's rule, 2e-4 (1 + max |p|), toward the ray's side. The CPU reference interpolates its own positions and normals from the CPU R1 visibility buffer (bit-identical to the GPU's by C4) and casts with the CPU traversal (shadows) and a brute-force scan (reflections). Scenes retro_room and iso_street at 256 x 256, R1 modern options.",
   "H1_note": "The sun is directional, so the 'light-side limit' exemption of H1 does not apply; only the grazing exemption (|n . l| < 1e-3, geometric normal) is counted.",
-  "H2_note": "The edge exemption uses the visible slot's screen-space edges, as C2 and P4 do; reflection hits that miss on both sides count as agreeing."
+  "H2_note": "The edge exemption uses the visible slot's screen-space edges, as C2 and P4 do; reflection hits that miss on both sides count as agreeing.",
+  "H2_method_note_1": {
+   "written": "2026-10-10 18:57Z, after the first hybrid run and before the second",
+   "finding": "The committed H2 control (reflection about the negated normal) cannot fail: r = d - 2 (d . n) n is unchanged when n is negated. In the first run it agreed on every pixel, so H2 had no working control and is reported as non-discriminating for that run.",
+   "change": "The H2 control becomes reflection about the shading normal tilted by 0.05 rad toward its basis tangent (Duff et al. 2017), which must fail H2. The H1 control is unchanged; it failed in the first run through the grazing clause only (4 and 13 non-grazing differences, below 0.1%), which is recorded as weak. Bounds unchanged."
+  }
  }
 }
