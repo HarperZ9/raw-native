@@ -124,6 +124,8 @@ def statement(code, ptr_params):
         zero = "0.0f" if et == "float" else "0"
         return f"{et} {m.group(1)}[{n}] = {{{', '.join([zero] * n)}}};"
     code = re.sub(r"\bvar\s+(\w+)\s*:\s*array<\s*(\w+)\s*,\s*(\d+)\s*>\s*;", array_var, code)
+    # var x: Struct;  WGSL zero-initialises it, HLSL must be told
+    code = re.sub(r"\bvar\s+(\w+)\s*:\s*([A-Z]\w*)\s*;", lambda m: f"{m.group(2)} {m.group(1)} = ({m.group(2)})0;", code)
 
     def decl(m):
         t, suffix = htype(m.group(3))
@@ -197,16 +199,20 @@ def signature(line, attrs):
     head, sem = "", ""
     if attrs in ("@vertex", "@fragment"):
         want = "@builtin(position)" if attrs == "@vertex" else "@location(0)"
-        if ret_attr != want or ret != "vec4f":
-            raise TranslateError(f"{attrs} entry points return {want} vec4f: {line.strip()!r}")
-        sem = " : SV_Position" if attrs == "@vertex" else " : SV_Target0"
+        # RHI version 3: an entry point may return a struct whose fields carry the semantics
+        # (a vertex output with @builtin(position); fragment targets in a struct named *Targets).
+        struct_ok = ret_attr is None and ret and re.fullmatch(r"[A-Z]\w*", ret) and (attrs == "@vertex" or ret.endswith("Targets"))
+        if not struct_ok and (ret_attr != want or ret != "vec4f"):
+            raise TranslateError(f"{attrs} entry points return {want} vec4f or a struct: {line.strip()!r}")
+        if not struct_ok:
+            sem = " : SV_Position" if attrs == "@vertex" else " : SV_Target0"
     elif attrs:
         wg = re.search(r"@workgroup_size\(([^)]*)\)", attrs)
         if "@compute" not in attrs or not wg:
             raise TranslateError(f"unsupported attributes {attrs!r}")
         dims = [d.strip() for d in wg.group(1).split(",")] + ["1", "1"]
         head = f"[numthreads({dims[0]}, {dims[1]}, {dims[2]})]\n"
-    if ret_attr and not sem:
+    if ret_attr and not sem and attrs not in ("@vertex", "@fragment"):
         raise TranslateError(f"a return attribute outside an entry point: {line.strip()!r}")
     rt = htype(ret)[0] if ret else "void"
     lead = line[:len(line) - len(line.lstrip())]
