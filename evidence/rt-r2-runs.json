@@ -124,6 +124,20 @@
    "checks": "H1, H2",
    "result": "identical counts to run 13 on every case",
    "evidence": "evidence/rt-r2-hybrid-gpu-webgpu-swiftshader.json"
+  },
+  {
+   "run": 15,
+   "when": "2026-10-10 19:56Z (lock held 19:56:21Z to 19:56:41Z)",
+   "backend": "D3D12 on the RTX 4090 (driver 610.88), under D:/gpu.lock.d, binaries at 669db8c",
+   "checks": "B1 to B3, P1 to P4, H1 and H2; and a 1280 x 720, 1024 spp rt-pathtrace of dense_block",
+   "result": "B1 to B3 pass: identical trees on all five scenes (dense_block built in 40 ms with transfers and a host sync a round); traversal exact, using the tie exemption on 2, 7, 1 and 393 rays; P1 to P3 pass as on WARP (P2 retro_room mean |z| 0.819); P4 the same open failure (132 and 134 albedo pixels, float64 sides with the path tracer on 132 and 129); H1 and H2 pass with 0 differences. The rt-pathtrace render exited 2 about 5 s in, with no output written.",
+   "diagnosis": "Inferred, not confirmed (the job sent stdout to /dev/null, so the message was lost): pathTraceGpu recorded every slice of the 1024 spp into one submission, long enough at 1280 x 720 to trip the Windows GPU watchdog (TDR, 2 s by default); WARP has no watchdog, so the local runs never showed it.",
+   "change": "pathTraceGpu submits each slice separately; on WARP the parity results are identical. The next RTX job keeps stdout.",
+   "evidence": [
+    "evidence/rt-r2-bvh-gpu-d3d12-rtx4090.json",
+    "evidence/rt-r2-pt-gpu-d3d12-rtx4090.json",
+    "evidence/rt-r2-hybrid-gpu-d3d12-rtx4090.json"
+   ]
   }
  ]
 }
