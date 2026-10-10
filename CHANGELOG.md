@@ -6,6 +6,18 @@ the day the release was published on GitHub, in UTC.
 
 ## Unreleased
 
+- **Lighting** (roadmap M3).
+  - Punctual lights use physical units (lux and candela, after KHR_lights_punctual), with
+    clustered assignment on the GPU. No light is ever missing from its cluster, and clustered
+    shading equals brute force.
+  - Image lighting is a split sum from the material model's own energy tables. It reads a
+    seamless, GGX-prefiltered cube along the BRDF lobe's centroid. Against importance-sampled
+    integration the median error is 1.6% and the 95th percentile is 16.9%.
+  - The GPU matches the float64 reference on D3D12 WARP and on WebGPU (SwiftShader). Run the
+    check with `raw_native_cli lighting-parity`.
+  - `raw_native_cli material-gallery` renders 49 spheres in seven material families as PNG
+    and PFM, from the reference and from the GPU.
+
 - **Physically based materials** (roadmap M3). The glTF 2.0 material model with the ratified
   material extensions (ior, specular, clearcoat, sheen, transmission, volume, anisotropy,
   iridescence, emissive strength), as a float64 reference and as WGSL for the GPU.

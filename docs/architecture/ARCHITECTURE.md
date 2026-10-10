@@ -217,6 +217,28 @@ path, the way the CPU renderer is the oracle for frames.
   alone, which breaks reciprocity). Bounds and every run, failures included:
   `evidence/m3-materials-*.json`.
 
+## Lighting
+
+`raw/renderer/lighting.hpp` is the lighting reference, in view space and physical units.
+
+- **Punctual lights** follow KHR_lights_punctual: directional lights in lux, point and spot
+  lights in candela, with the specification's spot falloff and a squared range window. A
+  physical camera turns EV100 into exposure.
+- **Clusters.** 16 x 9 x 24 view-space froxels with exponential depth slices. Each holds up
+  to 256 lights, the clustered path's per-scene limit, so no list is ever cut. The GPU pass
+  `light_cluster` builds the same lists, and shading from a list equals shading from every
+  light.
+- **Image lighting** uses the split sum with the material model's own energy terms. The
+  environment is a cube map in a buffer. It is GGX-prefiltered (`light_prefilter`, with
+  host-computed sample directions), sampled seamlessly across faces, and read along the
+  centroid of the BRDF's lobe. Diffuse light comes from order-2 spherical harmonics. The
+  reference is the full material integrated by multiple importance sampling.
+- **Shading** of arbitrary surface samples (`pbr_shade`) runs clustered lights and image
+  lighting in one pass. `raw_native_cli lighting-parity` checks the clusters, the prefilter
+  and the shading against the float64 reference. `raw_native_cli material-gallery` renders
+  the showcase: 49 spheres in seven material families, drawn by both paths from the same
+  samples. Bounds and every run, failures included: `evidence/m3-lighting-*.json`.
+
 ## Verification as the engine grows
 
 - **Every feature has a reference.** The CPU renderer is a layer of the engine,
