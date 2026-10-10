@@ -12,13 +12,14 @@ import { createHost } from "../raw-gpu.mjs";
 import { createPaint, encodePaint8 } from "../shaders/paint/paint.mjs";
 import { createGpuPaint } from "../shaders/paint/gpu.mjs";
 import { streetScene, motionVectors } from "../shaders/fixtures/street.mjs";
+import { frameSet } from "../../tests/web/post_frames.mjs";
 
 const q = new URLSearchParams(location.search);
 function stats(a, b) {
   const hist = new Uint32Array(256); let sum = 0, n = 0, max = 0, at = -1;
   for (let i = 0; i < a.length; i++) { if ((i & 3) === 3) continue; const d = Math.abs(a[i] - b[i]); hist[d]++; sum += d; n++; if (d > max) { max = d; at = i >> 2; } }
   let acc = 0, p999 = 0; for (let d = 0; d < 256; d++) { acc += hist[d]; if (acc >= n * 0.999) { p999 = d; break; } }
-  return { max, p999, mean: sum / n, over1: n - hist[0] - hist[1], worstPixel: at };
+  return { max, p999, mean: sum / n, over1: n - hist[0] - hist[1], over2: n - hist[0] - hist[1] - hist[2], worstPixel: at };
 }
 async function parity(host) {
   const bounds = await (await fetch("../../evidence/shaders-paint-parity-bounds.json")).json();
@@ -53,7 +54,17 @@ async function parity(host) {
     const st = stats(want, got), b = mb.bounds;
     cases.push({ id: "motion-" + c.id, ...st, cpu_ms: 0, motionBounds: true, pass: st.max <= b.max_abs_code && st.p999 <= b.p999_abs_code && st.mean <= b.mean_abs_code });
   }
-  return { bounds: bounds.bounds, motionBounds: mb.bounds, cases };
+  // The engine's committed post frames (large flat areas, one-pixel lines, hard edges).
+  const pb = await (await fetch("../../evidence/shaders-paint-postframes-parity-bounds.json")).json(), fs = frameSet();
+  for (const c of pb.cases) {
+    if (only && "post-" + c.id !== only) continue;
+    const scene = { width: fs.width, height: fs.height, data: fs.data[fs.names.indexOf(c.frame)] }, o = { w: fs.width, h: fs.height };
+    const want = encodePaint8(createPaint(c.preset, {}, o).frame(scene).img, o.w, o.h), gpu = await createGpuPaint(host, c.preset, {}, o);
+    gpu.frame(scene.data); const got = (await gpu.read()).packed; gpu.destroy();
+    const st = stats(want, got), b = pb.bounds;
+    cases.push({ id: "post-" + c.id, ...st, cpu_ms: 0, motionBounds: true, pass: st.max <= b.max_abs_code && st.over2 <= b.over2_count && st.mean <= b.mean_abs_code });
+  }
+  return { bounds: bounds.bounds, motionBounds: mb.bounds, postBounds: pb.bounds, cases };
 }
 async function timing(host) {
   const W = +q.get("w") || 1920, H = +q.get("h") || 1080, frames = +q.get("frames") || 60, sm = streetScene(W >> 2, H >> 2, 0);
