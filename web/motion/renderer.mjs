@@ -256,6 +256,7 @@ class Motion {
   }
   // Draw off screen and return { width, height, data: Uint8Array RGBA rows }.
   async capture(list, opts = {}) {
+    await this.post.prepare((list.post && list.post.passes) || [], this.w, this.h);
     if (!this.capTex) this.capTex = this.device.createTexture({ label: "motion capture", size: [this.w, this.h], format: "rgba8unorm", usage: TEX.RENDER | TEX.COPY_SRC });
     const r = this.#frame(list, opts, this.capTex.createView(), true);
     await r.buf.mapAsync(1);
