@@ -125,7 +125,7 @@ every backend it names.
 
 | Criterion | Status | Evidence |
 |---|---|---|
-| 1. Scenes verified, path-traced error recorded | Open: not started; the model substitution waits on the author | `evidence/m3-scene-models.json` |
+| 1. Scenes verified, path-traced error recorded | Open. The owned assets exist and pass their checks (`evidence/m3-assets-runs.json`); the verified renders and path-traced errors are not started | `evidence/m3-assets-bounds.json` |
 | 2. TAA ghosting and RMSE | Ghosting passes. **Open failure**: pan RMSE 0.735 of single-sample (bound 0.5); GPU parity drifts (31 of 16,384 pixels, bound 16) | `evidence/m3-post-runs.json` |
 | 3. Aliasing and the validation layer | Open: not started | |
 | 4. The Studio viewer (A4) | Open: not started | |

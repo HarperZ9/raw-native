@@ -1,13 +1,13 @@
 // Cascaded shadow maps against ray-cast visibility (evidence/m3-shadows-bounds.json), on the CPU:
 // cascade stability under a camera pan and turn, hard shadows, and PCSS soft shadows.
-//   test_shadows [--full] [--json] [--models DIR]
-// --models adds Suzanne and the helmet role's model (evidence/m3-scene-models.json) to the hard
-// and soft checks; without --full the hard and soft checks use every fourth pixel.
+//   test_shadows [--full] [--json] [--scene-stats]
+// Scenes (method note 6): the test scene from two cameras, raw-hero in the test scene and raw-hall
+// from its nave; without --full the hard and soft checks use every fourth pixel.
 #include "raw/renderer/shadows.hpp"
 #include "raw/renderer/raster.hpp"
 #include "raw/renderer/bvh.hpp"
 #include "raw/tools/model_scene.hpp"
-#include "raw/tools/model_manifest.hpp"
+#include "raw/tools/owned_assets.hpp"
 #include "raw/core/parallel.hpp"
 #include "check.hpp"
 #include <algorithm>
@@ -188,10 +188,8 @@ SceneResult visibilityChecks(const std::string& name, const Scene& sc, int strid
 
 int main(int argc, char** argv) {
     bool json = false, full = false, stats = false;
-    std::string models;
     for (int i = 1; i < argc; ++i) {
         json = json || !std::strcmp(argv[i], "--json"); full = full || !std::strcmp(argv[i], "--full");
-        if (!std::strcmp(argv[i], "--models") && i + 1 < argc) models = argv[++i];
         stats = stats || !std::strcmp(argv[i], "--scene-stats");
     }
     full = full || json;
@@ -199,13 +197,9 @@ int main(int argc, char** argv) {
     std::vector<std::pair<std::string, Scene>> scenes{{"built-in test scene", sceneFromParams(p, nullptr)}};
     scenes.push_back({"test scene, near camera", scenes[0].second});   // method note 2: cascade 0 in use
     scenes[1].second.camera.eye = {1.8f, 3.2f, 2.4f}; scenes[1].second.camera.center = {0.8f, 0.2f, 1.0f};   // method note 5
-    if (!models.empty()) {
-        std::string err;
-        p.model = models + "/Models/Suzanne/glTF/Suzanne.gltf";
-        scenes.push_back({"Suzanne", sceneFromParams(p, nullptr)});
-        p.model = resolveModelRole(std::string(RAW_SOURCE_DIR) + "/evidence/m3-scene-models.json", "helmet", models, err);
-        if (!p.model.empty()) scenes.push_back({"helmet role", sceneFromParams(p, nullptr)});
-    }
+    // Method note 6: the owned assets (author's decision, 2026-10-10).
+    scenes.push_back({"raw-hero", owned::inTestScene(owned::hero(), 256, 256)});
+    scenes.push_back({"raw-hall nave", owned::hallScene(owned::hall())});
     for (auto& sc : scenes) sc.second.lights[0].dir = normalize(Vec3{0.55f, -0.45f, 0.35f});   // the method note's visible sun
     if (stats) {   // scene design only: G-buffer pixels per cascade, no shadow result
         for (const auto& sc : scenes) {

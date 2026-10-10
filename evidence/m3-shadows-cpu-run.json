@@ -4,8 +4,8 @@
  "scenes": [
   {"scene": "built-in test scene", "interior_pixels": 37125, "hard_mismatches": 0, "soft_pixels": 37996, "shadowed": 15390, "penumbra": 1970, "cascade0_pixels": 0, "pcss_mean_abs": 0.0058, "pcss_p95_abs": 0.0159, "pcss_penumbra_mean_abs": 0.0739},
   {"scene": "test scene, near camera", "interior_pixels": 64618, "hard_mismatches": 0, "soft_pixels": 65536, "shadowed": 49285, "penumbra": 1702, "cascade0_pixels": 10749, "pcss_mean_abs": 0.0027, "pcss_p95_abs": 0.0000, "pcss_penumbra_mean_abs": 0.0774},
-  {"scene": "Suzanne", "interior_pixels": 36094, "hard_mismatches": 2, "soft_pixels": 36656, "shadowed": 2928, "penumbra": 612, "cascade0_pixels": 0, "pcss_mean_abs": 0.0032, "pcss_p95_abs": 0.0000, "pcss_penumbra_mean_abs": 0.0736},
-  {"scene": "helmet role", "interior_pixels": 35812, "hard_mismatches": 0, "soft_pixels": 36787, "shadowed": 2775, "penumbra": 1034, "cascade0_pixels": 0, "pcss_mean_abs": 0.0051, "pcss_p95_abs": 0.0000, "pcss_penumbra_mean_abs": 0.0884}
+  {"scene": "raw-hero", "interior_pixels": 36075, "hard_mismatches": 6, "soft_pixels": 36656, "shadowed": 4225, "penumbra": 602, "cascade0_pixels": 0, "pcss_mean_abs": 0.0047, "pcss_p95_abs": 0.0000, "pcss_penumbra_mean_abs": 0.0923},
+  {"scene": "raw-hall nave", "interior_pixels": 56156, "hard_mismatches": 1, "soft_pixels": 58013, "shadowed": 47122, "penumbra": 2673, "cascade0_pixels": 0, "pcss_mean_abs": 0.0071, "pcss_p95_abs": 0.0234, "pcss_penumbra_mean_abs": 0.0929}
  ],
  "failures": 0
 }

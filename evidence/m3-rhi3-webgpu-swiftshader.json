@@ -8,7 +8,9 @@
  "depth_control_differs": true,
  "subpixel_bits": 4,
  "gbuffer": [
-  {"scene": "built-in test scene", "size": 256, "same_triangle_pixels": 37989, "differing_pixels": 6, "explained_by_edge_or_tie": 4, "position_ratio": 0.0014, "normal_ratio": 0.0000, "distance_ratio": 0.0055, "albedo_diffs": 0, "pass": false, "unexplained": [{"x": 25, "y": 124, "gpu_tri": 2, "cpu_tri": 0, "edge_px": 0.0172, "depth_rel": -1.000e+00}, {"x": 14, "y": 128, "gpu_tri": 2, "cpu_tri": 0, "edge_px": 0.0128, "depth_rel": -1.000e+00}]}
+  {"scene": "built-in test scene", "size": 256, "same_triangle_pixels": 37989, "differing_pixels": 6, "explained_by_edge_or_tie": 4, "position_ratio": 0.0014, "normal_ratio": 0.0000, "distance_ratio": 0.0055, "albedo_diffs": 0, "pass": false, "unexplained": [{"x": 25, "y": 124, "gpu_tri": 2, "cpu_tri": 0, "edge_px": 0.0172, "depth_rel": -1.000e+00}, {"x": 14, "y": 128, "gpu_tri": 2, "cpu_tri": 0, "edge_px": 0.0128, "depth_rel": -1.000e+00}]},
+  {"scene": "raw-hero", "size": 256, "same_triangle_pixels": 36446, "differing_pixels": 208, "explained_by_edge_or_tie": 206, "position_ratio": 0.0018, "normal_ratio": 0.0179, "distance_ratio": 0.0168, "albedo_diffs": 0, "pass": false, "unexplained": [{"x": 25, "y": 124, "gpu_tri": 2, "cpu_tri": 0, "edge_px": 0.0172, "depth_rel": -1.000e+00}, {"x": 14, "y": 128, "gpu_tri": 2, "cpu_tri": 0, "edge_px": 0.0128, "depth_rel": -1.000e+00}]},
+  {"scene": "raw-hall nave", "size": 256, "same_triangle_pixels": 56809, "differing_pixels": 1207, "explained_by_edge_or_tie": 1203, "position_ratio": 0.0032, "normal_ratio": 0.0206, "distance_ratio": 0.0287, "albedo_diffs": 0, "pass": false, "unexplained": [{"x": 2, "y": 16, "gpu_tri": 384821, "cpu_tri": 385509, "edge_px": 0.0112, "depth_rel": 4.125e-01}, {"x": 253, "y": 16, "gpu_tri": 384990, "cpu_tri": 385680, "edge_px": 0.0112, "depth_rel": 4.126e-01}, {"x": 82, "y": 248, "gpu_tri": 4173, "cpu_tri": 714, "edge_px": 0.0111, "depth_rel": 1.991e-02}, {"x": 173, "y": 248, "gpu_tri": 726, "cpu_tri": 731, "edge_px": 0.0111, "depth_rel": 2.751e-04}]}
  ],
  "control_moved_triangle_fails": true,
  "pass": false

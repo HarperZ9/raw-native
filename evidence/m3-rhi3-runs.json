@@ -24,6 +24,20 @@
    "result": "FAILED, open: with 8-bit snapping, 3 unexplained pixels and view distance 3.3x its bound. A probe triangle measured SwiftShader's precision at 4 bits; with the reference snapping at 4 bits and edge distances taken on the snapped triangle, distance is 0.0055 and position 0.0014 of their bounds, but 2 pixels remain, at 0.013 and 0.017 px from an edge of the ground triangle (bound 0.01 px)",
    "cause (inferred, not proven)": "the ground triangle reaches far off screen, SwiftShader clips it, and the clipped vertices snap to 1/16 px, moving its edges by up to 1/32 px; WARP's guard band does not clip there. The bound stays at 0.01 px; this case is recorded as a failure, and the WebGPU CI step gates on the formats, depth and control parts only",
    "probe": "subpixel_bits in each result file"
+  },
+  {
+   "what": "D3D12 WARP, debug layer, owned scenes (method note 2), first try",
+   "result": "not a result: raw-hall's long wall and slab triangles crossed the camera's near plane; the CPU rasterizer drops such a triangle while the hardware clips it, so 12,031 pixels differed. The hall generator now cuts long boxes at every bay line (asset run 3)."
+  },
+  {
+   "what": "D3D12 WARP, debug layer, owned scenes, after the cut",
+   "result": "FAILED, open. Formats, depth order and the control pass. Test scene and raw-hero pass (0 and 1 differing pixels, explained). raw-hall nave: 63 differing pixels, all within 0.01 px of an edge, but the normal ratio reaches 14.4: four pixels on the top two rows, on column triangles reaching far off screen, differ by about 1 degree. Inferred cause, not proven: the hardware clips those triangles to its guard band before snapping, the reference does not.",
+   "evidence": "evidence/m3-rhi3-d3d12-warp.json"
+  },
+  {
+   "what": "WebGPU SwiftShader, owned scenes",
+   "result": "FAILED, open, as before on SwiftShader: 4-bit precision; 2, 2 and 4 unexplained pixels on the test scene, raw-hero and raw-hall (of 6, 208 and 1,207 differing). Formats, depth and the control pass.",
+   "evidence": "evidence/m3-rhi3-webgpu-swiftshader.json"
   }
  ],
  "does_not_prove": "Anything under does_not_prove in the bounds file."

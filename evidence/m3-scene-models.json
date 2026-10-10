@@ -41,18 +41,18 @@
     {
      "name": "raw-hall",
      "licence": "FSL-1.1-MIT",
-     "notes": "generated; 486,656 triangles",
+     "notes": "generated; see evidence/m3-assets-runs.json for counts",
      "main": "raw-hall.gltf",
      "files": [
       {
        "path": "raw-hall.gltf",
-       "sha256": "afbfe5ac0b0682b5aa10e5187965270b9d7a13bf1268005d377b284f99c31415",
-       "bytes": 7329
+       "sha256": "e80d838b7185a506fceef6824020428ab641e8ca87942dd6a1b37b6eccbe90ef",
+       "bytes": 7335
       },
       {
        "path": "raw-hall.bin",
-       "sha256": "b0b1c31ff759a6e0554e461a4f41fa1657e6632edc0d7845a61a5e929c4aa411",
-       "bytes": 12549216
+       "sha256": "06d4b1ff505b3b08f8a727ee0472d470c9f9bdc6cc9586a9ea8db47263c3efdf",
+       "bytes": 12637056
       }
      ]
     }

@@ -15,6 +15,13 @@
    "what": "after the fix; vents moved onto the shell surface after a visual check of the preview",
    "result": "pass on MSVC. raw-hero 111,136 triangles, all nine extensions on 2.2% (emissive strength) to 31% of its area, plain metal 3.4%, plain dielectric 12.1%; raw-hall 486,656 triangles, 37.2 x 14.4 x 16.8 m, 52 columns, 48 arches, 8 drapery panels (98,304 triangles), 10 lanterns; no degenerate triangle, bad normal or flipped normal; the glTF round trip matches; both controls fail as required. GCC determinism is checked by CI.",
    "evidence": "evidence/m3-assets.json"
+  },
+  {
+   "run": "assets-3",
+   "date": "2026-10-10",
+   "what": "after cutting the hall's long boxes at every bay line (a defect the RHI v3 and shadow checks exposed: the CPU rasterizer drops triangles that cross the near plane)",
+   "result": "pass on MSVC: raw-hall 488,120 triangles; everything else as run 2; hashes rewritten.",
+   "evidence": "evidence/m3-assets.json"
   }
  ]
 }

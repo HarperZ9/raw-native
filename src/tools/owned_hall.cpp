@@ -14,6 +14,18 @@ pbr::Material stone(double r, double g, double b, double rough) {
     pbr::Material m; m.baseColor = {r, g, b}; m.metallic = 0.0; m.roughness = rough;
     return m;
 }
+// A box long in x, cut at every bay line, so no triangle is longer than a bay. The CPU reference
+// rasterizer drops a triangle with a vertex behind the near plane instead of clipping it, so long
+// triangles would vanish from views inside the hall.
+void longBox(Part& p, P3 lo, P3 hi) {
+    double x = lo.x;
+    while (x < hi.x) {
+        double next = hi.x;
+        for (int i = 0; i <= kBays; ++i) { const double b = kX0 + kBay * i; if (b > x + 1e-9 && b < next) next = b; }
+        box(p, {x, lo.y, lo.z}, {next, hi.y, hi.z});
+        x = next;
+    }
+}
 // A fluted column: base, a shaft with entasis and 20 flutes, a flared capital and an abacus.
 void column(Part& p, P3 at, double scale) {
     std::vector<std::pair<double, double>> prof = {
@@ -70,16 +82,16 @@ Asset hall() {
             for (int i = 0; i <= kBays; ++i) { column(cols, {kX0 + kBay * i, base, z}, scale); ++nColumns; }
             for (int i = 0; i < kBays; ++i) { arch(arches, kX0 + kBay * i, kX0 + kBay * (i + 1), spring, z - 0.3, z + 0.3, ri, ro); ++nArches; }
             // The wall above the arches, up to the next floor or the roof.
-            box(walls, {kX0 - 0.3, spring + ro, z - 0.3}, {-kX0 + 0.3, storey == 0 ? 7.2 : 14.0, z + 0.3});
+            longBox(walls, {kX0 - 0.3, spring + ro, z - 0.3}, {-kX0 + 0.3, storey == 0 ? 7.2 : 14.0, z + 0.3});
         }
     }
-    box(walls, {kX0 - 0.6, 0.0, -8.4}, {-kX0 + 0.6, 14.0, -8.0});    // outer walls
-    box(walls, {kX0 - 0.6, 0.0, 8.0}, {-kX0 + 0.6, 14.0, 8.4});
+    longBox(walls, {kX0 - 0.6, 0.0, -8.4}, {-kX0 + 0.6, 14.0, -8.0});    // outer walls
+    longBox(walls, {kX0 - 0.6, 0.0, 8.0}, {-kX0 + 0.6, 14.0, 8.4});
     box(walls, {kX0 - 0.6, 0.0, -8.0}, {kX0 - 0.2, 14.0, 8.0});     // end walls
     box(walls, {-kX0 + 0.2, 0.0, -8.0}, {-kX0 + 0.6, 14.0, 8.0});
     for (double s : {-1.0, 1.0}) {                                      // gallery floors and aisle roofs
-        box(walls, {kX0, 7.0, s > 0 ? 5.3 : -8.0}, {-kX0, 7.2, s > 0 ? 8.0 : -5.3});
-        box(walls, {kX0, 14.0, s > 0 ? 5.3 : -8.0}, {-kX0, 14.3, s > 0 ? 8.0 : -5.3});
+        longBox(walls, {kX0, 7.0, s > 0 ? 5.3 : -8.0}, {-kX0, 7.2, s > 0 ? 8.0 : -5.3});
+        longBox(walls, {kX0, 14.0, s > 0 ? 5.3 : -8.0}, {-kX0, 14.3, s > 0 ? 8.0 : -5.3});
     }
     Part cloth; cloth.name = "drapery"; cloth.kind = "drapery";
     cloth.material = stone(0.45, 0.06, 0.07, 0.8);

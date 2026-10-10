@@ -34,6 +34,12 @@ Asset hero();
 Asset hall();
 // The scene form: one mesh per part with its base colour as albedo, lit by the default sun.
 Scene toScene(const Asset& a);
+// The asset in the built-in test scene in place of its box: scaled to a largest extent of 2,
+// centred over the origin and resting on the ground, as a loaded model is (model_scene.hpp).
+Scene inTestScene(const Asset& a, int w, int h);
+// raw-hall from inside: the nave camera at eye height looking down the arcade, lit by the sun
+// through the open atrium. near: the gallery camera, closer to columns, arches and drapery.
+Scene hallScene(const Asset& hall, bool gallery = false);
 // glTF 2.0: the JSON text and its single binary buffer (written as <name>.bin beside it).
 std::string exportGltf(const Asset& a, std::vector<uint8_t>& bin);
 

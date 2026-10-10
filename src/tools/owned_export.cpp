@@ -61,6 +61,32 @@ Scene toScene(const Asset& a) {
     return s;
 }
 
+Scene inTestScene(const Asset& a, int w, int h) {
+    Scene s = buildTestScene(w, h);
+    s.meshes.pop_back();                                   // the built-in box
+    Vec3 lo{1e30f, 1e30f, 1e30f}, hi{-1e30f, -1e30f, -1e30f};
+    for (const Part& p : a.parts) for (const Vec3& q : p.positions) {
+        lo = {std::min(lo.x, q.x), std::min(lo.y, q.y), std::min(lo.z, q.z)};
+        hi = {std::max(hi.x, q.x), std::max(hi.y, q.y), std::max(hi.z, q.z)};
+    }
+    const float ext = std::max({hi.x - lo.x, hi.y - lo.y, hi.z - lo.z, 1e-6f}), k = 2.0f / ext;
+    const Vec3 c{(lo.x + hi.x) * 0.5f, lo.y, (lo.z + hi.z) * 0.5f};
+    const Scene src = toScene(a);
+    for (const Mesh& m : src.meshes) {
+        Mesh t = m;
+        for (Vec3& v : t.positions) v = (v - c) * k;
+        s.meshes.push_back(std::move(t));
+    }
+    return s;
+}
+Scene hallScene(const Asset& hall, bool gallery) {
+    Scene s = toScene(hall);
+    s.camera.fovy = 1.1f; s.camera.aspect = 1.0f;
+    if (gallery) { s.camera.eye = {-12.0f, 9.0f, 6.6f}; s.camera.center = {4.0f, 5.0f, -4.0f}; }
+    else { s.camera.eye = {-15.5f, 2.0f, 0.0f}; s.camera.center = {10.0f, 5.5f, 0.0f}; }
+    return s;
+}
+
 std::string exportGltf(const Asset& a, std::vector<uint8_t>& bin) {
     bin.clear();
     std::string meshes, nodes, accessors, views, materials, nodeList;
