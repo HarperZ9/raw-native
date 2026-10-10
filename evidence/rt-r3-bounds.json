@@ -1,0 +1,52 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "RT workstream stage R3: ray marching. An SDF scene graph with sphere tracing, soft shadows, AO, fog, god rays, and compositing with the R1 rasterizer through shared depth",
+ "written": "2026-10-10, before the implementation and the first run",
+ "method": {
+  "graph": "a postfix program of nodes evaluated on a stack: primitives (sphere, box, round box, torus, capsule, cylinder, plane, Mandelbulb, Mandelbox), each with a material id; operators union, smooth union (polynomial smin with k), subtraction, intersection; transforms (translate, rotate by a 3 x 3 matrix, uniform scale, applied to the query point with the distance scaled back); domain repetition with a period. The CPU reference evaluates the same program in float64; the GPU in float32.",
+  "fractals": "the distance estimators and constants of the site's fractal work (Hvidtfeldt, 'Distance Estimated 3D Fractals', Syntopia 2011): Mandelbulb power 8, bailout 2, dr = power r^(power-1) dr + 1, d = 0.5 log(r) r / dr; Mandelbox with fold limit 1, minimum radius^2 0.25, fixed radius^2 1",
+  "march": "sphere tracing from the camera, step = d (times 0.6 when the program holds a fractal or a smooth union), hit when d < 1e-4 (1 + t), at most 512 steps, t < tMax; normal by the four-tap tetrahedron difference (Quilez) at h = 1e-4 (1 + t)",
+  "shading_terms": "soft shadow by Quilez's sphere-traced penumbra estimate min(1, k h / t) with k = 12 over at most 128 steps; ambient occlusion by five samples along the normal at 0.02 + 0.12 i, weight 0.85^i (Quilez); homogeneous fog transmittance exp(-sigma t); height fog density a exp(-b y), its transmittance in closed form exp(-a exp(-b o_y) (1 - exp(-b d_y t)) / (b d_y)); god rays as single scattering of the sun along the view ray: 64 midpoint samples, each weighted by the fog density, the transmittance to the camera, the Henyey-Greenstein phase (g = 0.6) and the sun visibility from a hard SDF shadow ray",
+  "compositing": "the SDF hit's view distance becomes R1's depth z/w by the same projection; per pixel the nearer of the R1 visibility buffer and the SDF hit wins",
+  "aovs": "the same set as the path tracer's interface v1 where they apply: albedo, normal, depth (forward-axis distance), motion, plus the material id (in the triangle slot)"
+ },
+ "checks": {
+  "M1_analytic": {
+   "what": "CPU float64 sphere tracing of a sphere, a box and a torus against their analytic ray intersections, 65,536 rays a primitive (camera rays at 256 x 256)",
+   "bound": "hit and miss agree except where the analytic closest approach of the ray to the surface is within 1e-3 of it (counted); |t - t_analytic| <= 2e-4 (1 + t) on hits",
+   "control": "a march that stops at d < 1e-2 must exceed the t bound"
+  },
+  "M2_gpu_march": {
+   "what": "the GPU float32 march against the CPU float64 march on four owned SDF scenes at 256 x 256: garden (smooth-union blobs, the painterly target), menger_tower (a Mandelbox-folded tower over a plane), bulb (Mandelbulb), arcade (repeated boxes and capsules, the retro target)",
+   "bound": "hit and miss agree on at least 99.8% of pixels and every disagreement has a CPU closest approach within 1e-3 (1 + t) of the surface (a grazing near miss, counted); where both hit: |t_gpu - t_cpu| <= 1e-3 (1 + t) on at least 99.5% of pixels, the same material on at least 99.5%, normals dot >= 0.999 on at least 99%",
+   "control": "the GPU with the smooth-union k halved must break the garden's t bound"
+  },
+  "M3_shading_terms": {
+   "what": "soft shadow and AO on the GPU against the CPU at the CPU hit points of M2 (both evaluated from the same float32 points)",
+   "bound": "mean |difference| <= 2e-3 and 99th percentile <= 2e-2 for each term on each scene",
+   "control": "the GPU soft shadow with k = 3 must break the shadow bound on the garden"
+  },
+  "M4_fog": {
+   "what": "GPU homogeneous and height-fog transmittance at 4,096 seeded (origin, direction, distance) cases against float64 closed forms; and a GPU numerical march of the height fog (256 midpoint samples) against the closed form",
+   "bound": "closed forms: relative difference <= 1e-5 (homogeneous) and <= 1e-4 (height); numerical march: relative difference <= 1e-3",
+   "control": "the numerical march with 4 samples must break its bound"
+  },
+  "M5_god_rays": {
+   "what": "the GPU single-scattering march against the CPU float64 march with the same sample positions, arcade and menger_tower at 256 x 256",
+   "bound": "|difference| <= 1e-3 (relative to the image's maximum in-scatter) on at least 99.5% of pixels; every other pixel is one where a shadow ray's hit/miss differs between the two (counted)",
+   "control": "the GPU march with the sun visibility forced to 1 must differ by more than 5% of the maximum on at least 1% of pixels"
+  },
+  "M6_compositing": {
+   "what": "the R1 GPU rasterizer's retro_room with an SDF sculpture group placed inside it, composited through shared depth, against a CPU reference that casts each pixel-centre ray at both the triangles (brute-force scan) and the SDF (float64 march) and keeps the nearer",
+   "bound": "the winner (raster or SDF) agrees on every pixel except where the two depths are within 1e-3 relative (counted) or within 1 px of a raster edge or an SDF silhouette (counted)",
+   "control": "compositing that always puts the SDF in front must disagree outside the exemptions"
+  },
+  "M7_determinism": {
+   "what": "the GPU march, shading terms and god rays run twice",
+   "bound": "bit-identical output"
+  }
+ },
+ "scenes": "owned and procedural, built in raw/renderer/sdf_scenes: garden, menger_tower, bulb, arcade, and the sculpture group for M6",
+ "backends": "D3D12 WARP and WebGPU SwiftShader; the RTX 4090 only under D:/gpu.lock.d",
+ "does_not_prove": "Frame times; that the fractal estimators are exact distances (they are lower bounds; M2 compares two marches of the same estimator); stylised appearance; anything about scenes not run."
+}
