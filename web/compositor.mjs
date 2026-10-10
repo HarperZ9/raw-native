@@ -31,6 +31,17 @@ struct VO { @builtin(position) p: vec4f, @location(0) uv: vec2f, }
   return c * U.look.x;
 }`;
 
+// The resolve pass: the half-float accumulation, written once to the 8-bit target.
+const RESOLVE_WGSL = /* wgsl */ `
+@group(0) @binding(0) var acc: texture_2d<f32>;
+@vertex fn vs(@builtin(vertex_index) v: u32) -> @builtin(position) vec4f {
+  let c = vec2f(f32((v << 1u) & 2u), f32(v & 2u));
+  return vec4f(c.x * 2.0 - 1.0, 1.0 - c.y * 2.0, 0.0, 1.0);
+}
+@fragment fn fs(@builtin(position) q: vec4f) -> @location(0) vec4f { return textureLoad(acc, vec2i(q.xy), 0); }`;
+const ACC = "rgba16float";
+const NARROW = new Set(["rgba8unorm", "bgra8unorm", "rgba8unorm-srgb", "bgra8unorm-srgb"]);
+
 const OVER = { color: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }, alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" } };
 const ADD = { color: { srcFactor: "one", dstFactor: "one", operation: "add" }, alpha: { srcFactor: "one", dstFactor: "one", operation: "add" } };
 
@@ -42,12 +53,16 @@ export async function createCompositor(host, { format = null } = {}) {
   const pipes = new Map();
   const pipe = async (blend, f) => { const k = blend + f; if (!pipes.has(k)) pipes.set(k, await make(blend === "add" ? ADD : OVER, f)); return pipes.get(k); };
   await pipe("over", fmt);
-  return new Compositor(host, fmt, pipe);
+  const resolveModule = host.device.createShaderModule({ label: "compositor resolve", code: RESOLVE_WGSL });
+  const resolves = new Map();
+  const resolve = async (f) => { if (!resolves.has(f)) resolves.set(f, await host.device.createRenderPipelineAsync({ label: "compositor resolve " + f, layout: "auto",
+    primitive: { topology: "triangle-list" }, vertex: { module: resolveModule, entryPoint: "vs" }, fragment: { module: resolveModule, entryPoint: "fs", targets: [{ format: f }] } })); return resolves.get(f); };
+  return new Compositor(host, fmt, pipe, resolve);
 }
 
 class Compositor {
-  constructor(host, format, pipe) {
-    this.host = host; this.format = format; this.pipe = pipe;
+  constructor(host, format, pipe, resolve) {
+    this.host = host; this.format = format; this.pipe = pipe; this.resolve = resolve;
     this.uploads = new WeakMap();      // canvas -> texture it is uploaded to
     this.ubufs = []; this.tbuf = host.buffer({ size: 16, usage: ["uniform", "copy-dst"], label: "compositor target" });
   }
@@ -61,11 +76,24 @@ class Compositor {
   }
   // Draw layers in order. Each: { source, opacity = 1, blend = "over", rect = full target, premultiplied }.
   // A texture source is taken as premultiplied unless premultiplied: false; an uploaded canvas is straight.
+  // More than one layer onto an 8-bit target accumulates in half floats and is rounded to 8 bits once,
+  // in a resolve pass: blending each layer straight into 8 bits rounds once per layer, and hardware
+  // blenders round near-midpoint values their own way (up to a code each on an RTX 4090; M1 criterion 1).
   async draw(layers, { target = null, clear = [0, 0, 0, 0] } = {}) {
     const h = this.host, d = h.device;
     const tex = target || h.context.getCurrentTexture();
-    const f = target ? target.format : this.format;
+    const out = target ? target.format : this.format;
     const W = tex.width, H = tex.height;
+    const accumulate = layers.length > 1 && NARROW.has(out);
+    const f = accumulate ? ACC : out;
+    let acc = null;
+    if (accumulate) {
+      if (!this.acc || this.acc.width !== W || this.acc.height !== H) {
+        if (this.acc) this.acc.destroy();
+        this.acc = d.createTexture({ label: "compositor accumulation", size: [W, H], format: ACC, usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.TEXTURE_BINDING });
+      }
+      acc = this.acc;
+    }
     h.write(this.tbuf, new Float32Array([W, H, 0, 0]));
     const prepared = [];
     for (let i = 0; i < layers.length; i++) {
@@ -84,9 +112,16 @@ class Compositor {
     const enc = d.createCommandEncoder({ label: "compositor" });
     const ts = h.timer && h.timer.capacity ? { querySet: h.timer.set, beginningOfPassWriteIndex: 0, endOfPassWriteIndex: 1 } : undefined;
     const rp = enc.beginRenderPass({ label: "composite", timestampWrites: ts,
-      colorAttachments: [{ view: tex.createView(), loadOp: "clear", storeOp: "store", clearValue: clear }] });
+      colorAttachments: [{ view: (acc || tex).createView(), loadOp: "clear", storeOp: "store", clearValue: clear }] });
     for (const { p, bind } of prepared) { rp.setPipeline(p); rp.setBindGroup(0, bind); rp.draw(4); }
     rp.end();
+    if (acc) {
+      const rpipe = await this.resolve(out);
+      const rs = enc.beginRenderPass({ label: "composite resolve", colorAttachments: [{ view: tex.createView(), loadOp: "clear", storeOp: "store", clearValue: [0, 0, 0, 0] }] });
+      rs.setPipeline(rpipe);
+      rs.setBindGroup(0, d.createBindGroup({ layout: rpipe.getBindGroupLayout(0), entries: [{ binding: 0, resource: acc.createView() }] }));
+      rs.draw(3); rs.end();
+    }
     if (ts) h.timer.resolve(enc, ["composite"]);
     d.queue.submit([enc.finish()]);
     if (ts) h.timer.collect();

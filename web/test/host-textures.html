@@ -36,10 +36,13 @@ const layers = (canvas, tB, tC) => [
   { source: tC, opacity: 0.5, blend: "add", premultiplied: false, rect: [64, 32, 128, 96] },
 ];
 
-// The CPU composite, quantized to 8 bits after each layer as an RGBA8 target is.
+// The CPU composite: accumulated in full precision and rounded to 8 bits once, as the compositor
+// does for more than one layer onto an 8-bit target (it accumulates in half floats; that
+// precision, 2^-11 near 1, is well under a code). Changed 2026-10-10 with the compositor; before,
+// both rounded after every layer, and RTX blending put the two 2 codes apart (M1 criterion 1).
 function cpuComposite(base) {
   const dst = new Float64Array(W * H * 4);
-  const q = (v) => Math.round(Math.max(0, Math.min(1, v)) * 255) / 255;
+  const q = (v) => v;   // no per-layer clamp or rounding: the half-float accumulation has neither
   const apply = (img, op, add, rx, ry) => {
     for (let y = 0; y < img.height; y++) for (let x = 0; x < img.width; x++) {
       const s = (y * img.width + x) * 4, t = ((y + ry) * W + (x + rx)) * 4;
@@ -52,7 +55,7 @@ function cpuComposite(base) {
     }
   };
   apply(base, 1, false, 0, 0); apply(B, 0.6, false, 0, 0); apply(Cimg, 0.5, true, 64, 32);
-  return Uint8Array.from(dst, (v) => Math.round(v * 255));
+  return Uint8Array.from(dst, (v) => Math.round(Math.max(0, Math.min(1, v)) * 255));   // the one rounding, clamped
 }
 async function readback(host, tex) {
   const d = host.device, bpr = Math.ceil(tex.width * 4 / 256) * 256;
