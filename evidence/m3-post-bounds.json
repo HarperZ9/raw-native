@@ -98,5 +98,16 @@
    "A new SSR control (c), added before its first run: SSR with the normal replaced by the view vector must fail the hits bound. The unlimited-thickness control (a) stays reported."
   ],
   "bounds": "Unchanged."
+ },
+ "method_note_3_2026_10_10": {
+  "written": "2026-10-10, after the second CPU run and before any change is run",
+  "second_run": "Failed the two-scene gate for GTAO: only the near scene meets GTAO coverage (7,825 occluded pixels; GTAO mean 0.0075, p95 0.025; its control fails the bound). The other four scenes have 807 to 1,982 occluded pixels, and on all four GTAO is further from the reference than visibility 1 everywhere (mean 0.018 to 0.030 against 0.0075 to 0.0176). SSR passes on its two gated scenes (98.3% and 96.5% correct, false hits 0.2% and 0.5%, control (c) 0%); on the ungated scenes it reaches 94.3% (Suzanne), 84.4% (helmet) and 65.1% (interior). An open plane reads up to 0.081 away from 1.",
+  "diagnosis": "Two biases on an open plane. (1) Slice directions are uniform in screen angle, which is uniform around the view vector only at the screen centre: with no samples at all, a plane reads 0.994 to 1.020. (2) Taking each sample's depth from the nearest pixel puts samples slightly above or below the surface, and the horizon keeps the maximum, so the noise becomes occlusion (about 1.6% at the screen centre).",
+  "changes": [
+   "GTAO slices are uniform in angle around the view vector: the slice direction is cos(phi) T + sin(phi) B in the plane perpendicular to the view vector, and the screen step follows that direction's projection.",
+   "GTAO samples take 1 / depth interpolated bilinearly from the four nearest pixel centres (exact on a plane), falling back to the nearest pixel when one of the four is empty or their depths differ by more than 10%.",
+   "Scene for coverage, procedure fixed now: test_post --scene-stats prints, per scene, the reference's occluded pixels and SSR's resolvable pixels, computing neither GTAO nor SSR. A close camera on the interior role's model is chosen as the first of these candidates, in this order, that reaches 2,000 of both: eye (0.9, 1.2, 1.6), (0.7, 1.0, 1.2), (0.5, 0.8, 0.9), each toward (0, 0.3, 0). The choice goes into a note before its first GTAO or SSR run."
+  ],
+  "bounds": "Unchanged; the two-scene gate stays."
  }
 }
