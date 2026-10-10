@@ -37,7 +37,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--command", choices=["texture-identity", "pbr-parity", "lighting-parity", "raster-identity", "shadow-parity", "post-parity", "swr-parity", "rt-bvh-parity", "rt-pt-parity", "rt-hybrid-parity"], default="texture-identity")
+    ap.add_argument("--command", choices=["texture-identity", "pbr-parity", "lighting-parity", "raster-identity", "shadow-parity", "post-parity", "swr-parity", "rt-bvh-parity", "rt-pt-parity", "rt-hybrid-parity", "sdf-parity"], default="texture-identity")
     ap.add_argument("--dir", default="build-wasm-gpu")
     ap.add_argument("--args", default="", help="extra CLI flags, comma separated (diagnosis)")
     ap.add_argument("--adapter", choices=["gpu", "swiftshader"], default="swiftshader")

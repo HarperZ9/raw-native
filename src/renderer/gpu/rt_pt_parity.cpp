@@ -1,5 +1,6 @@
 // The GPU path tracer's checks: P1 to P4 of evidence/rt-r2-bounds.json.
 #include "raw/renderer/rt_pt_gpu.hpp"
+#include "json_text.hpp"
 #include "raw/renderer/rt_scenes.hpp"
 #include "raw/renderer/swr_scenes.hpp"
 #include <algorithm>
@@ -228,8 +229,8 @@ void determinism(Ctx& c, const rt::PtScene& ps, const swr::Scene& base) {
 
 std::string RtPtParity::json() const {
     return "{\n \"schema\": \"raw-native.evidence/1\",\n \"criterion\": \"RT stage R2, the GPU path tracer: P1 to P4 (evidence/rt-r2-bounds.json)\",\n"
-           " \"interface_version\": " + std::to_string(rt::kPathTraceVersion) + ",\n \"backend\": \"" + backend + "\",\n \"adapter\": \"" + adapter +
-           "\",\n \"error\": \"" + error + "\",\n \"pass\": " + (pass() ? "true" : "false") + ",\n \"results\": [\n" + results + "\n ]\n}\n";
+           " \"interface_version\": " + std::to_string(rt::kPathTraceVersion) + ",\n \"backend\": \"" + backend + "\",\n \"adapter\": \"" + jsonText(adapter) +
+           "\",\n \"error\": \"" + jsonText(error) + "\",\n \"pass\": " + (pass() ? "true" : "false") + ",\n \"results\": [\n" + results + "\n ]\n}\n";
 }
 
 RtPtParity rtPtParity(rhi::Device& dev, bool quick) {
