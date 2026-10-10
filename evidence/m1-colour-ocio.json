@@ -3,7 +3,7 @@
  "criterion": "M1 exit criterion 2: C++ reference against OCIO 2.6.0",
  "ocio": "2.6.0",
  "config": "studio-config-v5.0.0_aces-v2.1_ocio-v2.6",
- "commit": "ae7feaf2fdf7eab9807ddd99484df818cdac5d83",
+ "commit": "4c5fee03b046bc4c1032e0b05d4fb0c9bd0c2af7",
  "inputs": 36787,
  "grid_sha256": "310cdee0f3ad2c7822d50d4d35c2217132d4b865604c1ae2782b06437cbb79e7",
  "pass": true,
