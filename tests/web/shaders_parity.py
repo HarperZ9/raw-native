@@ -61,6 +61,9 @@ def check(res: dict) -> list[str]:
     if res.get("gpuErrors"):
         return ["WebGPU error: " + m for m in res["gpuErrors"]]
     b, problems = res["bounds"], []
+    if "max_decision_mismatch_fraction" in b:
+        return [f"{c['id']}: decisions {100 * c['mismatch_fraction']:.4f}% differ, {100 * c['over2_fraction']:.4f}% of values over 2 codes, mean {c['mean']:.4f} (bounds {b})"
+                for c in res["cases"] if c["mismatch_fraction"] > b["max_decision_mismatch_fraction"] or c["over2_fraction"] > b["over2_fraction"] or c["mean"] > b["mean_abs_code"]]
     if "over2_fraction" in b:
         return [f"{c['id']}: {100 * c['over2_fraction']:.2f}% of values off by more than 2 codes, mean {c['mean']:.3f} (bounds {b})"
                 for c in res["cases"] if c["over2_fraction"] > b["over2_fraction"] or c["mean"] > b["mean_abs_code"]]

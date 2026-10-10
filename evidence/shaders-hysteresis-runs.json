@@ -1,0 +1,15 @@
+{
+  "what": "Every run of the hysteresis checks, failures included. Bounds file unchanged since 5d0dfb1.",
+  "runs": [
+    { "date": "2026-10-10", "check": "node tests, first run (margin only, 160 x 100)", "result": "5 of 6 pass",
+      "failure": "lamp ramp: held decisions changed 949 times where plain changed 3344 (ratio 0.284, bound at least 0.9)",
+      "diagnosis": "A margin alone holds every decision whose input ends less than the margin past a threshold. Under a doubled lamp most pixels move only a little past a threshold, so the margin kept 72% of the changes the ramp should cause. The flicker ratio meanwhile was 0.002: the margin suppresses everything, wanted or not.",
+      "fix": "Technique change, bounds unchanged: a persistence counter carried with the decision. A held decision gives way when the plain decision has differed from it for K frames in a row." },
+    { "date": "2026-10-10", "check": "sweep of K on the test sequences (24 fps)", "result": "bands6 flicker/ramp ratios: K 3: 0.500/0.959; K 4: 0.238/0.937; K 5: 0.024/0.920; K 6: 0.003/0.901; margin only: 0.002/0.284. pico8: K 5: 0.026/0.947." },
+    { "date": "2026-10-10", "check": "held-out sequences (flicker from t 3.1 sampled at 30 fps; lamp dimming 1 to 0.5), K = 5 frames", "result": "flicker ratio 0.251 (bands6) and 0.259 (pico8): over the 0.25 bound. K tuned on 24 fps sequences overfit the frame rate.",
+      "fix": "Persistence is now a time, persistSec 0.2 s, K = round(persistSec x fps), because flicker has a frequency in time. Held-out at 30 fps (K 6): flicker 0.044 and 0.044; dimming ramp 0.943 and 0.909 (the second close to the bound)." },
+    { "date": "2026-10-10", "check": "node tests after the change (120 x 75; 160 x 100 took 100 s)", "result": "6 of 6 pass" },
+    { "date": "2026-10-10", "check": "GPU parity, SwiftShader, first run", "result": "3 of 3 pass: 0 decision mismatches in 2,048,000 decisions; max 1 code, mean under 3e-5" }
+  ],
+  "limits": "The persistence time trades lag for stability: a genuine change shows up 0.2 s late, and flicker slower than about 2.5 Hz still toggles. The sweep used the test sequences; the held-out check is the guard against fitting them."
+}

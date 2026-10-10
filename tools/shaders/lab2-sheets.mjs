@@ -63,3 +63,21 @@ if (on("glaze")) {
     for (const preset of ["beetle", "oil-slick", "bruise"]) save(`glaze-${frame}-${preset}`, enc(runGlaze(resolveGlaze(preset), src)));
   }
 }
+
+if (on("hysteresis")) {
+  const { resolveHysteresis, step } = await import("../../web/shaders/hysteresis/hysteresis.mjs");
+  const { sequence } = await import("../../web/shaders/hysteresis/sequences.mjs");
+  const w = 320, h = 200, frames = sequence("flicker", w, h, 48);
+  for (const preset of ["bands6", "pico8"]) {
+    const plan = resolveHysteresis(preset, {}, { w, h });
+    for (const hyst of [false, true]) {
+      let state = null, prev = null; const count = new Uint16Array(w * h); let last;
+      for (const f of frames) { const r = step(plan, f.frame, null, f.dist, state, { hysteresis: hyst }); state = r.state; if (prev) for (let i = 0; i < count.length; i++) if (r.idx[i] !== prev[i]) count[i]++; prev = r.idx; last = r; }
+      const tag = hyst ? "held" : "plain";
+      save(`hysteresis-${preset}-${tag}-frame47`, { width: w, height: h, data: last.out });
+      // Toggles per pixel over 47 frame changes: black none, white 12 or more.
+      const d = new Uint8ClampedArray(w * h * 4); for (let i = 0; i < count.length; i++) { const v = Math.min(255, count[i] * 21); d[i * 4] = v; d[i * 4 + 1] = v; d[i * 4 + 2] = v; d[i * 4 + 3] = 255; }
+      save(`hysteresis-${preset}-${tag}-toggles`, { width: w, height: h, data: d });
+    }
+  }
+}

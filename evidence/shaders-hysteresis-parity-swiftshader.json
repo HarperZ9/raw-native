@@ -1,0 +1,47 @@
+{
+  "bounds": {
+    "max_decision_mismatch_fraction": 0.0002,
+    "over2_fraction": 0.0002,
+    "mean_abs_code": 0.05
+  },
+  "cases": [
+    {
+      "id": "bands-flicker",
+      "frames": 12,
+      "decisionMismatch": 0,
+      "decisions": 768000,
+      "mismatch_fraction": 0,
+      "over2_fraction": 0,
+      "mean": 2.777777777777778e-05,
+      "max": 1
+    },
+    {
+      "id": "palette-flicker",
+      "frames": 12,
+      "decisionMismatch": 0,
+      "decisions": 768000,
+      "mismatch_fraction": 0,
+      "over2_fraction": 0,
+      "mean": 0,
+      "max": 0
+    },
+    {
+      "id": "bands-orbit",
+      "frames": 8,
+      "decisionMismatch": 0,
+      "decisions": 512000,
+      "mismatch_fraction": 0,
+      "over2_fraction": 0,
+      "mean": 2.2786458333333334e-05,
+      "max": 1
+    }
+  ],
+  "adapter": {
+    "vendor": "google",
+    "architecture": "swiftshader",
+    "device": "",
+    "description": ""
+  },
+  "gpuErrors": [],
+  "adapter_kind": "swiftshader"
+}

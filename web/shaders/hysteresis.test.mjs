@@ -1,7 +1,7 @@
 // node --test web/shaders/hysteresis.test.mjs
 // Hysteresis quantisation on its CPU reference. Thresholds from
 // evidence/shaders-hysteresis-parity-bounds.json ("tests"), committed before the first run.
-// Runs at 160 x 100 (the bounds fix the frame counts, not the size). GPU parity:
+// Runs at 120 x 75 (the bounds fix the frame counts, not the size; 160 x 100 took 100 s). GPU parity:
 // tests/web/shaders_parity.py --shader hysteresis.
 import test from "node:test";
 import assert from "node:assert/strict";
@@ -10,8 +10,8 @@ import { resolveHysteresis, step } from "./hysteresis/hysteresis.mjs";
 import { sequence } from "./hysteresis/sequences.mjs";
 
 const B = JSON.parse(readFileSync(new URL("../../evidence/shaders-hysteresis-parity-bounds.json", import.meta.url), "utf8")).tests;
-const W = 160, H = 100, seqs = new Map();
-const seq = (name, n) => { const k = name + n; if (!seqs.has(k)) seqs.set(k, sequence(name, W, H, n)); return seqs.get(k); };
+const W = 120, H = 75, seqs = new Map();
+const seq = (name, n) => { if (!seqs.has(name) || seqs.get(name).length < n) seqs.set(name, sequence(name, W, H, Math.max(n, name === "flicker" ? 48 : n))); return seqs.get(name).slice(0, n); };
 function run(preset, frames, overrides = {}, hysteresis = true) {
   const plan = resolveHysteresis(preset, overrides, { w: W, h: H }), res = []; let state = null;
   for (const f of frames) { const r = step(plan, f.frame, f.motion, f.dist, state, { hysteresis }); res.push(r); state = r.state; }
