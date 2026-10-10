@@ -11,11 +11,13 @@
 import { compile, DEFAULT_CAMERA } from "./vector.mjs";
 import { VECTOR_WGSL, PARTICLE_WGSL, SPRITE_WGSL, LAYER_BUFFER_WGSL, LAYER_TEXTURE_WGSL, POST_WGSL } from "./shaders.mjs";
 import { ParticleSystem } from "./particles.mjs";
+import { PostRunner } from "./post_run.mjs";
+import { getPass } from "./post.mjs";
 
 const HDR = "rgba16float";
 const OVER = { color: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }, alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" } };
 const ADD = { color: { srcFactor: "one", dstFactor: "one", operation: "add" }, alpha: { srcFactor: "one", dstFactor: "one", operation: "add" } };
-const TEX = { RENDER: 0x10, BIND: 0x04, COPY_SRC: 0x01 };
+const TEX = { RENDER: 0x10, BIND: 0x04, COPY_SRC: 0x01, COPY_DST: 0x02 };
 
 export async function createMotion(host, { design = [1920, 1080] } = {}) {
   const m = new Motion(host, design);
@@ -39,12 +41,12 @@ class Motion {
     const post = (fs, format) => rp("motion " + fs, POST_WGSL, fs, format, undefined, "triangle-list");
     const outFormat = this.host.format || "rgba8unorm";
     [this.vecOver, this.vecAdd, this.spriteAdd, this.spriteOver, this.layerBuf, this.layerTex, this.bright, this.blurx, this.blury,
-      this.finishCanvas, this.finishCapture, this.partPipe] = await Promise.all([
+      this.finishCanvas, this.finishCapture, this.finishHDR, this.partPipe] = await Promise.all([
       rp("motion vector over", VECTOR_WGSL, "fs", HDR, OVER), rp("motion vector add", VECTOR_WGSL, "fs", HDR, ADD),
       rp("motion sprite add", SPRITE_WGSL, "fs", HDR, ADD), rp("motion sprite over", SPRITE_WGSL, "fs", HDR, OVER),
       rp("motion layer buffer", LAYER_BUFFER_WGSL, "fs", HDR, OVER, "triangle-list"),
       rp("motion layer texture", LAYER_TEXTURE_WGSL, "fs", HDR, OVER, "triangle-list"),
-      post("bright", HDR), post("blurx", HDR), post("blury", HDR), post("finish", outFormat), post("finish", "rgba8unorm"),
+      post("bright", HDR), post("blurx", HDR), post("blury", HDR), post("finish", outFormat), post("finish", "rgba8unorm"), post("finish", HDR),
       d.createComputePipelineAsync({ label: "motion particles", layout: "auto", compute: { module: mod(PARTICLE_WGSL, "particles"), entryPoint: "main" } }),
     ]);
     this.outFormat = outFormat;
@@ -53,6 +55,7 @@ class Motion {
     this.layerU = [0, 1, 2, 3].map((i) => this.host.buffer({ size: 48, usage: ["uniform", "copy-dst"], label: "motion layer " + i }));
     this.sampler = d.createSampler({ magFilter: "linear", minFilter: "linear", addressModeU: "clamp-to-edge", addressModeV: "clamp-to-edge" });
     this.images = {};
+    this.post = new PostRunner(this.host, this.sampler);
     this.#atlas(1);
   }
   // The image atlas that image paints sample: one rgba8unorm texture, filled in shelves.
@@ -84,7 +87,7 @@ class Motion {
     this.w = w; this.h = h;
     const d = this.device, tex = (label, W, H, format, usage) => d.createTexture({ label, size: [W, H], format, usage });
     for (const t of [this.accum, this.glowA, this.glowB, this.capTex, this.worldTex]) if (t) t.destroy();
-    this.accum = tex("motion accum", w, h, HDR, TEX.RENDER | TEX.BIND);
+    this.accum = tex("motion accum", w, h, HDR, TEX.RENDER | TEX.BIND | TEX.COPY_DST);
     const qw = Math.max(1, w >> 2), qh = Math.max(1, h >> 2);
     this.glowA = tex("motion glow a", qw, qh, HDR, TEX.RENDER | TEX.BIND);
     this.glowB = tex("motion glow b", qw, qh, HDR, TEX.RENDER | TEX.BIND);
@@ -105,6 +108,7 @@ class Motion {
     this.postBind = {
       bright: b(this.bright, this.postU[0], this.accum), blurx: b(this.blurx, this.postU[1], this.glowA), blury: b(this.blury, this.postU[2], this.glowB),
       finishCanvas: b(this.finishCanvas, this.postU[3], this.accum, this.glowA), finishCapture: b(this.finishCapture, this.postU[3], this.accum, this.glowA),
+      finishHDR: b(this.finishHDR, this.postU[3], this.accum, this.glowA),
     };
     return this.postBind;
   }
@@ -177,8 +181,15 @@ class Motion {
       }
     }
     rp.end();
-    // Bloom at quarter size, then the finish.
+    // Post passes (post.mjs): scene passes on the linear accumulation now; display passes
+    // after the finish.
     const post = { bloom: 0.45, threshold: 0.8, vignette: 0.35, grain: 0.01, ...(list.post || {}) };
+    const specs = post.passes || [];
+    const scenePasses = specs.filter((s) => getPass(s.pass).stage === "scene"), displayPasses = specs.filter((s) => getPass(s.pass).stage === "display");
+    if (scenePasses.length) {
+      const res = this.post.run(enc, scenePasses, this.accum, W, H, frame, time, null, "scene");
+      if (res !== this.accum) enc.copyTextureToTexture({ texture: res }, { texture: this.accum }, [W, H]);
+    }
     const qw = Math.max(1, W >> 2), qh = Math.max(1, H >> 2);
     host.write(this.postU[0], new Float32Array([qw, qh, W, H, post.threshold, 0, 0, 0]));
     host.write(this.postU[1], new Float32Array([qw, qh, qw, qh, 0, 0, 0, 0]));
@@ -192,7 +203,14 @@ class Motion {
     full(this.glowA.createView(), this.bright, pb.bright, "bloom");
     full(this.glowB.createView(), this.blurx, pb.blurx, null);
     full(this.glowA.createView(), this.blury, pb.blury, null);
-    full(target, capture ? this.finishCapture : this.finishCanvas, capture ? pb.finishCapture : pb.finishCanvas, "finish");
+    if (displayPasses.length) {
+      if (!this.dispTex || this.dispTex.width !== W || this.dispTex.height !== H) {
+        if (this.dispTex) this.dispTex.destroy();
+        this.dispTex = d.createTexture({ label: "motion display", size: [W, H], format: HDR, usage: TEX.RENDER | TEX.BIND | TEX.COPY_SRC });
+      }
+      full(this.dispTex.createView(), this.finishHDR, pb.finishHDR, "finish");
+      this.post.run(enc, displayPasses, this.dispTex, W, H, frame, time, { view: target, format: capture ? "rgba8unorm" : this.outFormat }, "display", scenePasses.length);
+    } else full(target, capture ? this.finishCapture : this.finishCanvas, capture ? pb.finishCapture : pb.finishCanvas, "finish");
     let read = null;
     if (capture) {
       const bpr = Math.ceil((W * 4) / 256) * 256;
@@ -237,6 +255,7 @@ class Motion {
   timings() { return this.host.timings(); }
   destroy() {
     for (const b of Object.values(this.gpu)) b.destroy();
-    for (const t of [this.accum, this.glowA, this.glowB, this.capTex, this.worldTex, this.atlasTex]) if (t) t.destroy();
+    for (const t of [this.accum, this.glowA, this.glowB, this.capTex, this.worldTex, this.atlasTex, this.dispTex]) if (t) t.destroy();
+    this.post.destroy();
   }
 }

@@ -244,6 +244,14 @@ the browser's hardware encoder. On an RTX 4090 the 24-second demo renders at
 3840 x 2160 in 30 s, about 25 ms a frame. Motion is creative media: no
 certificate (ADR 0011).
 
+A display list can name post passes in `post.passes`. Scene passes run in linear
+light before bloom, and display passes run after the finish. The shader library
+registers the looks (CRT, film, dither) through `registerPass()` in
+`web/motion/post.mjs`. A pass may keep its own last output, for phosphor
+persistence. `python tests/web/post_passes.py` holds every pass that ships a CPU
+reference to within one 8-bit code of it, on a committed frame set
+(`tests/web/post_frames.mjs`).
+
 The vector pass is measured against a CPU reference (`web/motion/vector_ref.mjs`,
 16 x 16 samples a pixel) on twenty cases fixed in
 `evidence/m1-vector-corpus.json` before the first run:
