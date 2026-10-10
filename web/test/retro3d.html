@@ -1,0 +1,47 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Retro 3D check</title>
+<!-- ROADMAP M2 criterion 8 (evidence/m2-retro3d-bounds.json): the committed mesh set under
+     the four settings of vertex snap and affine UVs, GPU against the CPU twin, per pixel:
+     covering triangle and fetched texel. Run by tests/web/retro3d_check.py. -->
+<script type="module">
+import { createRetro3d } from '../motion/retro3d_gpu.mjs';
+import { retro3dRef } from '../world/retro3d.mjs';
+import { scene, SCENES } from '../world/retro3d_meshes.mjs';
+
+const W = 256, H = 192, SNAP = 4;
+// The adapter's sub-pixel precision (evidence/m2-retro3d-bounds.json, amended): 4 bits on SwiftShader, 8 on D3D12.
+const SUB = Number(new URLSearchParams(location.search).get('subpixel') || 8);
+function compare(gpu, ref) {
+  let compared = 0, coverMismatch = 0, both = 0, same = 0, near = 0, far = 0, ties = 0, firstFar = null;
+  for (let o = 0; o < W * H; o++) {
+    if (ref.edge[o]) continue;
+    compared++;
+    if (gpu.ids[o] !== ref.ids[o]) { coverMismatch++; continue; }
+    if (!ref.ids[o]) continue;
+    if (ref.tie[o] < 1e-3) { ties++; continue; }   // both neighbours are right within float precision
+    both++;
+    const dx = Math.abs(gpu.texel[2 * o] - ref.texel[2 * o]), dy = Math.abs(gpu.texel[2 * o + 1] - ref.texel[2 * o + 1]);
+    const wd = (d) => Math.min(d, 64 - d);   // wrap-around neighbours are one texel apart
+    if (!dx && !dy) same++; else if (wd(dx) <= 1 && wd(dy) <= 1) near++; else { far++; if (!firstFar) firstFar = { x: o % W, y: Math.floor(o / W), gpu: [gpu.texel[2 * o], gpu.texel[2 * o + 1]], ref: [ref.texel[2 * o], ref.texel[2 * o + 1]] }; }
+  }
+  return { compared, coverMismatch, covered: both, ties, sameTexel: both ? same / both : 1, nearTexel: near, farTexel: far, firstFar };
+}
+const pass = (c) => c.coverMismatch === 0 && c.sameTexel >= 0.995 && c.farTexel === 0;
+const out = { cases: [] };
+try {
+  const ad = await navigator.gpu.requestAdapter(), dev = await ad.requestDevice();
+  out.adapter = ad.info ? `${ad.info.vendor} ${ad.info.architecture}`.trim() : '';
+  const r = createRetro3d(dev);
+  for (const name of Object.keys(SCENES)) for (const snap of [0, SNAP]) for (const affine of [false, true]) {
+    const s = scene(name, W, H), opts = { width: W, height: H, snap, affine, texSize: 64, subpixelBits: SUB };
+    const gpu = await r.check(s, opts), c = compare(gpu, retro3dRef(s, opts));
+    out.cases.push({ mesh: name, snap, affine, ...c, pass: pass(c) });
+    if (name === 'floor' && affine && !snap) out.controlAffine = { ...compare(gpu, retro3dRef(s, { ...opts, affine: false })) };
+    if (name === 'floor' && snap && !affine) out.controlSnap = { ...compare(gpu, retro3dRef(s, { ...opts, snap: 0 })) };
+  }
+  out.subpixelBits = SUB;
+  out.controlAffine.fails = !pass(out.controlAffine); out.controlSnap.fails = !pass(out.controlSnap);
+} catch (e) { out.error = String(e && e.stack || e); }
+window.__result = out;
+</script>

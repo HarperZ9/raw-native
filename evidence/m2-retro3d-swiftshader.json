@@ -1,0 +1,222 @@
+{
+ "cases": [
+  {
+   "mesh": "cube",
+   "snap": 0,
+   "affine": false,
+   "compared": 46743,
+   "coverMismatch": 0,
+   "covered": 7509,
+   "ties": 28,
+   "sameTexel": 1,
+   "nearTexel": 0,
+   "farTexel": 0,
+   "firstFar": null,
+   "pass": true
+  },
+  {
+   "mesh": "cube",
+   "snap": 0,
+   "affine": true,
+   "compared": 46743,
+   "coverMismatch": 0,
+   "covered": 7497,
+   "ties": 40,
+   "sameTexel": 1,
+   "nearTexel": 0,
+   "farTexel": 0,
+   "firstFar": null,
+   "pass": true
+  },
+  {
+   "mesh": "cube",
+   "snap": 4,
+   "affine": false,
+   "compared": 46693,
+   "coverMismatch": 0,
+   "covered": 7662,
+   "ties": 39,
+   "sameTexel": 1,
+   "nearTexel": 0,
+   "farTexel": 0,
+   "firstFar": null,
+   "pass": true
+  },
+  {
+   "mesh": "cube",
+   "snap": 4,
+   "affine": true,
+   "compared": 46693,
+   "coverMismatch": 0,
+   "covered": 7441,
+   "ties": 260,
+   "sameTexel": 1,
+   "nearTexel": 0,
+   "farTexel": 0,
+   "firstFar": null,
+   "pass": true
+  },
+  {
+   "mesh": "floor",
+   "snap": 0,
+   "affine": false,
+   "compared": 44364,
+   "coverMismatch": 0,
+   "covered": 16776,
+   "ties": 42,
+   "sameTexel": 1,
+   "nearTexel": 0,
+   "farTexel": 0,
+   "firstFar": null,
+   "pass": true
+  },
+  {
+   "mesh": "floor",
+   "snap": 0,
+   "affine": true,
+   "compared": 44364,
+   "coverMismatch": 0,
+   "covered": 16759,
+   "ties": 59,
+   "sameTexel": 1,
+   "nearTexel": 0,
+   "farTexel": 0,
+   "firstFar": null,
+   "pass": true
+  },
+  {
+   "mesh": "floor",
+   "snap": 4,
+   "affine": false,
+   "compared": 44426,
+   "coverMismatch": 0,
+   "covered": 16836,
+   "ties": 30,
+   "sameTexel": 1,
+   "nearTexel": 0,
+   "farTexel": 0,
+   "firstFar": null,
+   "pass": true
+  },
+  {
+   "mesh": "floor",
+   "snap": 4,
+   "affine": true,
+   "compared": 44426,
+   "coverMismatch": 0,
+   "covered": 12647,
+   "ties": 4219,
+   "sameTexel": 1,
+   "nearTexel": 0,
+   "farTexel": 0,
+   "firstFar": null,
+   "pass": true
+  },
+  {
+   "mesh": "cylinder",
+   "snap": 0,
+   "affine": false,
+   "compared": 43969,
+   "coverMismatch": 0,
+   "covered": 5040,
+   "ties": 21,
+   "sameTexel": 1,
+   "nearTexel": 0,
+   "farTexel": 0,
+   "firstFar": null,
+   "pass": true
+  },
+  {
+   "mesh": "cylinder",
+   "snap": 0,
+   "affine": true,
+   "compared": 43969,
+   "coverMismatch": 0,
+   "covered": 5040,
+   "ties": 21,
+   "sameTexel": 1,
+   "nearTexel": 0,
+   "farTexel": 0,
+   "firstFar": null,
+   "pass": true
+  },
+  {
+   "mesh": "cylinder",
+   "snap": 4,
+   "affine": false,
+   "compared": 43964,
+   "coverMismatch": 0,
+   "covered": 5115,
+   "ties": 25,
+   "sameTexel": 1,
+   "nearTexel": 0,
+   "farTexel": 0,
+   "firstFar": null,
+   "pass": true
+  },
+  {
+   "mesh": "cylinder",
+   "snap": 4,
+   "affine": true,
+   "compared": 43964,
+   "coverMismatch": 0,
+   "covered": 4344,
+   "ties": 796,
+   "sameTexel": 1,
+   "nearTexel": 0,
+   "farTexel": 0,
+   "firstFar": null,
+   "pass": true
+  }
+ ],
+ "adapter": "google swiftshader",
+ "controlAffine": {
+  "compared": 44364,
+  "coverMismatch": 0,
+  "covered": 16776,
+  "ties": 42,
+  "sameTexel": 0,
+  "nearTexel": 0,
+  "farTexel": 16776,
+  "firstFar": {
+   "x": 111,
+   "y": 99,
+   "gpu": [
+    53,
+    28
+   ],
+   "ref": [
+    52,
+    25
+   ]
+  },
+  "fails": true
+ },
+ "controlSnap": {
+  "compared": 44364,
+  "coverMismatch": 486,
+  "covered": 16329,
+  "ties": 42,
+  "sameTexel": 0.18641680445832567,
+  "nearTexel": 6214,
+  "farTexel": 7071,
+  "firstFar": {
+   "x": 111,
+   "y": 99,
+   "gpu": [
+    59,
+    6
+   ],
+   "ref": [
+    52,
+    25
+   ]
+  },
+  "fails": true
+ },
+ "subpixelBits": 4,
+ "adapter_kind": "swiftshader",
+ "problems": [],
+ "commit": "1de70bb6d67f68651bea21a9f077691118b602c5",
+ "does_not_prove": "That the look matches any particular console, or performance."
+}

@@ -9,5 +9,15 @@
   "texels": "at least 99.5% of pixels covered on both, away from edges, fetch the same texel; the rest differ by at most one texel in u or v (a UV landing within float precision of a texel boundary)"
  },
  "control": "the affine scene compared with a perspective-correct twin, and the snapped scene with an unsnapped twin, must each fail the texel bound on the floor mesh",
- "does_not_prove": "That the look matches any particular console, colour depth reduction or dithering (those are the dither pass), or performance."
+ "does_not_prove": "That the look matches any particular console, colour depth reduction or dithering (those are the dither pass), or performance.",
+ "amended": {
+  "date": "2026-10-10, after the first run, which failed the texel bound",
+  "first_run": "SwiftShader, twin with exact vertices: coverage matched in all 12 cases (0 mismatches away from edges), no texel was more than one away, and both controls failed; but the same-texel share was below 99.5% in 9 cases (0.849 to 0.991), all differences one texel.",
+  "diagnosis": [
+   "Sub-pixel vertex precision: rasterizers snap vertex positions to a fixed-point grid whose size the APIs leave to the hardware (D3D12 requires 8 bits, Vulkan allows 4). Quantizing the twin's vertices to 1/16 pixel made every case with snap off exact (1/256 changed nothing), so SwiftShader uses 4 bits.",
+   "Exact texel ties: with snapped vertices on whole pixels, affine UVs are rational in the pixel position, so many samples land exactly on a texel boundary, where float rounding legitimately picks either neighbour. Every remaining mismatch was within 1/1000 texel of a boundary (cube 70 of 70, cylinder 358 of 358, floor all)."
+  ],
+  "change": "The twin models the adapter's sub-pixel precision (subpixelBits: 4 for SwiftShader, 8 for D3D12 hardware), and samples within 1/1000 texel of a texel boundary are exempt from the texel bound, counted and reported, the same exemption the texture identity check (M2 criterion 3) uses. The coverage and texel bounds themselves are unchanged.",
+  "basis": "The coordinator's direction for M1 criterion 1 (2026-10-10): model the behaviour the APIs allow in the reference and keep the bound, recording a dated deviation. Applying it to this criterion is the engine session's inference, open to the coordinator's or the author's rejection."
+ }
 }
