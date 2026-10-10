@@ -11,7 +11,7 @@ option(RAW_NATIVE_BUILD_TESTS "Build the raw-native unit tests" ${PROJECT_IS_TOP
 # The library: every layer except the RHI backends and the shader libraries,
 # which a build picks in cmake/gpu.cmake (docs/architecture/ARCHITECTURE.md).
 # scripts/check_layers.py enforces which layer may include which.
-set(RAW_NATIVE_LIB_LAYERS core cert scene graph renderer tools)
+set(RAW_NATIVE_LIB_LAYERS core cert scene assets graph renderer tools)
 set(LIB_SRCS "")
 foreach(layer ${RAW_NATIVE_LIB_LAYERS})
     file(GLOB layer_srcs CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/${layer}/*.cpp")
@@ -75,6 +75,11 @@ if(RAW_NATIVE_BUILD_TESTS)
             "${CMAKE_CURRENT_SOURCE_DIR}/third_party/superstack")
         add_test(NAME ${name} COMMAND ${name})
     endforeach()
+    # The glTF fuzzer (ROADMAP M2 criterion 2). ctest runs a short pass; CI runs a
+    # million inputs under the sanitizers.
+    add_executable(fuzz_gltf tests/fuzz_gltf.cpp ${RAW_NATIVE_NULL_BACKEND})
+    target_link_libraries(fuzz_gltf PRIVATE raw_native)
+    add_test(NAME fuzz_gltf_short COMMAND fuzz_gltf 20000 7)
     # The superstack contract's own vectors, run against the vendored header on
     # this compiler. Fails when the header or a vector file no longer matches.
     if(RAW_NATIVE_SUPERSTACK_COMPILES)
