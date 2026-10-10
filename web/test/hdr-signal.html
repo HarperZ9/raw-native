@@ -18,14 +18,18 @@ function compare(name, gpu, cpu, grid) {
   let maxAbs = 0, maxRatio = 0, over = 0, nan = 0, worst = 0;
   // Where the values over the bound sit, by the C++ signal: near zero, below 1, at 1 and above.
   const overBy = { 'abs<0.05': 0, '0.05..1': 0, '>=1': 0 };
+  const failing = [];   // every channel over the bound (up to 400), for the CPU diagnosis
   for (let i = 0; i < cpu.length; ++i) {
     if (!Number.isFinite(gpu[i])) { ++nan; continue; }
     const d = Math.abs(gpu[i] - cpu[i]), r = d / BOUNDS[name](cpu[i]);
-    if (r > 1) { ++over; const a = Math.abs(cpu[i]); ++overBy[a < 0.05 ? 'abs<0.05' : a < 1 ? '0.05..1' : '>=1']; }
+    if (r > 1) {
+      ++over; const a = Math.abs(cpu[i]); ++overBy[a < 0.05 ? 'abs<0.05' : a < 1 ? '0.05..1' : '>=1'];
+      if (failing.length < 400) failing.push({ index: i, input: Array.from(grid.slice(i - i % 3, i - i % 3 + 3)), channel: i % 3, gpu: gpu[i], cpu: cpu[i] });
+    }
     if (r > maxRatio) { maxRatio = r; worst = Math.floor(i / 3); }
     maxAbs = Math.max(maxAbs, d);
   }
-  return { maxAbs, maxRatio, over, overBy, nan, worstInput: Array.from(grid.slice(worst * 3, worst * 3 + 3)),
+  return { maxAbs, maxRatio, over, overBy, failing, nan, worstInput: Array.from(grid.slice(worst * 3, worst * 3 + 3)),
     worstGpu: Array.from(gpu.slice(worst * 3, worst * 3 + 3)), worstCpu: Array.from(cpu.slice(worst * 3, worst * 3 + 3)) };
 }
 async function run() {

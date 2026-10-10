@@ -11,8 +11,23 @@
    "what": "run 2, SwiftShader, the same code plus a breakdown of where the over-bound values sit",
    "date": "2026-10-10",
    "result": "identical numbers to run 1; srgb-extended over-bound values: 92 with |signal| < 0.05, 93 between 0.05 and 1, none at 1 or above"
+  },
+  {
+   "what": "run 3, SwiftShader, the same code plus the list of failing channels",
+   "date": "2026-10-10",
+   "result": "the same 185 channels (183 inputs), all saturated blues: blue high, red and green small; 109 in red, 76 in green"
+  },
+  {
+   "what": "CPU diagnosis in float32",
+   "date": "2026-10-10",
+   "result": "reproduced at the WGSL precision limits; cause: the hue's atan2 and the cos and sin round trip. See evidence/m1-hdr-f32-diagnosis.json"
+  },
+  {
+   "what": "run 4, SwiftShader, after the fix (hue_atan2; cos and sin as a / M and b / M), bounds unchanged",
+   "date": "2026-10-10",
+   "result": "CPU half within bounds as before; controls exceed their bounds (6.3e11, 6.3e3, GPU 641). GPU: rec2100-pq max 1.17e-05, 0.012 of the bound; srgb-extended max 6.24e-05, 0.0639 of the bound; 0 over, 0 non-finite. Criterion 2 on SwiftShader still passes, with the committed ACES tables matching."
   }
  ],
- "status": "not met: the srgb-extended GPU half fails its bound on SwiftShader. The bound is kept. The RTX 4090 run waits for the GPU lock.",
- "reading": "Both HDR pipelines share the ACES 2.0 stage; rec2100-pq passes and srgb-extended fails. The extended path converts the P3-limited output to Rec.709, where saturated colours land near or below zero and the sRGB curve's slope (12.92 near 0) amplifies a float32 difference in the gamut-compression stage. This is a reading of run 2, not a tested cause."
+ "status": "SwiftShader half met after the fix (run 4), bounds unchanged. The RTX 4090 half waits for the GPU lock; criterion 3 needs both.",
+ "reading": "Tested, not read: see evidence/m1-hdr-f32-diagnosis.json. The earlier reading (the P3 to Rec.709 step and the sRGB slope near zero) described where the error showed, not where it came from."
 }

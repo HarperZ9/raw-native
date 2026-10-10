@@ -3,6 +3,8 @@
 // offline by tools/colour/ocio_compare.py (evidence/m1-colour-ocio.json).
 #include "raw/renderer/colour.hpp"
 #include "check.hpp"
+#include "../src/renderer/aces2.hpp"
+#include <algorithm>
 #include <cmath>
 using namespace raw::colour;
 
@@ -78,7 +80,28 @@ static void gridShape(){
     CHECK(g.back()[0] == 8.0f && g.back()[1] == 0.0f && g.back()[2] == 8.0f);   // magenta at L = 8
 }
 
+// The arithmetic atan2 the ACES 2.0 hue uses (M1 criterion 3, 2026-10-10): within 4 ulp of
+// atan2 everywhere, the axes and the origin included.
+static void hueAtan2(){
+    using raw::colour::aces2::hue_atan2;
+    CHECK(hue_atan2(0.f, 0.f) == 0.f);
+    CHECK_NEAR(hue_atan2(0.f, -1.f), 3.14159265358979, 1e-6);
+    CHECK_NEAR(hue_atan2(1.f, 0.f), 1.5707963267949, 1e-6);
+    CHECK_NEAR(hue_atan2(-1.f, 0.f), -1.5707963267949, 1e-6);
+    double worstUlps = 0;
+    for (int i = 0; i < 200000; ++i){
+        const double ang = -3.14159265358979 + 6.28318530717958 * (i + 0.5) / 200000.0;
+        const double r = std::pow(10.0, -6.0 + 8.0 * ((i * 7919) % 200000) / 200000.0);
+        const float y = (float)(r * std::sin(ang)), x = (float)(r * std::cos(ang));
+        const double ref = std::atan2((double)y, (double)x);
+        const double ulp = std::nextafter((float)std::fabs(ref), 10.f) - (float)std::fabs(ref);
+        worstUlps = std::max(worstUlps, std::fabs(hue_atan2(y, x) - ref) / ulp);
+    }
+    CHECK(worstUlps <= 4.0);
+}
+
 int main(){
+    hueAtan2();
     matrices();
     transfers();
     toneMappers();

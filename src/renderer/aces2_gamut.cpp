@@ -131,8 +131,14 @@ f3 Transform::forward(const f3& rgb) const {
     const f3 Aab = RGB_to_Aab(rgb, pIn);
     const f3 JMh = Aab_to_JMh(Aab, pIn);
     const ResolvedSharedCompressionParameters rp = resolve_CompressionParams(JMh[2], s);
-    const float h_rad = to_radians(JMh[2]);
-    const float cos_hr = std::cos(h_rad), sin_hr = std::sin(h_rad);
+    // cos and sin of the hue straight from the opponent coordinates: the forward path
+    // keeps the hue, so cos(atan2(b, a)) = a / M and sin = b / M. OCIO goes through the
+    // angle; that round trip loses precision where sin and cos are approximate (WGSL
+    // allows 2^-11 absolute), and saturated colours amplified it past M1 criterion 3's
+    // bound on SwiftShader (evidence/m1-hdr-signal-runs.json, 2026-10-10). M = 0 keeps
+    // hue 0, as atan2(0, 0) did.
+    const float cos_hr = JMh[1] > 0.f ? Aab[1] / JMh[1] : 1.f;
+    const float sin_hr = JMh[1] > 0.f ? Aab[2] / JMh[1] : 0.f;
     const float Mnorm = chroma_compress_norm(cos_hr, sin_hr, c.chroma_compress_scale);
     const float J_ts = tonescale_A_to_J_fwd(Aab[0], pIn, t);
     const f3 tonemapped = chroma_compress_fwd(JMh, J_ts, Mnorm, rp, c);

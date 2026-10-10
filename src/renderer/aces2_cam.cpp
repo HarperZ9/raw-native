@@ -75,7 +75,7 @@ f3 Aab_to_JMh(const f3& Aab, const JMhParams& p){
     if (Aab[0] <= 0.f) return {0.f, 0.f, 0.f};
     const float J = Achromatic_n_to_J(Aab[0], p.cz);
     const float M = std::sqrt(Aab[1] * Aab[1] + Aab[2] * Aab[2]);
-    return {J, M, from_radians_unwrapped(std::atan2(Aab[2], Aab[1]))};
+    return {J, M, from_radians_unwrapped(hue_atan2(Aab[2], Aab[1]))};
 }
 f3 RGB_to_JMh(const f3& RGB, const JMhParams& p){ return Aab_to_JMh(RGB_to_Aab(RGB, p), p); }
 f3 JMh_to_Aab(const f3& JMh, float cos_hr, float sin_hr, const JMhParams& p){

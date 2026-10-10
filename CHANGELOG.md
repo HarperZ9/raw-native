@@ -6,6 +6,15 @@ the day the release was published on GitHub, in UTC.
 
 ## Unreleased
 
+- **HDR signal check and a float32-stable ACES 2.0 hue** (roadmap M1, criterion 3 as amended on
+  2026-10-10). The HDR signal is checked in software against the published PQ, sRGB and tone-map
+  formulas, and the GPU encode against the CPU. That checks the signal, not the light a panel emits.
+  - The first SwiftShader run failed the extended sRGB half on 185 saturated blues. A float32 run
+    of the CPU reference at the precision WGSL allows reproduced it: the hue's atan2 may be off by
+    4096 ulp, and the hue tables index by whole degree.
+  - The hue now comes from an arithmetic atan2 (within 3 ulp), and cos and sin of the hue from
+    the opponent coordinates directly, on the CPU and in WGSL. With the bound unchanged, SwiftShader
+    passes at 0.064 of it. The CPU reference moved by at most 4.1e-5.
 - **Hardware capability probe** (HW workstream H1.0). `raw_native_cli hw-probe` reports what the
   D3D12 adapter offers beyond the RHI: ray tracing tier, inline ray query, opacity micromaps, mesh
   shaders, wave and 16-bit math, bindless, enhanced barriers, work graphs, async compute and

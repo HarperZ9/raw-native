@@ -1,0 +1,448 @@
+{
+ "criterion": "M1 exit criterion 3, HDR signal: why the srgb-extended GPU half failed on SwiftShader, and the fix",
+ "date": "2026-10-10",
+ "question": "Does the CPU reference, run in float32 with the precision WGSL allows, reproduce the 185 channels SwiftShader failed? If so the defect is numerical stability, not the backend.",
+ "tool": "tools/colour/f32diag: the same C++ colour reference with its transcendental functions swapped while the transform runs (tables are built exact, as the GPU receives them). Mode 0 is bit-identical to raw_native_cli. Mode 1: pow lowered as exp2(y log2 x) in float32. Mode 2: every transcendental off by up to K ulp, seeded. Mode 3: the WGSL limits, sin and cos 2^-11 absolute and atan2 4096 ulp, others 8 ulp. Mode 4: mode 3 with atan2 exact. Mode 5: atan2 at its limit alone.",
+ "bounds": "the criterion 3 GPU bounds, unchanged: rec2100-pq 1/1023; srgb-extended max(1/1023, 0.005 |v|)",
+ "steps": [
+  {
+   "step": "1. the pipeline as it was",
+   "result": "modes 1 and 2 (to 8 ulp) stay within the bound (worst 0.16). Mode 3 fails about 2,000 srgb-extended channels at up to 35 times the bound, covering 154 of the 185 SwiftShader failures, for each of three seeds. Reproduced: the defect is the pipeline's stability under the precision WGSL allows.",
+   "rows": {
+    "aces2-hdr1000/srgb-extended": {
+     "exact": {
+      "over": 0,
+      "worstRatio": 0.0,
+      "overlapWithGpuFailures": 0
+     },
+     "pow-exp2-log2": {
+      "over": 0,
+      "worstRatio": 0.0269,
+      "overlapWithGpuFailures": 0
+     },
+     "noise-2ulp-seed1": {
+      "over": 0,
+      "worstRatio": 0.0627,
+      "overlapWithGpuFailures": 0
+     },
+     "noise-2ulp-seed2": {
+      "over": 0,
+      "worstRatio": 0.1087,
+      "overlapWithGpuFailures": 0
+     },
+     "noise-2ulp-seed3": {
+      "over": 0,
+      "worstRatio": 0.0803,
+      "overlapWithGpuFailures": 0
+     },
+     "noise-8ulp-seed1": {
+      "over": 0,
+      "worstRatio": 0.1601,
+      "overlapWithGpuFailures": 0
+     },
+     "noise-8ulp-seed2": {
+      "over": 0,
+      "worstRatio": 0.16,
+      "overlapWithGpuFailures": 0
+     },
+     "noise-8ulp-seed3": {
+      "over": 0,
+      "worstRatio": 0.1485,
+      "overlapWithGpuFailures": 0
+     },
+     "wgsl-limits-seed1": {
+      "over": 1989,
+      "worstRatio": 34.2365,
+      "overlapWithGpuFailures": 154
+     },
+     "wgsl-limits-seed2": {
+      "over": 2012,
+      "worstRatio": 32.2035,
+      "overlapWithGpuFailures": 154
+     },
+     "wgsl-limits-seed3": {
+      "over": 2049,
+      "worstRatio": 34.9546,
+      "overlapWithGpuFailures": 153
+     }
+    },
+    "aces2-hdr1000/rec2100-pq": {
+     "exact": {
+      "over": 0,
+      "worstRatio": 0.0
+     },
+     "pow-exp2-log2": {
+      "over": 0,
+      "worstRatio": 0.0026
+     },
+     "noise-2ulp-seed1": {
+      "over": 0,
+      "worstRatio": 0.0045
+     },
+     "noise-2ulp-seed2": {
+      "over": 0,
+      "worstRatio": 0.0028
+     },
+     "noise-2ulp-seed3": {
+      "over": 0,
+      "worstRatio": 0.0019
+     },
+     "noise-8ulp-seed1": {
+      "over": 0,
+      "worstRatio": 0.0099
+     },
+     "noise-8ulp-seed2": {
+      "over": 0,
+      "worstRatio": 0.0091
+     },
+     "noise-8ulp-seed3": {
+      "over": 0,
+      "worstRatio": 0.0112
+     },
+     "wgsl-limits-seed1": {
+      "over": 3,
+      "worstRatio": 6.7692
+     },
+     "wgsl-limits-seed2": {
+      "over": 1,
+      "worstRatio": 1.1324
+     },
+     "wgsl-limits-seed3": {
+      "over": 0,
+      "worstRatio": 0.9501
+     }
+    }
+   }
+  },
+  {
+   "step": "2. cos and sin of the hue as a / M and b / M (no round trip through the angle)",
+   "result": "mode 3 failures fall to about 50; mode 4 (atan2 exact) has none; mode 5 (atan2 alone) has about 50. The rest is atan2: the hue tables index by truncated degree, so a hue error near a whole degree moves the output.",
+   "rows": {
+    "aces2-hdr1000/srgb-extended": {
+     "exact": {
+      "over": 0,
+      "worstRatio": 0.0,
+      "overlapWithGpuFailures": 0
+     },
+     "pow-exp2-log2": {
+      "over": 0,
+      "worstRatio": 0.0386,
+      "overlapWithGpuFailures": 0
+     },
+     "noise-2ulp-seed1": {
+      "over": 0,
+      "worstRatio": 0.0634,
+      "overlapWithGpuFailures": 0
+     },
+     "noise-2ulp-seed2": {
+      "over": 0,
+      "worstRatio": 0.0551,
+      "overlapWithGpuFailures": 0
+     },
+     "noise-2ulp-seed3": {
+      "over": 0,
+      "worstRatio": 0.0588,
+      "overlapWithGpuFailures": 0
+     },
+     "noise-8ulp-seed1": {
+      "over": 0,
+      "worstRatio": 0.1813,
+      "overlapWithGpuFailures": 0
+     },
+     "noise-8ulp-seed2": {
+      "over": 0,
+      "worstRatio": 0.1388,
+      "overlapWithGpuFailures": 0
+     },
+     "noise-8ulp-seed3": {
+      "over": 0,
+      "worstRatio": 0.2134,
+      "overlapWithGpuFailures": 0
+     },
+     "wgsl-limits-seed1": {
+      "over": 52,
+      "worstRatio": 34.9031,
+      "overlapWithGpuFailures": 14
+     },
+     "wgsl-limits-seed2": {
+      "over": 50,
+      "worstRatio": 34.6252,
+      "overlapWithGpuFailures": 12
+     },
+     "wgsl-limits-seed3": {
+      "over": 51,
+      "worstRatio": 3.9639,
+      "overlapWithGpuFailures": 13
+     },
+     "limits-no-atan2-seed1": {
+      "over": 0,
+      "worstRatio": 0.1689,
+      "overlapWithGpuFailures": 0
+     },
+     "limits-no-atan2-seed2": {
+      "over": 0,
+      "worstRatio": 0.1837,
+      "overlapWithGpuFailures": 0
+     },
+     "limits-no-atan2-seed3": {
+      "over": 0,
+      "worstRatio": 0.1118,
+      "overlapWithGpuFailures": 0
+     },
+     "atan2-only-seed1": {
+      "over": 50,
+      "worstRatio": 4.0077,
+      "overlapWithGpuFailures": 14
+     },
+     "atan2-only-seed2": {
+      "over": 53,
+      "worstRatio": 34.6737,
+      "overlapWithGpuFailures": 13
+     },
+     "atan2-only-seed3": {
+      "over": 53,
+      "worstRatio": 3.9979,
+      "overlapWithGpuFailures": 13
+     }
+    },
+    "aces2-hdr1000/rec2100-pq": {
+     "exact": {
+      "over": 0,
+      "worstRatio": 0.0
+     },
+     "pow-exp2-log2": {
+      "over": 0,
+      "worstRatio": 0.0023
+     },
+     "noise-2ulp-seed1": {
+      "over": 0,
+      "worstRatio": 0.0025
+     },
+     "noise-2ulp-seed2": {
+      "over": 0,
+      "worstRatio": 0.0028
+     },
+     "noise-2ulp-seed3": {
+      "over": 0,
+      "worstRatio": 0.0027
+     },
+     "noise-8ulp-seed1": {
+      "over": 0,
+      "worstRatio": 0.0078
+     },
+     "noise-8ulp-seed2": {
+      "over": 0,
+      "worstRatio": 0.0082
+     },
+     "noise-8ulp-seed3": {
+      "over": 0,
+      "worstRatio": 0.0078
+     },
+     "wgsl-limits-seed1": {
+      "over": 0,
+      "worstRatio": 0.6293
+     },
+     "wgsl-limits-seed2": {
+      "over": 1,
+      "worstRatio": 7.2494
+     },
+     "wgsl-limits-seed3": {
+      "over": 1,
+      "worstRatio": 7.2135
+     },
+     "limits-no-atan2-seed1": {
+      "over": 0,
+      "worstRatio": 0.008
+     },
+     "limits-no-atan2-seed2": {
+      "over": 0,
+      "worstRatio": 0.0077
+     },
+     "limits-no-atan2-seed3": {
+      "over": 0,
+      "worstRatio": 0.0077
+     },
+     "atan2-only-seed1": {
+      "over": 0,
+      "worstRatio": 0.7378
+     },
+     "atan2-only-seed2": {
+      "over": 1,
+      "worstRatio": 7.1045
+     },
+     "atan2-only-seed3": {
+      "over": 0,
+      "worstRatio": 0.409
+     }
+    }
+   }
+  },
+  {
+   "step": "3. plus an arithmetic atan2 (hue_atan2: reduction to |t| <= tan 15 deg and an odd series to t^11; within 2.7 ulp of atan2 in float32 over 2 million points)",
+   "result": "no failures in any mode or seed; worst 0.18 of the bound (srgb-extended) and 0.008 (rec2100-pq).",
+   "rows": {
+    "aces2-hdr1000/srgb-extended": {
+     "exact": {
+      "over": 0,
+      "worstRatio": 0.0,
+      "overlapWithGpuFailures": 0
+     },
+     "pow-exp2-log2": {
+      "over": 0,
+      "worstRatio": 0.0386,
+      "overlapWithGpuFailures": 0
+     },
+     "noise-2ulp-seed1": {
+      "over": 0,
+      "worstRatio": 0.0696,
+      "overlapWithGpuFailures": 0
+     },
+     "noise-2ulp-seed2": {
+      "over": 0,
+      "worstRatio": 0.0548,
+      "overlapWithGpuFailures": 0
+     },
+     "noise-2ulp-seed3": {
+      "over": 0,
+      "worstRatio": 0.0614,
+      "overlapWithGpuFailures": 0
+     },
+     "noise-8ulp-seed1": {
+      "over": 0,
+      "worstRatio": 0.1689,
+      "overlapWithGpuFailures": 0
+     },
+     "noise-8ulp-seed2": {
+      "over": 0,
+      "worstRatio": 0.1837,
+      "overlapWithGpuFailures": 0
+     },
+     "noise-8ulp-seed3": {
+      "over": 0,
+      "worstRatio": 0.1236,
+      "overlapWithGpuFailures": 0
+     },
+     "wgsl-limits-seed1": {
+      "over": 0,
+      "worstRatio": 0.1689,
+      "overlapWithGpuFailures": 0
+     },
+     "wgsl-limits-seed2": {
+      "over": 0,
+      "worstRatio": 0.1837,
+      "overlapWithGpuFailures": 0
+     },
+     "wgsl-limits-seed3": {
+      "over": 0,
+      "worstRatio": 0.1236,
+      "overlapWithGpuFailures": 0
+     },
+     "limits-no-atan2-seed1": {
+      "over": 0,
+      "worstRatio": 0.1689,
+      "overlapWithGpuFailures": 0
+     },
+     "limits-no-atan2-seed2": {
+      "over": 0,
+      "worstRatio": 0.1837,
+      "overlapWithGpuFailures": 0
+     },
+     "limits-no-atan2-seed3": {
+      "over": 0,
+      "worstRatio": 0.1236,
+      "overlapWithGpuFailures": 0
+     },
+     "atan2-only-seed1": {
+      "over": 0,
+      "worstRatio": 0.0,
+      "overlapWithGpuFailures": 0
+     },
+     "atan2-only-seed2": {
+      "over": 0,
+      "worstRatio": 0.0,
+      "overlapWithGpuFailures": 0
+     },
+     "atan2-only-seed3": {
+      "over": 0,
+      "worstRatio": 0.0,
+      "overlapWithGpuFailures": 0
+     }
+    },
+    "aces2-hdr1000/rec2100-pq": {
+     "exact": {
+      "over": 0,
+      "worstRatio": 0.0
+     },
+     "pow-exp2-log2": {
+      "over": 0,
+      "worstRatio": 0.0023
+     },
+     "noise-2ulp-seed1": {
+      "over": 0,
+      "worstRatio": 0.0022
+     },
+     "noise-2ulp-seed2": {
+      "over": 0,
+      "worstRatio": 0.0023
+     },
+     "noise-2ulp-seed3": {
+      "over": 0,
+      "worstRatio": 0.0026
+     },
+     "noise-8ulp-seed1": {
+      "over": 0,
+      "worstRatio": 0.008
+     },
+     "noise-8ulp-seed2": {
+      "over": 0,
+      "worstRatio": 0.0077
+     },
+     "noise-8ulp-seed3": {
+      "over": 0,
+      "worstRatio": 0.0077
+     },
+     "wgsl-limits-seed1": {
+      "over": 0,
+      "worstRatio": 0.008
+     },
+     "wgsl-limits-seed2": {
+      "over": 0,
+      "worstRatio": 0.0077
+     },
+     "wgsl-limits-seed3": {
+      "over": 0,
+      "worstRatio": 0.0077
+     },
+     "limits-no-atan2-seed1": {
+      "over": 0,
+      "worstRatio": 0.008
+     },
+     "limits-no-atan2-seed2": {
+      "over": 0,
+      "worstRatio": 0.0077
+     },
+     "limits-no-atan2-seed3": {
+      "over": 0,
+      "worstRatio": 0.0077
+     },
+     "atan2-only-seed1": {
+      "over": 0,
+      "worstRatio": 0.0
+     },
+     "atan2-only-seed2": {
+      "over": 0,
+      "worstRatio": 0.0
+     },
+     "atan2-only-seed3": {
+      "over": 0,
+      "worstRatio": 0.0
+     }
+    }
+   }
+  }
+ ],
+ "fix": "src/renderer/aces2.hpp hue_atan2 and src/renderer/aces2_gamut.cpp Transform::forward; the same in web/colour/colour.wgsl. Both paths changed together.",
+ "reference_moved": "the fixed C++ reference against the old one over the criterion 2 grid: at most 4.1e-5 (srgb-extended), 2.6e-6 (rec2100-pq), 6.6e-6 (SDR). Colour difference: Delta E ITP at most 0.0013 (HDR); CIEDE2000 at most 0.0004 (SDR).",
+ "ocio": "Not rerun: OpenColorIO is not installed on this machine and installing it is a download. Delta E ITP is a Euclidean distance, so the new reference is within 0.0391 + 0.0013 = 0.0404 of OCIO for rec2100-pq and 0.0067 + 0.0013 = 0.0080 for srgb-extended (bound 1.0 max, 0.25 p99). CIEDE2000 is not a metric in the strict sense, so for SDR the same sum (0.0028 against 0.5) is an estimate. A direct rerun of tools/colour/ocio_compare.py is still owed.",
+ "does_not_prove": "That every GPU's sin, cos and atan2 sit within the WGSL limits; mode 3 draws errors at random within them, which is not a worst case for each input. It shows that the CPU reference reproduces the failure at those limits and that the fixed pipeline does not."
+}
