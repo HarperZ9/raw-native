@@ -217,14 +217,20 @@ path, the way the CPU renderer is the oracle for frames.
   tables (white furnaces, conservation); `tests/test_pbr_reciprocity.cpp` checks reciprocity
   and the iridescence fast path against a spectral reference. `pbr.wgsl` is the float32 form,
   and `raw_native_cli pbr-parity` compares it with the reference on any RHI backend.
-- **Two deliberate departures from the extension texts:** iridescence sums eight harmonics
-  (the specification sums two, which leaves a 0.32 error on reflective bases at grazing angles),
-  and the clearcoat and transmission weights are symmetric (the texts weight by the view angle
-  alone, which breaks reciprocity). `Material::specExact` switches a material to the texts'
-  iridescence and clearcoat forms, on the CPU and the GPU alike, while the author decides
-  which forms are the default (`tests/test_pbr_spec.cpp`). The transmission weight has no
-  flag yet. Bounds and every run, failures included:
-  `evidence/m3-materials-*.json`.
+- **Departures from the extension texts, now the default** (the author's decision, 2026-10-10):
+  - Iridescence sums eight harmonics, not two.
+  - On dielectric bases, iridescence uses exact Fresnel amplitudes for s and p light, and a
+    colour response tabulated from the same colour matching fit its exact reference integrates.
+    Against a polarized Airy reference, its worst error falls from 0.26 to 0.019.
+  - The clearcoat and transmission weights are symmetric.
+  - Volume attenuation follows each refracted direction's own path through the thickness.
+  - `Material::specExact` keeps the texts' forms as a comparison control
+    (`tests/test_pbr_spec.cpp`, `tests/test_pbr_improve.cpp`).
+- **Open:** a white metal under a clear coat still loses up to 23% of its energy, against a
+  2% bound. The tried fixes either gained energy or exposed a 0.4% error in the split-albedo
+  table at grazing views, so they were reverted (`evidence/m3-materials2-runs.json`).
+- Bounds and every run, failures included: `evidence/m3-materials-*.json` and
+  `evidence/m3-materials2-*.json`.
 
 ## Lighting
 

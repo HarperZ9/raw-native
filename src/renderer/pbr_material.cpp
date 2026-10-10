@@ -36,9 +36,12 @@ Terms base(const Material& m, const Tables& t, const Setup& s, D3 o, D3 i) {
         out.transmission = m.baseColor * each([&](int k) { return std::min(1.0 - ch(esO, k), 1.0 - ch(esI, k)); }) * (g * tr * (1.0 - mt));
         return out;
     }
+    // Beer-Lambert along the refracted direction's own path through the thickness, thickness / |cos|
+    // (evidence/m3-materials2-bounds.json); the specification's form applies it once, for every direction.
+    const double path = m.specExact ? m.thickness : m.thickness / std::max(std::fabs(i.z), 1e-6);
     const Rgb att = each([&](int k) {
         if (m.attenuationDistance <= 0.0 || m.thickness <= 0.0) return 1.0;
-        return std::exp(std::log(std::max(ch(m.attenuationColor, k), 1e-300)) / m.attenuationDistance * m.thickness);
+        return std::exp(std::log(std::max(ch(m.attenuationColor, k), 1e-300)) / m.attenuationDistance * path);
     });
     out.transmission = m.baseColor * att * each([&](int k) {
         return walterBtdf(i, m.ior, o, 1.0, s.ax, s.ay, ch(s.f0d, k)) * tr * (1.0 - mt);

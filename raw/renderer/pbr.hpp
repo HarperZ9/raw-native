@@ -50,10 +50,11 @@ struct Material {
     double iridescence{0}, iridescenceIor{1.3};        // KHR_materials_iridescence
     double iridescenceThickness{400};                  //   nanometres
     Rgb emissive{0, 0, 0}; double emissiveStrength{1}; // KHR_materials_emissive_strength
-    // The extension texts' forms where raw-native departs from them (pending the author's
-    // decision, 2026-10-10): iridescence summed to the second harmonic, and the clearcoat
-    // weighted by Fresnel at the view alone, base * (1 - c F(n.v)) + c F(n.v) D V, with no
-    // multiple scattering in the coat. Neither form is reciprocal or energy-checked here.
+    // The extension texts' forms where raw-native departs from them, kept only as a comparison
+    // control (the author decided on 2026-10-10 that the engine's forms are the default):
+    // iridescence summed to the second harmonic with Schlick interfaces, the clearcoat weighted
+    // by Fresnel at the view alone, base * (1 - c F(n.v)) + c F(n.v) D V, with no multiple
+    // scattering in the coat, and volume attenuation applied once for every direction.
     bool specExact{false};
 };
 
@@ -158,13 +159,26 @@ double walterBtdf(D3 in, double etaIn, D3 out, double etaOut, double ax, double 
 // an error of 0.32 against the spectral reference (2026-10-10; eight and twenty-four
 // agree to 1e-7). Below about cos 0.3 on metals this renders closer to the physics than
 // the Khronos sample viewer does, by design.
+// polarized (the default, 2026-10-10, evidence/m3-materials2-bounds.json): exact Fresnel
+// amplitudes for s and p light at both interfaces, the base's index taken from its F0 per
+// channel, the two series averaged, and the colour response tabulated from the references'
+// colour matching fit; false gives the specification's Schlick interfaces and Gaussian fit.
+// A base with F0 above 0.25 in any channel (a conductor) always takes the false path.
 inline constexpr int kIridescenceHarmonics = 8;
 Rgb iridescentFresnel(double outsideIor, double filmIor, double thicknessNm, Rgb baseF0, double cosTheta1,
-                      int harmonics = kIridescenceHarmonics);
+                      int harmonics = kIridescenceHarmonics, bool polarized = true);
 inline constexpr int kIridescenceHarmonicsSpec = 2;       // the KHR_materials_iridescence text
+// The polarized path's sensitivity table: optical path differences 0 to kSensMax nm by kSensStep.
+inline constexpr double kSensMax = 40000.0, kSensStep = 10.0;
+// The table for upload to a GPU: per entry the real parts of the three channels, then the imaginary.
+std::vector<double> iridescenceSensitivityGrid();
 // The float64 spectral reference for it: the Airy reflectance with the same interface
 // terms, integrated over 380 to 780 nm against CIE 1931 (Wyman, Sloan, Shirley 2013),
 // in linear Rec.709, scaled so a constant spectrum maps to grey.
 Rgb iridescentSpectral(double outsideIor, double filmIor, double thicknessNm, Rgb baseF0, double cosTheta1);
+// The physical reference: the polarized Airy reflectance of the film on a dielectric base of
+// index baseIor (s and p averaged, total internal reflection handled), per wavelength, through
+// the same colour matching fit, white-balanced so a constant spectrum stays grey.
+Rgb iridescentExact(double outsideIor, double filmIor, double thicknessNm, double baseIor, double cosTheta1);
 
 }  // namespace raw::pbr
