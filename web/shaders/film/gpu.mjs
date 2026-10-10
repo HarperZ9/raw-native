@@ -44,12 +44,15 @@ export async function createGpuFilm(host, preset, overrides, input, out) {
   g.addPass("encode8", [[r.P, R], [r.img, R], [r.out8, W]], (c) => c.dispatch(pipes.encode8, [B.P, B.img, B.out8], wg(out.w), wg(out.h)));
   g.markOutput(r.out8); g.markOutput(r.img); g.compile();
   let frameNo = 0;
+  const params = (f) => {
+    const pp = packFilmParams(plan, f); host.write(B.P, pp);
+    const ix = FILM_INDEX.mtfDir; pp[ix] = 0; host.write(B.Px, pp); const py = pp.slice(); py[ix] = 1; host.write(B.Py, py);
+  };
   return {
     plan, buffers: B, image: B.img, packed: B.out8,
-    frame(sceneRGBA, f = frameNo) {
-      const pp = packFilmParams(plan, f); host.write(B.P, pp);
-      const ix = FILM_INDEX.mtfDir; pp[ix] = 0; host.write(B.Px, pp); const py = pp.slice(); py[ix] = 1; host.write(B.Py, py);
-      if (sceneRGBA) host.write(B.scene, sceneRGBA); host.frame(g); frameNo = f + 1; },
+    frame(sceneRGBA, f = frameNo) { params(f); if (sceneRGBA) host.write(B.scene, sceneRGBA); host.frame(g); frameNo = f + 1; },
+    // Record into an encoder the caller owns (the Motion post stack), scene already in buffers.scene.
+    record(enc, f = frameNo) { params(f); host.record(g, enc, false); frameNo = f + 1; },
     async read() {
       const rd = async (buf, n) => {
         const s = host.buffer({ size: n, usage: ["map-read", "copy-dst"] }), enc = host.device.createCommandEncoder();

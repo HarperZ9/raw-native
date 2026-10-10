@@ -61,6 +61,21 @@ q.frame(plateRGBA8);   // q.packed: RGBA8 palette colours; await q.read() -> { i
 
 The Studio's tube stage (`retro-crt.js`) ported to the GPU pass for pass: beam scanlines and masks in 8.8 fixed point, bloom and halation in linear light, then warp, bezel, colour separation and vignette. On the committed frame set it is within one 8-bit code of `retro-crt.js`, and bit-equal where only integer paths run. Use it where a render must match the Studio exactly; use the physical tube for everything else.
 
+## Paint (`web/shaders/paint/`)
+
+Turns a rendered frame into a painting. Presets are media: `oil-grotesque` (template (a): thick, warped, outlined, broken colour, violet shadows against hansa lights), `oil`, `gouache` and `watercolour`.
+
+| Pass | What it does |
+|---|---|
+| `prep` | Scene light to display light with a soft shoulder (`exposure`). Each colour becomes a pigment latent: concentrations of four pigments (titanium white, hansa yellow, quinacridone magenta, phthalo blue) from a 17^3 lookup solved by Levenberg-Marquardt, plus the RGB residual, so an unmixed colour decodes back to itself. The latent follows Sochorova and Jamriska 2021, implemented independently. |
+| `tensor`, `tensor.x`, `tensor.y` | Structure tensor (Sobel), smoothed: local flow and anisotropy. |
+| `akf` | Anisotropic Kuwahara (Kyprianidis, Kang and Doellner 2009; polynomial sector weights, NPAR 2010), written from the papers. It averages pigment latents, so neighbouring colours mix as paint (blue and yellow make green). |
+| `stroke` | Line integral convolution of bristle noise along the flow (relief), and of a coarse field (stroke identity, for broken colour). |
+| `relief` | Per pixel: XDoG lines (Winnemoeller et al. 2012), the lit impasto (shade and sheen from the stroke relief and a canvas weave), and the watercolour wet edge. |
+| `compose` | A slow noise warp for the expressive looks. Complementary temperature in pigment space, per-stroke pigment jitter, and soft value bands. Then Kubelka-Munk decode. The medium comes last: lit impasto for oil and gouache; for watercolour, a Kubelka-Munk glaze over paper, thicker in the paper's valleys (granulation) and at wash edges. |
+
+Everything textural is anchored to `canvasOffset`, so a camera pan carries the paper and brushwork with the world. On a one-pixel pan the mean frame-to-frame difference is 0.000 to 0.007 codes with the canvas anchored and 0.6 to 8.3 codes screen-locked (`paint.test.mjs`). Rotation, zoom and parallax need motion vectors, which are not done.
+
 ## The film (`web/shaders/film/`)
 
 Presets: `500t-print`, `500t-no-remjet` (CineStill-style halation), `250d-print`, `bleach-bypass`. Controls include `ev`, `printerPoints` (0.025 log E each), `grainScale` (cloud size), `grainAmount`, `gateWidthMm`, `halationReach`, `weaveUm` and `jitterUm`.
@@ -98,4 +113,5 @@ RTX 4090 frame times at 4K are in `evidence/shaders-timing-rtx4090.json` once me
 - The print dye set was engineered by a grid search for a neutral grey scale, as real stocks are. It is not a digitised 2383.
 - The halo kernel ignores the curvature's distortion of the kernel across the face.
 - Grain in the small-cloud regime is white at pixel scale (its correlation length is below a pixel).
+- The pigment spectra are parametric shapes, not measured pigments, and the painterly looks were tuned by eye on one test scene; the author's reference frames for template (a) will retune them.
 - No comparison against existing shaders has run. The protocol is fixed in `evidence/shaders-comparison-protocol.json`. Until it runs, no claim of being better than any shader is made.

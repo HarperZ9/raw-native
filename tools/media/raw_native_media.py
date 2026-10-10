@@ -62,6 +62,15 @@ def copy_lf(src: Path, dst: Path) -> None:
     dst.write_bytes(data)
 
 
+def copy_shaders(dst: Path) -> None:
+    """The shader library, whose looks scenes name in post.passes (web/shaders/post.mjs)."""
+    src = ENGINE / "web" / "shaders"
+    for f in src.rglob("*.mjs"):
+        if not f.name.endswith(".test.mjs"):
+            (dst / f.relative_to(src)).parent.mkdir(parents=True, exist_ok=True)
+            copy_lf(f, dst / f.relative_to(src))
+
+
 def copy_colour(dst: Path) -> None:
     """The colour pipeline Motion's colour-managed output uses: its WGSL, module and ACES 2.0 tables."""
     (dst / "tables").mkdir(parents=True, exist_ok=True)
@@ -82,6 +91,7 @@ def bundle(spec: dict, spec_path: Path, scene: dict, out: Path, facts: dict, cas
         if f.is_file() and not f.name.endswith(".test.mjs"):
             copy_lf(f, out / "engine" / "motion" / f.name)
     copy_colour(out / "engine" / "colour")
+    copy_shaders(out / "engine" / "shaders")
     src = spec_path.parent / spec.get("scenes_dir", "scenes")
     (out / "scene").mkdir(exist_ok=True)
     if src.is_dir():
@@ -251,6 +261,7 @@ def repage(args) -> int:
             if f.is_file() and not f.name.endswith(".test.mjs"):
                 copy_lf(f, d / "engine" / "motion" / f.name)
         copy_colour(d / "engine" / "colour")
+        copy_shaders(d / "engine" / "shaders")
         module = next((p.name for p in (d / "scene").glob(f"{sid}.scene.mjs")), None) or Path(spec[sid]["module"]).name
         page = (HERE / "page.html").read_text(encoding="utf-8")
         page = page.replace("{{TITLE}}", m["title"]).replace("{{SCENE}}", f"scene/{module}").replace("{{ID}}", sid)

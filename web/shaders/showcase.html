@@ -20,8 +20,8 @@
 </style>
 <main>
   <h1>raw-native shaders</h1>
-  <p class="lede">A cathode-ray tube and a film print, each simulated from its physics on the GPU. Every pass has a CPU reference it matches within one 8-bit code.</p>
-  <div class="tabs"><button id="t-crt" aria-pressed="true">Tube</button> <button id="t-film" aria-pressed="false">Film</button></div>
+  <p class="lede">A cathode-ray tube, a film print and a painting, each simulated from its physics on the GPU. Every pass has a CPU reference that it matches within the bound committed for it.</p>
+  <div class="tabs"><button id="t-crt" aria-pressed="true">Tube</button> <button id="t-film" aria-pressed="false">Film</button> <button id="t-paint" aria-pressed="false">Paint</button></div>
   <div class="bar" id="crt-bar">
     <label>Tube <select id="crt-preset"></select></label>
     <label>Signal <select id="crt-signal"><option value="">preset</option><option>rgb</option><option>svideo</option><option>composite</option></select></label>
@@ -35,6 +35,11 @@
     <label>Grain <input id="film-grain" type="range" min="0" max="4" step="0.25" value="1"></label>
     <label>Gate <input id="film-gate" type="range" min="2" max="24.89" step="0.1" value="24.89"></label>
   </div>
+  <div class="bar" id="paint-bar" hidden>
+    <label>Medium <select id="paint-preset"></select></label>
+    <label><input id="paint-pan" type="checkbox" checked> Pan the camera</label>
+    <label><input id="paint-anchor" type="checkbox" checked> Canvas follows the world</label>
+  </div>
   <canvas id="view" width="1280" height="960"></canvas>
   <div class="stats" id="stats">Startingâ€¦</div>
 </main>
@@ -46,12 +51,18 @@ import { createGpuFilm } from "./film/gpu.mjs";
 import { FILM_PRESETS } from "./film/film.mjs";
 import { gameFrame } from "./fixtures/game.mjs";
 import { sceneCard } from "./fixtures/scene.mjs";
+import { createGpuPaint } from "./paint/gpu.mjs";
+import { PAINT_PRESETS } from "./paint/paint.mjs";
+import { streetScene } from "./fixtures/street.mjs";
 
 const $ = (id) => document.getElementById(id), canvas = $("view"), stats = $("stats");
 const PASSES = { crt: ["signal.encode", "signal.separate", "signal.demod", "beam", "halo.down", "halo.conv", "compose", "encode8", "present"],
-  film: ["expose", "halo.down", "halo.conv", "develop", "print", "encode8", "present"] };
+  film: ["expose", "halo.down", "halo.conv", "develop", "print", "encode8", "present"],
+  paint: ["prep", "tensor", "tensor.x", "tensor.y", "akf", "stroke", "relief", "compose", "encode8", "present"] };
 for (const k of Object.keys(PRESETS)) $("crt-preset").add(new Option(k, k));
 for (const k of Object.keys(FILM_PRESETS)) $("film-preset").add(new Option(k, k));
+for (const k of Object.keys(PAINT_PRESETS)) $("paint-preset").add(new Option(k, k));
+let street = null;   // rendered once on the CPU (a few seconds), then panned through
 let mode = "crt", host, runner = null, present = null, building = false, dirty = true, frame = 0;
 
 async function presenter(buf, w, h) {
@@ -70,6 +81,12 @@ async function rebuild() {
     canvas.width = W; canvas.height = H;
     runner = await createGpuCrt(host, $("crt-preset").value, ov, { w: 256, h: $("crt-interlace").checked ? 448 : 224 }, { w: W, h: H });
     present = await presenter(runner.packed, W, H);
+  } else if (mode === "paint") {
+    const W = 800, H = 500;
+    if (!street) { stats.textContent = "Rendering the street scene on the CPU…"; await new Promise((r) => setTimeout(r, 30)); street = streetScene(1000, 500, 0); }
+    canvas.width = W; canvas.height = H;
+    runner = await createGpuPaint(host, $("paint-preset").value, {}, { w: W, h: H });
+    present = await presenter(runner.packed, W, H);
   } else {
     const W = 1280, H = 720, ov = { ev: +$("film-ev").value, grainAmount: +$("film-grain").value, gateWidthMm: +$("film-gate").value };
     canvas.width = W; canvas.height = H;
@@ -83,7 +100,12 @@ function tick() {
   if (runner && !building) {
     const t = frame / 60;
     if (mode === "crt") runner.frame(gameFrame(256, runner.plan.src.h, t).data, frame);
-    else { const s = sceneCard(640, 360, t); runner.frame(s.data, frame); }
+    else if (mode === "paint") {
+      // A window sliding across the wider street: the camera pans; the canvas offset follows it.
+      const W = 800, H = 500, off = $("paint-pan").checked ? Math.round(100 + 99 * Math.sin(t * 0.25)) : 100, win = new Float32Array(W * H * 4);
+      for (let y = 0; y < H; y++) win.set(street.data.subarray((y * 1000 + off) * 4, (y * 1000 + off + W) * 4), y * W * 4);
+      runner.frame(win, $("paint-anchor").checked ? [off, 0] : [0, 0]);
+    } else { const s = sceneCard(640, 360, t); runner.frame(s.data, frame); }
     present(); frame++;
     if (frame % 30 === 0) {
       // The host keeps a running average per pass name; show only this view's passes.
@@ -98,10 +120,11 @@ function tick() {
   requestAnimationFrame(tick);
 }
 const mark = () => { dirty = true; };
-for (const id of ["crt-preset", "crt-signal", "crt-std", "crt-zoom", "crt-interlace", "film-preset", "film-ev", "film-grain", "film-gate"]) $(id).addEventListener("change", mark);
-for (const [id, m] of [["t-crt", "crt"], ["t-film", "film"]]) $(id).addEventListener("click", () => {
-  mode = m; $("t-crt").setAttribute("aria-pressed", m === "crt"); $("t-film").setAttribute("aria-pressed", m === "film");
-  $("crt-bar").hidden = m !== "crt"; $("film-bar").hidden = m !== "film"; mark();
+for (const id of ["crt-preset", "crt-signal", "crt-std", "crt-zoom", "crt-interlace", "film-preset", "film-ev", "film-grain", "film-gate", "paint-preset"]) $(id).addEventListener("change", mark);
+for (const [id, m] of [["t-crt", "crt"], ["t-film", "film"], ["t-paint", "paint"]]) $(id).addEventListener("click", () => {
+  mode = m;
+  for (const k of ["crt", "film", "paint"]) { $("t-" + k).setAttribute("aria-pressed", m === k); $(k + "-bar").hidden = m !== k; }
+  mark();
 });
 try { host = await createHost({ canvas, timing: true }); requestAnimationFrame(tick); }
 catch (e) { stats.textContent = e instanceof HostUnavailable ? "This browser has no WebGPU, so the live shaders cannot run here." : String(e); console.error("showcase failed to start", e); }

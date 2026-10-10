@@ -1,0 +1,70 @@
+{
+  "bounds": {
+    "max_abs_code": 8,
+    "p999_abs_code": 2,
+    "mean_abs_code": 0.1
+  },
+  "cases": [
+    {
+      "id": "oil-grotesque",
+      "max": 2,
+      "p999": 1,
+      "mean": 0.001888888888888889,
+      "over1": 5,
+      "worstPixel": 17771,
+      "cpu_ms": 4058
+    },
+    {
+      "id": "oil",
+      "max": 1,
+      "p999": 0,
+      "mean": 0.0009351851851851852,
+      "over1": 0,
+      "worstPixel": 2495,
+      "cpu_ms": 3035
+    },
+    {
+      "id": "gouache",
+      "max": 1,
+      "p999": 0,
+      "mean": 0.000675925925925926,
+      "over1": 0,
+      "worstPixel": 4583,
+      "cpu_ms": 2886
+    },
+    {
+      "id": "watercolour",
+      "max": 1,
+      "p999": 0,
+      "mean": 0.00021296296296296298,
+      "over1": 0,
+      "worstPixel": 5395,
+      "cpu_ms": 2119
+    },
+    {
+      "id": "watercolour-day",
+      "max": 1,
+      "p999": 0,
+      "mean": 5.555555555555556e-05,
+      "over1": 0,
+      "worstPixel": 9233,
+      "cpu_ms": 2119
+    },
+    {
+      "id": "grotesque-panned",
+      "max": 1,
+      "p999": 1,
+      "mean": 0.0018611111111111111,
+      "over1": 0,
+      "worstPixel": 430,
+      "cpu_ms": 3940
+    }
+  ],
+  "adapter": {
+    "vendor": "google",
+    "architecture": "swiftshader",
+    "device": "",
+    "description": ""
+  },
+  "adapter_kind": "swiftshader"
+}

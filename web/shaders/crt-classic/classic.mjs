@@ -51,10 +51,16 @@ export async function createGpuClassic(host, o, size) {
   for (const [k, code] of Object.entries({ phosphor: PHOSPHOR_WGSL, down: GLOW_DOWN_WGSL, box: BOX_WGSL, add: GLOW_ADD_WGSL, tube: TUBE_WGSL })) pipes[k] = await host.compute("classic." + k, code);
   const glow = P[12] > 0 || P[13] > 0;
   return {
-    packed: B.c,
+    packed: B.c, src: B.src,
     frame(rgba8) {
       if (rgba8) host.write(B.src, rgba8);
-      const enc = host.device.createCommandEncoder(), cp = enc.beginComputePass();
+      const enc = host.device.createCommandEncoder();
+      this.record(enc);
+      host.device.queue.submit([enc.finish()]);
+    },
+    // Record into an encoder the caller owns (the Motion post stack), plate already in src.
+    record(enc) {
+      const cp = enc.beginComputePass();
       const run = (pipe, list, x, y) => { cp.setPipeline(pipe); cp.setBindGroup(0, host.bind(pipe, list)); cp.dispatchWorkgroups(Math.ceil(x / 8), Math.ceil(y / 8)); };
       run(pipes.phosphor, [B.P, B.beam, B.mt, B.src, B.a], w, h);
       if (glow) {
@@ -66,7 +72,7 @@ export async function createGpuClassic(host, o, size) {
       }
       run(pipes.add, [B.P, B.toLin, B.toSrgb, B.bright, B.lin, B.a, B.b], w, h);
       run(pipes.tube, [B.P, B.b, B.c], w, h);
-      cp.end(); host.device.queue.submit([enc.finish()]);
+      cp.end();
     },
     async read() {
       const s = host.buffer({ size: 4 * w * h, usage: ["map-read", "copy-dst"] }), enc = host.device.createCommandEncoder();

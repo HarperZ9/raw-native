@@ -1,0 +1,239 @@
+{
+ "adapter": "",
+ "frames": [
+  "ramp",
+  "edges",
+  "noise",
+  "bars"
+ ],
+ "size": [
+  960,
+  600
+ ],
+ "passes": {
+  "exposure": {
+   "stage": "scene",
+   "history": false,
+   "runs": [
+    {
+     "spec": {
+      "ev": -1
+     },
+     "maxCode": 0,
+     "over": 0,
+     "worst": null
+    },
+    {
+     "spec": {
+      "ev": 0.5
+     },
+     "maxCode": 1,
+     "over": 0,
+     "worst": {
+      "frame": "ramp",
+      "pixel": [
+       104,
+       0
+      ],
+      "channel": 0,
+      "gpu": 0.61376953125,
+      "cpu": 0.613539457321167
+     }
+    },
+    {
+     "spec": {
+      "ev": 2
+     },
+     "maxCode": 0,
+     "over": 0,
+     "worst": null
+    }
+   ]
+  },
+  "test-effect-half": {
+   "stage": "display",
+   "history": false,
+   "runs": [
+    {
+     "spec": {},
+     "maxCode": 0,
+     "over": 0,
+     "worst": null
+    }
+   ]
+  },
+  "test-effect-lowres": {
+   "stage": "display",
+   "history": false,
+   "runs": [
+    {
+     "spec": {},
+     "maxCode": 1,
+     "over": 0,
+     "worst": {
+      "frame": "ramp",
+      "pixel": [
+       94,
+       0
+      ],
+      "channel": 0,
+      "gpu": 0.39404296875,
+      "cpu": 0.3941650390625
+     }
+    }
+   ]
+  },
+  "crt": {
+   "stage": "display",
+   "history": false,
+   "runs": [
+    {
+     "spec": {
+      "preset": "pvm-20",
+      "source": [
+       320,
+       200
+      ]
+     },
+     "maxCode": 1,
+     "over": 0,
+     "worst": {
+      "frame": "ramp",
+      "pixel": [
+       116,
+       0
+      ],
+      "channel": 1,
+      "gpu": 0.433349609375,
+      "cpu": 0.43326935172080994
+     }
+    }
+   ]
+  },
+  "film": {
+   "stage": "scene",
+   "history": false,
+   "runs": [
+    {
+     "spec": {
+      "preset": "500t-print"
+     },
+     "maxCode": 1,
+     "over": 0,
+     "worst": {
+      "frame": "ramp",
+      "pixel": [
+       12,
+       0
+      ],
+      "channel": 1,
+      "gpu": 0.2646484375,
+      "cpu": 0.26472780108451843
+     }
+    }
+   ]
+  },
+  "crt-classic": {
+   "stage": "display",
+   "history": false,
+   "runs": [
+    {
+     "spec": {
+      "cell": 4,
+      "scanlines": true,
+      "scanStrength": 0.35,
+      "beam": 0.5,
+      "mask": "grille",
+      "maskStrength": 0.3,
+      "bloom": 0.18,
+      "halation": 0.2,
+      "curvature": 0.12,
+      "aberration": 0.1,
+      "vignette": 0.25
+     },
+     "maxCode": 1,
+     "over": 0,
+     "worst": {
+      "frame": "ramp",
+      "pixel": [
+       623,
+       13
+      ],
+      "channel": 2,
+      "gpu": 0.63525390625,
+      "cpu": 0.6313725709915161
+     }
+    },
+    {
+     "spec": {
+      "cell": 3,
+      "scanlines": true,
+      "scanStrength": 0.6,
+      "beam": 1,
+      "mask": "slot",
+      "maskStrength": 0.8
+     },
+     "maxCode": 0,
+     "over": 0,
+     "worst": null
+    }
+   ]
+  },
+  "dither": {
+   "stage": "display",
+   "history": false,
+   "runs": [
+    {
+     "spec": {
+      "palette": "pico8",
+      "mode": "bayer4"
+     },
+     "maxCode": 0,
+     "over": 0,
+     "worst": null
+    },
+    {
+     "spec": {
+      "palette": "gameboy",
+      "mode": "bayer8"
+     },
+     "maxCode": 0,
+     "over": 0,
+     "worst": null
+    },
+    {
+     "spec": {
+      "palette": "ega",
+      "mode": "blue"
+     },
+     "maxCode": 0,
+     "over": 0,
+     "worst": null
+    },
+    {
+     "spec": {
+      "palette": "nes",
+      "mode": "noise",
+      "strength": 0.7,
+      "brightness": 0.05
+     },
+     "maxCode": 0,
+     "over": 0,
+     "worst": null
+    }
+   ]
+  }
+ },
+ "motion": {
+  "maxAB": 1,
+  "brighter": true,
+  "sumA": 10602964,
+  "sumC": 16803253,
+  "clip": 118,
+  "aces": 89
+ },
+ "adapter_kind": "swiftshader",
+ "problems": [],
+ "commit": "9818540ad8be8485408689f3bf49736889845541",
+ "bound": "every channel of every pixel of every frame within one 8-bit code of the pass's CPU reference"
+}

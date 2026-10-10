@@ -75,3 +75,14 @@ Each physical number the CRT and film shaders use, where it comes from, and how 
 | Interleaved gradient noise | 0.06711056, 0.00583715, 52.9829189 | Jimenez 2014 | high |
 | Blue-noise mask | void-and-cluster, 64 x 64, sigma 1.5, 10% seed density, seed 20261010 | Ulichney 1993 (method) | high (method) |
 | Pair penalty | 0.12 | the Studio's retro-dither.js | reference value |
+
+## Paint (`web/shaders/paint/`)
+
+| Constant | Value | Source | Confidence |
+|---|---|---|---|
+| Kubelka-Munk reflectance | R = 1 + K/S - sqrt((K/S)^2 + 2 K/S); thin layer by the hyperbolic solution | Kubelka and Munk 1931 | high |
+| Pigment masstones | titanium white, hansa yellow, quinacridone magenta, phthalo blue as smooth spectral shapes | from the pigments' known colour, not measured | low |
+| Relative scattering | white 1.0, yellow 0.35, magenta 0.18, blue 0.12 | assumed (white scatters most, organic pigments are transparent) | low |
+| Latent lookup | 17^3, Levenberg-Marquardt in a cube-root colour space | this library | engineered |
+| Kuwahara | 8 sectors, zeta 0.33, q 6 to 10, radius 5 to 7 px | Kyprianidis et al. 2009, 2010 (form); values chosen by eye | form high, values tuned |
+| XDoG | k 1.6, tau 0.985, epsilon -0.004, phi 25 to 45 | Winnemoeller et al. 2012 (form); values chosen by eye | form high, values tuned |
