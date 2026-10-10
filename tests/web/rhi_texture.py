@@ -1,12 +1,14 @@
 #!/usr/bin/env python3
-"""M2 criterion 3, the WebGPU half: the WebGPU build's texture identity check in a browser.
+"""M2 criterion 3 and the M3 material parity, the WebGPU half: a GPU check of the WebGPU build in a browser.
 
-    python tests/web/rhi_texture.py [--dir build-wasm-gpu] [--adapter gpu|swiftshader] [--out result.json]
+    python tests/web/rhi_texture.py [--command texture-identity|pbr-parity] [--dir build-wasm-gpu]
+                                    [--adapter gpu|swiftshader] [--out result.json]
 
 Serves the repository, opens web/test/texture-identity.html in headless Chrome, which runs
-`raw_native_cli texture-identity` from the WebAssembly WebGPU build, and reads its JSON.
+`raw_native_cli <command>` from the WebAssembly WebGPU build, and reads its JSON.
 Passes when the CLI exits 0, which means every case is within the bounds in
-evidence/m2-rhi-texture-bounds.json and the control fails. Without a WebGPU adapter it fails
+evidence/m2-rhi-texture-bounds.json (texture-identity) or evidence/m3-materials-bounds.json
+(pbr-parity) and the control fails. Without a WebGPU adapter it fails
 (an adapter is the point of the check).
 """
 
@@ -35,6 +37,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--command", choices=["texture-identity", "pbr-parity"], default="texture-identity")
     ap.add_argument("--dir", default="build-wasm-gpu")
     ap.add_argument("--adapter", choices=["gpu", "swiftshader"], default="swiftshader")
     ap.add_argument("--out")
@@ -53,7 +56,7 @@ def main() -> int:
             page = b.new_page()
             logs = []
             page.on("console", lambda msg: logs.append(msg.text))
-            page.goto(f"http://localhost:{srv.server_address[1]}/web/test/texture-identity.html?dir={a.dir}&m={m}&w={w}")
+            page.goto(f"http://localhost:{srv.server_address[1]}/web/test/texture-identity.html?dir={a.dir}&m={m}&w={w}&cmd={a.command}")
             page.wait_for_function("window.__result !== undefined", timeout=300000)
             res = page.evaluate("window.__result")
             b.close()

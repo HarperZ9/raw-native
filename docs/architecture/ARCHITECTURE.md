@@ -194,6 +194,29 @@ tolerance against a reference that does exist and its certificates say
 Binary plugins come later through the C ABI
 ([ADR 0007](adr/0007-plugin-model.md)).
 
+## Materials
+
+`raw/renderer/pbr.hpp` is the material model: glTF 2.0 metallic-roughness and the ratified
+material extensions (ior, specular, clearcoat, sheen, transmission, volume, anisotropy,
+iridescence, emissive strength), evaluated in float64. It is the oracle for every GPU shading
+path, the way the CPU renderer is the oracle for frames.
+
+- **Energy.** GGX with height-correlated Smith visibility, plus Kulla-Conty multiple scattering
+  with coloured Fresnel. The tables it reads (split albedo, an anisotropic split albedo in four
+  dimensions, the sheen albedo) are built at start-up by deterministic VNDF sampling and
+  quadrature; nothing is copied from another engine's tables.
+- **Layers.** Coat over sheen over base. Each layer weights what is below it by a symmetric
+  attenuation, so every term stays reciprocal and no white input reflects more than it receives.
+- **Checks.** `tests/test_pbr_energy.cpp` integrates the model by a different route from its
+  tables (white furnaces, conservation); `tests/test_pbr_reciprocity.cpp` checks reciprocity
+  and the iridescence fast path against a spectral reference. `pbr.wgsl` is the float32 form,
+  and `raw_native_cli pbr-parity` compares it with the reference on any RHI backend.
+- **Two deliberate departures from the extension texts:** iridescence sums eight harmonics
+  (the specification sums two, which leaves a 0.32 error on reflective bases at grazing angles),
+  and the clearcoat and transmission weights are symmetric (the texts weight by the view angle
+  alone, which breaks reciprocity). Bounds and every run, failures included:
+  `evidence/m3-materials-*.json`.
+
 ## Verification as the engine grows
 
 - **Every feature has a reference.** The CPU renderer is a layer of the engine,

@@ -1,0 +1,11 @@
+{
+ "reciprocity_cases": 20000,
+ "reciprocity_worst_rel": 3.318e-14,
+ "thin_walled_worst_rel": 0.000e+00,
+ "volume_generalized_worst_rel": 5.311e-16,
+ "clearcoat_zero_bit_identical": true,
+ "iridescence_cases": 1000,
+ "iridescence_worst_abs": 0.0483,
+ "iridescence_worst_at": {"film_ior": 1.8, "thickness_nm": 300, "cos": 0.1},
+ "failures": 0
+}

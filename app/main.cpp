@@ -1,5 +1,6 @@
 #include "raw/assets/json.hpp"
 #include "raw/renderer/texture_identity.hpp"
+#include "raw/renderer/pbr_parity.hpp"
 #include "raw/rhi/rhi.hpp"
 #include "raw/renderer/raster.hpp"
 #include "raw/renderer/accel.hpp"
@@ -71,6 +72,9 @@ static const char* kUsage =
     "       raw_native_cli texture-identity\n"
     "         sample a texture through four samplers on the GPU backend and compare with the CPU\n"
     "         sampler reference (JSON on stdout; exit 0 pass, 1 fail, 4 no GPU backend or adapter)\n"
+    "       raw_native_cli pbr-parity\n"
+    "         evaluate the glTF material model on the GPU backend and compare with the float64\n"
+    "         reference (JSON on stdout; exit 0 pass, 1 fail, 4 no GPU backend or adapter)\n"
     "  --out <dir>                 output directory (default .)\n"
     "  --width <int> --height <int> frame size (default 256x256)\n"
     "  --eye x,y,z --target x,y,z --up x,y,z   camera\n"
@@ -111,6 +115,16 @@ int main(int argc, char** argv){
         raw::rhi::Device* dev = raw::rhi::device(why);
         if (!dev){ std::printf("{\n \"error\": \"%s\"\n}\n", why.c_str()); return 4; }
         const raw::gpu_check::TextureIdentity r = raw::gpu_check::textureIdentity(*dev);
+        std::fputs(r.json().c_str(), stdout);
+        return r.pass() ? 0 : 1;
+    }
+    // The material model's GPU parity (M3, evidence/m3-materials-bounds.json): JSON on
+    // stdout; exit 0 when it passes, 1 when it fails, 4 without a GPU backend or adapter.
+    if (argc >= 2 && std::strcmp(argv[1], "pbr-parity") == 0){
+        std::string why;
+        raw::rhi::Device* dev = raw::rhi::device(why);
+        if (!dev){ std::printf("{\n \"error\": \"%s\"\n}\n", why.c_str()); return 4; }
+        const raw::gpu_check::PbrParity r = raw::gpu_check::pbrParity(*dev);
         std::fputs(r.json().c_str(), stdout);
         return r.pass() ? 0 : 1;
     }

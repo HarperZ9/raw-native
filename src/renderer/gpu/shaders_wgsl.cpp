@@ -2,15 +2,15 @@
 // Each pass is its "//@pass <name>" section of passes.wgsl with common.wgsl in
 // front of it.
 #include "shader_library.hpp"
-#include "raw_gpu_shaders.hpp"   // generated: kCommonWgsl, kPassesWgsl, kThreadsWgsl, kRasterWgsl
+#include "raw_gpu_shaders.hpp"   // generated: kCommonWgsl, kPassesWgsl, kThreadsWgsl, kRasterWgsl, kPbrWgsl
 #include <map>
 #include <string>
 namespace raw::gpu_shaders {
 namespace {
-// A Threads pass: its section of threads.wgsl, with the code before the first
-// marker in front of it.
-std::string threadsSource(const std::string& name){
-    const std::string all = kThreadsWgsl, mark = "//@pass " + name + "\n";
+// A pass of a module with its own shared code (threads.wgsl, pbr.wgsl): its section,
+// with the code before the module's first marker in front of it.
+std::string moduleSource(const char* text, const std::string& name){
+    const std::string all = text, mark = "//@pass " + name + "\n";
     const size_t first = all.find("//@pass "), a = all.find(mark);
     if (a == std::string::npos) return {};
     const size_t b = all.find("//@pass ", a + mark.size());
@@ -28,7 +28,8 @@ std::string rasterSource(std::string name){
     return all.substr(a, b == std::string::npos ? std::string::npos : b - a);
 }
 std::string passSource(const std::string& name){
-    if (name.rfind("threads_", 0) == 0) return threadsSource(name);
+    if (name.rfind("threads_", 0) == 0) return moduleSource(kThreadsWgsl, name);
+    if (name.rfind("pbr_", 0) == 0) return moduleSource(kPbrWgsl, name);
     if (std::string r = rasterSource(name); !r.empty()) return r;
     const std::string all = kPassesWgsl, mark = "//@pass " + name + "\n";
     size_t a = all.find(mark);
