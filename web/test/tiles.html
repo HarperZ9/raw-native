@@ -1,0 +1,86 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Tile pass check</title>
+<!-- M2 criterion 10: the tile pass against its CPU twin (exact, at integer scales, with
+     flips), and 100,000 tiles timed, in the same order twice. -->
+<script type="module">
+import { createHost } from '../raw-gpu.mjs';
+import { createMotion } from '../motion/renderer.mjs';
+import { tilesRef } from '../world/tiles_ref.mjs';
+import { rng } from '../../third_party/superstack/superstack.mjs';
+
+function tileset() {   // 8 x 8 tiles of 16 px, each with a pattern that shows orientation
+  const W = 128, data = new Uint8Array(W * W * 4);
+  for (let y = 0; y < W; y++) for (let x = 0; x < W; x++) {
+    const t = (y >> 4) * 8 + (x >> 4), fx = x & 15, fy = y & 15, i = 4 * (y * W + x);
+    data[i] = (t * 37 + fx * 9) & 255; data[i + 1] = (t * 91 + fy * 13) & 255; data[i + 2] = fx < fy ? 230 : 40; data[i + 3] = (fx + fy) % 7 === 0 ? 128 : 255;
+  }
+  return { width: W, height: W, data };
+}
+function randomMap(w, h, seed, tile = 16) {
+  const r = rng(seed), n = w * h, gids = new Uint32Array(n), flip = new Uint8Array(n);
+  for (let i = 0; i < n; i++) { gids[i] = r.nextFloat() < 0.1 ? 0 : 1 + Math.floor(r.nextFloat() * 64); flip[i] = Math.floor(r.nextFloat() * 8); }
+  return { width: w, height: h, tileW: tile, tileH: tile, layers: [{ name: 'a', gids, flip, opacity: 1, visible: true }],
+    tilesets: [{ firstgid: 1, columns: 8, count: 64, tileW: tile, tileH: tile, spacing: 0, margin: 0 }] };
+}
+async function run() {
+  const host = await createHost({});
+  const W = 320, H = 192, mo = await createMotion(host, { design: [W, H] });
+  mo.resize(W, H);
+  const img = tileset();
+  mo.image('ts', img);
+  const res = { cases: [] };
+  for (const [scale, x, y] of [[1, 0, 0], [2, 8, 4], [3, -5, 7]]) {
+    const map = randomMap(12, 8, `tiles-${scale}`);
+    const list = { camera: { x: W / 2, y: H / 2 }, background: [0, 0, 0], post: { bloom: 0, vignette: 0, grain: 0 }, items: [{ kind: 'tilemap', map, tileset: 'ts', x, y, scale }] };
+    const f = await mo.capture(list, { frame: 0, float: true });
+    const ref = tilesRef(map, img, { ox: x, oy: y, s: scale, opacity: 1 }, W, H);
+    let max = 0, bad = 0, first = null;
+    for (let p = 0; p < W * H; p++) for (let k = 0; k < 3; k++) {
+      const d = Math.abs(f.data[4 * p + k] - ref[4 * p + k]);
+      if (d > 0.004) { bad++; if (!first) first = { x: p % W, y: Math.floor(p / W), gpu: Array.from(f.data.slice(4 * p, 4 * p + 4)), ref: Array.from(ref.slice(4 * p, 4 * p + 4)) }; }
+      max = Math.max(max, d);
+    }
+    res.cases.push({ scale, x, y, maxAbs: max, bad, first, covered: ref.filter((v, i) => i % 4 === 3 && v > 0).length });
+  }
+  // Isometric: a 10 x 10 diamond map of 32 x 16 cells drawn from 32 x 32 tileset tiles
+  // (taller than the grid, bottom-aligned), at scales 1 and 2.
+  const isoImg = (() => { const W = 256, d = new Uint8Array(W * 64 * 4);
+    for (let y = 0; y < 64; y++) for (let x = 0; x < W; x++) { const i = 4 * (y * W + x), t = (y >> 5) * 8 + (x >> 5); d[i] = (t * 53 + x) & 255; d[i + 1] = (y * 7 + t * 29) & 255; d[i + 2] = ((x & 31) > (y & 31)) ? 220 : 60; d[i + 3] = 255; }
+    return { width: W, height: 64, data: d }; })();
+  mo.image('iso', isoImg);
+  for (const scale of [1, 2]) {
+    const map = randomMap(10, 10, `iso-${scale}`, 32);
+    map.tileH = 16; map.orientation = 'isometric';
+    map.tilesets[0] = { firstgid: 1, columns: 8, count: 16, tileW: 32, tileH: 32, spacing: 0, margin: 0 };
+    map.layers[0].gids = map.layers[0].gids.map((g) => (g ? 1 + (g % 16) : 0)); map.layers[0].flip.fill(0);
+    const x = 160, y = 10;
+    const list = { camera: { x: W / 2, y: H / 2 }, background: [0, 0, 0], post: { bloom: 0, vignette: 0, grain: 0 }, items: [{ kind: 'tilemap', map, tileset: 'iso', x, y, scale }] };
+    const f = await mo.capture(list, { frame: 0, float: true });
+    const ref = tilesRef(map, isoImg, { ox: x, oy: y, s: scale, opacity: 1 }, W, H);
+    let max = 0, bad = 0, first = null;
+    for (let p = 0; p < W * H; p++) for (let k = 0; k < 3; k++) {
+      const d = Math.abs(f.data[4 * p + k] - ref[4 * p + k]);
+      if (d > 0.004) { bad++; if (!first) first = { x: p % W, y: Math.floor(p / W), gpu: Array.from(f.data.slice(4 * p, 4 * p + 4)), ref: Array.from(ref.slice(4 * p, 4 * p + 4)) }; }
+      max = Math.max(max, d);
+    }
+    res.cases.push({ iso: true, scale, x, y, maxAbs: max, bad, first, covered: ref.filter((v, i) => i % 4 === 3 && v > 0).length });
+  }
+  // 100,000 tiles: 400 x 250 cells of 4 px... drawn from the same tileset at scale 0.25
+  // of 16 px tiles, so 1,600 x 1,000 pixels of tiles all on screen at 1,600 x 1,000.
+  const BW = 1600, BH = 1000, big = randomMap(400, 250, 'tiles-big');
+  mo.resize(BW, BH);
+  const bigList = { camera: { x: W / 2, y: H / 2 }, background: [0, 0, 0], post: { bloom: 0, vignette: 0, grain: 0 }, items: [{ kind: 'tilemap', map: big, tileset: 'ts', x: 0, y: 0, scale: 0.25, screen: true }] };
+  const hashOf = async () => { const c = await mo.capture(bigList, { frame: 0 }); return [...new Uint8Array(await crypto.subtle.digest('SHA-256', c.data))].map((b) => b.toString(16).padStart(2, '0')).join(''); };
+  const h1 = await hashOf();
+  const times = [];
+  for (let i = 0; i < 20; i++) { const t0 = performance.now(); await mo.capture(bigList, { frame: 0 }); times.push(performance.now() - t0); }
+  const h2 = await hashOf();
+  times.sort((a, b) => a - b);
+  res.big = { tiles: 400 * 250, size: [BW, BH], frame_ms_median: +times[10].toFixed(2), frame_ms_p95: +times[19].toFixed(2), sameTwice: h1 === h2, sha256: h1,
+    note: 'frame time is a whole capture: the draw, the finish and the readback', gpu: mo.timings ? mo.timings() : null };
+  res.adapter = host.info;
+  return res;
+}
+run().then((r) => { window.__result = r; }, (e) => { window.__result = { error: String(e && e.stack || e) }; });
+</script>

@@ -2,7 +2,7 @@
 // Each pass is its "//@pass <name>" section of passes.wgsl with common.wgsl in
 // front of it.
 #include "shader_library.hpp"
-#include "raw_gpu_shaders.hpp"   // generated: kCommonWgsl, kPassesWgsl
+#include "raw_gpu_shaders.hpp"   // generated: kCommonWgsl, kPassesWgsl, kThreadsWgsl, kRasterWgsl
 #include <map>
 #include <string>
 namespace raw::gpu_shaders {
@@ -16,8 +16,20 @@ std::string threadsSource(const std::string& name){
     const size_t b = all.find("//@pass ", a + mark.size());
     return all.substr(0, first) + "\n" + all.substr(a, b == std::string::npos ? std::string::npos : b - a);
 }
+// A raster pass: its section of raster.wgsl alone (one module, entry points vs and
+// fs). "<name>.vs" and "<name>.fs" both name it, matching the D3D12 build's DXIL.
+std::string rasterSource(std::string name){
+    const size_t dot = name.find('.');
+    if (dot != std::string::npos) name = name.substr(0, dot);
+    const std::string all = kRasterWgsl, mark = "//@raster " + name + "\n";
+    const size_t a = all.find(mark);
+    if (a == std::string::npos) return {};
+    const size_t b = all.find("//@raster ", a + mark.size());
+    return all.substr(a, b == std::string::npos ? std::string::npos : b - a);
+}
 std::string passSource(const std::string& name){
     if (name.rfind("threads_", 0) == 0) return threadsSource(name);
+    if (std::string r = rasterSource(name); !r.empty()) return r;
     const std::string all = kPassesWgsl, mark = "//@pass " + name + "\n";
     size_t a = all.find(mark);
     if (a == std::string::npos) return {};

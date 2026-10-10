@@ -75,8 +75,10 @@ jobs:
           test "$rc" = 4
           grep -q '"verdict":"unverifiable"' gpu-none/gpu_certificate.json
           grep -q '"backend":"none"' gpu-none/gpu_certificate.json
-      - name: The web frame graph matches the C++ graph's golden output, and the Motion tests pass
-        run: node --test web/frame-graph.test.mjs web/camera.test.mjs web/motion/motion.test.mjs web/sound/sound.test.mjs web/shaders/crt.test.mjs web/shaders/film.test.mjs web/shaders/dither.test.mjs web/shaders/paint.test.mjs
+      - name: Every web test file (frame graph golden, Motion, world, sound, shaders)
+        shell: bash
+        # Every *.test.mjs under web/, so a new test file needs no edit here.
+        run: node --test $(find web -name '*.test.mjs' | sort)
       - name: Without a GPU backend, threads exits 4
         shell: bash
         run: |
@@ -95,6 +97,12 @@ jobs:
           if command -v python3 >/dev/null && python3 --version >/dev/null 2>&1; then py=python3; else py=python; fi
           "$py" scripts/check_layers.py --selftest
           "$py" scripts/check_layers.py
+      - name: Every third-party file matches third_party/MANIFEST.md (M2 criterion 6)
+        shell: bash
+        run: |
+          if command -v python3 >/dev/null && python3 --version >/dev/null 2>&1; then py=python3; else py=python; fi
+          "$py" scripts/check_third_party.py --selftest
+          "$py" scripts/check_third_party.py
       - name: Every case of the identity matrix matches the committed golden hashes
         # Ten renders (views, sizes, motion, no ray-traced pass, four threads)
         # and the no-GPU answer: every file each one writes, hashed. The golden
@@ -164,6 +172,13 @@ jobs:
           build/Release/raw_native_cli.exe --gpu --out gpu-warp --width 128 --height 128 --prev-eye 4.3,4,5.7 >/dev/null
           grep -q '"verdict":"verified"' gpu-warp/gpu_certificate.json
           grep -q '"description":"Microsoft Basic Render Driver"' gpu-warp/gpu_certificate.json
+      - name: Textures, samplers and raster passes on WARP match the CPU sampler reference (M2 criterion 3)
+        shell: bash
+        env:
+          RAW_NATIVE_D3D12_WARP: "1"
+        run: |
+          build/Release/gpu_texture_identity.exe texture-warp.json
+          build/Release/raw_native_cli.exe texture-identity | grep -q '"pass": true'
           build/Release/raw_native_cli.exe verify gpu-warp
           build/Release/raw_native_cli.exe verify gpu-warp/cpu
           grep -q '"schema":"superstack.receipt/1"' gpu-warp/gpu_receipt.json
@@ -179,6 +194,22 @@ jobs:
           n=$(grep -l '"verdict":"verified"' warp-out/*/gpu_certificate.json | wc -l)
           echo "verified GPU certificates: $n of 4"
           test "$n" = 4
+  fuzz-sanitizers:
+    # ROADMAP M2 criterion 2: one million fuzzed glTF inputs under AddressSanitizer and
+    # UndefinedBehaviorSanitizer; any report, other exception or slow input fails the job.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build the glTF fuzzer with the sanitizers
+        run: |
+          cmake -S . -B build-san -DCMAKE_BUILD_TYPE=RelWithDebInfo -DCMAKE_CXX_FLAGS="-fsanitize=address,undefined -fno-sanitize-recover=all -fno-omit-frame-pointer"
+          cmake --build build-san --target fuzz_gltf -j 4
+      - name: One million inputs
+        run: build-san/fuzz_gltf 1000000 1 1000 gltf-fuzz.json
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with: { name: gltf-fuzz, path: gltf-fuzz.json, retention-days: 30 }
   wasm:
     runs-on: ubuntu-24.04
     env:
@@ -239,6 +270,12 @@ jobs:
           cmake --build --preset wasm-gpu
           test -s build-wasm-gpu/raw-native-gpu.wasm
           sha256sum build-wasm-gpu/raw-native-gpu.wasm build-wasm-gpu/raw-native-gpu.mjs
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: The WebGPU build's textures, samplers and raster passes match the CPU sampler reference in Chrome on SwiftShader (M2 criterion 3)
+        run: |
+          python -m pip install playwright==1.58.0
+          python tests/web/rhi_texture.py --dir build-wasm-gpu --adapter swiftshader --out texture-webgpu.json
       - name: The default native build carries no GPU code
         run: |
           ! grep -q "emdawnwebgpu\|wgpu" build/raw_native_cli
@@ -330,6 +367,10 @@ jobs:
         run: python tests/web/shaders_parity.py --shader classic --adapter swiftshader --out media-out/shaders-classic-parity.json
       - name: Shader library, painterly, GPU against the CPU reference within the committed bounds, on the CPU adapter
         run: python tests/web/shaders_parity.py --shader paint --adapter swiftshader --out media-out/shaders-paint-parity.json
+      - name: Shader library, pixel art and scaling, GPU against the CPU reference within the committed bounds, on the CPU adapter
+        run: python tests/web/shaders_parity.py --shader pixel --adapter swiftshader --out media-out/shaders-pixel-parity.json
+      - name: Shader library, VHS, GPU against the CPU reference within the committed bounds, on the CPU adapter
+        run: python tests/web/shaders_parity.py --shader vhs --adapter swiftshader --out media-out/shaders-vhs-parity.json
       - name: The sound engine's live path (AudioWorklet in Chrome) matches its offline render within the PCM tolerance
         run: |
           node web/sound/smoke.mjs build/sound-smoke
@@ -346,6 +387,16 @@ jobs:
         run: python tests/web/vector_corpus.py --adapter swiftshader
       - name: Post passes match their CPU references; the stack runs inside Motion (M1 criteria 9 and 10)
         run: python tests/web/post_passes.py --adapter swiftshader --modules web/shaders/post.mjs
+      - name: Tile loaders survive 50,000 fuzzed inputs (the full million is in evidence/), and the tile pass matches its CPU twin (M2 criterion 10)
+        run: |
+          node tools/fuzz/tiles_fuzz.mjs --n 50000 > /dev/null
+          python tests/web/tiles_check.py --adapter swiftshader
+      - name: The isometric fade on the GPU matches its CPU twin and changes only the faded cells (M2 criterion 9)
+        run: python tests/web/iso_fade.py --adapter swiftshader
+      - name: The style template scaffolds render, the same twice (ADR 0016)
+        run: python tests/web/templates_check.py --adapter swiftshader --seconds 1
+      - name: Low-resolution frames scale to the output exactly, and a slow pan moves edges smoothly (M2 criterion 7)
+        run: python tests/web/pixel_scaling.py --adapter swiftshader
       - name: Every scene wrote a video, a poster, captions and a manifest, from this commit
         shell: bash
         run: |

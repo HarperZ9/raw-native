@@ -61,6 +61,41 @@ q.frame(plateRGBA8);   // q.packed: RGBA8 palette colours; await q.read() -> { i
 
 The Studio's tube stage (`retro-crt.js`) ported to the GPU pass for pass: beam scanlines and masks in 8.8 fixed point, bloom and halation in linear light, then warp, bezel, colour separation and vignette. On the committed frame set it is within one 8-bit code of `retro-crt.js`, and bit-equal where only integer paths run. Use it where a render must match the Studio exactly; use the physical tube for everything else.
 
+## VHS (`web/shaders/vhs/`)
+
+A videotape, simulated in the signal domain for template (c). Presets: `sp-fresh`, `lp-worn`, `ep-rental` (with a rolling tracking band) and `thriller` (a worn second-generation LP copy).
+
+| Pass | What it simulates |
+|---|---|
+| `sample` | The line read off the tape, sampled at 4 fsc, with the transport's time-base error: a slow wander, line-to-line jitter, the head-switch skew in the bottom lines, and the mistracking band's shove. |
+| `tape` | Luma through the FM channel: a windowed-sinc band limit at the tape speed's bandwidth (3.0 MHz SP, 2.5 LP, 2.2 EP), emphasis ringing (`peaking`), and noise that rises with frequency. Chroma through colour-under: a gaussian band limit at about 0.5 MHz, smooth like the analogue chain, a delay against luma, noise that streaks along the line, and a per-line phase wobble (hue). Generations narrow the bandwidths and add the noise. |
+| `play` | Oxide dropouts, filled from the line above as a deck's dropout compensator does, then back to R'G'B'. |
+| `show` | The signal lines at a display size. Or feed `signal` straight into the tube: the showcase plays the tape over composite into a Trinitron set. |
+
+Measured on the CPU reference (`vhs.test.mjs`):
+- 1 MHz luma detail passes and 4 MHz is mostly removed;
+- the chroma edge rises more than three times as wide as the luma edge and lags it by the set delay;
+- with every loss off, a flat field passes unchanged;
+- dropouts occur at the set rate;
+- the head switch moves only the bottom lines.
+
+## Pixel art (`web/shaders/pixel/`)
+
+3D pixel art that stays still while the camera turns, orbits and dollies, for template (b). The method follows Ebert's "Texel Splatting: Perspective-Stable 3D Pixel Art" (arXiv 2603.14587, CC BY 4.0), reimplemented from the paper. The paper's demo code has no stated licence and was not read.
+
+| Pass | What it does |
+|---|---|
+| `capture` | A cubemap of the scene (N texels per face) from a probe at the camera position snapped to a world grid (`cell`). Each texel keeps its hit's Chebyshev distance, normal, material and object. |
+| `shade` | Each texel shaded once, independently of the camera: posterised OKLab lightness (`bands`), and selective outlines, a darker shade of the object's own colour, where a texel borders a farther object (`outline`) or a crease (`crease`). |
+| `splatz`, `splatid` | Every texel splatted as a world-space quad (corners at the texel's corner directions, at its depth, expanded by `expand`) into a visibility buffer. One pass finds the nearest depth key with atomics, the next the lowest texel index at that key. |
+| `resolve` | The texel's colour, or an eye ray for pixels no texel reaches. On a cell change a 4 x 4 Bayer threshold crossfades from the previous probe. The blend advances each frame by the larger of 1 / `fadeFrames` and the distance moved over `fadeCells` of a cell. The paper leaves the timing open, so this rule is this library's choice. |
+
+Within a cell, a texel keeps its colour as the view changes. Measured by reprojection (`pixel/stability.mjs`): on a small orbit, turn and dolly, 0.00% of compared pixels change colour with texel splatting, against 5.5%, 12.2% and 19.2% for naive pixelisation (the same shading rendered at low resolution and upscaled). At a cell change the probe moves, and texels shift. Slow cameras crossfade; fast ones switch within a frame.
+
+Limits: the scene is a raymarched SDF diorama (`pixel/scene.mjs`, with a WGSL twin), because raw-native has no mesh rasteriser yet. Geometry the probe cannot see is filled by eye rays, which can shimmer. Outlines stop at cube-face seams.
+
+`pixel/scale.mjs` covers roadmap S3. Integer upscaling is bit-equal to nearest neighbour on the GPU. Sharp-bilinear keeps texel interiors exact, blends one output pixel at each seam, and takes the subpixel camera offset of a snapped low-resolution render.
+
 ## Paint (`web/shaders/paint/`)
 
 Turns a rendered frame into a painting. Presets are media: `oil-grotesque` (template (a): thick, warped, outlined, broken colour, violet shadows against hansa lights), `oil`, `gouache` and `watercolour`.
@@ -74,7 +109,10 @@ Turns a rendered frame into a painting. Presets are media: `oil-grotesque` (temp
 | `relief` | Per pixel: XDoG lines (Winnemoeller et al. 2012), the lit impasto (shade and sheen from the stroke relief and a canvas weave), and the watercolour wet edge. |
 | `compose` | A slow noise warp for the expressive looks. Complementary temperature in pigment space, per-stroke pigment jitter, and soft value bands. Then Kubelka-Munk decode. The medium comes last: lit impasto for oil and gouache; for watercolour, a Kubelka-Munk glaze over paper, thicker in the paper's valleys (granulation) and at wash edges. |
 
-Everything textural is anchored to `canvasOffset`, so a camera pan carries the paper and brushwork with the world. On a one-pixel pan the mean frame-to-frame difference is 0.000 to 0.007 codes with the canvas anchored and 0.6 to 8.3 codes screen-locked (`paint.test.mjs`). Rotation, zoom and parallax need motion vectors, which are not done.
+Everything textural (paper, canvas weave, bristles, stroke identity, warp) is noise at canvas coordinates, in one of two modes:
+
+- **Pan offset** (`canvasOffset`): the pixel plus the camera's 2D pan. Exact for an isometric camera that pans. On a one-pixel pan the mean frame-to-frame difference is 0.000 to 0.007 codes, against 0.6 to 8.3 screen-locked.
+- **Advected** (pass `{ mv, dist, distPrev }` from the renderer to `frame`): each pixel fetches its surface's canvas coordinate from last frame along the motion vector, after Neyret's "Advected Textures" (2003). It starts fresh where a depth test shows a disocclusion. Two layers carry the coordinates. A layer regenerates only when its mean distortion passes 0.35, measured as the departure of the local scale from 1 with rotation excluded and disocclusion seams left out. The new layer ramps in over 8 frames while the old one fades. A pure 2D pan never distorts, so it never regenerates. On the street scene at 160 x 100, the paper texture's reprojected change falls from 8.63 to 3.66 codes on an orbit, from 9.97 to 3.80 on a dolly, and from 3.82 to 2.99 on a parallax pan. In the full painting the orbit and dolly improve by 16 to 17%. The parallax pan is unchanged (2.30 against 2.33), because the image-driven parts dominate there. The residual comes from resampling fine noise every frame.
 
 ## The film (`web/shaders/film/`)
 

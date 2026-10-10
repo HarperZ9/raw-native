@@ -1,0 +1,38 @@
+{
+  "bounds": {
+    "max_abs_code": 6,
+    "p999_abs_code": 2,
+    "mean_abs_code": 0.1
+  },
+  "cases": [
+    {
+      "id": "sp-fresh",
+      "max": 1,
+      "p999": 0,
+      "mean": 0.0004577020202020202,
+      "over1": 0
+    },
+    {
+      "id": "thriller",
+      "max": 1,
+      "p999": 1,
+      "mean": 0.0012547348484848485,
+      "over1": 0
+    },
+    {
+      "id": "ep-rental-tracking",
+      "max": 1,
+      "p999": 1,
+      "mean": 0.0018781565656565656,
+      "over1": 0
+    }
+  ],
+  "adapter": {
+    "vendor": "google",
+    "architecture": "swiftshader",
+    "device": "",
+    "description": ""
+  },
+  "gpuErrors": [],
+  "adapter_kind": "swiftshader"
+}

@@ -11,14 +11,15 @@
 import { createHost } from "../raw-gpu.mjs";
 import { createPaint, encodePaint8 } from "../shaders/paint/paint.mjs";
 import { createGpuPaint } from "../shaders/paint/gpu.mjs";
-import { streetScene } from "../shaders/fixtures/street.mjs";
+import { streetScene, motionVectors } from "../shaders/fixtures/street.mjs";
+import { frameSet } from "../../tests/web/post_frames.mjs";
 
 const q = new URLSearchParams(location.search);
 function stats(a, b) {
   const hist = new Uint32Array(256); let sum = 0, n = 0, max = 0, at = -1;
   for (let i = 0; i < a.length; i++) { if ((i & 3) === 3) continue; const d = Math.abs(a[i] - b[i]); hist[d]++; sum += d; n++; if (d > max) { max = d; at = i >> 2; } }
   let acc = 0, p999 = 0; for (let d = 0; d < 256; d++) { acc += hist[d]; if (acc >= n * 0.999) { p999 = d; break; } }
-  return { max, p999, mean: sum / n, over1: n - hist[0] - hist[1], worstPixel: at };
+  return { max, p999, mean: sum / n, over1: n - hist[0] - hist[1], over2: n - hist[0] - hist[1] - hist[2], worstPixel: at };
 }
 async function parity(host) {
   const bounds = await (await fetch("../../evidence/shaders-paint-parity-bounds.json")).json();
@@ -35,7 +36,35 @@ async function parity(host) {
     gpu.destroy();
     cases.push({ id: c.id, ...stats(want, got), cpu_ms: Math.round(cpuMs) });
   }
-  return { bounds: bounds.bounds, cases };
+  // Advected-canvas mode: camera sequences with motion vectors, checked against their own bounds.
+  const mb = await (await fetch("../../evidence/shaders-paint-motion-parity-bounds.json")).json(), MW = 160, MH = 100, R = Math.hypot(5.2, 6.4);
+  const cams = { orbit: (f) => { const a = 0.69 + f * 0.01; return { eye: [R * Math.sin(a), 4.6, R * Math.cos(a)] }; },
+    dolly: (f) => ({ eye: [5.2 * (1 - 0.012 * f), 4.6 * (1 - 0.012 * f), 6.4 * (1 - 0.012 * f)] }),
+    pan: (f) => ({ eye: [5.2 + 0.02 * f, 4.6, 6.4], target: [0.2 + 0.02 * f, 0.8, 0] }) };
+  for (const c of mb.cases) {
+    if (only && "motion-" + c.id !== only) continue;
+    const cpu = createPaint(c.preset, {}, { w: MW, h: MH }), gpu = await createGpuPaint(host, c.preset, {}, { w: MW, h: MH });
+    let prev = null, ref;
+    for (let f = 0; f < c.frames; f++) {
+      const sc = streetScene(MW, MH, 0, cams[c.camera](f)), m = prev ? motionVectors(prev, sc) : { mv: new Float32Array(MW * MH * 2), dA: sc.depth };
+      const motion = { mv: m.mv, dist: sc.depth, distPrev: m.dA };
+      ref = cpu.frame(sc, motion); gpu.frame(sc.data, null, motion); prev = sc;
+    }
+    const want = encodePaint8(ref.img, MW, MH), got = (await gpu.read()).packed; gpu.destroy();
+    const st = stats(want, got), b = mb.bounds;
+    cases.push({ id: "motion-" + c.id, ...st, cpu_ms: 0, motionBounds: true, pass: st.max <= b.max_abs_code && st.p999 <= b.p999_abs_code && st.mean <= b.mean_abs_code });
+  }
+  // The engine's committed post frames (large flat areas, one-pixel lines, hard edges).
+  const pb = await (await fetch("../../evidence/shaders-paint-postframes-parity-bounds.json")).json(), fs = frameSet();
+  for (const c of pb.cases) {
+    if (only && "post-" + c.id !== only) continue;
+    const scene = { width: fs.width, height: fs.height, data: fs.data[fs.names.indexOf(c.frame)] }, o = { w: fs.width, h: fs.height };
+    const want = encodePaint8(createPaint(c.preset, {}, o).frame(scene).img, o.w, o.h), gpu = await createGpuPaint(host, c.preset, {}, o);
+    gpu.frame(scene.data); const got = (await gpu.read()).packed; gpu.destroy();
+    const st = stats(want, got), b = pb.bounds;
+    cases.push({ id: "post-" + c.id, ...st, cpu_ms: 0, motionBounds: true, pass: st.max <= b.max_abs_code && st.over2 <= b.over2_count && st.mean <= b.mean_abs_code });
+  }
+  return { bounds: bounds.bounds, motionBounds: mb.bounds, postBounds: pb.bounds, cases };
 }
 async function timing(host) {
   const W = +q.get("w") || 1920, H = +q.get("h") || 1080, frames = +q.get("frames") || 60, sm = streetScene(W >> 2, H >> 2, 0);
@@ -56,8 +85,10 @@ async function timing(host) {
 }
 try {
   const host = await createHost({ timing: true });
+  const gpuErrors = []; host.device.onuncapturederror = (e) => gpuErrors.push(e.error.message);   // a validation error names itself instead of showing up as wrong pixels
   const res = q.get("timing") ? await timing(host) : await parity(host);
   res.adapter = host.info;
+  await host.done(); res.gpuErrors = gpuErrors;
   window.__result = res;
 } catch (e) { window.__result = { error: String(e && e.stack || e) }; }
 </script>

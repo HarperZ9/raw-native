@@ -1,0 +1,55 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Pixel art: GPU against the CPU reference</title>
+<link rel="icon" href="data:,">
+<!-- Run by tests/web/shaders_parity.py --shader pixel. Each case of
+     evidence/shaders-pixel-parity-bounds.json, frame by frame through the CPU reference and the
+     GPU, compared on its last frame. Timing mode: ?timing=1&w=..&h=..&N=..&frames=.. -->
+<script type="module">
+import { createHost } from "../raw-gpu.mjs";
+import { createPixel, encodePixel8 } from "../shaders/pixel/pixel.mjs";
+import { createGpuPixel } from "../shaders/pixel/gpu.mjs";
+import { integerUpscale, sharpBilinear, SCALE_WGSL } from "../shaders/pixel/scale.mjs";
+import { gradientPlate } from "../shaders/fixtures/plates.mjs";
+
+const q = new URLSearchParams(location.search);
+const view = (f) => { const r = f.radius || 6.5, a = f.angle; return { eye: [r * Math.sin(a), 4.2 * r / 6.5, r * Math.cos(a)], target: [f.targetX || 0, 0.6, 0], fovy: 0.75 }; };
+try {
+  const host = await createHost({ timing: true });
+  const gpuErrors = []; host.device.onuncapturederror = (e) => gpuErrors.push(e.error.message);
+  if (q.get("timing")) {
+    const W = +q.get("w") || 1920, H = +q.get("h") || 1080, frames = +q.get("frames") || 60, N = +q.get("N") || 192;
+    const g = await createGpuPixel(host, { N }, { w: W, h: H }), per = [];
+    for (let f = 0; f < frames; f++) { const t = performance.now(); g.frame(view({ angle: 0.6 + f * 0.003 })); await host.done(); per.push(performance.now() - t); }
+    per.sort((a, b) => a - b);
+    window.__result = { preset: `N${N}`, width: W, height: H, frames, wall_ms_median: per[per.length >> 1], gpuErrors };
+  } else {
+    const bounds = await (await fetch("../../evidence/shaders-pixel-parity-bounds.json")).json(), { width: W, height: H } = bounds.output, cases = [];
+    for (const c of bounds.cases) {
+      const cpu = createPixel({ N: c.N }, { w: W, h: H }), gpu = await createGpuPixel(host, { N: c.N }, { w: W, h: H });
+      let ref, t0 = performance.now();
+      for (const f of c.frames) { ref = cpu.frame(view(f)); gpu.frame(view(f)); }
+      const cpuMs = performance.now() - t0, want = encodePixel8(ref.img, W, H), got = (await gpu.read()).packed; gpu.destroy();
+      let over = 0, sum = 0, max = 0, n = 0;
+      for (let i = 0; i < want.length; i++) { if ((i & 3) === 3) continue; const d = Math.abs(want[i] - got[i]); sum += d; n++; if (d > 2) over++; if (d > max) max = d; }
+      cases.push({ id: c.id, over2_fraction: over / n, mean: sum / n, max, cpu_ms: Math.round(cpuMs), blend: ref.blend });
+    }
+    // Scaling (S3): integer upscale must equal nearest neighbour exactly; sharp-bilinear within a code.
+    const sb = await (await fetch("../../evidence/shaders-scale-parity-bounds.json")).json(), pl = gradientPlate(80, 45), pipe = await host.compute("pixel.scale", SCALE_WGSL);
+    for (const c of sb.cases) {
+      const want = c.mode === "integer" ? integerUpscale(pl, c.w / 80).data : sharpBilinear(pl, c.w, c.h, c.offX, c.offY).data;
+      const S = host.buffer({ size: 32, usage: ["storage", "copy-dst"], data: new Float32Array([80, 45, c.w, c.h, c.offX || 0, c.offY || 0, c.mode === "integer" ? 0 : 1, 0]) });
+      const src = host.buffer({ size: pl.data.byteLength, usage: ["storage", "copy-dst"], data: pl.data }), dst = host.buffer({ size: 4 * c.w * c.h, usage: ["storage", "copy-src"] });
+      const rb = host.buffer({ size: 4 * c.w * c.h, usage: ["map-read", "copy-dst"] }), enc = host.device.createCommandEncoder(), cp = enc.beginComputePass();
+      cp.setPipeline(pipe); cp.setBindGroup(0, host.bind(pipe, [S, src, dst])); cp.dispatchWorkgroups(Math.ceil(c.w / 8), Math.ceil(c.h / 8)); cp.end();
+      enc.copyBufferToBuffer(dst, 0, rb, 0, 4 * c.w * c.h); host.device.queue.submit([enc.finish()]); await rb.mapAsync(1);
+      const got = new Uint8Array(rb.getMappedRange().slice(0)); rb.unmap();
+      let max = 0; for (let i = 0; i < want.length; i++) max = Math.max(max, Math.abs(want[i] - got[i]));
+      const bound = c.mode === "integer" ? sb.bounds.integer_max_abs_code : sb.bounds.sharp_max_abs_code;
+      cases.push({ id: "scale-" + c.id, over2_fraction: max > bound ? 1 : 0, mean: 0, max });
+    }
+    await host.done();
+    window.__result = { bounds: bounds.bounds, cases, adapter: host.info, gpuErrors };
+  }
+} catch (e) { window.__result = { error: String(e && e.stack || e) }; }
+</script>

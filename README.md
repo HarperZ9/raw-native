@@ -289,6 +289,20 @@ every case is inside its bounds: paint inside shapes within 0.0003, nothing draw
 outside them, and edge pixels within 0.03 on average
 (`evidence/m1-vector-swiftshader.json`).
 
+## Tile maps
+
+`web/world/tiles.mjs` loads two map formats into one TileMap: LDtk levels (JSON) and
+Tiled maps (TMX, read by our own parser; Tiled's code is GPL and is not used). TMX
+layers can be CSV, XML, or base64, raw, zlib or gzip. Any malformed input throws a
+`TileError`. One million fuzzed inputs produced no other exception and nothing
+slower than 4 ms (`evidence/m2-tiles-fuzz.json`).
+
+A Motion item `{ kind: "tilemap", map, tileset, x, y, scale }` draws a map. Each
+layer is one quad, and texels are loaded without filtering, so pixel art stays
+exact. On Chrome's CPU adapter the pass matches its CPU twin
+(`web/world/tiles_ref.mjs`) at scales 1, 2 and 3 with every flip, and 100,000
+tiles draw identically twice (`evidence/m2-tiles-swiftshader.json`).
+
 ## Media at every release
 
 `raw-native media render` turns a repo's `docs/media/media.json` into videos.

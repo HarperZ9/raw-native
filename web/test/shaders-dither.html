@@ -13,6 +13,7 @@ import { gradientPlate, randomPlate } from "../shaders/fixtures/plates.mjs";
 const q = new URLSearchParams(location.search);
 try {
   const host = await createHost({ timing: false });
+  const gpuErrors = []; host.device.onuncapturederror = (e) => gpuErrors.push(e.error.message);   // a validation error names itself instead of showing up as wrong pixels
   const plates = { gradient: gradientPlate(320, 180), random: randomPlate(512, 512, 7) };
   if (q.get("exhaustive")) {
     // Every 24-bit colour once, as a 4096 x 4096 plate (pixel p holds colour p): local evidence, not CI.
@@ -23,7 +24,8 @@ try {
     const g = await createGpuDither(host, c, { w: 4096, h: 4096 }); g.frame(all); const got = (await g.read()).idx; g.destroy();
     let bad = 0, first = -1;
     for (let i = 0; i < want.length; i++) if (want[i] !== got[i]) { bad++; if (first < 0) first = i; }
-    window.__result = { bounds: { mismatched_pixels: 0 }, cases: [{ id: `exhaustive-${palette}-${mode}`, colours: 16777216, mismatched: bad, firstMismatch: first, cpu_ms: Math.round(cpuMs) }], adapter: host.info };
+    await host.done();
+  window.__result = { bounds: { mismatched_pixels: 0 }, cases: [{ id: `exhaustive-${palette}-${mode}`, colours: 16777216, mismatched: bad, firstMismatch: first, cpu_ms: Math.round(cpuMs) }], adapter: host.info, gpuErrors };
     throw "done";
   }
   const cases = [];
@@ -41,6 +43,7 @@ try {
     for (let i = 0; i < want.length; i++) if (want[i] !== got[i]) { bad++; if (first < 0) first = i; }
     out.push({ id, mismatched: bad, firstMismatch: first });
   }
-  window.__result = { bounds: { mismatched_pixels: 0 }, cases: out, adapter: host.info };
+  await host.done();
+  window.__result = { bounds: { mismatched_pixels: 0 }, cases: out, adapter: host.info, gpuErrors };
 } catch (e) { if (e !== "done") window.__result = { error: String(e && e.stack || e) }; }
 </script>

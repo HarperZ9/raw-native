@@ -58,10 +58,19 @@ def run(shader: str, adapter: str, query: dict, timeout_ms: int) -> dict:
 def check(res: dict) -> list[str]:
     if "error" in res:
         return [res["error"]]
+    if res.get("gpuErrors"):
+        return ["WebGPU error: " + m for m in res["gpuErrors"]]
     b, problems = res["bounds"], []
+    if "over2_fraction" in b:
+        return [f"{c['id']}: {100 * c['over2_fraction']:.2f}% of values off by more than 2 codes, mean {c['mean']:.3f} (bounds {b})"
+                for c in res["cases"] if c["over2_fraction"] > b["over2_fraction"] or c["mean"] > b["mean_abs_code"]]
     if "mismatched_pixels" in b:
         return [f"{c['id']}: {c['mismatched']} pixels differ (first at {c['firstMismatch']})" for c in res["cases"] if c["mismatched"] > b["mismatched_pixels"]]
     for c in res["cases"]:
+        if c.get("motionBounds"):
+            if not c["pass"]:
+                problems.append(f"{c['id']}: max {c['max']}, p99.9 {c['p999']}, mean {c['mean']:.4f} (bounds {res['motionBounds']})")
+            continue
         if c["max"] > b["max_abs_code"] or c["p999"] > b["p999_abs_code"] or c["mean"] > b["mean_abs_code"]:
             problems.append(f"{c['id']}: max {c['max']}, p99.9 {c['p999']}, mean {c['mean']:.4f} (bounds {b})")
     return problems
@@ -69,7 +78,7 @@ def check(res: dict) -> list[str]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--shader", choices=["crt", "film", "dither", "classic", "paint"], required=True)
+    ap.add_argument("--shader", choices=["crt", "film", "dither", "classic", "paint", "pixel", "vhs"], required=True)
     ap.add_argument("--adapter", choices=["gpu", "swiftshader"], default="swiftshader")
     ap.add_argument("--case")
     ap.add_argument("--exhaustive", help="dither only: palette:mode over all 16,777,216 colours")
@@ -86,7 +95,7 @@ def main() -> int:
         if a.overrides:
             q["overrides"] = a.overrides
         res = run(a.shader, a.adapter, q, 600000)
-        problems = [res["error"]] if "error" in res else []
+        problems = [res["error"]] if "error" in res else ["WebGPU error: " + m for m in res.get("gpuErrors", [])]
     else:
         q = {"case": a.case} if a.case else {}
         if a.exhaustive:

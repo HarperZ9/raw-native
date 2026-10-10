@@ -1,0 +1,83 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Pixel scaling check</title>
+<!-- M2 criterion 7 (evidence/m2-pixel-scaling-bounds.json). Motion renders 160 x 90, then the
+     scale pass draws 960 x 540. The low-resolution frame is read back and scaled on the CPU
+     by the shader library's references; the GPU output must match them. A pan in 0.1-pixel
+     steps must move a square's edge with the camera, within one output pixel, never backwards. -->
+<script type="module">
+import { createHost } from '../raw-gpu.mjs';
+import { createMotion } from '../motion/renderer.mjs';
+import { rect, circle } from '../motion/path.mjs';
+import { integerUpscale, sharpBilinear } from '../shaders/pixel/scale.mjs';
+
+const LW = 160, LH = 90, K = 6, W = LW * K, H = LH * K;
+const post = { bloom: 0, vignette: 0, grain: 0 };
+const ground = [0.02, 0.02, 0.03];
+
+function diff(a, b) {
+  let max = 0, bad = 0, first = null;
+  for (let i = 0; i < a.length; i++) {
+    const d = Math.abs(a[i] - b[i]);
+    if (d > max) max = d;
+    if (d > 0) { bad++; if (!first) first = { i, gpu: a[i], cpu: b[i] }; }
+  }
+  return { max, bad, first };
+}
+// The x where the row crosses half the contrast between ground and square, going left to right.
+function leftEdge(img, y) {
+  const row = (x) => img.data[4 * (y * img.width + x)];
+  const lo = row(0), hi = Math.max(...Array.from({ length: img.width }, (_, x) => row(x))), half = (lo + hi) / 2;
+  for (let x = 1; x < img.width; x++) {
+    const a = row(x - 1), b = row(x);
+    if (a < half && b >= half) return x - 0.5 + (half - a) / (b - a);
+  }
+  return null;
+}
+
+async function run() {
+  const host = await createHost({});
+  const mo = await createMotion(host, { design: [W, H] });
+  mo.resize(W, H);
+  const items = [
+    { shape: rect(60, 60, 300, 180), fill: '#e8e4da' }, { shape: circle(640, 270, 130), fill: '#5fb3a1' },
+    { shape: rect(420, 330, 120, 150), fill: [0.9, 0.3, 0.2, 0.7] }, { shape: circle(200, 420, 61), fill: '#c9a227' },
+  ];
+  const scene = (mode, camera) => ({ items, camera, background: ground, post, pixel: { width: LW, height: LH, mode } });
+  const out = { cases: [] };
+
+  // Integer: bit-equal to integerUpscale of the low-resolution frame.
+  let gpu = await mo.capture(scene('integer', { x: W / 2, y: H / 2 }));
+  let low = await mo.pixelMode.readLow();
+  out.cases.push({ check: 'integer', ...diff(gpu.data, integerUpscale(low, K).data), lowNonGround: low.data.filter((v, i) => i % 4 === 0 && v > 20).length });
+
+  // Sharp: within 1 of sharpBilinear at four sub-texel offsets.
+  for (const want of [0, 0.25, 0.5, 0.75]) {
+    const camera = { x: W / 2 + want * K, y: H / 2 + want * K };
+    const list = scene('sharp', camera), { off } = mo.pixelMode.snap(list);
+    gpu = await mo.capture(list);
+    low = await mo.pixelMode.readLow();
+    out.cases.push({ check: 'sharp', want, off, ...diff(gpu.data, sharpBilinear(low, W, H, off[0], off[1]).data) });
+  }
+
+  // Pan: a 4 x 4 texel square, the camera moved 0.1 output pixels a frame for 120 frames.
+  const x0 = 456, y0 = 258, sq = [{ shape: rect(x0, y0, 4 * K, 4 * K), fill: '#e8e4da' }];
+  const pan = [];
+  for (let t = 0; t <= 120; t++) {
+    const p = t * 0.1;
+    const img = await mo.capture({ items: sq, camera: { x: W / 2 + p, y: H / 2 }, background: ground, post, pixel: { width: LW, height: LH, mode: 'sharp' } });
+    pan.push({ t, want: x0 - p, got: leftEdge(img, y0 + 2 * K) });
+  }
+  let maxErr = 0, backwards = 0, missing = 0;
+  for (let i = 0; i < pan.length; i++) {
+    if (pan[i].got === null) { missing++; continue; }
+    maxErr = Math.max(maxErr, Math.abs(pan[i].got - pan[i].want));
+    if (i && pan[i - 1].got !== null && pan[i].got > pan[i - 1].got + 1e-9) backwards++;
+  }
+  out.pan = { frames: pan.length, maxErr, backwards, missing, first: pan[0], last: pan[pan.length - 1] };
+  out.adapter = host.adapterInfo || null;
+  mo.destroy();
+  return out;
+}
+run().then((r) => { window.__result = r; }, (e) => { window.__result = { error: String(e && e.stack || e) }; });
+</script>

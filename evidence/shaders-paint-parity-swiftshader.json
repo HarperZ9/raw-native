@@ -4,60 +4,184 @@
     "p999_abs_code": 2,
     "mean_abs_code": 0.1
   },
+  "motionBounds": {
+    "max_abs_code": 8,
+    "p999_abs_code": 3,
+    "mean_abs_code": 0.2
+  },
+  "postBounds": {
+    "max_abs_code": 4,
+    "over2_count": 0,
+    "mean_abs_code": 0.05
+  },
   "cases": [
     {
       "id": "oil-grotesque",
-      "max": 2,
+      "max": 1,
       "p999": 1,
-      "mean": 0.001888888888888889,
-      "over1": 5,
-      "worstPixel": 17771,
-      "cpu_ms": 4058
+      "mean": 0.0016481481481481482,
+      "over1": 0,
+      "over2": 0,
+      "worstPixel": 23,
+      "cpu_ms": 4099
     },
     {
       "id": "oil",
       "max": 1,
       "p999": 0,
-      "mean": 0.0009351851851851852,
+      "mean": 0.0008888888888888889,
       "over1": 0,
-      "worstPixel": 2495,
-      "cpu_ms": 3035
+      "over2": 0,
+      "worstPixel": 447,
+      "cpu_ms": 2995
     },
     {
       "id": "gouache",
       "max": 1,
       "p999": 0,
-      "mean": 0.000675925925925926,
+      "mean": 0.0006203703703703704,
       "over1": 0,
-      "worstPixel": 4583,
-      "cpu_ms": 2886
+      "over2": 0,
+      "worstPixel": 5919,
+      "cpu_ms": 2945
     },
     {
       "id": "watercolour",
       "max": 1,
       "p999": 0,
-      "mean": 0.00021296296296296298,
+      "mean": 0.0002314814814814815,
       "over1": 0,
-      "worstPixel": 5395,
-      "cpu_ms": 2119
+      "over2": 0,
+      "worstPixel": 6369,
+      "cpu_ms": 2246
     },
     {
       "id": "watercolour-day",
       "max": 1,
       "p999": 0,
-      "mean": 5.555555555555556e-05,
+      "mean": 8.333333333333333e-05,
       "over1": 0,
-      "worstPixel": 9233,
-      "cpu_ms": 2119
+      "over2": 0,
+      "worstPixel": 6600,
+      "cpu_ms": 2186
     },
     {
       "id": "grotesque-panned",
       "max": 1,
       "p999": 1,
-      "mean": 0.0018611111111111111,
+      "mean": 0.0015185185185185184,
       "over1": 0,
-      "worstPixel": 430,
-      "cpu_ms": 3940
+      "over2": 0,
+      "worstPixel": 165,
+      "cpu_ms": 4131
+    },
+    {
+      "id": "motion-orbit-grotesque",
+      "max": 1,
+      "p999": 1,
+      "mean": 0.0021041666666666665,
+      "over1": 0,
+      "over2": 0,
+      "worstPixel": 236,
+      "cpu_ms": 0,
+      "motionBounds": true,
+      "pass": true
+    },
+    {
+      "id": "motion-dolly-watercolour",
+      "max": 1,
+      "p999": 0,
+      "mean": 0.0002916666666666667,
+      "over1": 0,
+      "over2": 0,
+      "worstPixel": 1703,
+      "cpu_ms": 0,
+      "motionBounds": true,
+      "pass": true
+    },
+    {
+      "id": "motion-pan-oil",
+      "max": 1,
+      "p999": 1,
+      "mean": 0.0010208333333333332,
+      "over1": 0,
+      "over2": 0,
+      "worstPixel": 229,
+      "cpu_ms": 0,
+      "motionBounds": true,
+      "pass": true
+    },
+    {
+      "id": "post-ramp-watercolour",
+      "max": 1,
+      "p999": 0,
+      "mean": 0.00035011574074074074,
+      "over1": 0,
+      "over2": 0,
+      "worstPixel": 65,
+      "cpu_ms": 0,
+      "motionBounds": true,
+      "pass": true
+    },
+    {
+      "id": "post-edges-watercolour",
+      "max": 1,
+      "p999": 0,
+      "mean": 0.00021469907407407408,
+      "over1": 0,
+      "over2": 0,
+      "worstPixel": 984,
+      "cpu_ms": 0,
+      "motionBounds": true,
+      "pass": true
+    },
+    {
+      "id": "post-bars-watercolour",
+      "max": 1,
+      "p999": 0,
+      "mean": 6.828703703703703e-05,
+      "over1": 0,
+      "over2": 0,
+      "worstPixel": 8792,
+      "cpu_ms": 0,
+      "motionBounds": true,
+      "pass": true
+    },
+    {
+      "id": "post-ramp-grotesque",
+      "max": 1,
+      "p999": 0,
+      "mean": 0.0008177083333333334,
+      "over1": 0,
+      "over2": 0,
+      "worstPixel": 291,
+      "cpu_ms": 0,
+      "motionBounds": true,
+      "pass": true
+    },
+    {
+      "id": "post-edges-grotesque",
+      "max": 1,
+      "p999": 0,
+      "mean": 0.0007413194444444444,
+      "over1": 0,
+      "over2": 0,
+      "worstPixel": 65,
+      "cpu_ms": 0,
+      "motionBounds": true,
+      "pass": true
+    },
+    {
+      "id": "post-bars-grotesque",
+      "max": 1,
+      "p999": 0,
+      "mean": 0.00025983796296296296,
+      "over1": 0,
+      "over2": 0,
+      "worstPixel": 29,
+      "cpu_ms": 0,
+      "motionBounds": true,
+      "pass": true
     }
   ],
   "adapter": {
@@ -66,5 +190,6 @@
     "device": "",
     "description": ""
   },
+  "gpuErrors": [],
   "adapter_kind": "swiftshader"
 }

@@ -1,0 +1,13 @@
+{
+  "what": "GPU VHS (web/shaders/vhs/gpu.mjs) against the CPU reference (web/shaders/vhs/vhs.mjs)",
+  "fixed_before_first_run": "2026-10-10",
+  "source": "fixtures/street.mjs streetScene(176, 120, 0) as R'G'B' (exposure 2.4, sRGB-encoded)",
+  "output": { "width": 352, "height": 240 },
+  "cases": [
+    { "id": "sp-fresh", "preset": "sp-fresh", "frame": 3 },
+    { "id": "thriller", "preset": "thriller", "frame": 7 },
+    { "id": "ep-rental-tracking", "preset": "ep-rental", "frame": 11 }
+  ],
+  "bounds": { "max_abs_code": 6, "p999_abs_code": 2, "mean_abs_code": 0.1 },
+  "why": "Noise is drawn from the same integer hashes on both sides; what differs is f32 against f64 in the filters, the Box-Muller transform and the line shifts. A dropout run boundary can move a sample on a half step."
+}

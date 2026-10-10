@@ -12,3 +12,13 @@ third_party/superstack/tests/run_vectors.cpp -text
 third_party/superstack/vectors/*.json -text
 third_party/superstack/superstack.mjs -text
 third_party/superstack/examples/sound/* -text
+
+# third_party/MANIFEST.md pins these by the SHA-256 of their exact bytes (ROADMAP M2 criterion 6),
+# so they too check out as the committed blob under any core.autocrlf setting.
+third_party/** -text
+src/renderer/aces2.hpp -text
+src/renderer/aces2_cam.cpp -text
+src/renderer/aces2_gamut.cpp -text
+src/renderer/aces2_tables.cpp -text
+web/colour/colour.wgsl -text
+docs/motion/hanken-grotesk-500.atlas.json -text

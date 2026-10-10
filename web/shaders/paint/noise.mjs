@@ -19,7 +19,10 @@ export function paperHeight(x, y) {
 // Bristle noise: fine across the stroke, which the flow integration then stretches along it.
 export const bristle = (x, y) => 0.7 * vnoise(x / 1.3, y / 1.3, 53) + 0.3 * vnoise(x / 5, y / 5, 59);
 // Low-frequency warp for the expressive presets: two noise fields in [-1, 1].
-export function warp(x, y) { return [2 * vnoise(x / 23, y / 23, 71) - 1, 2 * vnoise(x / 23, y / 23, 73) - 1]; }
+export function warp(x, y) { return [warpX(x, y), warpY(x, y)]; }
+export const warpX = (x, y) => 2 * vnoise(x / 23, y / 23, 71) - 1, warpY = (x, y) => 2 * vnoise(x / 23, y / 23, 73) - 1;
+// Paper at half the tooth frequency: where pigment settles.
+export const paperHalf = (x, y) => paperHeight(x / 2, y / 2);
 // Oil canvas: a plain weave (threads over and under every 3.2 px) with a little slub noise.
 export function canvasHeight(x, y) {
   return 0.5 + 0.25 * Math.sin((2 * Math.PI * x) / 3.2) * Math.cos((2 * Math.PI * y) / 3.2) + 0.25 * (vnoise(x / 1.5, y / 1.5, 61) - 0.5);

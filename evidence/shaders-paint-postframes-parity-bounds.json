@@ -1,0 +1,10 @@
+{
+  "what": "GPU painterly passes against the CPU reference on raw-native's committed post-pass frame set (tests/web/post_frames.mjs, 960 x 600)",
+  "set": "2026-10-10, AFTER diagnostic runs on these frames. These bounds are not blind: the engine session reported failures here (more than 2 codes on up to 180,115 values), the cause was found and fixed (flow direction on axis-aligned and vanishing gradients, nearest-pixel tensor reads in the stroke pass, a sign-dependent direction blend), and the bounds are the engine session's own threshold with a margin.",
+  "cases": [
+    { "id": "ramp-watercolour", "frame": "ramp", "preset": "watercolour" }, { "id": "edges-watercolour", "frame": "edges", "preset": "watercolour" },
+    { "id": "bars-watercolour", "frame": "bars", "preset": "watercolour" }, { "id": "ramp-grotesque", "frame": "ramp", "preset": "oil-grotesque" },
+    { "id": "edges-grotesque", "frame": "edges", "preset": "oil-grotesque" }, { "id": "bars-grotesque", "frame": "bars", "preset": "oil-grotesque" }
+  ],
+  "bounds": { "max_abs_code": 4, "over2_count": 0, "mean_abs_code": 0.05 }
+}

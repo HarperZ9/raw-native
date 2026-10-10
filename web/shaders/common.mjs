@@ -53,6 +53,14 @@ export function notchTaps(centre, halfWidth, half) {
   for (let i = 0; i < h.length; i++) h[i] = (i === half ? 1 : 0) - (hi[i] - lo[i]);
   return h;
 }
+// A gaussian low-pass whose response is down 3 dB at `cutoff` cycles per sample (smooth, no
+// ringing: the shape of an analogue chain rather than a brick wall); taps sum to 1.
+export function gaussTaps(cutoff, half = 0) {
+  const sigma = 0.13251 / cutoff, r = half || Math.ceil(4 * sigma), h = new Float64Array(2 * r + 1);
+  let s = 0; for (let i = -r; i <= r; i++) { h[i + r] = Math.exp(-0.5 * (i / sigma) ** 2); s += h[i + r]; }
+  for (let i = 0; i < h.length; i++) h[i] /= s;
+  return h;
+}
 // Taps that pass everything: used when a stage's bandwidth is set to 0 (off).
 export const identityTaps = () => new Float64Array([1]);
 

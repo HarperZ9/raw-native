@@ -52,11 +52,30 @@ export function blur4(plan, a, wts, alongY) {
   return o;
 }
 // Orientation along the edge (unit vector) and anisotropy in [0, 1] from a smoothed tensor.
+// The gradient eigenvector is taken from whichever of (F, l1 - E) and (l1 - G, F) is longer, so an
+// axis-aligned gradient (F = 0) is exact; the old single formula collapsed to zero for a horizontal
+// gradient and fell back to an arbitrary direction, which f32 and f64 resolved differently.
+// Anisotropy is scaled down where the gradient is far below one 8-bit code (a vanishing tensor is
+// exactly 0 in f64 and about 1e-15 of rounding in f32), and where the structure is near isotropic
+// the direction eases toward a fixed one (sign-aligned first, so the blend is continuous).
+export const FLOW_FALLBACK = [0.7071067811865476, 0.7071067811865476];
+// Major eigenvector of a symmetric 2 x 2 [[e, f], [f, g]], from the better-conditioned of the two
+// candidate forms; its sign is arbitrary, which strokes and Kuwahara sectors do not mind.
+function majorVec(e, f, g) {
+  const tr = e + g, l1 = (tr + Math.sqrt((e - g) * (e - g) + 4 * f * f)) / 2;
+  const ax = f, ay = l1 - e, bx = l1 - g, by = f, na = Math.hypot(ax, ay), nb = Math.hypot(bx, by);
+  return na >= nb ? [ax, ay, na] : [bx, by, nb];
+}
 export function flow(E, F, G) {
   const tr = E + G, dsc = Math.sqrt((E - G) * (E - G) + 4 * F * F), l1 = (tr + dsc) / 2, l2 = (tr - dsc) / 2;
-  let tx = l1 - E, ty = -F; const n = Math.hypot(tx, ty);
-  if (n > 1e-12) { tx /= n; ty /= n; } else { tx = 0.7071; ty = 0.7071; }
-  return [tx, ty, tr > 1e-12 ? (l1 - l2) / (l1 + l2) : 0];
+  const sharp = Math.min(1, Math.max(0, (tr - 1e-7) / 9e-7)), A = tr > 1e-12 ? ((l1 - l2) / (l1 + l2)) * sharp * sharp * (3 - 2 * sharp) : 0;
+  // Blend in the tensor domain, which has no sign: the unit-trace structure tensor toward the
+  // tensor of the fallback's gradient (perpendicular to the fallback tangent), by anisotropy.
+  const t = Math.min(1, Math.max(0, (A - 0.02) / 0.08)), k = t * t * (3 - 2 * t), inv = tr > 1e-12 ? 1 / tr : 0;
+  const e = k * E * inv + (1 - k) * 0.5, f = k * F * inv - (1 - k) * 0.5, g = k * G * inv + (1 - k) * 0.5;
+  const [gx, gy, ng] = majorVec(e, f, g);
+  if (ng <= 1e-12) return [FLOW_FALLBACK[0], FLOW_FALLBACK[1], A];
+  return [-gy / ng, gx / ng, A];
 }
 
 export function akf(plan, s, lat, T) {
@@ -96,17 +115,26 @@ export function akf(plan, s, lat, T) {
 }
 
 // Brush relief: bristle noise averaged along the flow, a triangle-weighted line integral.
-export function stroke(plan, T) {
-  const { w, h } = plan.out, { strokeLen: L } = plan.p, [ox, oy] = plan.p.canvasOffset, H = new Float32Array(w * h * 2);
-  const dirAt = (px, py) => { const i = Math.min(h - 1, Math.max(0, Math.floor(py + 0.5))) * w + Math.min(w - 1, Math.max(0, Math.floor(px + 0.5))); return flow(T[i * 4], T[i * 4 + 1], T[i * 4 + 2]); };
+export function stroke(plan, T, cv) {
+  const { w, h } = plan.out, { strokeLen: L } = plan.p, H = new Float32Array(w * h * 2);
+  // The tensor read bilinearly at the stroke's continuous position: a nearest-pixel read made the
+  // direction field step at half pixels, where f32 and f64 paths could part.
+  const dirAt = (px, py) => {
+    const fx = Math.min(w - 1, Math.max(0, px)), fy = Math.min(h - 1, Math.max(0, py)), x0 = Math.floor(fx), y0 = Math.floor(fy), x1 = Math.min(w - 1, x0 + 1), y1 = Math.min(h - 1, y0 + 1), tx = fx - x0, ty = fy - y0;
+    const t = [0, 1, 2].map((c) => (T[(y0 * w + x0) * 4 + c] * (1 - tx) + T[(y0 * w + x1) * 4 + c] * tx) * (1 - ty) + (T[(y1 * w + x0) * 4 + c] * (1 - tx) + T[(y1 * w + x1) * 4 + c] * tx) * ty);
+    return flow(t[0], t[1], t[2]);
+  };
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-    let acc = bristle(x + ox, y + oy) * (L + 1), ids = strokeId(x + ox, y + oy) * (L + 1), ws = L + 1;
+    let acc = cv.n(bristle, x, y) * (L + 1), ids = cv.n(strokeId, x, y) * (L + 1), ws = L + 1;
     for (const sgn of [1, -1]) {
-      let px = x, py = y, [tx, ty] = dirAt(x, y); tx *= sgn; ty *= sgn;
+      let px = x, py = y, [tx, ty] = dirAt(x, y), cont = 1; tx *= sgn; ty *= sgn;
       for (let k = 1; k <= L; k++) {
         px += tx; py += ty;
         const [nx, ny] = dirAt(px, py), d = nx * tx + ny * ty; tx = d < 0 ? -nx : nx; ty = d < 0 ? -ny : ny;
-        const wk = L + 1 - k; acc += wk * bristle(px + ox, py + oy); ids += wk * strokeId(px + ox, py + oy); ws += wk;
+        // A turn near 90 degrees makes the sign choice above a coin toss; fade the stroke out
+        // there so whichever way it goes contributes almost nothing (and f32 and f64 agree).
+        const a = Math.min(1, Math.max(0, (Math.abs(d) - 0.05) / 0.25)); cont *= a * a * (3 - 2 * a);
+        const wk = (L + 1 - k) * cont; acc += wk * cv.n(bristle, px, py); ids += wk * cv.n(strokeId, px, py); ws += wk;
       }
     }
     H[(y * w + x) * 2] = acc / ws; H[(y * w + x) * 2 + 1] = ids / ws;
