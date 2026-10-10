@@ -249,6 +249,20 @@ jobs:
           build/Release/gpu_swr_parity.exe swr-warp.json
           build/Release/raw_native_cli.exe swr-render --out swr-warp
           python -c "import json,sys; d=json.load(open('swr-warp/swr.json')); f=d['frames']; print(json.dumps(f)); sys.exit(0 if len(f)==6 and all(x['pixels_differing']==0 for x in f) else 1)"
+      - name: The compute PLOC BVH on WARP equals its CPU reference node for node, and its traversal gives the brute-force answer (RT stage R2, B1 to B3)
+        shell: bash
+        env:
+          RAW_NATIVE_D3D12_WARP: "1"
+        run: |
+          build/Release/gpu_rt_bvh_parity.exe rt-bvh-warp.json > /dev/null
+          grep -q '"pass": true' rt-bvh-warp.json
+      - name: The compute path tracer on WARP against its CPU reference and the R1 rasterizer; P4's albedo and depth are a recorded open failure (evidence/rt-r2-runs.json)
+        shell: bash
+        env:
+          RAW_NATIVE_D3D12_WARP: "1"
+        run: |
+          build/Release/gpu_rt_pt_parity.exe rt-pt-warp.json > /dev/null || true
+          python tests/gpu/pt_gate.py rt-pt-warp.json
       - name: Textures, samplers and raster passes on WARP match the CPU sampler reference (M2 criterion 3)
         shell: bash
         env:
@@ -383,6 +397,12 @@ jobs:
           python tests/gpu/post_gate.py post-webgpu.json --min-scenes 5
       - name: raw-native's own rasterizer in Chrome on SwiftShader matches its CPU reference (RT stage R1, C4 and C5)
         run: python tests/web/rhi_texture.py --command swr-parity --dir build-wasm-gpu --adapter swiftshader --out swr-webgpu.json
+      - name: The compute PLOC BVH and its traversal in Chrome on SwiftShader, quick (20,000 rays a scene; RT stage R2, B1 to B3)
+        run: python tests/web/rhi_texture.py --command rt-bvh-parity --args=--quick --dir build-wasm-gpu --adapter swiftshader --out rt-bvh-webgpu.json
+      - name: The compute path tracer in Chrome on SwiftShader, quick; P4's albedo and depth are a recorded open failure
+        run: |
+          python tests/web/rhi_texture.py --command rt-pt-parity --args=--quick --dir build-wasm-gpu --adapter swiftshader --out rt-pt-webgpu.json || true
+          python tests/gpu/pt_gate.py rt-pt-webgpu.json
       - name: The WebGPU build's material model matches its float64 reference in Chrome on SwiftShader (M3 materials)
         run: python tests/web/rhi_texture.py --command pbr-parity --dir build-wasm-gpu --adapter swiftshader --out pbr-webgpu.json
       - name: The default native build carries no GPU code

@@ -1,0 +1,12 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "RT stage R2, the path tracer's CPU checks (P0, P1 on the reference, P3 threads)",
+ "pass": true,
+ "results": [
+  {"check": "P0", "cases": 400, "reference": "ndf-mixture", "worst_ratio_to_bound": 0.7569, "outside": 0, "control_ndf_pdf_worst_ratio": 60.0079, "control_outside": 309, "reported_cosine_reference_worst": 1.8512, "reported_cosine_outside": 1},
+  {"check": "P1 cpu", "albedo": 0.5, "control_drop_cosine": false, "mean": 1.999287, "expected": 2.000000, "z": 1.192, "worst_pixel_z": 3.640, "within": true},
+  {"check": "P1 cpu", "albedo": 0.8, "control_drop_cosine": false, "mean": 4.998286, "expected": 5.000000, "z": 1.216, "worst_pixel_z": 3.232, "within": true},
+  {"check": "P1 cpu", "albedo": 0.5, "control_drop_cosine": true, "mean": 54.041008, "expected": 2.000000, "z": 4.467, "worst_pixel_z": 8.862, "within": false},
+  {"check": "P3 cpu threads", "identical": true}
+ ]
+}

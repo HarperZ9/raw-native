@@ -56,6 +56,50 @@
    "checks": "P0, P1 on the CPU reference, P3 threads",
    "result": "fail: P0 1 of 400 cases outside (case 64, ratio 1.851); P0 control fails as required (263 cases outside); P1 CPU furnace a = 0.5: 1.19 standard errors, worst pixel 3.64; a = 0.8: 1.22, 3.23; control (no cosine) outside; P3 1 thread against 24 byte-identical",
    "diagnosis": "See the bounds file, addendum 1, P0 method note 1: the cosine-weighted reference is unreliable for a lobe of roughness 0.095 at grazing; an independent NDF-mixture estimator agrees with the tracer's VNDF sampling within 0.3 standard errors."
+  },
+  {
+   "run": 7,
+   "when": "2026-10-10 18:32Z",
+   "backend": "CPU (MSVC, Release)",
+   "checks": "P0 (method note 1), P1 on the CPU reference, P3 threads",
+   "result": "pass: P0 400 cases against the NDF mixture, worst 0.757 of the bound, control 309 cases outside; reported: against cosine sampling 1 case outside (case 64, ratio 1.851). CPU furnace a = 0.5: 1.19 standard errors, worst pixel 3.64; a = 0.8: 1.22 and 3.23; control outside. 1 thread against 24 byte-identical."
+  },
+  {
+   "run": 8,
+   "when": "2026-10-10 18:38Z",
+   "backend": "D3D12 WARP",
+   "checks": "P1 to P4",
+   "result": "fail: P1 pass (z 0.34, 1.01; control 8.5); P2 iso_street pass (mean |z| 0.38; 0.82 over pixels with non-zero variance), retro_room fail with NaN in the image mean; P3 pass; P4 fail on albedo (133 pixels on retro_room, 137 on iso_street) and depth (7 pixels over 1e-4 on retro_room)",
+   "diagnosis_p2": "2 GPU pixels were non-finite and 0 CPU pixels. Candidate causes were pow(1 - oh, 5) with a base rounded below zero (GPU pow is exp2 of log2) and sqrt(1 - p1^2) with |cos| rounded above 1. Replacing pow by a clamped product alone removed both NaNs, so pow is the inferred cause; the sqrt guard was added as well, on the CPU and the GPU.",
+   "diagnosis_p4": "On every failing pixel a float64 ray-triangle answer decides who is right: albedo, the path tracer matches float64 on 132 of 133 (retro_room) and 132 of 137 (iso_street), R1 on 1 and 5; depth, the path tracer on 7 of 7, R1 on 0. R1 snaps vertices to 1/256 px, which moves its UVs near texel boundaries and its depths near the horizon; the committed exemption (1e-3 texel) did not allow for that. P4 stays failed as committed; the bound is not loosened."
+  },
+  {
+   "run": 9,
+   "when": "2026-10-10 18:41Z to 18:44Z",
+   "backend": "D3D12 WARP (debug layer)",
+   "checks": "P1 to P4 after the pow change",
+   "result": "P1, P2, P3 pass; P2 retro_room mean |z| 0.819 (0.80 expected for normal noise), 0.008% of pixels over 4, image z 0.87; its control (MIS weight 1) mean |z| 1.82, image z 179, fails as required; P4 open failure as in run 8 (triangles, normals pass: 0 triangle differences away from edges, worst 1 - dot 6e-8)",
+   "evidence": [
+    "evidence/rt-r2-pt-cpu.json",
+    "evidence/rt-r2-pt-gpu-d3d12-warp.json"
+   ]
+  },
+  {
+   "run": 10,
+   "when": "2026-10-10 18:42Z",
+   "backend": "WebGPU SwiftShader (Chrome, local wasm build)",
+   "checks": "P1 to P4",
+   "result": "as WARP: P1 (z 0.41, 1.13; control 9.4), P2 (retro_room 0.820, image z 0.81; iso_street 0.38, image z 0.46; control fails), P3 pass; P4 open failure with the same diagnosis (path tracer matches float64 on 132 and 132 albedo failures)",
+   "evidence": "evidence/rt-r2-pt-gpu-webgpu-swiftshader.json"
+  },
+  {
+   "run": 11,
+   "when": "2026-10-10 18:52Z",
+   "backend": "D3D12 WARP (debug layer)",
+   "checks": "P1 to P4",
+   "my_error": "The sqrt guard of run 8's fix was added to pt.wgsl but not regenerated into HLSL before run 9's evidence and the first R2 part 2 commit; a shell chain ran the commit although the translator check failed. Regenerated and rerun.",
+   "result": "identical to run 9 on every number (the guard does not trigger on WARP); P4 open failure unchanged",
+   "evidence": "evidence/rt-r2-pt-gpu-d3d12-warp.json"
   }
  ]
 }

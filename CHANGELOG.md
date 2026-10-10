@@ -56,6 +56,21 @@ the day the release was published on GitHub, in UTC.
     about 11 on SwiftShader, outside the committed bound. It stays open until the RTX 4090 run
     is in; `evidence/m3-shadows-runs.json` records each texel's cause.
   - `raw_native_cli shadow-parity` runs the GPU checks.
+- **Ray tracing: a BVH built by compute, and a path tracer** (RT stage R2, `evidence/rt-r2-bounds.json`).
+  - PLOC (Meister and Bittner 2018) builds the BVH on the GPU without atomics. The GPU tree equals
+    the CPU tree node for node, up to 100,760 triangles, on D3D12 WARP and on WebGPU SwiftShader.
+  - Traversal gives the brute-force answer on every one of 100,000 rays a scene. The SAH cost is
+    within 1.22 of the M3 binned build.
+  - A compute path tracer: next-event estimation with MIS, Lambert plus GGX (VNDF sampling) and a
+    deterministic seed. It writes radiance and the AOVs albedo, normal, depth, motion, variance and
+    triangle. Interface v1 is documented in `raw/renderer/rt_pathtrace.hpp`.
+  - Furnace boxes land within 1.2 standard errors of E / (1 - a). Against the CPU reference at 256
+    spp, mean |z| is 0.82 (0.80 expected), and the same seed gives the same bytes.
+  - Open failure: P4's albedo and depth against the R1 rasterizer. A float64 answer sides with the
+    path tracer on 264 of 270 failing pixels, so the cause is R1's vertex snapping, which the
+    committed exemption did not allow for.
+  - `raw_native_cli rt-pathtrace` writes frames and AOVs; `rt-bvh-parity` and `rt-pt-parity` run
+    the checks.
 - **raw-native's own triangle rasterizer** (RT stage R1, `evidence/rt-r1-bounds.json`). One
   specification in two forms: a deterministic CPU reference and a GPU compute rasterizer with
   binned tiles and a visibility buffer, without fixed-function raster or atomics.

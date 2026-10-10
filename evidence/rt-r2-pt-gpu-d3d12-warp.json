@@ -1,0 +1,20 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "RT stage R2, the GPU path tracer: P1 to P4 (evidence/rt-r2-bounds.json)",
+ "interface_version": 1,
+ "backend": "d3d12",
+ "adapter": "Microsoft Basic Render Driver",
+ "error": "",
+ "pass": false,
+ "results": [
+  {"check": "P1", "albedo": 0.5, "control_drop_cosine": false, "mean": 1.999855, "expected": 2.000000, "z": 0.342, "worst_pixel_z": 4.627, "within": true},
+  {"check": "P1", "albedo": 0.8, "control_drop_cosine": false, "mean": 4.998995, "expected": 5.000000, "z": 1.008, "worst_pixel_z": 4.455, "within": true},
+  {"check": "P1", "albedo": 0.5, "control_drop_cosine": true, "mean": 45.323963, "expected": 2.000000, "z": 8.495, "worst_pixel_z": 10.102, "within": false},
+  {"check": "P2", "scene": "retro_room", "case": "gpu against cpu", "mean_abs_z": 0.8188, "fraction_z_over_4": 0.00008, "image_mean_z": 0.871, "reported_mean_abs_z_noisy_pixels": 0.8188, "zero_variance_pixels": 0, "nonfinite_gpu": 0, "nonfinite_cpu": 0, "within": true},
+  {"check": "P2", "scene": "retro_room", "case": "control: MIS weight 1", "mean_abs_z": 1.8244, "fraction_z_over_4": 0.03068, "image_mean_z": 179.467, "reported_mean_abs_z_noisy_pixels": 1.8244, "zero_variance_pixels": 0, "nonfinite_gpu": 0, "nonfinite_cpu": 0, "within": false},
+  {"check": "P2", "scene": "iso_street", "case": "gpu against cpu", "mean_abs_z": 0.3798, "fraction_z_over_4": 0.00000, "image_mean_z": 0.492, "reported_mean_abs_z_noisy_pixels": 0.8236, "zero_variance_pixels": 6622, "nonfinite_gpu": 0, "nonfinite_cpu": 0, "within": true},
+  {"check": "P3", "same_seed_identical": true, "seed_plus_1_pixels_changed": 1.0000, "pass": true},
+  {"check": "P4", "scene": "retro_room", "covered": 65536, "triangle_differences": 0, "edge_exempt": 9, "depth_over_1e-4": 7, "worst_depth_rel": 1.296e-04, "normal_over_1e-5": 0, "worst_normal_1_minus_dot": 5.960e-08, "albedo_differences": 133, "texel_boundary_exempt": 79, "diagnosis_albedo_failures_matching_float64": {"path_tracer": 132, "r1": 1}, "diagnosis_depth_failures_matching_float64": {"path_tracer": 7, "r1": 0}, "pass": false},
+  {"check": "P4", "scene": "iso_street", "covered": 37222, "triangle_differences": 0, "edge_exempt": 7, "depth_over_1e-4": 0, "worst_depth_rel": 7.438e-06, "normal_over_1e-5": 0, "worst_normal_1_minus_dot": 1.192e-07, "albedo_differences": 137, "texel_boundary_exempt": 53, "diagnosis_albedo_failures_matching_float64": {"path_tracer": 132, "r1": 5}, "diagnosis_depth_failures_matching_float64": {"path_tracer": 0, "r1": 0}, "pass": false}
+ ]
+}
