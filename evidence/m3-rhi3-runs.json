@@ -1,0 +1,30 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "M3 RHI version 3 and the hardware G-buffer: every run against evidence/m3-rhi3-bounds.json, failures included",
+ "written": "2026-10-10, after the runs, in order",
+ "bounds_changed": false,
+ "runs": [
+  {
+   "what": "D3D12 WARP, first run (debug layer on)",
+   "result": "formats exact; depth order equal and the control differs; G-buffer FAILED: albedo differed on almost every pixel, normals up to 32x their bound on SciFiHelmet",
+   "cause": "albedo: the check's expectation rounded 76.5 up, while the APIs' float-to-unorm conversion rounds ties to even (0.3 x 255 = 76.5 gives 76), a defect in the check. Normals: the hardware snaps vertices to 1/256 px (D3D12's 16.8 fixed point), which moves barycentrics on small triangles; the CPU rasterizer did not snap",
+   "fix": "the expectation uses round-half-even; raster.cpp gained a sub-pixel snapping option (default off, so no golden changes) that the check uses"
+  },
+  {
+   "what": "D3D12 WARP, second run",
+   "result": "PASS: 0 differing pixels in the test scene, Suzanne and SciFiHelmet; position 0.07, normal 0.05, distance 0.15 of their bounds; the moved-triangle control fails"
+  },
+  {
+   "what": "WebGPU SwiftShader, first runs",
+   "result": "FAILED: a binding error (the depth test's shader never read its uniform, and WebGPU's derived layout drops unused bindings), then the device limit of 32 colour bytes a sample",
+   "fix": "the uniform was removed; the device asks for the adapter's maxColorAttachmentBytesPerSample, capped at 128"
+  },
+  {
+   "what": "WebGPU SwiftShader, G-buffer",
+   "result": "FAILED, open: with 8-bit snapping, 3 unexplained pixels and view distance 3.3x its bound. A probe triangle measured SwiftShader's precision at 4 bits; with the reference snapping at 4 bits and edge distances taken on the snapped triangle, distance is 0.0055 and position 0.0014 of their bounds, but 2 pixels remain, at 0.013 and 0.017 px from an edge of the ground triangle (bound 0.01 px)",
+   "cause (inferred, not proven)": "the ground triangle reaches far off screen, SwiftShader clips it, and the clipped vertices snap to 1/16 px, moving its edges by up to 1/32 px; WARP's guard band does not clip there. The bound stays at 0.01 px; this case is recorded as a failure, and the WebGPU CI step gates on the formats, depth and control parts only",
+   "probe": "subpixel_bits in each result file"
+  }
+ ],
+ "does_not_prove": "Anything under does_not_prove in the bounds file."
+}

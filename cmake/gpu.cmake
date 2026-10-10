@@ -101,7 +101,7 @@ function(raw_native_d3d12_shaders gen out_header)
         string(APPEND table "    {\"${p}\", kDxil_${p}, sizeof kDxil_${p}},\n")
     endforeach()
     # Raster passes: one HLSL file, compiled twice, as "<name>.vs" and "<name>.fs".
-    set(rasters texture_identity)
+    set(rasters texture_identity fmt_pattern depth_tris gbuffer)
     foreach(p ${rasters})
         set(src "${RAW_NATIVE_SHADERS}/hlsl/${p}.hlsl")
         foreach(stage vs fs)
@@ -137,7 +137,7 @@ if(RAW_NATIVE_GPU_D3D12)
     set(gen "${CMAKE_CURRENT_BINARY_DIR}/gen")
     raw_native_d3d12_shaders("${gen}" "${gen}/raw_d3d12_dxil.hpp")
     add_library(raw_native_d3d12 STATIC src/rhi/d3d12/d3d12_device.cpp src/rhi/d3d12/d3d12_commands.cpp
-        src/rhi/d3d12/d3d12_raster.cpp
+        src/rhi/d3d12/d3d12_raster.cpp src/rhi/d3d12/d3d12_texture.cpp
         src/renderer/gpu/shaders_dxil.cpp
         ${RAW_NATIVE_DXIL_HEADERS})
     target_include_directories(raw_native_d3d12 PRIVATE "${gen}")
@@ -162,6 +162,11 @@ if(RAW_NATIVE_GPU_D3D12)
         target_link_libraries(gpu_pbr_parity PRIVATE raw_native_d3d12)
         add_test(NAME gpu_pbr_parity COMMAND gpu_pbr_parity)
         set_tests_properties(gpu_pbr_parity PROPERTIES SKIP_RETURN_CODE 77)
+        # RHI version 3: formats, depth and the hardware G-buffer (M3, evidence/m3-rhi3-bounds.json).
+        add_executable(gpu_raster_identity tests/gpu/raster_identity.cpp)
+        target_link_libraries(gpu_raster_identity PRIVATE raw_native_d3d12)
+        add_test(NAME gpu_raster_identity COMMAND gpu_raster_identity)
+        set_tests_properties(gpu_raster_identity PROPERTIES SKIP_RETURN_CODE 77)
         # The lighting's GPU parity (M3, evidence/m3-lighting-bounds.json), skipped the same way.
         add_executable(gpu_lighting_parity tests/gpu/lighting_parity.cpp)
         target_link_libraries(gpu_lighting_parity PRIVATE raw_native_d3d12)

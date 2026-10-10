@@ -34,6 +34,13 @@ bool WebGpuDevice::init(std::string& err){
     dd.deviceLostCallbackInfo.mode = WGPUCallbackMode_AllowSpontaneous;
     dd.deviceLostCallbackInfo.callback = [](WGPUDevice const*, WGPUDeviceLostReason, WGPUStringView m, void*, void*){
         std::fprintf(stderr, "webgpu device lost: %s\n", str(m).c_str()); };
+    // RHI version 3: four colour targets of up to RGBA32Float need more than WebGPU's default
+    // 32 bytes of colour attachment a sample. Ask for the adapter's limit, capped at 128.
+    WGPULimits have = WGPU_LIMITS_INIT, want = WGPU_LIMITS_INIT;
+    if (wgpuAdapterGetLimits(adapterObj, &have) == WGPUStatus_Success){
+        want.maxColorAttachmentBytesPerSample = have.maxColorAttachmentBytesPerSample < 128 ? have.maxColorAttachmentBytesPerSample : 128;
+        dd.requiredLimits = &want;
+    }
     WGPURequestDeviceCallbackInfo dcb = WGPU_REQUEST_DEVICE_CALLBACK_INFO_INIT;
     dcb.mode = WGPUCallbackMode_WaitAnyOnly; dcb.userdata1 = &req;
     dcb.callback = [](WGPURequestDeviceStatus s, WGPUDevice d, WGPUStringView m, void* u, void*){

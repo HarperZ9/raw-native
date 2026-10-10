@@ -88,7 +88,8 @@ TextureIdentity textureIdentity(rhi::Device& dev, const rhi::ShaderCode& vs, con
         if (!cl) { r.error = err; return r; }
         if (k == 0) cl->uploadTexture(tex, src.data(), SW, SH);
         cl->upload(ubo, 0, map, sizeof map);
-        rhi::RenderPassDesc pass{tgt, {0, 0, 0, 0}};
+        rhi::RenderPassDesc pass;
+        pass.color[0] = {tgt, {0, 0, 0, 0}};
         cl->beginRenderPass(pass);
         const rhi::RasterBind binds[3] = {{ubo, {}, {}}, {{}, tex, {}}, {{}, {}, smp}};
         cl->draw(pipe, binds, 3);

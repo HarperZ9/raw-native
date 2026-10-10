@@ -9,11 +9,12 @@
 <script type="module">
 import { loadRawNative } from '../../wasm/raw-loader.mjs';
 const q = new URLSearchParams(location.search), dir = q.get('dir') || 'build-wasm-gpu';
-const cmd = ['texture-identity', 'pbr-parity', 'lighting-parity'].includes(q.get('cmd')) ? q.get('cmd') : 'texture-identity';
+const cmd = ['texture-identity', 'pbr-parity', 'lighting-parity', 'raster-identity'].includes(q.get('cmd')) ? q.get('cmd') : 'texture-identity';
 try {
   const raw = await loadRawNative({ moduleUrl: `../../${dir}/raw-native-gpu.mjs`, moduleSha256: q.get('m'),
     wasmUrl: `../../${dir}/raw-native-gpu.wasm`, wasmSha256: q.get('w') });
-  const r = await raw.runCliAsync([cmd]);
+  const extra = q.get('args') ? q.get('args').split(',') : [];   // diagnosis flags, comma separated
+  const r = await raw.runCliAsync([cmd, ...extra]);
   window.__result = { exitCode: r.exitCode, stdout: r.stdout };
 } catch (e) {
   window.__result = { error: String(e && e.stack || e) };

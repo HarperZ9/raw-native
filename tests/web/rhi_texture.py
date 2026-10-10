@@ -37,8 +37,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--command", choices=["texture-identity", "pbr-parity", "lighting-parity"], default="texture-identity")
+    ap.add_argument("--command", choices=["texture-identity", "pbr-parity", "lighting-parity", "raster-identity"], default="texture-identity")
     ap.add_argument("--dir", default="build-wasm-gpu")
+    ap.add_argument("--args", default="", help="extra CLI flags, comma separated (diagnosis)")
     ap.add_argument("--adapter", choices=["gpu", "swiftshader"], default="swiftshader")
     ap.add_argument("--out")
     a = ap.parse_args()
@@ -56,7 +57,7 @@ def main() -> int:
             page = b.new_page()
             logs = []
             page.on("console", lambda msg: logs.append(msg.text))
-            page.goto(f"http://localhost:{srv.server_address[1]}/web/test/texture-identity.html?dir={a.dir}&m={m}&w={w}&cmd={a.command}")
+            page.goto(f"http://localhost:{srv.server_address[1]}/web/test/texture-identity.html?dir={a.dir}&m={m}&w={w}&cmd={a.command}&args={a.args}")
             page.wait_for_function("window.__result !== undefined", timeout=300000)
             res = page.evaluate("window.__result")
             b.close()

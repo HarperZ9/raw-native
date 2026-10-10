@@ -65,7 +65,15 @@ def items(text):
 
 
 def raster_binding(code, s, binds):
-    """A raster pass's binding: an optional uniform first, then textures and samplers."""
+    """A raster pass's binding: an optional uniform first, then textures, samplers and
+    read-only storage buffers (RHI version 3: vertex pulling). A storage buffer is a UAV,
+    u<k> with k counting storage bindings in order, like the compute passes' buffers."""
+    st = re.fullmatch(r"\s*@group\(0\)\s*@binding\((\d+)\)\s*var<storage(?:,\s*read)?>\s*(\w+)\s*:\s*array<\s*(\w+)\s*>\s*;\s*", code)
+    if st:
+        if int(st.group(1)) != len(binds):
+            raise TranslateError(f"bindings must be group 0 and numbered in order: {s!r}")
+        binds.append("StorageRead")
+        return f"RWStructuredBuffer<{htype(st.group(3))[0]}> {st.group(2)} : register(u{binds.count('StorageRead') - 1});"
     m = re.fullmatch(r"\s*@group\(0\)\s*@binding\((\d+)\)\s*var(?:<(uniform)>)?\s*(\w+)\s*:\s*([\w<>]+)\s*;\s*", code)
     if not m or int(m.group(1)) != len(binds):
         raise TranslateError(f"bindings must be group 0 and numbered in order: {s!r}")
@@ -80,7 +88,30 @@ def raster_binding(code, s, binds):
     if m.group(4) == "sampler":
         binds.append("Sampler")
         return f"SamplerState {m.group(3)} : register(s{binds.count('Sampler') - 1});"
-    raise TranslateError(f"raster bindings are a uniform, texture_2d<f32> or sampler: {s!r}")
+    raise TranslateError(f"raster bindings are a uniform, texture_2d<f32>, sampler or read-only storage: {s!r}")
+
+
+def struct_field(code, struct_name):
+    """One struct field. Stage attributes become HLSL semantics: @builtin(position) is
+    SV_Position; @location(k) is TEXCOORDk (an interpolant), or SV_Targetk in a struct whose
+    name ends in Targets (a fragment output); @interpolate(flat) is nointerpolation."""
+    m = re.fullmatch(r"(\s*)((?:@\w+\([^)]*\)\s*)*)(\w+)\s*:\s*(" + TYPE_RE + r")\s*,\s*", code)
+    if not m:
+        raise TranslateError(f"unsupported struct field {code.strip()!r}")
+    lead, attrs, name, typ = m.groups()
+    t, suffix = htype(typ)
+    sem, mod = "", ""
+    for a in re.findall(r"@\w+\([^)]*\)", attrs):
+        loc = re.fullmatch(r"@location\((\d+)\)", a)
+        if a == "@builtin(position)":
+            sem = " : SV_Position"
+        elif loc:
+            sem = f" : SV_Target{loc.group(1)}" if struct_name.endswith("Targets") else f" : TEXCOORD{loc.group(1)}"
+        elif a == "@interpolate(flat)":
+            mod = "nointerpolation "
+        else:
+            raise TranslateError(f"unsupported field attribute {a!r}")
+    return f"{lead}{mod}{t} {name}{suffix}{sem};"
 
 
 def check_loop_names(lines):
@@ -105,14 +136,18 @@ def translate_item(kind, lines, binds, raster=False):
             continue
         if kind == "struct":
             if s.startswith("struct"):
+                struct_name = re.match(r"\s*struct\s+(\w+)", code).group(1)
                 code = code.replace("{", "{")
             elif s == "}":
                 code = code.replace("}", "};")
             else:
-                def field(m):
-                    t, suffix = htype(m.group(2))
-                    return f"{t} {m.group(1)}{suffix};"
-                code = re.sub(r"(\w+)\s*:\s*(" + TYPE_RE + r")\s*,", field, code)
+                if "@" in code:
+                    code = struct_field(code, struct_name)
+                else:
+                    def field(m):
+                        t, suffix = htype(m.group(2))
+                        return f"{t} {m.group(1)}{suffix};"
+                    code = re.sub(r"(\w+)\s*:\s*(" + TYPE_RE + r")\s*,", field, code)
         elif kind == "const":
             m = re.fullmatch(r"(\s*)const\s+(\w+)\s*:\s*(\w+)\s*=\s*(.*);\s*", code)
             if not m:
@@ -324,7 +359,7 @@ def selftest():
             print(f"selftest: raster translation lacks {want!r}:\n" + out, file=sys.stderr)
             return 1
     for what, src in {"fragment returning a builtin": rhead + vs + fs.replace("@location(0) vec4f", "@builtin(position) vec4f"),
-                      "storage buffer in a raster pass": rhead.replace("var t: texture_2d<f32>", "var<storage, read> t: array<f32>") + vs + fs,
+                      "writable storage in a raster pass": rhead.replace("var t: texture_2d<f32>", "var<storage, read_write> t: array<f32>") + vs + fs,
                       "textureSample with derivatives": rhead + vs + fs.replace("textureSampleLevel(t, s, q.xy, 0.0)", "textureSample(t, s, q.xy)"),
                       "entry points in the wrong order": rhead + fs + vs}.items():
         try:
@@ -340,6 +375,19 @@ def selftest():
         return 1
     except TranslateError:
         pass
+    # RHI version 3: vertex pulling, a vertex-output struct, flat interpolants, and several
+    # fragment targets in a struct named *Targets.
+    v3 = ("//@raster g\n@group(0) @binding(0) var<storage, read> pos: array<f32>;\n"
+          "struct VsOut {\n    @builtin(position) clip: vec4f,\n    @location(0) n: vec3f,\n    @location(1) @interpolate(flat) id: u32,\n}\n"
+          "struct GTargets {\n    @location(0) a: vec4f,\n    @location(1) b: vec4f,\n}\n"
+          "@vertex\nfn vs(@builtin(vertex_index) i: u32) -> VsOut {\n    var o: VsOut;\n    o.clip = vec4f(pos[i], 0.0, 0.0, 1.0);\n    return o;\n}\n"
+          "@fragment\nfn fs(v: VsOut) -> GTargets {\n    var t: GTargets;\n    t.a = v.clip;\n    return t;\n}\n")
+    out = translate_raster(v3)["g.hlsl"]
+    for want in ("RWStructuredBuffer<float> pos : register(u0);", "float4 clip : SV_Position;", "float3 n : TEXCOORD0;",
+                 "nointerpolation uint id : TEXCOORD1;", "float4 b : SV_Target1;", "VsOut o = (VsOut)0;", "GTargets fs(VsOut v) {"):
+        if want not in out:
+            print(f"selftest: RHI v3 raster translation lacks {want!r}:\n" + out, file=sys.stderr)
+            return 1
     print("wgsl_to_hlsl: selftest passed")
     return 0
 

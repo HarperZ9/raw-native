@@ -127,7 +127,13 @@ Textures track their own state inside each backend. Raster passes come from
 `src/renderer/gpu/shaders/raster.wgsl` through the same WGSL-to-HLSL translator
 as the compute passes. A sampled-texture identity check
 (`raw_native_cli texture-identity`) compares a GPU render with the CPU sampler
-reference in `raw/renderer/sampler.hpp`. Swapchains, timestamp queries and more
+reference in `raw/renderer/sampler.hpp`. Version 3 (ROADMAP M3) adds RGBA16F,
+RGBA32F, R32F and Depth32F formats, up to four colour targets and a depth target per
+pass, depth tests and culling, and read-only storage buffers in raster stages, so a
+vertex shader pulls its own vertices. `raw_native_cli raster-identity` checks the
+formats, the depth test and the hardware G-buffer against the CPU rasterizer. The
+rasterizer's sub-pixel precision is probed first and emulated by the reference: D3D12
+has 8 bits, and SwiftShader has 4. Swapchains, timestamp queries and more
 queues arrive behind the same handles when the renderer needs them, with Vulkan
 and Metal backends after the author sets platform priority
 ([ADR 0002](adr/0002-rhi.md)).

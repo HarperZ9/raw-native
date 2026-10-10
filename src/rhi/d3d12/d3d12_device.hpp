@@ -10,10 +10,11 @@
 // Binding: binding i of a pipeline is root parameter i, a root CBV for a
 // uniform and a root UAV (register u<i>) for every storage buffer, so no
 // descriptor heaps are needed by compute.
-// Textures and raster pipelines (d3d12_raster.cpp): a texture is a committed RGBA8
-// resource that tracks its own state; its SRV and RTV live in CPU-only heaps and are
-// copied into shader-visible rings at each draw. A raster pipeline's uniform is a root
-// CBV, each texture an SRV table and each sampler a sampler table.
+// Textures (d3d12_texture.cpp) and raster pipelines (d3d12_raster.cpp): a texture is a
+// committed resource of its format that tracks its own state; its SRV, RTV and DSV live in
+// CPU-only heaps and are copied into shader-visible rings at each draw. A raster pipeline's
+// uniform is a root CBV, each texture an SRV table, each sampler a sampler table and each
+// read-only storage buffer a root UAV.
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -38,12 +39,16 @@ struct BufferRec { ComPtr<ID3D12Resource> res; D3D12_HEAP_TYPE heap{D3D12_HEAP_T
 struct PipeRec { ComPtr<ID3D12RootSignature> rs; ComPtr<ID3D12PipelineState> pso; std::vector<Binding> layout; };
 struct TexRec {
     ComPtr<ID3D12Resource> res; uint32_t w{0}, h{0}; TextureUsage usage{TextureUsage::None};
-    D3D12_RESOURCE_STATES state{D3D12_RESOURCE_STATE_COMMON}; UINT srv{~0u}, rtv{~0u};
+    D3D12_RESOURCE_STATES state{D3D12_RESOURCE_STATE_COMMON}; UINT srv{~0u}, rtv{~0u}, dsv{~0u};
+    TextureFormat format{TextureFormat::RGBA8Unorm};
 };
 struct SampRec { UINT slot{0}; };
-struct RasterRec { ComPtr<ID3D12RootSignature> rs; ComPtr<ID3D12PipelineState> pso; std::vector<RasterBinding> layout; };
+struct RasterRec { ComPtr<ID3D12RootSignature> rs; ComPtr<ID3D12PipelineState> pso; std::vector<RasterBinding> layout; uint32_t targetCount{1}; bool depth{false}; };
 // A descriptor heap and the next free slot in it.
 struct Heap { ComPtr<ID3D12DescriptorHeap> heap; UINT size{0}, next{0}, capacity{0}; };
+DXGI_FORMAT dxgiFormat(TextureFormat f);
+D3D12_CPU_DESCRIPTOR_HANDLE cpuAt(const Heap& h, UINT i);
+D3D12_GPU_DESCRIPTOR_HANDLE gpuAt(const Heap& h, UINT i);
 
 class D3d12Device;
 class D3d12CommandList final : public CommandList {
@@ -60,7 +65,9 @@ public:
     void endRenderPass() override;
     // Move a texture to `to`, recording the transition when it is not there already.
     void transition(TexRec& t, D3D12_RESOURCE_STATES to);
-    TextureHandle target;   // the open render pass's target
+    TextureHandle targets[kMaxColorTargets];   // the open render pass's colour targets
+    uint32_t targetCount{0};
+    TextureHandle depthTarget;
     // The first recording error, reported by submitAndWait.
     std::string error;
     // Staging buffers for uploads into DEFAULT-heap buffers, released after the
@@ -104,7 +111,7 @@ public:
     RasterRec* raster(RasterPipelineHandle h){ return rasters_.get(h.index, h.gen); }
     // CPU-only heaps hold each texture's SRV and RTV and each sampler; the draw copies
     // them into the shader-visible rings, which rewind at begin().
-    Heap srvCpu, sampCpu, rtvCpu, srvGpu, sampGpu;
+    Heap srvCpu, sampCpu, rtvCpu, dsvCpu, srvGpu, sampGpu;
     bool initHeaps(std::string& err);
     ID3D12Device* d3d(){ return device_.Get(); }
     ID3D12GraphicsCommandList* list(){ return list_.Get(); }
