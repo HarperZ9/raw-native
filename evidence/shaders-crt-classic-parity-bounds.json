@@ -1,0 +1,16 @@
+{
+  "what": "crt-classic (web/shaders/crt-classic) on the GPU against the Studio's tube stage, retro-crt.js, vendored unchanged as web/shaders/reference/retro-crt.mjs",
+  "fixed_before_first_run": "2026-10-10",
+  "roadmap": "M1 criterion 9: within 1/255 at 8-bit of retro-crt.js on a committed frame set at 960 x 600 with fixed seeds",
+  "frames": "testCard(240, 150) nearest-upscaled x4 to 960 x 600 (cell 4); testCard(320, 200) x3 (cell 3); gradientPlate(960, 600) (cell 1)",
+  "cases": [
+    { "id": "studio-defaults", "frame": "card4", "opts": { "cell": 4, "scanlines": true, "scanStrength": 0.35, "beam": 0.5, "mask": "grille", "maskStrength": 0.3, "bloom": 0.18, "halation": 0.2, "curvature": 0.12, "aberration": 0.1, "vignette": 0.25 } },
+    { "id": "slot-strong", "frame": "card4", "opts": { "cell": 4, "scanlines": true, "scanStrength": 0.6, "beam": 1, "mask": "slot", "maskStrength": 0.8 } },
+    { "id": "dot-cell3", "frame": "card3", "opts": { "cell": 3, "scanlines": true, "scanStrength": 0.4, "beam": 0.3, "mask": "dot", "maskStrength": 0.5, "vignette": 0.3 } },
+    { "id": "glow-strong", "frame": "card4", "opts": { "cell": 4, "bloom": 1, "halation": 1 } },
+    { "id": "tube-strong", "frame": "card4", "opts": { "cell": 4, "curvature": 1, "aberration": 1, "vignette": 1 } },
+    { "id": "flat-cell1", "frame": "gradient", "opts": { "cell": 1, "scanlines": true, "scanStrength": 0.5, "mask": "grille", "maskStrength": 0.4 } },
+    { "id": "vignette-only", "frame": "gradient", "opts": { "cell": 1, "vignette": 0.6 } }
+  ],
+  "bounds": { "max_abs_code": 1 }
+}
