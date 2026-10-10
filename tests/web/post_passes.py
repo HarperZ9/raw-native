@@ -72,6 +72,8 @@ def check(res: dict) -> list[str]:
         problems.append("motion: " + m["error"])
     elif m.get("maxAB", 99) > 1 or not m.get("brighter"):
         problems.append(f"motion: a neutral stack changed the frame by {m.get('maxAB')} codes, or +1 EV did not brighten it")
+    elif abs(m.get("clip", 0) - 118) > 1 or abs(m.get("aces", 0) - 89) > 2:
+        problems.append(f"motion: colour-managed grey encoded to {m.get('clip')} (clip, expect 118) and {m.get('aces')} (ACES 2.0, expect about 89)")
     for name, p in res["passes"].items():
         for r in p.get("runs", []):
             if r["maxCode"] > 1:

@@ -151,6 +151,17 @@ fn hash(p: vec2u, f: u32) -> f32 {
   c = c + (hash(vec2u(q.xy), u32(U.look.w)) - 0.5) * U.look.z;
   return vec4f(clamp(c, vec3f(0.0), vec3f(1.0)), 1.0);
 }
+// The finish for colour-managed output (post.colour): the same bloom, vignette and
+// grain, kept linear and unclamped for the tone mapper that follows.
+@fragment fn finishLinear(@builtin(position) q: vec4f) -> @location(0) vec4f {
+  let uv = q.xy / U.size.xy;
+  var c = textureSampleLevel(src, smp, uv, 0.0).rgb;
+  c = c + textureSampleLevel(glow, smp, uv, 0.0).rgb * U.look.x;
+  let v = uv - 0.5;
+  c = c * (1.0 - U.look.y * dot(v, v) * 1.6);
+  c = c * (1.0 + (hash(vec2u(q.xy), u32(U.look.w)) - 0.5) * U.look.z);
+  return vec4f(max(c, vec3f(0.0)), 1.0);
+}
 @fragment fn bright(@builtin(position) q: vec4f) -> @location(0) vec4f {
   let uv = q.xy / U.size.xy;
   let c = textureSampleLevel(src, smp, uv, 0.0).rgb;

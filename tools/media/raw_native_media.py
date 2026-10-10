@@ -62,6 +62,15 @@ def copy_lf(src: Path, dst: Path) -> None:
     dst.write_bytes(data)
 
 
+def copy_colour(dst: Path) -> None:
+    """The colour pipeline Motion's colour-managed output uses: its WGSL, module and ACES 2.0 tables."""
+    (dst / "tables").mkdir(parents=True, exist_ok=True)
+    for f in ("colour.mjs", "colour.wgsl"):
+        copy_lf(ENGINE / "web" / "colour" / f, dst / f)
+    for f in (ENGINE / "web" / "colour" / "tables").glob("*.json"):
+        copy_lf(f, dst / "tables" / f.name)
+
+
 def bundle(spec: dict, spec_path: Path, scene: dict, out: Path, facts: dict, cast: dict | None, narration: Path | None) -> str:
     """Lay out out/: engine/, scene/, facts and the page. Returns the scene module path relative to the capture page."""
     if out.exists():
@@ -72,6 +81,7 @@ def bundle(spec: dict, spec_path: Path, scene: dict, out: Path, facts: dict, cas
     for f in (ENGINE / "web" / "motion").iterdir():
         if f.is_file() and not f.name.endswith(".test.mjs"):
             copy_lf(f, out / "engine" / "motion" / f.name)
+    copy_colour(out / "engine" / "colour")
     src = spec_path.parent / spec.get("scenes_dir", "scenes")
     (out / "scene").mkdir(exist_ok=True)
     if src.is_dir():
@@ -240,6 +250,7 @@ def repage(args) -> int:
         for f in (ENGINE / "web" / "motion").iterdir():
             if f.is_file() and not f.name.endswith(".test.mjs"):
                 copy_lf(f, d / "engine" / "motion" / f.name)
+        copy_colour(d / "engine" / "colour")
         module = next((p.name for p in (d / "scene").glob(f"{sid}.scene.mjs")), None) or Path(spec[sid]["module"]).name
         page = (HERE / "page.html").read_text(encoding="utf-8")
         page = page.replace("{{TITLE}}", m["title"]).replace("{{SCENE}}", f"scene/{module}").replace("{{ID}}", sid)
