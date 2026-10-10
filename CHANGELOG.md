@@ -4,6 +4,23 @@ Each release's full notes, with downloads and evidence, are on the
 [releases page](https://github.com/HarperZ9/raw-native/releases). Dates are
 the day the release was published on GitHub, in UTC.
 
+## Unreleased
+
+- **Sound engine** (`web/sound/`, design in `docs/sound/DESIGN.md`). A voice-first mix
+  for films and interactive pages: narration, a generated score bed ducked under the
+  voice, nine procedural cue types bound to the scene timeline and panned to the
+  marked object, and a mastering chain (EQ, compressor, true-peak limiter) resolved
+  to -16 LUFS and at most -1.5 dBTP.
+  - One `Mix` class runs offline in Node and live in an AudioWorklet. Chrome's live
+    output reconciles with the offline render at most 1 LSB apart; CI checks it.
+  - The mixer renders the `superstack.sound/1` example scene to the contract's
+    reference PCM bit for bit (roadmap M1, media output).
+  - Meters: BS.1770-5 integrated, momentary, short-term and true peak (Annex 2
+    interpolator), and EBU Tech 3342 loudness range, tested against the superstack
+    vectors and EBU Tech 3341/3342 cases.
+  - `third_party/superstack` now also vendors `superstack.mjs` and the example sound
+    scene from the v0.2.0 tag, pinned by SHA-256.
+
 ## 0.6.0 (2026-10-09)
 
 - **Media engine.** `raw-native media render` (`tools/media/`, ADR 0012) renders a
