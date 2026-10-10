@@ -1,0 +1,19 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "M2 exit criterion 9 (ROADMAP.md): the isometric occlusion fade on the GPU",
+ "written": "2026-10-10, before the first run",
+ "setup": "A tilemap item takes fade: { cells, to, layers }. cells is fadeMask (web/world/iso.mjs) for a target cell; a faded layer's pixels in cell i draw at opacity 1 - cells[i] * (1 - to). tilesRef (web/world/tiles_ref.mjs) applies the same rule on the CPU.",
+ "checks": {
+  "match": {
+   "what": "a 10 x 10 isometric map with a ground layer and a wall layer (walls on a seeded set of cells), the target behind a row of walls, at scales 1 and 2",
+   "reference": "tilesRef with the same fade",
+   "bound": "every channel within 2^-11 (half-float precision), the same bound as the tile pass"
+  },
+  "effect": {
+   "what": "the same frame without fade",
+   "bound": "at least 100 pixels differ by more than 0.05 from the faded frame, and every such pixel lies in a cell with cells[i] > 0",
+   "why": "a fade that does nothing, or fades the wrong cells, would pass the match check if the twin shared the fault; this check ties the change to the mask"
+  }
+ },
+ "does_not_prove": "That the fade reads well to a player, or behaviour for sprites (the fade covers tile layers only)."
+}

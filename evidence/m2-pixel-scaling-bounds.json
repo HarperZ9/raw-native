@@ -1,0 +1,24 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "M2 exit criterion 7 (ROADMAP.md): pixel-perfect scaling",
+ "written": "2026-10-10, before the first run",
+ "setup": "Motion renders the frame at a low resolution (list.pixel: { width, height, mode }), then a scale pass draws it at the output size. In 'sharp' mode the camera snaps to the low-resolution texel grid and the residual becomes the scale pass's sub-texel offset (the shader library's sharpBilinear, web/shaders/pixel/scale.mjs).",
+ "checks": {
+  "integer": {
+   "what": "160 x 90 rendered, upscaled by 6 to 960 x 540 in 'integer' mode",
+   "reference": "integerUpscale (web/shaders/pixel/scale.mjs) of the same low-resolution frame read back",
+   "bound": "bit-equal: every byte"
+  },
+  "sharp": {
+   "what": "the same frame in 'sharp' mode with sub-texel offsets 0, 0.25, 0.5 and 0.75",
+   "reference": "sharpBilinear of the same low-resolution frame",
+   "bound": "every byte within 1"
+  },
+  "pan": {
+   "what": "a 4 x 4 texel square on a dark ground, 'sharp' mode, the camera panned in steps of 0.1 output pixels over 120 frames",
+   "metric": "in the output row through the square's centre, the x where the square's left edge crosses half its contrast (linear interpolation between pixel centres), against the continuous-pan position x0 - pan(t)",
+   "bound": "|error| <= 1 output pixel on every frame, and the edge moves monotonically (never backwards) as the camera pans one way"
+  }
+ },
+ "does_not_prove": "Behaviour on content other than hard-edged squares and these frames, or on a display."
+}
