@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""The physical CRT shader: GPU passes against the CPU reference, in a real browser.
+"""The shader library: GPU passes against their CPU references, in a real browser.
 
-    python tests/web/shaders_crt.py [--adapter gpu|swiftshader] [--case ID] [--out evidence.json]
-    python tests/web/shaders_crt.py --timing --preset pvm-20 --width 3840 --height 2880 [--adapter gpu]
+    python tests/web/shaders_parity.py --shader crt|film [--adapter gpu|swiftshader] [--case ID] [--out evidence.json]
+    python tests/web/shaders_parity.py --shader crt --timing --preset pvm-20 --width 3840 --height 2880 [--adapter gpu]
 
-Parity mode opens web/test/shaders-crt.html, which renders every case in
-evidence/shaders-crt-parity-bounds.json through crt.mjs (CPU) and gpu.mjs (WebGPU) and
+Parity mode opens web/test/shaders-<shader>.html, which renders every case in
+evidence/shaders-<shader>-parity-bounds.json through the CPU reference and the WebGPU passes and
 compares the 8-bit encodes. Passes when every case is inside the bounds in that file,
 which were committed before the first run. Timing mode reports per-pass GPU time.
 """
@@ -33,7 +33,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         pass
 
 
-def run(adapter: str, query: dict, timeout_ms: int) -> dict:
+def run(shader: str, adapter: str, query: dict, timeout_ms: int) -> dict:
     from playwright.sync_api import sync_playwright
     srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(Handler, directory=str(ROOT)))
     threading.Thread(target=srv.serve_forever, daemon=True).start()
@@ -45,7 +45,7 @@ def run(adapter: str, query: dict, timeout_ms: int) -> dict:
             b = p.chromium.launch(channel="chrome", headless=True, args=args)
             page = b.new_page()
             qs = urllib.parse.urlencode(query)
-            page.goto(f"http://localhost:{srv.server_address[1]}/web/test/shaders-crt.html?{qs}")
+            page.goto(f"http://localhost:{srv.server_address[1]}/web/test/shaders-{shader}.html?{qs}")
             page.wait_for_function("window.__result !== undefined", timeout=timeout_ms)
             res = page.evaluate("window.__result")
             b.close()
@@ -67,6 +67,7 @@ def check(res: dict) -> list[str]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
+    ap.add_argument("--shader", choices=["crt", "film"], required=True)
     ap.add_argument("--adapter", choices=["gpu", "swiftshader"], default="swiftshader")
     ap.add_argument("--case")
     ap.add_argument("--timing", action="store_true")
@@ -81,14 +82,15 @@ def main() -> int:
         q = {"timing": 1, "preset": a.preset, "w": a.width, "h": a.height, "frames": a.frames}
         if a.overrides:
             q["overrides"] = a.overrides
-        res = run(a.adapter, q, 600000)
+        res = run(a.shader, a.adapter, q, 600000)
         problems = [res["error"]] if "error" in res else []
     else:
-        res = run(a.adapter, {"case": a.case} if a.case else {}, 1800000)
+        res = run(a.shader, a.adapter, {"case": a.case} if a.case else {}, 1800000)
         problems = check(res)
     text = json.dumps(res, indent=2)
     print(text)
     if a.out:
+        Path(a.out).parent.mkdir(parents=True, exist_ok=True)
         Path(a.out).write_text(text + "\n", encoding="utf-8", newline="\n")
     for p in problems:
         print("FAIL:", p, file=sys.stderr)
