@@ -1,0 +1,37 @@
+{
+  "what": "Curvature hatching from the SDF Hessian (web/shaders/hatch/): GPU ray march and shading against the float64 CPU reference, and the falsification tests",
+  "fixed_before_first_run": "2026-10-10",
+  "source": "fixtures/stilllife.mjs, an owned SDF still life (torus, sphere, capsule, rounded box, ground)",
+  "output": {
+    "width": 320,
+    "height": 200
+  },
+  "cases": [
+    {
+      "id": "stilllife-engraving",
+      "preset": "engraving"
+    },
+    {
+      "id": "stilllife-crosshatch",
+      "preset": "crosshatch"
+    },
+    {
+      "id": "stilllife-ink",
+      "preset": "ink"
+    }
+  ],
+  "bounds": {
+    "over2_fraction": 0.005,
+    "mean_abs_code": 0.5
+  },
+  "tests": {
+    "sphere_curvature_rel_error_max": 0.02,
+    "cylinder_curvatures": "max 1/r within 2 percent, min within 0.02/r of 0",
+    "cylinder_direction_axis_dot_max": 0.02,
+    "sphere_umbilic_fraction_min": 0.99,
+    "plane_fallback_fraction_min": 0.99,
+    "torus_saddle_signs": "inner equator: principal curvatures of opposite sign"
+  },
+  "rules": "No criterion uses a measured display reading or calibrate-pro (author, 2026-10-10). Colour checks are in software against float64 references.",
+  "why": "Ray marching in f32 and f64 differs at silhouettes and grazing hits, where a pixel can hit a different surface; elsewhere differences are rounding. The bound is a fraction of values."
+}

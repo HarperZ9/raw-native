@@ -1,0 +1,56 @@
+{
+  "what": "Peripheral crowding (web/shaders/crowd/): GPU pass against the float64 CPU reference, and the falsification tests",
+  "fixed_before_first_run": "2026-10-10",
+  "source": "fixtures/street.mjs streetScene(320, 200, 0), lab sources edges plate",
+  "output": {
+    "width": 320,
+    "height": 200
+  },
+  "cases": [
+    {
+      "id": "street-centre",
+      "preset": "thriller",
+      "frame": "street",
+      "gaze": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "id": "street-left",
+      "preset": "thriller",
+      "frame": "street",
+      "gaze": [
+        0.3,
+        0.45
+      ]
+    },
+    {
+      "id": "edges-centre",
+      "preset": "dread",
+      "frame": "edges",
+      "gaze": [
+        0.5,
+        0.5
+      ]
+    }
+  ],
+  "bounds": {
+    "over2_fraction": 0.001,
+    "mean_abs_code": 0.1
+  },
+  "tests": {
+    "inside_fovea_max_dev": 0,
+    "local_mean_max_abs_dev": 0.02,
+    "local_mean_scale": "the pooling radius at each pixel",
+    "local_std_ratio_range": [
+      0.8,
+      1.2
+    ],
+    "periphery_detail_correlation_max": 0.3,
+    "control_zero_pooling_correlation_min": 0.999,
+    "static_input_frames_identical_between_reseeds": true
+  },
+  "rules": "No criterion uses a measured display reading or calibrate-pro (author, 2026-10-10). Colour checks are in software against float64 references.",
+  "why": "Patch displacements are integers from integer hashes, but the pooling radius is a float; where it sits on a rounding edge one patch can move by a pixel, so the bound is a fraction of values."
+}
