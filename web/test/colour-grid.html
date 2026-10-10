@@ -30,6 +30,8 @@ async function run() {
       const a = Math.round(255 * Math.min(1, Math.max(0, gpu[i]))), b = Math.round(255 * Math.min(1, Math.max(0, cpu[i])));
       const dc = Math.abs(a - b), da = Math.abs(gpu[i] - cpu[i]);
       if (dc > 1) ++over;
+      // Above 1 (extended range) the 8-bit code says nothing: hold those to 0.5% relative.
+      if (Math.max(Math.abs(gpu[i]), Math.abs(cpu[i])) > 1 && Math.abs(gpu[i] - cpu[i]) > 0.005 * Math.abs(cpu[i])) { ++over; maxCode = Math.max(maxCode, 2); }
       if (dc > maxCode) { maxCode = dc; worst = Math.floor(i / 3); }
       maxAbs = Math.max(maxAbs, da);
     }

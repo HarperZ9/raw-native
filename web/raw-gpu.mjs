@@ -53,7 +53,7 @@ const TEXTURE_USAGE = { "copy-src": 0x01, "copy-dst": 0x02, sampled: 0x04, stora
 
 const USAGE = { storage: 0x80, uniform: 0x40, "copy-src": 0x04, "copy-dst": 0x08, "map-read": 0x01, vertex: 0x20, index: 0x10 };
 
-export async function createHost({ canvas = null, powerPreference = "high-performance", timing = true } = {}) {
+export async function createHost({ canvas = null, powerPreference = "high-performance", timing = true, hdr = false } = {}) {
   const gpu = typeof navigator !== "undefined" && navigator.gpu;
   if (!gpu) throw new HostUnavailable("WebGPU is not available in this browser");
   // A software adapter (SwiftShader in headless Chrome on a CI runner) can answer null for
@@ -71,11 +71,13 @@ export async function createHost({ canvas = null, powerPreference = "high-perfor
     requiredLimits: { maxStorageBufferBindingSize: adapter.limits.maxStorageBufferBindingSize,
       maxBufferSize: adapter.limits.maxBufferSize },
   });
-  return new Host(adapter, device, canvas, canTime);
+  return new Host(adapter, device, canvas, canTime, hdr);
 }
 
 class Host {
-  constructor(adapter, device, canvas, canTime) {
+  constructor(adapter, device, canvas, canTime, hdr = false) {
+    this.wantHdr = hdr;
+    this.hdr = false;
     this.adapter = adapter;
     this.device = device;
     this.info = adapter.info ? { vendor: adapter.info.vendor, architecture: adapter.info.architecture,
@@ -98,6 +100,17 @@ class Host {
     this.canvas = canvas;
     this.context = canvas.getContext("webgpu");
     this.format = navigator.gpu.getPreferredCanvasFormat();
+    this.hdr = false;
+    if (this.wantHdr) {
+      // Extended range: rgba16float in extended tone-mapping mode, where 1.0 is SDR white
+      // and brighter values reach the display's headroom. A browser without the mode keeps
+      // standard output; host.hdr says which one the canvas got.
+      try {
+        this.context.configure({ device: this.device, format: "rgba16float", alphaMode: "opaque", colorSpace: "srgb", toneMapping: { mode: "extended" } });
+        const c = this.context.getConfiguration ? this.context.getConfiguration() : null;
+        if (c && c.toneMapping && c.toneMapping.mode === "extended") { this.format = "rgba16float"; this.hdr = true; this.present = null; return; }
+      } catch (_) { /* fall back to standard output below */ }
+    }
     this.context.configure({ device: this.device, format: this.format, alphaMode: "opaque" });
     this.present = null;
   }

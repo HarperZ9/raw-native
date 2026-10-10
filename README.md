@@ -255,6 +255,13 @@ colours are scene-linear Rec.709 light. The finish keeps them linear, and the
 frame is tone-mapped and encoded by the same WGSL the colour tests hold to the C++
 reference. Without it, colours stay display values, as before.
 
+For HDR displays, `createHost({ canvas, hdr: true })` asks for an rgba16float canvas
+in extended tone-mapping mode. `host.hdr` says whether the browser granted it. The
+pipeline `aces2-hdr1000/srgb-extended` then carries light above SDR white to the
+screen: on the canvas, 1.0 is SDR white and brighter values use the display's
+headroom. `tests/web/hdr_output.py` checks this end to end against the C++
+reference. A colorimeter reading of what a display shows is still to come.
+
 A display list can name post passes in `post.passes`. Scene passes run in linear
 light before bloom, and display passes run after the finish. The shader library
 registers the looks (CRT, film, dither) through `registerPass()` in

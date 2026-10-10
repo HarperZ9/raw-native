@@ -1,0 +1,38 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Extended-range output check</title>
+<!-- M1 exit criterion 3, the engine half: the canvas takes extended tone mapping where the
+     browser offers it, and the colour pipeline aces2-hdr1000/srgb-extended carries light
+     above SDR white through the whole Motion frame. -->
+<canvas id="c" width="320" height="180"></canvas>
+<script type="module">
+import { createHost } from '../raw-gpu.mjs';
+import { createMotion } from '../motion/renderer.mjs';
+import { rect } from '../motion/path.mjs';
+async function run() {
+  const errs = [];
+  // The pipeline through the whole Motion frame, read back as floats (no canvas needed).
+  const host = await createHost({});
+  host.device.onuncapturederror = (e) => errs.push(e.error.message.slice(0, 300));
+  const mo = await createMotion(host, { design: [320, 180] });
+  mo.resize(320, 180);
+  // Linear light: a patch at SDR white beside one at 10 times SDR white.
+  const list = { camera: { x: 160, y: 90 }, background: [0, 0, 0], post: { bloom: 0, vignette: 0, grain: 0, colour: 'aces2-hdr1000/srgb-extended' },
+    items: [{ shape: rect(0, 0, 160, 180), fill: [1, 1, 1, 1] }, { shape: rect(160, 0, 160, 180), fill: [10, 10, 10, 1] }] };
+  const f = await mo.capture(list, { frame: 0, float: true });
+  const at = (x, y) => f.data[4 * (y * 320 + x)];
+  // The canvas: does the browser grant extended tone mapping, and does a frame draw to it?
+  let canvas = { hdr: false, toneMapping: null, drew: false, error: null };
+  try {
+    const ch = await createHost({ canvas: document.getElementById('c'), hdr: true });
+    const cm = await createMotion(ch, { design: [320, 180] });
+    cm.resize(320, 180);
+    cm.draw(list, { frame: 0 });
+    await ch.device.queue.onSubmittedWorkDone();
+    const cfg = ch.context.getConfiguration ? ch.context.getConfiguration() : null;
+    canvas = { hdr: ch.hdr, format: ch.format, toneMapping: cfg && cfg.toneMapping ? cfg.toneMapping.mode : null, drew: true, error: null };
+  } catch (e) { canvas.error = String(e && e.message || e); }
+  return { white: at(80, 90), bright: at(240, 90), canvas, errors: errs };
+}
+run().then((r) => { window.__result = r; }, (e) => { window.__result = { error: String(e && e.stack || e) }; });
+</script>

@@ -97,3 +97,12 @@ def delta_e_itp_pq(enc1: np.ndarray, enc2: np.ndarray) -> np.ndarray:
     a, b = ictcp(pq_decode(enc1)), ictcp(pq_decode(enc2))
     d = a - b
     return 720 * np.sqrt(d[:, 0] ** 2 + (0.5 * d[:, 1]) ** 2 + d[:, 2] ** 2)
+
+
+def delta_e_itp_srgb_extended(enc1: np.ndarray, enc2: np.ndarray) -> np.ndarray:
+    """Delta E ITP between two sign-extended sRGB outputs, 1.0 = 100 nits, Rec.709 primaries."""
+    dec = lambda v: np.sign(v) * np.where(np.abs(v) <= 0.04045, np.abs(v) / 12.92, ((np.abs(v) + 0.055) / 1.055) ** 2.4)  # noqa: E731
+    m = np.linalg.solve(rgb_to_xyz(PRIMARIES["rec2020"]), rgb_to_xyz(PRIMARIES["srgb"]))
+    a, b = ictcp(np.clip(dec(enc1) @ m.T, 0, None) * 100), ictcp(np.clip(dec(enc2) @ m.T, 0, None) * 100)
+    d = a - b
+    return 720 * np.sqrt(d[:, 0] ** 2 + (0.5 * d[:, 1]) ** 2 + d[:, 2] ** 2)

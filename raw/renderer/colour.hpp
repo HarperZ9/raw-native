@@ -7,7 +7,8 @@
 // encoding, named "<tone>/<output>", for example "aces2-sdr/srgb".
 //
 //   tone:   clip, pbr-neutral, agx, aces2-sdr (100 nits), aces2-hdr1000 (1,000 nits)
-//   output: srgb, display-p3, rec2020 (BT.1886, pure 2.4), rec2100-pq (ST 2084)
+//   output: srgb, display-p3, rec2020 (BT.1886, pure 2.4), rec2100-pq (ST 2084),
+//           srgb-extended (the sRGB curve extended by sign, unclamped; 1.0 = 100 nits)
 //
 // The bounds against OpenColorIO 2.6.0, and the grid they are measured on, are
 // in evidence/m1-colour-bounds.json. The ACES 2.0 output transform is a port of
@@ -35,6 +36,7 @@ RGB apply(const Mat3& m, const RGB& v);
 // Transfer functions on display-relative values.
 double srgbEncode(double linear);            // IEC 61966-2-1, input clamped at 0
 double srgbDecode(double encoded);
+double srgbEncodeExtended(double linear);   // sign-extended, no clamp: a canvas in extended mode
 double bt1886Encode(double linear);          // pure 2.4 power, input clamped at 0
 double bt1886Decode(double encoded);
 double pqEncode(double linear100);           // SMPTE ST 2084; 1.0 = 100 nits
@@ -45,7 +47,7 @@ RGB pbrNeutral(const RGB& c);                // Khronos PBR Neutral
 RGB agx(const RGB& c);                       // AgX, Filament and three.js form
 
 enum class Tone { Clip, PbrNeutral, AgX, Aces2 };
-enum class Output { Srgb, DisplayP3, Rec2020, Rec2100Pq };
+enum class Output { Srgb, DisplayP3, Rec2020, Rec2100Pq, SrgbExtended };
 
 struct Pipeline {
     Tone tone = Tone::Clip;

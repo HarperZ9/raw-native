@@ -23,7 +23,7 @@ import numpy as np
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
-from colour_metrics import ciede2000_display, delta_e_itp_pq  # noqa: E402
+from colour_metrics import ciede2000_display, delta_e_itp_pq, delta_e_itp_srgb_extended  # noqa: E402
 
 CONFIG = "studio-config-v5.0.0_aces-v2.1_ocio-v2.6"
 OUT_BUILTIN = "ACES-OUTPUT - ACES2065-1_to_CIE-XYZ-D65 - "
@@ -45,6 +45,8 @@ def ocio_processor(ocio, config, pipeline: str):
                                   bt("DISPLAY - CIE-XYZ-D65_to_DisplayP3")], False),
         "aces2-hdr1000/rec2100-pq": ([cst(lin, "ACES2065-1"), bt(OUT_BUILTIN + "HDR-1000nit-P3-D65_2.0"),
                                       bt("DISPLAY - CIE-XYZ-D65_to_REC.2100-PQ")], False),
+        "aces2-hdr1000/srgb-extended": ([cst(lin, "ACES2065-1"), bt(OUT_BUILTIN + "HDR-1000nit-P3-D65_2.0"),
+                                         bt("DISPLAY - CIE-XYZ-D65_to_sRGB - MIRROR NEGS")], False),
     }
     if pipeline not in groups:
         return None, False
@@ -73,6 +75,7 @@ def main() -> int:
     a.cli = str(Path(a.cli).resolve())
     import PyOpenColorIO as ocio
     bounds = json.loads(Path(a.bounds).read_text(encoding="utf-8"))["bounds"]
+    hdr_bounds = json.loads(Path(a.bounds).with_name("m1-colour-bounds-hdr.json").read_text(encoding="utf-8"))["bounds"]
     config = ocio.Config.CreateFromBuiltinConfig(CONFIG)
     results, ok = {}, True
     with tempfile.TemporaryDirectory() as tmp:
@@ -98,6 +101,10 @@ def main() -> int:
             if output == "rec2100-pq":
                 d = delta_e_itp_pq(mine, theirs)
                 bound = bounds["cpp_vs_ocio_hdr"]["aces2"]
+                metric = "delta_e_itp"
+            elif output == "srgb-extended":
+                d = delta_e_itp_srgb_extended(mine, theirs)
+                bound = hdr_bounds["cpp_vs_ocio"]
                 metric = "delta_e_itp"
             else:
                 d = ciede2000_display(mine, theirs, output)

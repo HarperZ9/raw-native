@@ -14,6 +14,7 @@ const Named kPipelines[] = {
     {"agx/display-p3", Tone::AgX, Output::DisplayP3, 100}, {"aces2-sdr/srgb", Tone::Aces2, Output::Srgb, 100},
     {"aces2-sdr/display-p3", Tone::Aces2, Output::DisplayP3, 100},
     {"aces2-hdr1000/rec2100-pq", Tone::Aces2, Output::Rec2100Pq, 1000},
+    {"aces2-hdr1000/srgb-extended", Tone::Aces2, Output::SrgbExtended, 1000},
 };
 
 const Primaries& outputPrimaries(Output o){
@@ -25,7 +26,7 @@ const Primaries& outputPrimaries(Output o){
 }
 // ACES 2.0 limits to the output gamut in SDR and to P3-D65 inside Rec.2020 for HDR,
 // as the ACES 2.0 HDR P3-D65 output transforms do.
-const Primaries& limitingPrimaries(Output o){ return o == Output::Rec2100Pq ? kP3D65 : outputPrimaries(o); }
+const Primaries& limitingPrimaries(Output o){ return o == Output::Rec2100Pq || o == Output::SrgbExtended ? kP3D65 : outputPrimaries(o); }
 
 // OCIO receives the limiting primaries as float parameters.
 Primaries asFloat(const Primaries& p){
@@ -37,6 +38,7 @@ double encode(Output o, double v){
     switch (o){
     case Output::Rec2020: return bt1886Encode(std::min(v, 1.0));
     case Output::Rec2100Pq: return pqEncode(v);
+    case Output::SrgbExtended: return srgbEncodeExtended(v);
     default: return srgbEncode(std::min(v, 1.0));
     }
 }

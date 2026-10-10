@@ -1,0 +1,20 @@
+{
+ "white": 1.0283203125,
+ "bright": 2.16015625,
+ "canvas": {
+  "hdr": true,
+  "format": "rgba16float",
+  "toneMapping": "extended",
+  "drew": true,
+  "error": null
+ },
+ "errors": [],
+ "adapter_kind": "swiftshader",
+ "reference": {
+  "white": 1.028317928314209,
+  "bright": 2.1599466800689697
+ },
+ "canvas_granted": true,
+ "problems": [],
+ "does_not_prove": "What a display shows: the canvas maps 1.0 to the system's SDR white, which the viewer sets."
+}
