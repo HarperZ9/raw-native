@@ -140,5 +140,12 @@
   "third_gpu_run": "SSR parity passes on all six scenes (at most 11 differing pixels, 0.02%). GTAO passes. TAA still fails: the pixels off by more than 1e-3 grow from 0 at frame 2 to 32 at frame 31 (bound 16). Probes (not checked runs): with the colour clip off, 0 pixels differ at frame 31; with the depth test off and the clip on, 26.",
   "diagnosis": "The clip's standard deviation is computed as sqrt(E[x^2] - E[x]^2). In float32 that cancels badly in flat regions, where the true deviation is about 0, so the GPU's clip box is wider than the CPU's by about 1e-4 and the two histories drift apart.",
   "change": "Both sides compute the neighbourhood's deviation in two passes (the mean first, then the mean squared difference). Bounds unchanged."
+ },
+ "method_note_9_2026_10_10": {
+  "written": "2026-10-10, before any run on the new scenes",
+  "decision": "The author decided on 2026-10-10: \"No test models, only full owned assets.\" Suzanne, the helmet and interior roles' Khronos models and the interior close-up leave the GTAO, SSR and post-parity checks.",
+  "scenes": "The built-in test scene from its two cameras, raw-hero in the test scene, raw-hall from its nave camera, and raw-hall from its gallery camera (eye -12, 9, 6.6 toward 4, 5, -4; fovy 1.1), the dense scene in place of the interior close-up. Fixed now, before any GTAO or SSR result on them; test_post --scene-stats reports their reference coverage.",
+  "gating": "As method note 2: a scene that misses a coverage bound is reported, not gated, for that metric; each metric must pass on at least two gated scenes. The open-failure handling in ctest (method note 2's successor in test_post) moves from the interior close-up to whichever scene fails, named in the runs record.",
+  "bounds": "Unchanged. The runs on the Khronos models stay in evidence/m3-post-runs.json as history."
  }
 }
