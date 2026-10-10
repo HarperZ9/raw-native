@@ -99,3 +99,14 @@ Each physical number the CRT and film shaders use, where it comes from, and how 
 | Quad expansion | 1.15 of a texel | the paper gives none | choice |
 | Crossfade | 4 x 4 Bayer; blend step max(1/12, moved / (0.15 cell)) | Bayer from the paper; timing is this library's choice | choice |
 | Depth key | view depth quantised to 1/4096 world unit, lowest texel index wins ties | this library (CPU and GPU agree on ties) | engineered |
+
+## VHS (`web/shaders/vhs/`)
+
+| Constant | Value | Source | Confidence |
+|---|---|---|---|
+| Luma bandwidth | 3.0 MHz SP, 2.5 LP, 2.2 EP (about 240 TV lines in SP) | VHS format, recalled | moderate |
+| Chroma (colour-under) | about 0.5 MHz bandwidth around a 629 kHz carrier | VHS format, recalled | moderate |
+| Chroma delay | 150 to 260 ns | typical of worn decks, recalled | low |
+| Head switch | about 6 lines before vertical sync | VHS transports, recalled | moderate |
+| Noise, jitter, dropout rates | per preset | chosen by eye | choice |
+| Generations | bandwidth / sqrt(g), noise power x g | a simple model of re-recording | low |

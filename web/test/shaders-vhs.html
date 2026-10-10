@@ -1,0 +1,37 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>VHS: GPU against the CPU reference</title>
+<link rel="icon" href="data:,">
+<!-- Run by tests/web/shaders_parity.py --shader vhs. Each case of
+     evidence/shaders-vhs-parity-bounds.json through vhs.mjs (CPU) and vhs/gpu.mjs, compared
+     as 8-bit display codes. -->
+<script type="module">
+import { createHost } from "../raw-gpu.mjs";
+import { createVhs, toDisplay } from "../shaders/vhs/vhs.mjs";
+import { createGpuVhs } from "../shaders/vhs/gpu.mjs";
+import { streetScene } from "../shaders/fixtures/street.mjs";
+import { linearToSrgb } from "../shaders/common.mjs";
+
+function stats(a, b) {
+  const hist = new Uint32Array(256); let sum = 0, n = 0, max = 0;
+  for (let i = 0; i < a.length; i++) { if ((i & 3) === 3) continue; const d = Math.abs(a[i] - b[i]); hist[d]++; sum += d; n++; if (d > max) max = d; }
+  let acc = 0, p999 = 0; for (let d = 0; d < 256; d++) { acc += hist[d]; if (acc >= n * 0.999) { p999 = d; break; } }
+  return { max, p999, mean: sum / n, over1: n - hist[0] - hist[1] };
+}
+try {
+  const host = await createHost({ timing: false });
+  const gpuErrors = []; host.device.onuncapturederror = (e) => gpuErrors.push(e.error.message);
+  const bounds = await (await fetch("../../evidence/shaders-vhs-parity-bounds.json")).json(), { width: W, height: H } = bounds.output;
+  const SW = 176, SH = 120, s = streetScene(SW, SH, 0), src = { width: SW, height: SH, data: new Float32Array(SW * SH * 4) };
+  for (let i = 0; i < src.data.length; i++) src.data[i] = (i & 3) === 3 ? 1 : linearToSrgb(1 - Math.exp(-Math.max(0, s.data[i]) * 2.4));
+  const cases = [];
+  for (const c of bounds.cases) {
+    const cpu = createVhs(c.preset, {}, { w: SW, h: SH }), want = toDisplay(cpu.plan, cpu.frame(src, c.frame).sig, W, H);
+    const g = await createGpuVhs(host, c.preset, {}, { w: SW, h: SH }, { w: W, h: H }); g.frame(src.data, c.frame);
+    const got = (await g.read()).packed; g.destroy();
+    cases.push({ id: c.id, ...stats(want, got) });
+  }
+  await host.done();
+  window.__result = { bounds: bounds.bounds, cases, adapter: host.info, gpuErrors };
+} catch (e) { window.__result = { error: String(e && e.stack || e) }; }
+</script>
