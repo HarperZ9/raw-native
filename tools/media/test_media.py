@@ -74,5 +74,48 @@ class Facts(unittest.TestCase):
         self.assertEqual(media_spec.scrub(f"{Path.home().as_posix()}/cache", root), "~/cache")
 
 
+class Audio(unittest.TestCase):
+    """The offline mix against superstack.sound/1 and against the JavaScript mix."""
+
+    def setUp(self):
+        import audio_mix
+        self.am = audio_mix
+        root = Path(__file__).resolve().parents[2]
+        self.vectors = json.loads((root / "third_party/superstack/vectors/sound.json").read_text(encoding="utf-8"))
+        self.fixture = json.loads((root / "tests/web/audio_mix_fixture.json").read_text(encoding="utf-8"))
+
+    def test_quantize_vectors(self):
+        for c in self.vectors["quantize"]:
+            self.assertEqual(self.am.quantize_s16([c["in"]])[0], c["out"], c["in"])
+
+    def test_loudness_vectors(self):
+        import math
+        for v in self.vectors["loudness"]:
+            n, ch, s = v["frames"], v["channels"], []
+            for i in range(n):
+                for c in range(ch):
+                    if v["kind"] == "silence":
+                        s.append(0.0)
+                        continue
+                    amp = v["amp"][c] * (v["quiet_gain"] if v["kind"] == "gated" and i >= n // 2 else 1.0)
+                    s.append(amp * math.sin(2.0 * math.pi * v["freq"] * i / v["rate"]))
+            got = self.am.integrated_lufs(s, v["rate"], ch)
+            if v["integrated_lufs"] is None:
+                self.assertIsNone(got, v["name"])
+            else:
+                self.assertAlmostEqual(got, v["integrated_lufs"], delta=v["tolerance_lu"], msg=v["name"])
+
+    def test_the_shared_fixture(self):
+        import hashlib
+        F = self.fixture
+        a = [((i * 37) % 65536 - 32768) / 32768 * 0.6 for i in range(F["frames"])]
+        b = []
+        for i in range(F["frames"]):
+            b += [((i * 101) % 4096 - 2048) / 2048 * 0.3, ((i * 7) % 1000 - 500) / 500 * 0.25]
+        mix = self.am.mix_tracks([{"samples": a, "channels": 1, "gain": 0.7071},
+                                  {"samples": b, "channels": 2, "gain": 0.5, "offset": 1000}], 2, F["frames"])
+        self.assertEqual(hashlib.sha256(self.am.quantize_s16(mix).tobytes()).hexdigest(), F["pcm_sha256"])
+
+
 if __name__ == "__main__":
     unittest.main()

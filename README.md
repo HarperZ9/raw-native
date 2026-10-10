@@ -236,6 +236,27 @@ When a release is published, `.github/workflows/media.yml` renders each scene at
 repos call the same workflow. The narrated 4K render is made on the author's
 machine and replaces them (ADR 0012).
 
+### Checks on every render
+
+- **Sound.** Narration and score are mixed in one place, `tools/media/audio_mix.py`,
+  to the superstack.sound/1 rule: a float64 sum, then s16 at
+  `floor(clamp(v) * 32767 + 0.5)`. The manifest records the mix's PCM hash,
+  integrated loudness (BS.1770) and peak. The browser twin, `web/motion/audio.mjs`,
+  produces the same bytes on a shared fixture, and both pass the superstack vectors.
+- **Frames.** `--hash-frames` reads every frame back before the encoder sees it and
+  writes `frames.sha256`. `tools/media/determinism.py SCENE` renders twice and
+  compares. CI does this for two seconds of a scene on every push. On Chrome's CPU
+  adapter at 640 x 360, all 1,456 frames of "Checking the light" matched
+  (`evidence/m1-frame-determinism-swiftshader.json`). That shows identity on one
+  adapter and browser, not across GPUs or drivers.
+- **Budgets.** `budgets` in `media.json` sets limits; `tools/media/budget.py` fails
+  a render that exceeds them. CI holds each four-second smoke render to 120 s.
+- **Energy.** `tools/media/energy.py SCENE` integrates the GPU's reported board
+  power over a render and gives joules per frame, with idle power subtracted
+  separately. It says "unavailable" where there is no telemetry.
+- **Encoders.** Each render's manifest lists which of H.264, HEVC, AV1 and VP9 the
+  browser could encode at 1080p and 4K, in hardware and software.
+
 ### Add media to another repo
 
 1. Write `docs/media/media.json`. Copy raw-native's: it names
