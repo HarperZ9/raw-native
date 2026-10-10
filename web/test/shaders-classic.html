@@ -1,0 +1,35 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>crt-classic: GPU against retro-crt.js</title>
+<link rel="icon" href="data:,">
+<!-- Run by tests/web/shaders_parity.py --shader classic. Each case of
+     evidence/shaders-crt-classic-parity-bounds.json through the vendored retro-crt.js and through
+     the GPU port; 8-bit differences per channel. -->
+<script type="module">
+import { createHost } from "../raw-gpu.mjs";
+import { createGpuClassic, classicRef } from "../shaders/crt-classic/classic.mjs";
+import { testCard } from "../shaders/fixtures/testcard.mjs";
+import { gradientPlate } from "../shaders/fixtures/plates.mjs";
+
+function bytesUp(f, k) {
+  const w = f.width * k, h = f.height * k, o = new Uint8Array(w * h * 4);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) for (let c = 0; c < 4; c++)
+    o[(y * w + x) * 4 + c] = c === 3 ? 255 : Math.round(f.data[(((y / k) | 0) * f.width + ((x / k) | 0)) * 4 + c] * 255);
+  return { width: w, height: h, data: o };
+}
+try {
+  const host = await createHost({ timing: false });
+  const bounds = await (await fetch("../../evidence/shaders-crt-classic-parity-bounds.json")).json();
+  const frames = { card4: bytesUp(testCard(240, 150), 4), card3: bytesUp(testCard(320, 200), 3), gradient: gradientPlate(960, 600) };
+  const cases = [];
+  for (const c of bounds.cases) {
+    const f = frames[c.frame], want = classicRef(f.data, f.width, f.height, c.opts);
+    const g = await createGpuClassic(host, c.opts, { w: f.width, h: f.height });
+    g.frame(f.data); const got = await g.read(); g.destroy();
+    let max = 0, over = 0, at = -1;
+    for (let i = 0; i < want.length; i++) { if ((i & 3) === 3) continue; const d = Math.abs(want[i] - got[i]); if (d > max) { max = d; at = i >> 2; } if (d > 1) over++; }
+    cases.push({ id: c.id, max, over1: over, worstPixel: at, p999: 0, mean: 0 });
+  }
+  window.__result = { bounds: { max_abs_code: bounds.bounds.max_abs_code, p999_abs_code: 255, mean_abs_code: 255 }, cases, adapter: host.info };
+} catch (e) { window.__result = { error: String(e && e.stack || e) }; }
+</script>

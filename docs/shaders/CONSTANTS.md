@@ -57,9 +57,21 @@ Each physical number the CRT and film shaders use, where it comes from, and how 
 | Halation ring | 2 t tan(asin(1/n)) = 0.22 mm | derived | high (geometry) |
 | Halation reach | red 0.25, green 0.06, blue 0 of the light reaching the base | inferred from layer order | low |
 | Remjet | absorbs 97% of the halation | assumed | low |
+| Pressure plate reflectance | 0.05, diffuse | matte black anodised metal, recalled | low |
+| Emulsion scatter | gaussian sigma 4.2 um (50% MTF near 45 cycles/mm) | assumed figure for a modern camera negative | low |
 | Dye clouds | radius 3.2 to 4.2 um (500T), 2.4 to 3.0 um (250D) | dye clouds 3 to 10 um, recalled | low |
 | RMS granularity target | sigma D 0.008 (500T), 0.006 (250D) at 48 um, net density 1.0 | Kodak's measurement definition (high); the values are recalled | low |
 | Selwyn's law | sigma * sqrt(A) constant | Selwyn 1935 | high |
 | Boolean grain model | lambda(u) = ln(1/(1-u)) / (pi r^2) | Newson, Delon, Galerne, CGF 2017 | high |
 | Super 35 gate | 24.89 mm wide | SMPTE 59 | high |
 | Gate weave | 6 um drift, 1.5 um jitter | camera weave 5 to 10 um, recalled | low |
+
+## Dither (`web/shaders/dither/`)
+
+| Constant | Value | Source | Confidence |
+|---|---|---|---|
+| OKLab matrices | Ottosson's, as in the superstack contract | Ottosson 2020; vendored reference | high |
+| Bayer matrices 2, 4, 8 | standard recursive | Bayer 1973 | high |
+| Interleaved gradient noise | 0.06711056, 0.00583715, 52.9829189 | Jimenez 2014 | high |
+| Blue-noise mask | void-and-cluster, 64 x 64, sigma 1.5, 10% seed density, seed 20261010 | Ulichney 1993 (method) | high (method) |
+| Pair penalty | 0.12 | the Studio's retro-dither.js | reference value |

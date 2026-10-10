@@ -21,7 +21,7 @@ export function fresnelUnpolarised(n, theta) {
 }
 
 // Energy returned to the phosphor plane per radial bin (width dr, in mm), out to rMax.
-export function radialReturn({ thickness: t, n, transmission: T }, dr, rMax) {
+export function radialReturn({ thickness: t, n, transmission: T, backReflectance = 0 }, dr, rMax) {
   const bins = new Float64Array(Math.ceil(rMax / dr) + 1);
   const steps = 40000, dth = Math.PI / 2 / steps;
   let kappa = 0;
@@ -32,7 +32,33 @@ export function radialReturn({ thickness: t, n, transmission: T }, dr, rMax) {
     kappa += e;
     if (r < rMax) bins[Math.floor(r / dr)] += e;
   }
+  if (backReflectance > 0) kappa += backPlate(t, n, T, backReflectance, bins, dr, rMax);
   return { bins, kappa };
+}
+
+// A diffuse reflector just behind the back surface (a camera's pressure plate behind film
+// with no remjet). Light under the critical angle leaves the back surface (displaced t tan
+// theta), is scattered back by the plate with reflectance R, refracts in again (the re-entry
+// angle theta' stays under the critical angle; Lambertian in air is uniform in sin^2 theta'
+// n^2, and about 92% enters), and crosses the thickness again (displaced t tan theta'). The
+// two displacements add as vectors at a uniform relative angle. This fills the disc inside
+// the ring that total internal reflection leaves dark.
+function backPlate(t, n, T, R, bins, dr, rMax) {
+  const thc = Math.asin(1 / n), A = 160, B = 80, C = 48;
+  let total = 0;
+  for (let i = 0; i < A; i++) {
+    const th = ((i + 0.5) * thc) / A, w = Math.sin(2 * th) * (thc / A) * (1 - fresnelUnpolarised(n, th)) * Math.pow(T, 1 / Math.cos(th)) * R * 0.92;
+    const r1 = t * Math.tan(th);
+    for (let j = 0; j < B; j++) {
+      const s2 = (j + 0.5) / B, th2 = Math.asin(Math.sqrt(s2) / n), r2 = t * Math.tan(th2), w2 = (w / B) * Math.pow(T, 1 / Math.cos(th2));
+      for (let k = 0; k < C; k++) {
+        const r = Math.sqrt(r1 * r1 + r2 * r2 + 2 * r1 * r2 * Math.cos(((k + 0.5) * 2 * Math.PI) / C));
+        if (r < rMax) bins[Math.floor(r / dr)] += w2 / C;
+        total += w2 / C;
+      }
+    }
+  }
+  return total;
 }
 
 function convolve(a, b, R) {

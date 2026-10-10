@@ -16,14 +16,16 @@ export const FILM_PRESETS = {
   "bleach-bypass": { negative: "neg-500t", process: "bleach-bypass", remjet: true },
 };
 const base = { negative: "neg-500t", print: "print-2383", process: "normal", printerPoints: [0, 0, 0], ev: 0,
-  gateWidthMm: 24.89, grainScale: 1, grainAmount: 1, remjet: true, halationReach: [0.25, 0.06, 0], weaveUm: 6, jitterUm: 1.5, seed: 1 };
+  gateWidthMm: 24.89, grainScale: 1, grainAmount: 1, remjet: true, pressurePlate: 0.05, emulsionSigmaUm: 4.2, halationReach: [0.25, 0.06, 0], weaveUm: 6, jitterUm: 1.5, seed: 1 };
 
 export function resolveFilm(preset, overrides, input, out) {
   const p = { ...base, ...(typeof preset === "string" ? FILM_PRESETS[preset] : preset || {}), ...(overrides || {}) };
   const t = build(p), umPerPx = (p.gateWidthMm * 1000) / out.w, jTable = varianceTable();
   // Returned light exposes the emulsion; the part the turbid emulsion scatters back down (albedo
   // about 0.4, low confidence) returns again. Only the kernel shape is used; its strength is below.
-  const baseGlass = { thickness: 0.125, n: 1.49, transmission: 1, albedo: 0.4, cell: 0.02 };
+  // pressurePlate: diffuse reflectance behind the base (matte black anodised, about 0.05, low
+  // confidence); it fills the inside of the ring. 0 turns it off.
+  const baseGlass = { thickness: 0.125, n: 1.49, transmission: 1, albedo: 0.4, cell: 0.02, backReflectance: p.pressurePlate };
   const hk = haloKernel(baseGlass, { mmPerPx: umPerPx / 1000, maxCells: 25 });
   const sum = hk.weights.reduce((a, b) => a + b, 0), kappa = radialReturn(baseGlass, 0.001, 5).kappa;
   return {
@@ -33,6 +35,7 @@ export function resolveFilm(preset, overrides, input, out) {
     halo: { q: hk.q, R: hk.R, weights: hk.weights.map((w) => (sum > 0 ? w / sum : 0)), ringMm: hk.ringMm },
     haloStrength: p.halationReach.map((r) => r * kappa * (p.remjet ? 0.03 : 1)),
     grainUm: t.grainUm.map((r) => r * p.grainScale),
+    mtf: mtfWeights(p.emulsionSigmaUm / umPerPx),
   };
 }
 
@@ -86,4 +89,34 @@ export function upsample(g, gw, gh, q, x, y) {
   const x0 = Math.floor(fx), y0 = Math.floor(fy), x1 = Math.min(gw - 1, x0 + 1), y1 = Math.min(gh - 1, y0 + 1), tx = fx - x0, ty = fy - y0;
   const at = (xx, yy, c) => g[(yy * gw + xx) * 4 + c];
   return [0, 1, 2].map((c) => (at(x0, y0, c) * (1 - tx) + at(x1, y0, c) * tx) * (1 - ty) + (at(x0, y1, c) * (1 - tx) + at(x1, y1, c) * tx) * ty);
+}
+
+// Emulsion scatter (the film's own MTF): light spreads sideways in the turbid emulsion before
+// it is recorded. A gaussian of sigma 4.2 um puts the 50% MTF near 45 cycles/mm (an assumed
+// figure for a modern camera negative, low confidence). Normalised weights for a separable
+// blur; none when sigma is under 0.15 pixel.
+export function mtfWeights(sigmaPx) {
+  if (!(sigmaPx >= 0.15)) return new Float32Array([1]);
+  const r = Math.min(16, Math.ceil(3 * sigmaPx)), w = new Float32Array(2 * r + 1);
+  let s = 0;
+  for (let i = -r; i <= r; i++) { w[i + r] = Math.exp(-0.5 * (i / sigmaPx) ** 2); s += w[i + r]; }
+  for (let i = 0; i < w.length; i++) w[i] /= s;
+  return w;
+}
+export function mtf(plan, H) {
+  const w = plan.mtf, r = (w.length - 1) / 2, { w: W, h: Hh } = plan.out;
+  if (r === 0) return H;
+  const pass = (src, alongY) => {
+    const o = new Float32Array(src.length);
+    for (let y = 0; y < Hh; y++) for (let x = 0; x < W; x++) for (let c = 0; c < 3; c++) {
+      let s = 0;
+      for (let k = -r; k <= r; k++) {
+        const xx = alongY ? x : Math.min(W - 1, Math.max(0, x + k)), yy = alongY ? Math.min(Hh - 1, Math.max(0, y + k)) : y;
+        s += w[k + r] * src[(yy * W + xx) * 4 + c];
+      }
+      o[(y * W + x) * 4 + c] = s;
+    }
+    return o;
+  };
+  return pass(pass(H, false), true);
 }

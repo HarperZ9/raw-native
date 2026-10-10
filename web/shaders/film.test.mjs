@@ -5,7 +5,8 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { build, negDensities, printPixel, GREY_TARGET } from "./film/stocks.mjs";
 import { varianceTable, grainAt, tableAt, poissonCount, MU_MAX } from "./film/grain.mjs";
-import { resolveFilm, weave } from "./film/film.mjs";
+import { resolveFilm, weave, mtfWeights } from "./film/film.mjs";
+import { radialReturn } from "./crt/halo.mjs";
 import { createFilm } from "./film/run.mjs";
 import { pcg } from "./common.mjs";
 
@@ -95,4 +96,20 @@ test("gate weave is deterministic and bounded by its amplitude", () => {
     assert.equal(x, x2); assert.equal(y, y2);
     assert.ok(Math.hypot(x, y) * p.umPerPx <= Math.SQRT2 * (p.p.weaveUm + p.p.jitterUm / 2) + 1e-9, `frame ${f}`);
   }
+});
+
+test("the pressure plate adds to the Fresnel fill inside the halation ring, in proportion to its reflectance", () => {
+  const base = { thickness: 0.125, n: 1.49, transmission: 1 }, dr = 0.002, ring = 2 * 0.125 * Math.tan(Math.asin(1 / 1.49));
+  const dens = (R) => { const { bins, kappa } = radialReturn({ ...base, backReflectance: R }, dr, 0.6); const i = Math.floor((0.5 * ring) / dr); return { kappa, inside: bins[i] / ((i + 0.5) * dr) }; };
+  const off = dens(0), p5 = dens(0.05), p20 = dens(0.2);
+  assert.ok(p5.inside > 1.5 * off.inside, `inside the ring: ${p5.inside} with a 5% plate, ${off.inside} from Fresnel alone`);
+  near((p20.inside - off.inside) / (p5.inside - off.inside), 4, 0.05, "fill scales with plate reflectance");
+  assert.ok(p5.kappa > off.kappa && p5.kappa - off.kappa < 0.05, `returned energy ${off.kappa} -> ${p5.kappa}`);
+});
+
+test("emulsion scatter: sigma 4.2 um puts the 50% MTF near 45 cycles/mm, and the blur keeps the mean", () => {
+  const sigma = 4.2e-3, f50 = Math.sqrt(Math.LN2 / (2 * Math.PI * Math.PI)) / sigma;
+  near(f50, 45, 1, "f50 in cycles/mm");
+  const w = mtfWeights(1.3); near(w.reduce((a, b) => a + b, 0), 1, 1e-6, "weights");
+  assert.equal(mtfWeights(0.1).length, 1, "no blur under 0.15 pixel");
 });

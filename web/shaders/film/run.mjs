@@ -1,7 +1,7 @@
 // The film shader's last pass (grain, print, projection) and the frame loop, CPU reference.
 //   const film = createFilm("500t-print", { ev: 0 }, { w: 1920, h: 1080 }, { w: 1920, h: 1080 });
 //   const { img } = film.frame(sceneLinearFrame, frameNo);   // display-linear Rec.709
-import { resolveFilm, expose, develop, FILM_PRESETS } from "./film.mjs";
+import { resolveFilm, expose, develop, mtf, FILM_PRESETS } from "./film.mjs";
 import { printPixel } from "./stocks.mjs";
 import { grainAt } from "./grain.mjs";
 import { haloDown, haloConv } from "../crt/glass.mjs";
@@ -31,7 +31,7 @@ export function createFilm(preset, overrides, input, out) {
   return {
     plan,
     frame(scene, f = frameNo) {
-      const H = expose(plan, scene, f), halo = haloConv(plan, haloDown(plan, H));
+      const H = mtf(plan, expose(plan, scene, f)), halo = haloConv(plan, haloDown(plan, H));
       const F = develop(plan, H, halo), img = printPass(plan, F, f);
       frameNo = f + 1;
       return { H, F, img };

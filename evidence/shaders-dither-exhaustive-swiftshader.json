@@ -1,0 +1,31 @@
+{
+ "what": "Dither parity over every 24-bit sRGB colour (4096 x 4096 plate, pixel p holds colour p), SwiftShader, local run; not part of CI",
+ "runs": [
+  {
+   "id": "exhaustive-pico8-bayer8",
+   "colours": 16777216,
+   "mismatched": 0,
+   "firstMismatch": -1,
+   "cpu_ms": 2737,
+   "adapter": {
+    "vendor": "google",
+    "architecture": "swiftshader",
+    "device": "",
+    "description": ""
+   }
+  },
+  {
+   "id": "exhaustive-ega-noise",
+   "colours": 16777216,
+   "mismatched": 0,
+   "firstMismatch": -1,
+   "cpu_ms": 4528,
+   "adapter": {
+    "vendor": "google",
+    "architecture": "swiftshader",
+    "device": "",
+    "description": ""
+   }
+  }
+ ]
+}
