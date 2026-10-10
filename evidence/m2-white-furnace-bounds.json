@@ -1,0 +1,17 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "M2 exit criterion 5 (ROADMAP.md): white furnace",
+ "written": "2026-10-10, before the first run",
+ "setup": "The base model's specular lobe: GGX distribution, height-correlated Smith visibility, Fresnel at 1 (white), alpha = roughness^2, plus the Kulla-Conty multiple-scattering term built from a tabulated directional albedo E(mu, roughness) and its cosine-weighted average. The table is built with VNDF importance sampling on a Hammersley set. The furnace integrates the lobe by a different route: deterministic Gauss-Legendre quadrature over the half vector (with tan(theta_h) / alpha as the radial variable) for the single-scattering part, and Gauss-Legendre over mu_i for the multiple-scattering part.",
+ "checks": {
+  "furnace": {
+   "what": "directional albedo of the white lobe at roughness 0.05, 0.10, ..., 1.00 (20 values) and view cosine mu_o 0.05, 0.10, ..., 1.00 (20 values), 400 points, none of them on a table node",
+   "bound": "|albedo - 1| <= 1e-3 at every point"
+  },
+  "control": {
+   "what": "the same furnace with the multiple-scattering term removed",
+   "bound": "|albedo - 1| > 0.1 at roughness 1.0 for some mu_o, so the furnace can fail"
+  }
+ },
+ "does_not_prove": "Energy conservation for coloured Fresnel, the diffuse lobe or any GPU shader; behaviour at mu_o below 0.05 or at roughness 0 (a mirror); that the look matches any other engine."
+}
