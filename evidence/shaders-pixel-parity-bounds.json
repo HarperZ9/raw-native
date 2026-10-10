@@ -1,0 +1,14 @@
+{
+  "what": "GPU perspective-stable pixel art (web/shaders/pixel/gpu.mjs) against the CPU reference (web/shaders/pixel/pixel.mjs)",
+  "fixed_before_first_run": "2026-10-10",
+  "output": { "width": 240, "height": 150 },
+  "compare": "8-bit sRGB per channel, all pixels, on the last frame of each case",
+  "cases": [
+    { "id": "orbit-front", "N": 48, "frames": [{ "angle": 0.6 }] },
+    { "id": "orbit-back", "N": 48, "frames": [{ "angle": 2.4 }] },
+    { "id": "turned-and-close", "N": 64, "frames": [{ "angle": 1.1, "radius": 4.2, "targetX": 1.0 }] },
+    { "id": "cell-crossfade", "N": 48, "frames": [{ "angle": 0.6 }, { "angle": 0.64 }, { "angle": 0.68 }, { "angle": 0.72 }] }
+  ],
+  "bounds": { "over2_fraction": 0.03, "mean_abs_code": 2.0 },
+  "why_looser": "The probe marches rays in f32 on the GPU and f64 on the CPU; a ray that grazes a silhouette can hit on one side and miss on the other. At this test size one texel covers about a hundred output pixels, so a single disagreeing texel moves a block of pixels. The bound allows a few such texels per frame, not a systematic difference; a systematic one would move most pixels."
+}
