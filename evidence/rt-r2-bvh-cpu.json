@@ -1,0 +1,12 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "RT stage R2, the BVH's CPU half (B2 CPU traversal, B3 reported)",
+ "pass": true,
+ "results": [
+  {"scene": "retro_room", "triangles": 636, "cpu_build_ms": 0.4, "rounds": 29, "depth": 17, "well_formed": true, "rays": 100000, "hits": 55665, "traversal_differences": 0, "sah": 22.8266, "m3_binned_sah": 22.6439, "sah_ratio": 1.0081, "port_node_count": 429, "bvh_node_count": 429},
+  {"scene": "iso_street", "triangles": 1436, "cpu_build_ms": 0.8, "rounds": 30, "depth": 17, "well_formed": true, "rays": 100000, "hits": 7522, "traversal_differences": 0, "sah": 29.0414, "m3_binned_sah": 23.9015, "sah_ratio": 1.2150, "port_node_count": 807, "bvh_node_count": 807},
+  {"scene": "clip_stress", "triangles": 16, "cpu_build_ms": 0.0, "rounds": 8, "depth": 9, "well_formed": true, "rays": 100000, "hits": 69052, "traversal_differences": 0, "sah": 3.9814, "m3_binned_sah": 5.9604, "sah_ratio": 0.6680, "port_node_count": 9, "bvh_node_count": 9},
+  {"scene": "dense_block", "triangles": 100760, "cpu_build_ms": 80.7, "rounds": 48, "depth": 28, "well_formed": true, "rays": 100000, "hits": 70387, "traversal_differences": 0, "sah": 77.7025, "m3_binned_sah": 64.7012, "sah_ratio": 1.2009, "port_node_count": 68493, "bvh_node_count": 68493},
+  {"scene": "soup", "triangles": 20000, "cpu_build_ms": 32.6, "rounds": 40, "depth": 22, "well_formed": true, "rays": 100000, "hits": 86692, "traversal_differences": 0, "sah": 192.5732, "m3_binned_sah": 194.3637, "sah_ratio": 0.9908, "port_node_count": 13319, "bvh_node_count": 13319}
+ ]
+}
