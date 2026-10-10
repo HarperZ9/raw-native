@@ -154,3 +154,37 @@ Each physical number the CRT and film shaders use, where it comes from, and how 
 | Palette margin | 0.03 Oklab | chosen | choice |
 | Persistence | 0.2 s | swept on the 24 fps test sequences, checked on a held-out 30 fps sequence | engineered |
 | Disocclusion | view distance within 3% | chosen | choice |
+
+## CRT purity and degauss (`web/shaders/purity/`)
+
+| Constant | Value | Source | Confidence |
+|---|---|---|---|
+| Stripe and beam widths | 0.26 and 0.2 of the triad pitch | chosen so a centred beam lands inside its stripe | choice |
+| Per-gun spread | outer guns land with (1 +/- 0.35) of the error | chosen so white tints; no source | low |
+| Degauss frequency | mains, 60 Hz on a 59.94 Hz field | degauss current is at mains (US 5901029) | high (mains), moderate (60 Hz region) |
+| Degauss envelope | exponential, tau 0.25 s (gone by about 1.25 s) | coils run 1 to 4 s (US 6686695); a thermistor envelope, not measured | low |
+| Landing errors | 0.015 to 0.16 of the pitch by preset | landing variation 23 to 131 um by tube size (US 6686695) | choice |
+
+## Fibre-network watercolour (`web/shaders/fibre/`)
+
+| Constant | Value | Source | Confidence |
+|---|---|---|---|
+| Fibre process | fixed count per cell, uniform centres, angles about a machine direction | Kallmes-Corte random line process (via Sampson and Dodson), stratified | moderate (model), choice (form) |
+| Fibre length, width | 0.05 to 0.08 of the image height; 1 to 1.4 px | not found for watercolour paper | choice |
+| Conductivity | k0 0.2 to 0.3, k1 0.5 to 0.95 (k1 <= 4.8 k0 keeps the stencil monotone) | chosen | choice |
+| Deposition, flocculation, evaporation | per preset | chosen by eye | choice |
+
+## Curvature hatching (`web/shaders/hatch/`)
+
+| Constant | Value | Source | Confidence |
+|---|---|---|---|
+| Finite-difference step | 0.01 scene units | error about (E / R)^2 on the still life's radii | engineered |
+| Umbilic threshold | curvature gap under 0.12 of the larger curvature | chosen | choice |
+| Line density | 22 to 34 lines per metre, nested to keep about 4 px | chosen | choice |
+
+## Salience caricature warp (`web/shaders/caricature/`)
+
+| Constant | Value | Source | Confidence |
+|---|---|---|---|
+| Fold bound | det J >= 0.04 (clamp 0.8 for one step; 1 - 0.04^(1 / (2 steps)) per step) | derived | exact |
+| Salience weights, blur | per preset (head 1.0, hat 0.6 to 0.7, coat 0.45 to 0.5, lamp 0.4 to 0.5) | chosen | choice |

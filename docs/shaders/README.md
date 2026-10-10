@@ -158,13 +158,41 @@ Bands and palette snapping that hold still. Posterised light and toon bands boil
 
 Checks: zero margin and static input give the plain decisions exactly; under the street's flickering lamp, decisions toggle at 0.02 to 0.03 of the plain rate (bound 0.25), and a held-out sequence at 30 fps gives 0.044; a held band is never more than one band from the plain one; under a lamp that doubles, at least 0.9 of the plain band changes still happen; under a camera orbit, reprojected memory toggles less than plain.
 
+## CRT purity and degauss (`web/shaders/purity/`)
+
+A stray magnetic field bends the three beams, so they land partly on the neighbouring phosphor stripes: colour patches that follow the field (a magnetised mask, the earth's field). Degaussing rings the field down at the mains frequency; because each line is drawn at its own time, the swing runs down the screen in bands while it dies away, and the picture wobbles a little. Each gun's footprint overlaps its own stripe and its neighbours; light on the black matrix is lost, never created. Presets: `magnetised`, `earth-field`, `degauss`. No shader that simulates purity or degauss was found in the indexes we could reach, so it is new to us.
+
+Checks: no field leaves the picture unchanged; light is only ever lost; a red beam pushed right lights green, not blue; the degauss envelope decays with its time constant; the swing crosses zero down the screen at the mains frequency.
+
+## Fibre-network watercolour (`web/shaders/fibre/`)
+
+Paper as a random network of fibres (after the Kallmes-Corte model): each pixel gets fibre coverage, an orientation tensor and a crossing density. Pigment travels with the water through a capillary conductivity tensor, faster along fibres, and settles where fibres cross. The wash starts wet in flat areas and dry across the picture's strong edges, so colour bleeds inside regions and edges stay crisp. The diffusion uses a monotone stencil that reproduces the tensor's second moments exactly, and pigment is conserved exactly. Presets: `hot-press`, `cold-press`, `rough`.
+
+Checks: a drop spreads evenly on fibre-free paper; on aligned fibres it elongates within 10% of what the tensor says; pigment is conserved; deposits correlate with fibre crossings, and do not without flocculation; a uniform wash on bare paper dries uniform.
+
+## Curvature hatching (`web/shaders/hatch/`)
+
+Engraving lines that follow each surface's strongest bend, read per pixel from the Hessian of the scene's signed distance field inside the ray march. Where the bend is undefined (spheres, the floor) the lines become planar slices, as cross-contours; the cross-hatch layer is a planar slant. Line spacing halves by nested levels so it stays near 4 pixels on screen. Scene: an owned SDF still life (`web/shaders/fixtures/stilllife.mjs`). Presets: `engraving`, `crosshatch`, `ink`. Prior work drives curvature lines on SDF surfaces with sampled streamlines (Broske); this pass hatches per pixel.
+
+Checks: sphere curvatures within 2% and all umbilic; cylinder curvature 1/r around and 0 along, with lines around the axis; the plane falls back; the torus's inner equator is a saddle. Limit: where the principal direction turns fast, lines swirl.
+
+## Salience caricature warp (`web/shaders/caricature/`)
+
+For the grotesque register: salience from the scene's materials (head, hat, coat, lamp), smoothed, and each output pixel read from y + lambda grad S(y), so content swells around what matters. The strength is clamped by the largest bend of the salience field, which guarantees the map never folds (det J >= 0.04) for any salience; several clamped steps compose with the same guarantee. Presets: `subtle`, `grotesque`.
+
+Checks: no salience leaves the frame unchanged; random salience with a huge strength never folds, in one step or composed; the figure's head is magnified at least 1.2 times.
+
+## Not landed: peripheral crowding
+
+A crowding look for the thriller (detail rearranged away from the gaze, local mean kept) was built and failed its committed criteria: keeping the worst local-mean change under 0.02 and scrambling enough detail conflict near strong edges. The code and every run are on a separate branch; nothing here claims it.
+
 ## Measurements
 
 GPU parity against the CPU reference (8-bit, bounds committed before the first run in `evidence/shaders-*-parity-bounds.json`). On SwiftShader, every case has max difference 1, p99.9 at most 1, and mean at most 0.004 codes: 9 tube cases at 640 x 480 and 6 film cases at 480 x 270. Two first-run failures were fixed in the shaders, not the bounds:
 - the delta mask's binary dot test flipped between f32 and f64 (max 57);
 - a float Poisson threshold flipped one dye cloud (max 30).
 
-Lab 2 techniques, same method (bounds in `evidence/shaders-{adjacency,sag,lightpaint,glaze,hysteresis}-parity-bounds.json`, every run including failures in `evidence/shaders-*-runs.json`): every case max 1 code on SwiftShader; hysteresis decisions identical on 2,048,000 of 2,048,000.
+Lab 2 techniques, same method (bounds in `evidence/shaders-{adjacency,sag,lightpaint,glaze,hysteresis,purity,fibre,hatch,caricature}-parity-bounds.json`, every run including failures in `evidence/shaders-*-runs.json`): every case max 1 code on SwiftShader (hatching: max 2 codes, none over 2); hysteresis decisions identical on 2,048,000 of 2,048,000. Model-judge results for the blind panels are in `evidence/shaders-model-judges-2026-10-10.json`, kept apart from human ratings, of which there are none yet.
 
 Frame time, median wall per frame, SwiftShader (CPU WebGPU) in headless Chrome:
 
