@@ -9,7 +9,9 @@ namespace raw {
 namespace {
 const char* kColourUsage =
     "usage: raw_native_cli colour list | grid OUT | apply PIPELINE IN OUT | tables PIPELINE OUT.json\n"
-    "  float32 little-endian RGB triples in and out; pipelines are <tone>/<output>\n";
+    "                         | encode pq|pq-decode|srgb-extended IN OUT\n"
+    "  apply: float32 little-endian RGB triples in and out; pipelines are <tone>/<output>\n"
+    "  encode: float64 little-endian scalars in and out, through the encoding alone (M1 criterion 3)\n";
 
 bool writeFloats(const std::string& path, const std::vector<colour::RGB>& v){
     std::ofstream f(path, std::ios::binary);
@@ -25,6 +27,20 @@ bool readFloats(const std::string& path, std::vector<colour::RGB>& v){
     f.seekg(0);
     return (bool)f.read(reinterpret_cast<char*>(v.data()), n);
 }
+bool readDoubles(const std::string& path, std::vector<double>& v){
+    std::ifstream f(path, std::ios::binary | std::ios::ate);
+    if (!f) return false;
+    const std::streamsize n = f.tellg();
+    if (n % (std::streamsize)sizeof(double) != 0) return false;
+    v.resize((size_t)n / sizeof(double));
+    f.seekg(0);
+    return (bool)f.read(reinterpret_cast<char*>(v.data()), n);
+}
+bool writeDoubles(const std::string& path, const std::vector<double>& v){
+    std::ofstream f(path, std::ios::binary);
+    f.write(reinterpret_cast<const char*>(v.data()), (std::streamsize)(v.size() * sizeof(double)));
+    return (bool)f;
+}
 int fail(const char* what, const std::string& arg){ std::fprintf(stderr, "colour: %s: %s\n", what, arg.c_str()); return 2; }
 }
 
@@ -36,6 +52,16 @@ int colourCommand(int argc, char** argv){
     }
     if (sub == "grid" && argc == 3)
         return writeFloats(argv[2], colour::grid()) ? 0 : fail("cannot write", argv[2]);
+    if (sub == "encode" && argc == 5){
+        const std::string e = argv[2];
+        double (*fn)(double) = e == "pq" ? colour::pqEncode : e == "pq-decode" ? colour::pqDecode
+                             : e == "srgb-extended" ? colour::srgbEncodeExtended : nullptr;
+        if (!fn) return fail("unknown encoding", e);
+        std::vector<double> v;
+        if (!readDoubles(argv[3], v)) return fail("cannot read float64 values from", argv[3]);
+        for (double& x : v) x = fn(x);
+        return writeDoubles(argv[4], v) ? 0 : fail("cannot write", argv[4]);
+    }
     colour::Pipeline p;
     if ((sub == "apply" && argc == 5) || (sub == "tables" && argc == 4)){
         if (!colour::parsePipeline(argv[2], p)) return fail("unknown pipeline", argv[2]);

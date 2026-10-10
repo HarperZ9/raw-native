@@ -80,14 +80,15 @@ export async function colourWGSL(base = new URL('./colour.wgsl', import.meta.url
   return source;
 }
 
-/** Runs a pipeline over RGB triples (Float32Array, length 3n) and returns the encoded triples. */
-export async function applyColour(device, name, rgb, tables = null) {
+/** Runs a pipeline over RGB triples (Float32Array, length 3n) and returns the encoded triples.
+ *  `wgsl` replaces colour.wgsl's source; only a test's control uses it. */
+export async function applyColour(device, name, rgb, tables = null, wgsl = null) {
   const { params, data } = pack(name, tables);
   const code = `@group(0) @binding(0) var<uniform> cp: ColourParams;
 @group(0) @binding(1) var<storage, read> cd: array<f32>;
 @group(0) @binding(2) var<storage, read> src: array<f32>;
 @group(0) @binding(3) var<storage, read_write> dst: array<f32>;
-${await colourWGSL()}
+${wgsl ?? await colourWGSL()}
 @compute @workgroup_size(64) fn main(@builtin(global_invocation_id) id: vec3u) {
   let i = id.x;
   if (i * 3u + 2u >= arrayLength(&src)) { return; }
