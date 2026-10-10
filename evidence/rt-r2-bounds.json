@@ -1,0 +1,60 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "RT workstream stage R2: our own BVH built by compute, a compute path tracer with a stable interface and AOVs, and hybrid ray-traced shadows and reflections over the R1 visibility buffer",
+ "written": "2026-10-10, before the implementation and the first run",
+ "method": {
+  "bvh": "PLOC (Meister and Bittner, 'Parallel Locally-Ordered Clustering for Bounding Volume Hierarchy Construction', IEEE TVCG 2018), from the paper: 30-bit Morton codes of triangle centroids in the scene box, a bitonic sort of (code, index), then rounds of nearest-neighbour search within radius 16 by the surface area of the merged box (ties to the lower index), merging of mutual neighbours, and compaction by prefix sums. No atomics: node ids and positions come from scans. A CPU reference runs the same algorithm in the same float32 operation order. Leaves hold one triangle.",
+  "traversal": "closest hit and any hit with a stack, the ray-triangle test of raw/math/primitives.hpp (Moeller-Trumbore) written in the same operation order",
+  "sah_cost": "C_trav = 1, C_isect = 1: sum over internal nodes of A(n) / A(root) plus sum over leaves of A(l) / A(root) times its triangle count",
+  "path_tracer": "unidirectional, next-event estimation for a sun and emissive triangles, multiple importance sampling between BSDF sampling and emitter sampling, Russian roulette after bounce 3 with the survival probability recorded; materials: Lambert plus a GGX metal-roughness lobe (Walter et al. 2007; VNDF sampling, Heitz 2018), our own implementation, base colour from the R1 procedural textures; the counter-based hash RNG PCG2D seeded from (seed, pixel, sample, bounce)",
+  "interface": "raw/renderer/rt_pathtrace.hpp, version 1: PathTraceDesc {seed, spp, maxBounces, width, height, camera, previous camera}; outputs per pixel: radiance (RGB, linear, unclamped), albedo (first-hit base colour), normal (first-hit shading normal, world), depth (first-hit view distance, 0 for a miss), motion (screen-space pixel offset to the previous camera, for static scenes), variance (per-pixel sample variance of radiance luminance, divided by spp); the same seed, spp and scene give the same bytes on one backend"
+ },
+ "checks": {
+  "B1_build_identity": {
+   "what": "the GPU PLOC build against the CPU PLOC reference on the owned scenes (retro_room, iso_street, clip_stress), a procedural 100,000-triangle city block (dense_block, owned) and a seeded 20,000-triangle soup",
+   "bound": "the same tree: node for node, the same children, the same leaf triangles and bit-identical boxes",
+   "control": "the GPU build with radius 8 instead of 16 must give a different tree on dense_block"
+  },
+  "B2_traversal": {
+   "what": "100,000 seeded rays per scene (half random, half camera rays), closest hit and any hit",
+   "bound": "the CPU traversal of the GPU-built tree returns exactly the brute-force scan's answer (same triangle, same t, ties to the lower index); the GPU traversal returns the same triangle except where the brute-force scan's two nearest hits lie within 1e-5 relative t (counted), with |t difference| <= 1e-5 t; any-hit answers equal",
+   "control": "the GPU traversal with the box test's far limit shortened by 10% must miss hits"
+  },
+  "B3_sah": {
+   "what": "SAH cost of the GPU-built tree against the M3 binned-SAH BVH (raw/renderer/bvh.hpp, leaves of up to 4 triangles), same scenes",
+   "bound": "ratio <= 1.25 on every scene",
+   "reported": "build time on WARP and on the RTX 4090 (under the GPU lock), not bounded"
+  },
+  "P1_furnace": {
+   "what": "a closed box with emission E on every face and Lambert albedo a = 0.5 and 0.8 on every face, GPU path tracer at 64 spp, no Russian roulette cut-off beyond 64 bounces",
+   "bound": "image mean within 4 standard errors of E / (1 - a); every pixel within 6 of its own standard errors",
+   "control": "the tracer with the cosine factor dropped from the Lambert estimator must fail"
+  },
+  "P2_convergence": {
+   "what": "the GPU path tracer against the CPU path tracer on retro_room (sun plus an emissive ceiling panel) and iso_street at 128 x 96, each at 256 spp with different seeds",
+   "bound": "per-pixel z = (gpu - cpu) / sqrt(var_gpu / n + var_cpu / n) on luminance: mean |z| <= 0.9 (0.80 expected for normal noise), fraction |z| > 4 <= 0.2%; image mean luminance within 3 combined standard errors",
+   "control": "the GPU tracer with next-event estimation's MIS weight forced to 1 (double counting) must fail"
+  },
+  "P3_determinism": {
+   "what": "the GPU path tracer run twice with the same seed and spp; and once with seed + 1",
+   "bound": "the same seed gives bit-identical radiance and AOVs; seed + 1 changes at least 99% of radiance pixels on retro_room"
+  },
+  "P4_aovs": {
+   "what": "albedo, normal, depth and triangle of the first hit against the R1 rasterizer's visibility buffer for the same camera, pixel centres, no jitter",
+   "bound": "triangle equal except within 1 px of an edge (counted); depth relative difference <= 1e-4; normal dot >= 1 - 1e-5; albedo equal (same texel) except at texel boundaries (counted)"
+  },
+  "H1_shadows": {
+   "what": "ray-traced sun shadows from the R1 visibility buffer (position from the perspective-correct interpolation), on the GPU, against CPU any-hit rays from the same positions",
+   "bound": "at most 0.1% of covered pixels differ, every difference within 1e-3 of grazing (|n . l| < 1e-3) or with an occluder hit within 1e-4 relative distance of the light-side limit (counted)",
+   "control": "shadow rays from the position without the offset along the normal must show self-shadowing (acne) above the bound"
+  },
+  "H2_reflections": {
+   "what": "one mirror bounce from every visibility-buffer pixel on retro_room and iso_street, GPU closest hit against the CPU brute-force scan",
+   "bound": "the same reflected triangle on at least 99.9% of pixels; every other within 1 px of a primary edge or at a t tie (1e-5 relative), counted",
+   "control": "reflection about the face normal negated must fail"
+  }
+ },
+ "scenes": "owned and procedural: R1's retro_room, iso_street and clip_stress; dense_block (a 100,000-triangle city block of boxes, stairs and cylinders, generated in code); a seeded triangle soup; the furnace box",
+ "backends": "D3D12 WARP and WebGPU SwiftShader gate; the RTX 4090 only under D:/gpu.lock.d, reported separately",
+ "does_not_prove": "That the path tracer agrees with the M3 material model (it implements Lambert plus GGX only; the M3 model is a later interface version); performance against hardware ray tracing; denoising quality; any claim about scenes not run."
+}
