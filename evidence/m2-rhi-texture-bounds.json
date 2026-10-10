@@ -1,0 +1,14 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "M2 exit criterion 3 (ROADMAP.md): textures, samplers, graphics pipelines and render passes on D3D12 and WebGPU; a sampled-texture identity test against the CPU sampler reference",
+ "written": "2026-10-10, before the first run",
+ "setup": "A 37 x 23 RGBA8 source texture of hashed texel colours (no smooth gradient to hide an off-by-one) is uploaded, and a raster pipeline draws one full-screen triangle into a 64 x 48 RGBA8 render target. The fragment shader maps each target pixel centre to uv = (pixel + 0.5) / size * scale + offset, with scale and offset chosen so uv runs past [0, 1] on both axes, and samples the source at mip level 0. The target is copied to a buffer and read back. The CPU sampler reference (raw/renderer/sampler.hpp) applies the same mapping and the WebGPU and D3D12 sampling rules: nearest picks floor(u * width); linear blends the four texels around u * width - 0.5; clamp-to-edge and repeat wrap each texel index; the result is rounded to 8 bits.",
+ "cases": "four samplers: nearest and linear, each with clamp-to-edge and repeat",
+ "bounds": {
+  "nearest": "bit-exact on every pixel, except pixels whose sample point lies within 1/1000 of a texel of a texel edge, where both neighbours are correct answers within float precision; those are counted and reported, and must be under 1% of pixels",
+  "linear": "every channel within 2 codes: D3D12 and WebGPU allow filter weights with 8 bits of sub-texel precision, which alone can move a result by about 1 code, and the final rounding adds up to 1"
+ },
+ "control": "the nearest case run against the reference with the texture's rows swapped (a transposed upload) must fail",
+ "backends": "D3D12 on WARP (software) in CI and on the local GPU when the lock allows; WebGPU in the browser on SwiftShader in CI",
+ "does_not_prove": "Mipmapping, anisotropic filtering, formats other than RGBA8, or performance."
+}
