@@ -467,6 +467,14 @@ jobs:
         run: python tests/web/shaders_parity.py --shader glaze --adapter swiftshader --out media-out/shaders-glaze-parity.json
       - name: Shader lab 2, hysteresis quantisation, GPU against the CPU reference within the committed bounds, on the CPU adapter
         run: python tests/web/shaders_parity.py --shader hysteresis --adapter swiftshader --out media-out/shaders-hysteresis-parity.json
+      - name: Shader lab 2, CRT purity and degauss, GPU against the CPU reference within the committed bounds, on the CPU adapter
+        run: python tests/web/shaders_parity.py --shader purity --adapter swiftshader --out media-out/shaders-purity-parity.json
+      - name: Shader lab 2, fibre-network watercolour, GPU against the CPU reference within the committed bounds, on the CPU adapter
+        run: python tests/web/shaders_parity.py --shader fibre --adapter swiftshader --out media-out/shaders-fibre-parity.json
+      - name: Shader lab 2, curvature hatching, GPU against the CPU reference within the committed bounds, on the CPU adapter
+        run: python tests/web/shaders_parity.py --shader hatch --adapter swiftshader --out media-out/shaders-hatch-parity.json
+      - name: Shader lab 2, salience caricature warp, GPU against the CPU reference within the committed bounds, on the CPU adapter
+        run: python tests/web/shaders_parity.py --shader caricature --adapter swiftshader --out media-out/shaders-caricature-parity.json
       - name: Frame times on the CPU adapter, for the record (not a gate)
         run: python tests/web/lab2_timing.py --adapter swiftshader --width 480 --height 300 --frames 5 --out media-out/shaders-lab2-timing.json
   media-smoke:

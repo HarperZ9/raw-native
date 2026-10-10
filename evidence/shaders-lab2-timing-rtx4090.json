@@ -1,0 +1,91 @@
+{
+  "rows": [
+    {
+      "shader": "adjacency",
+      "preset": "eberhard",
+      "width": 1920,
+      "height": 1080,
+      "frames": 60,
+      "median_ms": 3.100000001490116,
+      "p90_ms": 31,
+      "steps": 36,
+      "scale": 13
+    },
+    {
+      "shader": "adjacency",
+      "preset": "exhausted",
+      "width": 1920,
+      "height": 1080,
+      "frames": 60,
+      "median_ms": 5,
+      "p90_ms": 6.100000001490116,
+      "steps": 34,
+      "scale": 24
+    },
+    {
+      "shader": "sag",
+      "preset": "consumer",
+      "width": 1920,
+      "height": 1080,
+      "frames": 60,
+      "median_ms": 3,
+      "p90_ms": 4
+    },
+    {
+      "shader": "sag",
+      "preset": "thriller",
+      "width": 1920,
+      "height": 1080,
+      "frames": 60,
+      "median_ms": 3,
+      "p90_ms": 4.100000001490116
+    },
+    {
+      "shader": "lightpaint",
+      "preset": "disco",
+      "width": 1920,
+      "height": 1080,
+      "frames": 60,
+      "median_ms": 3,
+      "p90_ms": 4
+    },
+    {
+      "shader": "glaze",
+      "preset": "oil-slick",
+      "width": 1920,
+      "height": 1080,
+      "frames": 60,
+      "median_ms": 3,
+      "p90_ms": 4
+    },
+    {
+      "shader": "hysteresis",
+      "preset": "bands6",
+      "width": 1920,
+      "height": 1080,
+      "frames": 60,
+      "median_ms": 23.199999999254942,
+      "p90_ms": 24.300000000745058,
+      "note": "includes the per-frame upload of the frame and motion buffers"
+    },
+    {
+      "shader": "hysteresis",
+      "preset": "pico8",
+      "width": 1920,
+      "height": 1080,
+      "frames": 60,
+      "median_ms": 23.100000001490116,
+      "p90_ms": 25.100000001490116,
+      "note": "includes the per-frame upload of the frame and motion buffers"
+    }
+  ],
+  "adapter": {
+    "vendor": "nvidia",
+    "architecture": "lovelace",
+    "device": "",
+    "description": ""
+  },
+  "gpuErrors": [],
+  "method": "wall time per frame, submit to onSubmittedWorkDone, 3 warm-up frames dropped",
+  "adapter_kind": "gpu"
+}

@@ -81,3 +81,50 @@ if (on("hysteresis")) {
     }
   }
 }
+
+if (on("purity")) {
+  const { resolvePurity, runPurity, displayEncode8 } = await import("../../web/shaders/purity/purity.mjs");
+  const { displayLinear } = await import("../../web/shaders/lab/sources.mjs");
+  const enc = (f) => ({ width: f.width, height: f.height, data: displayEncode8(f) });
+  for (const frame of ["white", "street"]) {
+    const src = displayLinear(frame, W, 480);
+    save(`purity-${frame}-0-source`, enc(src));
+    save(`purity-${frame}-magnetised`, enc(runPurity(resolvePurity("magnetised"), src, 0)));
+    save(`purity-${frame}-earth-field`, enc(runPurity(resolvePurity("earth-field"), src, 0)));
+    for (const t of [0.02, 0.15, 0.4]) save(`purity-${frame}-degauss-${t}s`, enc(runPurity(resolvePurity("degauss"), src, t)));
+  }
+}
+
+if (on("fibre")) {
+  const { resolveFibre, runFibre } = await import("../../web/shaders/fibre/fibre.mjs");
+  const { displayEncode8 } = await import("../../web/shaders/purity/purity.mjs");
+  const { displayLinear } = await import("../../web/shaders/lab/sources.mjs");
+  const enc = (f) => ({ width: f.width, height: f.height, data: displayEncode8(f) });
+  for (const frame of ["street", "edges"]) {
+    const src = displayLinear(frame, W, H);
+    save(`fibre-${frame}-0-source`, enc(src));
+    for (const preset of ["hot-press", "cold-press", "rough"]) {
+      const im = enc(runFibre(resolveFibre(preset, {}, { w: W, h: H }), src).out);
+      save(`fibre-${frame}-${preset}`, im); save(`fibre-${frame}-${preset}-crop`, nearest(crop(im, 220, 60, 160, 120), 4));
+    }
+  }
+}
+
+if (on("hatch")) {
+  const { resolveHatch, runHatch } = await import("../../web/shaders/hatch/hatch.mjs");
+  const { displayEncode8 } = await import("../../web/shaders/purity/purity.mjs");
+  for (const preset of ["engraving", "crosshatch", "ink"]) {
+    const r = runHatch(resolveHatch(preset, {}, { w: W, h: H })), im = { width: W, height: H, data: displayEncode8(r) };
+    save(`hatch-${preset}`, im); save(`hatch-${preset}-crop`, nearest(crop(im, 240, 120, 200, 150), 3));
+    if (preset === "engraving") { const d = new Uint8ClampedArray(W * H * 4); for (let i = 0; i < W * H; i++) { const v = r.fallback[i] ? 255 : 0; d.set([v, v * 0.6, 0, 255], i * 4); } save("hatch-fallback-map", { width: W, height: H, data: d }); }
+  }
+}
+
+if (on("caricature")) {
+  const { resolveCaricature, runCaricature, salienceFrom } = await import("../../web/shaders/caricature/caricature.mjs");
+  for (const frame of ["street", "day"]) {
+    const src = labSource(frame, W, H);
+    save(`caricature-${frame}-0-source`, img8(src, frame === "day" ? 1 : 2.4));
+    for (const preset of ["subtle", "grotesque"]) { const plan = resolveCaricature(preset, {}, { w: W, h: H }); save(`caricature-${frame}-${preset}`, img8(runCaricature(plan, src, salienceFrom(plan, src.mat)).out, frame === "day" ? 1 : 2.4)); }
+  }
+}

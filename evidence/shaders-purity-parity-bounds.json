@@ -1,0 +1,51 @@
+{
+  "what": "CRT colour purity and degauss (web/shaders/purity/): GPU pass against the float64 CPU reference, and the falsification tests",
+  "fixed_before_first_run": "2026-10-10",
+  "source": "fixtures/street.mjs streetScene(320, 240, 0) display-encoded, and flat plates (white, red)",
+  "output": {
+    "width": 320,
+    "height": 240
+  },
+  "cases": [
+    {
+      "id": "street-magnetised",
+      "preset": "magnetised",
+      "frame": "street",
+      "t": 0
+    },
+    {
+      "id": "street-degauss-0.3s",
+      "preset": "degauss",
+      "frame": "street",
+      "t": 0.3
+    },
+    {
+      "id": "white-degauss-0.1s",
+      "preset": "degauss",
+      "frame": "white",
+      "t": 0.1
+    },
+    {
+      "id": "red-earth-field",
+      "preset": "earth-field",
+      "frame": "red",
+      "t": 0
+    }
+  ],
+  "bounds": {
+    "max_abs_code": 2,
+    "p999_abs_code": 1,
+    "mean_abs_code": 0.05
+  },
+  "tests": {
+    "zero_field_identity_max_dev": 1e-12,
+    "light_never_created": "for every gun and every landing error, the light reaching all phosphors sums to at most the beam's light (tolerance 1e-12)",
+    "red_shifted_right_shows_green_not_blue": true,
+    "degauss_envelope_rel_error_max": 0.02,
+    "degauss_envelope_times": "1, 2 and 3 time constants",
+    "after_5_tau_max_dev_from_residual": 0.001,
+    "line_phase_zero_crossings_tolerance": 1
+  },
+  "rules": "No criterion uses a measured display reading or calibrate-pro (author, 2026-10-10). Colour checks are in software against float64 references.",
+  "why": "Per-pixel interval overlaps and smooth fields; f32 against f64 differs by rounding in the overlap clamps."
+}

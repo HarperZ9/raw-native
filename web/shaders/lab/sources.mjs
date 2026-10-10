@@ -46,3 +46,11 @@ export function labSource(name, w, h, t = 0) {
   cache.set(key, f);
   return f;
 }
+// Display-linear frames (0..1) for passes that model the display itself (CRT purity):
+// "street" through the soft shoulder, or flat "white" and "red" plates.
+export function displayLinear(name, w, h) {
+  if (name === "white" || name === "red") { const c = name === "white" ? [1, 1, 1] : [1, 0, 0], d = new Float32Array(w * h * 4); for (let i = 0; i < w * h; i++) d.set([...c, 1], i * 4); return { width: w, height: h, data: d }; }
+  const f = labSource(name, w, h), d = new Float32Array(f.data.length);
+  for (let i = 0; i < d.length; i++) d[i] = (i & 3) === 3 ? 1 : Math.min(1, 1 - Math.exp(-Math.max(0, f.data[i]) * 2.4));
+  return { width: w, height: h, data: d };
+}
