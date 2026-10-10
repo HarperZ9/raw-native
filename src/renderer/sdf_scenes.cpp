@@ -42,7 +42,7 @@ Scene garden() {
     return s;
 }
 
-// A Mandelbox-folded tower standing on a plane, in light fog: the god-ray target.
+// A Mandelbox block floating over a plane, in light fog: the god-ray target.
 Scene mengerTower() {
     Scene s;
     s.name = "menger_tower";

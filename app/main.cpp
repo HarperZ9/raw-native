@@ -6,6 +6,7 @@
 #include "raw/renderer/rt_gpu.hpp"
 #include "raw/renderer/rt_pt_gpu.hpp"
 #include "raw/renderer/rt_hybrid.hpp"
+#include "raw/renderer/sdf_gpu.hpp"
 #include "raw/tools/gallery_cmd.hpp"
 #include "raw/tools/bake_cmd.hpp"
 #include "raw/tools/raster_cmd.hpp"
@@ -13,6 +14,7 @@
 #include "raw/tools/hw_cmd.hpp"
 #include "raw/tools/swr_cmd.hpp"
 #include "raw/tools/pt_cmd.hpp"
+#include "raw/tools/sdf_cmd.hpp"
 #include "raw/rhi/rhi.hpp"
 #include "raw/renderer/raster.hpp"
 #include "raw/renderer/accel.hpp"
@@ -101,7 +103,9 @@ static const char* kUsage =
     "       raw_native_cli rt-pathtrace [--scene S] [--width W] [--height H] [--spp N] [--seed S] [--out DIR] [--cpu]\n"
     "         path-traced radiance and AOVs (albedo, normal, depth, motion, variance, triangle) of an\n"
     "         owned scene, interface v1 (raw/renderer/rt_pathtrace.hpp); PFM, PNG and JSON\n"
-    "       raw_native_cli rt-bvh-parity [--quick] | rt-pt-parity [--quick]\n"
+    "       raw_native_cli sdf-render [--out DIR] [--width W] [--height H]\n"
+    "         the owned SDF scenes from the GPU ray marcher, with albedo, normal, depth and material AOVs\n"
+    "       raw_native_cli rt-bvh-parity [--quick] | rt-pt-parity [--quick] | rt-hybrid-parity | sdf-parity [--quick]\n"
     "         the compute BVH and path tracer against their CPU references (same exit codes)\n"
     "       raw_native_cli swr-parity\n"
     "         the software rasterizer's GPU compute form against its CPU reference, every mode\n"
@@ -154,6 +158,7 @@ int main(int argc, char** argv){
     if (argc >= 2 && std::strcmp(argv[1], "hw-probe") == 0) return hwProbeCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "swr-render") == 0) return swrRenderCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "rt-pathtrace") == 0) return ptCommand(argc - 1, argv + 1);
+    if (argc >= 2 && std::strcmp(argv[1], "sdf-render") == 0) return sdfRenderCommand(argc - 1, argv + 1);
     // The sampled-texture identity check on this build's GPU backend (ROADMAP M2
     // criterion 3): JSON on stdout; exit 0 when it passes, 1 when it fails, 4 without
     // a GPU backend or adapter.
@@ -221,6 +226,16 @@ int main(int argc, char** argv){
         raw::rhi::Device* dev = raw::rhi::device(why);
         if (!dev){ std::printf("{\n \"error\": \"%s\"\n}\n", why.c_str()); return 4; }
         const raw::gpu_check::RtHybridParity r = raw::gpu_check::rtHybridParity(*dev);
+        std::fputs(r.json().c_str(), stdout);
+        return r.pass() ? 0 : 1;
+    }
+    // The GPU ray marcher against its float64 reference (RT stage R3,
+    // evidence/rt-r3-bounds.json, checks M2 to M7): same exit codes.
+    if (argc >= 2 && std::strcmp(argv[1], "sdf-parity") == 0){
+        std::string why;
+        raw::rhi::Device* dev = raw::rhi::device(why);
+        if (!dev){ std::printf("{\n \"error\": \"%s\"\n}\n", why.c_str()); return 4; }
+        const raw::gpu_check::SdfParity r = raw::gpu_check::sdfParity(*dev, argc >= 3 && std::strcmp(argv[2], "--quick") == 0);
         std::fputs(r.json().c_str(), stdout);
         return r.pass() ? 0 : 1;
     }

@@ -42,6 +42,43 @@
    "result": "fail: M2 passes on garden (t 39,024 of 39,024), menger_tower (29,239 of 29,240) and arcade (55,468 of 55,468) and FAILS on bulb (t within on 93.3% of hits against 99.5%, normals 57.3% against 99%); M3 passes on all four (worst mean 5.5e-4, p99 8.4e-3 on the bulb's shadow); M4 FAILS (height fog worst relative 1.0); M5 passes (2 and 1 pixels outside 1e-3, each with a differing shadow sample count); M6 passes (0 disagreements); M7 bit-identical. Controls: smooth k halved breaks M2; k = 3 breaks M3; visibility 1 breaks M5 (65,536 and 1,447 pixels over 5%); SDF in front breaks M6 (107 unexplained)",
    "diagnosis_m2_bulb": "Float32 precision in the Mandelbulb's iteration, inferred: the same estimator evaluated in float32 on the CPU, with no GPU involved, agrees with float64 on only 67.9% of hits. The bound is not loosened and the scene is not changed; this stays an open failure.",
    "diagnosis_m4": "See method note 4: 113 cases underflow float32."
+  },
+  {
+   "run": 6,
+   "when": "2026-10-10 19:17Z",
+   "backend": "D3D12 WARP (debug layer)",
+   "checks": "M2 to M7 (method note 4)",
+   "result": "open failures in M2 (bulb, as in run 5) and M4: M4's closed forms pass (homogeneous 3.4e-7, height 2.7e-5; 113 cases excluded below 1e-30), but the 256-sample march reaches 1.33e-3 against 1e-3; everything else as in run 5",
+   "diagnosis_m4_march": "Midpoint-rule discretization, confirmed: the same 256-sample march in float64 reaches 1.324e-3 (13 cases over 1e-3, the worst at optical depth 64). The bound did not allow for optical depths this large. Not loosened; an open failure.",
+   "evidence": "evidence/rt-r3-sdf-gpu-d3d12-warp.json"
+  },
+  {
+   "run": 7,
+   "when": "2026-10-10 19:18Z to 19:26Z",
+   "backend": "WebGPU SwiftShader (Chrome, local wasm build)",
+   "checks": "M2 to M7",
+   "result": "no result: first attempt, WebGPU's automatic bind-group layout dropped binding 1 (the program) in sdf_fog and sdf_composite, which never read it (the error text also broke the JSON, now escaped); second attempt, the page hit its 300 s limit because the CPU references run single-threaded in WebAssembly",
+   "change": "The two passes read the program statically (N[0] * 0, no numeric effect); error text is JSON-escaped; a --quick mode runs M2 to M5 at 128 x 128 in the browser. No bound changed."
+  },
+  {
+   "run": 8,
+   "when": "2026-10-10 19:26Z",
+   "backend": "WebGPU SwiftShader, --quick",
+   "checks": "M2 to M7",
+   "result": "as on WARP (the same two open failures), but M6's control did not discriminate at 128 x 128 (all 128 disagreements fell in the edge and silhouette exemption), so M6 was not a pass there",
+   "change": "M6 always runs at 256 x 256 (its CPU reference is cheap); only M2 to M5 shrink in --quick."
+  },
+  {
+   "run": 9,
+   "when": "2026-10-10 19:39Z",
+   "backend": "D3D12 WARP (debug layer, 256 x 256) and WebGPU SwiftShader (--quick: M2 to M5 at 128 x 128, M6 at 256 x 256)",
+   "checks": "M2 to M7",
+   "result": "pass except two open failures on both backends. M2: garden, menger_tower, arcade within (t, material and normal on every or all but one hit); bulb OPEN FAILURE (t within on 93.3% of hits on WARP against 99.5%, normals 57%). M3 within on all four. M4: closed forms within (113 cases excluded below 1e-30), the 256-sample march OPEN FAILURE (1.33e-3 against 1e-3, midpoint-rule error at optical depth 64). M5 within (WARP: 2 and 1 pixels outside 1e-3, each with a differing shadow-sample count; SwiftShader quick: 0). M6 0 disagreements. M7 bit-identical. Every control fails as required: smooth k halved (M2), k = 3 (M3), 4 samples (M4: 165x), visibility 1 (M5), SDF in front (M6: 107 unexplained).",
+   "evidence": [
+    "evidence/rt-r3-m1-cpu.json",
+    "evidence/rt-r3-sdf-gpu-d3d12-warp.json",
+    "evidence/rt-r3-sdf-gpu-webgpu-swiftshader.json"
+   ]
   }
  ]
 }
