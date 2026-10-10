@@ -1,0 +1,7 @@
+{
+ "depth_edges": {"pixels": 880, "worst_px": 1.063, "samples": 3929, "missed": 0, "control_fails": true},
+ "id_edges": {"pixels": 2004, "worst_px": 1.063, "samples": 8935, "missed": 0, "control_fails": true},
+ "normal_edges": {"pixels": 643, "worst_px": 0.998, "samples": 1366, "missed": 0, "control_fails": true},
+ "inverted_hull": {"pixels": 8488, "worst_px": 0.068, "annulus_pixels": 8428, "missed": 52, "control_fails": true},
+ "toon_ramp": {"covered": 76676, "differ": 64, "differ_away_from_a_boundary": 0, "control_fails": true}
+}
