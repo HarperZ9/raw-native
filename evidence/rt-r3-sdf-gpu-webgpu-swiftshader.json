@@ -1,0 +1,30 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "RT stage R3, the GPU ray marcher: M2 to M7 (evidence/rt-r3-bounds.json)",
+ "m2_to_m5_size": 128,
+ "m6_size": 256,
+ "backend": "webgpu",
+ "adapter": "",
+ "error": "",
+ "pass": false,
+ "results": [
+  {"check": "M2", "scene": "garden", "case": "gpu against cpu", "pixels": 16384, "hit_miss_agree": 16384, "disagree": 0, "grazing": 0, "both_hit": 9745, "t_within": 9745, "material_same": 9745, "normal_within": 9745, "within": true},
+  {"check": "M3", "scene": "garden", "case": "gpu against cpu", "points": 9745, "shadow_mean": 1.662e-07, "shadow_p99": 1.158e-06, "ao_mean": 3.248e-07, "ao_p99": 1.848e-06, "within": true},
+  {"check": "M2", "scene": "garden", "case": "control: smooth k halved", "pixels": 16384, "hit_miss_agree": 16369, "disagree": 15, "grazing": 15, "both_hit": 9731, "t_within": 7093, "material_same": 9707, "normal_within": 7376, "within": false},
+  {"check": "M3", "scene": "garden", "case": "control: soft shadow k = 3", "points": 9745, "shadow_mean": 4.706e-02, "shadow_p99": 6.809e-01, "ao_mean": 3.248e-07, "ao_p99": 1.848e-06, "within": false},
+  {"check": "M2", "scene": "menger_tower", "case": "gpu against cpu", "pixels": 16384, "hit_miss_agree": 16384, "disagree": 0, "grazing": 0, "both_hit": 7317, "t_within": 7317, "material_same": 7317, "normal_within": 7317, "within": true},
+  {"check": "M3", "scene": "menger_tower", "case": "gpu against cpu", "points": 7317, "shadow_mean": 3.277e-07, "shadow_p99": 5.196e-06, "ao_mean": 1.441e-08, "ao_p99": 5.428e-07, "within": true},
+  {"check": "M2", "scene": "bulb", "case": "gpu against cpu", "pixels": 16384, "hit_miss_agree": 16384, "disagree": 0, "grazing": 0, "both_hit": 13240, "t_within": 12289, "material_same": 13238, "normal_within": 7326, "within": false},
+  {"check": "M3", "scene": "bulb", "case": "gpu against cpu", "points": 13240, "shadow_mean": 5.995e-04, "shadow_p99": 9.623e-03, "ao_mean": 1.161e-05, "ao_p99": 3.117e-04, "within": true},
+  {"check": "M2", "scene": "arcade", "case": "gpu against cpu", "pixels": 16384, "hit_miss_agree": 16384, "disagree": 0, "grazing": 0, "both_hit": 13870, "t_within": 13870, "material_same": 13870, "normal_within": 13870, "within": true},
+  {"check": "M3", "scene": "arcade", "case": "gpu against cpu", "points": 13870, "shadow_mean": 4.268e-07, "shadow_p99": 7.707e-06, "ao_mean": 1.476e-07, "ao_p99": 2.999e-06, "within": true},
+  {"check": "M4", "cases": 4096, "excluded_below_1e-30": 113, "homogeneous_worst_rel": 4.878e-07, "height_closed_worst_rel": 2.972e-05, "height_march_256_worst_rel": 1.327e-03, "control_march_4_worst_rel": 1.654e+02, "within": false},
+  {"check": "M5", "scene": "arcade", "case": "gpu against cpu", "pixels": 16384, "max_inscatter": 1.1337e-02, "within_1e-3": 16384, "explained_by_shadow_samples": 0, "over_5_percent": 0, "within": true},
+  {"check": "M5", "scene": "arcade", "case": "control: sun visibility 1", "pixels": 16384, "max_inscatter": 1.1337e-02, "within_1e-3": 0, "explained_by_shadow_samples": 16384, "over_5_percent": 16384, "control_fails": true},
+  {"check": "M5", "scene": "menger_tower", "case": "gpu against cpu", "pixels": 16384, "max_inscatter": 3.3677e-01, "within_1e-3": 16384, "explained_by_shadow_samples": 0, "over_5_percent": 0, "within": true},
+  {"check": "M5", "scene": "menger_tower", "case": "control: sun visibility 1", "pixels": 16384, "max_inscatter": 3.3677e-01, "within_1e-3": 13666, "explained_by_shadow_samples": 2718, "over_5_percent": 380, "control_fails": true},
+  {"check": "M6", "case": "composite against cpu", "agree": 65536, "depth_tie": 0, "edge_or_silhouette": 0, "unexplained": 0, "within": true},
+  {"check": "M6", "case": "control: SDF always in front", "agree": 65058, "depth_tie": 0, "edge_or_silhouette": 371, "unexplained": 107, "within": false},
+  {"check": "M7", "scene": "arcade", "identical": true}
+ ]
+}

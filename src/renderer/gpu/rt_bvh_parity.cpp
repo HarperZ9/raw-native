@@ -1,5 +1,6 @@
 // The compute BVH against the CPU reference: checks B1 to B3 of evidence/rt-r2-bounds.json.
 #include "raw/renderer/rt_gpu.hpp"
+#include "json_text.hpp"
 #include "raw/renderer/rt_scenes.hpp"
 #include "raw/renderer/swr_scenes.hpp"
 #include "raw/core/parallel.hpp"
@@ -124,7 +125,7 @@ Case runScene(rhi::Device& dev, const char* name, const std::vector<Tri>& tris, 
 
 std::string RtBvhParity::json() const {
     return "{\n \"schema\": \"raw-native.evidence/1\",\n \"criterion\": \"RT stage R2, the compute BVH: B1 to B3 (evidence/rt-r2-bounds.json)\",\n"
-           " \"backend\": \"" + backend + "\",\n \"adapter\": \"" + adapter + "\",\n \"error\": \"" + error + "\",\n"
+           " \"backend\": \"" + backend + "\",\n \"adapter\": \"" + jsonText(adapter) + "\",\n \"error\": \"" + jsonText(error) + "\",\n"
            " \"quick\": " + std::string(quick ? "true" : "false") + ",\n \"control_radius_8_nodes_differing\": " + std::to_string(controlRadiusDiffNodes) + ",\n"
            " \"control_short_far_hits_missed\": " + std::to_string(controlShortFarMissed) + ",\n"
            " \"pass\": " + (pass() ? "true" : "false") + ",\n \"scenes\": [\n" + results + "\n ]\n}\n";

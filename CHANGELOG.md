@@ -56,6 +56,20 @@ the day the release was published on GitHub, in UTC.
     about 11 on SwiftShader, outside the committed bound. It stays open until the RTX 4090 run
     is in; `evidence/m3-shadows-runs.json` records each texel's cause.
   - `raw_native_cli shadow-parity` runs the GPU checks.
+- **Ray marching: an SDF scene graph on the CPU and the GPU** (RT stage R3, `evidence/rt-r3-bounds.json`).
+  - A postfix SDF program provides primitives, smooth union, subtraction, intersection, frames and
+    repetition. It also includes the Mandelbulb and Mandelbox estimators the site's fractal work uses.
+  - Sphere tracing refines each hit with a sign bracket and bisection. The stop rule alone was off
+    by up to 0.5 / cos(theta) at grazing angles. Hits now land within 2e-4 (1 + t) of the analytic
+    answer for a sphere, a box and a torus.
+  - On the GPU, float32 matches float64 on the garden, the arcade and the Mandelbox scene. Soft
+    shadows, AO, god rays and fog closed forms agree too, and raster-plus-SDF compositing through
+    shared depth disagrees on no pixel.
+  - Open failures: the Mandelbulb in float32 (the same estimator in float32 on the CPU departs
+    further), and a 256-sample fog march on optically deep rays (midpoint-rule error, confirmed in
+    float64).
+  - `raw_native_cli sdf-render` writes the scenes with albedo, normal, depth and material AOVs;
+    `sdf-parity` runs the checks.
 - **Ray tracing: a BVH built by compute, and a path tracer** (RT stage R2, `evidence/rt-r2-bounds.json`).
   - PLOC (Meister and Bittner 2018) builds the BVH on the GPU without atomics. The GPU tree equals
     the CPU tree node for node, up to 100,760 triangles, on D3D12 WARP and on WebGPU SwiftShader.

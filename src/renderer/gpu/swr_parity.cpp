@@ -1,5 +1,6 @@
 // The GPU rasterizer against the CPU reference: checks C4 and C5 of evidence/rt-r1-bounds.json.
 #include "raw/renderer/swr_parity.hpp"
+#include "json_text.hpp"
 #include "raw/renderer/swr_scenes.hpp"
 #include <algorithm>
 #include <cmath>
@@ -93,7 +94,7 @@ bool SwrParity::pass() const {
 }
 std::string SwrParity::json() const {
     std::string s = "{\n \"schema\": \"raw-native.evidence/1\",\n \"criterion\": \"RT stage R1, GPU checks C4 and C5 (evidence/rt-r1-bounds.json)\",\n";
-    s += " \"backend\": \"" + backend + "\",\n \"adapter\": \"" + adapter + "\",\n \"error\": \"" + error + "\",\n";
+    s += " \"backend\": \"" + backend + "\",\n \"adapter\": \"" + jsonText(adapter) + "\",\n \"error\": \"" + jsonText(error) + "\",\n";
     s += " \"control_flipped_fill_rule_pixels_differing\": " + std::to_string(controlFillRuleDiff) + ",\n";
     s += " \"control_moved_vertex_pixels_differing\": " + std::to_string(controlMovedVertexDiff) + ",\n";
     s += " \"reported_moved_vertex_uv_components_differing\": " + std::to_string(controlMovedVertexUvDiff) + ",\n";
