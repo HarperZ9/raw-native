@@ -1,0 +1,745 @@
+{
+ "schema": "raw-native.models/1",
+ "purpose": "The models of ROADMAP M3 criterion 1, by role. Each role names the candidate in use; changing one 'use' field swaps a model everywhere (fetch, render, checks). Written 2026-10-10 by the M3 session at the coordinator's direction, while the author decides the licence questions below.",
+ "source": {
+  "repository": "https://github.com/KhronosGroup/glTF-Sample-Assets",
+  "commit": "edc7c9e67c639d230715049ee31f9a96a6babbbe",
+  "verification": "each file's git blob hash equals the hash in the repository tree at that commit"
+ },
+ "approval": "The author approved downloading the Khronos sample models on 2026-10-10 (relayed verbatim: \"You have my yes.\"); the files stay outside the repository.",
+ "roles": [
+  {
+   "role": "metal_rough_spheres",
+   "criterion": "M3 criterion 1, MetalRoughSpheres",
+   "use": "MetalRoughSpheres",
+   "candidates": [
+    {
+     "name": "MetalRoughSpheres",
+     "licence": "CC-BY-4.0",
+     "notes": "named by the criterion",
+     "main": "Models/MetalRoughSpheres/glTF/MetalRoughSpheres.gltf",
+     "files": [
+      {
+       "path": "Models/MetalRoughSpheres/glTF/MetalRoughSpheres.gltf",
+       "git_blob": "77284872536c21552bf728b4bc3c6f1bb37d7e1e",
+       "bytes": 11899
+      },
+      {
+       "path": "Models/MetalRoughSpheres/glTF/MetalRoughSpheres0.bin",
+       "git_blob": "2823ba4ac569ab8f6de2335676d4372fe0eb6640",
+       "bytes": 11199904
+      },
+      {
+       "path": "Models/MetalRoughSpheres/glTF/Spheres_BaseColor.png",
+       "git_blob": "7ae003ee3765ba55df3a9b929277320813ee00b0",
+       "bytes": 8500
+      },
+      {
+       "path": "Models/MetalRoughSpheres/glTF/Spheres_MetalRough.png",
+       "git_blob": "3987ddf95c71969d68277cff31502d441ee74b20",
+       "bytes": 8220
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "role": "helmet",
+   "criterion": "M3 criterion 1, DamagedHelmet or its licence-clean stand-in",
+   "use": "FlightHelmet",
+   "decision": "with the author: DamagedHelmet (named by the criterion) derives from a CC-BY-NC-4.0 original; FlightHelmet is CC0-1.0 and the default until the author decides",
+   "candidates": [
+    {
+     "name": "FlightHelmet",
+     "licence": "CC0-1.0",
+     "notes": "licence-clean stand-in, 5 materials, textured",
+     "main": "Models/FlightHelmet/glTF/FlightHelmet.gltf",
+     "files": [
+      {
+       "path": "Models/FlightHelmet/glTF/FlightHelmet.bin",
+       "git_blob": "3a878be10d32ec4eb4ab4c37b781792abe94a332",
+       "bytes": 3227148
+      },
+      {
+       "path": "Models/FlightHelmet/glTF/FlightHelmet.gltf",
+       "git_blob": "03b53b40cffe79b6b6647af7a51c37c4abfabf9b",
+       "bytes": 18698
+      },
+      {
+       "path": "Models/FlightHelmet/glTF/FlightHelmet_Materials_GlassPlasticMat_BaseColor.png",
+       "git_blob": "6d8e33b53dc0f7676a175c0aeb43cc71c8f006cb",
+       "bytes": 2306649
+      },
+      {
+       "path": "Models/FlightHelmet/glTF/FlightHelmet_Materials_GlassPlasticMat_Normal.png",
+       "git_blob": "25aa956368b82bd3368259b6283c0f087b236cee",
+       "bytes": 2648815
+      },
+      {
+       "path": "Models/FlightHelmet/glTF/FlightHelmet_Materials_GlassPlasticMat_OcclusionRoughMetal.png",
+       "git_blob": "01ff83ed9cb29ed84466aa20db37bcbb81b6f0f8",
+       "bytes": 3696183
+      },
+      {
+       "path": "Models/FlightHelmet/glTF/FlightHelmet_Materials_LeatherPartsMat_BaseColor.png",
+       "git_blob": "693a01d35c260d030d7c5bdd1f9bd3ff1c140401",
+       "bytes": 5478748
+      },
+      {
+       "path": "Models/FlightHelmet/glTF/FlightHelmet_Materials_LeatherPartsMat_Normal.png",
+       "git_blob": "5d2d37bbeba9e46e7f6c5234a6ab75cd601fcdf7",
+       "bytes": 5675531
+      },
+      {
+       "path": "Models/FlightHelmet/glTF/FlightHelmet_Materials_LeatherPartsMat_OcclusionRoughMetal.png",
+       "git_blob": "72ea477505d6614dec6e7193eba63585272a67e2",
+       "bytes": 4375686
+      },
+      {
+       "path": "Models/FlightHelmet/glTF/FlightHelmet_Materials_LensesMat_BaseColor.png",
+       "git_blob": "d2dd7873f05af6363d48a1810b5bb80d97f393b1",
+       "bytes": 696304
+      },
+      {
+       "path": "Models/FlightHelmet/glTF/FlightHelmet_Materials_LensesMat_Normal.png",
+       "git_blob": "3989a09819f1e50550d76a93082417ccd98e4ef9",
+       "bytes": 5575
+      },
+      {
+       "path": "Models/FlightHelmet/glTF/FlightHelmet_Materials_LensesMat_OcclusionRoughMetal.png",
+       "git_blob": "372a426ddd7832e6a99f8ee86a08e0100ddeb5ed",
+       "bytes": 601603
+      },
+      {
+       "path": "Models/FlightHelmet/glTF/FlightHelmet_Materials_MetalPartsMat_BaseColor.png",
+       "git_blob": "908a88b4a6bf151e0fcd93cbb6ed723f5ffcbb46",
+       "bytes": 2680488
+      },
+      {
+       "path": "Models/FlightHelmet/glTF/FlightHelmet_Materials_MetalPartsMat_Normal.png",
+       "git_blob": "191ef7ef0c22a59a5e86ad181c9ca7e90769c49e",
+       "bytes": 3273483
+      },
+      {
+       "path": "Models/FlightHelmet/glTF/FlightHelmet_Materials_MetalPartsMat_OcclusionRoughMetal.png",
+       "git_blob": "95075d80991d015d094330ab5a5d0e68113f90f4",
+       "bytes": 2976508
+      },
+      {
+       "path": "Models/FlightHelmet/glTF/FlightHelmet_Materials_RubberWoodMat_BaseColor.png",
+       "git_blob": "02dff40201fc3133a2d356a71fbfe6c8af001553",
+       "bytes": 3594300
+      },
+      {
+       "path": "Models/FlightHelmet/glTF/FlightHelmet_Materials_RubberWoodMat_Normal.png",
+       "git_blob": "c3e6f7906eae6547997f11f23bb8c38586cb7741",
+       "bytes": 3327566
+      },
+      {
+       "path": "Models/FlightHelmet/glTF/FlightHelmet_Materials_RubberWoodMat_OcclusionRoughMetal.png",
+       "git_blob": "6ce3f642ca76811a7b121b8ba87344222799d19d",
+       "bytes": 3809284
+      }
+     ]
+    },
+    {
+     "name": "DamagedHelmet",
+     "licence": "CC-BY-4.0 over a CC-BY-NC-4.0 original",
+     "notes": "named by the criterion; non-commercial terms in its history",
+     "main": "Models/DamagedHelmet/glTF/DamagedHelmet.gltf",
+     "files": [
+      {
+       "path": "Models/DamagedHelmet/glTF/DamagedHelmet.bin",
+       "git_blob": "662eacc1da580cdcbc08572d5535b3ed484b1579",
+       "bytes": 558504
+      },
+      {
+       "path": "Models/DamagedHelmet/glTF/DamagedHelmet.gltf",
+       "git_blob": "c61145a010f0571650a48daffd5fd3e99a80d9a6",
+       "bytes": 4537
+      },
+      {
+       "path": "Models/DamagedHelmet/glTF/Default_AO.jpg",
+       "git_blob": "419f62840ad0eff2bc2482ada01e55ed02fb87e3",
+       "bytes": 361678
+      },
+      {
+       "path": "Models/DamagedHelmet/glTF/Default_albedo.jpg",
+       "git_blob": "15d64855c732130451cfd511d61ffb07b2d97e1f",
+       "bytes": 935629
+      },
+      {
+       "path": "Models/DamagedHelmet/glTF/Default_emissive.jpg",
+       "git_blob": "2de59e897bbfb1a664053bc5ba3cab0cd21accf0",
+       "bytes": 97499
+      },
+      {
+       "path": "Models/DamagedHelmet/glTF/Default_metalRoughness.jpg",
+       "git_blob": "04874cb6e9aba270a2c5d3b41f487c0dcc7b481d",
+       "bytes": 1300661
+      },
+      {
+       "path": "Models/DamagedHelmet/glTF/Default_normal.jpg",
+       "git_blob": "94ca20a2d131d5aa70f93f040707a80987cc4904",
+       "bytes": 517757
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "role": "interior",
+   "criterion": "M3 criterion 1, a Sponza-class scene",
+   "use": "ABeautifulGame",
+   "decision": "with the author: the Khronos Sponza is under the CRYENGINE licence. No CC0 or CC-BY interior of Sponza's size is in this repository at this commit; ABeautifulGame (CC-BY-4.0, many PBR materials) stands in for scale and material count, and is not an interior",
+   "candidates": [
+    {
+     "name": "ABeautifulGame",
+     "licence": "CC-BY-4.0",
+     "notes": "stand-in for scale, not an interior",
+     "main": "Models/ABeautifulGame/glTF/ABeautifulGame.gltf",
+     "files": [
+      {
+       "path": "Models/ABeautifulGame/glTF/ABeautifulGame.bin",
+       "git_blob": "8308f62c8082f6c73022238b00f7a53cadd20e05",
+       "bytes": 10829440
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/ABeautifulGame.gltf",
+       "git_blob": "0e8b4f99820db8758f5646d573d1f82e0918da21",
+       "bytes": 46214
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/Bishop_black_ORM.jpg",
+       "git_blob": "b06e49885ac765851028739f35afbc70a68733dd",
+       "bytes": 630950
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/Bishop_black_base_color.jpg",
+       "git_blob": "4011467f5cf9d9b29c2bd2fddc7f321e7fa20a3f",
+       "bytes": 403990
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/Bishop_black_normal.jpg",
+       "git_blob": "76e45c0566b02817f97eb66fe268ee05ead9d3db",
+       "bytes": 850400
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/Bishop_white_ORM.jpg",
+       "git_blob": "512d7ac10056a32c0511ee00bb9717ba6810420a",
+       "bytes": 622771
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/Bishop_white_base_color.jpg",
+       "git_blob": "907e057a16245e6053c5aa905a08795bd59263e0",
+       "bytes": 361127
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/Bishop_white_normal.jpg",
+       "git_blob": "d73a833d144592115cc76a30cad94aa714207886",
+       "bytes": 673915
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/Castle_ORM.jpg",
+       "git_blob": "5c02b1ddfc0f3c165e5496e70b515918d276c4b7",
+       "bytes": 1371413
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/Castle_black_base_color.jpg",
+       "git_blob": "f7b98a9444ebfa845beefd4ee9fbcf7aa37b6b20",
+       "bytes": 394527
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/Castle_normal.jpg",
+       "git_blob": "c3e22d0471f5f10f575f032388276a6b1d13279a",
+       "bytes": 491396
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/Castle_white_base_color.jpg",
+       "git_blob": "3548e2034a9d147405cee615266a8cd3dc943599",
+       "bytes": 334252
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/Chessboard_ORM.jpg",
+       "git_blob": "a7a05c31c72bddbd0e394464f9f9dd0b4abf654b",
+       "bytes": 582751
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/Chessboard_base_color.jpg",
+       "git_blob": "b85306f07f846f092d0714d6b2665f26eabb452e",
+       "bytes": 529405
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/Chessboard_normal.jpg",
+       "git_blob": "a58826c6f53f3a995876073299142e00e7bf92b0",
+       "bytes": 727372
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/King_black_ORM.jpg",
+       "git_blob": "210da263de0e525d8f813257d24801398f8a4bda",
+       "bytes": 782417
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/King_black_base_color.jpg",
+       "git_blob": "1ac5fa792d2db9874ba123538b30ac13492c86cf",
+       "bytes": 366216
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/King_black_normal.jpg",
+       "git_blob": "c605ae26d59119a268d60d96147b683a92717053",
+       "bytes": 764089
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/King_white_ORM.jpg",
+       "git_blob": "7f26fc05c2a24ea5707960db2de9e392c160ce64",
+       "bytes": 822486
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/King_white_base_color.jpg",
+       "git_blob": "224cba35045af8a21a756adf9caffa34df6c9867",
+       "bytes": 395138
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/King_white_normal.jpg",
+       "git_blob": "8a8dcf7a3c3cbad08698b38b3a8a09f966c4cf28",
+       "bytes": 961725
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/Knight_ORM.jpg",
+       "git_blob": "1fa040eeed73f1d40526bdf107c72dc7c9df3263",
+       "bytes": 350946
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/Knight_black_base_color.jpg",
+       "git_blob": "5be5b9aa22cb8e250e45b5c7406306fcc89398e1",
+       "bytes": 244999
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/Knight_normal.jpg",
+       "git_blob": "a88f0a7c71f5a5cd16266e79b8f24a4bb24587a1",
+       "bytes": 215780
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/Knight_white_base_color.jpg",
+       "git_blob": "e590e396139e0bfda92e91e4a4b4e2ded7e93a52",
+       "bytes": 395645
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/Pawn_ORM.jpg",
+       "git_blob": "47faf7dfd51ab10f5c7fdbe7d9c9bd3c63f9f03d",
+       "bytes": 792174
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/Pawn_black_base_color.jpg",
+       "git_blob": "5078a2ce44bfdc879d91d8c7b3c2809f5f113dd7",
+       "bytes": 315179
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/Pawn_normal.jpg",
+       "git_blob": "4cdc45070e1732707ec086dc2a9299b8ab9ec82c",
+       "bytes": 750313
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/Pawn_white_base_color.jpg",
+       "git_blob": "576de84a0d81cf3c530b167a4d4a749c7c64f64a",
+       "bytes": 303807
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/Queen_black_ORM.jpg",
+       "git_blob": "c130d53b243862fe4a0074255d177e9f28c18bc9",
+       "bytes": 741172
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/Queen_black_base_color.jpg",
+       "git_blob": "bbd230fc48691a6c90be4e86263c6f5e581bc00b",
+       "bytes": 295346
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/Queen_black_normal.jpg",
+       "git_blob": "ffbc753426d02b544ad3d1daa9955aad01d04274",
+       "bytes": 777060
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/Queen_white_ORM.jpg",
+       "git_blob": "0a1203df738dbbcfaf588128f072ef80889d7bae",
+       "bytes": 709227
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/Queen_white_base_color.jpg",
+       "git_blob": "d04ff2f6fd0138e9185a67ac8eb7b55b2566501b",
+       "bytes": 309191
+      },
+      {
+       "path": "Models/ABeautifulGame/glTF/Queen_white_normal.jpg",
+       "git_blob": "4bb1b52164ffe9b50dedc6d756c897452636b379",
+       "bytes": 662916
+      }
+     ]
+    },
+    {
+     "name": "Sponza",
+     "licence": "LicenseRef-CRYENGINE-Agreement",
+     "notes": "named by the criterion; excluded from evidence and media until the author decides",
+     "main": "Models/Sponza/glTF/Sponza.gltf",
+     "files": [
+      {
+       "path": "Models/Sponza/glTF/10381718147657362067.jpg",
+       "git_blob": "e49b8b12468323f8293f9c7e65b2f6f6c5debddd",
+       "bytes": 881980
+      },
+      {
+       "path": "Models/Sponza/glTF/10388182081421875623.jpg",
+       "git_blob": "254626b440670950cd9f1f949245490545ff4b67",
+       "bytes": 917202
+      },
+      {
+       "path": "Models/Sponza/glTF/11474523244911310074.jpg",
+       "git_blob": "f2cf424e0c27d4c209ee5fabadc10a673763d141",
+       "bytes": 1079152
+      },
+      {
+       "path": "Models/Sponza/glTF/11490520546946913238.jpg",
+       "git_blob": "4174770a63aea6e0a86ade5ea0aae6b7b8fcca10",
+       "bytes": 321375
+      },
+      {
+       "path": "Models/Sponza/glTF/11872827283454512094.jpg",
+       "git_blob": "fd4136f46878b129b0a2207d79a8b2a7de165cd0",
+       "bytes": 668962
+      },
+      {
+       "path": "Models/Sponza/glTF/11968150294050148237.jpg",
+       "git_blob": "db25cc6c67d36037210e96bb1998c3fa9fc0cc1c",
+       "bytes": 530384
+      },
+      {
+       "path": "Models/Sponza/glTF/1219024358953944284.jpg",
+       "git_blob": "4f3fe654ee3d576225ff7253c5b8704873d95ac4",
+       "bytes": 329124
+      },
+      {
+       "path": "Models/Sponza/glTF/12501374198249454378.jpg",
+       "git_blob": "79276b204b3e251353474952590b6155993011eb",
+       "bytes": 418235
+      },
+      {
+       "path": "Models/Sponza/glTF/13196865903111448057.jpg",
+       "git_blob": "cdf1eaee667bafe2408729367784020603be9b9d",
+       "bytes": 281980
+      },
+      {
+       "path": "Models/Sponza/glTF/13824894030729245199.jpg",
+       "git_blob": "8410fd7731f9573d653aebd9b07c637a0048f5a3",
+       "bytes": 313460
+      },
+      {
+       "path": "Models/Sponza/glTF/13982482287905699490.jpg",
+       "git_blob": "2c938a4ca239ab36f574190f98d6b1fab4aa5311",
+       "bytes": 347538
+      },
+      {
+       "path": "Models/Sponza/glTF/14118779221266351425.jpg",
+       "git_blob": "f385e6b40ce7d88eac659b05a853252e77f6cc1c",
+       "bytes": 1611314
+      },
+      {
+       "path": "Models/Sponza/glTF/14170708867020035030.jpg",
+       "git_blob": "51f9d064c23fbf7b25c4782262bf7e6bd6ecf542",
+       "bytes": 140738
+      },
+      {
+       "path": "Models/Sponza/glTF/14267839433702832875.jpg",
+       "git_blob": "5e7b1c37f820403e6cc13657bb2ecb9542a24ceb",
+       "bytes": 711217
+      },
+      {
+       "path": "Models/Sponza/glTF/14650633544276105767.jpg",
+       "git_blob": "64e58dc2c87a53417de0037b4a5814f9addbf2aa",
+       "bytes": 521947
+      },
+      {
+       "path": "Models/Sponza/glTF/15295713303328085182.jpg",
+       "git_blob": "80c8b28b48d4a0c2680eeb49942b9f0cc38bca1a",
+       "bytes": 520162
+      },
+      {
+       "path": "Models/Sponza/glTF/15722799267630235092.jpg",
+       "git_blob": "079c22c5620950ca00c742b2c7e3ddc6656406d8",
+       "bytes": 560258
+      },
+      {
+       "path": "Models/Sponza/glTF/16275776544635328252.png",
+       "git_blob": "987e8d03ad1da1542575108d6bcd8b90307bba03",
+       "bytes": 1077432
+      },
+      {
+       "path": "Models/Sponza/glTF/16299174074766089871.jpg",
+       "git_blob": "578484f29ca71f95394e204e06a40c907ae324a1",
+       "bytes": 322693
+      },
+      {
+       "path": "Models/Sponza/glTF/16885566240357350108.jpg",
+       "git_blob": "82bd131e1e23feff2424b7895c3f017a61a3b244",
+       "bytes": 12575
+      },
+      {
+       "path": "Models/Sponza/glTF/17556969131407844942.jpg",
+       "git_blob": "8b7b6ded422f2c73a70591d0cb50b92b603fdae6",
+       "bytes": 370061
+      },
+      {
+       "path": "Models/Sponza/glTF/17876391417123941155.jpg",
+       "git_blob": "662ac2e84cde764c45c1d78aa7f244e8aa78a216",
+       "bytes": 1151448
+      },
+      {
+       "path": "Models/Sponza/glTF/2051777328469649772.jpg",
+       "git_blob": "16bdb11d115e26aa5042108f2285b38d2a1e3332",
+       "bytes": 206618
+      },
+      {
+       "path": "Models/Sponza/glTF/2185409758123873465.jpg",
+       "git_blob": "6740aee73530d43e22696fcea094be3c4944356a",
+       "bytes": 780166
+      },
+      {
+       "path": "Models/Sponza/glTF/2299742237651021498.jpg",
+       "git_blob": "93e4c860c93868c0d7bf21108ba180e910f55fc1",
+       "bytes": 772672
+      },
+      {
+       "path": "Models/Sponza/glTF/2374361008830720677.jpg",
+       "git_blob": "393a02897d98ecaa8221e0a6b398c583c670b9eb",
+       "bytes": 852079
+      },
+      {
+       "path": "Models/Sponza/glTF/2411100444841994089.jpg",
+       "git_blob": "e0fe74c0480e840a0ee7caf7e8031bf4dd31d770",
+       "bytes": 399963
+      },
+      {
+       "path": "Models/Sponza/glTF/2775690330959970771.jpg",
+       "git_blob": "a715d92c478b7ddde38a26e56db7ead4de2b9dd7",
+       "bytes": 785678
+      },
+      {
+       "path": "Models/Sponza/glTF/2969916736137545357.jpg",
+       "git_blob": "d4c22138b90fd3f004718b3ad4f52f301442578f",
+       "bytes": 822373
+      },
+      {
+       "path": "Models/Sponza/glTF/332936164838540657.jpg",
+       "git_blob": "393a02897d98ecaa8221e0a6b398c583c670b9eb",
+       "bytes": 852079
+      },
+      {
+       "path": "Models/Sponza/glTF/3371964815757888145.jpg",
+       "git_blob": "5d7e258890688e6205d37890bb3d5ca92bd44f14",
+       "bytes": 682743
+      },
+      {
+       "path": "Models/Sponza/glTF/3455394979645218238.jpg",
+       "git_blob": "c91c7956e866e452f27c121bd7ecc105e4f18da9",
+       "bytes": 551432
+      },
+      {
+       "path": "Models/Sponza/glTF/3628158980083700836.jpg",
+       "git_blob": "75884009982c8bbbc94df6076f703a43858147b1",
+       "bytes": 527788
+      },
+      {
+       "path": "Models/Sponza/glTF/3827035219084910048.jpg",
+       "git_blob": "0a7b892cf8b2c4ddeae3901c93938a52e4f60a9b",
+       "bytes": 608394
+      },
+      {
+       "path": "Models/Sponza/glTF/4477655471536070370.jpg",
+       "git_blob": "3b463b27cd9de857310dbe2e9fbf37659dcb1b14",
+       "bytes": 211322
+      },
+      {
+       "path": "Models/Sponza/glTF/4601176305987539675.jpg",
+       "git_blob": "3fca97a404598ea5aa6abc9b9f59433a103fc01d",
+       "bytes": 1043152
+      },
+      {
+       "path": "Models/Sponza/glTF/466164707995436622.jpg",
+       "git_blob": "d65b8f3c45068614b30985af6202192c44db8cb4",
+       "bytes": 486634
+      },
+      {
+       "path": "Models/Sponza/glTF/4675343432951571524.jpg",
+       "git_blob": "14dd8f9e551dd92a13ffe19e80b202cd385220f4",
+       "bytes": 764529
+      },
+      {
+       "path": "Models/Sponza/glTF/4871783166746854860.jpg",
+       "git_blob": "dd777519519b41d00df6bda5b056819522cfd944",
+       "bytes": 570081
+      },
+      {
+       "path": "Models/Sponza/glTF/4910669866631290573.jpg",
+       "git_blob": "3fca97a404598ea5aa6abc9b9f59433a103fc01d",
+       "bytes": 1043152
+      },
+      {
+       "path": "Models/Sponza/glTF/4975155472559461469.jpg",
+       "git_blob": "43aee7b9b93f214e83b3957caba2b11792348336",
+       "bytes": 399027
+      },
+      {
+       "path": "Models/Sponza/glTF/5061699253647017043.png",
+       "git_blob": "8b690c363fa467a6acc232439606c43978150936",
+       "bytes": 2427921
+      },
+      {
+       "path": "Models/Sponza/glTF/5792855332885324923.jpg",
+       "git_blob": "c965353acdf76db7d9b51f0a2da0bd5d164884c4",
+       "bytes": 564801
+      },
+      {
+       "path": "Models/Sponza/glTF/5823059166183034438.jpg",
+       "git_blob": "1873401fbee770d55436e796a82ac30131cd90d5",
+       "bytes": 573157
+      },
+      {
+       "path": "Models/Sponza/glTF/6047387724914829168.jpg",
+       "git_blob": "d9b3ccaa5de3c1947d45a5f4465467a7aa9f4d96",
+       "bytes": 518310
+      },
+      {
+       "path": "Models/Sponza/glTF/6151467286084645207.jpg",
+       "git_blob": "1714a852546944fab0d4399efa15c69c78c0c857",
+       "bytes": 643517
+      },
+      {
+       "path": "Models/Sponza/glTF/6593109234861095314.jpg",
+       "git_blob": "3fca97a404598ea5aa6abc9b9f59433a103fc01d",
+       "bytes": 1043152
+      },
+      {
+       "path": "Models/Sponza/glTF/6667038893015345571.jpg",
+       "git_blob": "2a79121d938c1d7a079551667a5973f2134eaaeb",
+       "bytes": 703420
+      },
+      {
+       "path": "Models/Sponza/glTF/6772804448157695701.jpg",
+       "git_blob": "d3619afe0feac0983f8bf6fe717d2a9039cf0325",
+       "bytes": 599959
+      },
+      {
+       "path": "Models/Sponza/glTF/7056944414013900257.jpg",
+       "git_blob": "393a02897d98ecaa8221e0a6b398c583c670b9eb",
+       "bytes": 852079
+      },
+      {
+       "path": "Models/Sponza/glTF/715093869573992647.jpg",
+       "git_blob": "e56a2822547144c2f68ab42fa9ccad166a46ee49",
+       "bytes": 280745
+      },
+      {
+       "path": "Models/Sponza/glTF/7268504077753552595.jpg",
+       "git_blob": "15a6d7dfc6b7254a8951bccf25446fbf5e7897fc",
+       "bytes": 572245
+      },
+      {
+       "path": "Models/Sponza/glTF/7441062115984513793.jpg",
+       "git_blob": "e571d401ced3e00ad9fdd77e21492581c695c44e",
+       "bytes": 665796
+      },
+      {
+       "path": "Models/Sponza/glTF/755318871556304029.jpg",
+       "git_blob": "f2afed3cd3fd3803a08d32bb0f6ee1421bda708a",
+       "bytes": 302363
+      },
+      {
+       "path": "Models/Sponza/glTF/759203620573749278.jpg",
+       "git_blob": "8a2170c960a8e61a28d7575393bdee835b5b96df",
+       "bytes": 509411
+      },
+      {
+       "path": "Models/Sponza/glTF/7645212358685992005.jpg",
+       "git_blob": "ee067215721f41b078608d953aa84fc47f766aa9",
+       "bytes": 656995
+      },
+      {
+       "path": "Models/Sponza/glTF/7815564343179553343.jpg",
+       "git_blob": "11948eee5834d516f13e8fa981cd871c098d0c96",
+       "bytes": 623144
+      },
+      {
+       "path": "Models/Sponza/glTF/8006627369776289000.png",
+       "git_blob": "ba5f65519c18c288c8b58d0572415f3ad1cbf99d",
+       "bytes": 1225157
+      },
+      {
+       "path": "Models/Sponza/glTF/8051790464816141987.jpg",
+       "git_blob": "6e0501522007d07d05b28fbaeaf54ff65b6ce308",
+       "bytes": 260119
+      },
+      {
+       "path": "Models/Sponza/glTF/8114461559286000061.jpg",
+       "git_blob": "58be9bcee57134c796897a04496c5b8f44e9b970",
+       "bytes": 193077
+      },
+      {
+       "path": "Models/Sponza/glTF/8481240838833932244.jpg",
+       "git_blob": "207a7a6cc33e11acd39633c97c87bb05bf5c4714",
+       "bytes": 531156
+      },
+      {
+       "path": "Models/Sponza/glTF/8503262930880235456.jpg",
+       "git_blob": "f3423ebee2ace0489f7b7d8a037dcec4336cbc9e",
+       "bytes": 104626
+      },
+      {
+       "path": "Models/Sponza/glTF/8747919177698443163.jpg",
+       "git_blob": "3c3d983ff42de98687f436984e1de7244a8ada38",
+       "bytes": 872255
+      },
+      {
+       "path": "Models/Sponza/glTF/8750083169368950601.jpg",
+       "git_blob": "48a46dfcb5727a2911304d62ce670801c0ffdb71",
+       "bytes": 362437
+      },
+      {
+       "path": "Models/Sponza/glTF/8773302468495022225.jpg",
+       "git_blob": "4647a44e6059fdca58de9fbedccc56b9751ea75e",
+       "bytes": 413837
+      },
+      {
+       "path": "Models/Sponza/glTF/8783994986360286082.jpg",
+       "git_blob": "6839be4a8bb6659eb9d15d24fbae7f5a4ca03ec2",
+       "bytes": 388462
+      },
+      {
+       "path": "Models/Sponza/glTF/9288698199695299068.jpg",
+       "git_blob": "dba904f11b17f78104c51f2dd8222ef1cf655446",
+       "bytes": 1044330
+      },
+      {
+       "path": "Models/Sponza/glTF/9916269861720640319.jpg",
+       "git_blob": "bfe9d287d7cf7fabd1011372870c6598236960f0",
+       "bytes": 608687
+      },
+      {
+       "path": "Models/Sponza/glTF/Sponza.bin",
+       "git_blob": "caa2a36d0309aa985adadd879991a4b3399c4ef4",
+       "bytes": 9528220
+      },
+      {
+       "path": "Models/Sponza/glTF/Sponza.gltf",
+       "git_blob": "02252eba518f40cce4b36d45000c7f21139e5494",
+       "bytes": 167176
+      },
+      {
+       "path": "Models/Sponza/glTF/white.png",
+       "git_blob": "0851a35f7e27a14f7dd415dae9b5b814c6366be2",
+       "bytes": 951
+      }
+     ]
+    }
+   ]
+  }
+ ]
+}

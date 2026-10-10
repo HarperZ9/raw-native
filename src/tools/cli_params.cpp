@@ -1,5 +1,6 @@
 #include "raw/tools/cli_params.hpp"
 #include "raw/core/sha256.hpp"
+#include "raw/tools/model_manifest.hpp"
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
@@ -62,6 +63,7 @@ std::optional<CliParams> parseArgs(int argc, const char* const* argv, std::strin
     // Back-compat: a lone leading positional arg (not a flag) is the out dir.
     int i = 1;
     if (argc > 1 && argv[1][0] != '-'){ p.out = argv[1]; i = 2; }
+    std::string role, modelsDir, manifest = "evidence/m3-scene-models.json";
     // --params is applied first so explicit flags can override the file.
     for (int j = i; j + 1 < argc; ++j){
         if (std::strcmp(argv[j], "--params") == 0){
@@ -105,7 +107,19 @@ std::optional<CliParams> parseArgs(int argc, const char* const* argv, std::strin
             Vec3 t; if (!parseVec3(v, t)){ err = "bad --prev-target"; return std::nullopt; } p.prevCenter = t; }
         else if (a == "--prev-up"){ const char* v = need(i); if (!v) return std::nullopt;
             Vec3 t; if (!parseVec3(v, t)){ err = "bad --prev-up"; return std::nullopt; } p.prevUp = t; }
+        // M3: a model by role from the model manifest (evidence/m3-scene-models.json), so one
+        // field of the manifest swaps it; needs --models, the directory the files live in.
+        else if (a == "--model-role"){ const char* v = need(i); if (!v) return std::nullopt; role = v; }
+        else if (a == "--models"){ const char* v = need(i); if (!v) return std::nullopt; modelsDir = v; }
+        else if (a == "--model-manifest"){ const char* v = need(i); if (!v) return std::nullopt; manifest = v; }
         else { err = "unknown flag: " + a; return std::nullopt; }
+    }
+    if (!role.empty()){
+        if (modelsDir.empty() || !p.model.empty()){ err = "--model-role needs --models and no --model"; return std::nullopt; }
+        p.model = resolveModelRole(manifest, role, modelsDir, err);
+        if (p.model.empty()) return std::nullopt;
+        p.modelSha256 = sha256File(p.model);
+        if (p.modelSha256.empty()){ err = "cannot read " + p.model + " (fetch it: python tools/assets/fetch_gltf.py DIR --manifest " + manifest + ")"; return std::nullopt; }
     }
     if (p.width <= 0 || p.height <= 0){ err = "width/height must be positive"; return std::nullopt; }
     return p;
