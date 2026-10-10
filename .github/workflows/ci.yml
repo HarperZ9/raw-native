@@ -213,8 +213,9 @@ jobs:
           RAW_NATIVE_D3D12_WARP: "1"
           RAW_NATIVE_D3D12_DEBUG: "1"
         run: |
-          build/Release/raw_native_cli.exe shadow-parity --out shadow-warp.json > /dev/null || true
-          python tests/gpu/shadow_gate.py shadow-warp.json --min-scenes 2
+          python tools/assets/fetch_gltf.py gltf-models --manifest evidence/m3-scene-models.json
+          build/Release/raw_native_cli.exe shadow-parity --models gltf-models --out shadow-warp.json > /dev/null || true
+          python tests/gpu/shadow_gate.py shadow-warp.json --min-scenes 4
       - name: Clusters, the environment prefilter and lit shading on WARP match the float64 reference (M3 lighting)
         shell: bash
         env:

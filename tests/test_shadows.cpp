@@ -7,10 +7,7 @@
 #include "raw/renderer/raster.hpp"
 #include "raw/renderer/bvh.hpp"
 #include "raw/tools/model_scene.hpp"
-#if __has_include("raw/tools/model_manifest.hpp")
 #include "raw/tools/model_manifest.hpp"
-#define RAW_HAS_MODEL_MANIFEST 1
-#endif
 #include "raw/core/parallel.hpp"
 #include "check.hpp"
 #include <algorithm>
@@ -206,11 +203,7 @@ int main(int argc, char** argv) {
         std::string err;
         p.model = models + "/Models/Suzanne/glTF/Suzanne.gltf";
         scenes.push_back({"Suzanne", sceneFromParams(p, nullptr)});
-#ifdef RAW_HAS_MODEL_MANIFEST
         p.model = resolveModelRole(std::string(RAW_SOURCE_DIR) + "/evidence/m3-scene-models.json", "helmet", models, err);
-#else
-        p.model = models + "/Models/FlightHelmet/glTF/FlightHelmet.gltf";   // the manifest's current helmet choice
-#endif
         if (!p.model.empty()) scenes.push_back({"helmet role", sceneFromParams(p, nullptr)});
     }
     for (auto& sc : scenes) sc.second.lights[0].dir = normalize(Vec3{0.55f, -0.45f, 0.35f});   // the method note's visible sun
