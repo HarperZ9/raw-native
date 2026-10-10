@@ -26,5 +26,6 @@
  },
  "timing": "GPU timestamps, 10 warm-up and 100 measured dispatches a size on the RTX 4090 (3 on SwiftShader, fallback only, not a claim). Reported: median, p5, p95, p99, IQR and TFLOPS at the median (2 M N K flops). The speedup of the tensor-core kernel over the fallback is the ratio of medians with a 95% bootstrap interval (10,000 resamples); 'faster' needs an interval above 1. No comparison with vendor libraries is made.",
  "adapters": "SwiftShader Vulkan locally (no cooperative matrix: the fallback and the forced-off path only); the RTX 4090 only under D:/gpu.lock.d",
- "does_not_prove": "Peak tensor-core throughput (the kernel is not tuned: no shared-memory staging, no double buffering); correctness for other types or shapes than those run; anything about D3D12."
+ "does_not_prove": "Peak tensor-core throughput (the kernel is not tuned: no shared-memory staging, no double buffering); correctness for other types or shapes than those run; anything about D3D12.",
+ "method_note_1": "Added 2026-10-10 after the first SwiftShader run and before any run of the new control. The two committed controls apply to the tensor-core kernel only, so on an adapter without cooperative matrices nothing showed that the accuracy check can fail. Added: control_fallback_skip_k, the fallback kernel with its last 16-wide K tile skipped; bound: the accuracy bound fails. It runs on every adapter."
 }
