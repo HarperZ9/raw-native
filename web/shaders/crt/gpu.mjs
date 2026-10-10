@@ -66,6 +66,12 @@ export async function createGpuCrt(host, preset, overrides, src, out, { exposure
       if (srcRGBA) host.write(B.src, srcRGBA);
       host.frame(g); frameNo = f + 1;
     },
+    // Record the frame into an encoder the caller owns (the Motion post stack), with the
+    // source already in buffers.src. No timestamps, so the caller's timing stays its own.
+    record(enc, f = frameNo) {
+      host.write(B.P, packParams(plan, taps, f, exposure));
+      host.record(g, enc, false); frameNo = f + 1;
+    },
     async read() {
       const rd = async (buf, n) => {
         const s = host.buffer({ size: n, usage: ["map-read", "copy-dst"] }), enc = host.device.createCommandEncoder();

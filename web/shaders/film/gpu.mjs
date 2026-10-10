@@ -42,6 +42,8 @@ export async function createGpuFilm(host, preset, overrides, input, out) {
   return {
     plan, buffers: B, image: B.img, packed: B.out8,
     frame(sceneRGBA, f = frameNo) { host.write(B.P, packFilmParams(plan, f)); if (sceneRGBA) host.write(B.scene, sceneRGBA); host.frame(g); frameNo = f + 1; },
+    // Record into an encoder the caller owns (the Motion post stack), scene already in buffers.scene.
+    record(enc, f = frameNo) { host.write(B.P, packFilmParams(plan, f)); host.record(g, enc, false); frameNo = f + 1; },
     async read() {
       const rd = async (buf, n) => {
         const s = host.buffer({ size: n, usage: ["map-read", "copy-dst"] }), enc = host.device.createCommandEncoder();
