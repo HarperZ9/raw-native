@@ -26,6 +26,10 @@ the day the release was published on GitHub, in UTC.
   - `RAW_NATIVE_HW_DISABLE` forces any feature off, and the fallbacks run and match.
   - Shader execution reordering and cooperative matrices have no query in the Windows SDK
     10.0.26100 headers, so they go through Vulkan.
+- **Wave intrinsics and native fp16** (HW H1.2). `raw_native_cli hw-wave16` runs a full prefix sum of
+  16.7 million values with wave intrinsics and with group-shared memory, plus a 9 x 9 HDR bilateral
+  filter in fp16 and in fp32. The scans are bit-equal to the CPU, and fp16 stays within 2^-8 of fp32.
+  A dropped lane and a subnormal-range input both fail, as they must. RTX timings are pending.
 - **Async compute** (HW H1.4). `raw_native_cli hw-async` runs a producer on a compute queue beside the
   direct queue, joined by a fence. The results are bit-equal to the serial order and the CPU. A
   consumer that waits on the wrong fence value reads the zero sentinel, so the check can fail. The

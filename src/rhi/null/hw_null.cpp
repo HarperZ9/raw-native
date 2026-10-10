@@ -34,3 +34,11 @@ AsyncRun asyncSchedule(Device&, Schedule, uint32_t){
     return r;
 }
 }
+namespace raw::rhi::hw {
+KernelRun scanFull(Device&, const std::vector<uint32_t>&, ScanForm, int, int){
+    KernelRun r; r.error = "no hardware kernels on this backend"; return r;
+}
+KernelRun bilateral(Device&, const std::vector<float>&, uint32_t, uint32_t, bool, int, int){
+    KernelRun r; r.error = "no hardware kernels on this backend"; return r;
+}
+}

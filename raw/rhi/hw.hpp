@@ -144,6 +144,20 @@ struct AsyncRun {
 // Run one schedule with fresh buffers. Async and the control need the async_compute feature.
 AsyncRun asyncSchedule(Device& dev, Schedule s, uint32_t n);
 
+// H1.2 (bounds in evidence/hw-h1-2-bounds.json): a full prefix sum and a bilateral filter, each
+// in its hardware form and its portable form, timed with GPU timestamps.
+enum class ScanForm : uint8_t { Shared, Wave, WaveDropControl };
+struct KernelRun {
+    bool ran{false};
+    std::string error;
+    std::vector<uint32_t> u;    // scan output
+    std::vector<float> f;       // filter output
+    std::vector<double> ms;     // GPU time of each measured dispatch sequence
+};
+KernelRun scanFull(Device& dev, const std::vector<uint32_t>& in, ScanForm form, int warmup, int repeats);
+// rgb: 3 floats a pixel. fp16: the native 16-bit form (needs native_16bit), else fp32.
+KernelRun bilateral(Device& dev, const std::vector<float>& rgb, uint32_t w, uint32_t h, bool fp16, int warmup, int repeats);
+
 // Triangles are 9 floats each (a, b, c). Hits are written for every ray.
 TraceResult traceRayQuery(Device& dev, const std::vector<float>& triangles, const std::vector<RayIn>& rays,
                           const TraceOptions& opt, std::vector<HitOut>& hits);

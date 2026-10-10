@@ -251,6 +251,11 @@ jobs:
         run: |
           RAW_NATIVE_D3D12_WARP=1 RAW_NATIVE_D3D12_DEBUG=1 build/Release/raw_native_cli.exe hw-async --warmup 0 --repeats 2 --out hw-async.json
           RAW_NATIVE_D3D12_WARP=1 RAW_NATIVE_HW_DISABLE=async_compute build/Release/raw_native_cli.exe hw-async --warmup 0 --repeats 1 --out hw-async-off.json
+      - name: A wave-intrinsic prefix sum and an fp16 bilateral filter on WARP match their portable forms, with controls (HW H1.2)
+        shell: bash
+        run: |
+          RAW_NATIVE_D3D12_WARP=1 RAW_NATIVE_D3D12_DEBUG=1 build/Release/raw_native_cli.exe hw-wave16 --warmup 0 --repeats 1 --out hw-wave16.json > /dev/null
+          RAW_NATIVE_D3D12_WARP=1 RAW_NATIVE_HW_DISABLE=wave_ops,native_16bit build/Release/raw_native_cli.exe hw-wave16 --warmup 0 --repeats 1 --out hw-wave16-off.json > /dev/null
       - name: Textures, samplers and raster passes on WARP match the CPU sampler reference (M2 criterion 3)
         shell: bash
         env:

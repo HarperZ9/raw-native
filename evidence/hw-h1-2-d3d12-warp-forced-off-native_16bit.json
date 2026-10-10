@@ -1,0 +1,11 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/hw-h1-2-bounds.json",
+ "adapter": "Microsoft Basic Render Driver",
+ "disable": "native_16bit",
+ "warmup": 0,
+ "repeats": 1,
+ "scan": {"elements":16777216,"forced_off":false,"shared_mismatches":0,"wave_mismatches":0,"control_mismatches":16777152,"error":"","shared_time":{"n":1,"median_ms":82.521,"p5_ms":82.521,"p95_ms":82.521,"p99_ms":82.521,"iqr_ms":0},"wave_time":{"n":1,"median_ms":50.7136,"p5_ms":50.7136,"p95_ms":50.7136,"p99_ms":50.7136,"iqr_ms":0},"wave_speedup":{"median_ratio":1.6272,"ci95":[1.6272,1.6272]},"pass":true},
+ "bilateral": {"pixels":2073600,"forced_off":true,"fp16_over_bound":null,"fp16_worst_over_tol":0,"control_over_bound":null,"control_worst_over_tol":0,"error":"native 16-bit forced off","fp32_time":{"n":1,"median_ms":170.578,"p5_ms":170.578,"p95_ms":170.578,"p99_ms":170.578,"iqr_ms":0},"fp16_time":null,"fp16_speedup":null,"pass":true},
+ "pass": true
+}
