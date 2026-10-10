@@ -56,6 +56,19 @@ the day the release was published on GitHub, in UTC.
     about 11 on SwiftShader, outside the committed bound. It stays open until the RTX 4090 run
     is in; `evidence/m3-shadows-runs.json` records each texel's cause.
   - `raw_native_cli shadow-parity` runs the GPU checks.
+- **raw-native's own triangle rasterizer** (RT stage R1, `evidence/rt-r1-bounds.json`). One
+  specification in two forms: a deterministic CPU reference and a GPU compute rasterizer with
+  binned tiles and a visibility buffer, without fixed-function raster or atomics.
+  - 8 sub-pixel bits, exact 64-bit edge functions (pairs of 32-bit words on the GPU), the
+    top-left fill rule, near, far and guard-band clipping, and perspective-correct attributes.
+  - Retro modes are options on both forms: affine texture mapping, vertex snapping to whole
+    pixels or coarser, and 12-bit depth with a 4 x 4 ordered dither.
+  - CPU checks: shared-edge meshes are covered exactly once, and visibility matches BVH ray
+    casts on three owned scenes. UVs are within 1.6e-4 of an analytic float64 answer.
+  - From the same setup, the GPU matches the CPU bit for bit on every pixel, scene and mode, on
+    D3D12 WARP and on WebGPU SwiftShader. With its own setup, every pixel still matches.
+  - The scenes are procedural and built in the repo: a BRender-era room, an isometric street and
+    a clipping stress scene. `raw_native_cli swr-render` draws them; `swr-parity` runs the GPU checks.
 - **M3 models by role.** `evidence/m3-scene-models.json` lists the criterion's models with their
   licences and git blob hashes. One `use` field per role picks FlightHelmet or DamagedHelmet, and a
   stand-in or Sponza. `--model-role` and `fetch_gltf.py --manifest` read it.

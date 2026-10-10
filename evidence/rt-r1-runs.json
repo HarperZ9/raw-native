@@ -1,0 +1,51 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "RT stage R1: every run of the rasterizer checks, failures included (bounds: evidence/rt-r1-bounds.json, committed e9351b1 before any run)",
+ "runs": [
+  {
+   "run": 1,
+   "when": "2026-10-10 17:36Z",
+   "backend": "CPU (MSVC, Release)",
+   "checks": "C1, C2, C3",
+   "result": "fail: C1 on tie_grid_jittered, 3 double hits; every other C1 mesh, C2 and C3 within bounds, every control failing as required",
+   "diagnosis": "The jittered grid moved inner vertices up to 3 px on a 9 px grid. An independent Python mirror of the generator found one triangle (cell 9, 18) wound opposite to the other 1,151: the quad folded, so the input was not a planar triangulation and any fill rule covers its neighbours twice. The fault is the test mesh, not the rasterizer.",
+   "change": "Jitter reduced to 2 px on each axis (the mirror's smallest doubled area is then 1,390,886 fixed-point units, positive). A precondition check was added: every input triangle of a C1 mesh must have the same winding; on the 3 px mesh it reports 1 folded triangle. The bound is unchanged."
+  },
+  {
+   "run": 2,
+   "when": "2026-10-10 17:37Z",
+   "backend": "CPU (MSVC, Release)",
+   "checks": "C1, C2, C3",
+   "result": "pass: C1 0 doubles, 0 holes, 0 outside on all three meshes (controls: inclusive 14,063 / 110 / 605 doubles, exclusive 13,969 / 16 / 605 holes); C2 0 mismatches on retro_room, iso_street, clip_stress (exempt edge pixels 8, 7, 0; controls 3,350 / 9,840 / 62,664 mismatches); C3 max |uv err| 1.60e-4, median 3.1e-6 (control affine 0.635)",
+   "evidence": "evidence/rt-r1-cpu.json"
+  },
+  {
+   "run": 3,
+   "when": "2026-10-10 17:44Z",
+   "backend": "D3D12 WARP, debug layer on",
+   "checks": "C4, C5",
+   "result": "pass: 36 cases, 0 triangle-id, depth-bit, UV, texel or colour differences in any case; C5 0 setup slots differing; controls: flipped fill rule 14,831 pixels differ, moved vertex 1 pixel, guard band 8 w 5 valid-slot differences",
+   "note": "The moved-vertex control met its bound (at least one pixel) with a single pixel: z/w changes below one float32 step for a 1/256 px move on far surfaces, so it discriminates weakly. A reported, ungated count of UV components that change was added (177)."
+  },
+  {
+   "run": 4,
+   "when": "2026-10-10 17:45Z",
+   "backend": "WebGPU SwiftShader (Chrome, local wasm build)",
+   "checks": "C4, C5",
+   "result": "pass: every C4 case bit-identical; C5 4 of 635 retro_room setup slots differ (float rounding in the GPU's own setup), with no pixel effect and depth within bound"
+  },
+  {
+   "run": 5,
+   "when": "2026-10-10 17:48Z",
+   "backend": "CPU, D3D12 WARP (debug layer), WebGPU SwiftShader",
+   "checks": "C1 to C5, full rerun",
+   "reason": "Scene defect found by looking at the showcase image, not by a check: clip_stress's block covered the whole view, so its pixel checks exercised one box face, and its side walls never entered the frame. The block now passes beside the camera and is cut by the near plane in view; one wall runs from behind the camera to the horizon (16 triangles, 23 valid slots after clipping). No bound changed.",
+   "result": "pass on all three backends. clip_stress: C2 0 mismatches, 57,552 of 65,536 pixels covered, control 15,046; C4 and C5 0 differences on WARP and SwiftShader; guard band control 2 valid-slot differences. Other scenes as in runs 2 to 4.",
+   "evidence": [
+    "evidence/rt-r1-cpu.json",
+    "evidence/rt-r1-gpu-d3d12-warp.json",
+    "evidence/rt-r1-gpu-webgpu-swiftshader.json"
+   ]
+  }
+ ]
+}

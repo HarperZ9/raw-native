@@ -240,6 +240,15 @@ jobs:
         run: |
           RAW_NATIVE_D3D12_WARP=1 RAW_NATIVE_D3D12_DEBUG=1 build/Release/gpu_hw_probe.exe hw-warp.json
           RAW_NATIVE_D3D12_WARP=1 RAW_NATIVE_D3D12_DEBUG=1 python scripts/hw_forced_off.py build/Release/gpu_hw_probe.exe hw-forced-off.json
+      - name: raw-native's own rasterizer on WARP with the debug layer matches its CPU reference bit for bit, every scene and mode (RT stage R1, C4 and C5)
+        shell: bash
+        env:
+          RAW_NATIVE_D3D12_WARP: "1"
+          RAW_NATIVE_D3D12_DEBUG: "1"
+        run: |
+          build/Release/gpu_swr_parity.exe swr-warp.json
+          build/Release/raw_native_cli.exe swr-render --out swr-warp
+          python -c "import json,sys; d=json.load(open('swr-warp/swr.json')); f=d['frames']; print(json.dumps(f)); sys.exit(0 if len(f)==6 and all(x['pixels_differing']==0 for x in f) else 1)"
       - name: Textures, samplers and raster passes on WARP match the CPU sampler reference (M2 criterion 3)
         shell: bash
         env:
@@ -372,6 +381,8 @@ jobs:
         run: |
           python tests/web/rhi_texture.py --command post-parity --dir build-wasm-gpu --adapter swiftshader --out post-webgpu.json || true
           python tests/gpu/post_gate.py post-webgpu.json --min-scenes 5
+      - name: raw-native's own rasterizer in Chrome on SwiftShader matches its CPU reference (RT stage R1, C4 and C5)
+        run: python tests/web/rhi_texture.py --command swr-parity --dir build-wasm-gpu --adapter swiftshader --out swr-webgpu.json
       - name: The WebGPU build's material model matches its float64 reference in Chrome on SwiftShader (M3 materials)
         run: python tests/web/rhi_texture.py --command pbr-parity --dir build-wasm-gpu --adapter swiftshader --out pbr-webgpu.json
       - name: The default native build carries no GPU code
