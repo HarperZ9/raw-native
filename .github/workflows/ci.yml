@@ -270,6 +270,12 @@ jobs:
           cmake --build --preset wasm-gpu
           test -s build-wasm-gpu/raw-native-gpu.wasm
           sha256sum build-wasm-gpu/raw-native-gpu.wasm build-wasm-gpu/raw-native-gpu.mjs
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: The WebGPU build's textures, samplers and raster passes match the CPU sampler reference in Chrome on SwiftShader (M2 criterion 3)
+        run: |
+          python -m pip install playwright==1.58.0
+          python tests/web/rhi_texture.py --dir build-wasm-gpu --adapter swiftshader --out texture-webgpu.json
       - name: The default native build carries no GPU code
         run: |
           ! grep -q "emdawnwebgpu\|wgpu" build/raw_native_cli

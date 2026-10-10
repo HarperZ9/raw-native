@@ -1,0 +1,19 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Texture identity check</title>
+<!-- ROADMAP M2 criterion 3, the WebGPU half: the WebGPU build of raw_native_cli runs
+     "texture-identity" (textures, samplers, a raster pipeline and a render pass through
+     the RHI) and compares the read-back with the CPU sampler reference. The driver,
+     tests/web/rhi_texture.py, passes the module and wasm hashes the loader checks. -->
+<script type="module">
+import { loadRawNative } from '../../wasm/raw-loader.mjs';
+const q = new URLSearchParams(location.search), dir = q.get('dir') || 'build-wasm-gpu';
+try {
+  const raw = await loadRawNative({ moduleUrl: `../../${dir}/raw-native-gpu.mjs`, moduleSha256: q.get('m'),
+    wasmUrl: `../../${dir}/raw-native-gpu.wasm`, wasmSha256: q.get('w') });
+  const r = await raw.runCliAsync(['texture-identity']);
+  window.__result = { exitCode: r.exitCode, stdout: r.stdout };
+} catch (e) {
+  window.__result = { error: String(e && e.stack || e) };
+}
+</script>
