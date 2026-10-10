@@ -239,6 +239,23 @@ path, the way the CPU renderer is the oracle for frames.
   the showcase: 49 spheres in seven material families, drawn by both paths from the same
   samples. Bounds and every run, failures included: `evidence/m3-lighting-*.json`.
 
+## Baked lighting
+
+`raw/renderer/bake.hpp` is the optional Source-style path (Mitchell, McTaggart and Green 2006).
+
+- **Radiosity normal maps.** Three tangent-space basis vectors per texel. The values are
+  normalised to the part of each lobe above the surface and scaled so that their mean
+  equals the texel's flat irradiance. A flat normal is then exact up to bake noise, and a
+  bumped normal keeps the directional ratios.
+- **Ambient cubes** hold six irradiances for models. The important lights are shaded
+  directly, as Source does.
+- **The baker** is a Lambertian path tracer on `raw/renderer/bvh.hpp`, a binned-SAH BVH
+  that returns exactly what a scan of every triangle returns. It is seeded per texel, so a
+  bake is identical for any thread count.
+- **Checks:** `tests/test_bake.cpp` compares the bake against converged path tracing, after
+  a furnace test of the path tracer itself. `raw_native_cli bake-room` renders the showcase
+  room both ways. Bounds and every run: `evidence/m3-bake-*.json`.
+
 ## Verification as the engine grows
 
 - **Every feature has a reference.** The CPU renderer is a layer of the engine,

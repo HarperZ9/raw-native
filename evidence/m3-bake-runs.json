@@ -1,0 +1,17 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "M3 baked lighting (dated addition 9, 2026-10-10): the record of every run against evidence/m3-bake-bounds.json, failures included",
+ "written": "2026-10-10, after the runs, in the order they happened",
+ "bounds_changed": false,
+ "runs": [
+  {"what": "first run (a reduced-sample mode, 4,096 reference paths)", "result": "path-tracer furnace 1.38% (bound 1%); radiosity normal map, face normal: median 0.170, p95 0.346 (FAILED); bumped: median 0.165, p95 0.330 (FAILED); ambient cube: p95 0.525, worst 3.44 (FAILED)",
+   "cause": "the reduced mode ran the furnace with a quarter of its committed paths (its noise, not a defect: 0.61% at the committed 16,384). The plain basis values: each basis lobe loses part of itself below the surface, so a flat normal read dark. Ambient-cube probes were drawn inside the solid boxes (rays from inside see back faces, which are black)",
+   "fix": "the quick mode keeps the committed path counts and checks fewer points; probes inside a solid are rejected"},
+  {"what": "second run, basis values normalised by the part of their lobe above the surface", "result": "furnace 0.61%; face normal median 0.114, p95 0.224 (FAILED, bound 0.10 / 0.25); bumped median 0.100, p95 0.267; ambient cube median 0.103, p95 0.534 (FAILED)",
+   "cause": "three tilted cosine lobes are not the cosine lobe: under a light along the normal the flat result reads about 27% dark. The ambient cube's six numbers cannot hold the point light's sharp direct term",
+   "fix": "energy-preserving radiosity normal maps: each texel also bakes the flat irradiance and scales its three basis values per channel so their mean equals it (a flat normal is then exact up to bake noise; a bumped normal keeps the basis ratios). Ambient cubes leave out the point lights' direct term at the probe and the light is shaded directly, as Source shades important lights on models"},
+  {"what": "final run", "result": "furnace 0.61%; face normal median 0.017, p95 0.064 (now the bake's own noise at 1,024 paths); bumped median 0.053, p95 0.169; ambient cube median 0.036, p95 0.124; lightmaps byte-identical with 1 thread and with 16"},
+  {"what": "showcase, bake-room at 768 px (informative, no bound)", "result": "radiosity-normal-mapped room against a 1,024-path path trace: luminance RMSE 7.4% of the mean; the lightmap's 12.5 cm texels blur the point light's shadow edges, which the path trace keeps sharp"}
+ ],
+ "does_not_prove": "Anything under does_not_prove in the bounds file."
+}

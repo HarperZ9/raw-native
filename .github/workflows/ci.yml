@@ -44,6 +44,7 @@ jobs:
           if [ -x build/test_pbr_energy ]; then d=build; else d=build/Release; fi
           "$d/test_pbr_energy" --full
           "$d/test_lighting" --full
+          "$d/test_bake" --full
       - name: Render and check the default certificate
         shell: bash
         run: |
