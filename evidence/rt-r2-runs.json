@@ -48,6 +48,14 @@
     "evidence/rt-r2-bvh-gpu-d3d12-warp.json",
     "evidence/rt-r2-bvh-gpu-webgpu-swiftshader.json"
    ]
+  },
+  {
+   "run": 6,
+   "when": "2026-10-10 18:30Z",
+   "backend": "CPU (MSVC, Release)",
+   "checks": "P0, P1 on the CPU reference, P3 threads",
+   "result": "fail: P0 1 of 400 cases outside (case 64, ratio 1.851); P0 control fails as required (263 cases outside); P1 CPU furnace a = 0.5: 1.19 standard errors, worst pixel 3.64; a = 0.8: 1.22, 3.23; control (no cosine) outside; P3 1 thread against 24 byte-identical",
+   "diagnosis": "See the bounds file, addendum 1, P0 method note 1: the cosine-weighted reference is unreliable for a lobe of roughness 0.095 at grazing; an independent NDF-mixture estimator agrees with the tracer's VNDF sampling within 0.3 standard errors."
   }
  ]
 }

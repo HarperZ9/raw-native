@@ -65,7 +65,12 @@
    "P0_bsdf_consistency": {
     "what": "CPU: for 400 seeded (material, outgoing direction) cases over roughness 0.05 to 1, metallic 0 to 1, the directional albedo by the tracer's own importance sampling (65,536 samples) against cosine-weighted hemisphere sampling (262,144 samples) of the same BSDF evaluation",
     "bound": "|difference| <= 4 combined standard errors + 1e-3 on every case",
-    "control": "the importance-sampled estimate with the VNDF pdf replaced by the plain NDF pdf (D cos theta_h / (4 |wo . h|) without G1) must fail on at least one case"
+    "control": "the importance-sampled estimate with the VNDF pdf replaced by the plain NDF pdf (D cos theta_h / (4 |wo . h|) without G1) must fail on at least one case",
+    "method_note_1": {
+     "written": "2026-10-10 18:31Z, after P0's first run failed and before its second",
+     "finding": "Case 64 (roughness 0.095, mu 0.084): the tracer's VNDF estimate 0.7640 (se 0.0033) against the cosine-weighted reference 0.2926 (se 0.0633). A third, independent estimator (classic NDF sampling of h mixed one-sample with cosine sampling, weighted by the mixture pdf) gave 0.7653 (se 0.0017), agreeing with VNDF within 0.3 standard errors. Cosine sampling almost never lands in a lobe this narrow, so its mean and standard error are both unreliable there.",
+     "change": "The gated reference becomes that NDF-mixture estimator (262,144 samples); the cosine-weighted estimate stays in the evidence, reported. Bound (4 combined standard errors + 1e-3) and control unchanged. The first run stays recorded as a failure."
+    }
    }
   }
  }
