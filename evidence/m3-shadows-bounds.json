@@ -56,5 +56,10 @@
   "written": "2026-10-10, after the near scene's first run and before the new camera's first run",
   "result_of_note_2": "The near scene failed the coverage bound: its camera faced the box's unlit side, so 54,201 of 54,224 pixels were shadowed and 3 were penumbra (bound 300). Hard 0 mismatches, cascade 0 held 52,425 pixels. Recorded as a failed run.",
   "change": "The near scene's camera moves to the lit side: eye (-1.5, 1.6, 2.4) toward (0.6, 0.4, 0.6). The bounds and the cascade-0 requirement stay."
+ },
+ "method_note_4_2026_10_10": {
+  "written": "2026-10-10, after the lit-side camera's run and before the next camera's first run",
+  "result_of_note_3": "The lit-side camera also failed the coverage bound: 299 penumbra pixels against 300 (41,919 shadowed, 37,091 in cascade 0, 0 hard mismatches). An image of the reference shows why: the camera stands inside the ground quad, and the CPU rasterizer drops triangles with a vertex behind the near plane (it does not clip), so the ground vanished and the box's unlit face filled the view. Recorded as a failed run.",
+  "change": "The near scene's camera moves to eye (2.2, 2.4, 3.6) toward (1.8, 0.2, 1.6), chosen by geometry alone before any run: every ground corner sits at least 0.45 units in front of the camera (near plane 0.1), the box top is at view depth 2.6 (cascade 0) and the shadow's far edge near 3.0 (cascade 1). The bounds and the cascade-0 requirement stay. If this camera fails coverage too, that run is recorded and the near scene is reported, not gated, until a scene that passes coverage is fixed in advance."
  }
 }
