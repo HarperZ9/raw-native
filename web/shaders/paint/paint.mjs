@@ -2,6 +2,7 @@
 // returns display-linear Rec.709. Presets are media, set for the templates the author chose.
 import { prep, tensor, gaussWeights, blur4, akf, stroke } from "./abstract.mjs";
 import { compose, relief } from "./compose.mjs";
+import { createCanvasState, decide, advect, layerWeights, blendNoise } from "./canvas.mjs";
 
 export const PAINT_PRESETS = {
   // Template (a): thick, warped, outlined oil with a hard temperature split; abstract and grotesque.
@@ -17,16 +18,28 @@ export function resolvePaint(preset, overrides, size) {
   return { p, out: { w: size.w, h: size.h }, tw: gaussWeights(p.tensorSigma) };
 }
 
+// The canvas sampler: noise at canvas coordinates. Offset mode (no motion vectors): the pixel
+// plus the pan offset. Advected mode: two advected layers, blended (canvas.mjs).
+export function offsetCanvas(plan) { const [ox, oy] = plan.p.canvasOffset; return { n: (f, x, y) => f(x + ox, y + oy) }; }
+export function advectedCanvas(st) { const wts = layerWeights(st); return { wts, n: (f, x, y, m = 0.5) => blendNoise(f, st, wts, x, y, m) }; }
+
 export function createPaint(preset, overrides, size) {
   const plan = resolvePaint(preset, overrides, size);
+  let canvas = null;
   return {
     plan,
-    frame(scene) {
+    // motion (optional): { mv, dist, distPrev } from the renderer, for rotation, zoom and parallax.
+    frame(scene, motion = null) {
+      let cv;
+      if (motion) {
+        canvas = canvas || createCanvasState(size.w, size.h);
+        decide(canvas); advect(canvas, motion.mv, motion.dist, motion.distPrev); cv = advectedCanvas(canvas);
+      } else cv = offsetCanvas(plan);
       const { s, lat } = prep(plan, scene);
       const T = blur4(plan, blur4(plan, tensor(plan, s), plan.tw, false), plan.tw, true);
-      const ak = akf(plan, s, lat, T), H = stroke(plan, T);
-      const Rl = relief(plan, ak, H, T);
-      return { s, T, ak, H, Rl, img: compose(plan, ak, H, Rl) };
+      const ak = akf(plan, s, lat, T), H = stroke(plan, T, cv);
+      const Rl = relief(plan, ak, H, T, cv);
+      return { s, T, ak, H, Rl, img: compose(plan, ak, H, Rl, cv), canvas };
     },
   };
 }

@@ -91,7 +91,10 @@ Turns a rendered frame into a painting. Presets are media: `oil-grotesque` (temp
 | `relief` | Per pixel: XDoG lines (Winnemoeller et al. 2012), the lit impasto (shade and sheen from the stroke relief and a canvas weave), and the watercolour wet edge. |
 | `compose` | A slow noise warp for the expressive looks. Complementary temperature in pigment space, per-stroke pigment jitter, and soft value bands. Then Kubelka-Munk decode. The medium comes last: lit impasto for oil and gouache; for watercolour, a Kubelka-Munk glaze over paper, thicker in the paper's valleys (granulation) and at wash edges. |
 
-Everything textural is anchored to `canvasOffset`, so a camera pan carries the paper and brushwork with the world. On a one-pixel pan the mean frame-to-frame difference is 0.000 to 0.007 codes with the canvas anchored and 0.6 to 8.3 codes screen-locked (`paint.test.mjs`). Rotation, zoom and parallax need motion vectors, which are not done.
+Everything textural (paper, canvas weave, bristles, stroke identity, warp) is noise at canvas coordinates, in one of two modes:
+
+- **Pan offset** (`canvasOffset`): the pixel plus the camera's 2D pan. Exact for an isometric camera that pans. On a one-pixel pan the mean frame-to-frame difference is 0.000 to 0.007 codes, against 0.6 to 8.3 screen-locked.
+- **Advected** (pass `{ mv, dist, distPrev }` from the renderer to `frame`): each pixel fetches its surface's canvas coordinate from last frame along the motion vector, after Neyret's "Advected Textures" (2003). It starts fresh where a depth test shows a disocclusion. Two layers carry the coordinates. A layer regenerates only when its mean distortion passes 0.35, measured as the departure of the local scale from 1 with rotation excluded and disocclusion seams left out. The new layer ramps in over 8 frames while the old one fades. A pure 2D pan never distorts, so it never regenerates. On the street scene at 160 x 100, the paper texture's reprojected change falls from 8.63 to 3.66 codes on an orbit, from 9.97 to 3.80 on a dolly, and from 3.82 to 2.99 on a parallax pan. In the full painting the orbit and dolly improve by 16 to 17%. The parallax pan is unchanged (2.30 against 2.33), because the image-driven parts dominate there. The residual comes from resampling fine noise every frame.
 
 ## The film (`web/shaders/film/`)
 

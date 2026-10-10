@@ -1,7 +1,7 @@
 // WGSL shared by the painterly passes: the parameter block, value noise, paper, canvas,
 // bristles, warp, the pigment lookup and Kubelka-Munk decode. Mirrors noise.mjs and pigments.mjs.
 export const PAINT_FIELDS = ["w", "h", "exposure", "radius", "q", "zeta", "eta", "strokeLen", "ox", "oy", "medium", "impasto", "gloss", "push",
-  "broken", "valueBands", "lines", "lineSigma", "lineSharp", "warp", "granulation", "edge", "dilution", "dir"];
+  "broken", "valueBands", "lines", "lineSigma", "lineSharp", "warp", "granulation", "edge", "dilution", "dir", "canvasMode"];
 export const PAINT_INDEX = Object.fromEntries(PAINT_FIELDS.map((k, i) => [k, i]));
 const layout = PAINT_FIELDS.map((k, i) => `const P_${k}: u32 = ${i}u;`).join("\n");
 // Table offsets in the pigment buffer: K (31 x 4), S (31 x 4), W (31 x 3), then the 17^3 x 4 lookup.
