@@ -9,8 +9,9 @@ float32 inputs and the page compares the two at 8-bit output. Passes when every
 channel of every input is within one 8-bit code and nothing is NaN.
 
 It also checks that the committed ACES 2.0 tables under web/colour/tables/ match
-the tables this build of the reference produces, to a relative 1e-5 (libm differs
-in the last bits between compilers, so this is not a byte comparison).
+the tables this build of the reference produces, to a relative 1e-5, and 1e-3 for
+the upper hull gammas (libm differs in the last bits between compilers, so this is
+not a byte comparison).
 """
 
 from __future__ import annotations
@@ -76,7 +77,11 @@ def tables_match(tmp: Path, names: list[str]) -> list[str]:
                 for i, (x, y) in enumerate(zip(a, b)):
                     walk(x, y, f"{path}[{i}]")
             elif isinstance(a, (int, float)):
-                if not isinstance(b, (int, float)) or abs(a - b) > 1e-5 * max(1.0, abs(a)):
+                # The upper hull gammas (every third cusp value) come from a bisection to
+                # 1e-5 in gamma, where a last-bit libm difference can take the other
+                # branch: 1e-3 there, 1e-5 elsewhere.
+                tol = 1e-3 if path.startswith(".gamut.cusp[") and int(path.split("[")[1][:-1]) % 3 == 2 else 1e-5
+                if not isinstance(b, (int, float)) or abs(a - b) > tol * max(1.0, abs(a)):
                     problems.append(f"{n}: {path} is {b} in the committed tables and {a} from this build")
             elif a != b:
                 problems.append(f"{n}: {path} differs")
