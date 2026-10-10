@@ -114,5 +114,11 @@
   "written": "2026-10-10, after --scene-stats and before the scene's first GTAO or SSR run",
   "stats": "Reference-only coverage: interior close (0.9, 1.2, 1.6) 19,801 occluded and 8,418 resolvable; (0.7, 1.0, 1.2) 19,987 and 7,759; (0.5, 0.8, 0.9) 17,799 and 6,555. The other scenes as in the second run.",
   "choice": "The first candidate meets both coverage bounds: a sixth scene, the interior role's model from eye (0.9, 1.2, 1.6) toward (0, 0.3, 0)."
+ },
+ "method_note_5_2026_10_10": {
+  "written": "2026-10-10, after the first TAA run and before any change is run",
+  "first_run": "Failed the RMSE bound: on the pan, TAA's RMSE is 1.23 times the single-sample RMSE (bound 0.5); TAA without jitter reaches 0.81. Ghosting passes: 0.0055 over 12,166 trail pixels (bound 0.03); the no-clip, no-depth control reaches 0.298 and fails as required; clip only 0.021 and depth test only 0.012, reported.",
+  "diagnosis": "Bilinear history sampling blurs the history on every frame of a sub-pixel pan. At 0.3 pixels a frame and a blend of 0.1, the accumulated blur has a standard deviation of roughly 1.4 pixels, which costs more at edges than the aliasing it removes.",
+  "change": "The history is sampled with a 4 x 4 Catmull-Rom filter (B = 0, C = 0.5) instead of bilinearly; the colour clip then bounds its overshoot. Nothing else changes. Bounds unchanged."
  }
 }
