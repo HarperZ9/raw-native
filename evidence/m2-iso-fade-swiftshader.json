@@ -1,0 +1,64 @@
+{
+ "cases": [
+  {
+   "scale": 1,
+   "maxAbs": 0.0003447532653808594,
+   "first": {
+    "x": 163,
+    "y": 104,
+    "gpu": [
+     0.8056640625,
+     0.56884765625,
+     0.2353515625,
+     1
+    ],
+    "ref": [
+     0.805931031703949,
+     0.5685029029846191,
+     0.23529411852359772,
+     1
+    ]
+   },
+   "changed": 1290,
+   "outside": 0,
+   "firstOutside": null,
+   "fadedCells": 6,
+   "covered": 25600
+  },
+  {
+   "scale": 2,
+   "maxAbs": 0.0003695487976074219,
+   "first": {
+    "x": 183,
+    "y": 158,
+    "gpu": [
+     0.454833984375,
+     0.78076171875,
+     0.2353515625,
+     1
+    ],
+    "ref": [
+     0.45490196347236633,
+     0.7803921699523926,
+     0.23529411852359772,
+     1
+    ]
+   },
+   "changed": 3016,
+   "outside": 0,
+   "firstOutside": null,
+   "fadedCells": 6,
+   "covered": 45440
+  }
+ ],
+ "adapter": {
+  "vendor": "google",
+  "architecture": "swiftshader",
+  "device": "",
+  "description": ""
+ },
+ "adapter_kind": "swiftshader",
+ "problems": [],
+ "commit": "f63e494e9aabc38b197608fec8b4b1d7c7e894b9",
+ "does_not_prove": "That the fade reads well to a player, or behaviour for sprites (the fade covers tile layers only)."
+}

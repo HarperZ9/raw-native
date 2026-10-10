@@ -1,0 +1,77 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Isometric fade check</title>
+<!-- M2 criterion 9, the GPU half (evidence/m2-iso-fade-bounds.json): the tile pass with a
+     fade from fadeMask() against tilesRef() with the same fade, and the faded frame against
+     the unfaded one, where every changed pixel must lie in a faded cell. -->
+<script type="module">
+import { createHost } from '../raw-gpu.mjs';
+import { createMotion } from '../motion/renderer.mjs';
+import { tilesRef } from '../world/tiles_ref.mjs';
+import { isoCamera, fadeMask } from '../world/iso.mjs';
+import { rng } from '../../third_party/superstack/superstack.mjs';
+
+const W = 320, H = 192, N = 10;
+function tileset() {   // 8 x 2 tiles of 32 x 32: row 0 ground, row 1 walls
+  const TW = 256, d = new Uint8Array(TW * 64 * 4);
+  for (let y = 0; y < 64; y++) for (let x = 0; x < TW; x++) {
+    const i = 4 * (y * TW + x), t = (y >> 5) * 8 + (x >> 5);
+    d[i] = (t * 53 + x) & 255; d[i + 1] = (y * 7 + t * 29) & 255; d[i + 2] = ((x & 31) > (y & 31)) ? 220 : 60; d[i + 3] = 255;
+  }
+  return { width: TW, height: 64, data: d };
+}
+function world(seed) {
+  const r = rng(seed), n = N * N, ground = new Uint32Array(n), walls = new Uint32Array(n), heights = new Float32Array(n);
+  for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) {
+    const k = j * N + i;
+    ground[k] = 1 + Math.floor(r.nextFloat() * 8);
+    // A band of walls in front of the target, and a few scattered elsewhere.
+    const band = Math.abs(i - j) <= 1 && i + j >= 9 && i + j <= 12;
+    if (band || r.nextFloat() < 0.08) { walls[k] = 9 + Math.floor(r.nextFloat() * 8); heights[k] = 3; }
+  }
+  const layer = (name, gids) => ({ name, gids, flip: new Uint8Array(n), opacity: 1, visible: true });
+  return { heights, map: { width: N, height: N, tileW: 32, tileH: 16, orientation: 'isometric',
+    layers: [layer('ground', ground), layer('walls', walls)],
+    tilesets: [{ firstgid: 1, columns: 8, count: 16, tileW: 32, tileH: 32, spacing: 0, margin: 0 }] } };
+}
+
+async function run() {
+  const host = await createHost({});
+  const mo = await createMotion(host, { design: [W, H] });
+  mo.resize(W, H);
+  const img = tileset();
+  mo.image('iso', img);
+  const res = { cases: [] };
+  for (const scale of [1, 2]) {
+    const { map, heights } = world(`fade-${scale}`), x = 160, y = 10;
+    const iso = isoCamera({ tileW: 32, tileH: 16, origin: [x, y], zoom: scale, width: N, height: N });
+    const cells = fadeMask({ width: N, height: N, heights }, iso, [3.5, 3.5], { radius: 3 });
+    const fade = { cells, to: 0.25 };
+    const base = { camera: { x: W / 2, y: H / 2 }, background: [0, 0, 0], post: { bloom: 0, vignette: 0, grain: 0 } };
+    const item = { kind: 'tilemap', map, tileset: 'iso', x, y, scale };
+    const f = await mo.capture({ ...base, items: [{ ...item, fade }] }, { frame: 0, float: true });
+    const plain = await mo.capture({ ...base, items: [item] }, { frame: 0, float: true });
+    const ref = tilesRef(map, img, { ox: x, oy: y, s: scale, opacity: 1, fade }, W, H);
+    let maxAbs = 0, first = null, changed = 0, outside = 0, firstOutside = null;
+    for (let p = 0; p < W * H; p++) {
+      for (let k = 0; k < 3; k++) {   // colour: the frame sits on an opaque ground, so its alpha is 1
+        const d = Math.abs(f.data[4 * p + k] - ref[4 * p + k]);
+        if (d > maxAbs) { maxAbs = d; first = { x: p % W, y: Math.floor(p / W), gpu: Array.from(f.data.slice(4 * p, 4 * p + 4)), ref: Array.from(ref.slice(4 * p, 4 * p + 4)) }; }
+      }
+      let dp = 0;
+      for (let k = 0; k < 3; k++) dp = Math.max(dp, Math.abs(f.data[4 * p + k] - plain.data[4 * p + k]));
+      if (dp > 0.05) {
+        changed++;
+        const c = iso.pick(p % W + 0.5, Math.floor(p / W) + 0.5);
+        if (!c || !(cells[c[1] * N + c[0]] > 0)) { outside++; if (!firstOutside) firstOutside = { x: p % W, y: Math.floor(p / W), cell: c }; }
+      }
+    }
+    res.cases.push({ scale, maxAbs, first, changed, outside, firstOutside, fadedCells: Array.from(cells).filter((v) => v > 0).length,
+      covered: ref.filter((v, i) => i % 4 === 3 && v > 0).length });
+  }
+  res.adapter = host.info || null;
+  mo.destroy();
+  return res;
+}
+run().then((r) => { window.__result = r; }, (e) => { window.__result = { error: String(e && e.stack || e) }; });
+</script>
