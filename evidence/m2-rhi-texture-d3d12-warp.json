@@ -1,0 +1,12 @@
+{
+ "backend": "d3d12",
+ "adapter": "Microsoft Basic Render Driver",
+ "cases": [
+  {"case": "nearest/clamp", "pixels": 3072, "exempt": 0, "max_codes": 0, "pass": true},
+  {"case": "nearest/repeat", "pixels": 3072, "exempt": 0, "max_codes": 0, "pass": true},
+  {"case": "linear/clamp", "pixels": 3072, "exempt": 0, "max_codes": 1, "pass": true},
+  {"case": "linear/repeat", "pixels": 3072, "exempt": 0, "max_codes": 1, "pass": true}
+ ],
+ "control_fails": true,
+ "pass": true
+}

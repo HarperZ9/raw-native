@@ -172,6 +172,13 @@ jobs:
           build/Release/raw_native_cli.exe --gpu --out gpu-warp --width 128 --height 128 --prev-eye 4.3,4,5.7 >/dev/null
           grep -q '"verdict":"verified"' gpu-warp/gpu_certificate.json
           grep -q '"description":"Microsoft Basic Render Driver"' gpu-warp/gpu_certificate.json
+      - name: Textures, samplers and raster passes on WARP match the CPU sampler reference (M2 criterion 3)
+        shell: bash
+        env:
+          RAW_NATIVE_D3D12_WARP: "1"
+        run: |
+          build/Release/gpu_texture_identity.exe texture-warp.json
+          build/Release/raw_native_cli.exe texture-identity | grep -q '"pass": true'
           build/Release/raw_native_cli.exe verify gpu-warp
           build/Release/raw_native_cli.exe verify gpu-warp/cpu
           grep -q '"schema":"superstack.receipt/1"' gpu-warp/gpu_receipt.json

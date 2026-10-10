@@ -19,6 +19,16 @@ struct Recorder final : rhi::Device, rhi::CommandList {
     rhi::BufferHandle createBuffer(const rhi::BufferDesc& d, std::string&) override {
         log.push_back(std::string("create ") + d.label); ++live; return {next++, 1}; }
     void destroyBuffer(rhi::BufferHandle) override { --live; }
+    // RHI version 2 (textures and raster passes): the frame graph does not use them yet.
+    rhi::TextureHandle createTexture(const rhi::TextureDesc&, std::string&) override { return {}; }
+    void destroyTexture(rhi::TextureHandle) override {}
+    rhi::SamplerHandle createSampler(const rhi::SamplerDesc&, std::string&) override { return {}; }
+    rhi::RasterPipelineHandle createRasterPipeline(const rhi::RasterPipelineDesc&, std::string&) override { return {}; }
+    void uploadTexture(rhi::TextureHandle, const void*, uint32_t, uint32_t) override {}
+    void copyTextureToBuffer(rhi::TextureHandle, rhi::BufferHandle) override {}
+    void beginRenderPass(const rhi::RenderPassDesc&) override {}
+    void draw(rhi::RasterPipelineHandle, std::span<const rhi::RasterBind>, uint32_t) override {}
+    void endRenderPass() override {}
     rhi::PipelineHandle createComputePipeline(const rhi::ComputePipelineDesc&, std::string&) override { return {1, 1}; }
     rhi::CommandList* begin(std::string&) override { log.push_back("begin"); return this; }
     bool submitAndWait(std::string&) override { log.push_back("submit"); return true; }
