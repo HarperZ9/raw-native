@@ -3,6 +3,7 @@
 #include "raw/renderer/pbr_parity.hpp"
 #include "raw/renderer/lighting_parity.hpp"
 #include "raw/tools/gallery_cmd.hpp"
+#include "raw/tools/bake_cmd.hpp"
 #include "raw/rhi/rhi.hpp"
 #include "raw/renderer/raster.hpp"
 #include "raw/renderer/accel.hpp"
@@ -69,6 +70,9 @@ static const char* kUsage =
     "       raw_native_cli threads [flags]  render the Threads module on the GPU backend\n"
     "         (--world 0..14 --frames --width --height --particles --substeps --fps --persistence\n"
     "          --exposure --spacing --levels --out); writes threads.ppm\n"
+    "       raw_native_cli bake-room [--out DIR] [--size N] [--spp K] [--paths P]\n"
+    "         Source-style radiosity normal maps for a test room, drawn from the lightmaps and by\n"
+    "         path tracing; PNG, PFM and JSON\n"
     "       raw_native_cli material-gallery [--out DIR] [--size N] [--spp K] [--cpu-only]\n"
     "         the M3 material gallery: 49 spheres, seven material families, from the float64\n"
     "         reference and (with a GPU backend) the GPU shading pass; PNG, PFM and JSON\n"
@@ -116,6 +120,7 @@ int main(int argc, char** argv){
     if (argc >= 2 && std::strcmp(argv[1], "threads") == 0) return threadsCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "colour") == 0) return colourCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "material-gallery") == 0) return galleryCommand(argc - 1, argv + 1);
+    if (argc >= 2 && std::strcmp(argv[1], "bake-room") == 0) return bakeCommand(argc - 1, argv + 1);
     // The sampled-texture identity check on this build's GPU backend (ROADMAP M2
     // criterion 3): JSON on stdout; exit 0 when it passes, 1 when it fails, 4 without
     // a GPU backend or adapter.

@@ -6,6 +6,15 @@ the day the release was published on GitHub, in UTC.
 
 ## Unreleased
 
+- **Source-style baked lighting** (roadmap M3, S10). Radiosity normal maps and ambient cubes
+  (Valve, SIGGRAPH 2006), baked by a CPU path tracer on a new BVH.
+  - Against converged path tracing, a flat normal is within 1.7% (median) and a bumped normal
+    within 5.3%; ambient cubes are within 3.6%.
+  - The normal maps are energy-preserving: a flat normal reproduces the flat irradiance
+    exactly, which the plain form misses by up to 27%.
+  - Bakes are identical for any thread count. `raw_native_cli bake-room` renders a test room
+    from its lightmaps and by path tracing.
+
 - **Lighting** (roadmap M3).
   - Punctual lights use physical units (lux and candela, after KHR_lights_punctual), with
     clustered assignment on the GPU. No light is ever missing from its cluster, and clustered

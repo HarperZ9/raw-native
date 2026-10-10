@@ -1,0 +1,8 @@
+{
+ "pt_furnace_worst": 0.0061,
+ "rnm_face_normal": {"n": 250, "median": 0.0173, "p95": 0.0640, "worst": 0.1892},
+ "rnm_bumped": {"n": 250, "median": 0.0533, "p95": 0.1693, "worst": 0.3377},
+ "ambient_cube": {"n": 1024, "median": 0.0355, "p95": 0.1240, "worst": 0.2473},
+ "deterministic": true,
+ "paths": {"reference": 16384, "bake": 1024, "cube": 4096}
+}
