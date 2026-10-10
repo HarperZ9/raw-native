@@ -328,6 +328,8 @@ jobs:
         run: python tools/media/raw_native_media.py render --setup --out media-out --adapter swiftshader --width 960 --height 540 --max-seconds 4
       - name: Every equation in raw-native's scenes renders from the TeX subset (M1 criterion 5)
         run: node tools/media/tex_coverage.mjs --scenes docs/motion --atlas docs/motion/hanken-grotesk-500.atlas.json --scenes docs/media/scenes --atlas docs/motion/hanken-grotesk-500.atlas.json
+      - name: The vector corpus on the GPU matches the CPU reference within its bounds (M1 criterion 4)
+        run: python tests/web/vector_corpus.py --adapter swiftshader
       - name: Every scene wrote a video, a poster, captions and a manifest, from this commit
         shell: bash
         run: |

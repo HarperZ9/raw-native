@@ -52,6 +52,26 @@ class Motion {
     this.postU = [0, 1, 2, 3].map((i) => this.host.buffer({ size: 32, usage: ["uniform", "copy-dst"], label: "motion post " + i }));
     this.layerU = [0, 1, 2, 3].map((i) => this.host.buffer({ size: 48, usage: ["uniform", "copy-dst"], label: "motion layer " + i }));
     this.sampler = d.createSampler({ magFilter: "linear", minFilter: "linear", addressModeU: "clamp-to-edge", addressModeV: "clamp-to-edge" });
+    this.images = {};
+    this.#atlas(1);
+  }
+  // The image atlas that image paints sample: one rgba8unorm texture, filled in shelves.
+  #atlas(size) {
+    if (this.atlasTex) this.atlasTex.destroy();
+    this.atlasTex = this.device.createTexture({ label: "motion atlas", size: [size, size], format: "rgba8unorm", usage: TEX.BIND | 0x02 });
+    this.atlasView = this.atlasTex.createView();
+    this.atlasSize = size; this.shelf = { x: 0, y: 0, h: 0 };
+  }
+  // Add an image for image paints: { width, height, data: RGBA8 rows, straight alpha }.
+  image(name, { width, height, data }) {
+    const A = 2048, gap = 1;
+    if (this.atlasSize !== A) { this.#atlas(A); for (const [n, im] of Object.entries(this.images)) { delete this.images[n]; this.image(n, im.src); } }
+    let sh = this.shelf;
+    if (sh.x + width + gap > A) { sh.x = 0; sh.y += sh.h + gap; sh.h = 0; }
+    if (sh.y + height > A || width > A) throw new Error(`image ${name} does not fit the ${A} x ${A} atlas`);
+    this.device.queue.writeTexture({ texture: this.atlasTex, origin: [sh.x, sh.y] }, data, { bytesPerRow: width * 4 }, [width, height]);
+    this.images[name] = { uv: [sh.x / A, sh.y / A, (sh.x + width) / A, (sh.y + height) / A], size: [width, height], src: { width, height, data } };
+    sh.x += width + gap; sh.h = Math.max(sh.h, height);
   }
   // Make a particle system from formations (particles.mjs).
   particles(spec) { return new ParticleSystem(this, spec); }
@@ -100,7 +120,7 @@ class Motion {
     const d = this.device, W = this.w, H = this.h, host = this.host;
     const cam = { ...DEFAULT_CAMERA, ...(list.camera || {}) };
     const t0 = performance.now();
-    const c = compile(list.items || [], cam, W, H, this.design, this.cpuOut);
+    const c = compile(list.items || [], cam, W, H, this.design, this.cpuOut, this.images);
     this.cpuOut = c.out;
     const vw = new Float32Array([W, H, 1 / W, 1 / H, time, frame, 0, 0]);
     host.write(this.view, vw);
@@ -108,6 +128,8 @@ class Motion {
     if (c.inst.byteLength) host.write(inst, c.inst);
     if (c.segs.byteLength) host.write(segs, c.segs);
     if (c.idx.byteLength) host.write(idx, c.idx);
+    const paints = this.#ensure("paints", c.paints.byteLength);
+    if (c.paints.byteLength) host.write(paints, c.paints);
     // Layers that render with their own submits go first.
     let li = 0;
     for (const r of c.runs) {
@@ -134,7 +156,7 @@ class Motion {
       if (r.kind === "vector") {
         const pipe = r.blend === "add" ? this.vecAdd : this.vecOver;
         rp.setPipeline(pipe);
-        rp.setBindGroup(0, host.bind(pipe, [this.view, inst, segs, idx]));
+        rp.setBindGroup(0, host.bind(pipe, [this.view, inst, segs, idx, paints, this.atlasView, this.sampler]));
         rp.draw(4, r.count, 0, r.first);
       } else if (r.kind === "particles") {
         r.item.system.draw(rp, r.item.blend === "over" ? this.spriteOver : this.spriteAdd, this.view);
@@ -215,6 +237,6 @@ class Motion {
   timings() { return this.host.timings(); }
   destroy() {
     for (const b of Object.values(this.gpu)) b.destroy();
-    for (const t of [this.accum, this.glowA, this.glowB, this.capTex, this.worldTex]) if (t) t.destroy();
+    for (const t of [this.accum, this.glowA, this.glowB, this.capTex, this.worldTex, this.atlasTex]) if (t) t.destroy();
   }
 }

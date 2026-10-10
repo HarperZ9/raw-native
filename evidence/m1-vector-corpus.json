@@ -1,0 +1,318 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "M1 exit criterion 4 (docs/architecture/ROADMAP.md): vector",
+ "written": "2026-10-10, before the first run",
+ "canvas": {
+  "size": [
+   256,
+   256
+  ],
+  "units": "pixels (design size equals canvas size, camera at rest)",
+  "background": "transparent; results are premultiplied RGBA in 0..1"
+ },
+ "images": {
+  "checker16": "16 x 16 RGBA8, texel (i, j) is #e8e4daff when (i + j) is even and #1b2a4aff otherwise; bilinear, clamp to edge, texel centres at (i + 0.5) / 16"
+ },
+ "semantics": "SVG 1.1 and Canvas 2D: nonzero or even-odd fills; a stroke is the union of each segment's rectangle, its joins (miter with limit, falling back to bevel; round; bevel) and its caps (butt, round, square); dashes start at the contour start, lengths in user units; zero-length dashes draw their caps; gradients interpolate unpremultiplied colour linearly in the given values, pad outside 0..1; a clip multiplies coverage by the clip path's fill coverage.",
+ "reference": "web/motion/vector_ref.mjs, on the CPU in Node: coverage from 16 x 16 point samples per pixel of the exact region (fills by winding number at each sample; strokes by point-in-piece tests on the stroke's segments, joins and caps); paint evaluated at the pixel centre and multiplied by coverage.",
+ "bounds": {
+  "metric": "absolute difference per channel of premultiplied RGBA, GPU against the CPU reference",
+  "interior": {
+   "where": "pixels the reference covers fully (all 256 samples) and that lie at least 1.5 px from every edge sample",
+   "max": 0.008,
+   "why": "paint only: 2/255 for gradient and image filtering precision"
+  },
+  "edge": {
+   "where": "all other pixels where either image has coverage",
+   "mean": 0.03,
+   "max": 0.2,
+   "why": "the GPU ramps coverage over signed distance (one pixel wide); against box-filtered coverage that is exact for axis-aligned edges and within about 0.043 for straight edges at 45 degrees. Sharp corners lose more"
+  },
+  "sharp": {
+   "cases": [
+    "fill-nonzero",
+    "fill-evenodd",
+    "stroke-miter",
+    "stroke-miter-limit",
+    "stroke-closed",
+    "clip-evenodd",
+    "stroke-hairline"
+   ],
+   "max": 0.4,
+   "why": "miter tips and star points narrower than a pixel, where distance ramping and box coverage differ most"
+  },
+  "outside": {
+   "where": "pixels the reference does not cover and at least 1.5 px from every edge sample",
+   "max": 0.0
+  }
+ },
+ "cases": [
+  {
+   "id": "fill-nonzero",
+   "about": "self-intersecting star, nonzero winding",
+   "shape": "M128 24 L198 230 L22 102 L234 102 L58 230 Z",
+   "fill": "#e8e4da",
+   "rule": "nonzero"
+  },
+  {
+   "id": "fill-evenodd",
+   "about": "the same star, even-odd: the centre pentagon is a hole",
+   "shape": "M128 24 L198 230 L22 102 L234 102 L58 230 Z",
+   "fill": "#e8e4da",
+   "rule": "evenodd"
+  },
+  {
+   "id": "fill-convex",
+   "about": "a pentagon, the plain case",
+   "shape": "M128 20 L231 95 L192 216 L64 216 L25 95 Z",
+   "fill": "#5fb3a1"
+  },
+  {
+   "id": "stroke-round",
+   "about": "zigzag, round joins and caps (the existing stroke)",
+   "shape": "M24 200 L72 56 L120 200 L168 56 L232 200",
+   "stroke": "#e8e4da",
+   "width": 14,
+   "join": "round",
+   "cap": "round"
+  },
+  {
+   "id": "stroke-miter",
+   "about": "zigzag, miter joins within the limit, butt caps",
+   "shape": "M24 200 L72 56 L120 200 L168 56 L232 200",
+   "stroke": "#e8e4da",
+   "width": 14,
+   "join": "miter",
+   "cap": "butt",
+   "miterLimit": 4
+  },
+  {
+   "id": "stroke-miter-limit",
+   "about": "one join past miter limit 2 falls back to bevel, square caps",
+   "shape": "M24 180 L128 60 L232 180 L24 196",
+   "stroke": "#e8e4da",
+   "width": 14,
+   "join": "miter",
+   "cap": "square",
+   "miterLimit": 2
+  },
+  {
+   "id": "stroke-bevel",
+   "about": "zigzag, bevel joins, square caps",
+   "shape": "M24 200 L72 56 L120 200 L168 56 L232 200",
+   "stroke": "#e8e4da",
+   "width": 14,
+   "join": "bevel",
+   "cap": "square"
+  },
+  {
+   "id": "stroke-closed",
+   "about": "closed pentagon stroke: miter joins all round, no caps",
+   "shape": "M128 20 L231 95 L192 216 L64 216 L25 95 Z",
+   "stroke": "#e8e4da",
+   "width": 12,
+   "join": "miter",
+   "cap": "butt",
+   "miterLimit": 10
+  },
+  {
+   "id": "stroke-curve",
+   "about": "flattened cubic wave, butt caps, round joins",
+   "shape": "M16 128 C 64 16 96 16 128 128 S 192 240 240 128",
+   "stroke": "#e8e4da",
+   "width": 20,
+   "join": "round",
+   "cap": "butt"
+  },
+  {
+   "id": "stroke-hairline",
+   "about": "one-pixel stroke",
+   "shape": "M24 200 L72 56 L120 200 L168 56 L232 200",
+   "stroke": "#e8e4da",
+   "width": 1,
+   "join": "miter",
+   "cap": "butt",
+   "miterLimit": 10
+  },
+  {
+   "id": "dash-butt",
+   "about": "circle (as a path) with dashes 24 on, 12 off, offset 6, butt caps",
+   "shape": "M128 40 A88 88 0 1 1 127.99 40 Z",
+   "stroke": "#e8e4da",
+   "width": 10,
+   "cap": "butt",
+   "join": "miter",
+   "dash": [
+    24,
+    12
+   ],
+   "dashOffset": 6
+  },
+  {
+   "id": "dash-dots",
+   "about": "zero-length dashes with round caps: dots every 20 units",
+   "shape": "M24 200 L72 56 L120 200 L168 56 L232 200",
+   "stroke": "#e8e4da",
+   "width": 10,
+   "cap": "round",
+   "join": "round",
+   "dash": [
+    0,
+    20
+   ]
+  },
+  {
+   "id": "gradient-linear",
+   "about": "rectangle, linear gradient with three stops",
+   "shape": "M24 40 L232 40 L232 216 L24 216 Z",
+   "fill": {
+    "linear": [
+     24,
+     0,
+     232,
+     0
+    ],
+    "stops": [
+     [
+      0,
+      "#1b2a4a"
+     ],
+     [
+      0.5,
+      "#5fb3a1"
+     ],
+     [
+      1,
+      "#e8e4da"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "gradient-radial",
+   "about": "pentagon, radial gradient, transparent edge",
+   "shape": "M128 20 L231 95 L192 216 L64 216 L25 95 Z",
+   "fill": {
+    "radial": [
+     128,
+     128,
+     110
+    ],
+    "stops": [
+     [
+      0,
+      "#e8e4daff"
+     ],
+     [
+      1,
+      "#5fb3a100"
+     ]
+    ]
+   }
+  },
+  {
+   "id": "gradient-stroke",
+   "about": "wave stroke painted with a linear gradient",
+   "shape": "M16 128 C 64 16 96 16 128 128 S 192 240 240 128",
+   "stroke": {
+    "linear": [
+     16,
+     0,
+     240,
+     0
+    ],
+    "stops": [
+     [
+      0,
+      "#e8a06a"
+     ],
+     [
+      1,
+      "#5fb3a1"
+     ]
+    ]
+   },
+   "width": 16,
+   "join": "round",
+   "cap": "round"
+  },
+  {
+   "id": "clip-circle",
+   "about": "a filled rectangle clipped by a circle",
+   "shape": "M0 0 L256 0 L256 256 L0 256 Z",
+   "fill": "#e8e4da",
+   "clip": "M128 32 A96 96 0 1 1 127.99 32 Z"
+  },
+  {
+   "id": "clip-evenodd",
+   "about": "linear gradient clipped by the even-odd star",
+   "shape": "M0 0 L256 0 L256 256 L0 256 Z",
+   "fill": {
+    "linear": [
+     0,
+     0,
+     256,
+     256
+    ],
+    "stops": [
+     [
+      0,
+      "#1b2a4a"
+     ],
+     [
+      1,
+      "#e8a06a"
+     ]
+    ]
+   },
+   "clip": "M128 24 L198 230 L22 102 L234 102 L58 230 Z",
+   "clipRule": "evenodd"
+  },
+  {
+   "id": "clip-stroke",
+   "about": "a dashed stroke clipped by a rectangle",
+   "shape": "M24 200 L72 56 L120 200 L168 56 L232 200",
+   "stroke": "#e8e4da",
+   "width": 14,
+   "join": "miter",
+   "cap": "butt",
+   "dash": [
+    30,
+    10
+   ],
+   "clip": "M40 40 L216 40 L216 216 L40 216 Z"
+  },
+  {
+   "id": "image-fill",
+   "about": "pentagon filled with a 16 x 16 checker image stretched over 0..256, bilinear",
+   "shape": "M128 20 L231 95 L192 216 L64 216 L25 95 Z",
+   "fill": {
+    "image": "checker16",
+    "rect": [
+     0,
+     0,
+     256,
+     256
+    ]
+   }
+  },
+  {
+   "id": "image-stroke",
+   "about": "zigzag stroke painted with the checker image",
+   "shape": "M24 200 L72 56 L120 200 L168 56 L232 200",
+   "stroke": {
+    "image": "checker16",
+    "rect": [
+     0,
+     0,
+     256,
+     256
+    ]
+   },
+   "width": 18,
+   "join": "bevel",
+   "cap": "butt"
+  }
+ ],
+ "does_not_prove": "Agreement on these twenty cases at this size. Not every SVG feature (no stroke transforms, no gradient spread modes other than pad, no pattern repeat), and not the look against another renderer."
+}
