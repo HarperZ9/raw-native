@@ -72,6 +72,23 @@ export default {
     this.lines = lines;
     return A;
   },
+  // Sound cues (web/sound, docs/sound/DESIGN.md): one per thing that changes on
+  // screen, at the time the picture changes, panned to where it happens.
+  sound(ctx) {
+    const { tl, verdict } = ctx.assets, pix = Number(ctx.assets.F.pixels.value);
+    const c = [
+      { t: tl.at(1) - 0.5, type: "texture", n: N * N, dur: Math.min(3, tl.at(2) - tl.at(1) + 0.3), why: "the reference's points gather into a field", gain_db: -12 },
+      { t: tl.at(2), type: "move", x: 960, x1: 560, dur: 1.6, why: "the reference moves left to make room", gain_db: -13 },
+      { t: tl.at(3) - 0.2, type: "texture", n: N * N, dur: 2.0, x: 1360, why: "the fast estimate gathers on the right", gain_db: -12 },
+      { t: tl.at(4), type: "move", dur: 1.6, f0: 1200, f1: 500, why: "the two fields merge into their difference", gain_db: -13 },
+      { t: tl.at(4) + 0.8, type: "count", from: 1, to: pix, per: 100, dur: 1.4, why: "the comparison bars grow", gain_db: -10 },
+      verdict === "verified"
+        ? { t: tl.at(5), type: "land", why: "the certificate says verified", gain_db: -5 }
+        : { t: tl.at(5), type: "motif", why: `hot mark: the certificate says ${verdict}`, gain_db: -6 },
+      { t: tl.at(6) - 0.2, type: "chapter", why: "section: the certificate", gain_db: -7 },
+    ];
+    return c;
+  },
   frame(t, ctx) {
     const A = ctx.assets, tl = A.tl, items = [], tol = ctx.params.tolerance;
     const put = (shape, color, o) => { if (o > 0) items.push({ shape, fill: color, opacity: o, screen: true }); };

@@ -105,6 +105,19 @@ class Audio(unittest.TestCase):
             else:
                 self.assertAlmostEqual(got, v["integrated_lufs"], delta=v["tolerance_lu"], msg=v["name"])
 
+    def test_an_s16_track_at_gain_1_passes_through_bit_for_bit(self):
+        import tempfile
+        from array import array
+        pcm = array("h", [-32768, -32767, -1, 0, 1, 12345, 32766, 32767, -20000, 7] * 6)
+        with tempfile.TemporaryDirectory() as d:
+            p = Path(d) / "t.wav"
+            self.am.write_wav(p, pcm, 48000, 2)
+            samples, rate, ch = self.am.read_wav(p)
+        mix = self.am.mix_tracks([{"samples": samples, "channels": ch, "gain": 1.0}], 2, len(pcm) // 2)
+        out = self.am.quantize_s16(mix)
+        # Every value round-trips except -32768, which the superstack rule clamps to -32767.
+        self.assertEqual(list(out), [max(-32767, v) for v in pcm])
+
     def test_the_shared_fixture(self):
         import hashlib
         F = self.fixture

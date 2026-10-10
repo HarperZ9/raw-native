@@ -20,6 +20,11 @@ the day the release was published on GitHub, in UTC.
     vectors and EBU Tech 3341/3342 cases.
   - `third_party/superstack` now also vendors `superstack.mjs` and the example sound
     scene from the v0.2.0 tag, pinned by SHA-256.
+- **Sound in the release loop.** A narrated scene's video now carries the sound
+  engine's mix: a sheet from the scene's own `sound()` cues (or its chapters), mastered
+  and checked, with the sheet, report and receipt in the bundle and a `sound` block in
+  the manifest. "Checking the light" and the walkthrough declare their cues.
+  `--no-sound` keeps the bare narration.
 
 ## 0.6.0 (2026-10-09)
 
