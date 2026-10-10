@@ -1,0 +1,17 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/hw-h1-4-bounds.json",
+ "adapter": "NVIDIA GeForce RTX 4090",
+ "disable": "",
+ "n": 262144,
+ "schedule": "serial and async",
+ "error": "",
+ "serial_mismatches_vs_cpu": 0,
+ "async_mismatches": 0,
+ "control_ran": true,
+ "control_elements_differing": 65536,
+ "serial_wall": {"n":200,"median_ms":17.7694,"p5_ms":17.1697,"p95_ms":18.9021,"p99_ms":20.6275,"iqr_ms":0.659925},
+ "async_wall": {"n":200,"median_ms":17.8813,"p5_ms":17.3269,"p95_ms":19.0067,"p99_ms":20.8455,"iqr_ms":0.6216},
+ "overlap_gain": {"median_ratio":0.993742,"ci95":[0.987493,0.997279]},
+ "verdict": {"equal": true, "control_fails": true, "pass": true}
+}
