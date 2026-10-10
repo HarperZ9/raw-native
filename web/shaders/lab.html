@@ -120,7 +120,7 @@ function tick() {
       split.run(run[0].packed, run[1].packed, at);
     }
     present(); frame++;
-    if (frame % 30 === 0) stats.textContent = `${LOOKS[mode].name}, ${W} x ${H}, frame ${frame}. GPU times: tests/web/shaders_parity.py --timing.`;
+    if (frame % 30 === 0) stats.textContent = `${LOOKS[mode].name}, ${W} x ${H}, frame ${frame}. GPU times: tests/web/lab2_timing.py.`;
   }
   requestAnimationFrame(tick);
 }
