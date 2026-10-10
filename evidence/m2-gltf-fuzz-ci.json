@@ -1,0 +1,20 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "M2 exit criterion 2 (one million fuzzed glTF inputs: no crash, hang or sanitizer report)",
+ "source": "CI job fuzz-sanitizers (GCC, AddressSanitizer and UndefinedBehaviorSanitizer), run 38025762208, job 114136151656, on main at 1c72497194bc03cd096b8f96ac419ff413cfd07c, 2026-10-10. The summary below is the JSON the fuzzer printed in that job's log, copied byte for byte apart from this wrapper; the job uploads the same file as the gltf-fuzz artifact for 30 days.",
+ "command": "build-san/fuzz_gltf 1000000 1 1000 gltf-fuzz.json",
+ "result": {
+  "inputs": 1000000,
+  "seed": 1,
+  "loaded": 16118,
+  "refused": 983882,
+  "other_exceptions": 0,
+  "slow": 0,
+  "limit_ms": 1000,
+  "max_ms": 7.111,
+  "seconds": 78.6,
+  "pass": true
+ },
+ "control": "The fuzzer's first CI runs found a real bug (required glTF keys defaulted to -1 and were used as an index); the fix (need()) is in src/assets/gltf.cpp. A fuzzer that has found a fault is one that can.",
+ "does_not_prove": "Robustness against inputs a byte-mutation fuzzer is unlikely to reach (structurally valid files with hostile sizes beyond the importer's limits are covered by the limits, not by this run), or behaviour of the renderer on the 16,118 files that loaded."
+}
