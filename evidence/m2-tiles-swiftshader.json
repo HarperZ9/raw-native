@@ -6,7 +6,8 @@
    "y": 0,
    "maxAbs": 0.00024318695068359375,
    "bad": 0,
-   "first": null
+   "first": null,
+   "covered": 21760
   },
   {
    "scale": 2,
@@ -14,7 +15,8 @@
    "y": 4,
    "maxAbs": 0.00024318695068359375,
    "bad": 0,
-   "first": null
+   "first": null,
+   "covered": 53536
   },
   {
    "scale": 3,
@@ -22,7 +24,28 @@
    "y": 7,
    "maxAbs": 0.00024127960205078125,
    "bad": 0,
-   "first": null
+   "first": null,
+   "covered": 59200
+  },
+  {
+   "iso": true,
+   "scale": 1,
+   "x": 160,
+   "y": 10,
+   "maxAbs": 0.00024318695068359375,
+   "bad": 0,
+   "first": null,
+   "covered": 21248
+  },
+  {
+   "iso": true,
+   "scale": 2,
+   "x": 160,
+   "y": 10,
+   "maxAbs": 0.00024318695068359375,
+   "bad": 0,
+   "first": null,
+   "covered": 43356
   }
  ],
  "big": {
@@ -31,16 +54,16 @@
    1600,
    1000
   ],
-  "frame_ms_median": 38.2,
-  "frame_ms_p95": 41.3,
+  "frame_ms_median": 41.4,
+  "frame_ms_p95": 45,
   "sameTwice": true,
   "sha256": "990cdeebb28a86bf82ba78ad0ff98d041abe953accee6cab76fb55442406f859",
   "note": "frame time is a whole capture: the draw, the finish and the readback",
   "gpu": {
-   "draw": 17.02362913562392,
-   "bloom": 1.4388415772587722,
-   "finish": 8.939997665413044,
-   "total": 27.402468378295737
+   "draw": 18.349646202276503,
+   "bloom": 1.421525993795619,
+   "finish": 9.296097890676576,
+   "total": 29.0672700867487
   }
  },
  "adapter": {
@@ -51,6 +74,6 @@
  },
  "adapter_kind": "swiftshader",
  "problems": [],
- "commit": "020276fd76799f716729859db4089320c465f89c",
+ "commit": "c667ebe5e4415cf54f24ffa0edb783b6a461162a",
  "does_not_prove": "Frame time on this adapter only; the criterion's time is the RTX 4090's."
 }

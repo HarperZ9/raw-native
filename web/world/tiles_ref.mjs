@@ -8,7 +8,15 @@ export function tilesRef(map, image, { ox = 0, oy = 0, s = 1, opacity = 1 }, W, 
     if (!L.visible) continue;
     const op = opacity * (L.opacity ?? 1);
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-      const mx = (x + 0.5 - ox) / s, my = (y + 0.5 - oy) / s;
+      let mx = Math.fround(Math.fround(x + 0.5 - ox) / s), my = Math.fround(Math.fround(y + 0.5 - oy) / s);
+      if (map.orientation === "isometric") {
+        // Fround each step, as the GPU computes in f32.
+        const f = Math.fround, a = f(mx / f(map.tileW * 0.5)), b = f(my / f(map.tileH * 0.5));
+        const gx = f(f(a + b) * 0.5), gy = f(f(b - a) * 0.5);
+        if (gx < 0 || gy < 0) continue;
+        const cx = Math.floor(gx), cy = Math.floor(gy), fx = f(gx - cx), fy = f(gy - cy);
+        mx = f(cx * map.tileW + f(f(f(fx - fy) + 1) * 0.5) * map.tileW); my = f(cy * map.tileH + f(f(fx + fy) * 0.5) * map.tileH);
+      }
       if (mx < 0 || my < 0) continue;
       const cx = Math.floor(mx / map.tileW), cy = Math.floor(my / map.tileH);
       if (cx >= map.width || cy >= map.height) continue;
@@ -20,7 +28,8 @@ export function tilesRef(map, image, { ox = 0, oy = 0, s = 1, opacity = 1 }, W, 
       if (fl & 4) [fx, fy] = [fy, fx];
       if (fl & 1) fx = map.tileW - 1 - fx;
       if (fl & 2) fy = map.tileH - 1 - fy;
-      const tx = mg + (local % cols) * (map.tileW + sp) + fx, ty = mg + Math.floor(local / cols) * (map.tileH + sp) + fy;
+      const tw = ts.tileW || map.tileW, th = Math.max(ts.tileH || map.tileH, map.tileH);
+      const tx = mg + (local % cols) * (tw + sp) + fx, ty = mg + Math.floor(local / cols) * (th + sp) + fy + (th - map.tileH);
       if (tx >= image.width || ty >= image.height) continue;
       const j = 4 * (ty * image.width + tx), a = image.data[j + 3] / 255, o = 4 * (y * W + x);
       const c = [image.data[j] / 255 * a * op, image.data[j + 1] / 255 * a * op, image.data[j + 2] / 255 * a * op, a * op];
