@@ -106,7 +106,8 @@ def run(cli: str, adapter: str) -> dict:
                 b.close()
         finally:
             srv.shutdown()
-    res.update({"adapter_kind": adapter, "grid_sha256": grid_sha, "table_problems": table_problems})
+    commit = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, cwd=ROOT).stdout.strip()
+    res.update({"adapter_kind": adapter, "commit": commit, "grid_sha256": grid_sha, "table_problems": table_problems})
     return res
 
 
