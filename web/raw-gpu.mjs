@@ -18,6 +18,8 @@ import { FrameGraph, Access } from "./frame-graph.mjs";
 export { FrameGraph, Access };
 export const VERSION = "0.6.0";
 
+const isBuffer = (r) => typeof GPUBuffer !== "undefined" ? r instanceof GPUBuffer : typeof r.mapAsync === "function";
+
 export class HostUnavailable extends Error {}
 
 // Split a WGSL file into its passes: the code before the first "//@pass name"
@@ -151,8 +153,8 @@ class Host {
       vertex: { module, entryPoint: "vs" }, fragment: { module, entryPoint: "fs", targets: [{ format, blend: blend || undefined }] } });
   }
   #id(o) { let i = this.ids.get(o); if (!i) { i = this.nextId++; this.ids.set(o, i); } return i; }
-  // Bind groups are cached per pipeline and buffer list, so a steady frame
-  // creates none.
+  // Bind groups are cached per pipeline and resource list, so a steady frame
+  // creates none. Entries are buffers, texture views or samplers, in binding order.
   bind(pipeline, buffers) {
     let m = this.bindCache.get(pipeline);
     if (!m) { m = new Map(); this.bindCache.set(pipeline, m); }
@@ -160,7 +162,7 @@ class Host {
     let g = m.get(key);
     if (!g) {
       g = this.device.createBindGroup({ layout: pipeline.getBindGroupLayout(0),
-        entries: buffers.map((buffer, binding) => ({ binding, resource: { buffer } })) });
+        entries: buffers.map((r, binding) => ({ binding, resource: isBuffer(r) ? { buffer: r } : r })) });
       m.set(key, g);
     }
     return g;

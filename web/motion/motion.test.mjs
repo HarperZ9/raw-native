@@ -5,7 +5,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { parsePath, circle, rect, bounds, area, length, trim, resample, lengths } from "./path.mjs";
+import { parsePath, circle, rect, bounds, area, length, trim, resample, lengths, dash, line } from "./path.mjs";
+import { strokePieces, strokeOutline, PIECE } from "./stroke.mjs";
+import { exactEdges } from "./edges.mjs";
+import { paintAt, packPaint, PAINT } from "./paint.mjs";
 import { morph } from "./morph.mjs";
 import { text, tex, fmt } from "./text.mjs";
 import { ease, span, track, timeline, narrationCues, countUp, lerpLog, rng } from "./timeline.mjs";
@@ -204,4 +207,57 @@ test("audio: superstack.sound/1 quantize and loudness vectors, and the shared mi
   const pcm = quantizeS16(mix);
   assert.equal(createHash("sha256").update(Buffer.from(pcm.buffer)).digest("hex"), F.pcm_sha256, "JS mix differs from the Python mix");
   near(integratedLufs(mix, F.rate, 2), F.integrated_lufs, 1e-9);
+});
+
+test("dashes: pattern, offset, zero-length dots and an odd pattern repeated", () => {
+  const pts = (sh) => sh.map((c) => [...c.pts].map((v) => +v.toFixed(3)));
+  assert.deepEqual(pts(dash(line(0, 0, 40, 0), [10, 5])), [[0, 0, 10, 0], [15, 0, 25, 0], [30, 0, 40, 0]]);
+  assert.deepEqual(pts(dash(line(0, 0, 40, 0), [10, 5], 12))[0], [3, 0, 13, 0]);
+  assert.deepEqual(pts(dash(line(0, 0, 50, 0), [0, 20])), [[0, 0, 0, 0], [20, 0, 20, 0], [40, 0, 40, 0]]);
+  // [10] repeats as [10, 10].
+  assert.deepEqual(pts(dash(line(0, 0, 50, 0), [10])), [[0, 0, 10, 0], [20, 0, 30, 0], [40, 0, 50, 0]]);
+  // Dashes follow corners: the second dash turns the corner of an L.
+  const L = dash([{ pts: Float32Array.from([0, 0, 10, 0, 10, 10]), closed: false }], [6, 2]);
+  assert.deepEqual(pts(L)[1], [8, 0, 10, 0, 10, 4]);
+});
+
+test("joins and caps: miter tip, miter limit to bevel, square and round caps", () => {
+  // A right-angle turn: the miter tip is hw * sqrt(2) from the vertex, on the outer side.
+  const P = strokePieces([{ pts: Float32Array.from([0, 0, 10, 0, 10, 10]), closed: false }], { hw: 1, join: "miter", cap: "butt", miterLimit: 4 });
+  assert.equal(P.length / PIECE, 3);                     // two segments and one join
+  const j = P.subarray(2 * PIECE, 3 * PIECE);
+  assert.equal(j[1], 4);                                 // a quad
+  near(j[8], 11); near(j[9], -1);                        // the tip at (11, -1)
+  // A hairpin past the limit becomes a bevel triangle.
+  const B = strokePieces([{ pts: Float32Array.from([0, 0, 10, 0, 0, 1]), closed: false }], { hw: 1, join: "miter", miterLimit: 4 });
+  assert.equal(B[2 * PIECE + 1], 3);
+  // A square cap extends hw past each end; a round cap is a disc.
+  const S = strokePieces(line(0, 0, 10, 0), { hw: 2, cap: "square" });
+  const xs = [...S.subarray(PIECE + 4, PIECE + 12)].filter((_, i) => i % 2 === 0);
+  near(Math.min(...xs), -2);
+  const R = strokePieces(line(0, 0, 10, 0), { hw: 2, cap: "round" });
+  assert.equal(R[PIECE], 1); near(R[PIECE + 2], 2);
+  // A zero-length subpath draws only with round or square caps.
+  assert.equal(strokePieces(line(5, 5, 5, 5), { hw: 2, cap: "butt" }).length, 0);
+  assert.equal(strokePieces(line(5, 5, 5, 5), { hw: 2, cap: "round" })[0], 1);
+  // The outline winds every piece the same way.
+  for (const c of strokeOutline(dash(circle(50, 50, 30), [8, 4]), { hw: 3, join: "round", cap: "square" })) assert.ok(area(c) > 0);
+});
+
+test("exact edges: overlapping squares keep only their outer boundary", () => {
+  const sq = (x, y) => ({ pts: Float32Array.from([x, y, x + 10, y, x + 10, y + 10, x, y + 10]), closed: true });
+  const E = exactEdges([sq(0, 0), sq(5, 5)], "nonzero");
+  let boundary = 0, internal = 0;
+  for (let i = 0; i < E.kind.length; i++) {
+    const L = Math.hypot(E.segs[4 * i + 2] - E.segs[4 * i], E.segs[4 * i + 3] - E.segs[4 * i + 1]);
+    if (E.kind[i] === 0) internal += L; else boundary += L;
+  }
+  near(boundary, 60); near(internal, 20);              // union perimeter 60; the overlap square's inner sides 20
+});
+
+test("paints: gradient stops, pad, and the image clamp", () => {
+  const out = { a: new Float32Array(PAINT * 2), n: 0, push(...v) { for (const x of v) this.a[this.n++] = x; } };
+  const i = packPaint(out, { linear: [0, 0, 100, 0], stops: [[0, "#000000"], [0.5, "#ff0000"], [1, "#ffffff"]] }, 1, 0, 0);
+  const at = (x) => paintAt(out.a, i * PAINT, x, 0).map((v) => +v.toFixed(3));
+  assert.deepEqual(at(-10), [0, 0, 0, 1]); assert.deepEqual(at(25), [0.5, 0, 0, 1]); assert.deepEqual(at(75), [1, 0.5, 0.5, 1]); assert.deepEqual(at(500), [1, 1, 1, 1]);
 });
