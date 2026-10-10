@@ -1,0 +1,44 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "M3 exit criterion 2 (TAA ghosting and RMSE against the supersampled reference) and dated addition 8 (GTAO and SSR each against a CPU reference)",
+ "written": "2026-10-10, before the implementation and the first run",
+ "lessons_applied": "From the shadow checks: every comparison carries a coverage bound so it cannot pass over nothing, every metric has a control that must fail it, and scene cameras are fixed here, before any result.",
+ "scenes": "At 256 x 256 with the perspective-correct G-buffer: the built-in test scene from its own camera and from the near camera of evidence/m3-shadows-bounds.json method note 5 (eye 1.8, 3.2, 2.4 toward 0.8, 0.2, 1.0), Suzanne, and the helmet role's model (evidence/m3-scene-models.json). TAA uses the built-in test scene at 128 x 128.",
+ "gtao": {
+  "model": "Ground-truth-based ambient occlusion (Jimenez, Wu, Pesce, Jarabo 2016), cosine-weighted visibility from the horizon angles on 16 fixed slice directions, 16 steps a side, world radius 0.5, projected-normal integration (their eq. 10), no falloff, no bent normal, no multi-bounce term, no denoiser. Input: the view-space depth and normal of the G-buffer.",
+  "reference": "Ray casts on raw/renderer/bvh.hpp: 1,024 stratified cosine-weighted directions a pixel from the surface point (offset 1e-3 along the normal); a direction is occluded when it hits within 0.5. Visibility is the unoccluded fraction.",
+  "checks": {
+   "vs_reference": {"what": "GTAO against the ray-cast visibility on G-buffer pixels at least 8 pixels from the border", "bound": "mean |difference| <= 0.05 and 95th percentile <= 0.15 per scene (GTAO is screen-space; this records how good it is)"},
+   "coverage": {"bound": "at least 2,000 pixels per scene with reference visibility below 0.9"},
+   "gpu_parity": {"what": "the WGSL pass against the CPU GTAO on the same G-buffer", "bound": "|gpu - cpu| <= 1e-3 on all but 0.1% of pixels"},
+   "controls": {"what": "(a) visibility 1 everywhere against the reference; (b) the GPU pass on a depth buffer with the scene's last mesh moved 1% of the scene extent", "bound": "(a) fails the vs_reference bound, (b) fails gpu_parity"}
+  }
+ },
+ "ssr": {
+  "model": "Screen-space mirror reflections: for each G-buffer pixel, the reflected view ray marched in screen space over the view depth (up to 20 units, 64 linear steps, then 8 bisection steps), with a thickness of 0.2 units; the result is a hit pixel or a miss.",
+  "reference": "A BVH ray from the surface point (offset 1e-3 along the normal) along the mirror direction; its first hit H. A pixel is resolvable when H exists, projects inside the screen, and the G-buffer's surface at that pixel lies within two pixel footprints of H (H is visible).",
+  "checks": {
+   "hits": {"what": "resolvable pixels whose SSR hit position (the G-buffer position at the hit pixel) lies within two pixel footprints of H; a footprint is 2 d tan(fovy / 2) / height at H's view depth d", "bound": "at least 90% of resolvable pixels per scene"},
+   "false_hits": {"what": "pixels that are not resolvable where SSR reports a hit", "bound": "at most 10% of those pixels per scene"},
+   "coverage": {"bound": "at least 2,000 resolvable pixels per scene"},
+   "gpu_parity": {"what": "the WGSL pass against the CPU SSR on the same G-buffer", "bound": "the same hit pixel, or both a miss, on all but 0.1% of pixels"},
+   "controls": {"what": "(a) SSR with unlimited thickness against the false_hits bound; (b) the GPU pass on a depth buffer with the scene's last mesh moved 1% of the scene extent", "bound": "(a) fails false_hits, (b) fails gpu_parity"}
+  }
+ },
+ "taa": {
+  "model": "Temporal anti-aliasing written for this engine: Halton(2, 3) sub-pixel jitter over 16 phases, history reprojected by per-pixel motion (camera and object motion from the scene), sampled bilinearly, clipped to the YCoCg colour box of the current 3 x 3 neighbourhood (mean plus or minus 1.25 standard deviations), blended with weight 0.1 for the current frame; a disoccluded or off-screen history sample takes the current frame. Shading is Lambert from the sun plus 0.2 ambient on linear albedo, background 0.05; no tone map.",
+  "reference": "Each frame supersampled on the CPU rasterizer at 16 x 16 stratified samples per pixel, box filter.",
+  "sequences": {
+   "pan": "64 frames; the camera pans along its right vector by 0.3 pixels a frame; the scene is static.",
+   "moving_box": "32 frames; the camera is fixed; the box moves along +x by 1.5 pixels a frame (in screen space at its centre)."
+  },
+  "checks": {
+   "rmse": {"what": "pan sequence, frames 32 to 63: mean RMSE of the TAA frame against its supersampled reference, and of the unjittered single-sample frame against the same reference", "bound": "TAA RMSE <= 0.5 x the single-sample RMSE"},
+   "ghosting": {"what": "moving_box sequence, frames 16 to 31: the trail is the pixels the box covers in none of the reference at frame f but in some reference frame from f - 8 to f - 1; ghosting G = mean |TAA - reference| over the trail", "bound": "G <= 0.03"},
+   "coverage": {"bound": "at least 500 trail pixels summed over frames 16 to 31"},
+   "gpu_parity": {"what": "the WGSL resolve fed the CPU's frames, motion and its own history, frame by frame, against the CPU resolve", "bound": "|gpu - cpu| <= 1e-3 per channel on all but 0.1% of pixels in every frame"},
+   "controls": {"what": "(a) TAA without jitter against the rmse bound; (b) TAA without the colour clip against the ghosting bound; (c) the GPU resolve with its history shifted one pixel", "bound": "(a) fails rmse, (b) fails ghosting, (c) fails gpu_parity"}
+  }
+ },
+ "does_not_prove": "Frame times; rough (glossy) reflections; AO or reflections of off-screen or hidden geometry, which screen-space methods cannot see; TAA under fast motion, thin geometry, transparency or animated textures; that the stand-in scenes cover a Sponza-class level."
+}
