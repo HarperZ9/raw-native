@@ -1,0 +1,10 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/hw-h1-7-bounds.json (committed 2cc03ec before any code or run; method note 1 committed 5f8a5b0 before its control ran)",
+ "runs": [
+  {"run": 1, "adapter": "SwiftShader Vulkan 1.3, validation on", "sizes": [1024], "result": "pass: fallback only (no cooperative matrix); worst element 0.0015 of its bound; RMS against a sequential fp32 CPU sum 1.0 (the fallback's order matches it exactly). Showed that no control ran on this adapter, which led to method note 1."},
+  {"run": 2, "adapter": "same", "sizes": [1024, 2048], "result": "pass: fallback within the bound (worst 0.0015, 0.0011 of it); the fallback skip-K control fails as required (24,117 and 22,722 of 24,576 checked elements over the bound); validation errors 0. Timings recorded, not a claim (3.3 s and 22.3 s a dispatch on the CPU adapter)."},
+  {"run": "forced off", "adapter": "same", "sizes": [1024], "result": "pass: path 'fallback only'"}
+ ],
+ "pending": "RTX 4090 under D:/gpu.lock.d (mission-control 2026-10-10-engine-hw/gpu/hw_h1_7_rtx_job.sh): correctness with validation on, then timings with validation off, sizes 1024, 2048, 4096"
+}
