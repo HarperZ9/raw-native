@@ -14,6 +14,7 @@
 <canvas id="c" width="16" height="16"></canvas>
 <script type="module">
 import { createEngine } from "./engine.mjs";
+import "../shaders/post.mjs";   // the shader library's looks, as post passes
 const q = new URLSearchParams(location.search);
 const W = +q.get("w") || 1920, H = +q.get("h") || 1080, fps = +q.get("fps") || 30;
 const transport = q.get("transport") || "webcodecs";

@@ -87,6 +87,10 @@
     "aces2_ocio_de": {
       "json": "evidence/m1-colour-ocio.json",
       "pointer": "/pipelines/aces2-sdr~1srgb/max"
+    },
+    "post_gate": {
+      "json": "evidence/m1-post-passes-swiftshader.json",
+      "pointer": "/passes"
     }
   },
   "scenes": [
@@ -105,6 +109,14 @@
       "title": "What it draws",
       "poster_at": 0.55,
       "captions_burned": true
+    },
+    {
+      "id": "looks",
+      "kind": "explainer",
+      "module": "scenes/looks.scene.mjs",
+      "title": "Looks",
+      "poster_at": 0.3,
+      "captions_burned": false
     },
     {
       "id": "first-run",

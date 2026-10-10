@@ -24,6 +24,7 @@
 </main>
 <script type="module">
   import { mountPlayer } from "./engine/motion/player.mjs";
+  import "./engine/shaders/post.mjs";   // the shader library's looks, as post passes
   const media = await (await fetch("media.json")).json().catch(() => ({ files: {} }));
   const files = Object.keys(media.files || {});
   const video = files.find((f) => /-1080p\.mp4$/.test(f)) || files.find((f) => /\.mp4$/.test(f));
