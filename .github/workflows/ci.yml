@@ -184,6 +184,13 @@ jobs:
           build/Release/raw_native_cli.exe --gpu --out gpu-warp --width 128 --height 128 --prev-eye 4.3,4,5.7 >/dev/null
           grep -q '"verdict":"verified"' gpu-warp/gpu_certificate.json
           grep -q '"description":"Microsoft Basic Render Driver"' gpu-warp/gpu_certificate.json
+      - name: The glTF material model on WARP matches its float64 reference within the committed bound (M3 materials)
+        shell: bash
+        env:
+          RAW_NATIVE_D3D12_WARP: "1"
+        run: |
+          build/Release/gpu_pbr_parity.exe pbr-warp.json
+          build/Release/raw_native_cli.exe pbr-parity | grep -q '"pass": true'
       - name: Textures, samplers and raster passes on WARP match the CPU sampler reference (M2 criterion 3)
         shell: bash
         env:
@@ -302,6 +309,8 @@ jobs:
         run: |
           python tools/assets/fetch_gltf.py gltf-models
           python tests/web/gpu_models.py gltf-models --dir build-wasm-gpu --adapter swiftshader --out gltf-webgpu.json
+      - name: The WebGPU build's material model matches its float64 reference in Chrome on SwiftShader (M3 materials)
+        run: python tests/web/rhi_texture.py --command pbr-parity --dir build-wasm-gpu --adapter swiftshader --out pbr-webgpu.json
       - name: The default native build carries no GPU code
         run: |
           ! grep -q "emdawnwebgpu\|wgpu" build/raw_native_cli

@@ -45,8 +45,25 @@ double charlieD(D3 h, double sheenRoughness) {
     const double s2 = h.x * h.x + h.y * h.y;
     return (2.0 + inv) * std::pow(s2, 0.5 * inv) / (2.0 * kPi);
 }
-// Neubelt and Pettineo 2013, as Filament's cloth model uses it.
-double neubeltV(double muO, double muI) { return 1.0 / (4.0 * (muI + muO - muI * muO)); }
+// The specification's fit: L(x) = a / (1 + b x^c) + d x + e, coefficients mixed by (1 - alpha)^2.
+// (The Neubelt visibility, tried first, is not bounded: its albedo passes 1 at grazing
+// angles, and the albedo scaling then went negative; found by the GPU parity dump, 2026-10-10.)
+namespace {
+double sheenL(double x, double a) {
+    const double t = (1.0 - a) * (1.0 - a);
+    const double A = 21.5473 + (25.3245 - 21.5473) * t, B = 3.82987 + (3.32435 - 3.82987) * t;
+    const double C = 0.19823 + (0.16801 - 0.19823) * t, D = -1.97760 + (-1.27393 + 1.97760) * t;
+    const double E = -4.32054 + (-4.85967 + 4.32054) * t;
+    return A / (1.0 + B * std::pow(x, C)) + D * x + E;
+}
+double sheenLambda(double c, double a) {
+    return std::fabs(c) < 0.5 ? std::exp(sheenL(c, a)) : std::exp(2.0 * sheenL(0.5, a) - sheenL(1.0 - c, a));
+}
+}  // namespace
+double charlieV(double muO, double muI, double sheenRoughness) {
+    const double r = std::clamp(sheenRoughness, kMinSheenRoughness, 1.0), a = r * r;
+    return 1.0 / ((1.0 + sheenLambda(muO, a) + sheenLambda(muI, a)) * (4.0 * muO * muI));
+}
 
 double walterBtdf(D3 in, double etaIn, D3 out, double etaOut, double ax, double ay, double f0) {
     if (in.z * out.z >= 0.0) return 0.0;

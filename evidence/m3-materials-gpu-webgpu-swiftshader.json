@@ -1,0 +1,17 @@
+{
+ "check": "m3 materials gpu_parity",
+ "backend": "webgpu",
+ "adapter": "",
+ "error": "",
+ "cases": 4096,
+ "seed": 20261010,
+ "bound": "|gpu - ref| <= 1e-3 |ref| + 1e-5",
+ "worst_ratio_to_bound": 0.4558,
+ "worst_abs": 1.039e-05,
+ "worst_case": 2922,
+ "worst_family": 2,
+ "values_outside": 0,
+ "control_no_multiple_scattering_worst_ratio": 814.170,
+ "control_fails": true,
+ "pass": true
+}

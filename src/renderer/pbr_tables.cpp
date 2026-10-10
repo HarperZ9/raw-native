@@ -61,12 +61,16 @@ double sheenAlbedo(double mu, double rs, const std::vector<double>& x, const std
             D3 h{o.x + in.x, o.y + in.y, o.z + in.z};
             const double l = std::sqrt(h.x * h.x + h.y * h.y + h.z * h.z);
             h = {h.x / l, h.y / l, h.z / l};
-            s += w[i] * w[j] * charlieD(h, rs) * neubeltV(mu, ci) * ci * si;
+            s += w[i] * w[j] * charlieD(h, rs) * charlieV(mu, ci, rs) * ci * si;
         }
     }
     return s * 2.0 * kPi * 0.5 * kPi;      // phi over [0, pi] doubled; theta over [0, pi/2]
 }
 
+// The sheen table's view axis is u = sqrt(mu): the sheen albedo rises from 0 at mu = 0 to its
+// peak within a few hundredths, which a grid in theta sampled too coarsely (the albedo
+// scaling then let the grazing furnace reach 1.049, 2026-10-10).
+double sheenMu(int j) { const double u = double(j) / (Tables::kSheenMu - 1); return u * u; }
 double gridTheta(int j, int n) { return -Tables::kThetaPad + (kPi / 2 + Tables::kThetaPad) * j / (n - 1); }
 double gridRough(int i, int n) { return Tables::kRoughMax * i / (n - 1); }
 
@@ -113,13 +117,20 @@ Tables::Tables()
     brdf::gaussLegendre01(96, gx, gw);
     for (int i = 0; i < kSheenRough; ++i)
         for (int j = 0; j < kSheenMu; ++j)
-            sh_[std::size_t(i) * kSheenMu + j] = sheenAlbedo(std::max(std::cos(gridTheta(j, kSheenMu)), 1e-4), gridRough(i, kSheenRough), gx, gw);
+            sh_[std::size_t(i) * kSheenMu + j] = sheenAlbedo(std::max(sheenMu(j), 1e-4), gridRough(i, kSheenRough), gx, gw);
     buildAnisotropic();
 }
 double Tables::A(double mu, double r) const { return read2(a_, kTheta, kRough, mu, r); }
 double Tables::B(double mu, double r) const { return read2(b_, kTheta, kRough, mu, r); }
 double Tables::Aavg(double r) const { return read1(aavg_, r); }
 double Tables::Bavg(double r) const { return read1(bavg_, r); }
-double Tables::Sh(double mu, double r) const { return read2(sh_, kSheenMu, kSheenRough, mu, r); }
+double Tables::Sh(double mu, double r) const {
+    const double x = std::sqrt(std::clamp(mu, 0.0, 1.0)) * (kSheenMu - 1);
+    const double y = std::clamp(r / kRoughMax * (kSheenRough - 1), 0.0, kSheenRough - 1.0);
+    const int x0 = std::min(int(x), kSheenMu - 2), y0 = std::min(int(y), kSheenRough - 2);
+    const double fx = x - x0, fy = y - y0;
+    const auto at = [&](int i, int j) { return sh_[std::size_t(i) * kSheenMu + j]; };
+    return (at(y0, x0) * (1 - fx) + at(y0, x0 + 1) * fx) * (1 - fy) + (at(y0 + 1, x0) * (1 - fx) + at(y0 + 1, x0 + 1) * fx) * fy;
+}
 
 }  // namespace raw::pbr

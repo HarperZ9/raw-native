@@ -29,7 +29,9 @@ void grid(std::vector<Point>& p) {
         Material m = white(); m.roughness = kr * 0.2; m.anisotropy = an;
         p.push_back({"furnace_anisotropic", m, km * 0.1, az * kPi / 180.0, {}});
     }
-    const double mus[] = {0.1, 0.3, 0.5, 0.7, 0.9, 1.0};
+    // Added 2026-10-10 after the GPU parity dump showed a negative sheen weighting at mu 0.06:
+    // the grazing views 0.02 and 0.05 join every conservation family (a tightening).
+    const double mus[] = {0.02, 0.05, 0.1, 0.3, 0.5, 0.7, 0.9, 1.0};
     for (int base = 0; base < 2; ++base) {
         Material b = white(); b.roughness = 0.5; b.metallic = base == 0 ? 1.0 : 0.0;
         for (double mu : mus) {

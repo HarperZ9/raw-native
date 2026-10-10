@@ -6,6 +6,18 @@ the day the release was published on GitHub, in UTC.
 
 ## Unreleased
 
+- **Physically based materials** (roadmap M3). The glTF 2.0 material model with the ratified
+  material extensions (ior, specular, clearcoat, sheen, transmission, volume, anisotropy,
+  iridescence, emissive strength), as a float64 reference and as WGSL for the GPU.
+  - White furnaces: metal within 2.9e-4, a white base under the dielectric layer within 4.7e-4,
+    anisotropic metal within 3.4e-3. No layered combination reflects more than 1 + 3.7e-4.
+  - Reciprocity holds to 3.3e-14 over 20,000 random cases, and the volume BTDF obeys
+    generalized reciprocity.
+  - The GPU path matches the reference on D3D12 WARP and on WebGPU (SwiftShader) at under half
+    the committed bound, over 4,096 cases. `raw_native_cli pbr-parity` runs the check.
+  - Iridescence sums eight harmonics where the extension text sums two; that removes a 0.32
+    colour error on metals at grazing angles against a spectral reference.
+
 - **Sound engine** (`web/sound/`, design in `docs/sound/DESIGN.md`). A voice-first mix
   for films and interactive pages: narration, a generated score bed ducked under the
   voice, nine procedural cue types bound to the scene timeline and panned to the

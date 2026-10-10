@@ -14,7 +14,7 @@
 //             Lambertian base weighted by (1 - E_s(mu_o))(1 - E_s(mu_i)) / (1 - E_s_avg);
 //   clearcoat an isotropic GGX layer (f0 0.04) over everything, weighting what is below
 //             by (1 - c E_c(mu_o))(1 - c E_c(mu_i));
-//   sheen     Charlie distribution with Neubelt visibility, weighting what is below by
+//   sheen     Charlie distribution and visibility, weighting what is below by
 //             min(1 - s E_sh(mu_o), 1 - s E_sh(mu_i));
 //   transmission thin-walled (mirrored specular lobe) or, with volume, the rough
 //             dielectric interface BTDF (Walter et al. 2007) and Beer-Lambert attenuation;
@@ -117,7 +117,9 @@ double smithV(D3 wo, D3 wi, double ax, double ay);      // G2 / (4 |mu_o| |mu_i|
 double smithG2(D3 wo, D3 wi, double ax, double ay);
 double schlick(double f0, double f90, double cosine);
 double charlieD(D3 h, double sheenRoughness);
-double neubeltV(double muO, double muI);
+// Charlie visibility (Estevez and Kulla 2017, the fitted lambda KHR_materials_sheen gives):
+// 1 / ((1 + lambda(mu_o) + lambda(mu_i)) 4 mu_o mu_i), alpha = sheenRoughness^2.
+double charlieV(double muO, double muI, double sheenRoughness);
 // Rough dielectric transmission (Walter et al. 2007): light arrives along `in` from the
 // side of index etaIn and leaves along `out` on the side of index etaOut; in and out are
 // on opposite sides. f0 is the Schlick reflectance taken at the cosine on the side of

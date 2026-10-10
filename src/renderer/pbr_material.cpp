@@ -125,7 +125,7 @@ Terms evalTerms(const Material& m, const Tables& t, D3 wo, D3 wi) {
     if (sh > 0.0) {
         aSheen = std::min(1.0 - sh * t.Sh(wo.z, m.sheenRoughness), 1.0 - sh * t.Sh(std::fabs(wi.z), m.sheenRoughness));
         Rgb lobe{};
-        if (wi.z > 0.0) lobe = m.sheenColor * (charlieD(norm({wo.x + wi.x, wo.y + wi.y, wo.z + wi.z}), m.sheenRoughness) * neubeltV(wo.z, wi.z));
+        if (wi.z > 0.0) lobe = m.sheenColor * (charlieD(norm({wo.x + wi.x, wo.y + wi.y, wo.z + wi.z}), m.sheenRoughness) * charlieV(wo.z, wi.z, m.sheenRoughness));
         out = {out.specular * aSheen, out.coat, out.smooth * aSheen + lobe, out.transmission * aSheen};
     }
     const double c = std::clamp(m.clearcoat, 0.0, 1.0);

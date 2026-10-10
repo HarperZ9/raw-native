@@ -104,6 +104,28 @@ Exit criteria:
 4. The Studio opens a glTF file, renders it, and shows the CPU reference, the error map and the certificate (A4).
 5. The renderer and scene APIs and the plugin C ABI are tagged as a numbered snapshot, documented, with an API dump checked in CI and a compatibility test suite that runs against the snapshot. A later break moves to the next snapshot with a migration note (ADR 0015).
 
+Dated additions (2026-10-10). They add checks and never loosen the five above:
+
+6. **Materials.** The glTF 2.0 material model with KHR_materials_ior, _specular, _clearcoat, _sheen,
+   _transmission, _volume, _anisotropy, _iridescence and _emissive_strength has a float64 CPU reference
+   (`raw/renderer/pbr.hpp`) that passes white furnaces, conservation and reciprocity, and the WGSL
+   path (`pbr.wgsl`) matches it on D3D12 and WebGPU within the bounds in
+   `evidence/m3-materials-bounds.json`, with a control that must fail.
+7. **Lighting.** Punctual and area lights in physical units, clustered light assignment against a
+   brute-force list, and image-based lighting against importance-sampled integration, each with
+   bounds committed before its first run.
+8. **Shadows, AO, reflections, TAA.** Cascaded and contact shadows against CPU ray-cast visibility;
+   GTAO and SSR each against a CPU reference; TAA as in criterion 2, with no binary upscaler.
+9. **Baked lighting.** Source-style directional lightmaps (radiosity normal mapping) and ambient cubes
+   (Mitchell, McTaggart and Green 2006) as an optional path, baked by the CPU ray tracer, with the
+   bake's error against a converged path trace recorded.
+
+Licence note on criterion 1 (2026-10-10). `DamagedHelmet` derives from a CC-BY-NC-4.0 model and the
+Khronos `Sponza` is under the CRYENGINE agreement, so neither can ship in this repository's evidence
+or media. The proposal, for the author's decision, keeps the criterion's difficulty: `FlightHelmet`
+(CC0-1.0) in place of `DamagedHelmet`, and an interior scene of Sponza's size under CC0 or CC-BY in
+place of `Sponza`, named before its first run.
+
 ## M4: Scale and reach
 
 Scope: Vulkan (A1), native window, swapchain and HDR output, clustered lighting, GPU culling, LOD and meshlets by compute, skeletal and morph animation, general particles, Tracy zones, and runtime stage G2 (audio playback, animation state machines, event timelines).
