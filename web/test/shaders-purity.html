@@ -1,0 +1,31 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>CRT purity: GPU against the CPU reference</title>
+<link rel="icon" href="data:,">
+<!-- Run by tests/web/shaders_parity.py --shader purity. Each case of
+     evidence/shaders-purity-parity-bounds.json through purity.mjs (CPU, float64) and
+     purity/gpu.mjs, compared as 8-bit sRGB codes. -->
+<script type="module">
+import { createHost } from "../raw-gpu.mjs";
+import { resolvePurity, runPurity, displayEncode8 } from "../shaders/purity/purity.mjs";
+import { createGpuPurity } from "../shaders/purity/gpu.mjs";
+import { displayLinear } from "../shaders/lab/sources.mjs";
+import { codeStats } from "../shaders/lab/gpu-kit.mjs";
+const q = new URLSearchParams(location.search);
+try {
+  const host = await createHost({ timing: false });
+  const gpuErrors = []; host.device.onuncapturederror = (e) => gpuErrors.push(e.error.message);
+  const bounds = await (await fetch("../../evidence/shaders-purity-parity-bounds.json")).json(), { width: W, height: H } = bounds.output;
+  const cases = [];
+  for (const c of bounds.cases) {
+    if (q.get("case") && q.get("case") !== c.id) continue;
+    const src = displayLinear(c.frame, W, H), size = { w: W, h: H };
+    const want = displayEncode8(runPurity(resolvePurity(c.preset), src, c.t));
+    const g = await createGpuPurity(host, c.preset, {}, size); g.frame(src.data, c.t);
+    const got = (await g.read()).packed; g.destroy();
+    cases.push({ id: c.id, ...codeStats(want, got) });
+  }
+  await host.done();
+  window.__result = { bounds: bounds.bounds, cases, adapter: host.info, gpuErrors };
+} catch (e) { window.__result = { error: String(e && e.stack || e) }; }
+</script>

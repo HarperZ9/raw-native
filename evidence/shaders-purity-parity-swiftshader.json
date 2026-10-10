@@ -1,0 +1,53 @@
+{
+  "bounds": {
+    "max_abs_code": 2,
+    "p999_abs_code": 1,
+    "mean_abs_code": 0.05
+  },
+  "cases": [
+    {
+      "id": "street-magnetised",
+      "max": 1,
+      "p999": 0,
+      "mean": 4.340277777777778e-06,
+      "over1": 0,
+      "over2": 0,
+      "n": 230400
+    },
+    {
+      "id": "street-degauss-0.3s",
+      "max": 1,
+      "p999": 0,
+      "mean": 0.00019097222222222223,
+      "over1": 0,
+      "over2": 0,
+      "n": 230400
+    },
+    {
+      "id": "white-degauss-0.1s",
+      "max": 1,
+      "p999": 1,
+      "mean": 0.0014583333333333334,
+      "over1": 0,
+      "over2": 0,
+      "n": 230400
+    },
+    {
+      "id": "red-earth-field",
+      "max": 1,
+      "p999": 0,
+      "mean": 4.340277777777778e-06,
+      "over1": 0,
+      "over2": 0,
+      "n": 230400
+    }
+  ],
+  "adapter": {
+    "vendor": "google",
+    "architecture": "swiftshader",
+    "device": "",
+    "description": ""
+  },
+  "gpuErrors": [],
+  "adapter_kind": "swiftshader"
+}
