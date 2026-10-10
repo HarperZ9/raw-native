@@ -11,7 +11,8 @@ const B = JSON.parse(readFileSync(new URL("../../evidence/shaders-fibre-parity-b
 const plate = (w, h, f) => { const d = new Float32Array(w * h * 4); for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) d.set([...f(x, y), 1], (y * w + x) * 4); return { width: w, height: h, data: d }; };
 // A dark drop on light paper; returns the spread of the drop's pigment (suspended plus deposited).
 function spread(over, W = 81, H = 81) {
-  const plan = resolveFibre("cold-press", { paper: [1, 1, 1], ...over }, { w: W, h: H });
+  // edgeDry 0: the drop is itself an edge, and wetness gating (added after the first run) would hold it.
+  const plan = resolveFibre("cold-press", { paper: [1, 1, 1], edgeDry: 0, ...over }, { w: W, h: H });
   const r = runFibre(plan, plate(W, H, (x, y) => (x === 40 && y === 40 ? [0.05, 0.05, 0.05] : [1, 1, 1])), { keep: true });
   let m = 0, sx = 0, sy = 0, vx = 0, vy = 0;
   for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) { const q = r.P[(y * W + x) * 3] + r.D[(y * W + x) * 3]; m += q; sx += q * x; sy += q * y; }
