@@ -75,6 +75,18 @@
     "ao_ss": {
       "image": "out/media/ao_ss.pfm",
       "size": 64
+    },
+    "vector_cases": {
+      "json": "evidence/m1-vector-swiftshader.json",
+      "pointer": "/cases"
+    },
+    "colour_gpu": {
+      "json": "evidence/m1-colour-gpu-swiftshader.json",
+      "pointer": "/pipelines"
+    },
+    "aces2_ocio_de": {
+      "json": "evidence/m1-colour-ocio.json",
+      "pointer": "/pipelines/aces2-sdr~1srgb/max"
     }
   },
   "scenes": [
@@ -84,6 +96,14 @@
       "module": "scenes/ao-check.scene.mjs",
       "title": "Checking the light",
       "poster_at": 0.62,
+      "captions_burned": true
+    },
+    {
+      "id": "what-it-draws",
+      "kind": "explainer",
+      "module": "scenes/what-it-draws.scene.mjs",
+      "title": "What it draws",
+      "poster_at": 0.55,
       "captions_burned": true
     },
     {
