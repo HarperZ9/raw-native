@@ -97,6 +97,12 @@ jobs:
           if command -v python3 >/dev/null && python3 --version >/dev/null 2>&1; then py=python3; else py=python; fi
           "$py" scripts/check_layers.py --selftest
           "$py" scripts/check_layers.py
+      - name: Every third-party file matches third_party/MANIFEST.md (M2 criterion 6)
+        shell: bash
+        run: |
+          if command -v python3 >/dev/null && python3 --version >/dev/null 2>&1; then py=python3; else py=python; fi
+          "$py" scripts/check_third_party.py --selftest
+          "$py" scripts/check_third_party.py
       - name: Every case of the identity matrix matches the committed golden hashes
         # Ten renders (views, sizes, motion, no ray-traced pass, four threads)
         # and the no-GPU answer: every file each one writes, hashed. The golden
