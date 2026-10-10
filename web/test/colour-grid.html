@@ -1,0 +1,44 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Colour grid check</title>
+<!-- M1 exit criterion 2: run every colour pipeline over the committed grid on the GPU and
+     compare with the C++ reference at 8-bit output. Driven by tests/web/colour_grid.py,
+     which serves the grid and the C++ outputs under /_data/. -->
+<script type="module">
+import { PIPELINES, applyColour } from '../colour/colour.mjs';
+const f32 = async url => new Float32Array(await (await fetch(url)).arrayBuffer());
+const json = async url => (await fetch(url)).json();
+async function run() {
+  if (!navigator.gpu) return { error: 'no WebGPU' };
+  let adapter = null;
+  for (let i = 0; i < 20 && !adapter; ++i) { adapter = await navigator.gpu.requestAdapter(); if (!adapter) await new Promise(r => setTimeout(r, 250)); }
+  if (!adapter) return { error: 'no adapter' };
+  const device = await adapter.requestDevice();
+  const info = adapter.info || {};
+  const grid = await f32('/_data/grid.f32');
+  const out = { adapter: `${info.vendor || ''} ${info.architecture || ''} ${info.description || ''}`.trim(), inputs: grid.length / 3, pipelines: {} };
+  for (const name of PIPELINES) {
+    const file = name.replace('/', '_');
+    const tables = name.startsWith('aces2') ? await json(`/_data/${file}.json`) : null;
+    const t0 = performance.now();
+    const gpu = await applyColour(device, name, grid, tables);
+    const ms = performance.now() - t0;
+    const cpu = await f32(`/_data/${file}.f32`);
+    let maxCode = 0, maxAbs = 0, worst = 0, over = 0, nan = 0;
+    for (let i = 0; i < cpu.length; ++i) {
+      if (!Number.isFinite(gpu[i])) { ++nan; continue; }
+      const a = Math.round(255 * Math.min(1, Math.max(0, gpu[i]))), b = Math.round(255 * Math.min(1, Math.max(0, cpu[i])));
+      const dc = Math.abs(a - b), da = Math.abs(gpu[i] - cpu[i]);
+      if (dc > 1) ++over;
+      if (dc > maxCode) { maxCode = dc; worst = Math.floor(i / 3); }
+      maxAbs = Math.max(maxAbs, da);
+    }
+    out.pipelines[name] = { maxCode, maxAbs, over, nan, ms: +ms.toFixed(2),
+      worstInput: Array.from(grid.slice(worst * 3, worst * 3 + 3)), worstGpu: Array.from(gpu.slice(worst * 3, worst * 3 + 3)),
+      worstCpu: Array.from(cpu.slice(worst * 3, worst * 3 + 3)) };
+  }
+  device.destroy();
+  return out;
+}
+run().then(r => { window.__result = r; }, e => { window.__result = { error: String(e && e.stack || e) }; });
+</script>
