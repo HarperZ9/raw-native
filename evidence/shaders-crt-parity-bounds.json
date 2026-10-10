@@ -1,0 +1,24 @@
+{
+  "what": "GPU (web/shaders/crt/gpu.mjs) against the CPU reference (web/shaders/crt/crt.mjs) for the physical CRT",
+  "fixed_before_first_run": "2026-10-10",
+  "frame": "web/shaders/fixtures/testcard.mjs testCard(256, 224), R'G'B' signal values",
+  "output": { "width": 640, "height": 480 },
+  "compare": "8-bit sRGB from the display encode (encode8 / glass.mjs encode8), exposure 1, per channel, all pixels",
+  "cases": [
+    { "id": "pvm-rgb", "preset": "pvm-20", "frames": 1 },
+    { "id": "trinitron-composite-comb", "preset": "trinitron-tv", "frames": 1 },
+    { "id": "slot-composite-notch", "preset": "slot-tv", "frames": 1 },
+    { "id": "slot-pal", "preset": "slot-tv", "overrides": { "signal": { "standard": "pal" } }, "frames": 1 },
+    { "id": "delta-vga", "preset": "vga-14", "frames": 1 },
+    { "id": "bw-p4", "preset": "bw-tv", "frames": 1 },
+    { "id": "radar-p7-persistence", "preset": "radar-p7", "frames": 3 },
+    { "id": "pvm-interlace-zoom", "preset": "pvm-20", "overrides": { "interlace": true, "view": { "zoom": 3 } }, "frames": 2 },
+    { "id": "convergence", "preset": "trinitron-tv", "overrides": { "convergence": { "r": [0.3, 0], "b": [-0.2, 0.1], "radial": 0.6 } }, "frames": 1 }
+  ],
+  "bounds": {
+    "max_abs_code": 3,
+    "p999_abs_code": 1,
+    "mean_abs_code": 0.05
+  },
+  "why_not_bit_equal": "The GPU computes in f32 and the CPU reference in f64; erf, exp and pow differ in the last bits, and a pixel whose footprint edge lands on a stripe or slot boundary can round differently. The bound allows that and nothing structural."
+}

@@ -1,0 +1,108 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>raw-native shaders</title>
+<link rel="icon" href="data:,">
+<style>
+  :root { --ink: #e9e6df; --ground: #0e0e0f; --dim: #8a877f; --rule: #2a2a2c; --mark: #e8a35a; }
+  body { margin: 0; background: var(--ground); color: var(--ink); font: 14px/1.45 "Hanken Grotesk", system-ui, sans-serif; }
+  main { max-width: 1280px; margin: 0 auto; padding: 16px; }
+  h1 { font-size: 20px; font-weight: 600; margin: 4px 0 2px; }
+  p.lede { color: var(--dim); margin: 0 0 14px; max-width: 70ch; }
+  .bar { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 10px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+  label { display: inline-flex; gap: 6px; align-items: center; color: var(--dim); }
+  select, input { accent-color: var(--mark); }
+  [hidden] { display: none !important; }
+  canvas { display: block; width: 100%; height: auto; margin-top: 12px; background: #000; image-rendering: auto; }
+  .stats { font: 12px/1.4 "Conso", ui-monospace, monospace; color: var(--dim); margin-top: 8px; white-space: pre-wrap; }
+  .tabs button { background: none; color: var(--dim); border: 1px solid var(--rule); padding: 6px 12px; font: inherit; cursor: pointer; }
+  .tabs button[aria-pressed="true"] { color: var(--ink); border-color: var(--mark); }
+</style>
+<main>
+  <h1>raw-native shaders</h1>
+  <p class="lede">A cathode-ray tube and a film print, each simulated from its physics on the GPU. Every pass has a CPU reference it matches within one 8-bit code.</p>
+  <div class="tabs"><button id="t-crt" aria-pressed="true">Tube</button> <button id="t-film" aria-pressed="false">Film</button></div>
+  <div class="bar" id="crt-bar">
+    <label>Tube <select id="crt-preset"></select></label>
+    <label>Signal <select id="crt-signal"><option value="">preset</option><option>rgb</option><option>svideo</option><option>composite</option></select></label>
+    <label>Standard <select id="crt-std"><option value="">preset</option><option>ntsc</option><option>pal</option></select></label>
+    <label>Zoom <input id="crt-zoom" type="range" min="1" max="8" step="0.5" value="1"></label>
+    <label><input id="crt-interlace" type="checkbox"> Interlace</label>
+  </div>
+  <div class="bar" id="film-bar" hidden>
+    <label>Stock <select id="film-preset"></select></label>
+    <label>Exposure <input id="film-ev" type="range" min="-4" max="4" step="0.25" value="0"></label>
+    <label>Grain <input id="film-grain" type="range" min="0" max="4" step="0.25" value="1"></label>
+    <label>Gate <input id="film-gate" type="range" min="2" max="24.89" step="0.1" value="24.89"></label>
+  </div>
+  <canvas id="view" width="1280" height="960"></canvas>
+  <div class="stats" id="stats">Starting…</div>
+</main>
+<script type="module">
+import { createHost, HostUnavailable, Access } from "../raw-gpu.mjs";
+import { createGpuCrt } from "./crt/gpu.mjs";
+import { PRESETS } from "./crt/params.mjs";
+import { createGpuFilm } from "./film/gpu.mjs";
+import { FILM_PRESETS } from "./film/film.mjs";
+import { gameFrame } from "./fixtures/game.mjs";
+import { sceneCard } from "./fixtures/scene.mjs";
+
+const $ = (id) => document.getElementById(id), canvas = $("view"), stats = $("stats");
+const PASSES = { crt: ["signal.encode", "signal.separate", "signal.demod", "beam", "halo.down", "halo.conv", "compose", "encode8", "present"],
+  film: ["expose", "halo.down", "halo.conv", "develop", "print", "encode8", "present"] };
+for (const k of Object.keys(PRESETS)) $("crt-preset").add(new Option(k, k));
+for (const k of Object.keys(FILM_PRESETS)) $("film-preset").add(new Option(k, k));
+let mode = "crt", host, runner = null, present = null, building = false, dirty = true, frame = 0;
+
+async function presenter(buf, w, h) {
+  await host.presenter();
+  const g = host.graph(), b = g.importBuffer("packed", buf), c = g.createHost("canvas");
+  g.addPass("present", [[b, Access.StorageRead], [c, Access.Attachment]], (ctx) => ctx.presentFrame(buf, w, h));
+  g.markOutput(c); g.compile();
+  return () => host.frame(g);
+}
+async function rebuild() {
+  building = true; dirty = false;
+  if (runner) runner.destroy();
+  if (mode === "crt") {
+    const W = 1280, H = 960, sig = $("crt-signal").value, std = $("crt-std").value, ov = { view: { zoom: +$("crt-zoom").value }, interlace: $("crt-interlace").checked };
+    if (sig || std) ov.signal = { ...(sig ? { mode: sig } : {}), ...(std ? { standard: std } : {}) };
+    canvas.width = W; canvas.height = H;
+    runner = await createGpuCrt(host, $("crt-preset").value, ov, { w: 256, h: $("crt-interlace").checked ? 448 : 224 }, { w: W, h: H });
+    present = await presenter(runner.packed, W, H);
+  } else {
+    const W = 1280, H = 720, ov = { ev: +$("film-ev").value, grainAmount: +$("film-grain").value, gateWidthMm: +$("film-gate").value };
+    canvas.width = W; canvas.height = H;
+    runner = await createGpuFilm(host, $("film-preset").value, ov, { w: 640, h: 360 }, { w: W, h: H });
+    present = await presenter(runner.packed, W, H);
+  }
+  building = false;
+}
+function tick() {
+  if (dirty && !building) { rebuild().then(() => requestAnimationFrame(tick)); return; }
+  if (runner && !building) {
+    const t = frame / 60;
+    if (mode === "crt") runner.frame(gameFrame(256, runner.plan.src.h, t).data, frame);
+    else { const s = sceneCard(640, 360, t); runner.frame(s.data, frame); }
+    present(); frame++;
+    if (frame % 30 === 0) {
+      // The host keeps a running average per pass name; show only this view's passes.
+      const ms = host.timings(), own = PASSES[mode];
+      if (!ms) stats.textContent = "GPU timestamps not available on this adapter";
+      else {
+        const rows = Object.entries(ms).filter(([k]) => own.includes(k)), total = rows.reduce((a, [, v]) => a + v, 0);
+        stats.textContent = rows.concat([["total", total]]).map(([k, v]) => `${k.padEnd(16)} ${v.toFixed(3)} ms`).join("\n");
+      }
+    }
+  }
+  requestAnimationFrame(tick);
+}
+const mark = () => { dirty = true; };
+for (const id of ["crt-preset", "crt-signal", "crt-std", "crt-zoom", "crt-interlace", "film-preset", "film-ev", "film-grain", "film-gate"]) $(id).addEventListener("change", mark);
+for (const [id, m] of [["t-crt", "crt"], ["t-film", "film"]]) $(id).addEventListener("click", () => {
+  mode = m; $("t-crt").setAttribute("aria-pressed", m === "crt"); $("t-film").setAttribute("aria-pressed", m === "film");
+  $("crt-bar").hidden = m !== "crt"; $("film-bar").hidden = m !== "film"; mark();
+});
+try { host = await createHost({ canvas, timing: true }); requestAnimationFrame(tick); }
+catch (e) { stats.textContent = e instanceof HostUnavailable ? "This browser has no WebGPU, so the live shaders cannot run here." : String(e); console.error("showcase failed to start", e); }
+</script>

@@ -1,0 +1,99 @@
+{
+ "what": "Shader library frame times on SwiftShader (CPU WebGPU) in headless Chrome, median wall per frame, from tests/web/shaders_parity.py --timing",
+ "runs": [
+  {
+   "preset": "pvm-20",
+   "width": 960,
+   "height": 720,
+   "frames": 6,
+   "wall_ms_median": 312.30000000074506,
+   "gpu_ms": {
+    "signal.encode": 8.661815161,
+    "beam": 252.87358837500005,
+    "halo.down": 1.099649317,
+    "halo.conv": 46.34926395000001,
+    "compose": 10.571689777,
+    "encode8": 5.330008366,
+    "total": 324.8860149460001
+   },
+   "adapter": {
+    "vendor": "google",
+    "architecture": "swiftshader",
+    "device": "",
+    "description": ""
+   },
+   "shader": "crt"
+  },
+  {
+   "preset": "slot-tv",
+   "width": 960,
+   "height": 720,
+   "frames": 6,
+   "wall_ms_median": 492.09999999962747,
+   "gpu_ms": {
+    "signal.encode": 12.950274637000001,
+    "signal.separate": 10.306194490000001,
+    "signal.demod": 38.236302181000006,
+    "beam": 393.302288438,
+    "halo.down": 1.2404207870000001,
+    "halo.conv": 62.759498253000004,
+    "compose": 12.359454196,
+    "encode8": 5.948271064000001,
+    "total": 537.102704046
+   },
+   "adapter": {
+    "vendor": "google",
+    "architecture": "swiftshader",
+    "device": "",
+    "description": ""
+   },
+   "shader": "crt"
+  },
+  {
+   "preset": "500t-no-remjet",
+   "width": 960,
+   "height": 540,
+   "frames": 6,
+   "wall_ms_median": 454.30000000074506,
+   "gpu_ms": {
+    "expose": 6.711498315000002,
+    "halo.down": 2.7969079950000006,
+    "halo.conv": 216.00493423100005,
+    "develop": 16.430458142,
+    "print": 199.422530042,
+    "encode8": 4.290179241000001,
+    "total": 445.656507966
+   },
+   "adapter": {
+    "vendor": "google",
+    "architecture": "swiftshader",
+    "device": "",
+    "description": ""
+   },
+   "shader": "film"
+  },
+  {
+   "preset": "bleach-bypass",
+   "width": 960,
+   "height": 540,
+   "frames": 6,
+   "wall_ms_median": 447.7000000011176,
+   "gpu_ms": {
+    "expose": 6.533311491000001,
+    "halo.down": 2.3246863089999996,
+    "halo.conv": 180.679688393,
+    "develop": 14.848391242000005,
+    "print": 159.43379598,
+    "encode8": 4.290543416,
+    "total": 368.110416831
+   },
+   "adapter": {
+    "vendor": "google",
+    "architecture": "swiftshader",
+    "device": "",
+    "description": ""
+   },
+   "shader": "film"
+  }
+ ]
+}
