@@ -54,3 +54,12 @@ if (on("lightpaint")) {
     for (const preset of ["disco", "grotesque", "complement"]) save(`lightpaint-${frame}-${preset}`, img8(runLightpaint(resolveLightpaint(preset), src)));
   }
 }
+
+if (on("glaze")) {
+  const { resolveGlaze, runGlaze } = await import("../../web/shaders/glaze/glaze.mjs");
+  for (const frame of ["street", "day"]) {
+    const src = labSource(frame, W, H), g = frame === "day" ? 1 : 2.4, enc = (f) => ({ width: f.width, height: f.height, data: labEncode8(f, g) });
+    save(`glaze-${frame}-0-plain`, enc(src));
+    for (const preset of ["beetle", "oil-slick", "bruise"]) save(`glaze-${frame}-${preset}`, enc(runGlaze(resolveGlaze(preset), src)));
+  }
+}

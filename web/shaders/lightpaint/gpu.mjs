@@ -11,9 +11,10 @@ export function packLightpaint(plan, size, fogColor, gain = 2.4) {
   const p = plan.p;
   return Float32Array.from([size.w, size.h, p.Emid, p.t0, p.strength, p.shape, p.complement ? 1 : 0, ...p.shadow, ...p.light, ...fogColor, gain]);
 }
+// aux per pixel: fog fraction, kind (0 sky, 1 emissive, 2 lit), view distance, 0.
 export function packAux(src) {
   const n = src.width * src.height, a = new Float32Array(n * 4);
-  for (let i = 0; i < n; i++) { a[i * 4] = src.fogT[i]; a[i * 4 + 1] = src.kind[i]; }
+  for (let i = 0; i < n; i++) { a[i * 4] = src.fogT[i]; a[i * 4 + 1] = src.kind[i]; a[i * 4 + 2] = src.depth ? src.depth[i] : 0; }
   return a;
 }
 export async function createGpuLightpaint(host, preset, overrides, size, { gain = 2.4 } = {}) {

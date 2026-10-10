@@ -1,0 +1,31 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Interference glazes: GPU against the CPU reference</title>
+<link rel="icon" href="data:,">
+<!-- Run by tests/web/shaders_parity.py --shader glaze. Each case of
+     evidence/shaders-glaze-parity-bounds.json through glaze.mjs (CPU, float64) and
+     glaze/gpu.mjs, compared as 8-bit display codes. -->
+<script type="module">
+import { createHost } from "../raw-gpu.mjs";
+import { resolveGlaze, runGlaze } from "../shaders/glaze/glaze.mjs";
+import { createGpuGlaze } from "../shaders/glaze/gpu.mjs";
+import { labSource } from "../shaders/lab/sources.mjs";
+import { labEncode8, codeStats } from "../shaders/lab/gpu-kit.mjs";
+const q = new URLSearchParams(location.search);
+try {
+  const host = await createHost({ timing: false });
+  const gpuErrors = []; host.device.onuncapturederror = (e) => gpuErrors.push(e.error.message);
+  const bounds = await (await fetch("../../evidence/shaders-glaze-parity-bounds.json")).json(), { width: W, height: H } = bounds.output;
+  const cases = [];
+  for (const c of bounds.cases) {
+    if (q.get("case") && q.get("case") !== c.id) continue;
+    const src = labSource(c.frame, W, H), size = { w: W, h: H };
+    const want = labEncode8(runGlaze(resolveGlaze(c.preset), src));
+    const g = await createGpuGlaze(host, c.preset, {}, size); g.frame(src);
+    const got = (await g.read()).packed; g.destroy();
+    cases.push({ id: c.id, ...codeStats(want, got) });
+  }
+  await host.done();
+  window.__result = { bounds: bounds.bounds, cases, adapter: host.info, gpuErrors };
+} catch (e) { window.__result = { error: String(e && e.stack || e) }; }
+</script>
