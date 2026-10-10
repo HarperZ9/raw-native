@@ -28,3 +28,20 @@ if (on("adjacency")) {
     if (frame === "street") save(`adjacency-${frame}-0-source-crop`, nearest(crop(img8(src), 120, 90, 160, 120), 4));
   }
 }
+
+if (on("sag")) {
+  const { resolveSag, runSag, signal8 } = await import("../../web/shaders/sag/sag.mjs");
+  const sig8 = (f) => ({ width: f.width, height: f.height, data: signal8(f) });
+  for (const frame of ["street-signal", "box"]) {
+    const src = labSource(frame, W, 480);
+    save(`sag-${frame}-0-source`, sig8(src));
+    for (const preset of ["consumer", "thriller"]) {
+      const r = runSag(resolveSag(preset, {}, { w: W, h: 480 }), src).out;
+      save(`sag-${frame}-${preset}`, sig8(r));
+      // Where the picture moved: |sagged - source| x 8, as grey.
+      const d = new Uint8ClampedArray(W * 480 * 4);
+      for (let i = 0; i < d.length; i += 4) { const v = Math.min(255, 8 * 255 * Math.abs(r.data[i + 1] - src.data[i + 1])); d[i] = d[i + 1] = d[i + 2] = v; d[i + 3] = 255; }
+      save(`sag-${frame}-${preset}-diff8x`, { width: W, height: 480, data: d });
+    }
+  }
+}

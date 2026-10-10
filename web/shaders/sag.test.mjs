@@ -28,7 +28,9 @@ test("a bright box moves no line above it (causality)", () => {
   for (let yo = 0; yo < H; yo++) { if (yo + 1.5 >= sc.Y[top - 1]) break; rows++; for (let x = 0; x < W * 4; x++) dev = Math.max(dev, Math.abs(a[yo * W * 4 + x] - b[yo * W * 4 + x])); }
   assert.ok(rows > 80, `only ${rows} rows checked`);
   assert.ok(dev <= B.lines_above_box_max_dev, `rows above the box changed by ${dev}`);
-  let below = 0; for (let x = 0; x < W * 4; x++) below = Math.max(below, Math.abs(a[200 * W * 4 + x] - b[200 * W * 4 + x]));
+  // Control (revised after the first run: row 200 lies 60 lines below the box, where the sag has
+  // decayed to e^-4.6 and a uniform grey cannot show a shift; the band just below the box can).
+  let below = 0; for (let i = 140 * W * 4; i < 170 * W * 4; i++) below = Math.max(below, Math.abs(a[i] - b[i]));
   assert.ok(below > 1e-3, `control: a row below the box must change (changed by ${below})`);
 });
 
