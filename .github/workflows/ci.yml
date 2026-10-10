@@ -354,6 +354,8 @@ jobs:
         run: |
           node tools/fuzz/tiles_fuzz.mjs --n 50000 > /dev/null
           python tests/web/tiles_check.py --adapter swiftshader
+      - name: The style template scaffolds render, the same twice (ADR 0016)
+        run: python tests/web/templates_check.py --adapter swiftshader --seconds 1
       - name: Every scene wrote a video, a poster, captions and a manifest, from this commit
         shell: bash
         run: |
