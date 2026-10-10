@@ -5,7 +5,11 @@
 // OpenColorIO Project. The port keeps OCIO's float32 arithmetic and its order of
 // operations so the CPU reference tracks OCIO's own CPU path; the licence text is
 // in third_party/NOTICE-OpenColorIO.md. Changes: namespaces, std::array types,
-// no SIMD branches, and the matrix helpers built on raw::colour.
+// no SIMD branches, and the matrix helpers built on raw::colour. Two changes to the
+// arithmetic (2026-10-10, M1 criterion 3): the hue comes from hue_atan2 below, and the
+// forward transform takes cos and sin of the hue as a / M and b / M rather than through
+// the angle. Both keep the WGSL path within a few ulp of this one; see
+// evidence/m1-hdr-f32-diagnosis.json.
 #include "raw/renderer/colour.hpp"
 #include <array>
 #include <cmath>
@@ -24,6 +28,27 @@ inline float wrap_to_hue_limit(float hue){
     return y < 0.f ? y + hue_limit : y;
 }
 inline constexpr float to_radians(float v){ return PI * v / 180.0f; }
+// atan2 from arithmetic alone, so the CPU reference and the WGSL agree on the hue to a few
+// ulp. Built-in atan2 may be off by 4096 ulp in WGSL, and the hue tables index by
+// truncated degree, so a hue error near a whole degree moved saturated colours past
+// M1 criterion 3's bound on SwiftShader (evidence/m1-hdr-signal-runs.json, 2026-10-10).
+// The argument is reduced to |t| <= tan(15 deg), where the odd series to t^11 is within
+// 3e-9 rad of atan. atan2(0, 0) is 0. web/colour/colour.wgsl hue_atan2 is the same
+// sequence of operations; change both together.
+inline float hue_atan2(float y, float x){
+    const float ax = std::abs(x), ay = std::abs(y);
+    if (ax == 0.f && ay == 0.f) return 0.f;
+    const bool swap = ay > ax;
+    float t = swap ? ax / ay : ay / ax;
+    const bool big = t > 0.2679491924f;               // tan(15 deg)
+    if (big) t = (t * 1.7320508076f - 1.f) / (1.7320508076f + t);
+    const float t2 = t * t;
+    float a = t * (1.f + t2 * (-1.f / 3.f + t2 * (1.f / 5.f + t2 * (-1.f / 7.f + t2 * (1.f / 9.f + t2 * (-1.f / 11.f))))));
+    if (big) a = a + 0.5235987756f;                   // pi / 6
+    if (swap) a = 1.5707963268f - a;
+    if (x < 0.f) a = PI - a;
+    return y < 0.f ? -a : a;
+}
 inline float from_radians_unwrapped(float v){       // v already within (-pi, pi]
     float y = 180.0f * v / PI;
     return y < 0.f ? y + hue_limit : y;

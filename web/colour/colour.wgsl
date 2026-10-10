@@ -90,9 +90,27 @@ fn aab_to_rgb(aab: vec3f, b: u32) -> vec3f {
   let a = m3(b + 27u, aab);
   return m3(b + 9u, vec3f(cone_inv(a.x), cone_inv(a.y), cone_inv(a.z)));
 }
+// atan2 from arithmetic alone: the same sequence as hue_atan2 in src/renderer/aces2.hpp.
+// Built-in atan2 may be off by 4096 ulp, and the hue tables index by truncated degree
+// (M1 criterion 3, 2026-10-10). Within 3 ulp of atan2.
+fn hue_atan2(y: f32, x: f32) -> f32 {
+  let ax = abs(x);
+  let ay = abs(y);
+  if (ax == 0.0 && ay == 0.0) { return 0.0; }
+  let swap = ay > ax;
+  var t = select(ay / ax, ax / ay, swap);
+  let big = t > 0.2679491924;
+  if (big) { t = (t * 1.7320508076 - 1.0) / (1.7320508076 + t); }
+  let t2 = t * t;
+  var a = t * (1.0 + t2 * (-1.0 / 3.0 + t2 * (1.0 / 5.0 + t2 * (-1.0 / 7.0 + t2 * (1.0 / 9.0 + t2 * (-1.0 / 11.0))))));
+  if (big) { a = a + 0.5235987756; }
+  if (swap) { a = 1.5707963268 - a; }
+  if (x < 0.0) { a = PI - a; }
+  return select(a, -a, y < 0.0);
+}
 fn aab_to_jmh(aab: vec3f, b: u32) -> vec3f {
   if (aab.x <= 0.0) { return vec3f(0.0); }
-  var h = 180.0 * atan2(aab.z, aab.y) / PI;
+  var h = 180.0 * hue_atan2(aab.z, aab.y) / PI;
   if (h < 0.0) { h = h + 360.0; }
   return vec3f(100.0 * powp(aab.x, cd[b + 37u]), length(aab.yz), h);
 }
@@ -221,9 +239,10 @@ fn aces2(rgb709: vec3f) -> vec3f {
   let aab = rgb_to_aab(ap0, O_CAM_IN);
   let jmh = aab_to_jmh(aab, O_CAM_IN);
   let reach = reach_m(jmh.z);
-  let hr = jmh.z * PI / 180.0;
-  let ch = cos(hr);
-  let sh = sin(hr);
+  // cos and sin of the hue straight from the opponent coordinates (aces2_gamut.cpp forward):
+  // no round trip through the angle.
+  let ch = select(1.0, aab.y / jmh.y, jmh.y > 0.0);
+  let sh = select(0.0, aab.z / jmh.y, jmh.y > 0.0);
   let jts = tonescale_a_to_j(aab.x);
   let mcp = chroma_compress(jmh, jts, chroma_norm(ch, sh), reach);
   let g = gamut_compress(vec3f(jts, mcp, jmh.z), reach);
