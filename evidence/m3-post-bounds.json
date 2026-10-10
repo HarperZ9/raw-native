@@ -1,0 +1,144 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "M3 exit criterion 2 (TAA ghosting and RMSE against the supersampled reference) and dated addition 8 (GTAO and SSR each against a CPU reference)",
+ "written": "2026-10-10, before the implementation and the first run",
+ "lessons_applied": "From the shadow checks: every comparison carries a coverage bound so it cannot pass over nothing, every metric has a control that must fail it, and scene cameras are fixed here, before any result.",
+ "scenes": "At 256 x 256 with the perspective-correct G-buffer: the built-in test scene from its own camera and from the near camera of evidence/m3-shadows-bounds.json method note 5 (eye 1.8, 3.2, 2.4 toward 0.8, 0.2, 1.0), Suzanne, and the helmet role's model (evidence/m3-scene-models.json). TAA uses the built-in test scene at 128 x 128.",
+ "gtao": {
+  "model": "Ground-truth-based ambient occlusion (Jimenez, Wu, Pesce, Jarabo 2016), cosine-weighted visibility from the horizon angles on 16 fixed slice directions, 16 steps a side, world radius 0.5, projected-normal integration (their eq. 10), no falloff, no bent normal, no multi-bounce term, no denoiser. Input: the view-space depth and normal of the G-buffer.",
+  "reference": "Ray casts on raw/renderer/bvh.hpp: 1,024 stratified cosine-weighted directions a pixel from the surface point (offset 1e-3 along the normal); a direction is occluded when it hits within 0.5. Visibility is the unoccluded fraction.",
+  "checks": {
+   "vs_reference": {
+    "what": "GTAO against the ray-cast visibility on G-buffer pixels at least 8 pixels from the border",
+    "bound": "mean |difference| <= 0.05 and 95th percentile <= 0.15 per scene (GTAO is screen-space; this records how good it is)"
+   },
+   "coverage": {
+    "bound": "at least 2,000 pixels per scene with reference visibility below 0.9"
+   },
+   "gpu_parity": {
+    "what": "the WGSL pass against the CPU GTAO on the same G-buffer",
+    "bound": "|gpu - cpu| <= 1e-3 on all but 0.1% of pixels"
+   },
+   "controls": {
+    "what": "(a) visibility 1 everywhere against the reference; (b) the GPU pass on a depth buffer with the scene's last mesh moved 1% of the scene extent",
+    "bound": "(a) fails the vs_reference bound, (b) fails gpu_parity"
+   }
+  }
+ },
+ "ssr": {
+  "model": "Screen-space mirror reflections: for each G-buffer pixel, the reflected view ray marched in screen space over the view depth (up to 20 units, 64 linear steps, then 8 bisection steps), with a thickness of 0.2 units; the result is a hit pixel or a miss.",
+  "reference": "A BVH ray from the surface point (offset 1e-3 along the normal) along the mirror direction; its first hit H. A pixel is resolvable when H exists, projects inside the screen, and the G-buffer's surface at that pixel lies within two pixel footprints of H (H is visible).",
+  "checks": {
+   "hits": {
+    "what": "resolvable pixels whose SSR hit position (the G-buffer position at the hit pixel) lies within two pixel footprints of H; a footprint is 2 d tan(fovy / 2) / height at H's view depth d",
+    "bound": "at least 90% of resolvable pixels per scene"
+   },
+   "false_hits": {
+    "what": "pixels that are not resolvable where SSR reports a hit",
+    "bound": "at most 10% of those pixels per scene"
+   },
+   "coverage": {
+    "bound": "at least 2,000 resolvable pixels per scene"
+   },
+   "gpu_parity": {
+    "what": "the WGSL pass against the CPU SSR on the same G-buffer",
+    "bound": "the same hit pixel, or both a miss, on all but 0.1% of pixels"
+   },
+   "controls": {
+    "what": "(a) SSR with unlimited thickness against the false_hits bound; (b) the GPU pass on a depth buffer with the scene's last mesh moved 1% of the scene extent",
+    "bound": "(a) fails false_hits, (b) fails gpu_parity"
+   }
+  }
+ },
+ "taa": {
+  "model": "Temporal anti-aliasing written for this engine: Halton(2, 3) sub-pixel jitter over 16 phases, history reprojected by per-pixel motion (camera and object motion from the scene), sampled bilinearly, clipped to the YCoCg colour box of the current 3 x 3 neighbourhood (mean plus or minus 1.25 standard deviations), blended with weight 0.1 for the current frame; a disoccluded or off-screen history sample takes the current frame. Shading is Lambert from the sun plus 0.2 ambient on linear albedo, background 0.05; no tone map.",
+  "reference": "Each frame supersampled on the CPU rasterizer at 16 x 16 stratified samples per pixel, box filter.",
+  "sequences": {
+   "pan": "64 frames; the camera pans along its right vector by 0.3 pixels a frame; the scene is static.",
+   "moving_box": "32 frames; the camera is fixed; the box moves along +x by 1.5 pixels a frame (in screen space at its centre)."
+  },
+  "checks": {
+   "rmse": {
+    "what": "pan sequence, frames 32 to 63: mean RMSE of the TAA frame against its supersampled reference, and of the unjittered single-sample frame against the same reference",
+    "bound": "TAA RMSE <= 0.5 x the single-sample RMSE"
+   },
+   "ghosting": {
+    "what": "moving_box sequence, frames 16 to 31: the trail is the pixels the box covers in none of the reference at frame f but in some reference frame from f - 8 to f - 1; ghosting G = mean |TAA - reference| over the trail",
+    "bound": "G <= 0.03"
+   },
+   "coverage": {
+    "bound": "at least 500 trail pixels summed over frames 16 to 31"
+   },
+   "gpu_parity": {
+    "what": "the WGSL resolve fed the CPU's frames, motion and its own history, frame by frame, against the CPU resolve",
+    "bound": "|gpu - cpu| <= 1e-3 per channel on all but 0.1% of pixels in every frame"
+   },
+   "controls": {
+    "what": "(a) TAA without jitter against the rmse bound; (b) TAA without the colour clip against the ghosting bound; (c) the GPU resolve with its history shifted one pixel",
+    "bound": "(a) fails rmse, (b) fails ghosting, (c) fails gpu_parity"
+   }
+  }
+ },
+ "does_not_prove": "Frame times; rough (glossy) reflections; AO or reflections of off-screen or hidden geometry, which screen-space methods cannot see; TAA under fast motion, thin geometry, transparency or animated textures; that the stand-in scenes cover a Sponza-class level.",
+ "method_note_1_2026_10_10": {
+  "written": "2026-10-10, before any implementation or run",
+  "issue": "The TAA model rejects disoccluded history by depth. That test alone removes most of the moving box's trail, so control (b), TAA without the colour clip, could pass the ghosting bound and fail to discriminate.",
+  "change": "Control (b) removes both the colour clip and the depth disocclusion test, which leaves plain history blending; it must fail ghosting. TAA with the clip but without the depth test, and with the depth test but without the clip, are run and reported as well, not gated.",
+  "disocclusion": "The depth test, stated now: the history is rejected when the previous frame's view depth at the reprojected position (nearest pixel) differs from the reprojected point's expected previous view depth by more than 2% of that depth plus 0.02 units."
+ },
+ "method_note_2_2026_10_10": {
+  "written": "2026-10-10, after the first CPU run of GTAO and SSR and before any change is run",
+  "first_run": "Failed. GTAO: mean |difference| 0.008 to 0.021 and p95 0.025 to 0.075 (inside the bounds), but three of four scenes miss the coverage bound (1,982, 807 and 1,338 occluded pixels against 2,000), and on those three the control (visibility 1 everywhere) also meets the bounds, so there the check cannot discriminate. On Suzanne GTAO (0.019) is further from the reference than the control (0.0075). An open plane alone reads up to 0.086 away from 1. SSR: 69% to 87% of resolvable pixels correct against the 90% bound, almost all of the rest misses; the near scene and Suzanne also fail or nearly fail coverage; false hits 0% to 0.5% pass, but the unlimited-thickness control reaches only 0.01% to 5.3%, so it does not discriminate.",
+  "diagnosis": "GTAO reconstructs each horizon sample at its pixel centre, which lies off the slice plane, so an open plane reads as partly occluded; the sample should sit at the exact slice position with the depth read from its pixel. SSR spends most of its 64 steps outside the screen: the 20-unit ray is not clipped to the view, so steps on screen are several pixels apart and skip the 0.2-unit thickness band.",
+  "changes": [
+   "GTAO: a horizon sample's view position is rebuilt from its exact screen position and the depth of the pixel it falls in.",
+   "SSR: the march is clipped to the screen rectangle and the near plane before stepping; a step that lands behind the depth buffer starts the bisection, and the thickness applies to the refined point.",
+   "A fifth scene, fixed now: the interior role's model (evidence/m3-scene-models.json, ABeautifulGame today) under the same camera as Suzanne, for AO and reflection content.",
+   "Gating: a scene that misses a coverage bound is reported, not gated, for that metric; the metric must pass on every scene that meets coverage, and on at least two scenes.",
+   "A new SSR control (c), added before its first run: SSR with the normal replaced by the view vector must fail the hits bound. The unlimited-thickness control (a) stays reported."
+  ],
+  "bounds": "Unchanged."
+ },
+ "method_note_3_2026_10_10": {
+  "written": "2026-10-10, after the second CPU run and before any change is run",
+  "second_run": "Failed the two-scene gate for GTAO: only the near scene meets GTAO coverage (7,825 occluded pixels; GTAO mean 0.0075, p95 0.025; its control fails the bound). The other four scenes have 807 to 1,982 occluded pixels, and on all four GTAO is further from the reference than visibility 1 everywhere (mean 0.018 to 0.030 against 0.0075 to 0.0176). SSR passes on its two gated scenes (98.3% and 96.5% correct, false hits 0.2% and 0.5%, control (c) 0%); on the ungated scenes it reaches 94.3% (Suzanne), 84.4% (helmet) and 65.1% (interior). An open plane reads up to 0.081 away from 1.",
+  "diagnosis": "Two biases on an open plane. (1) Slice directions are uniform in screen angle, which is uniform around the view vector only at the screen centre: with no samples at all, a plane reads 0.994 to 1.020. (2) Taking each sample's depth from the nearest pixel puts samples slightly above or below the surface, and the horizon keeps the maximum, so the noise becomes occlusion (about 1.6% at the screen centre).",
+  "changes": [
+   "GTAO slices are uniform in angle around the view vector: the slice direction is cos(phi) T + sin(phi) B in the plane perpendicular to the view vector, and the screen step follows that direction's projection.",
+   "GTAO samples take 1 / depth interpolated bilinearly from the four nearest pixel centres (exact on a plane), falling back to the nearest pixel when one of the four is empty or their depths differ by more than 10%.",
+   "Scene for coverage, procedure fixed now: test_post --scene-stats prints, per scene, the reference's occluded pixels and SSR's resolvable pixels, computing neither GTAO nor SSR. A close camera on the interior role's model is chosen as the first of these candidates, in this order, that reaches 2,000 of both: eye (0.9, 1.2, 1.6), (0.7, 1.0, 1.2), (0.5, 0.8, 0.9), each toward (0, 0.3, 0). The choice goes into a note before its first GTAO or SSR run."
+  ],
+  "bounds": "Unchanged; the two-scene gate stays."
+ },
+ "method_note_4_2026_10_10": {
+  "written": "2026-10-10, after --scene-stats and before the scene's first GTAO or SSR run",
+  "stats": "Reference-only coverage: interior close (0.9, 1.2, 1.6) 19,801 occluded and 8,418 resolvable; (0.7, 1.0, 1.2) 19,987 and 7,759; (0.5, 0.8, 0.9) 17,799 and 6,555. The other scenes as in the second run.",
+  "choice": "The first candidate meets both coverage bounds: a sixth scene, the interior role's model from eye (0.9, 1.2, 1.6) toward (0, 0.3, 0)."
+ },
+ "method_note_5_2026_10_10": {
+  "written": "2026-10-10, after the first TAA run and before any change is run",
+  "first_run": "Failed the RMSE bound: on the pan, TAA's RMSE is 1.23 times the single-sample RMSE (bound 0.5); TAA without jitter reaches 0.81. Ghosting passes: 0.0055 over 12,166 trail pixels (bound 0.03); the no-clip, no-depth control reaches 0.298 and fails as required; clip only 0.021 and depth test only 0.012, reported.",
+  "diagnosis": "Bilinear history sampling blurs the history on every frame of a sub-pixel pan. At 0.3 pixels a frame and a blend of 0.1, the accumulated blur has a standard deviation of roughly 1.4 pixels, which costs more at edges than the aliasing it removes.",
+  "change": "The history is sampled with a 4 x 4 Catmull-Rom filter (B = 0, C = 0.5) instead of bilinearly; the colour clip then bounds its overshoot. Nothing else changes. Bounds unchanged."
+ },
+ "method_note_6_2026_10_10": {
+  "written": "2026-10-10, after the second TAA run and before any change is run",
+  "second_run": "Failed RMSE again: ratio 1.22 with Catmull-Rom history. Note 5's diagnosis was wrong. Ghosting 0.0059, control 0.308.",
+  "diagnosis": "A static-camera probe (not a checked run) isolates the cause: after 48 frames TAA reads 0.0256 RMSE with the depth test and 0.0060 without it, against 0.0211 for a single sample and 0.0042 for a plain average of the jittered frames. The depth test compares against the previous frame's depth at the nearest pixel; at every silhouette the jitter makes consecutive frames sample different surfaces, so the test rejects the history exactly where anti-aliasing needs it.",
+  "change": "The depth test rejects the history only when the expected previous depth lies outside the range of the previous frame's depths over the 3 x 3 pixels around the reprojected position, widened by the same tolerance (2% plus 0.02 units); a pixel with no geometry in that range counts as background, as before. Catmull-Rom history stays. Bounds unchanged."
+ },
+ "method_note_7_2026_10_10": {
+  "written": "2026-10-10, after the first GPU parity run on WARP and before any change is run",
+  "first_gpu_run": "GTAO parity passes on all six scenes (at most 28 of 35,849 pixels off by more than 1e-3, against 0.1%). SSR parity fails on all six (561 to 3,414 differing pixels, 1.5% to 9.5%), most of them a hit on one side and a miss on the other. TAA parity fails: up to 32 of 16,384 pixels in one frame (bound 16), worst 0.117. All three controls fail as required.",
+  "diagnosis": "SSR: the march's end is clipped 1e-6 pixels inside the screen. In float32 at x = 256 that margin rounds away, the GPU's end lands on x = 256, and its last steps leave the screen, so it misses hits at the right border that the float64 march finds.",
+  "change": "The clip margin becomes 1e-3 pixels on both sides. TAA: unchanged; its differences are traced in the next run's record before any change.",
+  "bounds": "Unchanged."
+ },
+ "method_note_8_2026_10_10": {
+  "written": "2026-10-10, after the second and third GPU parity runs on WARP and before any further change is run",
+  "second_gpu_run": "After note 7: SSR still 293 to 3,380 differing pixels. Note 7's diagnosis was only a small part: my parity code passed GTAO's 16 steps to the SSR pass, which marches 64. Fixed in the parity code (SSR gets its own step count); no model change.",
+  "third_gpu_run": "SSR parity passes on all six scenes (at most 11 differing pixels, 0.02%). GTAO passes. TAA still fails: the pixels off by more than 1e-3 grow from 0 at frame 2 to 32 at frame 31 (bound 16). Probes (not checked runs): with the colour clip off, 0 pixels differ at frame 31; with the depth test off and the clip on, 26.",
+  "diagnosis": "The clip's standard deviation is computed as sqrt(E[x^2] - E[x]^2). In float32 that cancels badly in flat regions, where the true deviation is about 0, so the GPU's clip box is wider than the CPU's by about 1e-4 and the two histories drift apart.",
+  "change": "Both sides compute the neighbourhood's deviation in two passes (the mean first, then the mean squared difference). Bounds unchanged."
+ }
+}

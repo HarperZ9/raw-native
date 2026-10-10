@@ -289,6 +289,30 @@ CPU reference of each GPU pass.
   method notes and every run: `evidence/m3-shadows-*.json`.
 - **Not yet:** point and spot light shadows, alpha-tested casters, and frame times.
 
+## Screen-space AO, reflections and TAA
+
+`raw/renderer/post.hpp` and `raw/renderer/taa.hpp` hold the CPU references; `post.wgsl` holds
+the GPU passes `post_gtao`, `post_ssr` and `post_taa`.
+
+- **GTAO** follows Jimenez et al. 2016: 16 slices uniform around the view vector, 16 steps a
+  side within 0.5 units, the cosine-weighted horizon integral, no falloff or bent normal.
+  Samples sit exactly on their slice, with depth interpolated as 1 / depth, so an open plane
+  reads close to 1.
+- **SSR** marches the mirror ray in screen space, clipped to the screen, 64 steps and 8
+  bisection steps, with a 0.2-unit thickness.
+- **TAA** jitters by Halton(2, 3), reprojects with per-pixel motion, reads history with a
+  Catmull-Rom filter, rejects it when the expected depth leaves the 3 x 3 range of the previous
+  depths, clips it to a YCoCg box of 1.25 deviations and blends 10% of the new frame.
+- **Checks.** `tests/test_post.cpp` compares GTAO and SSR with BVH ray casts on six scenes, and
+  `tests/test_taa.cpp` compares TAA with a 16 x 16 supersampled reference.
+  `raw_native_cli post-parity` compares the GPU passes with the CPU.
+  - GTAO and SSR pass on the open scenes and fail on the dense interior close-up, where screen
+    space cannot see behind the pieces.
+  - TAA passes its ghosting bound and fails its RMSE bound under a slow pan.
+  - GTAO and SSR GPU parity pass on WARP and SwiftShader. TAA GPU parity, each side feeding back
+    its own history, fails; from the same history one pixel differs at most.
+  - Bounds, eight method notes and every run: `evidence/m3-post-*.json`.
+
 ## Verification as the engine grows
 
 - **Every feature has a reference.** The CPU renderer is a layer of the engine,

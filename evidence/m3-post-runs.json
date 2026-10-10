@@ -1,0 +1,89 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "M3 criterion 2 and dated addition 8 (GTAO, SSR, TAA): every run against evidence/m3-post-bounds.json, failures included",
+ "runs": [
+  {
+   "run": "cpu-1",
+   "date": "2026-10-10",
+   "what": "test_post --json --models: test scene, near camera, Suzanne, helmet role",
+   "result": "fail. GTAO within its error bounds (mean 0.008 to 0.021) but three scenes miss coverage, and there the control (visibility 1) also meets the bounds; on Suzanne GTAO is further from the reference than the control. An open plane reads up to 0.086 away from 1. SSR 69% to 87% correct against 90%, the rest nearly all misses; the unlimited-thickness control does not discriminate (0.01% to 5.3% false hits).",
+   "action": "method note 2: diagnosis (GTAO samples off the slice plane; SSR steps mostly off screen), fixes, a fifth scene, coverage gating, SSR control (c)"
+  },
+  {
+   "run": "cpu-2",
+   "date": "2026-10-10",
+   "what": "after note 2, five scenes",
+   "result": "fail: GTAO is gated on one scene only (the near scene: mean 0.0075, p95 0.025, control fails), against the two-scene gate; on the other four GTAO is still further from the reference than visibility 1. SSR passes on its two gated scenes (98.3%, 96.5%; false hits 0.2%, 0.5%; control (c) 0%); ungated: Suzanne 94.3%, helmet 84.4%, interior 65.1%. Open plane 0.081.",
+   "action": "method note 3: two plane biases found (screen-uniform slices; nearest-pixel sample depth), fixed; a procedure for a coverage scene"
+  },
+  {
+   "run": "cpu-3",
+   "date": "2026-10-10",
+   "what": "after notes 3 and 4, six scenes (adds the interior close-up chosen by reference-only coverage)",
+   "result": "fail on the interior close-up, the only scene with dense occlusion. GTAO there: mean 0.104 (bound 0.05), p95 0.458 (bound 0.15); the control is worse (0.216, 0.585). SSR there: 80.3% correct (bound 90%), false hits 17.6% (bound 10%). On the open scenes the plane fixes cut GTAO's error about tenfold (mean 0.0017 to 0.0084, now below the control on every scene), and GTAO passes on the near scene (mean 0.0034, p95 0.016). SSR passes on the test scene and the near scene. The open plane still reads up to 0.077 from 1 at its worst pixel. Inferred causes on the close-up: GTAO treats every visible surface as infinitely thick, so pieces in front darken what lies behind them, and a 0.5-unit radius spans hundreds of pixels at 16 steps; SSR cannot see the hidden sides of the pieces.",
+   "evidence": "evidence/m3-post-cpu-run.json"
+  },
+  {
+   "run": "taa-1",
+   "date": "2026-10-10",
+   "what": "test_taa --json: pan (64 frames) and moving box (32 frames), test scene at 128 x 128",
+   "result": "fail: pan RMSE ratio 1.23 (bound 0.5); no-jitter control 0.81 (fails, as required). Ghosting passes: 0.0055 over 12,166 trail pixels (bound 0.03); the no-clip, no-depth control 0.298 (fails, as required); clip only 0.021, depth only 0.012 (reported).",
+   "action": "method note 5: Catmull-Rom history, on a diagnosis of bilinear blur"
+  },
+  {
+   "run": "taa-2",
+   "date": "2026-10-10",
+   "what": "after note 5",
+   "result": "fail: ratio 1.22. Note 5's diagnosis was wrong. A static-camera probe (not a checked run) found the cause: the nearest-pixel depth test rejects the history at every silhouette.",
+   "action": "method note 6: the depth test uses the previous depths' range over 3 x 3 pixels"
+  },
+  {
+   "run": "taa-3",
+   "date": "2026-10-10",
+   "what": "after note 6",
+   "result": "fail on RMSE: pan ratio 0.735 against 0.5 (no-jitter control 0.796). Ghosting passes: 0.0142 (bound 0.03); control 0.308 fails as required; clip only 0.021, depth only 0.119 (reported). A probe (not a checked run) shows the ratio is 0.265 on a static camera with any option and 0.72 to 0.81 under the 0.3-pixel pan with any option, so the remaining error comes from resampling the history every frame, not from the clip or the depth test.",
+   "evidence": "evidence/m3-taa-cpu-run.json"
+  },
+  {
+   "run": "gpu-warp-1",
+   "date": "2026-10-10",
+   "what": "gpu_post_parity on D3D12 WARP with the debug layer, six scenes and the TAA sequence",
+   "result": "fail. GTAO parity passes everywhere (at most 28 of 35,849 pixels off). SSR parity fails on all six scenes (561 to 3,414 pixels, most a hit against a miss). TAA parity fails (32 of 16,384 pixels in the worst frame; bound 16). Controls fail as required.",
+   "action": "method note 7"
+  },
+  {
+   "run": "gpu-warp-2",
+   "date": "2026-10-10",
+   "what": "after note 7 (clip margin)",
+   "result": "SSR still fails (293 to 3,380). The real cause was mine: the parity code handed the SSR pass GTAO's 16 steps instead of 64. Fixed in the parity code (method note 8 records it)."
+  },
+  {
+   "run": "gpu-warp-3",
+   "date": "2026-10-10",
+   "what": "SSR given its own step count",
+   "result": "SSR parity passes on all six scenes (at most 11 pixels). TAA still fails; probes trace it to the colour clip.",
+   "action": "method note 8: two-pass deviation in the clip"
+  },
+  {
+   "run": "gpu-warp-4",
+   "date": "2026-10-10",
+   "what": "after note 8",
+   "result": "TAA parity still fails (31 pixels in the worst frame). Note 8's diagnosis did not remove it. With both sides stepping from the same (GPU) history, at most 1 pixel differs in any frame; the drift comes from each side feeding back its own history, which amplifies single-pixel float32 differences over 32 frames. That is the check as committed, so it stays failed."
+  },
+  {
+   "run": "gpu-warp-final",
+   "date": "2026-10-10",
+   "what": "gpu_post_parity on WARP, debug layer, models by manifest role",
+   "result": "GTAO and SSR parity pass on all six scenes; TAA parity open failure (31 of 16,384; one-step 1); all controls fail as required.",
+   "evidence": "evidence/m3-post-gpu-d3d12-warp.json"
+  },
+  {
+   "run": "swiftshader-final",
+   "date": "2026-10-10",
+   "what": "post-parity in Chrome on SwiftShader, the two built-in scenes",
+   "result": "Same pattern: GTAO and SSR pass; TAA parity open failure (31; one-step 1); controls fail.",
+   "evidence": "evidence/m3-post-gpu-webgpu-swiftshader.json"
+  }
+ ],
+ "status": "Open failures, not loosened: GTAO and SSR accuracy on the interior close-up; TAA RMSE under the pan (0.735 against 0.5); TAA GPU parity with each side's own history (31 of 16,384 pixels against 16). Passing: GTAO and SSR accuracy on every other gated scene, TAA ghosting, GTAO and SSR GPU parity on WARP and SwiftShader, every control. Candidates, each in a method note before it runs: a thickness heuristic for GTAO and SSR; a motion-aware blend and history sharpening for TAA."
+}
