@@ -1,0 +1,14 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "RT stage R3: every run, failures included (bounds: evidence/rt-r3-bounds.json, committed 2cc583d before any R3 code)",
+ "runs": [
+  {
+   "run": 1,
+   "when": "2026-10-10 19:03Z",
+   "backend": "CPU (MSVC, Release)",
+   "checks": "M1",
+   "result": "fail: hit/miss agree on all 65,536 rays a primitive (exempt grazing 44, 26, 49), but t over the bound on 4,269 (sphere), 3,681 (box) and 2,994 (torus) hits; worst ratios 12.7, 2.6, 16.8; the control (eps 1e-2) is far outside (worst 251, 242, 227)",
+   "diagnosis": "See method note 1: the stop rule's error grows as 1 / cos(theta); confirmed with the sphere's analytic normal (max ratio x cos 0.5003)."
+  }
+ ]
+}
