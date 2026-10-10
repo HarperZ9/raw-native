@@ -41,7 +41,30 @@ async function run() {
       if (d > 0.004) { bad++; if (!first) first = { x: p % W, y: Math.floor(p / W), gpu: Array.from(f.data.slice(4 * p, 4 * p + 4)), ref: Array.from(ref.slice(4 * p, 4 * p + 4)) }; }
       max = Math.max(max, d);
     }
-    res.cases.push({ scale, x, y, maxAbs: max, bad, first });
+    res.cases.push({ scale, x, y, maxAbs: max, bad, first, covered: ref.filter((v, i) => i % 4 === 3 && v > 0).length });
+  }
+  // Isometric: a 10 x 10 diamond map of 32 x 16 cells drawn from 32 x 32 tileset tiles
+  // (taller than the grid, bottom-aligned), at scales 1 and 2.
+  const isoImg = (() => { const W = 256, d = new Uint8Array(W * 64 * 4);
+    for (let y = 0; y < 64; y++) for (let x = 0; x < W; x++) { const i = 4 * (y * W + x), t = (y >> 5) * 8 + (x >> 5); d[i] = (t * 53 + x) & 255; d[i + 1] = (y * 7 + t * 29) & 255; d[i + 2] = ((x & 31) > (y & 31)) ? 220 : 60; d[i + 3] = 255; }
+    return { width: W, height: 64, data: d }; })();
+  mo.image('iso', isoImg);
+  for (const scale of [1, 2]) {
+    const map = randomMap(10, 10, `iso-${scale}`, 32);
+    map.tileH = 16; map.orientation = 'isometric';
+    map.tilesets[0] = { firstgid: 1, columns: 8, count: 16, tileW: 32, tileH: 32, spacing: 0, margin: 0 };
+    map.layers[0].gids = map.layers[0].gids.map((g) => (g ? 1 + (g % 16) : 0)); map.layers[0].flip.fill(0);
+    const x = 160, y = 10;
+    const list = { camera: { x: W / 2, y: H / 2 }, background: [0, 0, 0], post: { bloom: 0, vignette: 0, grain: 0 }, items: [{ kind: 'tilemap', map, tileset: 'iso', x, y, scale }] };
+    const f = await mo.capture(list, { frame: 0, float: true });
+    const ref = tilesRef(map, isoImg, { ox: x, oy: y, s: scale, opacity: 1 }, W, H);
+    let max = 0, bad = 0, first = null;
+    for (let p = 0; p < W * H; p++) for (let k = 0; k < 3; k++) {
+      const d = Math.abs(f.data[4 * p + k] - ref[4 * p + k]);
+      if (d > 0.004) { bad++; if (!first) first = { x: p % W, y: Math.floor(p / W), gpu: Array.from(f.data.slice(4 * p, 4 * p + 4)), ref: Array.from(ref.slice(4 * p, 4 * p + 4)) }; }
+      max = Math.max(max, d);
+    }
+    res.cases.push({ iso: true, scale, x, y, maxAbs: max, bad, first, covered: ref.filter((v, i) => i % 4 === 3 && v > 0).length });
   }
   // 100,000 tiles: 400 x 250 cells of 4 px... drawn from the same tileset at scale 0.25
   // of 16 px tiles, so 1,600 x 1,000 pixels of tiles all on screen at 1,600 x 1,000.

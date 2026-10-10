@@ -4,7 +4,8 @@
     python tests/web/tiles_check.py [--adapter gpu|swiftshader] [--out evidence.json]
 
 Opens web/test/tiles.html. The page checks two things:
-- small random maps (every flip) at scales 1, 2 and 3, against the CPU twin
+- small random maps (every flip) at scales 1, 2 and 3, and isometric diamond maps
+  with tiles taller than the grid at scales 1 and 2, against the CPU twin
   (web/world/tiles_ref.mjs);
 - 100,000 tiles on screen, captured 20 times for the frame time, with identical
   frames (SHA-256) before and after.
@@ -59,6 +60,8 @@ def main() -> int:
         srv.shutdown()
     problems = [res["error"]] if "error" in res else []
     for c in res.get("cases", []):
+        if c.get("covered", 1) < 1000:
+            problems.append(f"case {c}: the reference covers almost nothing, so the comparison proves little")
         if c["maxAbs"] > 2 ** -11:
             problems.append(f"scale {c['scale']}: differs from the CPU twin by {c['maxAbs']} ({c['bad']} values), first {c['first']}")
     if res.get("big") and not res["big"]["sameTwice"]:
