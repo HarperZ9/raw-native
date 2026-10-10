@@ -391,6 +391,8 @@ jobs:
         run: |
           node tools/fuzz/tiles_fuzz.mjs --n 50000 > /dev/null
           python tests/web/tiles_check.py --adapter swiftshader
+      - name: Vertex snap and affine UVs match their CPU twin on the committed mesh set (M2 criterion 8)
+        run: python tests/web/retro3d_check.py --adapter swiftshader
       - name: The isometric fade on the GPU matches its CPU twin and changes only the faded cells (M2 criterion 9)
         run: python tests/web/iso_fade.py --adapter swiftshader
       - name: The style template scaffolds render, the same twice (ADR 0016)
