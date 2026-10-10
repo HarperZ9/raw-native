@@ -1,0 +1,16 @@
+{
+  "what": "GPU painterly passes (web/shaders/paint/gpu.mjs) against the CPU reference (web/shaders/paint/paint.mjs)",
+  "fixed_before_first_run": "2026-10-10",
+  "frame": "web/shaders/fixtures/street.mjs streetScene(240, 150, 0), dusk; and daylight for the watercolour daylight case",
+  "compare": "8-bit sRGB from encodePaint8 / PAINT_ENCODE_WGSL, per channel, all pixels",
+  "cases": [
+    { "id": "oil-grotesque", "preset": "oil-grotesque" },
+    { "id": "oil", "preset": "oil" },
+    { "id": "gouache", "preset": "gouache" },
+    { "id": "watercolour", "preset": "watercolour" },
+    { "id": "watercolour-day", "preset": "watercolour", "daylight": true, "overrides": { "exposure": 0.75 } },
+    { "id": "grotesque-panned", "preset": "oil-grotesque", "overrides": { "canvasOffset": [13.5, -7.25] } }
+  ],
+  "bounds": { "max_abs_code": 8, "p999_abs_code": 2, "mean_abs_code": 0.1 },
+  "why_looser_than_the_other_shaders": "The stroke pass follows the flow field for up to 16 steps, rounding to the nearest pixel at each; an f32 rounding on a half-pixel or a sign check on a near-perpendicular step can send one stroke down a different path, which moves that stroke's relief and colour jitter by a few codes. The bound allows isolated strokes of that kind, not a systematic difference."
+}
