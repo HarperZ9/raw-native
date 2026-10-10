@@ -1,0 +1,46 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Palette and dither: GPU against the f64 reference</title>
+<link rel="icon" href="data:,">
+<!-- Run by tests/web/shaders_parity.py --shader dither. Every case in the cross product of
+     evidence/shaders-dither-parity-bounds.json: palette indices from the GPU pass against the
+     vendored retro-dither.js reference, counted pixel by pixel. -->
+<script type="module">
+import { createHost } from "../raw-gpu.mjs";
+import { createGpuDither, ditherRef } from "../shaders/dither/dither.mjs";
+import { gradientPlate, randomPlate } from "../shaders/fixtures/plates.mjs";
+
+const q = new URLSearchParams(location.search);
+try {
+  const host = await createHost({ timing: false });
+  const plates = { gradient: gradientPlate(320, 180), random: randomPlate(512, 512, 7) };
+  if (q.get("exhaustive")) {
+    // Every 24-bit colour once, as a 4096 x 4096 plate (pixel p holds colour p): local evidence, not CI.
+    const all = new Uint8Array(4096 * 4096 * 4);
+    for (let p = 0; p < 4096 * 4096; p++) { all[p * 4] = p & 255; all[p * 4 + 1] = (p >> 8) & 255; all[p * 4 + 2] = p >> 16; all[p * 4 + 3] = 255; }
+    const [palette, mode] = q.get("exhaustive").split(":"), c = { palette, mode, strength: 1, brightness: 0 };
+    const t0 = performance.now(), want = ditherRef(all, 4096, 4096, c), cpuMs = performance.now() - t0;
+    const g = await createGpuDither(host, c, { w: 4096, h: 4096 }); g.frame(all); const got = (await g.read()).idx; g.destroy();
+    let bad = 0, first = -1;
+    for (let i = 0; i < want.length; i++) if (want[i] !== got[i]) { bad++; if (first < 0) first = i; }
+    window.__result = { bounds: { mismatched_pixels: 0 }, cases: [{ id: `exhaustive-${palette}-${mode}`, colours: 16777216, mismatched: bad, firstMismatch: first, cpu_ms: Math.round(cpuMs) }], adapter: host.info };
+    throw "done";
+  }
+  const cases = [];
+  for (const palette of ["gameboy", "cga", "ega", "pico8", "nes", "mono1"]) for (const mode of ["none", "bayer2", "bayer4", "bayer8", "noise", "blue"]) for (const plate of Object.keys(plates))
+    cases.push({ palette, mode, plate, strength: 1, brightness: 0 });
+  for (const mode of ["bayer8", "noise"]) for (const plate of Object.keys(plates)) cases.push({ palette: "pico8", mode, plate, strength: 0.7, brightness: 0.05 });
+  const only = q.get("case"), out = [];
+  for (const c of cases) {
+    const id = `${c.palette}-${c.mode}-${c.plate}-s${c.strength}-b${c.brightness}`;
+    if (only && !id.startsWith(only)) continue;
+    const pl = plates[c.plate], want = ditherRef(pl.data, pl.width, pl.height, c);
+    const g = await createGpuDither(host, c, { w: pl.width, h: pl.height });
+    g.frame(pl.data); const got = (await g.read()).idx; g.destroy();
+    let bad = 0, first = -1;
+    for (let i = 0; i < want.length; i++) if (want[i] !== got[i]) { bad++; if (first < 0) first = i; }
+    out.push({ id, mismatched: bad, firstMismatch: first });
+  }
+  window.__result = { bounds: { mismatched_pixels: 0 }, cases: out, adapter: host.info };
+} catch (e) { if (e !== "done") window.__result = { error: String(e && e.stack || e) }; }
+</script>

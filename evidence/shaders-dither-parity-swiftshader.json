@@ -1,0 +1,394 @@
+{
+  "bounds": {
+    "mismatched_pixels": 0
+  },
+  "cases": [
+    {
+      "id": "gameboy-none-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "gameboy-none-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "gameboy-bayer2-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "gameboy-bayer2-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "gameboy-bayer4-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "gameboy-bayer4-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "gameboy-bayer8-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "gameboy-bayer8-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "gameboy-noise-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "gameboy-noise-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "gameboy-blue-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "gameboy-blue-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "cga-none-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "cga-none-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "cga-bayer2-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "cga-bayer2-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "cga-bayer4-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "cga-bayer4-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "cga-bayer8-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "cga-bayer8-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "cga-noise-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "cga-noise-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "cga-blue-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "cga-blue-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "ega-none-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "ega-none-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "ega-bayer2-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "ega-bayer2-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "ega-bayer4-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "ega-bayer4-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "ega-bayer8-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "ega-bayer8-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "ega-noise-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "ega-noise-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "ega-blue-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "ega-blue-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "pico8-none-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "pico8-none-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "pico8-bayer2-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "pico8-bayer2-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "pico8-bayer4-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "pico8-bayer4-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "pico8-bayer8-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "pico8-bayer8-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "pico8-noise-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "pico8-noise-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "pico8-blue-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "pico8-blue-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "nes-none-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "nes-none-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "nes-bayer2-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "nes-bayer2-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "nes-bayer4-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "nes-bayer4-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "nes-bayer8-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "nes-bayer8-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "nes-noise-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "nes-noise-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "nes-blue-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "nes-blue-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "mono1-none-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "mono1-none-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "mono1-bayer2-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "mono1-bayer2-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "mono1-bayer4-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "mono1-bayer4-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "mono1-bayer8-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "mono1-bayer8-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "mono1-noise-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "mono1-noise-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "mono1-blue-gradient-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "mono1-blue-random-s1-b0",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "pico8-bayer8-gradient-s0.7-b0.05",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "pico8-bayer8-random-s0.7-b0.05",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "pico8-noise-gradient-s0.7-b0.05",
+      "mismatched": 0,
+      "firstMismatch": -1
+    },
+    {
+      "id": "pico8-noise-random-s0.7-b0.05",
+      "mismatched": 0,
+      "firstMismatch": -1
+    }
+  ],
+  "adapter": {
+    "vendor": "google",
+    "architecture": "swiftshader",
+    "device": "",
+    "description": ""
+  },
+  "adapter_kind": "swiftshader"
+}

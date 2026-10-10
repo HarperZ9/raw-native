@@ -1,0 +1,10 @@
+{
+  "what": "GPU palette quantisation and dither (web/shaders/dither) against the vendored f64 reference (web/shaders/reference/retro-dither.mjs, the author's retro-dither.js unchanged)",
+  "fixed_before_first_run": "2026-10-10",
+  "roadmap": "M1 criterion 10: ordered modes bit-equal to retro-dither.js",
+  "compare": "palette index per pixel; a mismatch is any pixel whose index differs",
+  "plates": { "gradient": "fixtures/plates.mjs gradientPlate(320, 180)", "random": "fixtures/plates.mjs randomPlate(512, 512, 7): 262,144 seeded 24-bit colours" },
+  "cases": "every palette in [gameboy, cga, ega, pico8, nes, mono1] x every mode in [none, bayer2, bayer4, bayer8, noise, blue] x both plates at strength 1, plus pico8 bayer8 and noise at strength 0.7 and brightness 0.05",
+  "bounds": { "mismatched_pixels": 0 },
+  "note": "noise (IGN) and blue are held to the same bound although the roadmap only requires the ordered modes."
+}

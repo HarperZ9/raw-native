@@ -58,3 +58,20 @@ fn halo_up(x: u32, y: u32) -> vec3f {
   }
   F[i] = o;
 }`;
+
+// One separable pass of the emulsion-scatter blur (P_mtfDir 0 along x, 1 along y).
+export const MTF_WGSL = /* wgsl */ `
+@group(0) @binding(1) var<storage, read> mw: array<f32>;
+@group(0) @binding(2) var<storage, read> a: array<vec4f>;
+@group(0) @binding(3) var<storage, read_write> o: array<vec4f>;
+@compute @workgroup_size(8, 8) fn main(@builtin(global_invocation_id) id: vec3u) {
+  let W = i32(P[P_outW]); let Hh = i32(P[P_outH]); let x = i32(id.x); let y = i32(id.y);
+  if (x >= W || y >= Hh) { return; }
+  let r = (i32(arrayLength(&mw)) - 1) / 2; let alongY = P[P_mtfDir] > 0.5; var s = vec3f(0.0);
+  for (var k = -r; k <= r; k++) {
+    var xx = x; var yy = y;
+    if (alongY) { yy = clamp(y + k, 0, Hh - 1); } else { xx = clamp(x + k, 0, W - 1); }
+    s += mw[k + r] * a[yy * W + xx].xyz;
+  }
+  o[y * W + x] = vec4f(s, 0.0);
+}`;

@@ -8,6 +8,13 @@
 //   "film"  scene stage: scene-linear light in, the print out as display values (the film
 //           is its own tone mapper, so use it without post.colour).
 //           spec: { preset: "500t-print" | ..., ev, ...overrides }
+//   "crt-classic"  display stage: the Studio's tube (retro-crt.js) on the GPU: scanlines,
+//           masks, bloom, halation, curvature, chromatic aberration, vignette.
+//           spec: the retro-crt.js options ({ cell, scanlines, mask, aberration, ... })
+//   "dither"  display stage: palette quantisation with ordered, noise or blue-noise dither.
+//           spec: { palette: "pico8" | ..., mode: "bayer4" | ..., strength, brightness }
+// The last two work on 8-bit plates, as their references do: the frame is rounded to
+// bytes going in, and their bytes come back out.
 // Each pass carries the library's CPU reference, run the way the stack feeds the GPU, so
 // tests/web/post_passes.py holds the GPU to it.
 import { registerPass } from "../motion/post.mjs";
@@ -17,6 +24,9 @@ import { createCrt } from "./crt/crt.mjs";
 import { shoulder } from "./crt/glass.mjs";
 import { createGpuFilm } from "./film/gpu.mjs";
 import { createFilm } from "./film/run.mjs";
+import { createGpuClassic, classicRef } from "./crt-classic/classic.mjs";
+import { createGpuDither, ditherRef } from "./dither/dither.mjs";
+import { labPalette } from "./reference/retro-palettes.mjs";
 
 const srgb = (l) => (l <= 0.0031308 ? l * 12.92 : 1.055 * Math.pow(l, 1 / 2.4) - 0.055);
 const SPLIT = (spec, keys) => Object.fromEntries(Object.entries(spec).filter(([k]) => k !== "pass" && !keys.includes(k)));
@@ -110,6 +120,68 @@ registerPass("film", {
       for (let c = 0; c < 3; c++) out[i + c] = srgb(Math.min(1, Math.max(0, img[i + c])));
       out[i + 3] = 1;
     }
+    return out;
+  },
+});
+
+// Byte-plate effects: pack the frame's display values to RGBA8 words, run the plate
+// effect, unpack its RGBA8 words to values.
+const PACK_WGSL = /* wgsl */ `
+@group(0) @binding(0) var<storage, read> a: array<vec4f>;
+@group(0) @binding(1) var<storage, read_write> b: array<u32>;
+fn q(v: f32) -> u32 { return u32(floor(clamp(v, 0.0, 1.0) * 255.0 + 0.5)); }
+@compute @workgroup_size(64) fn main(@builtin(global_invocation_id) g: vec3u) {
+  if (g.x >= arrayLength(&b)) { return; }
+  let c = a[g.x];
+  b[g.x] = q(c.x) | (q(c.y) << 8u) | (q(c.z) << 16u) | (q(c.w) << 24u);
+}`;
+const UNPACK_WGSL = /* wgsl */ `
+@group(0) @binding(0) var<storage, read> a: array<u32>;
+@group(0) @binding(1) var<storage, read_write> b: array<vec4f>;
+@compute @workgroup_size(64) fn main(@builtin(global_invocation_id) g: vec3u) {
+  if (g.x >= arrayLength(&b)) { return; }
+  let w = a[g.x];
+  b[g.x] = vec4f(f32(w & 255u), f32((w >> 8u) & 255u), f32((w >> 16u) & 255u), 255.0) / 255.0;
+}`;
+async function plateEffect(host, width, height, inner) {
+  const n = width * height, st = (bytes, label) => host.buffer({ size: bytes, usage: ["storage", "copy-src", "copy-dst"], label });
+  const input = st(16 * n, "plate in"), output = st(16 * n, "plate out");
+  const [pack, unpack] = await Promise.all([host.compute("plate pack", PACK_WGSL), host.compute("plate unpack", UNPACK_WGSL)]);
+  const g = host.graph(), ri = g.importBuffer("in", input), rs = g.importBuffer("src", inner.src);
+  g.addPass("pack", [[ri, Access.StorageRead], [rs, Access.StorageWrite]], (c) => c.dispatch(pack, [input, inner.src], Math.ceil(n / 64)));
+  g.markOutput(rs); g.compile();
+  const g2 = host.graph(), rp2 = g2.importBuffer("packed", inner.packed), ro2 = g2.importBuffer("out", output);
+  g2.addPass("unpack", [[rp2, Access.StorageRead], [ro2, Access.StorageWrite]], (c) => c.dispatch(unpack, [inner.packed, output], Math.ceil(n / 64)));
+  g2.markOutput(ro2); g2.compile();
+  return { input, output, record(enc) { host.record(g, enc, false); inner.record(enc); host.record(g2, enc, false); },
+    destroy() { input.destroy(); output.destroy(); inner.destroy(); } };
+}
+const toBytes = (input) => { const b = new Uint8Array(input.length); for (let i = 0; i < b.length; i++) b[i] = Math.floor(Math.min(1, Math.max(0, input[i])) * 255 + 0.5); return b; };
+const fromBytes = (bytes) => { const o = new Float32Array(bytes.length); for (let i = 0; i < o.length; i++) o[i] = (i & 3) === 3 ? 1 : bytes[i] / 255; return o; };
+const optsOf = (spec) => Object.fromEntries(Object.entries(spec).filter(([k]) => k !== "pass"));
+
+registerPass("crt-classic", {
+  stage: "display",
+  tests: [{ cell: 4, scanlines: true, scanStrength: 0.35, beam: 0.5, mask: "grille", maskStrength: 0.3, bloom: 0.18, halation: 0.2, curvature: 0.12, aberration: 0.1, vignette: 0.25 },
+    { cell: 3, scanlines: true, scanStrength: 0.6, beam: 1, mask: "slot", maskStrength: 0.8 }],
+  effect: async (host, { width, height, spec }) => {
+    const t = await createGpuClassic(host, optsOf(spec), { w: width, h: height });
+    return plateEffect(host, width, height, { src: t.src, packed: t.packed, record: (enc) => t.record(enc), destroy: () => t.destroy() });
+  },
+  cpu: (input, W, H, spec) => fromBytes(classicRef(toBytes(input), W, H, optsOf(spec))),
+});
+
+registerPass("dither", {
+  stage: "display",
+  tests: [{ palette: "pico8", mode: "bayer4" }, { palette: "gameboy", mode: "bayer8" }, { palette: "ega", mode: "blue" }, { palette: "nes", mode: "noise", strength: 0.7, brightness: 0.05 }],
+  effect: async (host, { width, height, spec }) => {
+    const d = await createGpuDither(host, optsOf(spec), { w: width, h: height });
+    return plateEffect(host, width, height, { src: d.buffers.src, packed: d.packed, record: (enc) => d.record(enc), destroy: () => d.destroy() });
+  },
+  cpu: (input, W, H, spec) => {
+    const bytes = toBytes(input), idx = ditherRef(bytes, W, H, optsOf(spec));
+    const d = labPalette(spec.palette || "pico8").map((e) => e.rgb), out = new Float32Array(W * H * 4);
+    for (let p = 0; p < W * H; p++) { const c = d[idx[p]]; out[4 * p] = c[0] / 255; out[4 * p + 1] = c[1] / 255; out[4 * p + 2] = c[2] / 255; out[4 * p + 3] = 1; }
     return out;
   },
 });
