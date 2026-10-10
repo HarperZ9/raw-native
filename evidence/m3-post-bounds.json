@@ -109,5 +109,10 @@
    "Scene for coverage, procedure fixed now: test_post --scene-stats prints, per scene, the reference's occluded pixels and SSR's resolvable pixels, computing neither GTAO nor SSR. A close camera on the interior role's model is chosen as the first of these candidates, in this order, that reaches 2,000 of both: eye (0.9, 1.2, 1.6), (0.7, 1.0, 1.2), (0.5, 0.8, 0.9), each toward (0, 0.3, 0). The choice goes into a note before its first GTAO or SSR run."
   ],
   "bounds": "Unchanged; the two-scene gate stays."
+ },
+ "method_note_4_2026_10_10": {
+  "written": "2026-10-10, after --scene-stats and before the scene's first GTAO or SSR run",
+  "stats": "Reference-only coverage: interior close (0.9, 1.2, 1.6) 19,801 occluded and 8,418 resolvable; (0.7, 1.0, 1.2) 19,987 and 7,759; (0.5, 0.8, 0.9) 17,799 and 6,555. The other scenes as in the second run.",
+  "choice": "The first candidate meets both coverage bounds: a sixth scene, the interior role's model from eye (0.9, 1.2, 1.6) toward (0, 0.3, 0)."
  }
 }
