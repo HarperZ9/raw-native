@@ -120,5 +120,11 @@
   "first_run": "Failed the RMSE bound: on the pan, TAA's RMSE is 1.23 times the single-sample RMSE (bound 0.5); TAA without jitter reaches 0.81. Ghosting passes: 0.0055 over 12,166 trail pixels (bound 0.03); the no-clip, no-depth control reaches 0.298 and fails as required; clip only 0.021 and depth test only 0.012, reported.",
   "diagnosis": "Bilinear history sampling blurs the history on every frame of a sub-pixel pan. At 0.3 pixels a frame and a blend of 0.1, the accumulated blur has a standard deviation of roughly 1.4 pixels, which costs more at edges than the aliasing it removes.",
   "change": "The history is sampled with a 4 x 4 Catmull-Rom filter (B = 0, C = 0.5) instead of bilinearly; the colour clip then bounds its overshoot. Nothing else changes. Bounds unchanged."
+ },
+ "method_note_6_2026_10_10": {
+  "written": "2026-10-10, after the second TAA run and before any change is run",
+  "second_run": "Failed RMSE again: ratio 1.22 with Catmull-Rom history. Note 5's diagnosis was wrong. Ghosting 0.0059, control 0.308.",
+  "diagnosis": "A static-camera probe (not a checked run) isolates the cause: after 48 frames TAA reads 0.0256 RMSE with the depth test and 0.0060 without it, against 0.0211 for a single sample and 0.0042 for a plain average of the jittered frames. The depth test compares against the previous frame's depth at the nearest pixel; at every silhouette the jitter makes consecutive frames sample different surfaces, so the test rejects the history exactly where anti-aliasing needs it.",
+  "change": "The depth test rejects the history only when the expected previous depth lies outside the range of the previous frame's depths over the 3 x 3 pixels around the reprojected position, widened by the same tolerance (2% plus 0.02 units); a pixel with no geometry in that range counts as background, as before. Catmull-Rom history stays. Bounds unchanged."
  }
 }
