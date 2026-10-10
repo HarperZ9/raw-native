@@ -3,7 +3,7 @@
 #include "raw/renderer/post.hpp"
 #include "raw/renderer/raster.hpp"
 #include "raw/renderer/taa.hpp"
-#include "raw/tools/model_scene.hpp"
+#include "raw/scene/scene.hpp"
 #include "gpu_util.hpp"
 #include "shaders/post_layout.hpp"
 #include <algorithm>
@@ -147,8 +147,8 @@ PostParity postParity(rhi::Device& dev, const std::vector<std::pair<std::string,
         r.scenes.push_back(c);
     }
     // TAA: the moving-box sequence, CPU and GPU each feeding back its own history.
-    CliParams p; p.width = p.height = 128;
-    const Scene base = sceneFromParams(p, nullptr);
+
+    const Scene base = buildTestScene(128, 128);
     const Mat4 vp = mul(base.camera.proj(), base.camera.view());
     const auto sx = [&](Vec3 q) { const Vec4 c = mul(vp, Vec4{q.x, q.y, q.z, 1}); return (c.x / c.w * 0.5f + 0.5f) * 128.0f; };
     const float dx = 1.5f * 0.01f / (sx({0.01f, 1, 0}) - sx({0, 1, 0}));
