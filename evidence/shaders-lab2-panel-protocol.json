@@ -1,0 +1,53 @@
+{
+  "what": "Blind paired comparison for the five shader lab 2 techniques, each against the conventional result on the same frame",
+  "fixed_before_first_run": "2026-10-10, before any panel image was rendered and before any rating",
+  "follows": "evidence/shaders-comparison-protocol.json (design, raters, metric and decision rule as there)",
+  "claim_rule": "No claim that a technique is preferred unless its decision rule is met. Losses and null results are recorded with the same prominence as wins. A preference over the conventional result is not a claim of superiority over any other product.",
+  "raters": "The author plus volunteers. Model judges are not used as raters.",
+  "design": "Two-alternative forced choice. Each pair shown twice with sides swapped. Order and sides from seed 20261012, committed here.",
+  "metric": "Win rate of the technique against its conventional result, with a 95% Wilson interval, per technique.",
+  "decision_rule": "'preferred' when the interval's lower bound is above 0.5; 'not distinguishable' when it spans 0.5; 'lost' when the upper bound is below 0.5.",
+  "renderer": "The CPU references (tools/shaders/lab2-sheets.mjs and the panel build), whose GPU passes match them within 1 code.",
+  "pairs": {
+    "adjacency": {
+      "question": "Which looks more like a developed film print?",
+      "conventional": "the scene with the same display encode, no development model",
+      "cases": [
+        "street dusk 640 x 400: eberhard, mackie, exhausted",
+        "edges plate 640 x 400: eberhard"
+      ]
+    },
+    "sag": {
+      "question": "Which looks more like a real CRT?",
+      "conventional": "the same signal with no supply sag",
+      "cases": [
+        "flash clip: street dusk as signal at 640 x 480, 36 frames at 12 fps, a flash every 1.5 s, thriller and consumer, as GIF",
+        "box frame 640 x 480, thriller, still"
+      ]
+    },
+    "lightpaint": {
+      "question": "Which looks more like a painting?",
+      "conventional": "albedo times irradiance (RGB multiply)",
+      "cases": [
+        "street dusk 640 x 400: disco, grotesque, complement",
+        "street day 640 x 400: disco"
+      ]
+    },
+    "glaze": {
+      "question": "Which looks more like pearlescent or iridescent paint?",
+      "conventional": "the body paint without flakes",
+      "cases": [
+        "street dusk 640 x 400: beetle, oil-slick, bruise",
+        "street day 640 x 400: oil-slick"
+      ]
+    },
+    "hysteresis": {
+      "question": "Which is easier to watch while still following the light?",
+      "conventional": "plain quantisation, no memory",
+      "cases": [
+        "flicker clip: street dusk 320 x 200 shown x2, 48 frames at 24 fps, bands6 and pico8, as GIF"
+      ]
+    }
+  },
+  "limits": "Still frames cannot show the temporal techniques fully; clips are GIFs (256 colours, which suits the banded and paletted clips and is lossy for the sag clip). The conventional result is the technique switched off, not a competitor product; a competitor comparison (for example crt-guest-advanced raster bloom) would need its parameter changed from default, which this panel does not do."
+}
