@@ -109,3 +109,13 @@ if (on("fibre")) {
     }
   }
 }
+
+if (on("hatch")) {
+  const { resolveHatch, runHatch } = await import("../../web/shaders/hatch/hatch.mjs");
+  const { displayEncode8 } = await import("../../web/shaders/purity/purity.mjs");
+  for (const preset of ["engraving", "crosshatch", "ink"]) {
+    const r = runHatch(resolveHatch(preset, {}, { w: W, h: H })), im = { width: W, height: H, data: displayEncode8(r) };
+    save(`hatch-${preset}`, im); save(`hatch-${preset}-crop`, nearest(crop(im, 240, 120, 200, 150), 3));
+    if (preset === "engraving") { const d = new Uint8ClampedArray(W * H * 4); for (let i = 0; i < W * H; i++) { const v = r.fallback[i] ? 255 : 0; d.set([v, v * 0.6, 0, 255], i * 4); } save("hatch-fallback-map", { width: W, height: H, data: d }); }
+  }
+}

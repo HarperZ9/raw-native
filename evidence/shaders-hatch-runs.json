@@ -1,0 +1,27 @@
+{
+  "what": "Every run of the curvature-hatching checks. Bounds file unchanged since 679f718.",
+  "runs": [
+    {
+      "date": "2026-10-10",
+      "check": "node tests, first run",
+      "result": "4 of 4 pass (sphere curvature and umbilics, cylinder curvatures and direction, plane fallback, torus saddle)"
+    },
+    {
+      "date": "2026-10-10",
+      "check": "GPU parity, SwiftShader, first run",
+      "result": "3 of 3 within bounds: over-2 fraction 0.00007 to 0.00015 (bound 0.005), max 15 to 17 codes at a few silhouette pixels"
+    },
+    {
+      "date": "2026-10-10",
+      "check": "look review",
+      "result": "three problems: one world line frequency turned the distant ground into moire; a dot product with the projected-up fallback direction swirled on the sphere; the cross-hatch layer's dot product with the direction field zigzagged on the column",
+      "change": "Line frequency halves by nested levels to keep about 4 px spacing; antialiasing ramps over one pixel; umbilic and flat regions use planar slices (horizontal on upright surfaces, a fixed slant on the ground); the second layer is always a planar slant. Bounds unchanged."
+    },
+    {
+      "date": "2026-10-10",
+      "check": "node tests and GPU parity after the change",
+      "result": "4 of 4; 3 of 3 with over-2 fraction 0 and max 2 codes"
+    }
+  ],
+  "limits": "The line coordinate is a dot product with the principal direction, valid where the direction varies slowly; where it turns fast (the torus's inner top) lines swirl. Integrating the direction field (streamlines or LIC) would fix it at a cost. Faint moire remains on the far ground."
+}
