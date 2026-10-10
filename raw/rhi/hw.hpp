@@ -120,4 +120,21 @@ struct Timing {
 // flat = true runs the control kernel, whose work ignores n.
 Timing timestampLinearity(Device& dev, bool flat, int repetitions = 21);
 
+// H1.1: closest hits by inline ray query (bounds in evidence/hw-h1-1-bounds.json).
+struct RayIn { float ox, oy, oz, tmin, dx, dy, dz, tmax; };
+struct HitOut { float t, u, v; int32_t tri; };   // tri -1 on a miss; u, v weight vertices b and c
+struct TraceOptions {
+    float offset[3]{0, 0, 0};   // added to the instance transform (the offset control)
+    int warmup{0}, repeats{0};  // timed repeats of the trace dispatch after the first
+};
+struct TraceResult {
+    bool ran{false};            // false: unsupported, forced off, or an error (see error)
+    std::string error;
+    double buildMs{0};          // GPU time of the bottom- and top-level builds
+    std::vector<double> traceMs;   // one GPU time per measured repeat
+};
+// Triangles are 9 floats each (a, b, c). Hits are written for every ray.
+TraceResult traceRayQuery(Device& dev, const std::vector<float>& triangles, const std::vector<RayIn>& rays,
+                          const TraceOptions& opt, std::vector<HitOut>& hits);
+
 }  // namespace raw::rhi::hw

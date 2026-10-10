@@ -29,6 +29,9 @@ public:
     bool uavBuffer(uint64_t size, ComPtr<ID3D12Resource>& out, std::string& err);
     bool uploadBuffer(const void* data, uint64_t size, ComPtr<ID3D12Resource>& out, std::string& err);
     bool readbackBuffer(uint64_t size, ComPtr<ID3D12Resource>& out, std::string& err);
+    // A DEFAULT-heap UAV buffer created in the RAYTRACING_ACCELERATION_STRUCTURE state (H1.1).
+    bool accelBuffer(uint64_t size, ComPtr<ID3D12Resource>& out, std::string& err);
+    ID3D12Device* device(){ return dev_; }
 
     bool begin(std::string& err);
     ID3D12GraphicsCommandList* list(){ return list_.Get(); }

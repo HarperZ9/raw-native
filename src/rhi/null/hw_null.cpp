@@ -20,3 +20,10 @@ Timing timestampLinearity(Device&, bool, int){
     return t;
 }
 }
+namespace raw::rhi::hw {
+TraceResult traceRayQuery(Device&, const std::vector<float>&, const std::vector<RayIn>&, const TraceOptions&, std::vector<HitOut>&){
+    TraceResult r;
+    r.error = "no inline ray query on this backend";
+    return r;
+}
+}
