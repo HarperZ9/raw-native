@@ -50,14 +50,19 @@ export async function createGpuPaint(host, preset, overrides, size) {
   pass("compose", pipes.compose, [[r.P, R], [r.pig, R], [r.olat, R], [r.os, R], [r.H, R], [r.Rl, R], [r.img, Wr]], [B.P, B.pig, B.olat, B.os, B.H, B.Rl, B.img]);
   pass("encode8", pipes.encode8, [[r.P, R], [r.pig, R], [r.img, R], [r.out8, Wr]], [B.P, B.pig, B.img, B.out8]);
   g.markOutput(r.out8); g.markOutput(r.img); g.compile();
+  const params = (offset) => {
+    if (offset) plan.p.canvasOffset = offset;
+    host.write(B.P, packPaintParams(plan, 0)); host.write(B.Px, packPaintParams(plan, 0)); host.write(B.Py, packPaintParams(plan, 1));
+  };
   return {
-    plan, packed: B.out8, image: B.img,
+    plan, packed: B.out8, image: B.img, scene: B.scene,
     frame(sceneRGBA, offset = null) {
-      if (offset) plan.p.canvasOffset = offset;
-      host.write(B.P, packPaintParams(plan, 0)); host.write(B.Px, packPaintParams(plan, 0)); host.write(B.Py, packPaintParams(plan, 1));
       if (sceneRGBA) host.write(B.scene, sceneRGBA);
+      params(offset);
       host.frame(g);
     },
+    // Record into an encoder the caller owns (the Motion post stack), scene already in B.scene.
+    record(enc, offset = null) { params(offset); host.record(g, enc, false); },
     async read() {
       const rd = async (buf, bytes) => {
         const s = host.buffer({ size: bytes, usage: ["map-read", "copy-dst"] }), enc = host.device.createCommandEncoder();

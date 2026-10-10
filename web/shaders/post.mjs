@@ -13,7 +13,10 @@
 //           spec: the retro-crt.js options ({ cell, scanlines, mask, aberration, ... })
 //   "dither"  display stage: palette quantisation with ordered, noise or blue-noise dither.
 //           spec: { palette: "pico8" | ..., mode: "bayer4" | ..., strength, brightness }
-// The last two work on 8-bit plates, as their references do: the frame is rounded to
+//   "paint"  scene stage: the painterly shader (structure tensor, anisotropic Kuwahara,
+//           Kubelka-Munk pigment, strokes and medium); scene light in, display values out.
+//           spec: { preset: "oil-grotesque" | "oil" | "gouache" | "watercolour", ...overrides }
+// crt-classic and dither work on 8-bit plates, as their references do: the frame is rounded to
 // bytes going in, and their bytes come back out.
 // Each pass carries the library's CPU reference, run the way the stack feeds the GPU, so
 // tests/web/post_passes.py holds the GPU to it.
@@ -27,6 +30,8 @@ import { createFilm } from "./film/run.mjs";
 import { createGpuClassic, classicRef } from "./crt-classic/classic.mjs";
 import { createGpuDither, ditherRef } from "./dither/dither.mjs";
 import { labPalette } from "./reference/retro-palettes.mjs";
+import { createGpuPaint } from "./paint/gpu.mjs";
+import { createPaint } from "./paint/paint.mjs";
 
 const srgb = (l) => (l <= 0.0031308 ? l * 12.92 : 1.055 * Math.pow(l, 1 / 2.4) - 0.055);
 const SPLIT = (spec, keys) => Object.fromEntries(Object.entries(spec).filter(([k]) => k !== "pass" && !keys.includes(k)));
@@ -182,6 +187,22 @@ registerPass("dither", {
     const bytes = toBytes(input), idx = ditherRef(bytes, W, H, optsOf(spec));
     const d = labPalette(spec.palette || "pico8").map((e) => e.rgb), out = new Float32Array(W * H * 4);
     for (let p = 0; p < W * H; p++) { const c = d[idx[p]]; out[4 * p] = c[0] / 255; out[4 * p + 1] = c[1] / 255; out[4 * p + 2] = c[2] / 255; out[4 * p + 3] = 1; }
+    return out;
+  },
+});
+
+registerPass("paint", {
+  stage: "scene",
+  tests: [{ preset: "oil-grotesque" }, { preset: "watercolour" }],
+  effect: async (host, { width, height, spec }) => {
+    const p = await createGpuPaint(host, spec.preset || "oil", SPLIT(spec, ["preset"]), { w: width, h: height });
+    const e = await encoder(host, false, width * height, p.image, 1);
+    return { input: p.scene, output: e.out, record(enc) { p.record(enc); e.record(enc); }, destroy() { p.destroy(); e.destroy(); } };
+  },
+  cpu: (input, W, H, spec) => {
+    const { img } = createPaint(spec.preset || "oil", SPLIT(spec, ["preset"]), { w: W, h: H }).frame({ width: W, height: H, data: input });
+    const out = new Float32Array(W * H * 4);
+    for (let i = 0; i < out.length; i += 4) { for (let c = 0; c < 3; c++) out[i + c] = srgb(Math.min(1, Math.max(0, img[i + c]))); out[i + 3] = 1; }
     return out;
   },
 });
