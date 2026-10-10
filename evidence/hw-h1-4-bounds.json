@@ -1,0 +1,27 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "HW H1.4: async compute on D3D12, a compute queue beside the direct queue with fence synchronization (mission-control 2026-10-10-engine-hw/PLAN.md)",
+ "written": "2026-10-10, before the implementation and the first run",
+ "work": "three kernels over 65,536 threads each, built from the H1.0 integer hash: P (producer) writes X, W (independent) writes Y, C (consumer) writes Z = X xor rotl(Y, 7). P and W take n rounds a thread, C one.",
+ "schedules": {
+  "serial": "P, W, C in that order on the direct queue, UAV barriers between them",
+  "async": "P on the compute queue, which signals fence F; W then C on the direct queue, with the direct queue waiting on F before C"
+ },
+ "checks": {
+  "equal": {
+   "what": "Z from the async schedule against Z from the serial schedule and against the CPU, n = 4,096, 10 repetitions",
+   "bound": "bit-equal on every element of every repetition"
+  },
+  "control_wrong_wait": {
+   "what": "the compute queue first waits on a CPU-signalled fence G before P; the direct queue waits on F at value 0 (already reached) before C; the CPU signals G only after the direct queue has finished. X is zero before P runs.",
+   "bound": "Z differs from the serial Z (it is computed from the zero sentinel). If it does not differ, the check does not discriminate and is reported so."
+  },
+  "fallback": {
+   "what": "RAW_NATIVE_HW_DISABLE=async_compute",
+   "bound": "the tool runs the serial schedule only, says so, and Z matches the CPU"
+  }
+ },
+ "timing": "wall-clock time (QueryPerformanceCounter) from the first submission until both queues' fences complete, per schedule, 10 warm-up and 200 measured repetitions on the RTX 4090 (5 on WARP, not a claim); median, p5, p95, p99, IQR. Overlap gain = serial median / async median with a 95% bootstrap interval (10,000 resamples); 'overlaps' needs an interval above 1. n is chosen so P and W each take about the same GPU time on the RTX (n is stated). A null result is reported as a null.",
+ "adapters": "D3D12 WARP with the debug layer locally and in CI; the RTX 4090 only under D:/gpu.lock.d",
+ "does_not_prove": "Overlap of raster with compute (this slice overlaps compute with compute); gains for any real frame; behaviour of more than two queues."
+}
