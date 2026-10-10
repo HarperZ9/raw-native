@@ -8,6 +8,7 @@
 #include "raw/tools/owned_assets.hpp"
 #include "raw/tools/hw_cmd.hpp"
 #include "raw/tools/hw_rayquery_cmd.hpp"
+#include "raw/tools/hw_async_cmd.hpp"
 #include "raw/rhi/rhi.hpp"
 #include "raw/renderer/raster.hpp"
 #include "raw/renderer/accel.hpp"
@@ -93,6 +94,8 @@ static const char* kUsage =
     "         math, async compute, timestamps); --checks runs the functional checks behind it\n"
     "       raw_native_cli hw-rayquery [--warmup N] [--repeats N] [--out FILE]\n"
     "         inline ray query against the CPU BVH on procedural scenes, with controls and timings\n"
+    "       raw_native_cli hw-async [--n N] [--warmup N] [--repeats N] [--out FILE]\n"
+    "         a compute queue beside the direct queue: results against the serial order, a control, timings\n"
     "       raw_native_cli pbr-parity\n"
     "         evaluate the glTF material model on the GPU backend and compare with the float64\n"
     "         reference (JSON on stdout; exit 0 pass, 1 fail, 4 no GPU backend or adapter)\n"
@@ -140,6 +143,7 @@ int main(int argc, char** argv){
     if (argc >= 2 && std::strcmp(argv[1], "shadow-parity") == 0) return shadowParityCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "hw-probe") == 0) return hwProbeCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "hw-rayquery") == 0) return hwRayQueryCommand(argc - 1, argv + 1);
+    if (argc >= 2 && std::strcmp(argv[1], "hw-async") == 0) return hwAsyncCommand(argc - 1, argv + 1);
     // The sampled-texture identity check on this build's GPU backend (ROADMAP M2
     // criterion 3): JSON on stdout; exit 0 when it passes, 1 when it fails, 4 without
     // a GPU backend or adapter.

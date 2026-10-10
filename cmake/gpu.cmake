@@ -146,6 +146,7 @@ function(raw_native_hw_shaders gen out_header)
         "hw_half_fallback|hw_half_fallback|cs_6_0|"
         "hw_rayquery_probe|hw_rayquery_probe|cs_6_5|"
         "hw_rayquery|hw_rayquery|cs_6_5|"
+        "hw_async_p|hw_async|cs_6_0|-DMODE=0" "hw_async_w|hw_async|cs_6_0|-DMODE=1" "hw_async_c|hw_async|cs_6_0|-DMODE=2"
         "hw_busy|hw_busy|cs_6_0|-DFLAT=0"
         "hw_busy_flat|hw_busy|cs_6_0|-DFLAT=1")
     set(headers "")
@@ -199,7 +200,7 @@ if(RAW_NATIVE_GPU_D3D12)
     add_library(raw_native_d3d12 STATIC src/rhi/d3d12/d3d12_device.cpp src/rhi/d3d12/d3d12_commands.cpp
         src/rhi/d3d12/d3d12_raster.cpp src/rhi/d3d12/d3d12_texture.cpp
         src/renderer/gpu/shaders_dxil.cpp
-        src/rhi/d3d12/hw_queue.cpp src/rhi/d3d12/hw_probe.cpp src/rhi/d3d12/hw_checks.cpp src/rhi/d3d12/hw_rayquery.cpp
+        src/rhi/d3d12/hw_queue.cpp src/rhi/d3d12/hw_probe.cpp src/rhi/d3d12/hw_checks.cpp src/rhi/d3d12/hw_rayquery.cpp src/rhi/d3d12/hw_async.cpp
         ${RAW_NATIVE_DXIL_HEADERS} ${RAW_NATIVE_HW_DXIL_HEADERS})
     target_include_directories(raw_native_d3d12 PRIVATE "${gen}")
     target_link_libraries(raw_native_d3d12 PUBLIC raw_native d3d12 dxgi)

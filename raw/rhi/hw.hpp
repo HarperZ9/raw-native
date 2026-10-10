@@ -133,6 +133,17 @@ struct TraceResult {
     double buildMs{0};          // GPU time of the bottom- and top-level builds
     std::vector<double> traceMs;   // one GPU time per measured repeat
 };
+// H1.4: the async-compute schedules (bounds in evidence/hw-h1-4-bounds.json).
+enum class Schedule : uint8_t { Serial, Async, WrongWaitControl };
+struct AsyncRun {
+    bool ran{false};
+    std::string error;
+    std::vector<uint32_t> z;   // the consumer's output
+    double wallMs{0};          // first submission to both fences complete (QueryPerformanceCounter)
+};
+// Run one schedule with fresh buffers. Async and the control need the async_compute feature.
+AsyncRun asyncSchedule(Device& dev, Schedule s, uint32_t n);
+
 // Triangles are 9 floats each (a, b, c). Hits are written for every ray.
 TraceResult traceRayQuery(Device& dev, const std::vector<float>& triangles, const std::vector<RayIn>& rays,
                           const TraceOptions& opt, std::vector<HitOut>& hits);

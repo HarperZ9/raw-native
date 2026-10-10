@@ -246,6 +246,11 @@ jobs:
           set +e; RAW_NATIVE_D3D12_WARP=1 build/Release/raw_native_cli.exe hw-rayquery --warmup 0 --repeats 1 --out hw-rq.json > /dev/null; set -e
           RAW_NATIVE_D3D12_WARP=1 RAW_NATIVE_HW_DISABLE=ray_query build/Release/raw_native_cli.exe hw-rayquery --out hw-rq-off.json > /dev/null
           python scripts/hw_rayquery_gate.py hw-rq.json hw-rq-off.json
+      - name: Async compute on WARP matches the serial order and the CPU, a wrong fence wait is caught, and the feature can be forced off (HW H1.4)
+        shell: bash
+        run: |
+          RAW_NATIVE_D3D12_WARP=1 RAW_NATIVE_D3D12_DEBUG=1 build/Release/raw_native_cli.exe hw-async --warmup 0 --repeats 2 --out hw-async.json
+          RAW_NATIVE_D3D12_WARP=1 RAW_NATIVE_HW_DISABLE=async_compute build/Release/raw_native_cli.exe hw-async --warmup 0 --repeats 1 --out hw-async-off.json
       - name: Textures, samplers and raster passes on WARP match the CPU sampler reference (M2 criterion 3)
         shell: bash
         env:

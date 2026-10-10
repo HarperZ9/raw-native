@@ -1,0 +1,24 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/hw-h1-4-bounds.json (committed 3facfc2 before any code or run)",
+ "runs": [
+  {
+   "run": 1,
+   "adapter": "D3D12 WARP, debug layer on",
+   "n": 4096,
+   "result": "pass: serial and async bit-equal to the CPU over 11 repetitions; the wrong-wait control differs on 65,536 of 65,536 elements, as required. Wall medians 84.9 ms serial, 76.6 ms async; gain 1.11 with interval [0.99, 1.18], which includes 1: no overlap claim (and WARP is not a claim in any case)."
+  },
+  {
+   "run": "forced off",
+   "adapter": "same",
+   "result": "pass: serial schedule only, matching the CPU"
+  },
+  {
+   "run": 2,
+   "adapter": "D3D12 WARP, debug layer on",
+   "n": 4096,
+   "result": "after moving the async branch into a helper (no behaviour change): pass, 0 mismatches, control differs on 65,536 elements. The overlap numbers in hw-h1-4-d3d12-warp.json are from this run."
+  }
+ ],
+ "pending": "RTX 4090 under D:/gpu.lock.d with n = 262,144 (stated before the run; 4,096 rounds would finish in well under a millisecond on the RTX, below submission overhead): mission-control 2026-10-10-engine-hw/gpu/hw_h1_4_rtx_job.sh"
+}

@@ -27,3 +27,10 @@ TraceResult traceRayQuery(Device&, const std::vector<float>&, const std::vector<
     return r;
 }
 }
+namespace raw::rhi::hw {
+AsyncRun asyncSchedule(Device&, Schedule, uint32_t){
+    AsyncRun r;
+    r.error = "no queues beyond the RHI on this backend";
+    return r;
+}
+}
