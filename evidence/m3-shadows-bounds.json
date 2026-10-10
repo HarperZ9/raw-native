@@ -67,5 +67,12 @@
   "result_of_note_4": "Note 4's camera failed the cascade-0 requirement: 0 pixels in cascade 0, because the box fell outside its 26-degree half field of view (my geometry check tested depth, not the frustum). Coverage passed (44,327 shadowed, 6,573 penumbra; hard 0 mismatches). Recorded as a failed run.",
   "tool": "test_shadows --scene-stats prints each scene's G-buffer pixels per cascade and computes no shadow, so a camera can be checked for cascade use before any shadow result exists.",
   "change": "The near scene's camera: eye (1.8, 3.2, 2.4) toward (0.8, 0.2, 1.0). --scene-stats before any shadow run: 10,749 pixels in cascade 0, 54,787 in cascade 1, all 65,536 covered. Also, the CPU checks now take the perspective-correct view depth (RasterOptions::perspectiveDepth), the depth the GPU G-buffer carries; the screen-linear default overstates depth across large triangles and picks cascades wrongly. All scenes are rerun."
+ },
+ "method_note_6_2026_10_10": {
+  "written": "2026-10-10, before any run on the new scenes",
+  "decision": "The author decided on 2026-10-10: \"No test models, only full owned assets.\" Suzanne and the helmet role's Khronos model leave every shadow check.",
+  "scenes": "The checks run on the built-in test scene from its two cameras, raw-hero in the test scene in place of its box (scaled to a largest extent of 2, as a loaded model was), and raw-hall from its nave camera (eye -15.5, 2, 0 toward 10, 5.5, 0; fovy 1.1), all lit by method note 1's sun. raw-hall is at its own scale in metres, so the cascades' 40-unit reach covers the nave.",
+  "history": "The runs on Suzanne and FlightHelmet stay in evidence/m3-shadows-runs.json as history; they are not evidence for the new scenes.",
+  "bounds": "Unchanged, coverage bound included."
  }
 }

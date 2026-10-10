@@ -27,5 +27,11 @@
   }
  },
  "does_not_prove": "Frame times; anti-aliasing or sub-pixel coverage (one sample a pixel); that the RTX 4090 rasterizes identically (measured separately under the GPU lock); textured materials (a later slice).",
- "method_note": "Added 2026-10-10 before the first run: src/renderer/raster.cpp interpolates view distance linearly in screen space and depth-tests on that (its own comment says it is exact only where triangles do not overlap), while hardware depth tests are exact. The identity check therefore runs raster.cpp with a perspective-correct depth option (1 / interpolated 1/w), the default staying as it is so no committed golden changes. The GPU writes the perspective-correct view distance."
+ "method_note": "Added 2026-10-10 before the first run: src/renderer/raster.cpp interpolates view distance linearly in screen space and depth-tests on that (its own comment says it is exact only where triangles do not overlap), while hardware depth tests are exact. The identity check therefore runs raster.cpp with a perspective-correct depth option (1 / interpolated 1/w), the default staying as it is so no committed golden changes. The GPU writes the perspective-correct view distance.",
+ "method_note_2_2026_10_10": {
+  "written": "2026-10-10, before any run on the new scenes",
+  "decision": "The author decided on 2026-10-10: \"No test models, only full owned assets.\" Suzanne and SciFiHelmet leave the G-buffer check.",
+  "scenes": "The built-in test scene, raw-hero in the test scene in place of its box, and raw-hall from its nave camera, at 256 x 256. The first scene stays the control's scene.",
+  "bounds": "Unchanged. Earlier runs on Suzanne and SciFiHelmet stay in evidence/m3-rhi3-runs.json as history."
+ }
 }

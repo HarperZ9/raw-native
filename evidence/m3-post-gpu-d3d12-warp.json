@@ -1,0 +1,16 @@
+{
+ "check": "m3 post gpu parity",
+ "backend": "d3d12",
+ "adapter": "Microsoft Basic Render Driver",
+ "error": "",
+ "scenes": [
+  {"scene": "built-in test scene", "pixels": 37996, "gtao_outside_1e-3": 0, "gtao_worst": 4.525e-04, "ssr_diffs": 1, "ssr_hit_vs_miss": 0, "ssr_neighbour": 1, "pass": true},
+  {"scene": "test scene, near camera", "pixels": 65536, "gtao_outside_1e-3": 10, "gtao_worst": 1.823e-02, "ssr_diffs": 11, "ssr_hit_vs_miss": 11, "ssr_neighbour": 0, "pass": true},
+  {"scene": "raw-hero", "pixels": 36656, "gtao_outside_1e-3": 2, "gtao_worst": 3.450e-03, "ssr_diffs": 0, "ssr_hit_vs_miss": 0, "ssr_neighbour": 0, "pass": true},
+  {"scene": "raw-hall nave", "pixels": 58013, "gtao_outside_1e-3": 12, "gtao_worst": 3.092e-02, "ssr_diffs": 2, "ssr_hit_vs_miss": 2, "ssr_neighbour": 0, "pass": true},
+  {"scene": "raw-hall gallery", "pixels": 63758, "gtao_outside_1e-3": 11, "gtao_worst": 3.583e-02, "ssr_diffs": 6, "ssr_hit_vs_miss": 6, "ssr_neighbour": 0, "pass": true}
+ ],
+ "taa": {"frames": 32, "pixels": 16384, "worst_frame_outside_1e-3": 31, "worst": 1.175e-01, "reported_one_step_worst_frame": 1},
+ "controls_fail": {"gtao": true, "ssr": true, "taa": true},
+ "pass": false
+}

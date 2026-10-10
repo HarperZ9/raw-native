@@ -1,0 +1,11 @@
+{
+ "plane_gtao_worst_abs_from_1": 0.07707,
+ "scenes": [
+  {"scene": "built-in test scene", "gtao": {"pixels": 34041, "occluded": 1982, "mean_abs": 0.0017, "p95_abs": 0.0080, "control_mean": 0.0176, "control_p95": 0.1367}, "ssr": {"resolvable": 8689, "correct": 8542, "rate": 0.9831, "missed": 101, "other": 29307, "false_hits": 46, "false_rate": 0.0016, "control_false_rate": 0.0035, "control_view_normal_rate": 0.0000}, "gated": {"gtao": false, "ssr": true}},
+  {"scene": "test scene, near camera", "gtao": {"pixels": 57600, "occluded": 7825, "mean_abs": 0.0034, "p95_abs": 0.0159, "control_mean": 0.0408, "control_p95": 0.3086}, "ssr": {"resolvable": 16804, "correct": 16212, "rate": 0.9648, "missed": 21, "other": 48732, "false_hits": 257, "false_rate": 0.0053, "control_false_rate": 0.0066, "control_view_normal_rate": 0.0000}, "gated": {"gtao": true, "ssr": true}},
+  {"scene": "raw-hero", "gtao": {"pixels": 32701, "occluded": 1094, "mean_abs": 0.0068, "p95_abs": 0.0198, "control_mean": 0.0119, "control_p95": 0.0391}, "ssr": {"resolvable": 1960, "correct": 1810, "rate": 0.9235, "missed": 64, "other": 34696, "false_hits": 362, "false_rate": 0.0104, "control_false_rate": 0.0308, "control_view_normal_rate": 0.0000}, "gated": {"gtao": false, "ssr": false}},
+  {"scene": "raw-hall nave", "gtao": {"pixels": 51033, "occluded": 5187, "mean_abs": 0.0170, "p95_abs": 0.0976, "control_mean": 0.0409, "control_p95": 0.2637}, "ssr": {"resolvable": 26858, "correct": 18345, "rate": 0.6830, "missed": 6995, "other": 31155, "false_hits": 3670, "false_rate": 0.1178, "control_false_rate": 0.5104, "control_view_normal_rate": 0.0000}, "gated": {"gtao": true, "ssr": true}},
+  {"scene": "raw-hall gallery", "gtao": {"pixels": 56142, "occluded": 22032, "mean_abs": 0.0734, "p95_abs": 0.6336, "control_mean": 0.1079, "control_p95": 0.3691}, "ssr": {"resolvable": 19075, "correct": 12409, "rate": 0.6505, "missed": 2164, "other": 44683, "false_hits": 2703, "false_rate": 0.0605, "control_false_rate": 0.3255, "control_view_normal_rate": 0.0000}, "gated": {"gtao": true, "ssr": true}}
+ ],
+ "failures": 3
+}

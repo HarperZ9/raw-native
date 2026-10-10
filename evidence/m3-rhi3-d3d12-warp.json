@@ -8,10 +8,10 @@
  "depth_control_differs": true,
  "subpixel_bits": 8,
  "gbuffer": [
-  {"scene": "built-in test scene", "size": 256, "same_triangle_pixels": 37996, "differing_pixels": 0, "explained_by_edge_or_tie": 0, "position_ratio": 0.0286, "normal_ratio": 0.0000, "distance_ratio": 0.1454, "albedo_diffs": 0, "pass": true},
-  {"scene": "Models/Suzanne/glTF/Suzanne.gltf", "size": 256, "same_triangle_pixels": 36656, "differing_pixels": 0, "explained_by_edge_or_tie": 0, "position_ratio": 0.0286, "normal_ratio": 0.0180, "distance_ratio": 0.1454, "albedo_diffs": 0, "pass": true},
-  {"scene": "Models/SciFiHelmet/glTF/SciFiHelmet.gltf", "size": 256, "same_triangle_pixels": 36891, "differing_pixels": 0, "explained_by_edge_or_tie": 0, "position_ratio": 0.0708, "normal_ratio": 0.0506, "distance_ratio": 0.1454, "albedo_diffs": 0, "pass": true}
+  {"scene": "built-in test scene", "size": 256, "same_triangle_pixels": 37996, "differing_pixels": 0, "explained_by_edge_or_tie": 0, "position_ratio": 0.0286, "normal_ratio": 0.0000, "distance_ratio": 0.1454, "albedo_diffs": 0, "pass": true, "unexplained": []},
+  {"scene": "raw-hero", "size": 256, "same_triangle_pixels": 36655, "differing_pixels": 1, "explained_by_edge_or_tie": 1, "position_ratio": 0.0304, "normal_ratio": 0.0118, "distance_ratio": 0.1454, "albedo_diffs": 0, "pass": true, "unexplained": []},
+  {"scene": "raw-hall nave", "size": 256, "same_triangle_pixels": 57950, "differing_pixels": 63, "explained_by_edge_or_tie": 63, "position_ratio": 0.1112, "normal_ratio": 14.3578, "distance_ratio": 0.7357, "albedo_diffs": 0, "pass": false, "unexplained": []}
  ],
  "control_moved_triangle_fails": true,
- "pass": true
+ "pass": false
 }
