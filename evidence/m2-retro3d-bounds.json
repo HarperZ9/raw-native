@@ -1,0 +1,13 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "M2 exit criterion 8 (ROADMAP.md): retro 3D flags, vertex snap and affine UVs, against CPU references on a committed mesh set",
+ "written": "2026-10-10, before the first run",
+ "setup": "web/world/retro3d.mjs draws textured triangles with a depth test into an RGBA8 target, with two flags. snap: each vertex's screen position is rounded to a grid of `snap` pixels before rasterising (the wobble of fixed-point vertex hardware). affine: UVs are interpolated linearly in screen space instead of perspective-correctly (the texture swim of hardware without perspective division). Texels are fetched nearest, with repeat. The CPU twin (retro3dRef) applies the same rules: pixel centres, a top-left fill rule, the same depth comparison. The committed mesh set is generated in code (web/world/retro3d_meshes.mjs): a cube, a floor of quads receding to the horizon (the case affine mapping visibly bends), and a cylinder, each drawn with each of the four flag settings.",
+ "metric": "per pixel: coverage (which triangle, if any) and the fetched texel. A pixel is an edge pixel when any triangle edge passes within 1 pixel of its centre; there float rounding may legitimately decide coverage either way.",
+ "bounds": {
+  "coverage": "every pixel that is not an edge pixel has the same coverage on the GPU and in the twin",
+  "texels": "at least 99.5% of pixels covered on both, away from edges, fetch the same texel; the rest differ by at most one texel in u or v (a UV landing within float precision of a texel boundary)"
+ },
+ "control": "the affine scene compared with a perspective-correct twin, and the snapped scene with an unsnapped twin, must each fail the texel bound on the floor mesh",
+ "does_not_prove": "That the look matches any particular console, colour depth reduction or dithering (those are the dither pass), or performance."
+}
