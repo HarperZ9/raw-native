@@ -1,7 +1,10 @@
 // Energy of the glTF material model (evidence/m3-materials-bounds.json): white furnaces for
 // metal, dielectric and anisotropic metal, conservation in every layered family, and the
 // rough interface's reflection plus transmission at low roughness.
-//   test_pbr_energy [--json]
+//   test_pbr_energy [--full] [--json]
+// Without --full (as ctest runs it) every seventh point of the committed grid is checked,
+// so the media walkthrough's test run stays short; CI runs --full, and --json implies it
+// (the evidence file is always the full grid).
 #include "pbr_quadrature.hpp"
 #include "raw/core/parallel.hpp"
 #include "check.hpp"
@@ -65,10 +68,17 @@ void grid(std::vector<Point>& p) {
 }  // namespace
 
 int main(int argc, char** argv) {
-    const bool json = argc > 1 && std::strcmp(argv[1], "--json") == 0;
+    bool json = false, full = false;
+    for (int i = 1; i < argc; ++i) { json = json || !std::strcmp(argv[i], "--json"); full = full || !std::strcmp(argv[i], "--full"); }
+    full = full || json;
     const Tables t;
     std::vector<Point> pts;
     grid(pts);
+    if (!full) {
+        std::vector<Point> some;
+        for (std::size_t k = 0; k < pts.size(); k += 7) some.push_back(pts[k]);
+        pts.swap(some);
+    }
     warm();
     const int threads = int(std::max(1u, std::thread::hardware_concurrency()));
     raw::parallelRows(int(pts.size()), threads, [&](int k) { pts[k].a = albedo(pts[k].m, t, view(pts[k].mu, pts[k].azimuth)); });

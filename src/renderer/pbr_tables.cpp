@@ -1,6 +1,8 @@
 // Energy tables of the glTF material model: see raw/renderer/pbr.hpp.
 #include "raw/renderer/pbr.hpp"
 #include "raw/renderer/brdf.hpp"
+#include "raw/core/parallel.hpp"
+#include <thread>
 #include <algorithm>
 #include <cmath>
 #include <cstdint>
@@ -96,13 +98,16 @@ double read1(const std::vector<double>& g, double r) {
 Tables::Tables()
     : a_(std::size_t(kRough) * kTheta), b_(std::size_t(kRough) * kTheta), sh_(std::size_t(kSheenRough) * kSheenMu),
       aavg_(kRough), bavg_(kRough) {
-    for (int i = 0; i < kRough; ++i) {
+    // Every row is independent and written by one thread, so the tables are identical for any
+    // thread count (raw/core/parallel.hpp).
+    const int threads = int(std::max(1u, std::thread::hardware_concurrency()));
+    parallelRows(kRough, threads, [&](int i) {
         const double a = std::max(gridRough(i, kRough) * gridRough(i, kRough), 1e-4);
         for (int j = 0; j < kTheta; ++j) {
             const double mu = std::max(std::cos(gridTheta(j, kTheta)), 1e-4);
             albedoSplit(mu, a, kSamples, a_[std::size_t(i) * kTheta + j], b_[std::size_t(i) * kTheta + j]);
         }
-    }
+    });
     // Cosine-weighted means, from the tables themselves, so 2 * integral(A(mu) mu dmu) is
     // the quadrature of exactly the function the model reads.
     std::vector<double> x, w;
@@ -115,9 +120,10 @@ Tables::Tables()
     }
     std::vector<double> gx, gw;
     brdf::gaussLegendre01(96, gx, gw);
-    for (int i = 0; i < kSheenRough; ++i)
+    parallelRows(kSheenRough, threads, [&](int i) {
         for (int j = 0; j < kSheenMu; ++j)
             sh_[std::size_t(i) * kSheenMu + j] = sheenAlbedo(std::max(sheenMu(j), 1e-4), gridRough(i, kSheenRough), gx, gw);
+    });
     buildAnisotropic();
 }
 double Tables::A(double mu, double r) const { return read2(a_, kTheta, kRough, mu, r); }

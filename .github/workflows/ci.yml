@@ -38,6 +38,11 @@ jobs:
         run: cmake --build build --config Release
       - name: Test
         run: ctest --test-dir build -C Release --output-on-failure
+      - name: The material furnaces on their full committed grid (M3)
+        shell: bash
+        run: |
+          if [ -x build/test_pbr_energy ]; then d=build; else d=build/Release; fi
+          "$d/test_pbr_energy" --full
       - name: Render and check the default certificate
         shell: bash
         run: |
