@@ -85,5 +85,18 @@
   "issue": "The TAA model rejects disoccluded history by depth. That test alone removes most of the moving box's trail, so control (b), TAA without the colour clip, could pass the ghosting bound and fail to discriminate.",
   "change": "Control (b) removes both the colour clip and the depth disocclusion test, which leaves plain history blending; it must fail ghosting. TAA with the clip but without the depth test, and with the depth test but without the clip, are run and reported as well, not gated.",
   "disocclusion": "The depth test, stated now: the history is rejected when the previous frame's view depth at the reprojected position (nearest pixel) differs from the reprojected point's expected previous view depth by more than 2% of that depth plus 0.02 units."
+ },
+ "method_note_2_2026_10_10": {
+  "written": "2026-10-10, after the first CPU run of GTAO and SSR and before any change is run",
+  "first_run": "Failed. GTAO: mean |difference| 0.008 to 0.021 and p95 0.025 to 0.075 (inside the bounds), but three of four scenes miss the coverage bound (1,982, 807 and 1,338 occluded pixels against 2,000), and on those three the control (visibility 1 everywhere) also meets the bounds, so there the check cannot discriminate. On Suzanne GTAO (0.019) is further from the reference than the control (0.0075). An open plane alone reads up to 0.086 away from 1. SSR: 69% to 87% of resolvable pixels correct against the 90% bound, almost all of the rest misses; the near scene and Suzanne also fail or nearly fail coverage; false hits 0% to 0.5% pass, but the unlimited-thickness control reaches only 0.01% to 5.3%, so it does not discriminate.",
+  "diagnosis": "GTAO reconstructs each horizon sample at its pixel centre, which lies off the slice plane, so an open plane reads as partly occluded; the sample should sit at the exact slice position with the depth read from its pixel. SSR spends most of its 64 steps outside the screen: the 20-unit ray is not clipped to the view, so steps on screen are several pixels apart and skip the 0.2-unit thickness band.",
+  "changes": [
+   "GTAO: a horizon sample's view position is rebuilt from its exact screen position and the depth of the pixel it falls in.",
+   "SSR: the march is clipped to the screen rectangle and the near plane before stepping; a step that lands behind the depth buffer starts the bisection, and the thickness applies to the refined point.",
+   "A fifth scene, fixed now: the interior role's model (evidence/m3-scene-models.json, ABeautifulGame today) under the same camera as Suzanne, for AO and reflection content.",
+   "Gating: a scene that misses a coverage bound is reported, not gated, for that metric; the metric must pass on every scene that meets coverage, and on at least two scenes.",
+   "A new SSR control (c), added before its first run: SSR with the normal replaced by the view vector must fail the hits bound. The unlimited-thickness control (a) stays reported."
+  ],
+  "bounds": "Unchanged."
  }
 }
