@@ -56,5 +56,17 @@
  },
  "scenes": "owned and procedural: R1's retro_room, iso_street and clip_stress; dense_block (a 100,000-triangle city block of boxes, stairs and cylinders, generated in code); a seeded triangle soup; the furnace box",
  "backends": "D3D12 WARP and WebGPU SwiftShader gate; the RTX 4090 only under D:/gpu.lock.d, reported separately",
- "does_not_prove": "That the path tracer agrees with the M3 material model (it implements Lambert plus GGX only; the M3 model is a later interface version); performance against hardware ray tracing; denoising quality; any claim about scenes not run."
+ "does_not_prove": "That the path tracer agrees with the M3 material model (it implements Lambert plus GGX only; the M3 model is a later interface version); performance against hardware ray tracing; denoising quality; any claim about scenes not run.",
+ "addendum_1": {
+  "written": "2026-10-10 18:27Z, after the BVH runs (B1 to B3) and before any path-tracer code or run",
+  "aov_definitions": "depth is the first hit's distance along the camera's forward axis (positive; 0 for a miss) and motion the pixel offset of that hit under the previous camera, both from the unjittered ray through the pixel centre; albedo and normal are means over every primary sample (the convention of learned denoisers); radiance is the mean of all samples; variance is the sample variance of radiance luminance divided by spp",
+  "materials": "Lambert weight albedo (1 - metallic) / pi; GGX with F0 = mix(0.04 specular, albedo, metallic), Schlick Fresnel, height-correlated Smith G2; lobe choice probability metallic + (1 - metallic) 0.5 specular; the furnace uses specular 0 and metallic 0 (pure Lambert)",
+  "added_check": {
+   "P0_bsdf_consistency": {
+    "what": "CPU: for 400 seeded (material, outgoing direction) cases over roughness 0.05 to 1, metallic 0 to 1, the directional albedo by the tracer's own importance sampling (65,536 samples) against cosine-weighted hemisphere sampling (262,144 samples) of the same BSDF evaluation",
+    "bound": "|difference| <= 4 combined standard errors + 1e-3 on every case",
+    "control": "the importance-sampled estimate with the VNDF pdf replaced by the plain NDF pdf (D cos theta_h / (4 |wo . h|) without G1) must fail on at least one case"
+   }
+  }
+ }
 }
