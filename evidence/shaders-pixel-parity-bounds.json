@@ -1,14 +1,316 @@
 {
   "what": "GPU perspective-stable pixel art (web/shaders/pixel/gpu.mjs) against the CPU reference (web/shaders/pixel/pixel.mjs)",
   "fixed_before_first_run": "2026-10-10",
-  "output": { "width": 240, "height": 150 },
+  "output": {
+    "width": 240,
+    "height": 150
+  },
   "compare": "8-bit sRGB per channel, all pixels, on the last frame of each case",
   "cases": [
-    { "id": "orbit-front", "N": 48, "frames": [{ "angle": 0.6 }] },
-    { "id": "orbit-back", "N": 48, "frames": [{ "angle": 2.4 }] },
-    { "id": "turned-and-close", "N": 64, "frames": [{ "angle": 1.1, "radius": 4.2, "targetX": 1.0 }] },
-    { "id": "cell-crossfade", "N": 48, "frames": [{ "angle": 0.6 }, { "angle": 0.64 }, { "angle": 0.68 }, { "angle": 0.72 }] }
+    {
+      "id": "orbit-front",
+      "N": 48,
+      "frames": [
+        {
+          "angle": 0.6
+        }
+      ]
+    },
+    {
+      "id": "orbit-back",
+      "N": 48,
+      "frames": [
+        {
+          "angle": 2.4
+        }
+      ]
+    },
+    {
+      "id": "turned-and-close",
+      "N": 64,
+      "frames": [
+        {
+          "angle": 1.1,
+          "radius": 4.2,
+          "targetX": 1.0
+        }
+      ]
+    },
+    {
+      "id": "cell-crossfade",
+      "N": 48,
+      "frames": [
+        {
+          "angle": 0.6
+        },
+        {
+          "angle": 0.64
+        },
+        {
+          "angle": 0.68
+        },
+        {
+          "angle": 0.72
+        }
+      ]
+    },
+    {
+      "id": "slow-crossfade",
+      "N": 48,
+      "frames": [
+        {
+          "angle": 0.6
+        },
+        {
+          "angle": 0.6008
+        },
+        {
+          "angle": 0.6016
+        },
+        {
+          "angle": 0.6024
+        },
+        {
+          "angle": 0.6032
+        },
+        {
+          "angle": 0.604
+        },
+        {
+          "angle": 0.6048
+        },
+        {
+          "angle": 0.6056
+        },
+        {
+          "angle": 0.6064
+        },
+        {
+          "angle": 0.6072
+        },
+        {
+          "angle": 0.608
+        },
+        {
+          "angle": 0.6088
+        },
+        {
+          "angle": 0.6096
+        },
+        {
+          "angle": 0.6104
+        },
+        {
+          "angle": 0.6112
+        },
+        {
+          "angle": 0.612
+        },
+        {
+          "angle": 0.6128
+        },
+        {
+          "angle": 0.6136
+        },
+        {
+          "angle": 0.6144
+        },
+        {
+          "angle": 0.6152
+        },
+        {
+          "angle": 0.616
+        },
+        {
+          "angle": 0.6168
+        },
+        {
+          "angle": 0.6176
+        },
+        {
+          "angle": 0.6184
+        },
+        {
+          "angle": 0.6192
+        },
+        {
+          "angle": 0.62
+        },
+        {
+          "angle": 0.6208
+        },
+        {
+          "angle": 0.6216
+        },
+        {
+          "angle": 0.6224
+        },
+        {
+          "angle": 0.6232
+        },
+        {
+          "angle": 0.624
+        },
+        {
+          "angle": 0.6248
+        },
+        {
+          "angle": 0.6256
+        },
+        {
+          "angle": 0.6264
+        },
+        {
+          "angle": 0.6272
+        },
+        {
+          "angle": 0.628
+        },
+        {
+          "angle": 0.6288
+        },
+        {
+          "angle": 0.6296
+        },
+        {
+          "angle": 0.6304
+        },
+        {
+          "angle": 0.6312
+        },
+        {
+          "angle": 0.632
+        },
+        {
+          "angle": 0.6328
+        },
+        {
+          "angle": 0.6336
+        },
+        {
+          "angle": 0.6344
+        },
+        {
+          "angle": 0.6352
+        },
+        {
+          "angle": 0.636
+        },
+        {
+          "angle": 0.6368
+        },
+        {
+          "angle": 0.6376
+        },
+        {
+          "angle": 0.6384
+        },
+        {
+          "angle": 0.6392
+        },
+        {
+          "angle": 0.64
+        },
+        {
+          "angle": 0.6408
+        },
+        {
+          "angle": 0.6416
+        },
+        {
+          "angle": 0.6424
+        },
+        {
+          "angle": 0.6432
+        },
+        {
+          "angle": 0.644
+        },
+        {
+          "angle": 0.6448
+        },
+        {
+          "angle": 0.6456
+        },
+        {
+          "angle": 0.6464
+        },
+        {
+          "angle": 0.6472
+        },
+        {
+          "angle": 0.648
+        },
+        {
+          "angle": 0.6488
+        },
+        {
+          "angle": 0.6496
+        },
+        {
+          "angle": 0.6504
+        },
+        {
+          "angle": 0.6512
+        },
+        {
+          "angle": 0.652
+        },
+        {
+          "angle": 0.6528
+        },
+        {
+          "angle": 0.6536
+        },
+        {
+          "angle": 0.6544
+        },
+        {
+          "angle": 0.6552
+        },
+        {
+          "angle": 0.656
+        },
+        {
+          "angle": 0.6568
+        },
+        {
+          "angle": 0.6576
+        },
+        {
+          "angle": 0.6584
+        },
+        {
+          "angle": 0.6592
+        },
+        {
+          "angle": 0.66
+        },
+        {
+          "angle": 0.6608
+        },
+        {
+          "angle": 0.6616
+        },
+        {
+          "angle": 0.6624
+        },
+        {
+          "angle": 0.6632
+        },
+        {
+          "angle": 0.664
+        },
+        {
+          "angle": 0.6648
+        }
+      ],
+      "added": "2026-10-10, after the fade policy became distance-aware (the existing cell-crossfade case now finishes its fade in one frame). The cell changes at frame 79, so the last frame (81) is mid-fade. Bounds unchanged."
+    }
   ],
-  "bounds": { "over2_fraction": 0.03, "mean_abs_code": 2.0 },
+  "bounds": {
+    "over2_fraction": 0.03,
+    "mean_abs_code": 2.0
+  },
   "why_looser": "The probe marches rays in f32 on the GPU and f64 on the CPU; a ray that grazes a silhouette can hit on one side and miss on the other. At this test size one texel covers about a hundred output pixels, so a single disagreeing texel moves a block of pixels. The bound allows a few such texels per frame, not a systematic difference; a systematic one would move most pixels."
 }

@@ -86,3 +86,15 @@ Each physical number the CRT and film shaders use, where it comes from, and how 
 | Latent lookup | 17^3, Levenberg-Marquardt in a cube-root colour space | this library | engineered |
 | Kuwahara | 8 sectors, zeta 0.33, q 6 to 10, radius 5 to 7 px | Kyprianidis et al. 2009, 2010 (form); values chosen by eye | form high, values tuned |
 | XDoG | k 1.6, tau 0.985, epsilon -0.004, phi 25 to 45 | Winnemoeller et al. 2012 (form); values chosen by eye | form high, values tuned |
+
+## Pixel art (`web/shaders/pixel/`)
+
+| Constant | Value | Source | Confidence |
+|---|---|---|---|
+| Probe position | camera snapped to a world grid; texels by cube direction | Ebert, arXiv 2603.14587 | high (method) |
+| Probe resolution | 128 per face (CPU default), 192 in the showcase | the paper uses 384 | choice |
+| Grid cell | 0.5 world units (about a twelfth of the diorama) | the paper gives none; chosen by eye: 2.0 smeared thin objects | choice |
+| Bands, outline, crease | 6 bands; lightness shifts 0.22 and 0.08 | the paper gives none | choice |
+| Quad expansion | 1.15 of a texel | the paper gives none | choice |
+| Crossfade | 4 x 4 Bayer; blend step max(1/12, moved / (0.15 cell)) | Bayer from the paper; timing is this library's choice | choice |
+| Depth key | view depth quantised to 1/4096 world unit, lowest texel index wins ties | this library (CPU and GPU agree on ties) | engineered |
