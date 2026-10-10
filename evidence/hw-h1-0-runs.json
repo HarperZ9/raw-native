@@ -1,0 +1,13 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/hw-h1-0-bounds.json (committed 7043a52 before any run)",
+ "runs": [
+  {"when": "2026-10-10", "adapter": "D3D12 WARP (Microsoft Basic Render Driver 10.0.26100.9587), debug layer on",
+   "what": "gpu_hw_probe, first run", "result": "pass: probe and pipelines agree on wave_ops, native_16bit, ray_query; scan 0 of 65,536 and half 0 of 4,096 differ; timestamp ratio 1.94; flat control 0.97 (fails as required)"},
+  {"when": "2026-10-10", "adapter": "same", "what": "scripts/hw_forced_off.py, first attempt",
+   "result": "did not run: the script passed a relative executable path that Windows CreateProcess could not resolve. No check executed. Fixed by resolving the path; bounds unchanged."},
+  {"when": "2026-10-10", "adapter": "same", "what": "scripts/hw_forced_off.py", "result": "pass: with all, no feature supported and every dispatch took its fallback and matched; each single name changed exactly that feature (none for the three the device does not offer)"},
+  {"when": "2026-10-10", "adapter": "same", "what": "gpu_hw_probe rerun after the match field became null for checks that dispatch nothing", "result": "pass: timestamp ratio 1.97; recorded in hw-h1-0-d3d12-warp.json"}
+ ],
+ "pending": "RTX 4090 run under D:/gpu.lock.d, queued behind MMBU B4 Stage 2 (mission-control 2026-10-10-engine-hw/gpu/hw_h1_0_rtx_job.sh)"
+}

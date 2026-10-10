@@ -63,7 +63,8 @@ endif()
 # so they build the same way in every configuration.
 set(RAW_NATIVE_NULL_BACKEND
     "${CMAKE_CURRENT_SOURCE_DIR}/src/rhi/null/null_device.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/src/renderer/gpu/shaders_none.cpp")
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/renderer/gpu/shaders_none.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/rhi/null/hw_null.cpp")
 
 if(RAW_NATIVE_BUILD_TESTS)
     enable_testing()
