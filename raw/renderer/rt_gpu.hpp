@@ -31,10 +31,11 @@ struct RtBvhParity {
     std::string error, backend, adapter;
     std::string results;      // JSON array entries, one a scene
     long controlRadiusDiffNodes{0}, controlShortFarMissed{0};
-    bool allPass{false};
+    bool allPass{false}, quick{false};
     bool pass() const { return error.empty() && allPass && controlRadiusDiffNodes > 0 && controlShortFarMissed > 0; }
     std::string json() const;
 };
-RtBvhParity rtBvhParity(rhi::Device& dev);
+// quick: 20,000 rays a scene instead of 100,000 (CI on SwiftShader; the evidence uses the full run).
+RtBvhParity rtBvhParity(rhi::Device& dev, bool quick = false);
 
 }  // namespace raw::gpu_check
