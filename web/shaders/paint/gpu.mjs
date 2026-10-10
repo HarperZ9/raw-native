@@ -55,8 +55,13 @@ export async function createGpuPaint(host, preset, overrides, size) {
   pass("compose", pipes.compose, [[r.P, R], [r.pig, R], [r.olat, R], [r.H, R], [r.Rl, R], [r.img, Wr], [r.Cv, R], [r.K, R]], [B.P, B.pig, B.olat, B.H, B.Rl, B.img, B.Cv, B.K]);
   pass("encode8", pipes.encode8, [[r.P, R], [r.pig, R], [r.img, R], [r.out8, Wr]], [B.P, B.pig, B.img, B.out8]);
   g.markOutput(r.out8); g.markOutput(r.img); g.compile();
+  // The still-image parameters (mode 0, no motion), for record().
+  const params = (offset) => {
+    if (offset) plan.p.canvasOffset = offset;
+    host.write(B.P, packPaintParams(plan, 0, 0)); host.write(B.Px, packPaintParams(plan, 0, 0)); host.write(B.Py, packPaintParams(plan, 1, 0));
+  };
   return {
-    plan, packed: B.out8, image: B.img, buffers: B,
+    plan, packed: B.out8, image: B.img, scene: B.scene, buffers: B,
     // offset: a 2D pan offset; motion (optional): { mv, dist, distPrev } for rotation, zoom, parallax.
     frame(sceneRGBA, offset = null, motion = null) {
       if (offset) plan.p.canvasOffset = offset;
@@ -75,6 +80,8 @@ export async function createGpuPaint(host, preset, overrides, size) {
       if (sceneRGBA) host.write(B.scene, sceneRGBA);
       host.frame(g);
     },
+    // Record into an encoder the caller owns (the Motion post stack), scene already in B.scene.
+    record(enc, offset = null) { params(offset); host.record(g, enc, false); },
     async read() {
       const rd = async (buf, bytes) => {
         const s = host.buffer({ size: bytes, usage: ["map-read", "copy-dst"] }), enc = host.device.createCommandEncoder();
