@@ -14,6 +14,7 @@ GBuffer rasterize(const Scene& scene, int w, int h, Arena* arena = nullptr, Buff
 // triangle at each pixel (0 where nothing covers it).
 // subpixelBits: when > 0, screen-space vertex positions snap to 1 / 2^bits of a pixel before
 // coverage and interpolation, as D3D12 (16.8 fixed point) and WebGPU rasterizers do.
-struct RasterOptions { bool perspectiveDepth{false}; Buffer<uint32_t>* triangleIds{nullptr}; int subpixelBits{0}; };
+// jitterX, jitterY: a sub-pixel offset (pixels) added to every projected vertex, for TAA.
+struct RasterOptions { bool perspectiveDepth{false}; Buffer<uint32_t>* triangleIds{nullptr}; int subpixelBits{0}; float jitterX{0}, jitterY{0}; };
 GBuffer rasterize(const Scene& scene, int w, int h, Arena* arena, Buffer<uint16_t>* ids, const RasterOptions& opt);
 }
