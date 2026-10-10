@@ -83,7 +83,19 @@ def raster_binding(code, s, binds):
     raise TranslateError(f"raster bindings are a uniform, texture_2d<f32> or sampler: {s!r}")
 
 
+def check_loop_names(lines):
+    """A function may not declare the same loop variable twice. HLSL 2021 (dxc -HV 2021)
+    scopes it to the loop, but Slang applies the older rule that it belongs to the enclosing
+    block, so a reused name is an error there (the A5 spike, docs/architecture/A5-SPIKE.md)."""
+    names = re.findall(r"\bfor\s*\(\s*var\s+(\w+)", "\n".join(split_comment(l)[0] for l in lines))
+    dup = sorted({n for n in names if names.count(n) > 1})
+    if dup:
+        raise TranslateError(f"loop variable declared twice in one function (Slang rejects it): {dup}")
+
+
 def translate_item(kind, lines, binds, raster=False):
+    if kind == "fn":
+        check_loop_names(lines)
     out, ptrs, attrs = [], [], ""
     for line in lines:
         code, comment = split_comment(line)
@@ -305,6 +317,13 @@ def selftest():
             continue
         print(f"selftest: accepted {what}", file=sys.stderr)
         return 1
+    loops = "@compute @workgroup_size(8, 8)\nfn main(@builtin(global_invocation_id) gid: vec3u) {\n    for (var k: u32 = 0u; k < 3u; k++) {\n    }\n    for (var k: u32 = 0u; k < 3u; k++) {\n    }\n}\n"
+    try:
+        translate(head, "//@pass t\n" + bind + loops)
+        print("selftest: accepted a loop variable declared twice in one function", file=sys.stderr)
+        return 1
+    except TranslateError:
+        pass
     print("wgsl_to_hlsl: selftest passed")
     return 0
 
