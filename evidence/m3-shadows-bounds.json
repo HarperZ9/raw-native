@@ -46,5 +46,10 @@
   "coverage_bound": "Each scene must have at least 2,000 shadowed pixels (one-ray reference) and at least 300 penumbra pixels (soft reference strictly between 0 and 1) at full sampling, or its hard and soft checks count as failed.",
   "stability_original": "The stability check above stays as written and is reported. If its control again stays at or under 1%, that is recorded as the check failing to discriminate, and the gate uses the addition below.",
   "texel_registration": "Dated addition 9 (2026-10-10). Swimming is measured directly: for each of the 4,096 points and each consecutive pair of path positions where the point stays in the same cascade, the change counts if the cascade's texel size changes or the point's sub-texel position in the map moves by more than 1e-3 texel on either axis. Bound: changes <= 0.1% of such point-position pairs; the control (no snapping, frustum-tight fit) must exceed 1%."
+ },
+ "method_note_2_2026_10_10": {
+  "written": "2026-10-10, after the first GPU runs and before this scene's first run",
+  "gap": "No scene in the checks reaches cascade 0 (view depth under about 2.9 units): the cameras sit 7 or more units from the models. The near cascade's lookups were untested.",
+  "addition": "A fourth scene for the hard, soft, coverage and GPU parity checks: the built-in test scene seen from eye (1.6, 1.4, 2.4) toward (0, 0.6, 0), so the box and its shadow fall in cascades 0 and 1. Same bounds; it must also put at least 2,000 G-buffer pixels in cascade 0."
  }
 }
