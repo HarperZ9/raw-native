@@ -138,6 +138,13 @@
     "evidence/rt-r2-pt-gpu-d3d12-rtx4090.json",
     "evidence/rt-r2-hybrid-gpu-d3d12-rtx4090.json"
    ]
+  },
+  {
+   "run": 16,
+   "when": "2026-10-10 20:23Z (lock held 20:23:41Z to 20:23:52Z)",
+   "backend": "D3D12 on the RTX 4090, under D:/gpu.lock.d, binary at 359ad36",
+   "checks": "the long-frame retest after run 15's change",
+   "result": "rt-pathtrace of dense_block at 1280 x 720, 1024 spp, one submission a 16-spp slice: exit 0 in 9,434 ms with every AOV written. This supports run 15's watchdog diagnosis (the same frame in one submission failed about 5 s in) without proving it, since run 15's message was lost."
   }
  ]
 }
