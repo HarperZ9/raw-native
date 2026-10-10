@@ -56,7 +56,7 @@ export async function createGpuPaint(host, preset, overrides, size) {
   pass("encode8", pipes.encode8, [[r.P, R], [r.pig, R], [r.img, R], [r.out8, Wr]], [B.P, B.pig, B.img, B.out8]);
   g.markOutput(r.out8); g.markOutput(r.img); g.compile();
   return {
-    plan, packed: B.out8, image: B.img,
+    plan, packed: B.out8, image: B.img, buffers: B,
     // offset: a 2D pan offset; motion (optional): { mv, dist, distPrev } for rotation, zoom, parallax.
     frame(sceneRGBA, offset = null, motion = null) {
       if (offset) plan.p.canvasOffset = offset;

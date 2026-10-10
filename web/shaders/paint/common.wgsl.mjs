@@ -50,11 +50,18 @@ fn lut_conc(s: vec3f) -> vec4f {
   return c;
 }
 fn smooth_(a: f32, b: f32, x: f32) -> f32 { let t = clamp((x - a) / (b - a), 0.0, 1.0); return t * t * (3.0 - 2.0 * t); }
+fn major_vec(e: f32, f: f32, g: f32) -> vec3f {
+  let tr = e + g; let l1 = (tr + sqrt((e - g) * (e - g) + 4.0 * f * f)) / 2.0;
+  let a = vec2f(f, l1 - e); let b = vec2f(l1 - g, f); let na = length(a); let nb = length(b);
+  if (na >= nb) { return vec3f(a, na); } return vec3f(b, nb);
+}
 fn flow(T: vec4f) -> vec3f {
   let E = T.x; let F = T.y; let G = T.z; let tr = E + G; let dsc = sqrt((E - G) * (E - G) + 4.0 * F * F);
-  let l1 = (tr + dsc) / 2.0; let l2 = (tr - dsc) / 2.0; var t = vec2f(l1 - E, -F); let n = length(t);
-  if (n > 1e-12) { t = t / n; } else { t = vec2f(0.7071, 0.7071); }
-  var A = 0.0; if (tr > 1e-12) { A = (l1 - l2) / (l1 + l2); }
-  return vec3f(t, A);
+  let l1 = (tr + dsc) / 2.0; let l2 = (tr - dsc) / 2.0;
+  let sh = clamp((tr - 1e-7) / 9e-7, 0.0, 1.0); var A = 0.0; if (tr > 1e-12) { A = (l1 - l2) / (l1 + l2) * sh * sh * (3.0 - 2.0 * sh); }
+  let s = clamp((A - 0.02) / 0.08, 0.0, 1.0); let k = s * s * (3.0 - 2.0 * s); var inv = 0.0; if (tr > 1e-12) { inv = 1.0 / tr; }
+  let m = major_vec(k * E * inv + (1.0 - k) * 0.5, k * F * inv - (1.0 - k) * 0.5, k * G * inv + (1.0 - k) * 0.5);
+  if (m.z <= 1e-12) { return vec3f(0.7071067811865476, 0.7071067811865476, A); }
+  return vec3f(-m.y / m.z, m.x / m.z, A);
 }
 `;

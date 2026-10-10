@@ -92,7 +92,11 @@ export const STROKE_WGSL = /* wgsl */ `
 @group(0) @binding(4) var<storage, read> Cv: array<vec4f>;
 @group(0) @binding(5) var<storage, read> Kv: array<f32>;
 ` + CANVAS_SAMPLER_WGSL + `
-fn dir_at(px: f32, py: f32) -> vec3f { return flow(T[clamp(i32(floor(py + 0.5)), 0, H() - 1) * W() + clamp(i32(floor(px + 0.5)), 0, W() - 1)]); }
+fn dir_at(px: f32, py: f32) -> vec3f {
+  let fx = clamp(px, 0.0, f32(W() - 1)); let fy = clamp(py, 0.0, f32(H() - 1));
+  let x0 = i32(floor(fx)); let y0 = i32(floor(fy)); let x1 = min(W() - 1, x0 + 1); let y1 = min(H() - 1, y0 + 1); let tx = fx - f32(x0); let ty = fy - f32(y0);
+  return flow((T[y0 * W() + x0] * (1.0 - tx) + T[y0 * W() + x1] * tx) * (1.0 - ty) + (T[y1 * W() + x0] * (1.0 - tx) + T[y1 * W() + x1] * tx) * ty);
+}
 @compute @workgroup_size(8, 8) fn main(@builtin(global_invocation_id) id: vec3u) {
   _ = pig[0];
   let x = i32(id.x); let y = i32(id.y); if (x >= W() || y >= H()) { return; }
@@ -101,12 +105,13 @@ fn dir_at(px: f32, py: f32) -> vec3f { return flow(T[clamp(i32(floor(py + 0.5)),
   var acc = cnoise(0u, f32(x), f32(y), 0.5) * f32(L + 1); var ids = cnoise(1u, f32(x), f32(y), 0.5) * f32(L + 1); var ws = f32(L + 1);
   for (var sg = 0; sg < 2; sg++) {
     let sgn = select(-1.0, 1.0, sg == 0); var px = f32(x); var py = f32(y);
-    let d0 = dir_at(px, py); var tx = d0.x * sgn; var ty = d0.y * sgn;
+    let d0 = dir_at(px, py); var tx = d0.x * sgn; var ty = d0.y * sgn; var cont = 1.0;
     for (var k = 1; k <= L; k++) {
       px += tx; py += ty;
       let nd = dir_at(px, py); let d = nd.x * tx + nd.y * ty;
       tx = select(nd.x, -nd.x, d < 0.0); ty = select(nd.y, -nd.y, d < 0.0);
-      let wk = f32(L + 1 - k); acc += wk * cnoise(0u, px, py, 0.5); ids += wk * cnoise(1u, px, py, 0.5); ws += wk;
+      let a = clamp((abs(d) - 0.05) / 0.25, 0.0, 1.0); cont *= a * a * (3.0 - 2.0 * a);
+      let wk = f32(L + 1 - k) * cont; acc += wk * cnoise(0u, px, py, 0.5); ids += wk * cnoise(1u, px, py, 0.5); ws += wk;
     }
   }
   Hs[y * W() + x] = vec2f(acc / ws, ids / ws);
