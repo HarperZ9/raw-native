@@ -5,7 +5,10 @@
 // from the same closed forms or dense samples of the exact distance.
 //   test_sdf [out.json]
 #include "raw/renderer/sdf.hpp"
+#include "raw/core/parallel.hpp"
 #include "check.hpp"
+#include <thread>
+#include <vector>
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -40,19 +43,26 @@ struct Counts { long rays{0}, hitsAgree{0}, missAgree{0}, disagree{0}, exempt{0}
 template<class F> Counts run(const Program& p, F exact, const Scene& cam, double eps, bool refine = true) {
     Counts c;
     const int W = 256, H = 256;
-    for (int y = 0; y < H; ++y)
+    std::vector<MarchHit> ms(std::size_t(W) * H);
+    std::vector<Truth> ts(ms.size());
+    parallelRows(H, int(std::max(1u, std::thread::hardware_concurrency())), [&](int y) {   // rows are independent
         for (int x = 0; x < W; ++x) {
-            ++c.rays;
             const D3 d = cameraRay(cam, x, y, W, H), o = d3(cam.eye);
-            const MarchHit m = march(p, o, d, 20.0, eps, refine);
-            const Truth tr = exact(o, d);
-            if (m.hit != tr.hit) { (tr.closest <= 1e-3 ? c.exempt : c.disagree) += 1; continue; }
-            if (!m.hit) { ++c.missAgree; continue; }
-            ++c.hitsAgree;
-            const double r = std::fabs(m.t - tr.t) / (2e-4 * (1.0 + tr.t));
-            c.worstT = std::max(c.worstT, r);
-            c.tOver += r > 1.0;
+            ms[std::size_t(y) * W + std::size_t(x)] = march(p, o, d, 20.0, eps, refine);
+            ts[std::size_t(y) * W + std::size_t(x)] = exact(o, d);
         }
+    });
+    for (std::size_t i = 0; i < ms.size(); ++i) {
+        const MarchHit& m = ms[i];
+        const Truth& tr = ts[i];
+        ++c.rays;
+        if (m.hit != tr.hit) { (tr.closest <= 1e-3 ? c.exempt : c.disagree) += 1; continue; }
+        if (!m.hit) { ++c.missAgree; continue; }
+        ++c.hitsAgree;
+        const double r = std::fabs(m.t - tr.t) / (2e-4 * (1.0 + tr.t));
+        c.worstT = std::max(c.worstT, r);
+        c.tOver += r > 1.0;
+    }
     return c;
 }
 void report(const char* name, const Counts& a, const Counts& ctl) {
