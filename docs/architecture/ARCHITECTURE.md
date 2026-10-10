@@ -120,11 +120,17 @@ tracking of its own: the frame graph declares every access and hands the RHI
 explicit barriers, and each backend maps them to its API or drops them when
 its API synchronizes by itself, as WebGPU does.
 
-Today it covers what the renderer uses: buffers, compute pipelines, uploads,
-copies, dispatches, read-back. Textures, samplers, graphics pipelines,
-swapchains, timestamp queries and more queues arrive behind the same handles
-when the renderer needs them, with Vulkan and Metal backends after the author
-sets platform priority ([ADR 0002](adr/0002-rhi.md)).
+Version 1 covered buffers, compute pipelines, uploads, copies, dispatches and
+read-back. Version 2 (`kRhiVersion` 2, ROADMAP M2 criterion 3) adds RGBA8
+textures, samplers, raster pipelines and render passes on D3D12 and WebGPU.
+Textures track their own state inside each backend. Raster passes come from
+`src/renderer/gpu/shaders/raster.wgsl` through the same WGSL-to-HLSL translator
+as the compute passes. A sampled-texture identity check
+(`raw_native_cli texture-identity`) compares a GPU render with the CPU sampler
+reference in `raw/renderer/sampler.hpp`. Swapchains, timestamp queries and more
+queues arrive behind the same handles when the renderer needs them, with Vulkan
+and Metal backends after the author sets platform priority
+([ADR 0002](adr/0002-rhi.md)).
 
 ### The web host
 

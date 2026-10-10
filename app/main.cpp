@@ -1,3 +1,5 @@
+#include "raw/renderer/texture_identity.hpp"
+#include "raw/rhi/rhi.hpp"
 #include "raw/renderer/raster.hpp"
 #include "raw/renderer/accel.hpp"
 #include "raw/renderer/ray_ao.hpp"
@@ -65,6 +67,9 @@ static const char* kUsage =
     "          --exposure --spacing --levels --out); writes threads.ppm\n"
     "       raw_native_cli colour list | grid OUT | apply PIPELINE IN OUT | tables PIPELINE OUT.json\n"
     "         the colour reference: tone mappers and display encodings on float32 RGB\n"
+    "       raw_native_cli texture-identity\n"
+    "         sample a texture through four samplers on the GPU backend and compare with the CPU\n"
+    "         sampler reference (JSON on stdout; exit 0 pass, 1 fail, 4 no GPU backend or adapter)\n"
     "  --out <dir>                 output directory (default .)\n"
     "  --width <int> --height <int> frame size (default 256x256)\n"
     "  --eye x,y,z --target x,y,z --up x,y,z   camera\n"
@@ -96,6 +101,17 @@ int main(int argc, char** argv){
     if (int rc = infoFlags(argc, argv); rc >= 0) return rc;
     if (argc >= 2 && std::strcmp(argv[1], "threads") == 0) return threadsCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "colour") == 0) return colourCommand(argc - 1, argv + 1);
+    // The sampled-texture identity check on this build's GPU backend (ROADMAP M2
+    // criterion 3): JSON on stdout; exit 0 when it passes, 1 when it fails, 4 without
+    // a GPU backend or adapter.
+    if (argc >= 2 && std::strcmp(argv[1], "texture-identity") == 0){
+        std::string why;
+        raw::rhi::Device* dev = raw::rhi::device(why);
+        if (!dev){ std::printf("{\n \"error\": \"%s\"\n}\n", why.c_str()); return 4; }
+        const raw::gpu_check::TextureIdentity r = raw::gpu_check::textureIdentity(*dev);
+        std::fputs(r.json().c_str(), stdout);
+        return r.pass() ? 0 : 1;
+    }
     if (argc >= 2 && std::strcmp(argv[1], "verify") == 0){
         if (argc != 3){ std::printf("usage: raw_native_cli verify <dir>\n"); return 2; }
         std::string report;

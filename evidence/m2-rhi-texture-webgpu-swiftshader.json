@@ -1,0 +1,18 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "M2 exit criterion 3 (ROADMAP.md), the WebGPU half",
+ "source": "CI job wasm, run 38028149510, job 114143298478, on feat/rhi-textures at a16788c, 2026-10-10: tests/web/rhi_texture.py ran the WebAssembly WebGPU build's `raw_native_cli texture-identity` in headless Chrome on SwiftShader. The result below is the CLI's stdout from that job's log, copied byte for byte apart from this wrapper. The adapter description is empty because Chrome does not expose it.",
+ "result": {
+  "backend": "webgpu",
+  "adapter": "",
+  "cases": [
+   {"case": "nearest/clamp", "pixels": 3072, "exempt": 0, "max_codes": 0, "pass": true},
+   {"case": "nearest/repeat", "pixels": 3072, "exempt": 0, "max_codes": 0, "pass": true},
+   {"case": "linear/clamp", "pixels": 3072, "exempt": 0, "max_codes": 0, "pass": true},
+   {"case": "linear/repeat", "pixels": 3072, "exempt": 0, "max_codes": 0, "pass": true}
+  ],
+  "control_fails": true,
+  "pass": true
+ },
+ "does_not_prove": "Behaviour on a hardware WebGPU adapter, which waits for the GPU lock, or anything listed under does_not_prove in evidence/m2-rhi-texture-bounds.json."
+}

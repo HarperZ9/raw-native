@@ -143,6 +143,13 @@ def statement(code, ptr_params):
         code = re.sub(r"\*" + p + r"\b", p, code)
     code = re.sub(r"([(,]\s*)&(\w+)", r"\1\2", code)   # &x as a call argument
     code = rewrite_calls(code, list(VECTORS) + list(SCALARS) + ["select"], construct)
+    # textureSampleLevel(t, s, uv, level): the one texture read raster passes use (an
+    # explicit level, so no derivatives are involved and both APIs agree on the LOD).
+    def sample_level(name, args):
+        if len(args) != 4:
+            raise TranslateError("textureSampleLevel needs four arguments")
+        return f"{args[0]}.SampleLevel({args[1]}, {args[2]}, {args[3]})"
+    code = rewrite_calls(code, ["textureSampleLevel"], sample_level)
     return literals(code)
 
 
@@ -159,15 +166,23 @@ def signature(line, attrs):
         depth += {"(": 1, ")": -1}.get(line[i], 0)
         i += 1
     params = line[m.end():i - 1]
-    r = re.match(r"\s*(?:->\s*(" + TYPE_RE + r"))?\s*\{", line[i:])
+    r = re.match(r"\s*(?:->\s*(@builtin\(position\)|@location\(0\))?\s*(" + TYPE_RE + r"))?\s*\{", line[i:])
     if not r:
         raise TranslateError(f"unsupported function signature: {line.strip()!r}")
-    name, ret, rest = m.group(1), r.group(1), line[i + r.end():]
+    name, ret_attr, ret, rest = m.group(1), r.group(1), r.group(2), line[i + r.end():]
     out, ptrs = [], []
     for p in split_args(params):
         b = re.fullmatch(r"@builtin\(global_invocation_id\)\s*(\w+)\s*:\s*vec3u", p)
         if b:
             out.append(f"uint3 {b.group(1)} : SV_DispatchThreadID")
+            continue
+        b = re.fullmatch(r"@builtin\(vertex_index\)\s*(\w+)\s*:\s*u32", p)
+        if b:
+            out.append(f"uint {b.group(1)} : SV_VertexID")
+            continue
+        b = re.fullmatch(r"@builtin\(position\)\s*(\w+)\s*:\s*vec4f", p)
+        if b:
+            out.append(f"float4 {b.group(1)} : SV_Position")
             continue
         pm = re.fullmatch(r"(\w+)\s*:\s*(" + TYPE_RE + r")", p)
         if not pm:
@@ -179,13 +194,20 @@ def signature(line, attrs):
         else:
             t, suffix = htype(pm.group(2))
             out.append(f"{t} {pm.group(1)}{suffix}")
-    head = ""
-    if attrs:
+    head, sem = "", ""
+    if attrs in ("@vertex", "@fragment"):
+        want = "@builtin(position)" if attrs == "@vertex" else "@location(0)"
+        if ret_attr != want or ret != "vec4f":
+            raise TranslateError(f"{attrs} entry points return {want} vec4f: {line.strip()!r}")
+        sem = " : SV_Position" if attrs == "@vertex" else " : SV_Target0"
+    elif attrs:
         wg = re.search(r"@workgroup_size\(([^)]*)\)", attrs)
         if "@compute" not in attrs or not wg:
             raise TranslateError(f"unsupported attributes {attrs!r}")
         dims = [d.strip() for d in wg.group(1).split(",")] + ["1", "1"]
         head = f"[numthreads({dims[0]}, {dims[1]}, {dims[2]})]\n"
+    if ret_attr and not sem:
+        raise TranslateError(f"a return attribute outside an entry point: {line.strip()!r}")
     rt = htype(ret)[0] if ret else "void"
     lead = line[:len(line) - len(line.lstrip())]
-    return f"{head}{lead}{rt} {name}({', '.join(out)}) {{", rest, ptrs
+    return f"{head}{lead}{rt} {name}({', '.join(out)}){sem} {{", rest, ptrs
