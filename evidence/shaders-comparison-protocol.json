@@ -1,13 +1,22 @@
 {
   "what": "Blind paired comparison of raw-native's CRT and film shaders against the strongest existing shaders, on identical frames",
   "fixed_before_first_run": "2026-10-10",
-  "status": "protocol only; no comparison has run. The competitor renders need RetroArch or librashader and the libretro slang-shaders repository on this machine, which needs the author's approval to download.",
+  "status": "Competitor renders made 2026-10-10; rating not yet run. Addendum below fixed before any rating.",
   "claim_rule": "No superiority claim is made for any shader unless this protocol has run and its decision rule is met. Losses are recorded with the same prominence as wins.",
   "crt": {
-    "competitors": ["crt-royale (GPL-2.0)", "crt-guest-advanced (GPL-2.0+)", "Sony Megatron (licence to check)", "crt-lottes (public domain)", "crt-beans (MIT)"],
+    "competitors": [
+      "crt-royale (GPL-2.0)",
+      "crt-guest-advanced (GPL-2.0+)",
+      "Sony Megatron (licence to check)",
+      "crt-lottes (public domain)",
+      "crt-beans (MIT)"
+    ],
     "competitor_use": "Rendered output only, run unmodified in their own runtime. No line of their code enters raw-native.",
     "settings": "Each competitor at its own default preset, plus the one preset its documentation recommends for the matching mask type. raw-native at the matching preset (pvm-20 for aperture grille RGB, slot-tv for slot mask composite, vga-14 for delta).",
-    "frames": ["web/shaders/fixtures/testcard.mjs testCard(256, 224)", "three game-like frames at 256 x 224 and 320 x 240 chosen by the author before the run"],
+    "frames": [
+      "web/shaders/fixtures/testcard.mjs testCard(256, 224)",
+      "three game-like frames at 256 x 224 and 320 x 240 chosen by the author before the run"
+    ],
     "output": "3840 x 2880 and 1920 x 1440, the same crop for every shader, shown at 1:1 on the same display",
     "reference": "Best case: macro photographs of a real tube (aperture grille, slot mask) showing the same frame, if the author can provide them; then the task is 'which is closer to the photograph'. Otherwise the task is 'which looks more like a real CRT'.",
     "raters": "The author plus any other volunteers. Model judges are not used as raters.",
@@ -16,12 +25,60 @@
     "decision_rule": "raw-native 'preferred' over a competitor only when the lower bound of the 95% interval is above 0.5. 'Not distinguishable' when the interval spans 0.5. 'Lost' when the upper bound is below 0.5."
   },
   "film": {
-    "competitors": ["Dehancer (commercial, rendered output only)", "FilmConvert Nitrate (commercial)", "Resolve's built-in Film Look Creator", "an open GPL or MIT film emulation if one is found and licensed for running"],
-    "frames": ["web/shaders/fixtures/scene.mjs sceneCard", "three scene-linear frames from the films or the Studio, chosen before the run"],
+    "competitors": [
+      "Dehancer (commercial, rendered output only)",
+      "FilmConvert Nitrate (commercial)",
+      "Resolve's built-in Film Look Creator",
+      "an open GPL or MIT film emulation if one is found and licensed for running"
+    ],
+    "frames": [
+      "web/shaders/fixtures/scene.mjs sceneCard",
+      "three scene-linear frames from the films or the Studio, chosen before the run"
+    ],
     "reference": "Best case: the same scene shot on film and scanned. Otherwise 'which looks more like a film print'.",
     "design": "As for the CRT.",
     "metric": "As for the CRT.",
     "decision_rule": "As for the CRT."
   },
-  "internal_baseline": "Before the external panel, raw-native's physical CRT is shown beside the Studio's own retro-crt.js on the same frame (tools/shaders/sheets.mjs). That shows a difference, not a preference, and is not a superiority claim."
+  "internal_baseline": "Before the external panel, raw-native's physical CRT is shown beside the Studio's own retro-crt.js on the same frame (tools/shaders/sheets.mjs). That shows a difference, not a preference, and is not a superiority claim.",
+  "addendum_2026_10_10": {
+    "fixed_before_first_rating": "2026-10-10, after rendering and before any rater saw a pair",
+    "competitor_runtime": "librashader v0.12.0 (release zip sha256 521fe0f364bfa705883f9e99fb1733a3a24f0f403bcc5591b6b78f6cff289183) D3D11 runtime on the WARP software rasterizer, driven by a small host that only loads a preset, uploads the frame, renders 3 frames and reads back. libretro/slang-shaders at e1d75632a205c70f14a4cc947c46d5abb7b3f7f1. Presets unmodified; the host is not part of raw-native.",
+    "competitor_presets": {
+      "aperture grille, RGB (raw-native pvm-20)": [
+        "crt/crt-royale.slangp",
+        "crt/crt-guest-advanced.slangp",
+        "hdr/sony_megatron_v1_presets/crt-sony-megatron-sony-pvm-20L4-sdr.slangp",
+        "crt/crt-lottes.slangp",
+        "crt/crt-beans-rgb.slangp"
+      ],
+      "slot mask, composite (raw-native slot-tv)": [
+        "crt/crt-guest-advanced-ntsc.slangp"
+      ],
+      "delta mask (raw-native vga-14)": [
+        "crt/crt-beans-vga.slangp"
+      ]
+    },
+    "parameter_changes": "One: Sony Megatron's 'Display's Resolution' set to match the render (1080p for 1920 x 1440, 4K for 3840 x 2880). Its default assumes a 4K display and gives wrong colours at 1920 x 1440. No other parameter of any competitor is changed. The 'documentation-recommended preset' variants of the original protocol were not run except where named above.",
+    "frames_deviation": "The author did not choose game frames before the run. The test card is the protocol frame; web/shaders/fixtures/game.mjs gameFrame(256, 224, 0) and gameFrame(320, 240, 0.5) are used as stand-ins and reported separately from the test card.",
+    "crops": "The same 960 x 720 window, centred, from every image at each resolution, shown 1:1.",
+    "dither_cases": {
+      "question": "Which is the better picture, reduced to these 16 colours?",
+      "pairs": [
+        "raw-native dither, EGA palette, blue-noise mode vs dithering/blue_noise.slangp with EGA_PALETTE = 1",
+        "raw-native dither, EGA palette, bayer4 vs dithering/bayer_4x4.slangp with EGA_PALETTE = 1"
+      ],
+      "frames": [
+        "scene card 320 x 180, sRGB",
+        "gameFrame(320, 240, 0.5)"
+      ],
+      "shown": "nearest-neighbour x3"
+    },
+    "film_adjacent_case": {
+      "question": "Which looks more like a film print?",
+      "pair": "raw-native film 500t-print vs film/film-grain.slangp on the sRGB scene card, 960 x 540. The competitor adds grain only; the commercial film tools in the original protocol were not run.",
+      "note": "This is a weak competitor for a film question, and a win here does not show superiority over Dehancer, FilmConvert or Resolve."
+    },
+    "raters": "Unchanged: the author and volunteers. No model rates."
+  }
 }
