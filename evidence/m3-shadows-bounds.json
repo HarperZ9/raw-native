@@ -1,0 +1,21 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "M3 shadows (dated addition 8, 2026-10-10): cascaded shadow maps with stable cascades, filtered soft shadows and contact shadows, against CPU ray-cast visibility",
+ "written": "2026-10-10, before the implementation and the first run",
+ "model": {
+  "cascades": "Four cascades for the scene's directional light over the first 40 units of the view, split by the practical scheme (lambda 0.75 between uniform and logarithmic). Each cascade is an orthographic box around the bounding sphere of its frustum slice, so its size does not change as the camera turns, and its origin snaps to whole shadow-map texels in light space, so it does not swim as the camera moves. Shadow maps are 1024 x 1024, drawn by the hardware G-buffer path of RHI version 3 (depth and a linear-depth target), read in compute after a copy.",
+  "filtering": "Hard: one compare with a slope-scaled bias and a normal offset of one texel. PCF: a 5 x 5 tent. PCSS (Fernando 2005): a blocker search over the light's angular radius, then a PCF kernel sized by the estimated penumbra.",
+  "contact": "A screen-space march of 16 steps over the G-buffer's view-space depth toward the light, up to 0.5 units, with a thickness of 0.1 units.",
+  "reference": "Ray casts on raw/renderer/bvh.hpp from each receiver point (offset by the same normal offset) toward the light: one ray for hard visibility; for the soft light, the fraction of 256 stratified directions over the sun's disc that reach it."
+ },
+ "checks": {
+  "shadow_map_identity": {"what": "each cascade's hardware shadow map against a CPU rasterization of the same light-space triangles (snapped at the precision the RHI v3 probe measures)", "bound": "same coverage except within 0.01 px of an edge; normalised depth within 1e-5 where both cover the same triangle"},
+  "stability": {"what": "4,096 seeded receiver points; the camera pans over 32 positions in steps of 0.37 shadow-map texels, then turns through 16 yaw steps of 0.25 degrees; the hard shadow result at every point and position", "bound": "results that change across the path <= 0.1% of point-positions; the control (no texel snapping, a frustum-tight fit) changes > 1%"},
+  "hard_visibility": {"what": "hard CSM shadows at the G-buffer pixels of the test scene, Suzanne and the helmet role's model at 256 x 256, against the one-ray reference, on interior pixels (where the reference agrees at the pixel's point and at 8 points two shadow-map texels away on the receiver)", "bound": "mismatches <= 0.1% of interior pixels"},
+  "pcss_soft": {"what": "PCSS against the 256-direction soft reference for a sun of 1.5 degrees angular radius, same pixels", "bound": "mean |difference| <= 0.05, 95th percentile <= 0.20 (PCSS is an approximation; this records how good it is)"},
+  "gpu_lookup_parity": {"what": "the WGSL shadow lookup (hard, PCF and PCSS) against the CPU lookup on the same read-back shadow maps and G-buffer", "bound": "|gpu - cpu| <= 1e-3 on all but 0.1% of pixels (depth comparisons at exact ties may flip between float32 and float64)"},
+  "contact_parity": {"what": "the WGSL contact-shadow march against the CPU march on the same depth buffer", "bound": "differing pixels <= 0.1%"},
+  "controls": {"what": "one shadow caster moved on the GPU side; the stability control above", "bound": "each fails its check"}
+ },
+ "does_not_prove": "Shadows from point and spot lights (cube or perspective maps come later); transparency and alpha-tested casters; frame times; that the stand-in scenes show every shadowing case of a Sponza-class level."
+}
