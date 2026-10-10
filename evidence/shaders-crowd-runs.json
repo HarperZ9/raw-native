@@ -1,0 +1,34 @@
+{
+  "what": "Every run of the peripheral-crowding checks. Bounds file unchanged since 679f718. Status: NOT LANDED; two committed criteria conflict for this design.",
+  "runs": [
+    {
+      "date": "2026-10-10",
+      "check": "node tests, first run (box-pyramid mean, plain displaced detail)",
+      "result": "3 of 5 pass",
+      "failures": [
+        "fovea test: my own precondition asked for over 1000 fovea pixels; there are 800 at 200 x 125 (the criterion itself, deviation 0, held)",
+        "local mean: worst change 0.076 against 0.02 (mean 0.005, p90 0.012); worst samples beside the lit window"
+      ]
+    },
+    {
+      "date": "2026-10-10",
+      "check": "design iterations on the street frame (worst local-mean change, sampled periphery)",
+      "result": "contrast-normalised detail 0.056; centred variable box instead of the pyramid 0.091; plus one mean-matching step 0.056; three steps 0.041; plus moving detail only between places of similar local mean (tolerance 0.04) 0.021"
+    },
+    {
+      "date": "2026-10-10",
+      "check": "sweep of the similarity tolerance on the test frame and three held-out frames (day; gaze left; edges plate)",
+      "result": "worst local-mean change and peripheral detail correlation per frame",
+      "table": {
+        "0.005": "street 0.0083/0.759, day 0.0235/0.394, gaze-left 0.0151/0.591, edges 0.0224/0.610",
+        "0.01": "street 0.0118/0.535, day 0.0535/0.242, gaze-left 0.0193/0.400, edges 0.0255/0.497",
+        "0.02": "street 0.0209/0.297, day 0.0559/0.063, gaze-left 0.0381/0.138, edges 0.0279/0.397",
+        "0.03": "street 0.0203/0.134, day 0.0536/-0.003, gaze-left 0.0529/0.031, edges 0.0295/0.219",
+        "0.04": "street 0.0209/0.082, day 0.0530/-0.022, gaze-left 0.0455/-0.010, edges 0.0328/0.166",
+        "0.01 without mean matching": "street 0.0151/0.536, day 0.0716/0.243, gaze-left 0.0272/0.400, edges 0.0444/0.498"
+      },
+      "finding": "No setting meets both committed criteria (worst local-mean change at most 0.02 and detail correlation at most 0.3) across frames. Scrambling an edge necessarily shifts the mean of any box that straddles it, so a worst-case bound of 0.02 at every sampled pixel conflicts with rearranging detail near strong edges. On average the mean holds (0.0025 to 0.006)."
+    }
+  ],
+  "decision": "Not landed. The bounds stay as committed. Options for the coordinator: keep crowding out of this round; or fix a new criterion (for example a percentile of the local-mean change) in a new, dated bounds file before any new run, recorded as a re-specification after this failure, not as a pass."
+}
