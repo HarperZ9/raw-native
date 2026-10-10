@@ -270,7 +270,9 @@ if(RAW_NATIVE_VULKAN AND NOT EMSCRIPTEN)
     # name|source|defines
     set(vk_entries "vk_scan_subgroup|vk_scan_subgroup|" "vk_scan_shared|vk_scan_shared|" "vk_half|vk_half|"
         "vk_half_fallback|vk_half_fallback|" "vk_busy|vk_busy|-DFLAT=0" "vk_busy_flat|vk_busy|-DFLAT=1"
-        "vk_rayquery_probe|vk_rayquery_probe|" "vk_coopmat_probe|vk_coopmat_probe|")
+        "vk_rayquery_probe|vk_rayquery_probe|" "vk_coopmat_probe|vk_coopmat_probe|"
+        "vk_gemm_coop|vk_gemm_coop|" "vk_gemm_coop_skipk|vk_gemm_coop|-DSKIP_K=1" "vk_gemm_coop_bcol|vk_gemm_coop|-DB_COLMAJOR=1"
+        "vk_gemm_tiled|vk_gemm_tiled|" "vk_gemm_tiled_skipk|vk_gemm_tiled|-DSKIP_K=1")
     set(vk_headers "")
     set(vk_includes "")
     set(vk_table "")
@@ -298,7 +300,7 @@ if(RAW_NATIVE_VULKAN AND NOT EMSCRIPTEN)
         "inline constexpr VkSpirvBlob kVkSpirv[] = {\n${vk_table}};\n")
     configure_file("${vkgen}/raw_vk_spirv.hpp.tmp" "${vkgen}/raw_vk_spirv.hpp" COPYONLY)
     add_executable(raw_native_vk_probe app/vk_probe.cpp src/rhi/vulkan/vk_context.cpp src/rhi/vulkan/vk_probe.cpp
-        src/rhi/vulkan/vk_compute.cpp src/rhi/vulkan/vk_checks.cpp ${vk_headers})
+        src/rhi/vulkan/vk_compute.cpp src/rhi/vulkan/vk_checks.cpp src/rhi/vulkan/vk_gemm.cpp ${vk_headers})
     target_include_directories(raw_native_vk_probe PRIVATE "${vkgen}" "${CMAKE_CURRENT_SOURCE_DIR}")
     target_compile_features(raw_native_vk_probe PRIVATE cxx_std_23)
     target_link_libraries(raw_native_vk_probe PRIVATE Vulkan::Vulkan)

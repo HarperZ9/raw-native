@@ -35,6 +35,10 @@ public:
     std::string firstLoaderError() const { return firstLoaderError_; }
 
     bool buffer(uint64_t size, Buffer& out, std::string& err);   // host-visible, coherent, mapped
+    // Device-local (not mapped), filled and read through a staging copy (H1.7 timings).
+    bool deviceBuffer(uint64_t size, Buffer& out, std::string& err);
+    bool upload(Buffer& dst, const void* data, uint64_t size, std::string& err);
+    bool download(Buffer& src, void* data, uint64_t size, std::string& err);
     void destroy(Buffer& b);
     // A compute pipeline over `buffers` storage buffers (bindings 0..n-1) and push constants.
     // Returns false with the VkResult when the driver refuses it.
@@ -42,7 +46,8 @@ public:
     bool pipeline(const uint32_t* spirv, size_t bytes, uint32_t buffers, uint32_t pushBytes, Pipeline& out, std::string& err, bool accel = false);
     void destroy(Pipeline& p);
     // Record one dispatch between two timestamps, submit, wait. ms receives the GPU time.
-    bool dispatch(const Pipeline& p, const std::vector<Buffer*>& bufs, const void* push, uint32_t groups, double* ms, std::string& err);
+    bool dispatch(const Pipeline& p, const std::vector<Buffer*>& bufs, const void* push, uint32_t groups, double* ms, std::string& err,
+                  uint32_t groupsY = 1);
     double timestampPeriodNs() const { return tsPeriod_; }
     bool timestampsUsable() const { return tsBits_ > 0 && tsPeriod_ > 0; }
 
@@ -68,6 +73,8 @@ private:
     bool createInstance(std::string& err);
     bool pickDevice(std::string& err);
     bool createDevice(std::string& err);
+    bool allocate(uint64_t size, VkMemoryPropertyFlags want, Buffer& out, std::string& err);
+    bool copy(VkBuffer dst, VkBuffer src, uint64_t size, std::string& err);
     static VKAPI_ATTR VkBool32 VKAPI_CALL onMessage(VkDebugUtilsMessageSeverityFlagBitsEXT, VkDebugUtilsMessageTypeFlagsEXT,
                                                     const VkDebugUtilsMessengerCallbackDataEXT*, void*);
 };

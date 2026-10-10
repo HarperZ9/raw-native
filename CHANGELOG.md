@@ -26,6 +26,11 @@ the day the release was published on GitHub, in UTC.
   - `RAW_NATIVE_HW_DISABLE` forces any feature off, and the fallbacks run and match.
   - Shader execution reordering and cooperative matrices have no query in the Windows SDK
     10.0.26100 headers, so they go through Vulkan.
+- **Cooperative matrix GEMM** (HW H1.7, Vulkan). `raw_native_vk_probe --gemm` multiplies fp16 matrices
+  on tensor cores through `VK_KHR_cooperative_matrix` and with a shared-memory fallback. Every checked
+  element must sit within K 2^-23 times the sum of |a||b| of a float64 reference. Wrong-layout and
+  skipped-K controls must fail. On SwiftShader the fallback passes at 1024 and 2048, and its control
+  fails. The RTX 4090 run, with timings and a bootstrap interval on the speedup, is pending.
 - **Inline ray query against the CPU BVH** (HW H1.1). `raw_native_cli hw-rayquery` builds DXR
   acceleration structures on the hw compute queue and traces 1,020,000 rays over three procedural
   scenes, compared hit by hit with M3's BVH. Offset and rotation controls fail on every scene, as

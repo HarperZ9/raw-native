@@ -4,31 +4,73 @@
 #include <cstring>
 namespace raw::rhi::vk {
 
-bool Context::buffer(uint64_t size, Buffer& out, std::string& err){
+bool Context::allocate(uint64_t size, VkMemoryPropertyFlags want, Buffer& out, std::string& err){
     VkBufferCreateInfo bi{VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO};
-    bi.size = size; bi.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT; bi.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    bi.size = size;
+    bi.usage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    bi.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     VkResult r = vkCreateBuffer(dev_, &bi, nullptr, &out.buf);
     if (r != VK_SUCCESS){ err = vkError("vkCreateBuffer", r); return false; }
     VkMemoryRequirements req{};
     vkGetBufferMemoryRequirements(dev_, out.buf, &req);
     VkPhysicalDeviceMemoryProperties mp{};
     vkGetPhysicalDeviceMemoryProperties(phys_, &mp);
-    const VkMemoryPropertyFlags want = VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
     uint32_t type = UINT32_MAX;
     for (uint32_t i = 0; i < mp.memoryTypeCount && type == UINT32_MAX; ++i)
         if ((req.memoryTypeBits & (1u << i)) && (mp.memoryTypes[i].propertyFlags & want) == want) type = i;
-    if (type == UINT32_MAX){ err = "no host-visible coherent memory type"; return false; }
+    if (type == UINT32_MAX){ err = "no memory type with the wanted properties"; return false; }
     VkMemoryAllocateInfo ai{VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO};
     ai.allocationSize = req.size; ai.memoryTypeIndex = type;
     if ((r = vkAllocateMemory(dev_, &ai, nullptr, &out.mem)) != VK_SUCCESS){ err = vkError("vkAllocateMemory", r); return false; }
     if ((r = vkBindBufferMemory(dev_, out.buf, out.mem, 0)) != VK_SUCCESS){ err = vkError("vkBindBufferMemory", r); return false; }
-    if ((r = vkMapMemory(dev_, out.mem, 0, VK_WHOLE_SIZE, 0, &out.map)) != VK_SUCCESS){ err = vkError("vkMapMemory", r); return false; }
-    std::memset(out.map, 0, size);
     out.size = size;
     return true;
 }
+bool Context::buffer(uint64_t size, Buffer& out, std::string& err){
+    if (!allocate(size, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, out, err)) return false;
+    VkResult r = vkMapMemory(dev_, out.mem, 0, VK_WHOLE_SIZE, 0, &out.map);
+    if (r != VK_SUCCESS){ err = vkError("vkMapMemory", r); return false; }
+    std::memset(out.map, 0, size);
+    return true;
+}
+bool Context::deviceBuffer(uint64_t size, Buffer& out, std::string& err){
+    return allocate(size, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, out, err);
+}
+bool Context::copy(VkBuffer dst, VkBuffer src, uint64_t size, std::string& err){
+    VkCommandBufferBeginInfo bi{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+    bi.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    vkResetCommandBuffer(cmd_, 0);
+    vkBeginCommandBuffer(cmd_, &bi);
+    const VkBufferCopy region{0, 0, size};
+    vkCmdCopyBuffer(cmd_, src, dst, 1, &region);
+    VkMemoryBarrier mb{VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_TRANSFER_WRITE_BIT,
+                       VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_HOST_READ_BIT};
+    vkCmdPipelineBarrier(cmd_, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_HOST_BIT,
+                         0, 1, &mb, 0, nullptr, 0, nullptr);
+    VkResult r = vkEndCommandBuffer(cmd_);
+    if (r != VK_SUCCESS){ err = vkError("vkEndCommandBuffer", r); return false; }
+    VkSubmitInfo s{VK_STRUCTURE_TYPE_SUBMIT_INFO};
+    s.commandBufferCount = 1; s.pCommandBuffers = &cmd_;
+    vkResetFences(dev_, 1, &fence_);
+    if ((r = vkQueueSubmit(queue_, 1, &s, fence_)) != VK_SUCCESS){ err = vkError("vkQueueSubmit", r); return false; }
+    if ((r = vkWaitForFences(dev_, 1, &fence_, VK_TRUE, UINT64_MAX)) != VK_SUCCESS){ err = vkError("vkWaitForFences", r); return false; }
+    return true;
+}
+bool Context::upload(Buffer& dst, const void* data, uint64_t size, std::string& err){
+    Buffer st;
+    const bool ok = buffer(size, st, err) && (std::memcpy(st.map, data, size), copy(dst.buf, st.buf, size, err));
+    destroy(st);
+    return ok;
+}
+bool Context::download(Buffer& src, void* data, uint64_t size, std::string& err){
+    Buffer st;
+    const bool ok = buffer(size, st, err) && copy(st.buf, src.buf, size, err);
+    if (ok) std::memcpy(data, st.map, size);
+    destroy(st);
+    return ok;
+}
 void Context::destroy(Buffer& b){
-    if (b.mem){ vkUnmapMemory(dev_, b.mem); vkFreeMemory(dev_, b.mem, nullptr); }
+    if (b.mem){ if (b.map) vkUnmapMemory(dev_, b.mem); vkFreeMemory(dev_, b.mem, nullptr); }
     if (b.buf) vkDestroyBuffer(dev_, b.buf, nullptr);
     b = {};
 }
@@ -66,7 +108,8 @@ void Context::destroy(Pipeline& p){
     p = {};
 }
 
-bool Context::dispatch(const Pipeline& p, const std::vector<Buffer*>& bufs, const void* push, uint32_t groups, double* ms, std::string& err){
+bool Context::dispatch(const Pipeline& p, const std::vector<Buffer*>& bufs, const void* push, uint32_t groups, double* ms, std::string& err,
+                       uint32_t groupsY){
     vkResetDescriptorPool(dev_, dpool_, 0);
     VkDescriptorSetAllocateInfo ai{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
     ai.descriptorPool = dpool_; ai.descriptorSetCount = 1; ai.pSetLayouts = &p.dsl;
@@ -95,10 +138,12 @@ bool Context::dispatch(const Pipeline& p, const std::vector<Buffer*>& bufs, cons
     static const bool misuse = std::getenv("RAW_NATIVE_VK_MISUSE") && std::strcmp(std::getenv("RAW_NATIVE_VK_MISUSE"), "1") == 0;
     const uint32_t pad[8]{};
     if (p.pushBytes) vkCmdPushConstants(cmd_, p.layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, p.pushBytes + (misuse ? 4u : 0u), misuse ? pad : push);
-    vkCmdDispatch(cmd_, groups, 1, 1);
+    vkCmdDispatch(cmd_, groups, groupsY, 1);
     if (timed) vkCmdWriteTimestamp(cmd_, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, queries_, 1);
-    VkMemoryBarrier mb{VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT};
-    vkCmdPipelineBarrier(cmd_, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 1, &mb, 0, nullptr, 0, nullptr);
+    // Shader writes become visible to the host and to a later copy (device-local read-back).
+    VkMemoryBarrier mb{VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT};
+    vkCmdPipelineBarrier(cmd_, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT,
+                         0, 1, &mb, 0, nullptr, 0, nullptr);
     if ((r = vkEndCommandBuffer(cmd_)) != VK_SUCCESS){ err = vkError("vkEndCommandBuffer", r); return false; }
     VkSubmitInfo s{VK_STRUCTURE_TYPE_SUBMIT_INFO};
     s.commandBufferCount = 1; s.pCommandBuffers = &cmd_;
