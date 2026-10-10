@@ -76,7 +76,7 @@ jobs:
           grep -q '"verdict":"unverifiable"' gpu-none/gpu_certificate.json
           grep -q '"backend":"none"' gpu-none/gpu_certificate.json
       - name: The web frame graph matches the C++ graph's golden output, and the Motion tests pass
-        run: node --test web/frame-graph.test.mjs web/camera.test.mjs web/motion/motion.test.mjs web/sound/sound.test.mjs web/shaders/crt.test.mjs web/shaders/film.test.mjs web/shaders/dither.test.mjs
+        run: node --test web/frame-graph.test.mjs web/camera.test.mjs web/motion/motion.test.mjs web/world/scene.test.mjs web/sound/sound.test.mjs web/shaders/crt.test.mjs web/shaders/film.test.mjs web/shaders/dither.test.mjs
       - name: Without a GPU backend, threads exits 4
         shell: bash
         run: |
