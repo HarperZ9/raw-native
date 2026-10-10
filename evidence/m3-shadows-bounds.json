@@ -61,5 +61,11 @@
   "written": "2026-10-10, after the lit-side camera's run and before the next camera's first run",
   "result_of_note_3": "The lit-side camera also failed the coverage bound: 299 penumbra pixels against 300 (41,919 shadowed, 37,091 in cascade 0, 0 hard mismatches). An image of the reference shows why: the camera stands inside the ground quad, and the CPU rasterizer drops triangles with a vertex behind the near plane (it does not clip), so the ground vanished and the box's unlit face filled the view. Recorded as a failed run.",
   "change": "The near scene's camera moves to eye (2.2, 2.4, 3.6) toward (1.8, 0.2, 1.6), chosen by geometry alone before any run: every ground corner sits at least 0.45 units in front of the camera (near plane 0.1), the box top is at view depth 2.6 (cascade 0) and the shadow's far edge near 3.0 (cascade 1). The bounds and the cascade-0 requirement stay. If this camera fails coverage too, that run is recorded and the near scene is reported, not gated, until a scene that passes coverage is fixed in advance."
+ },
+ "method_note_5_2026_10_10": {
+  "written": "2026-10-10, after note 4's run and before the next camera's first shadow run",
+  "result_of_note_4": "Note 4's camera failed the cascade-0 requirement: 0 pixels in cascade 0, because the box fell outside its 26-degree half field of view (my geometry check tested depth, not the frustum). Coverage passed (44,327 shadowed, 6,573 penumbra; hard 0 mismatches). Recorded as a failed run.",
+  "tool": "test_shadows --scene-stats prints each scene's G-buffer pixels per cascade and computes no shadow, so a camera can be checked for cascade use before any shadow result exists.",
+  "change": "The near scene's camera: eye (1.8, 3.2, 2.4) toward (0.8, 0.2, 1.0). --scene-stats before any shadow run: 10,749 pixels in cascade 0, 54,787 in cascade 1, all 65,536 covered. Also, the CPU checks now take the perspective-correct view depth (RasterOptions::perspectiveDepth), the depth the GPU G-buffer carries; the screen-linear default overstates depth across large triangles and picks cascades wrongly. All scenes are rerun."
  }
 }
