@@ -61,6 +61,24 @@ q.frame(plateRGBA8);   // q.packed: RGBA8 palette colours; await q.read() -> { i
 
 The Studio's tube stage (`retro-crt.js`) ported to the GPU pass for pass: beam scanlines and masks in 8.8 fixed point, bloom and halation in linear light, then warp, bezel, colour separation and vignette. On the committed frame set it is within one 8-bit code of `retro-crt.js`, and bit-equal where only integer paths run. Use it where a render must match the Studio exactly; use the physical tube for everything else.
 
+## VHS (`web/shaders/vhs/`)
+
+A videotape, simulated in the signal domain for template (c). Presets: `sp-fresh`, `lp-worn`, `ep-rental` (with a rolling tracking band) and `thriller` (a worn second-generation LP copy).
+
+| Pass | What it simulates |
+|---|---|
+| `sample` | The line read off the tape, sampled at 4 fsc, with the transport's time-base error: a slow wander, line-to-line jitter, the head-switch skew in the bottom lines, and the mistracking band's shove. |
+| `tape` | Luma through the FM channel: a windowed-sinc band limit at the tape speed's bandwidth (3.0 MHz SP, 2.5 LP, 2.2 EP), emphasis ringing (`peaking`), and noise that rises with frequency. Chroma through colour-under: a gaussian band limit at about 0.5 MHz, smooth like the analogue chain, a delay against luma, noise that streaks along the line, and a per-line phase wobble (hue). Generations narrow the bandwidths and add the noise. |
+| `play` | Oxide dropouts, filled from the line above as a deck's dropout compensator does, then back to R'G'B'. |
+| `show` | The signal lines at a display size. Or feed `signal` straight into the tube: the showcase plays the tape over composite into a Trinitron set. |
+
+Measured on the CPU reference (`vhs.test.mjs`):
+- 1 MHz luma detail passes and 4 MHz is mostly removed;
+- the chroma edge rises more than three times as wide as the luma edge and lags it by the set delay;
+- with every loss off, a flat field passes unchanged;
+- dropouts occur at the set rate;
+- the head switch moves only the bottom lines.
+
 ## Pixel art (`web/shaders/pixel/`)
 
 3D pixel art that stays still while the camera turns, orbits and dollies, for template (b). The method follows Ebert's "Texel Splatting: Perspective-Stable 3D Pixel Art" (arXiv 2603.14587, CC BY 4.0), reimplemented from the paper. The paper's demo code has no stated licence and was not read.

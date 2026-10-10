@@ -350,6 +350,8 @@ jobs:
         run: python tests/web/shaders_parity.py --shader paint --adapter swiftshader --out media-out/shaders-paint-parity.json
       - name: Shader library, pixel art and scaling, GPU against the CPU reference within the committed bounds, on the CPU adapter
         run: python tests/web/shaders_parity.py --shader pixel --adapter swiftshader --out media-out/shaders-pixel-parity.json
+      - name: Shader library, VHS, GPU against the CPU reference within the committed bounds, on the CPU adapter
+        run: python tests/web/shaders_parity.py --shader vhs --adapter swiftshader --out media-out/shaders-vhs-parity.json
       - name: The sound engine's live path (AudioWorklet in Chrome) matches its offline render within the PCM tolerance
         run: |
           node web/sound/smoke.mjs build/sound-smoke
