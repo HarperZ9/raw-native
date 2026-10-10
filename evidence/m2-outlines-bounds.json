@@ -5,12 +5,33 @@
  "setup": "CPU renderer, 512 x 512. Scene S: a UV sphere (radius 1, 96 x 48 segments) on the optical axis 4 units from the eye, fovy 0.8, so its silhouette projects to a circle whose radius in pixels is known in closed form. Scene K: a unit cube seen from a corner direction, whose three visible creases project to known segments. References are analytic, never a second rendering.",
  "metric": "edge distance: for a set of edge pixels E and an analytic curve R, (a) precision: every pixel centre in E lies within d of R; (b) coverage: R sampled every 0.25 px has an E pixel centre within d at every sample.",
  "checks": {
-  "depth_edges": { "scene": "S", "reference": "the silhouette circle", "bound": "precision and coverage at d = 1.5 px" },
-  "id_edges": { "scene": "S plus a second sphere partly behind it, ids 1 and 2", "reference": "the near sphere's silhouette circle where it covers the far sphere or the ground", "bound": "precision and coverage at d = 1.5 px" },
-  "normal_edges": { "scene": "K", "reference": "the three visible creases", "bound": "precision and coverage at d = 1.5 px, counting only pixels inside the cube's silhouette (2 px in from it)" },
-  "inverted_hull": { "scene": "S with a hull of thickness 0.05", "reference": "the annulus between the silhouettes of radius 1 and 1.05", "bound": "every hull pixel within 1 px of the annulus; at least 99% of pixels whose centres lie in the annulus are hull pixels" },
-  "toon_ramp": { "scene": "S lit by one directional light, 4 bands", "reference": "the band index from the exact sphere normal at each pixel (ray-sphere intersection)", "bound": "at most 2% of covered pixels differ, and every differing pixel lies within 1.5 px of an analytic band boundary" }
+  "depth_edges": {
+   "scene": "S",
+   "reference": "the silhouette circle",
+   "bound": "precision and coverage at d = 1.5 px"
+  },
+  "id_edges": {
+   "scene": "S plus a second sphere (radius 2.5, 8 units from the eye) centred behind it on the same axis, ids 1 and 2; both silhouettes are circles",
+   "reference": "the union of the two silhouette circles: near against far, and far against the background",
+   "bound": "precision and coverage at d = 1.5 px"
+  },
+  "normal_edges": {
+   "scene": "K",
+   "reference": "the three visible creases",
+   "bound": "precision and coverage at d = 1.5 px, counting only pixels inside the cube's silhouette (2 px in from it)"
+  },
+  "inverted_hull": {
+   "scene": "S with a hull of thickness 0.05",
+   "reference": "the annulus between the silhouettes of radius 1 and 1.05",
+   "bound": "every hull pixel within 1 px of the annulus; at least 99% of pixels whose centres lie in the annulus are hull pixels"
+  },
+  "toon_ramp": {
+   "scene": "S lit by one directional light, 4 bands",
+   "reference": "the band index from the exact sphere normal at each pixel (ray-sphere intersection)",
+   "bound": "at most 2% of covered pixels differ, and every differing pixel lies within 1.5 px of an analytic band boundary"
+  }
  },
  "control": "each check also runs on a deliberately wrong input (the silhouette radius scaled by 1.02, the crease set rotated by one cube edge, the hull thickness doubled, the light direction negated) and must fail",
- "does_not_prove": "How the outlines look in a game, their GPU twins (not built yet), or stability under camera motion."
+ "does_not_prove": "How the outlines look in a game, their GPU twins (not built yet), or stability under camera motion.",
+ "amended": "2026-10-10, before the first run: the id_edges scene and reference made exact (two concentric silhouettes); the earlier text omitted the far sphere's own edge, which is an id edge"
 }
