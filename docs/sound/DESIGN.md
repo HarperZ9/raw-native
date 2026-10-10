@@ -143,7 +143,24 @@ Film 1 mix, this engine's meter and ffmpeg 7.1 `ebur128=peak=true`:
 | Loudness range | 2.85 LU | 2.8 LU |
 | True peak | -1.80 dBTP | -1.8 dBFS (true peak) |
 
-## 6. Limits and open questions
+## 6. Choices in use
+
+On 10 October 2026 the author said "continue" without picking between the mixes on the review page. The coordinator then shipped this choice, which is reversible:
+
+| Where | Mix | What it is |
+|---|---|---|
+| Concept films (film 1 now; films 2 to 5 when re-rendered) | C | Narration and cues; no score bed under the voice |
+| Release media (raw-native v0.6.0's two videos, and the release loop) | B | Narration, cues, and a score ducked to 18 LU under the voice |
+
+C for the concept films follows section 2.1: the one controlled study of music under narration found that it hurt. B stays for release media, which are short and walk through what a command prints. That split is a judgement, and no study separates the two kinds of piece.
+
+Every choice can be switched back by swapping the mix file:
+
+- **Film 1 on the site.** Restore `checking-cost.mp4` and `checking-cost.m4a`, and their output hashes in `film.receipt.json`, from the commit before the change. That brings back mix A. Alternatively, build the sheet with `film.sound.mjs --with-score` and render it to get mix B. The interactive version plays `checking-cost.m4a`, so it follows the file.
+- **Release assets.** The videos and zips first attached to v0.6.0 carried the narration alone. They are kept, and re-attaching them with `gh release upload --clobber` restores them. A future render takes `--no-sound` for the bare narration. Removing a scene's `sound()` method gives it chapter cues only.
+- **A sheet.** Adding or removing `score` is the whole difference between B and C.
+
+## 7. Limits and open questions
 
 - Nothing here shows that the cues help anyone understand the films. The right test is a within-film comparison, cue against no cue, with a retention and transfer question afterwards; no study I found has done it for non-speech cues under narration.
 - The narration is synthesized. Torcoli's listeners heard human commentary, and masking margins may differ for a synthetic voice.
