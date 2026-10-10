@@ -1,0 +1,14 @@
+#version 460
+// The fallback of vk_half.comp at 32 bits.
+layout(local_size_x = 64) in;
+layout(std430, binding = 0) buffer Src { float src[]; };
+layout(std430, binding = 1) buffer Dst { float dst[]; };
+void main() {
+    const uint id = gl_GlobalInvocationID.x;
+    dst[id + 1u] = src[3u * id] * src[3u * id + 1u] + src[3u * id + 2u];
+    if (id == 0u) {
+        const float big = src[0] * 0.0 + 2048.0;
+        const float one = src[1] * 0.0 + 1.0;
+        dst[0] = ((big + one) == big) ? 1.0 : 0.0;
+    }
+}

@@ -51,7 +51,7 @@ API_HEADERS = [
 # Vendored headers (third_party/) and the files allowed to include them.
 VENDORED = {"superstack.hpp": ("src/tools/",)}
 # Headers CMake generates into the build tree, and the files that include them.
-GENERATED = {"raw_d3d12_dxil.hpp": ("src/renderer/gpu/",), "raw_hw_dxil.hpp": ("src/rhi/d3d12/",), "raw_gpu_shaders.hpp": ("src/renderer/gpu/",)}
+GENERATED = {"raw_d3d12_dxil.hpp": ("src/renderer/gpu/",), "raw_hw_dxil.hpp": ("src/rhi/d3d12/",), "raw_vk_spirv.hpp": ("src/rhi/vulkan/",), "raw_gpu_shaders.hpp": ("src/renderer/gpu/",)}
 INCLUDE = re.compile(r'^\s*#\s*include\s*([<"])([^>"]+)[>"]', re.M)
 
 
