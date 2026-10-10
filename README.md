@@ -186,7 +186,10 @@ t:
 - Morphs between shapes by point correspondence: a circle becomes a square,
   a sentence becomes an equation, and holes stay holes.
 - Text and equations as paths, from glyph atlases made with
-  `scripts/glyph_atlas.py`. The equations use a small TeX subset.
+  `scripts/glyph_atlas.py`. The equations use a small TeX subset;
+  `tools/media/tex_coverage.mjs` lists any equation in a set of scenes that the
+  subset or the atlas cannot draw. Every equation in films 1 to 5 can be drawn
+  (`evidence/m1-tex-coverage.json`).
 - Live plots, and GPU particle formations.
 - A camera that flies through scale with depth of field.
 - The Threads and Worlds layers underneath.

@@ -16,16 +16,26 @@
 import { parsePath, transform, contour } from "./path.mjs";
 
 const cache = new WeakMap();
+// Symbols a font may lack, built from glyphs it has: the approximately-equal sign
+// is two tildes, one raised and one lowered by 0.11 em.
+const SYNTH = { "≈": { from: "~", shifts: [0.11, -0.11] } };
+export const hasGlyph = (atlas, ch) => !!(atlas.glyphs[ch] || (SYNTH[ch] && atlas.glyphs[SYNTH[ch].from]));
 function glyphShape(atlas, ch) {
   let m = cache.get(atlas);
   if (!m) { m = new Map(); cache.set(atlas, m); }
   if (!m.has(ch)) {
-    const g = atlas.glyphs[ch] || atlas.glyphs["?"];
-    m.set(ch, g && g.d ? parsePath(g.d, { tolerance: atlas.unitsPerEm / 2000 }) : []);
+    const syn = !atlas.glyphs[ch] && SYNTH[ch] && atlas.glyphs[SYNTH[ch].from] ? SYNTH[ch] : null;
+    if (syn) {
+      const base = glyphShape(atlas, syn.from);
+      m.set(ch, syn.shifts.flatMap((dy) => transform(base, [1, 0, 0, 1, 0, dy * atlas.unitsPerEm])));
+    } else {
+      const g = atlas.glyphs[ch] || atlas.glyphs["?"];
+      m.set(ch, g && g.d ? parsePath(g.d, { tolerance: atlas.unitsPerEm / 2000 }) : []);
+    }
   }
   return m.get(ch);
 }
-const adv = (atlas, ch) => (atlas.glyphs[ch] || atlas.glyphs["?"] || { adv: atlas.unitsPerEm / 2 }).adv;
+const adv = (atlas, ch) => (atlas.glyphs[ch] || (SYNTH[ch] && atlas.glyphs[SYNTH[ch].from]) || atlas.glyphs["?"] || { adv: atlas.unitsPerEm / 2 }).adv;
 const kern = (atlas, a, b) => (atlas.kern && atlas.kern[a + b]) || 0;
 
 // One run of glyphs on a baseline. Returns { shape, glyphs, width, ascent, descent }.
@@ -63,7 +73,7 @@ export function fmt(n, digits = 0) {
 }
 
 // --- A small TeX subset -------------------------------------------------------
-const SYMBOLS = { times: "\u00d7", div: "\u00f7", approx: "\u2248", cdot: "\u00b7", to: "\u2192", pm: "\u00b1",
+export const SYMBOLS = { times: "\u00d7", div: "\u00f7", approx: "\u2248", cdot: "\u00b7", to: "\u2192", pm: "\u00b1",
   le: "\u2264", ge: "\u2265", minus: "\u2212", uparrow: "\u2191", rightarrow: "\u2192", infty: "\u221e",
   alpha: "\u03b1", beta: "\u03b2", gamma: "\u03b3", delta: "\u03b4", theta: "\u03b8", lambda: "\u03bb", mu: "\u03bc",
   pi: "\u03c0", sigma: "\u03c3", tau: "\u03c4", phi: "\u03c6", omega: "\u03c9", Delta: "\u0394", Sigma: "\u03a3", sqrt: "\u221a" };
