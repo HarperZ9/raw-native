@@ -1,0 +1,51 @@
+{
+ "criterion": "M1 exit criterion 5: equations render from the engine's TeX subset",
+ "equations": 5,
+ "unsupported_commands": [],
+ "missing_glyphs": [],
+ "atlases": [
+  "<site>/media/explainers/motion/conso-400.json",
+  "docs/motion/hanken-grotesk-500.atlas.json"
+ ],
+ "list": [
+  {
+   "file": "<site>/media/explainers/checking-cost/scene/s3-year.mjs",
+   "line": 28,
+   "tex": "21{,}800{,}126 \\times 6\\,\\text{hours} \\approx 130{,}800{,}757\\,\\text{hours}",
+   "ok": true
+  },
+  {
+   "file": "<site>/media/explainers/checking-cost/scene/s3-year.mjs",
+   "line": 29,
+   "tex": "130{,}800{,}757\\,\\text{hours} \\div 8{,}760 \\approx 14{,}932\\,\\text{years}",
+   "ok": true
+  },
+  {
+   "file": "<site>/media/explainers/checking-cost/scene/s3-year.mjs",
+   "line": 59,
+   "tex": "21{,}800{,}126 \\times 1{,}234.5\\,\\text{hours} = 1{,}234.5\\,\\text{hours}",
+   "ok": true
+  },
+  {
+   "file": "<site>/media/explainers/checking-cost/scene/s3-year.mjs",
+   "line": 60,
+   "tex": "1{,}234.5\\,\\text{hours} \\div 8{,}760 \\approx 1{,}234.5\\,\\text{years}",
+   "ok": true
+  },
+  {
+   "file": "docs/motion/demo.scene.mjs",
+   "line": 22,
+   "tex": "\\frac{a}{b} \\times 6\\,\\text{h} \\approx 10^{8}",
+   "ok": true
+  }
+ ],
+ "does_not_prove": "That every equation in the films is found: only literals in scene modules that contain a TeX command are read.",
+ "films": {
+  "1 checking-cost": "Motion scene modules: 4 equation literals, 2 of them live with the hours parameter (sample digits substituted)",
+  "2 passing-check, 3 rederive, 4 incentives, 5 visible-reasoning": "made by the site's earlier film pipeline from film.json; their figures are labelled values and percentages, with no TeX. Their rebuilds will be Motion scenes, checked by this tool when they land."
+ },
+ "also_scanned": "raw-native's own scenes (docs/motion, docs/media/scenes): the demo's equation uses the approximately-equal sign, which Hanken Grotesk lacks. Before this change it drew a question mark; text.mjs now builds the sign from two tildes.",
+ "negative_control": "An equation using \\sum is reported as unsupported, and the tool exits 1.",
+ "run": "node tools/media/tex_coverage.mjs --scenes <site>/media/explainers --atlas <site>/media/explainers/motion/conso-400.json --scenes docs/motion --atlas docs/motion/hanken-grotesk-500.atlas.json --scenes docs/media/scenes --atlas docs/motion/hanken-grotesk-500.atlas.json",
+ "date": "2026-10-10"
+}

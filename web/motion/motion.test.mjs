@@ -209,6 +209,16 @@ test("audio: superstack.sound/1 quantize and loudness vectors, and the shared mi
   near(integratedLufs(mix, F.rate, 2), F.integrated_lufs, 1e-9);
 });
 
+test("tex: a symbol the font lacks is built from glyphs it has", () => {
+  assert.ok(!atlas.glyphs["\u2248"], "the test needs an atlas without the approximately-equal sign");
+  const a = tex("x \\approx y", { atlas, size: 100 }), q = tex("x ? y", { atlas, size: 100 });
+  const t = text("~", { atlas, size: 100 }).shape;
+  // Two tildes, not the fallback question mark.
+  assert.equal(a.shape.length, text("x", { atlas, size: 100 }).shape.length + 2 * t.length + text("y", { atlas, size: 100 }).shape.length);
+  assert.deepEqual(a.shape.slice(1, 3).map((c) => c.pts.length), [t[0].pts.length, t[0].pts.length]);
+  assert.notDeepEqual(a.shape.map((c) => c.pts.length), q.shape.map((c) => c.pts.length));
+});
+
 test("dashes: pattern, offset, zero-length dots and an odd pattern repeated", () => {
   const pts = (sh) => sh.map((c) => [...c.pts].map((v) => +v.toFixed(3)));
   assert.deepEqual(pts(dash(line(0, 0, 40, 0), [10, 5])), [[0, 0, 10, 0], [15, 0, 25, 0], [30, 0, 40, 0]]);
