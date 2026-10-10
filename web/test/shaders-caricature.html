@@ -1,0 +1,31 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Caricature warp: GPU against the CPU reference</title>
+<link rel="icon" href="data:,">
+<!-- Run by tests/web/shaders_parity.py --shader caricature. Each case of
+     evidence/shaders-caricature-parity-bounds.json through caricature.mjs (CPU, float64) and
+     caricature/gpu.mjs, compared as 8-bit sRGB codes. -->
+<script type="module">
+import { createHost } from "../raw-gpu.mjs";
+import { resolveCaricature, runCaricature, salienceFrom } from "../shaders/caricature/caricature.mjs";
+import { createGpuCaricature } from "../shaders/caricature/gpu.mjs";
+import { labSource } from "../shaders/lab/sources.mjs";
+import { codeStats, labEncode8 } from "../shaders/lab/gpu-kit.mjs";
+const q = new URLSearchParams(location.search);
+try {
+  const host = await createHost({ timing: false });
+  const gpuErrors = []; host.device.onuncapturederror = (e) => gpuErrors.push(e.error.message);
+  const bounds = await (await fetch("../../evidence/shaders-caricature-parity-bounds.json")).json(), { width: W, height: H } = bounds.output;
+  const cases = [];
+  for (const c of bounds.cases) {
+    if (q.get("case") && q.get("case") !== c.id) continue;
+    const src = labSource(c.frame, W, H), size = { w: W, h: H }, plan = resolveCaricature(c.preset, {}, size);
+    const want = labEncode8(runCaricature(plan, src, salienceFrom(plan, src.mat)).out);
+    const g = await createGpuCaricature(host, c.preset, {}, size); g.frame(src.data, src.mat);
+    const got = (await g.read()).packed; g.destroy();
+    cases.push({ id: c.id, ...codeStats(want, got) });
+  }
+  await host.done();
+  window.__result = { bounds: bounds.bounds, cases, adapter: host.info, gpuErrors };
+} catch (e) { window.__result = { error: String(e && e.stack || e) }; }
+</script>

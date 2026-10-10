@@ -119,3 +119,12 @@ if (on("hatch")) {
     if (preset === "engraving") { const d = new Uint8ClampedArray(W * H * 4); for (let i = 0; i < W * H; i++) { const v = r.fallback[i] ? 255 : 0; d.set([v, v * 0.6, 0, 255], i * 4); } save("hatch-fallback-map", { width: W, height: H, data: d }); }
   }
 }
+
+if (on("caricature")) {
+  const { resolveCaricature, runCaricature, salienceFrom } = await import("../../web/shaders/caricature/caricature.mjs");
+  for (const frame of ["street", "day"]) {
+    const src = labSource(frame, W, H);
+    save(`caricature-${frame}-0-source`, img8(src, frame === "day" ? 1 : 2.4));
+    for (const preset of ["subtle", "grotesque"]) { const plan = resolveCaricature(preset, {}, { w: W, h: H }); save(`caricature-${frame}-${preset}`, img8(runCaricature(plan, src, salienceFrom(plan, src.mat)).out, frame === "day" ? 1 : 2.4)); }
+  }
+}
