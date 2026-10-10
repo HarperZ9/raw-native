@@ -17,6 +17,14 @@
    "checks": "M1 (method note 1)",
    "result": "fail: sphere passes (worst t ratio 0.041); box 4 hits over the bound (worst 2.38), torus 2 (worst 16.2); hit/miss agree everywhere; controls fail",
    "diagnosis": "See method note 2: near-tangent hits whose inside chord the doubling bracket skipped."
+  },
+  {
+   "run": 3,
+   "when": "2026-10-10 19:07Z",
+   "backend": "CPU (MSVC, Release)",
+   "checks": "M1 (method notes 1 and 2)",
+   "result": "not a pass: t within the bound on all three primitives (worst 0.041, 0.523, 0.000), hit/miss agree; but the sphere's control passed (worst 0.0), so the check did not discriminate there",
+   "diagnosis": "See method note 3."
   }
  ]
 }
