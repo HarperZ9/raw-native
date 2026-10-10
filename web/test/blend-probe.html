@@ -1,0 +1,44 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Additive blend probe</title>
+<!-- M1 criterion 1 diagnostic: through the real compositor, an opaque base of value d (row)
+     plus one additive layer of value v (column), alpha 200, opacity 0.5, straight alpha in.
+     Compares the RTX result with candidate rounding models of the blend. -->
+<script type="module">
+import { createHost } from "../raw-gpu.mjs";
+import { createCompositor } from "../compositor.mjs";
+const N = 256, out = {};
+const q = (x) => Math.round(Math.max(0, Math.min(1, x)) * 255);
+const models = {
+  exact: (d, v) => q(d / 255 + (v / 255) * (200 / 255) * 0.5),
+  srcRounded: (d, v) => q(d / 255 + q((v / 255) * (200 / 255) * 0.5) / 255),
+  srcTrunc: (d, v) => q(d / 255 + Math.floor((v / 255) * (200 / 255) * 0.5 * 255) / 255),
+  premulRounded: (d, v) => q(d / 255 + (q((v / 255) * (200 / 255)) / 255) * 0.5),
+  premulRoundedThenRounded: (d, v) => q(d / 255 + q((q((v / 255) * (200 / 255)) / 255) * 0.5) / 255),
+  sumTrunc: (d, v) => Math.min(255, Math.floor((d / 255 + (v / 255) * (200 / 255) * 0.5) * 255)),
+};
+try {
+  const host = await createHost({});
+  const comp = await createCompositor(host, { format: "rgba8unorm" });
+  const img = (f) => { const d = new Uint8Array(N * N * 4); for (let y = 0; y < N; y++) for (let x = 0; x < N; x++) d.set(f(x, y), (y * N + x) * 4); return { data: d, width: N, height: N }; };
+  const base = host.upload(host.texture({ width: N, height: N }), img((x, y) => [y, y, y, 255]));
+  const add = host.upload(host.texture({ width: N, height: N }), img((x, y) => [x, x, x, 200]));
+  const target = host.texture({ width: N, height: N, label: "probe" });
+  await comp.draw([{ source: base, premultiplied: false }, { source: add, opacity: 0.5, blend: "add", premultiplied: false }], { target });
+  const bpr = N * 4, buf = host.buffer({ size: bpr * N, usage: ["map-read", "copy-dst"] }), enc = host.device.createCommandEncoder();
+  enc.copyTextureToBuffer({ texture: target }, { buffer: buf, bytesPerRow: bpr }, [N, N]); host.device.queue.submit([enc.finish()]);
+  await buf.mapAsync(1); const got = new Uint8Array(buf.getMappedRange().slice(0)); buf.unmap();
+  out.adapter = host.info;
+  for (const [name, m] of Object.entries(models)) {
+    let exact = 0, off1 = 0, off2 = 0, worst = 0, ex = null;
+    for (let d = 0; d < N; d++) for (let v = 0; v < N; v++) {
+      const g = got[(d * N + v) * 4 + 1], w = m(d, v), e = Math.abs(g - w);
+      if (!e) exact++; else if (e === 1) off1++; else { off2++; if (!ex) ex = { d, v, got: g, model: w }; }
+      worst = Math.max(worst, e);
+    }
+    out[name] = { exact, off1, offMore: off2, worst, firstMore: ex };
+  }
+  out.samples = [[0, 60], [100, 60], [143, 60], [0, 88], [0, 190]].map(([d, v]) => ({ d, v, got: got[(d * N + v) * 4 + 1] }));
+} catch (e) { out.error = String(e && e.stack || e); }
+window.__result = out;
+</script>
