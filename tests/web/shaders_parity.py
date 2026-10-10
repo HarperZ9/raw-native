@@ -59,6 +59,8 @@ def check(res: dict) -> list[str]:
     if "error" in res:
         return [res["error"]]
     b, problems = res["bounds"], []
+    if "mismatched_pixels" in b:
+        return [f"{c['id']}: {c['mismatched']} pixels differ (first at {c['firstMismatch']})" for c in res["cases"] if c["mismatched"] > b["mismatched_pixels"]]
     for c in res["cases"]:
         if c["max"] > b["max_abs_code"] or c["p999"] > b["p999_abs_code"] or c["mean"] > b["mean_abs_code"]:
             problems.append(f"{c['id']}: max {c['max']}, p99.9 {c['p999']}, mean {c['mean']:.4f} (bounds {b})")
@@ -67,9 +69,10 @@ def check(res: dict) -> list[str]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--shader", choices=["crt", "film"], required=True)
+    ap.add_argument("--shader", choices=["crt", "film", "dither", "classic"], required=True)
     ap.add_argument("--adapter", choices=["gpu", "swiftshader"], default="swiftshader")
     ap.add_argument("--case")
+    ap.add_argument("--exhaustive", help="dither only: palette:mode over all 16,777,216 colours")
     ap.add_argument("--timing", action="store_true")
     ap.add_argument("--preset", default="pvm-20")
     ap.add_argument("--overrides")
@@ -85,7 +88,10 @@ def main() -> int:
         res = run(a.shader, a.adapter, q, 600000)
         problems = [res["error"]] if "error" in res else []
     else:
-        res = run(a.shader, a.adapter, {"case": a.case} if a.case else {}, 1800000)
+        q = {"case": a.case} if a.case else {}
+        if a.exhaustive:
+            q = {"exhaustive": a.exhaustive}
+        res = run(a.shader, a.adapter, q, 3600000)
         problems = check(res)
     text = json.dumps(res, indent=2)
     print(text)

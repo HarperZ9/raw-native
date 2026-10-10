@@ -9,55 +9,55 @@
       "id": "500t-print",
       "max": 1,
       "p999": 0,
-      "mean": 7.716049382716049e-05,
+      "mean": 6.17283950617284e-05,
       "over1": 0,
       "worstPixel": 3715,
-      "cpu_ms": 593
+      "cpu_ms": 595
     },
     {
       "id": "no-remjet-halation",
       "max": 1,
       "p999": 0,
-      "mean": 6.17283950617284e-05,
+      "mean": 5.1440329218106995e-05,
       "over1": 0,
-      "worstPixel": 2453,
-      "cpu_ms": 597
+      "worstPixel": 15114,
+      "cpu_ms": 594
     },
     {
       "id": "bleach-bypass",
       "max": 1,
       "p999": 0,
-      "mean": 8.487654320987654e-05,
+      "mean": 6.944444444444444e-05,
       "over1": 0,
-      "worstPixel": 1556,
-      "cpu_ms": 586
+      "worstPixel": 4043,
+      "cpu_ms": 585
     },
     {
       "id": "250d-timed-overexposed",
       "max": 1,
       "p999": 0,
-      "mean": 6.944444444444444e-05,
+      "mean": 6.687242798353909e-05,
       "over1": 0,
-      "worstPixel": 8267,
-      "cpu_ms": 577
+      "worstPixel": 622,
+      "cpu_ms": 578
     },
     {
       "id": "underexposed",
       "max": 1,
       "p999": 0,
-      "mean": 3.3436213991769545e-05,
+      "mean": 2.5720164609053497e-05,
       "over1": 0,
-      "worstPixel": 8176,
-      "cpu_ms": 579
+      "worstPixel": 24800,
+      "cpu_ms": 577
     },
     {
       "id": "grain-monte-carlo-weave",
       "max": 1,
       "p999": 0,
-      "mean": 0.00051440329218107,
+      "mean": 0.0005812757201646091,
       "over1": 0,
-      "worstPixel": 267,
-      "cpu_ms": 2748
+      "worstPixel": 330,
+      "cpu_ms": 2728
     }
   ],
   "adapter": {

@@ -1,0 +1,72 @@
+{
+  "bounds": {
+    "max_abs_code": 1,
+    "p999_abs_code": 255,
+    "mean_abs_code": 255
+  },
+  "cases": [
+    {
+      "id": "studio-defaults",
+      "max": 1,
+      "over1": 0,
+      "worstPixel": 13052,
+      "p999": 0,
+      "mean": 0
+    },
+    {
+      "id": "slot-strong",
+      "max": 0,
+      "over1": 0,
+      "worstPixel": -1,
+      "p999": 0,
+      "mean": 0
+    },
+    {
+      "id": "dot-cell3",
+      "max": 0,
+      "over1": 0,
+      "worstPixel": -1,
+      "p999": 0,
+      "mean": 0
+    },
+    {
+      "id": "glow-strong",
+      "max": 1,
+      "over1": 0,
+      "worstPixel": 294681,
+      "p999": 0,
+      "mean": 0
+    },
+    {
+      "id": "tube-strong",
+      "max": 1,
+      "over1": 0,
+      "worstPixel": 96422,
+      "p999": 0,
+      "mean": 0
+    },
+    {
+      "id": "flat-cell1",
+      "max": 0,
+      "over1": 0,
+      "worstPixel": -1,
+      "p999": 0,
+      "mean": 0
+    },
+    {
+      "id": "vignette-only",
+      "max": 0,
+      "over1": 0,
+      "worstPixel": -1,
+      "p999": 0,
+      "mean": 0
+    }
+  ],
+  "adapter": {
+    "vendor": "google",
+    "architecture": "swiftshader",
+    "device": "",
+    "description": ""
+  },
+  "adapter_kind": "swiftshader"
+}

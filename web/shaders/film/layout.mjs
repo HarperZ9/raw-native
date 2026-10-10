@@ -8,7 +8,7 @@ const FIELDS = [
   ["outW"], ["outH"], ["inW"], ["inH"], ["evK"], ["E", 9], ["weave", 2], ["umPerPx"], ["grainR", 3], ["grainCs", 3], ["frame"],
   ["haloQ"], ["haloR"], ["gw"], ["gh"], ["haloS", 3],
   ["negDmin", 3], ["negSpan", 3], ["negK", 3], ["negX0", 3], ["interimage"],
-  ["prtDmin", 3], ["prtSpan", 3], ["prtK", 3], ["logGain", 3], ["bleach"], ["printBase"], ["outM", 9],
+  ["prtDmin", 3], ["prtSpan", 3], ["prtK", 3], ["logGain", 3], ["bleach"], ["printBase"], ["outM", 9], ["mtfDir"],
 ];
 export const FILM_INDEX = {};
 let n = 0;
