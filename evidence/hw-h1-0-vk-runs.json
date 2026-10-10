@@ -3,10 +3,26 @@
  "bounds": "evidence/hw-h1-0-vk-bounds.json (committed 299ce8c before any run; method notes 1 and 2 committed before the runs they govern)",
  "adapter": "SwiftShader Device (Subzero), Vulkan 1.3, Chrome 154's vk_swiftshader.dll; implicit layers disabled; VK_LAYER_KHRONOS_validation on",
  "runs": [
-  {"run": 1, "result": "fail on validation only: one loader message (type GENERAL) about another application's missing implicit layer manifest was counted as a validation error. Every functional and timing bound met: subgroup scan 0 of 65,536 differ; float16 not offered, 32-bit fallback 0 of 4,096 differ; ray query and cooperative matrix not offered, not attempted; ratio 2.01, flat control 1.00. Record: hw-h1-0-vk-swiftshader-run1.json. Cause and change: method note 1."},
-  {"run": 2, "result": "pass: validation errors 0, loader errors 1 reported apart; ratio 2.01 (rerun values in hw-h1-0-vk-swiftshader.json)"},
-  {"run": "control", "result": "the misuse control (method note 2) reports 10 validation errors (VUID-vkCmdPushConstants-offset-01795), so the validation check discriminates. Record: hw-h1-0-vk-swiftshader-misuse-control.json"},
-  {"run": "forced off", "result": "pass, 15 of 15 cases (hw-h1-0-vk-forced-off-swiftshader.json)"}
+  {
+   "run": 1,
+   "result": "fail on validation only: one loader message (type GENERAL) about another application's missing implicit layer manifest was counted as a validation error. Every functional and timing bound met: subgroup scan 0 of 65,536 differ; float16 not offered, 32-bit fallback 0 of 4,096 differ; ray query and cooperative matrix not offered, not attempted; ratio 2.01, flat control 1.00. Record: hw-h1-0-vk-swiftshader-run1.json. Cause and change: method note 1."
+  },
+  {
+   "run": 2,
+   "result": "pass: validation errors 0, loader errors 1 reported apart; ratio 2.01 (rerun values in hw-h1-0-vk-swiftshader.json)"
+  },
+  {
+   "run": "control",
+   "result": "the misuse control (method note 2) reports 10 validation errors (VUID-vkCmdPushConstants-offset-01795), so the validation check discriminates. Record: hw-h1-0-vk-swiftshader-misuse-control.json"
+  },
+  {
+   "run": "forced off",
+   "result": "pass, 15 of 15 cases (hw-h1-0-vk-forced-off-swiftshader.json)"
+  },
+  {
+   "run": "fix before the RTX run",
+   "result": "found by review, not by a run: the cooperative-matrix probe shader reads float16 storage buffers and uses float16 arithmetic, but the device enabled neither storageBuffer16BitAccess nor (unless native_16bit was on) shaderFloat16. On the RTX the validation layer would have flagged it. The probe now reports cooperative_matrix supported only with both, and the device enables both when either fp16 feature is on. SwiftShader rerun: pass, validation clean. The staged RTX binary was replaced before its job took the lock."
+  }
  ],
  "pending": "RTX 4090 run under D:/gpu.lock.d (mission-control 2026-10-10-engine-hw/gpu/hw_h1_0_vk_rtx_job.sh)"
 }

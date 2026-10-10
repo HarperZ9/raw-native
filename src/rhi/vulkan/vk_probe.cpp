@@ -8,6 +8,7 @@ namespace raw::rhi::vk {
 
 struct FeatureChain {
     VkPhysicalDeviceFeatures2 f2{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2};
+    VkPhysicalDeviceVulkan11Features v11{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES};
     VkPhysicalDeviceVulkan12Features v12{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
     VkPhysicalDeviceVulkan13Features v13{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
     VkPhysicalDeviceAccelerationStructureFeaturesKHR as{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR};
@@ -58,6 +59,7 @@ hw::Probe probeDevice(VkInstance inst, VkPhysicalDevice phys, std::vector<const 
 
     auto* q = new FeatureChain;
     void* t = &q->f2;
+    t = link(t, q->v11, true);
     t = link(t, q->v12, true);
     t = link(t, q->v13, v13);
     t = link(t, q->as, asx);
@@ -104,7 +106,11 @@ hw::Probe probeDevice(VkInstance inst, VkPhysicalDevice phys, std::vector<const 
             }
         }
     }
-    p.add(hw::kCoopMatrix, q->coop.cooperativeMatrix == VK_TRUE, "VK_KHR_cooperative_matrix cooperativeMatrix", coopDetail);
+    // The fp16 kernels also need float16 arithmetic and 16-bit storage buffers.
+    const bool fp16io = q->v12.shaderFloat16 && q->v11.storageBuffer16BitAccess;
+    p.add(hw::kCoopMatrix, q->coop.cooperativeMatrix && fp16io,
+          "VK_KHR_cooperative_matrix cooperativeMatrix, with shaderFloat16 and storageBuffer16BitAccess",
+          coopDetail.empty() ? (fp16io ? "" : "no fp16 arithmetic or 16-bit storage") : coopDetail);
     const bool bindless = q->v12.descriptorIndexing && q->v12.runtimeDescriptorArray && q->v12.descriptorBindingPartiallyBound;
     p.add(hw::kBindless, bindless, "VkPhysicalDeviceVulkan12Features descriptor indexing",
           q->dbuf.descriptorBuffer ? "VK_EXT_descriptor_buffer offered" : "no descriptor buffers");
@@ -126,8 +132,11 @@ hw::Probe probeDevice(VkInstance inst, VkPhysicalDevice phys, std::vector<const 
     // The enable chain: only the bits H1 uses, for the features reported supported.
     auto* e = new FeatureChain;
     void* et = &e->f2;
+    et = link(et, e->v11, true);
     et = link(et, e->v12, true);
-    e->v12.shaderFloat16 = p.on(hw::kNative16);
+    const bool fp16 = p.on(hw::kNative16) || p.on(hw::kCoopMatrix);
+    e->v12.shaderFloat16 = fp16 && q->v12.shaderFloat16;
+    e->v11.storageBuffer16BitAccess = fp16 && q->v11.storageBuffer16BitAccess;
     e->v12.timelineSemaphore = q->v12.timelineSemaphore;
     e->v12.bufferDeviceAddress = q->v12.bufferDeviceAddress && (rq || rtp);
     if (p.on(hw::kBindless)){ e->v12.descriptorIndexing = e->v12.runtimeDescriptorArray = e->v12.descriptorBindingPartiallyBound = VK_TRUE; }
