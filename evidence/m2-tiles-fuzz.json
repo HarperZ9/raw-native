@@ -1,0 +1,19 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "M2 exit criterion 10 (loaders survive one million fuzzed inputs)",
+ "inputs": 1000000,
+ "seed": "raw-tiles",
+ "mutations": "byte flips, random and structural insertions, deletions, duplications, truncation, extreme numbers; one to eight per input, from valid TMX (csv, base64, zlib, gzip, xml) and LDtk seeds",
+ "pass_rule": "every input loads or throws TileError, none over the time limit",
+ "limit_ms": 1000,
+ "loaded": 49601,
+ "refused": 950399,
+ "findings": 0,
+ "slow": 0,
+ "max_ms": 4.9,
+ "seconds": 17.2,
+ "node": "v25.2.1",
+ "pass": true,
+ "examples": [],
+ "does_not_prove": "Robustness against these mutations of these seeds. Not against inputs far from them, and not that a loaded map is what its editor meant."
+}

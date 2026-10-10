@@ -75,8 +75,10 @@ jobs:
           test "$rc" = 4
           grep -q '"verdict":"unverifiable"' gpu-none/gpu_certificate.json
           grep -q '"backend":"none"' gpu-none/gpu_certificate.json
-      - name: The web frame graph matches the C++ graph's golden output, and the Motion tests pass
-        run: node --test web/frame-graph.test.mjs web/camera.test.mjs web/motion/motion.test.mjs web/sound/sound.test.mjs web/shaders/crt.test.mjs web/shaders/film.test.mjs web/shaders/dither.test.mjs web/shaders/paint.test.mjs web/shaders/pixel.test.mjs
+      - name: Every web test file (frame graph golden, Motion, world, sound, shaders)
+        shell: bash
+        # Every *.test.mjs under web/, so a new test file needs no edit here.
+        run: node --test $(find web -name '*.test.mjs' | sort)
       - name: Without a GPU backend, threads exits 4
         shell: bash
         run: |
@@ -348,6 +350,10 @@ jobs:
         run: python tests/web/vector_corpus.py --adapter swiftshader
       - name: Post passes match their CPU references; the stack runs inside Motion (M1 criteria 9 and 10)
         run: python tests/web/post_passes.py --adapter swiftshader --modules web/shaders/post.mjs
+      - name: Tile loaders survive 50,000 fuzzed inputs (the full million is in evidence/), and the tile pass matches its CPU twin (M2 criterion 10)
+        run: |
+          node tools/fuzz/tiles_fuzz.mjs --n 50000 > /dev/null
+          python tests/web/tiles_check.py --adapter swiftshader
       - name: Every scene wrote a video, a poster, captions and a manifest, from this commit
         shell: bash
         run: |
