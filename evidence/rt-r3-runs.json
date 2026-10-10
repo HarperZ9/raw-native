@@ -9,6 +9,14 @@
    "checks": "M1",
    "result": "fail: hit/miss agree on all 65,536 rays a primitive (exempt grazing 44, 26, 49), but t over the bound on 4,269 (sphere), 3,681 (box) and 2,994 (torus) hits; worst ratios 12.7, 2.6, 16.8; the control (eps 1e-2) is far outside (worst 251, 242, 227)",
    "diagnosis": "See method note 1: the stop rule's error grows as 1 / cos(theta); confirmed with the sphere's analytic normal (max ratio x cos 0.5003)."
+  },
+  {
+   "run": 2,
+   "when": "2026-10-10 19:05Z",
+   "backend": "CPU (MSVC, Release)",
+   "checks": "M1 (method note 1)",
+   "result": "fail: sphere passes (worst t ratio 0.041); box 4 hits over the bound (worst 2.38), torus 2 (worst 16.2); hit/miss agree everywhere; controls fail",
+   "diagnosis": "See method note 2: near-tangent hits whose inside chord the doubling bracket skipped."
   }
  ]
 }
