@@ -212,3 +212,37 @@ export function rotateAbout(shape, a, cx, cy) {
   const c = Math.cos(a), s = Math.sin(a);
   return transform(shape, [c, s, -s, c, cx - c * cx + s * cy, cy - s * cx - c * cy]);
 }
+
+// Dashes (SVG stroke-dasharray and stroke-dashoffset): the shape's contours cut into
+// open dash contours. The pattern restarts at each contour's start; an odd-length
+// pattern repeats twice, as SVG does. A zero-length dash is a contour of two equal
+// points, so round and square caps still draw it.
+export function dash(shape, pattern, offset = 0) {
+  let pat = pattern.filter((v) => v >= 0);
+  if (!pat.length || pat.every((v) => v === 0)) return shape;
+  if (pat.length % 2) pat = pat.concat(pat);
+  const period = pat.reduce((s, v) => s + v, 0);
+  const out = [];
+  for (const c of shape) {
+    const L = lengths(c), total = L[L.length - 1];
+    if (total <= 0) continue;
+    // Find where the offset lands in the pattern.
+    let s = -(((offset % period) + period) % period), k = 0;
+    while (s + pat[k] <= 0 && !(pat[k] === 0 && s === 0)) { s += pat[k]; k = (k + 1) % pat.length; }
+    while (s <= total) {
+      const a = Math.max(0, s), b = Math.min(total, s + pat[k]);
+      if (k % 2 === 0 && b >= a && (b > a || pat[k] === 0)) out.push(segmentOf(c, L, a, b));
+      s += pat[k]; k = (k + 1) % pat.length;
+      if (pat[k] === 0 && k % 2 === 1 && s >= total) break;
+    }
+  }
+  return out;
+}
+
+// The open contour along c between arc lengths a <= b.
+function segmentOf(c, L, a, b) {
+  const p = c.pts, n = p.length / 2, pts = [...pointAt(c, L, a)];
+  for (let i = 1; i < L.length; i++) if (L[i] > a && L[i] < b) { const q = i % n; pts.push(p[2 * q], p[2 * q + 1]); }
+  pts.push(...pointAt(c, L, b));
+  return contour(pts, false);
+}

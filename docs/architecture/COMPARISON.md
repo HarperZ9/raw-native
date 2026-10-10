@@ -67,7 +67,7 @@ Target: Khronos PBR Neutral, AgX and ACES 2.0 tone mappers, sRGB, Display P3 and
 Cost: M.
 
 **3. Vector, text and maths fidelity.**
-Why: every explainer is text, equations, plots and shapes. Gaps here show on screen. `web/motion/vector.mjs` draws strokes of constant width from the exact distance to the outline, and items take a `blend` mode. I found no dashes, join or cap choices, gradients or clip paths in `vector.mjs` or `path.mjs`; confirm against the shaders before scoping.
+Why: every explainer is text, equations, plots and shapes. Gaps here show on screen. `web/motion/vector.mjs` draws strokes of constant width from the exact distance to the outline, and items take a `blend` mode. I found no dashes, join or cap choices, gradients or clip paths in `vector.mjs` or `path.mjs`; confirm against the shaders before scoping. Update, 10 October 2026: dashes, joins and caps, gradients, clip paths and image fills landed in M1 (`evidence/m1-vector-corpus.json`); the SVG importer, shaping and the wider TeX subset remain.
 Target: stroke dashes, join and cap choices, linear and radial gradients, clip paths, image fills; an SVG subset importer; shaping through HarfBuzz at atlas time (offline script, not in the engine); a broader TeX subset. Evidence: a corpus of SVG cases listed in a committed file before the first run, each within a stated coverage error of a CPU exact-area reference; every equation in films 1 to 5 renders without MathJax. Slug's algorithm is now free of patent claims (dedicated to the public domain on 2026-03-17 per the report) and its reference shaders are usable with credit; Vello is a design peer. The current band approach stays unless a measured case argues for a change (ADR 0011's reversal signal).
 Cost: L.
 

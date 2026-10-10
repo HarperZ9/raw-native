@@ -1,0 +1,103 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Vector corpus check</title>
+<!-- M1 exit criterion 4: render the corpus of evidence/m1-vector-corpus.json with the Motion
+     vector pass and compare with the CPU reference (web/motion/vector_ref.mjs), which
+     tests/web/vector_corpus.py writes under /_data/. -->
+<canvas id="sheet" width="1280" height="512" style="background:#060608"></canvas>
+<script type="module">
+import { compile } from '../motion/vector.mjs';
+import { VECTOR_WGSL } from '../motion/shaders.mjs';
+import { items, checker16 } from '../../tests/web/vector_corpus.mjs';
+
+const half = (h) => {
+  const s = h & 0x8000 ? -1 : 1, e = (h >> 10) & 31, f = h & 1023;
+  return e === 0 ? s * f * 2 ** -24 : e === 31 ? (f ? NaN : s * Infinity) : s * (1 + f / 1024) * 2 ** (e - 15);
+};
+
+async function gpuRender(device, pipe, c, W, H, atlas, images) {
+  const U = GPUBufferUsage;
+  const buf = (arr, usage) => { const b = device.createBuffer({ size: Math.max(256, Math.ceil(arr.byteLength / 4) * 4), usage: usage | U.COPY_DST }); if (arr.byteLength) device.queue.writeBuffer(b, 0, arr); return b; };
+  const view = buf(new Float32Array([W, H, 1 / W, 1 / H, 0, 0, 0, 0]), U.UNIFORM);
+  const bs = [view, buf(c.inst, U.STORAGE), buf(c.segs, U.STORAGE), buf(c.idx, U.STORAGE), buf(c.paints, U.STORAGE)];
+  const tex = device.createTexture({ size: [W, H], format: 'rgba16float', usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC });
+  const sampler = device.createSampler({ magFilter: 'linear', minFilter: 'linear', addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge' });
+  const bg = device.createBindGroup({ layout: pipe.getBindGroupLayout(0), entries: [
+    ...bs.map((b, i) => ({ binding: i, resource: { buffer: b } })), { binding: 5, resource: atlas.createView() }, { binding: 6, resource: sampler }] });
+  const enc = device.createCommandEncoder();
+  const rp = enc.beginRenderPass({ colorAttachments: [{ view: tex.createView(), loadOp: 'clear', storeOp: 'store', clearValue: [0, 0, 0, 0] }] });
+  rp.setPipeline(pipe); rp.setBindGroup(0, bg);
+  for (const r of c.runs) if (r.kind === 'vector' && r.count) rp.draw(4, r.count, 0, r.first);
+  rp.end();
+  const bpr = Math.ceil(W * 8 / 256) * 256;
+  const read = device.createBuffer({ size: bpr * H, usage: U.MAP_READ | U.COPY_DST });
+  enc.copyTextureToBuffer({ texture: tex }, { buffer: read, bytesPerRow: bpr }, [W, H]);
+  device.queue.submit([enc.finish()]);
+  await read.mapAsync(GPUMapMode.READ);
+  const h = new Uint16Array(read.getMappedRange()), out = new Float32Array(W * H * 4);
+  for (let y = 0; y < H; y++) for (let x = 0; x < W * 4; x++) out[y * W * 4 + x] = half(h[y * bpr / 2 + x]);
+  read.unmap();
+  for (const b of [...bs, read]) b.destroy();
+  tex.destroy();
+  return out;
+}
+
+function draw(ctx, img, W, H, dx, dy, scale) {
+  const id = new ImageData(W, H), bg = [6, 6, 8];
+  for (let i = 0; i < W * H; i++) for (let k = 0; k < 3; k++) id.data[4 * i + k] = Math.round(255 * Math.min(1, img[4 * i + k] + (1 - img[4 * i + 3]) * bg[k] / 255));
+  for (let i = 0; i < W * H; i++) id.data[4 * i + 3] = 255;
+  const t = new OffscreenCanvas(W, H); t.getContext('2d').putImageData(id, 0, 0);
+  ctx.drawImage(t, dx, dy, W * scale, H * scale);
+}
+
+async function run() {
+  const adapter = await navigator.gpu?.requestAdapter();
+  if (!adapter) return { error: 'no adapter' };
+  const device = await adapter.requestDevice();
+  const corpus = await (await fetch('../../evidence/m1-vector-corpus.json')).json();
+  const [W, H] = corpus.canvas.size;
+  const mod = device.createShaderModule({ code: VECTOR_WGSL });
+  const errs = (await mod.getCompilationInfo()).messages.filter((m) => m.type === 'error');
+  if (errs.length) return { error: errs.map((m) => `${m.lineNum}:${m.linePos} ${m.message}`).join('\n') };
+  const OVER = { color: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' }, alpha: { srcFactor: 'one', dstFactor: 'one-minus-src-alpha', operation: 'add' } };
+  const pipe = await device.createRenderPipelineAsync({ layout: 'auto', primitive: { topology: 'triangle-strip' },
+    vertex: { module: mod, entryPoint: 'vs' }, fragment: { module: mod, entryPoint: 'fs', targets: [{ format: 'rgba16float', blend: OVER }] } });
+  const ck = checker16();
+  const atlas = device.createTexture({ size: [64, 64], format: 'rgba8unorm', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST });
+  device.queue.writeTexture({ texture: atlas, origin: [8, 8] }, ck.data, { bytesPerRow: 64 }, [16, 16]);
+  const images = { checker16: { uv: [8 / 64, 8 / 64, 24 / 64, 24 / 64], size: [16, 16] } };
+  const ctx = document.getElementById('sheet').getContext('2d');
+  const info = adapter.info || {};
+  const res = { adapter: `${info.vendor || ''} ${info.architecture || ''} ${info.description || ''}`.trim(), cases: {} };
+  let n = 0;
+  for (const { id, item } of items(corpus)) {
+    const c = compile([item], { x: W / 2, y: H / 2 }, W, H, [W, H], null, images);
+    const gpu = await gpuRender(device, pipe, c, W, H, atlas, images);
+    const ref = new Float32Array(await (await fetch(`/_data/${id}.rgba.f32`)).arrayBuffer());
+    const cls = new Uint8Array(await (await fetch(`/_data/${id}.cls.u8`)).arrayBuffer());
+    const s = { interior: { max: 0, n: 0 }, edge: { max: 0, sum: 0, n: 0 }, outside: { max: 0, n: 0 }, nan: 0, worst: null };
+    for (let i = 0; i < W * H; i++) {
+      let d = 0;
+      for (let k = 0; k < 4; k++) { const g = gpu[4 * i + k]; if (!Number.isFinite(g)) s.nan++; d = Math.max(d, Math.abs(g - ref[4 * i + k])); }
+      const key = cls[i] === 2 ? 'interior' : cls[i] === 1 ? 'edge' : 'outside';
+      const covered = gpu[4 * i + 3] > 0 || ref[4 * i + 3] > 0;
+      if (key === 'edge' && !covered) continue;
+      const b = s[key];
+      b.n++;
+      if (d > b.max) { b.max = d; if (key === 'edge') s.worst = { class: key, x: i % W, y: Math.floor(i / W), d, gpu: Array.from(gpu.slice(4 * i, 4 * i + 4)).map((v) => +v.toFixed(3)), ref: Array.from(ref.slice(4 * i, 4 * i + 4)).map((v) => +v.toFixed(3)) }; }
+      if (key === 'edge') b.sum += d;
+    }
+    s.edge.mean = s.edge.n ? s.edge.sum / s.edge.n : 0; delete s.edge.sum;
+    s.stats = c.stats;
+    res.cases[id] = s;
+    const col = n % 5, row = Math.floor(n / 5);
+    draw(ctx, gpu, W, H, col * 256, row * 128, 0.5);
+    draw(ctx, ref, W, H, col * 256 + 128, row * 128, 0.5);
+    n++;
+  }
+  res.sheet = document.getElementById('sheet').toDataURL('image/png');
+  device.destroy();
+  return res;
+}
+run().then((r) => { window.__result = r; }, (e) => { window.__result = { error: String(e && e.stack || e) }; });
+</script>

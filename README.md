@@ -182,7 +182,10 @@ within 1/255 in a real browser.
 manim. A scene is one ES module whose `frame(t)` returns what to draw at time
 t:
 
-- Bezier and arc paths, drawn with analytic anti-aliasing on the GPU.
+- Bezier and arc paths, drawn with analytic anti-aliasing on the GPU. Strokes
+  take dashes, miter, bevel or round joins and butt, square or round caps. Fills
+  and strokes take linear and radial gradients and image fills, and any item can
+  be clipped by a path. Overlapping contours leave no seams.
 - Morphs between shapes by point correspondence: a circle becomes a square,
   a sentence becomes an equation, and holes stay holes.
 - Text and equations as paths, from glyph atlases made with
@@ -206,6 +209,14 @@ render draws frame i at exactly i / fps in headless Chrome and encodes it with
 the browser's hardware encoder. On an RTX 4090 the 24-second demo renders at
 3840 x 2160 in 30 s, about 25 ms a frame. Motion is creative media: no
 certificate (ADR 0011).
+
+The vector pass is measured against a CPU reference (`web/motion/vector_ref.mjs`,
+16 x 16 samples a pixel) on twenty cases fixed in
+`evidence/m1-vector-corpus.json` before the first run:
+`python tests/web/vector_corpus.py --sheet sheet.png`. On Chrome's CPU adapter
+every case is inside its bounds: paint inside shapes within 0.0003, nothing drawn
+outside them, and edge pixels within 0.03 on average
+(`evidence/m1-vector-swiftshader.json`).
 
 ## Media at every release
 

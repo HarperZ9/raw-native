@@ -8,61 +8,7 @@
 // fill = clamp(0.5 + signed distance / w), stroke = clamp(0.5 + (half width -
 // distance) / w), where w is one pixel plus the defocus blur. No MSAA and no
 // tessellation, so a shape can change every frame at no extra cost.
-export const VECTOR_WGSL = /* wgsl */ `
-struct View { size: vec2f, inv: vec2f, time: f32, frame: f32, pad: vec2f, }
-struct Inst { box: vec4f, fill: vec4f, stroke: vec4f, p: vec4f, list: vec4u, }
-@group(0) @binding(0) var<uniform> V: View;
-@group(0) @binding(1) var<storage, read> inst: array<Inst>;
-@group(0) @binding(2) var<storage, read> segs: array<vec4f>;
-@group(0) @binding(3) var<storage, read> idx: array<u32>;
-struct VO { @builtin(position) pos: vec4f, @location(0) @interpolate(flat) i: u32, }
-@vertex fn vs(@builtin(vertex_index) v: u32, @builtin(instance_index) i: u32) -> VO {
-  let b = inst[i].box;
-  let c = vec2f(f32(v & 1u), f32((v >> 1u) & 1u));
-  let p = mix(b.xy, b.zw, c);
-  var o: VO;
-  o.pos = vec4f(p.x * V.inv.x * 2.0 - 1.0, 1.0 - p.y * V.inv.y * 2.0, 0.0, 1.0);
-  o.i = i;
-  return o;
-}
-@fragment fn fs(o: VO) -> @location(0) vec4f {
-  let I = inst[o.i];
-  let p = o.pos.xy;
-  var d = 1e9;
-  var w = 0i;
-  var crossings = 0u;
-  for (var k = 0u; k < I.list.y; k = k + 1u) {
-    let s = segs[idx[I.list.x + k]];
-    let a = s.xy;
-    let ab = s.zw - s.xy;
-    let ap = p - a;
-    let h = clamp(dot(ap, ab) / max(dot(ab, ab), 1e-12), 0.0, 1.0);
-    d = min(d, length(ap - ab * h));
-    if ((a.y <= p.y) != (s.w <= p.y)) {
-      let x = a.x + (p.y - a.y) * ab.x / ab.y;
-      if (x > p.x) {
-        if (s.w > a.y) { w = w + 1i; } else { w = w - 1i; }
-        crossings = crossings + 1u;
-      }
-    }
-  }
-  let aa = 1.0 + 2.0 * I.p.y;
-  var inside = w != 0i;
-  if (I.p.z > 0.5) { inside = (crossings & 1u) == 1u; }
-  var col = vec4f(0.0);
-  if (I.fill.a > 0.0) {
-    var sd = -d;
-    if (inside) { sd = d; }
-    col = I.fill * clamp(0.5 + sd / aa, 0.0, 1.0);
-  }
-  if (I.stroke.a > 0.0) {
-    let hw = max(I.p.x, 0.5);
-    let k = clamp(0.5 + (hw - d) / aa, 0.0, 1.0) * min(1.0, I.p.x * 2.0);
-    col = I.stroke * k + col * (1.0 - I.stroke.a * k);
-  }
-  if (col.a <= 0.0005) { discard; }
-  return col;
-}`;
+export { VECTOR_WGSL } from "./vector_wgsl.mjs";
 
 // Particles: positions are a pure function of time. Each particle moves from
 // formation A to formation B with its own delay, plus a curl-like drift whose
