@@ -77,12 +77,18 @@ rt::PathTraceOutput pathTraceGpu(rhi::Device& device, const rt::PtScene& s, cons
     const BufferHandle ACC = D.make(npx * 64, kRW, "pt acc"), OUT = D.make(npx * 64, kRW, "pt out"), RB = D.make(npx * 64, kRB, "pt rb");
     const std::uint32_t gx = std::uint32_t((d.width + 7) / 8), gy = std::uint32_t((d.height + 7) / 8);
     std::uint32_t b = 0;
+    // One submission a slice, so no single submission runs long enough for the OS GPU watchdog
+    // (Windows TDR, 2 s by default): the first RTX run at 1280 x 720, 1024 spp recorded every
+    // slice into one submission and failed (evidence/rt-r2-runs.json, run 15).
     do {
+        if (b > 0 && !(D.cl = device.begin(O.error))) return O;
         const std::uint32_t n = std::min(slice, d.spp - b);
         const std::vector<std::uint32_t> w = params(s, d, d.sppBegin + b, n, b == 0, p.emitterOffset);
         D.run("pt_trace", {D.uniform(w.data(), w.size()), NI, NB, T, A, TX, M, ACC}, gx, gy);
         b += n;
+        if (!device.submitAndWait(O.error)) return O;
     } while (b < d.spp);
+    if (!(D.cl = device.begin(O.error))) return O;
     const std::vector<std::uint32_t> w = params(s, d, d.sppBegin, d.spp, false, p.emitterOffset);
     D.run("pt_finish", {D.uniform(w.data(), w.size()), ACC, OUT}, gx, gy);
     D.to({OUT}, Access::CopySrc);
