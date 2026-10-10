@@ -322,6 +322,8 @@ jobs:
         run: python tests/web/host_textures.py --adapter swiftshader
       - name: Render four seconds of each scene on the CPU WebGPU adapter
         run: python tools/media/raw_native_media.py render --setup --out media-out --adapter swiftshader --width 960 --height 540 --max-seconds 4
+      - name: Colour pipelines in WGSL match the C++ reference within one 8-bit code (M1 criterion 2)
+        run: python tests/web/colour_grid.py --cli build/raw_native_cli --adapter swiftshader
       - name: Every scene wrote a video, a poster, captions and a manifest, from this commit
         shell: bash
         run: |
