@@ -11,6 +11,7 @@ cmake-build-*/
 !docs/motion/*.atlas.json
 # The media spec (docs/architecture/adr/0012-media-engine.md).
 !docs/media/media.json
+!web/colour/tables/*.json
 !tests/web/*.json
 
 # CMake artifacts
