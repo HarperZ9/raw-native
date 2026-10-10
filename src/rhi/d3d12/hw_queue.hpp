@@ -42,6 +42,12 @@ public:
     void timestamp(uint32_t index);
     // Close, execute, signal, wait; resolves timestamps [0, count) into the read-back buffer.
     bool submitAndWait(uint32_t timestampCount, std::string& err);
+    // H1.4: close and execute without waiting; when waitFence is set the queue first waits on the
+    // GPU until it reaches waitValue. Returns the value this queue's fence will reach.
+    bool submit(ID3D12Fence* waitFence, uint64_t waitValue, uint64_t& signaled, std::string& err);
+    bool waitCpu(uint64_t value, std::string& err);
+    ID3D12Fence* fence(){ return fence_.Get(); }
+    ID3D12CommandQueue* queue(){ return queue_.Get(); }
     // Ticks between two resolved timestamps of the last submission.
     uint64_t ticks(uint32_t from, uint32_t to) const;
     double ticksPerSecond() const { return (double)freq_; }

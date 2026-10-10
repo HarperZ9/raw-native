@@ -124,6 +124,26 @@ bool HwQueue::submitAndWait(uint32_t count, std::string& err){
     if (count && queries_) return readBack(stamps_.Get(), resolved_.data(), 8ull * count, err);
     return true;
 }
+bool HwQueue::submit(ID3D12Fence* waitFence, uint64_t waitValue, uint64_t& signaled, std::string& err){
+    HRESULT hr = list_->Close();
+    if (FAILED(hr)){ err = hrError("hw list Close", hr); return false; }
+    if (waitFence && FAILED(hr = queue_->Wait(waitFence, waitValue))){ err = hrError("hw queue Wait", hr); return false; }
+    ID3D12CommandList* lists[] = {list_.Get()};
+    queue_->ExecuteCommandLists(1, lists);
+    signaled = ++fenceValue_;
+    if (FAILED(hr = queue_->Signal(fence_.Get(), signaled))){ err = hrError("hw Signal", hr); return false; }
+    return true;
+}
+bool HwQueue::waitCpu(uint64_t value, std::string& err){
+    if (fence_->GetCompletedValue() < value){
+        HRESULT hr = fence_->SetEventOnCompletion(value, event_);
+        if (FAILED(hr)){ err = hrError("hw SetEventOnCompletion", hr); return false; }
+        WaitForSingleObject(event_, INFINITE);
+    }
+    HRESULT hr = dev_->GetDeviceRemovedReason();
+    if (FAILED(hr)){ err = hrError("the D3D12 device was removed", hr); return false; }
+    return true;
+}
 uint64_t HwQueue::ticks(uint32_t from, uint32_t to) const {
     if (from >= resolved_.size() || to >= resolved_.size() || resolved_[to] < resolved_[from]) return 0;
     return resolved_[to] - resolved_[from];
