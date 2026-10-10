@@ -6,9 +6,10 @@
 export const PIPELINES = [
   'clip/srgb', 'clip/display-p3', 'clip/rec2020', 'pbr-neutral/srgb', 'pbr-neutral/display-p3',
   'agx/srgb', 'agx/display-p3', 'aces2-sdr/srgb', 'aces2-sdr/display-p3', 'aces2-hdr1000/rec2100-pq',
+  'aces2-hdr1000/srgb-extended',
 ];
 const TONES = { clip: 0, 'pbr-neutral': 1, agx: 2, 'aces2-sdr': 3, 'aces2-hdr1000': 3 };
-const OUTPUTS = { srgb: 0, 'display-p3': 1, rec2020: 2, 'rec2100-pq': 3 };
+const OUTPUTS = { srgb: 0, 'display-p3': 1, rec2020: 2, 'rec2100-pq': 3, 'srgb-extended': 4 };
 export const LAYOUT = { toAp0: 0, ap0ToAp1: 9, ap1ToAp0: 18, ap1Upper: 27, outM: 28, peak: 37, camIn: 38, camOut: 79,
   tonescale: 120, limitJ: 125, gammaInv: 126, chroma: 127, gamut: 131, agxIn: 136, agxOutset: 145, agxOut: 154,
   reach: 163, hue: 526, cusp: 889, size: 889 + 363 * 3 };
@@ -18,7 +19,7 @@ const PRIMARIES = {
   p3: [[0.680, 0.320], [0.265, 0.690], [0.150, 0.060], [0.3127, 0.3290]],
   rec2020: [[0.708, 0.292], [0.170, 0.797], [0.131, 0.046], [0.3127, 0.3290]],
 };
-const OUT_PRIMARIES = { srgb: 'rec709', 'display-p3': 'p3', rec2020: 'rec2020', 'rec2100-pq': 'rec2020' };
+const OUT_PRIMARIES = { srgb: 'rec709', 'display-p3': 'p3', rec2020: 'rec2020', 'rec2100-pq': 'rec2020', 'srgb-extended': 'rec709' };
 
 const mul = (a, b) => Array.from({ length: 9 }, (_, k) => {
   const i = Math.floor(k / 3), j = k % 3;

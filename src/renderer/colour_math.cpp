@@ -71,6 +71,7 @@ double srgbEncode(double x){
     x = std::max(0.0, x);
     return x <= 0.0031308 ? 12.92 * x : 1.055 * std::pow(x, 1.0 / 2.4) - 0.055;
 }
+double srgbEncodeExtended(double x){ return std::copysign(srgbEncode(std::abs(x)), x); }
 double srgbDecode(double v){ return v <= 0.04045 ? v / 12.92 : std::pow((v + 0.055) / 1.055, 2.4); }
 double bt1886Encode(double x){ return std::pow(std::max(0.0, x), 1.0 / 2.4); }
 double bt1886Decode(double v){ return std::pow(std::max(0.0, v), 2.4); }

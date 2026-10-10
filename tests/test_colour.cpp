@@ -46,7 +46,7 @@ static void toneMappers(){
 }
 
 static void pipelines(){
-    CHECK(pipelineNames().size() == 10);
+    CHECK(pipelineNames().size() == 11);
     Pipeline p;
     CHECK(!parsePipeline("aces2-sdr/rec2100-pq", p));
     CHECK(parsePipeline("aces2-sdr/srgb", p) && p.tone == Tone::Aces2 && p.peakNits == 100.0f);
@@ -63,6 +63,11 @@ static void pipelines(){
     CHECK(top[0] <= pqEncode(10.0) + 1e-6 && top[0] > pqEncode(9.0));   // peaks near 1,000 nits
     CHECK(sdr.aces2Json().find("\"cusp\":[") != std::string::npos);
     CHECK(parsePipeline("clip/srgb", p) && Transform(p).aces2Json() == "null");
+    // Extended range: a bright input passes SDR white, and the curve is sign-symmetric.
+    CHECK(parsePipeline("aces2-hdr1000/srgb-extended", p));
+    const RGB ext = Transform(p).apply({1e4f, 1e4f, 1e4f});
+    CHECK(ext[0] > 2.0f && ext[0] < 3.0f);                       // about 1,000 nits over 100: encoded about 2.6
+    CHECK_NEAR(srgbEncodeExtended(-0.18), -srgbEncode(0.18), 1e-12);
 }
 
 static void gridShape(){
