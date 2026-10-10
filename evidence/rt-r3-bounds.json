@@ -53,5 +53,10 @@
   "written": "2026-10-10 19:04Z, after M1's first run failed and before its second",
   "finding": "M1 failed its t bound on all three primitives (worst ratios 12.7, 2.6, 16.8; t over the bound on 17%, 17% and 11% of hits) with 0 hit/miss disagreements. The stop rule d < 1e-4 (1 + t) leaves the hit d / cos(theta) short of the surface along the ray, so the error is up to 0.5 / cos(theta) of the bound at grazing angles. Confirmed on the sphere with its analytic normal: every over-bound pixel has cos(theta) < 0.5 and the largest ratio x cos(theta) is 0.5003.",
   "change": "The march gains a refinement after a hit: step forward in multiples of 1e-4 (1 + t) (doubling, at most 16 times) until the distance is negative, then bisect on its sign (40 iterations on the CPU, 24 on the GPU). Where no negative distance is found (the Mandelbox estimator is never negative, and tangent near-misses), the unrefined t stays. The bound is unchanged; the first run stays recorded as a failure."
+ },
+ "method_note_2": {
+  "written": "2026-10-10 19:07Z, after M1's second run and before its third",
+  "finding": "With method note 1 the sphere passes (worst 0.041), but 4 box and 2 torus hits stay over the t bound (worst 2.38 and 16.2). A dense scan of the exact distance shows they are near-tangent hits: penetration depths 4.2e-5 and 1.3e-4, inside chords under 1e-3. The doubling bracket (5e-4, 1e-3, 2e-3, ...) steps over chords that short, so those hits were never refined.",
+  "change": "The bracket steps linearly by 1e-4 (1 + t) for up to 64 steps, then doubles up to 16 times; the bisection is unchanged. The bound is unchanged."
  }
 }
