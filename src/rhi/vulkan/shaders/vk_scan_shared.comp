@@ -1,0 +1,22 @@
+#version 460
+// The fallback of vk_scan_subgroup.comp: a Hillis-Steele scan in shared memory.
+layout(local_size_x = 64) in;
+layout(std430, binding = 0) buffer Src { uint src[]; };
+layout(std430, binding = 1) buffer Dst { uint dst[]; };
+layout(std430, binding = 2) buffer Lanes { uint lanes[]; };
+shared uint s[2][64];
+void main() {
+    const uint gi = gl_LocalInvocationIndex;
+    const uint id = gl_GlobalInvocationID.x;
+    s[0][gi] = src[id];
+    barrier();
+    uint cur = 0u;
+    for (uint off = 1u; off < 64u; off <<= 1u) {
+        const uint nxt = 1u - cur;
+        s[nxt][gi] = s[cur][gi] + (gi >= off ? s[cur][gi - off] : 0u);
+        barrier();
+        cur = nxt;
+    }
+    dst[id] = s[cur][gi];
+    lanes[id] = 0u;
+}
