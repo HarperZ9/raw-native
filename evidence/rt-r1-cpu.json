@@ -1,0 +1,14 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "RT stage R1, CPU checks C1 to C3 (evidence/rt-r1-bounds.json)",
+ "pass": true,
+ "results": [
+  {"check": "C1", "mesh": "tie_grid", "inside": 46225, "boundary_exempt": 864, "doubles": 0, "holes": 0, "outside": 0, "control_inclusive_doubles": 14063, "control_exclusive_holes": 13969, "reported_whole_pixel_snap": {"doubles": 0, "holes": 0, "outside": 0}},
+  {"check": "C1", "mesh": "tie_grid_jittered", "inside": 46225, "boundary_exempt": 864, "doubles": 0, "holes": 0, "outside": 0, "control_inclusive_doubles": 110, "control_exclusive_holes": 16, "reported_whole_pixel_snap": {"doubles": 0, "holes": 0, "outside": 0}},
+  {"check": "C1", "mesh": "tie_fan", "inside": 23834, "boundary_exempt": 0, "doubles": 0, "holes": 0, "outside": 0, "control_inclusive_doubles": 605, "control_exclusive_holes": 605, "reported_whole_pixel_snap": {"doubles": 0, "holes": 0, "outside": 0}},
+  {"check": "C2", "scene": "retro_room", "triangles": 636, "pixels": 65536, "covered": 65536, "mismatches": 0, "exempt_edge": 8, "exempt_depth_tie": 0, "exempt_near_far": 0, "control_no_depth_test_mismatches": 3350},
+  {"check": "C2", "scene": "iso_street", "triangles": 1436, "pixels": 65536, "covered": 37222, "mismatches": 0, "exempt_edge": 7, "exempt_depth_tie": 0, "exempt_near_far": 0, "control_no_depth_test_mismatches": 9840},
+  {"check": "C2", "scene": "clip_stress", "triangles": 16, "pixels": 65536, "covered": 57552, "mismatches": 0, "exempt_edge": 0, "exempt_depth_tie": 0, "exempt_near_far": 0, "control_no_depth_test_mismatches": 15046},
+  {"check": "C3", "pixels": 30102, "max_uv_error": 1.5975e-04, "median_uv_error": 3.1031e-06, "control_affine_max_uv_error": 6.3494e-01}
+ ]
+}

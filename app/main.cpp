@@ -2,11 +2,13 @@
 #include "raw/renderer/texture_identity.hpp"
 #include "raw/renderer/pbr_parity.hpp"
 #include "raw/renderer/lighting_parity.hpp"
+#include "raw/renderer/swr_parity.hpp"
 #include "raw/tools/gallery_cmd.hpp"
 #include "raw/tools/bake_cmd.hpp"
 #include "raw/tools/raster_cmd.hpp"
 #include "raw/tools/owned_assets.hpp"
 #include "raw/tools/hw_cmd.hpp"
+#include "raw/tools/swr_cmd.hpp"
 #include "raw/rhi/rhi.hpp"
 #include "raw/renderer/raster.hpp"
 #include "raw/renderer/accel.hpp"
@@ -90,6 +92,11 @@ static const char* kUsage =
     "       raw_native_cli hw-probe [--checks] [--out FILE]\n"
     "         what the GPU adapter offers beyond the RHI (ray tracing, mesh shaders, wave and 16-bit\n"
     "         math, async compute, timestamps); --checks runs the functional checks behind it\n"
+    "       raw_native_cli swr-render [--out DIR] [--cpu-only]\n"
+    "         raw-native's own rasterizer on its owned scenes, modern and retro modes; PNG and JSON\n"
+    "       raw_native_cli swr-parity\n"
+    "         the software rasterizer's GPU compute form against its CPU reference, every mode\n"
+    "         (same output and exit codes)\n"
     "       raw_native_cli pbr-parity\n"
     "         evaluate the glTF material model on the GPU backend and compare with the float64\n"
     "         reference (JSON on stdout; exit 0 pass, 1 fail, 4 no GPU backend or adapter)\n"
@@ -136,6 +143,7 @@ int main(int argc, char** argv){
     if (argc >= 2 && std::strcmp(argv[1], "post-parity") == 0) return postParityCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "shadow-parity") == 0) return shadowParityCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "hw-probe") == 0) return hwProbeCommand(argc - 1, argv + 1);
+    if (argc >= 2 && std::strcmp(argv[1], "swr-render") == 0) return swrRenderCommand(argc - 1, argv + 1);
     // The sampled-texture identity check on this build's GPU backend (ROADMAP M2
     // criterion 3): JSON on stdout; exit 0 when it passes, 1 when it fails, 4 without
     // a GPU backend or adapter.
@@ -163,6 +171,16 @@ int main(int argc, char** argv){
         raw::rhi::Device* dev = raw::rhi::device(why);
         if (!dev){ std::printf("{\n \"error\": \"%s\"\n}\n", why.c_str()); return 4; }
         const raw::gpu_check::LightingParity r = raw::gpu_check::lightingParity(*dev);
+        std::fputs(r.json().c_str(), stdout);
+        return r.pass() ? 0 : 1;
+    }
+    // The software rasterizer on the GPU against its CPU reference (RT stage R1,
+    // evidence/rt-r1-bounds.json, checks C4 and C5): same exit codes.
+    if (argc >= 2 && std::strcmp(argv[1], "swr-parity") == 0){
+        std::string why;
+        raw::rhi::Device* dev = raw::rhi::device(why);
+        if (!dev){ std::printf("{\n \"error\": \"%s\"\n}\n", why.c_str()); return 4; }
+        const raw::gpu_check::SwrParity r = raw::gpu_check::swrParity(*dev);
         std::fputs(r.json().c_str(), stdout);
         return r.pass() ? 0 : 1;
     }

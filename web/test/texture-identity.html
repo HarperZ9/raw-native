@@ -9,7 +9,7 @@
 <script type="module">
 import { loadRawNative } from '../../wasm/raw-loader.mjs';
 const q = new URLSearchParams(location.search), dir = q.get('dir') || 'build-wasm-gpu';
-const cmd = ['texture-identity', 'pbr-parity', 'lighting-parity', 'raster-identity', 'shadow-parity', 'post-parity'].includes(q.get('cmd')) ? q.get('cmd') : 'texture-identity';
+const cmd = ['texture-identity', 'pbr-parity', 'lighting-parity', 'raster-identity', 'shadow-parity', 'post-parity', 'swr-parity'].includes(q.get('cmd')) ? q.get('cmd') : 'texture-identity';
 try {
   const raw = await loadRawNative({ moduleUrl: `../../${dir}/raw-native-gpu.mjs`, moduleSha256: q.get('m'),
     wasmUrl: `../../${dir}/raw-native-gpu.wasm`, wasmSha256: q.get('w') });
