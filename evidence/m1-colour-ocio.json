@@ -1,0 +1,190 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "M1 exit criterion 2: C++ reference against OCIO 2.6.0",
+ "ocio": "2.6.0",
+ "config": "studio-config-v5.0.0_aces-v2.1_ocio-v2.6",
+ "commit": "4c5fee03b046bc4c1032e0b05d4fb0c9bd0c2af7",
+ "inputs": 36787,
+ "grid_sha256": "310cdee0f3ad2c7822d50d4d35c2217132d4b865604c1ae2782b06437cbb79e7",
+ "pass": true,
+ "pipelines": {
+  "clip/srgb": {
+   "metric": "ciede2000",
+   "max": 0.001491,
+   "p99": 0.000586,
+   "mean": 9.4e-05,
+   "median": 6.2e-05,
+   "bound": {
+    "max": 0.05
+   },
+   "pass": true,
+   "max_code_diff_8bit": 0,
+   "worst_input": [
+    0.004467081744223833,
+    0.003054519649595022,
+    0.0
+   ],
+   "worst_mine": [
+    0.055687,
+    0.039464,
+    0.0
+   ],
+   "worst_ocio": [
+    0.055687,
+    0.039474,
+    0.0
+   ]
+  },
+  "clip/display-p3": {
+   "metric": "ciede2000",
+   "max": 0.001649,
+   "p99": 0.000722,
+   "mean": 0.000112,
+   "median": 6e-05,
+   "bound": {
+    "max": 0.05
+   },
+   "pass": true,
+   "max_code_diff_8bit": 1,
+   "worst_input": [
+    0.0,
+    0.003054519649595022,
+    0.004467081744223833
+   ],
+   "worst_mine": [
+    0.007006,
+    0.038154,
+    0.053821
+   ],
+   "worst_ocio": [
+    0.007008,
+    0.038164,
+    0.053821
+   ]
+  },
+  "clip/rec2020": {
+   "metric": "ciede2000",
+   "max": 0.001971,
+   "p99": 0.000784,
+   "mean": 0.000109,
+   "median": 5.2e-05,
+   "bound": {
+    "max": 0.05
+   },
+   "pass": true,
+   "max_code_diff_8bit": 1,
+   "worst_input": [
+    0.2923576831817627,
+    0.914444625377655,
+    8.946294784545898
+   ],
+   "worst_mine": [
+    0.944542,
+    0.984295,
+    1.0
+   ],
+   "worst_ocio": [
+    0.944548,
+    0.984291,
+    1.0
+   ]
+  },
+  "pbr-neutral/srgb": {
+   "ocio": "no OCIO 2.6.0 reference (see the bounds file)"
+  },
+  "pbr-neutral/display-p3": {
+   "ocio": "no OCIO 2.6.0 reference (see the bounds file)"
+  },
+  "agx/srgb": {
+   "ocio": "no OCIO 2.6.0 reference (see the bounds file)"
+  },
+  "agx/display-p3": {
+   "ocio": "no OCIO 2.6.0 reference (see the bounds file)"
+  },
+  "aces2-sdr/srgb": {
+   "metric": "ciede2000",
+   "max": 0.002431,
+   "p99": 0.001998,
+   "mean": 0.000496,
+   "median": 0.000367,
+   "bound": {
+    "max": 0.5,
+    "p99": 0.1
+   },
+   "pass": true,
+   "max_code_diff_8bit": 1,
+   "worst_input": [
+    40.9229621887207,
+    19.13397216796875,
+    0.914444625377655
+   ],
+   "worst_mine": [
+    1.0,
+    0.981775,
+    0.949803
+   ],
+   "worst_ocio": [
+    1.000007,
+    0.981771,
+    0.949813
+   ]
+  },
+  "aces2-sdr/display-p3": {
+   "metric": "ciede2000",
+   "max": 0.002668,
+   "p99": 0.002406,
+   "mean": 0.000571,
+   "median": 0.000398,
+   "bound": {
+    "max": 0.5,
+    "p99": 0.1
+   },
+   "pass": true,
+   "max_code_diff_8bit": 1,
+   "worst_input": [
+    13.083507537841797,
+    87.52437591552734,
+    0.013972264714539051
+   ],
+   "worst_mine": [
+    0.991443,
+    1.0,
+    0.984768
+   ],
+   "worst_ocio": [
+    0.991437,
+    1.000007,
+    0.984763
+   ]
+  },
+  "aces2-hdr1000/rec2100-pq": {
+   "metric": "delta_e_itp",
+   "max": 0.03914,
+   "p99": 0.000294,
+   "mean": 6.4e-05,
+   "median": 4.7e-05,
+   "bound": {
+    "max": 1.0,
+    "p99": 0.25
+   },
+   "pass": true,
+   "max_code_diff_8bit": 1,
+   "worst_input": [
+    0.0,
+    0.0,
+    0.0009765625
+   ],
+   "worst_mine": [
+    0.000173,
+    8.5e-05,
+    0.000985
+   ],
+   "worst_ocio": [
+    0.000107,
+    2.9e-05,
+    0.000984
+   ]
+  }
+ },
+ "does_not_prove": "Agreement with OCIO on this grid only; nothing about negative input, other configs, or a display."
+}

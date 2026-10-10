@@ -16,6 +16,7 @@
 #include "raw/renderer/gpu.hpp"
 #include "raw/tools/receipt.hpp"
 #include "raw/tools/threads_cmd.hpp"
+#include "raw/tools/colour_cmd.hpp"
 #include <string>
 #include <vector>
 #include <cstdint>
@@ -62,6 +63,8 @@ static const char* kUsage =
     "       raw_native_cli threads [flags]  render the Threads module on the GPU backend\n"
     "         (--world 0..14 --frames --width --height --particles --substeps --fps --persistence\n"
     "          --exposure --spacing --levels --out); writes threads.ppm\n"
+    "       raw_native_cli colour list | grid OUT | apply PIPELINE IN OUT | tables PIPELINE OUT.json\n"
+    "         the colour reference: tone mappers and display encodings on float32 RGB\n"
     "  --out <dir>                 output directory (default .)\n"
     "  --width <int> --height <int> frame size (default 256x256)\n"
     "  --eye x,y,z --target x,y,z --up x,y,z   camera\n"
@@ -92,6 +95,7 @@ static int infoFlags(int argc, char** argv){
 int main(int argc, char** argv){
     if (int rc = infoFlags(argc, argv); rc >= 0) return rc;
     if (argc >= 2 && std::strcmp(argv[1], "threads") == 0) return threadsCommand(argc - 1, argv + 1);
+    if (argc >= 2 && std::strcmp(argv[1], "colour") == 0) return colourCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "verify") == 0){
         if (argc != 3){ std::printf("usage: raw_native_cli verify <dir>\n"); return 2; }
         std::string report;

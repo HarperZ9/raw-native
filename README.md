@@ -150,6 +150,37 @@ Exit code 0 means the frame rendered. Exit code 1 means the render tried to use
 more memory than its budget and stopped; it still writes a memory certificate,
 with the verdict `refuted`. Exit code 2 means bad input.
 
+## Colour: tone mappers and display encodings
+
+Ten pipelines take scene-linear Rec.709 light to display code values: a tone
+mapper (clip, PBR Neutral, AgX, or the ACES 2.0 output transform at 100 or 1,000
+nits) followed by an encoding (sRGB, Display P3, Rec.2020 with BT.1886, or
+Rec.2100 PQ). Each has a C++ reference (`raw/renderer/colour.hpp`) and a WGSL
+implementation (`web/colour/colour.wgsl`).
+
+```sh
+raw_native_cli colour list
+raw_native_cli colour grid grid.f32
+raw_native_cli colour apply aces2-sdr/srgb grid.f32 out.f32
+python tests/web/colour_grid.py --cli build/Release/raw_native_cli.exe          # WGSL vs C++
+python tools/colour/ocio_compare.py --cli build/Release/raw_native_cli.exe      # C++ vs OpenColorIO 2.6.0
+```
+
+Measured on the 36,787-value grid fixed in `evidence/m1-colour-bounds.json`
+before the first run:
+- **WGSL against C++:** every channel within one 8-bit code in all ten pipelines,
+  on Chrome's CPU WebGPU adapter (`evidence/m1-colour-gpu-swiftshader.json`).
+- **C++ against OpenColorIO 2.6.0:** largest CIEDE2000 0.0027 for ACES 2.0 SDR
+  and 0.0020 for the clip pipelines; largest Delta E ITP 0.039 for ACES 2.0 at
+  1,000 nits in PQ (`evidence/m1-colour-ocio.json`). A CIEDE2000 of 1 is about one
+  just-noticeable difference.
+- PBR Neutral and AgX have no OpenColorIO built-in, so they are checked against
+  their published formulas only.
+
+The ACES 2.0 code is a port of OpenColorIO's (BSD-3-Clause,
+`third_party/NOTICE-OpenColorIO.md`). OpenColorIO is used offline to measure the
+port and is not a build dependency.
+
 ## Threads and the web GPU host
 
 `web/raw-gpu.mjs` runs WGSL compute and render pipelines through a frame graph
