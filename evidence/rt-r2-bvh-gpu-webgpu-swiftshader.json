@@ -1,0 +1,17 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "RT stage R2, the compute BVH: B1 to B3 (evidence/rt-r2-bounds.json)",
+ "backend": "webgpu",
+ "adapter": "",
+ "error": "",
+ "control_radius_8_nodes_differing": 100757,
+ "control_short_far_hits_missed": 55586,
+ "pass": true,
+ "scenes": [
+  {"scene": "retro_room", "triangles": 636, "gpu_build_ms_with_transfers": 268.3, "rounds": 29, "nodes_differing": 0, "cpu_traversal_of_gpu_tree_differences": 0, "rays": 100000, "hits": 55586, "gpu_triangle_differences": 0, "gpu_tie_exempt": 0, "gpu_t_over_bound": 0, "any_hit_differences": 0, "stack_overflows": 0, "sah_ratio": 1.0081, "cpu_tree_hash": "f9472ee59c7ec3c1", "gpu_tree_hash": "f9472ee59c7ec3c1", "leaf_order_differences": 0, "first_differing_node": -1, "pass": true},
+  {"scene": "iso_street", "triangles": 1436, "gpu_build_ms_with_transfers": 223.0, "rounds": 30, "nodes_differing": 0, "cpu_traversal_of_gpu_tree_differences": 0, "rays": 100000, "hits": 7423, "gpu_triangle_differences": 0, "gpu_tie_exempt": 0, "gpu_t_over_bound": 0, "any_hit_differences": 0, "stack_overflows": 0, "sah_ratio": 1.2150, "cpu_tree_hash": "39472670ca162560", "gpu_tree_hash": "39472670ca162560", "leaf_order_differences": 0, "first_differing_node": -1, "pass": true},
+  {"scene": "clip_stress", "triangles": 16, "gpu_build_ms_with_transfers": 156.7, "rounds": 8, "nodes_differing": 0, "cpu_traversal_of_gpu_tree_differences": 0, "rays": 100000, "hits": 69081, "gpu_triangle_differences": 0, "gpu_tie_exempt": 0, "gpu_t_over_bound": 0, "any_hit_differences": 0, "stack_overflows": 0, "sah_ratio": 0.6680, "cpu_tree_hash": "3a08e28616d3ceaf", "gpu_tree_hash": "3a08e28616d3ceaf", "leaf_order_differences": 0, "first_differing_node": -1, "pass": true},
+  {"scene": "dense_block", "triangles": 100760, "gpu_build_ms_with_transfers": 598.3, "rounds": 48, "nodes_differing": 0, "cpu_traversal_of_gpu_tree_differences": 0, "rays": 100000, "hits": 70503, "gpu_triangle_differences": 0, "gpu_tie_exempt": 0, "gpu_t_over_bound": 0, "any_hit_differences": 0, "stack_overflows": 0, "sah_ratio": 1.2009, "cpu_tree_hash": "551a8446cf45792f", "gpu_tree_hash": "551a8446cf45792f", "leaf_order_differences": 0, "first_differing_node": -1, "pass": true},
+  {"scene": "soup", "triangles": 20000, "gpu_build_ms_with_transfers": 339.3, "rounds": 40, "nodes_differing": 0, "cpu_traversal_of_gpu_tree_differences": 0, "rays": 100000, "hits": 86413, "gpu_triangle_differences": 0, "gpu_tie_exempt": 0, "gpu_t_over_bound": 0, "any_hit_differences": 0, "stack_overflows": 0, "sah_ratio": 0.9908, "cpu_tree_hash": "05150187056a5f51", "gpu_tree_hash": "05150187056a5f51", "leaf_order_differences": 0, "first_differing_node": -1, "pass": true}
+ ]
+}

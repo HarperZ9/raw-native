@@ -1,0 +1,53 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "RT stage R2: every run of the BVH, path tracer and hybrid checks, failures included (bounds: evidence/rt-r2-bounds.json, first committed 4853d1e, restacked as 2a692ce, before any R2 code)",
+ "runs": [
+  {
+   "run": 1,
+   "when": "2026-10-10 18:00Z",
+   "backend": "CPU (MSVC, Release), ctest mode",
+   "checks": "B2 CPU traversal, B3 reported",
+   "result": "fail: the CPU traversal of the PLOC tree missed the brute-force answer on 3 of 100,000 rays (iso_street) and 24 of 10,000 (dense_block); trees well formed; SAH ratios 0.668 to 1.215",
+   "diagnosis": "On axis-aligned, coplanar geometry the slab test's entry distance can round past the Moeller-Trumbore t of a triangle lying in the box face, so the box is culled while it holds the nearest hit. The scenes are walls and boxes, so it happens; the soup's random triangles rarely meet it.",
+   "change": "The slab exit is widened by 1 + 2 gamma(3), from Ize, 'Robust BVH Ray Traversal', JCGT 2013 (the paper's bound for float slab tests). The bound is unchanged."
+  },
+  {
+   "run": 2,
+   "when": "2026-10-10 18:01Z",
+   "backend": "CPU (MSVC, Release)",
+   "checks": "B2 CPU traversal, B3 reported, full mode (100,000 rays on every scene)",
+   "note": "dense_block was 69,664 triangles at 30 x 30 lots, short of the bounds file's 100,000; it is now 36 x 36 lots, 100,760 triangles, changed before any GPU run.",
+   "result": "pass: 0 traversal differences on 100,000 rays per scene; trees well formed; SAH ratio to the M3 binned build retro_room 1.008, iso_street 1.215, clip_stress 0.668, dense_block 1.198, soup 0.991 (bound 1.25, gated on the GPU tree); the port's node counts equal Bvh::nodeCount() on every scene",
+   "evidence": "evidence/rt-r2-bvh-cpu.json"
+  },
+  {
+   "run": 3,
+   "when": "2026-10-10 18:06Z",
+   "backend": "D3D12 WARP, debug layer on",
+   "checks": "B1, B2, B3",
+   "result": "pass: the GPU tree equals the CPU tree node for node on all five scenes; the CPU traversal of the GPU tree and the GPU traversal give the brute-force answer on every one of 100,000 rays a scene (0 tie exemptions used); any-hit equal; 0 stack overflows; SAH ratios 0.668 to 1.215; controls: radius 8 changes 100,757 nodes, the shortened slab exit loses 55,586 hits"
+  },
+  {
+   "run": 4,
+   "when": "2026-10-10 18:07Z to 18:12Z",
+   "backend": "WebGPU SwiftShader (Chrome, local wasm build)",
+   "checks": "B1, B2, B3",
+   "result": "fail: B1 on dense_block, 30,472 nodes differ (the tree is valid: traversal still exact, SAH ratio 1.2009 against the CPU's 1.1978); the other four scenes identical",
+   "first_error_seen": "Tint rejected the literal 3.40282347e38 as outside f32; now written as the hex float 0x1.fffffep+127 (FLT_MAX exactly). A host-side bug hid this message behind a later 'unknown pipeline' error; the runner now stops at the first error.",
+   "diagnosis": "Tree hashes and stage counters located the departure: the leaf order (Morton codes and sort) was identical and the first differing node was 164,588, late in the clustering. An independent CPU program built the tree with 12 forms of the box area; five fused multiply-add forms did not match, and the factored form dy (dx + dz) + dz dx reproduced SwiftShader's tree hash exactly (551a8446cf45792f). SwiftShader's compiler rewrites dx dy + dy dz as dy (dx + dz), an algebraic rewrite IEEE evaluation does not allow.",
+   "change": "The area is written in the factored form on the CPU and the GPU, a form with no common factor left to pull out. The bound is unchanged."
+  },
+  {
+   "run": 5,
+   "when": "2026-10-10 18:19Z",
+   "backend": "CPU, D3D12 WARP (debug layer), WebGPU SwiftShader",
+   "checks": "B1, B2, B3 (full)",
+   "result": "pass on all three: identical trees on every scene; 0 traversal differences on 100,000 rays a scene; 0 any-hit differences; 0 overflows; SAH ratio retro_room 1.008, iso_street 1.215, clip_stress 0.668, dense_block 1.201, soup 0.991 (bound 1.25); controls fail (100,757 nodes, 55,586 hits). GPU build of dense_block with transfers and one host sync a round: WARP 126 ms, SwiftShader 598 ms (reported, not bounded).",
+   "evidence": [
+    "evidence/rt-r2-bvh-cpu.json",
+    "evidence/rt-r2-bvh-gpu-d3d12-warp.json",
+    "evidence/rt-r2-bvh-gpu-webgpu-swiftshader.json"
+   ]
+  }
+ ]
+}

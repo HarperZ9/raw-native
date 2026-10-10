@@ -3,6 +3,7 @@
 #include "raw/renderer/pbr_parity.hpp"
 #include "raw/renderer/lighting_parity.hpp"
 #include "raw/renderer/swr_parity.hpp"
+#include "raw/renderer/rt_gpu.hpp"
 #include "raw/tools/gallery_cmd.hpp"
 #include "raw/tools/bake_cmd.hpp"
 #include "raw/tools/raster_cmd.hpp"
@@ -181,6 +182,16 @@ int main(int argc, char** argv){
         raw::rhi::Device* dev = raw::rhi::device(why);
         if (!dev){ std::printf("{\n \"error\": \"%s\"\n}\n", why.c_str()); return 4; }
         const raw::gpu_check::SwrParity r = raw::gpu_check::swrParity(*dev);
+        std::fputs(r.json().c_str(), stdout);
+        return r.pass() ? 0 : 1;
+    }
+    // The compute BVH build and traversal against the CPU reference (RT stage R2,
+    // evidence/rt-r2-bounds.json, checks B1 to B3): same exit codes.
+    if (argc >= 2 && std::strcmp(argv[1], "rt-bvh-parity") == 0){
+        std::string why;
+        raw::rhi::Device* dev = raw::rhi::device(why);
+        if (!dev){ std::printf("{\n \"error\": \"%s\"\n}\n", why.c_str()); return 4; }
+        const raw::gpu_check::RtBvhParity r = raw::gpu_check::rtBvhParity(*dev);
         std::fputs(r.json().c_str(), stdout);
         return r.pass() ? 0 : 1;
     }
