@@ -81,3 +81,16 @@ if (on("hysteresis")) {
     }
   }
 }
+
+if (on("purity")) {
+  const { resolvePurity, runPurity, displayEncode8 } = await import("../../web/shaders/purity/purity.mjs");
+  const { displayLinear } = await import("../../web/shaders/lab/sources.mjs");
+  const enc = (f) => ({ width: f.width, height: f.height, data: displayEncode8(f) });
+  for (const frame of ["white", "street"]) {
+    const src = displayLinear(frame, W, 480);
+    save(`purity-${frame}-0-source`, enc(src));
+    save(`purity-${frame}-magnetised`, enc(runPurity(resolvePurity("magnetised"), src, 0)));
+    save(`purity-${frame}-earth-field`, enc(runPurity(resolvePurity("earth-field"), src, 0)));
+    for (const t of [0.02, 0.15, 0.4]) save(`purity-${frame}-degauss-${t}s`, enc(runPurity(resolvePurity("degauss"), src, t)));
+  }
+}

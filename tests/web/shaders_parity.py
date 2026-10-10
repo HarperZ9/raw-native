@@ -81,7 +81,7 @@ def check(res: dict) -> list[str]:
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--shader", choices=["crt", "film", "dither", "classic", "paint", "pixel", "vhs", "adjacency", "sag", "lightpaint", "glaze", "hysteresis"], required=True)
+    ap.add_argument("--shader", choices=["crt", "film", "dither", "classic", "paint", "pixel", "vhs", "adjacency", "sag", "lightpaint", "glaze", "hysteresis", "purity", "crowd", "fibre", "hatch", "caricature"], required=True)
     ap.add_argument("--adapter", choices=["gpu", "swiftshader"], default="swiftshader")
     ap.add_argument("--case")
     ap.add_argument("--exhaustive", help="dither only: palette:mode over all 16,777,216 colours")

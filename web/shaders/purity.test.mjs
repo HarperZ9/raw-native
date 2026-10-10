@@ -14,7 +14,8 @@ test("with no stray field the picture is unchanged", () => {
   const plan = resolvePurity("magnetised", { mag: 0, earth: 0, degauss: 0 }), src = plate(64, 48, [0.3, 0.6, 0.9]);
   for (let i = 0; i < src.data.length; i += 7) src.data[i] = (i % 13) / 13;
   const o = runPurity(plan, src, 0).data; let dev = 0;
-  for (let i = 0; i < o.length; i++) dev = Math.max(dev, Math.abs(o[i] - src.data[i]));
+  // RGB only (first run compared alpha too, which the test pattern had overwritten: a test bug).
+  for (let i = 0; i < o.length; i++) if ((i & 3) !== 3) dev = Math.max(dev, Math.abs(o[i] - src.data[i]));
   assert.ok(dev <= B.zero_field_identity_max_dev, `max deviation ${dev}`);
 });
 
@@ -40,7 +41,8 @@ test("the degauss swing decays with its time constant", () => {
     const err = Math.abs(peak / p.degauss - 1);
     assert.ok(err <= B.degauss_envelope_rel_error_max, `at ${n} tau: envelope error ${err}`);
   }
-  let late = 0; for (let y = 0; y < 240; y++) late = Math.max(late, Math.abs(degaussAt(p, 5 * p.tau, y, 240)) * (0.3 + 1));
+  // Worst gun: the spread scales the outer guns' landing error by up to 1 + spread (added with the spread).
+  let late = 0; for (let y = 0; y < 240; y++) late = Math.max(late, Math.abs(degaussAt(p, 5 * p.tau, y, 240)) * (0.3 + 1) * (1 + p.spread));
   assert.ok(late <= B.after_5_tau_max_dev_from_residual, `landing error left at 5 tau: ${late}`);
 });
 
