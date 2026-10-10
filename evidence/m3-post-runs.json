@@ -43,7 +43,47 @@
    "what": "after note 6",
    "result": "fail on RMSE: pan ratio 0.735 against 0.5 (no-jitter control 0.796). Ghosting passes: 0.0142 (bound 0.03); control 0.308 fails as required; clip only 0.021, depth only 0.119 (reported). A probe (not a checked run) shows the ratio is 0.265 on a static camera with any option and 0.72 to 0.81 under the 0.3-pixel pan with any option, so the remaining error comes from resampling the history every frame, not from the clip or the depth test.",
    "evidence": "evidence/m3-taa-cpu-run.json"
+  },
+  {
+   "run": "gpu-warp-1",
+   "date": "2026-10-10",
+   "what": "gpu_post_parity on D3D12 WARP with the debug layer, six scenes and the TAA sequence",
+   "result": "fail. GTAO parity passes everywhere (at most 28 of 35,849 pixels off). SSR parity fails on all six scenes (561 to 3,414 pixels, most a hit against a miss). TAA parity fails (32 of 16,384 pixels in the worst frame; bound 16). Controls fail as required.",
+   "action": "method note 7"
+  },
+  {
+   "run": "gpu-warp-2",
+   "date": "2026-10-10",
+   "what": "after note 7 (clip margin)",
+   "result": "SSR still fails (293 to 3,380). The real cause was mine: the parity code handed the SSR pass GTAO's 16 steps instead of 64. Fixed in the parity code (method note 8 records it)."
+  },
+  {
+   "run": "gpu-warp-3",
+   "date": "2026-10-10",
+   "what": "SSR given its own step count",
+   "result": "SSR parity passes on all six scenes (at most 11 pixels). TAA still fails; probes trace it to the colour clip.",
+   "action": "method note 8: two-pass deviation in the clip"
+  },
+  {
+   "run": "gpu-warp-4",
+   "date": "2026-10-10",
+   "what": "after note 8",
+   "result": "TAA parity still fails (31 pixels in the worst frame). Note 8's diagnosis did not remove it. With both sides stepping from the same (GPU) history, at most 1 pixel differs in any frame; the drift comes from each side feeding back its own history, which amplifies single-pixel float32 differences over 32 frames. That is the check as committed, so it stays failed."
+  },
+  {
+   "run": "gpu-warp-final",
+   "date": "2026-10-10",
+   "what": "gpu_post_parity on WARP, debug layer, models by manifest role",
+   "result": "GTAO and SSR parity pass on all six scenes; TAA parity open failure (31 of 16,384; one-step 1); all controls fail as required.",
+   "evidence": "evidence/m3-post-gpu-d3d12-warp.json"
+  },
+  {
+   "run": "swiftshader-final",
+   "date": "2026-10-10",
+   "what": "post-parity in Chrome on SwiftShader, the two built-in scenes",
+   "result": "Same pattern: GTAO and SSR pass; TAA parity open failure (31; one-step 1); controls fail.",
+   "evidence": "evidence/m3-post-gpu-webgpu-swiftshader.json"
   }
  ],
- "status": "Open failures, not loosened: GTAO and SSR on the interior close-up; TAA RMSE under the pan (0.735 against 0.5). Candidates, each to be described in a method note before it runs: a thickness heuristic for GTAO and SSR; for TAA, a blend weight that rises with sub-pixel motion and a sharpened history."
+ "status": "Open failures, not loosened: GTAO and SSR accuracy on the interior close-up; TAA RMSE under the pan (0.735 against 0.5); TAA GPU parity with each side's own history (31 of 16,384 pixels against 16). Passing: GTAO and SSR accuracy on every other gated scene, TAA ghosting, GTAO and SSR GPU parity on WARP and SwiftShader, every control. Candidates, each in a method note before it runs: a thickness heuristic for GTAO and SSR; a motion-aware blend and history sharpening for TAA."
 }

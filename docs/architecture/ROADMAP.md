@@ -126,7 +126,7 @@ every backend it names.
 | Criterion | Status | Evidence |
 |---|---|---|
 | 1. Scenes verified, path-traced error recorded | Open: not started; the model substitution waits on the author | `evidence/m3-scene-models.json` |
-| 2. TAA ghosting and RMSE | Open: not started | |
+| 2. TAA ghosting and RMSE | Ghosting passes. **Open failure**: pan RMSE 0.735 of single-sample (bound 0.5); GPU parity drifts (31 of 16,384 pixels, bound 16) | `evidence/m3-post-runs.json` |
 | 3. Aliasing and the validation layer | Open: not started | |
 | 4. The Studio viewer (A4) | Open: not started | |
 | 5. API snapshot | Open: not started | |
@@ -135,7 +135,8 @@ every backend it names.
 | 8. Shadows: CPU checks against ray casts | Passes | `evidence/m3-shadows-cpu-run.json` |
 | 8. Shadows: GPU lookups and contact march | Passes on WARP and SwiftShader | `evidence/m3-shadows-gpu-*.json` |
 | 8. Shadows: GPU shadow map against the CPU rasterizer | **Open failure**: 3 texels on WARP, about 11 on SwiftShader; the RTX run is queued | `evidence/m3-shadows-runs.json` |
-| 8. GTAO, SSR, TAA | Open: not started | |
+| 8. GTAO and SSR against ray casts | GTAO passes on the near scene and is within bounds on four scenes too sparse to gate; SSR passes on the two test-scene views. **Open failure** on the interior close-up (GTAO mean 0.104, SSR 80% correct, 17.6% false hits); ungated, SSR reaches 84% on the helmet and 65% on the interior model | `evidence/m3-post-cpu-run.json` |
+| 8. GTAO and SSR GPU parity | Passes on WARP and SwiftShader | `evidence/m3-post-gpu-*.json` |
 | 9. Baked lighting | Passes | `evidence/m3-bake-*.json` |
 
 Licence note on criterion 1 (2026-10-10). `DamagedHelmet` derives from a CC-BY-NC-4.0 model and the

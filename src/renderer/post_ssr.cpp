@@ -37,7 +37,7 @@ std::vector<int> ssr(const ViewGBuffer& v, const SsrParams& prm) {
             double k1 = -1.0 / E[2];
             // Clip the screen segment to the screen rectangle, so every step lands on screen.
             double tEnd = 1.0;
-            const double lim = 1e-6;
+            const double lim = 1e-3;   // method note 7: survives float32 at the screen edge
             const auto clip = [&](double s0, double s1, double hi) {
                 if (s1 > hi - lim && s1 != s0) tEnd = std::min(tEnd, (hi - lim - s0) / (s1 - s0));
                 if (s1 < 0.0 && s1 != s0) tEnd = std::min(tEnd, (0.0 - s0) / (s1 - s0));

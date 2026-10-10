@@ -4,10 +4,7 @@
 #include "raw/renderer/post.hpp"
 #include "raw/renderer/raster.hpp"
 #include "raw/tools/model_scene.hpp"
-#if __has_include("raw/tools/model_manifest.hpp")
 #include "raw/tools/model_manifest.hpp"
-#define RAW_HAS_MODEL_MANIFEST 1
-#endif
 #include "check.hpp"
 #include <algorithm>
 #include <cmath>
@@ -98,14 +95,11 @@ int main(int argc, char** argv) {
         std::string err;
         p.model = models + "/Models/Suzanne/glTF/Suzanne.gltf";
         scenes.push_back({"Suzanne", sceneFromParams(p, nullptr)});
-#ifdef RAW_HAS_MODEL_MANIFEST
-        p.model = resolveModelRole(std::string(RAW_SOURCE_DIR) + "/evidence/m3-scene-models.json", "helmet", models, err);
-#else
-        p.model = models + "/Models/FlightHelmet/glTF/FlightHelmet.gltf";   // the manifest's current helmet choice
-#endif
+        const std::string manifest = std::string(RAW_SOURCE_DIR) + "/evidence/m3-scene-models.json";
+        p.model = resolveModelRole(manifest, "helmet", models, err);
         if (!p.model.empty()) scenes.push_back({"helmet role", sceneFromParams(p, nullptr)});
-        // Method note 2: the interior role's model (ABeautifulGame today), with Suzanne's camera.
-        p.model = models + "/Models/ABeautifulGame/glTF/ABeautifulGame.gltf";
+        // Method note 2: the interior role's model, with Suzanne's camera.
+        p.model = resolveModelRole(manifest, "interior", models, err);
         scenes.push_back({"interior role", sceneFromParams(p, nullptr)});
     }
     if (!stats && !models.empty()) {   // method note 4: the interior close-up

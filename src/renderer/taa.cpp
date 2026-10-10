@@ -111,23 +111,23 @@ std::vector<float> resolve(const Frame& f, const std::vector<float>& hist, const
             for (int c = 0; c < 3; ++c) hc[c] += wx[a] * wy[b] * hist[j + std::size_t(c)];
         }
         if (o.clip) {   // clip toward the neighbourhood mean, to the box of mean +- 1.25 sigma in YCoCg
-            double m[3] = {0, 0, 0}, m2[3] = {0, 0, 0};
+            double yc[9][3], m[3] = {0, 0, 0}, var[3] = {0, 0, 0};
             int n = 0;
             for (int b = -1; b <= 1; ++b) for (int a = -1; a <= 1; ++a) {
                 const int qx = x + a, qy = y + b;
                 if (qx < 0 || qy < 0 || qx >= w || qy >= h) continue;
                 const std::size_t j = (std::size_t(qy) * w + qx) * 3;
                 const double c[3] = {f.rgb[j], f.rgb[j + 1], f.rgb[j + 2]};
-                double yc[3];
-                toYcocg(c, yc);
-                for (int k = 0; k < 3; ++k) { m[k] += yc[k]; m2[k] += yc[k] * yc[k]; }
+                toYcocg(c, yc[n]);
+                for (int k = 0; k < 3; ++k) m[k] += yc[n][k];
                 ++n;
             }
+            for (int k = 0; k < 3; ++k) m[k] /= n;
+            for (int q = 0; q < n; ++q) for (int k = 0; k < 3; ++k) var[k] += (yc[q][k] - m[k]) * (yc[q][k] - m[k]);   // two passes (note 8)
             double hy[3], scale = 0.0;
             toYcocg(hc, hy);
             for (int k = 0; k < 3; ++k) {
-                m[k] /= n;
-                const double sd = std::sqrt(std::max(0.0, m2[k] / n - m[k] * m[k])), ext = kClipSigma * sd + 1e-7;
+                const double ext = kClipSigma * std::sqrt(var[k] / n) + 1e-7;
                 scale = std::max(scale, std::fabs(hy[k] - m[k]) / ext);
             }
             if (scale > 1.0) for (int k = 0; k < 3; ++k) hy[k] = m[k] + (hy[k] - m[k]) / scale;
