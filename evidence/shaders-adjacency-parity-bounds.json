@@ -1,0 +1,24 @@
+{
+  "what": "Development adjacency (web/shaders/adjacency/): GPU passes against the float64 CPU reference, and the falsification tests of the model",
+  "fixed_before_first_run": "2026-10-10",
+  "source": "fixtures/street.mjs streetScene(320, 200, 0) scene-linear, and the plates named per case",
+  "output": { "width": 320, "height": 200 },
+  "cases": [
+    { "id": "street-eberhard", "preset": "eberhard", "frame": "street" },
+    { "id": "street-mackie", "preset": "mackie", "frame": "street" },
+    { "id": "street-exhausted", "preset": "exhausted", "frame": "street" },
+    { "id": "edges-eberhard", "preset": "eberhard", "frame": "edges" }
+  ],
+  "bounds": { "max_abs_code": 3, "p999_abs_code": 1, "mean_abs_code": 0.05 },
+  "tests": {
+    "flat_field_max_dev": 1e-9,
+    "edge_overshoot_min_fraction_of_step": 0.02,
+    "edge_undershoot_min_fraction_of_step": 0.02,
+    "no_diffusion_max_overshoot": 1e-9,
+    "width_ratio_for_4x_diffusivity": [1.7, 2.3],
+    "conservation_max_rel_error": 1e-9,
+    "small_area_min_ratio": 1.05
+  },
+  "rules": "No criterion uses a measured display reading or calibrate-pro (author, 2026-10-10). Colour checks are in software against float64 references.",
+  "why": "Same explicit Euler steps on both sides; the diffusion is contractive, so f32 against f64 error stays near one rounding per step and does not grow."
+}

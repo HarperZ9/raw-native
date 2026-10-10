@@ -38,10 +38,13 @@ function softShadow(p, l, maxT, t) {
 }
 function ao(p, n, t) { let o = 0; for (let i = 1; i <= 5; i++) { const h = 0.06 * i; o += (h - map(add(p, mul(n, h)), t)[0]) / (i * i); } return Math.max(0, 1 - 2.2 * o); }
 
-export function streetScene(w = 480, h = 300, t = 0, { daylight = false, eye: eyeIn = null, target: targetIn = null } = {}) {
+export function streetScene(w = 480, h = 300, t = 0, { daylight = false, eye: eyeIn = null, target: targetIn = null, lampGain = 1 } = {}) {
   const color = new Float32Array(w * h * 4), depth = new Float32Array(w * h), normals = new Float32Array(w * h * 4);
+  // Lighting outputs for the shaders that relight (lab 2): albedo, irradiance (colour = albedo x
+  // irradiance before fog), the fog fraction and colour, and a kind per pixel (0 sky, 1 emissive, 2 lit).
+  const albedo = new Float32Array(w * h * 4), light = new Float32Array(w * h * 4), fogT = new Float32Array(w * h), kind = new Uint8Array(w * h);
   const eye = eyeIn || V(5.2, 4.6, 6.4), target = targetIn || V(0.2, 0.8, 0), fwd = norm(sub(target, eye)), right = norm([fwd[2], 0, -fwd[0]]).map((v) => -v), up = norm([right[1] * fwd[2] - right[2] * fwd[1], right[2] * fwd[0] - right[0] * fwd[2], right[0] * fwd[1] - right[1] * fwd[0]]);
-  const lampPos = V(-0.6, 2.56, 0.6), flick = 1 + 0.08 * Math.sin(t * 17) * Math.sin(t * 5.3);
+  const lampPos = V(-0.6, 2.56, 0.6), flick = lampGain * (1 + 0.08 * Math.sin(t * 17) * Math.sin(t * 5.3));
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     const sx = ((x + 0.5) / w - 0.5) * 2 * (w / h) * 0.42, sy = (0.5 - (y + 0.5) / h) * 2 * 0.42;
     const rd = norm(add(add(fwd, mul(right, sx)), mul(up, sy)));
@@ -49,7 +52,7 @@ export function streetScene(w = 480, h = 300, t = 0, { daylight = false, eye: ey
     for (let i = 0; i < 160 && s < 30; i++) { p = add(eye, mul(rd, s)); const [d, m] = map(p, t); if (d < 1e-3 * (1 + s)) { hit = m; break; } s += d * 0.9; }
     const i4 = (y * w + x) * 4;
     let c;
-    if (hit < 0) { const k = Math.max(0, rd[1]); c = daylight ? mix(V(0.75, 0.8, 0.9), V(0.25, 0.42, 0.85), k) : mix(V(0.18, 0.14, 0.2), V(0.05, 0.07, 0.16), k); depth[y * w + x] = 30; }
+    if (hit < 0) { const k = Math.max(0, rd[1]); c = daylight ? mix(V(0.75, 0.8, 0.9), V(0.25, 0.42, 0.85), k) : mix(V(0.18, 0.14, 0.2), V(0.05, 0.07, 0.16), k); depth[y * w + x] = 30; light.set([c[0], c[1], c[2], 1], i4); }
     else {
       const n = normal(p, t); normals.set([n[0], n[1], n[2], 1], i4); depth[y * w + x] = s;
       if (hit === 2) c = V(2.4, 1.5, 0.6); else if (hit === 8) c = mul(V(9, 6.5, 3.6), flick);
@@ -62,13 +65,17 @@ export function streetScene(w = 480, h = 300, t = 0, { daylight = false, eye: ey
         const sky = (0.5 + 0.5 * n[1]) * 0.16 * occ, bounce = Math.max(0, -n[1]) * 0.03;
         const winL = sub(V(-1.2, 1.7, -1.8), p), wd = len(winL), win = Math.max(0, dot(n, mul(winL, 1 / wd))) * 1.2 / (wd * wd) * occ;
         const kc = daylight ? [1, 0.88, 0.7] : [1, 0.72, 0.42], skyK = daylight ? 3.2 : 1;
-        c = [0, 1, 2].map((k) => alb[k] * (key * kc[k] + sky * skyK * [0.45, 0.6, 1][k] + win * [1, 0.7, 0.35][k] + bounce));
+        const E = [0, 1, 2].map((k) => key * kc[k] + sky * skyK * [0.45, 0.6, 1][k] + win * [1, 0.7, 0.35][k] + bounce);
+        c = [0, 1, 2].map((k) => alb[k] * E[k]);
+        albedo.set([alb[0], alb[1], alb[2], 1], i4); light.set([E[0], E[1], E[2], 1], i4); kind[y * w + x] = 2;
       }
-      const fog = 1 - Math.exp(-0.035 * s); c = mix(c, daylight ? V(0.7, 0.75, 0.85) : V(0.1, 0.09, 0.13), fog);
+      if (hit === 2 || hit === 8) { light.set([c[0], c[1], c[2], 1], i4); kind[y * w + x] = 1; }
+      const fog = 1 - Math.exp(-0.035 * s); fogT[y * w + x] = fog; c = mix(c, daylight ? V(0.7, 0.75, 0.85) : V(0.1, 0.09, 0.13), fog);
     }
     color.set([c[0], c[1], c[2], 1], i4);
   }
-  return { width: w, height: h, data: color, depth, normals, camera: { eye, fwd, right, up, tan: 0.42, aspect: w / h } };
+  const fogColor = daylight ? V(0.7, 0.75, 0.85) : V(0.1, 0.09, 0.13);
+  return { width: w, height: h, data: color, depth, normals, albedo, light, fogT, fogColor, kind, camera: { eye, fwd, right, up, tan: 0.42, aspect: w / h } };
 }
 
 // Screen-space motion vectors from frame A's camera to frame B's: for each pixel of B, where its

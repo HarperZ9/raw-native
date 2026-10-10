@@ -1,0 +1,23 @@
+{
+  "what": "Hysteresis quantisation (web/shaders/hysteresis/): GPU passes against the float64 CPU reference over frame sequences, and the falsification tests",
+  "fixed_before_first_run": "2026-10-10",
+  "source": "fixtures/street.mjs streetScene(320, 200, t) with the lamp flicker, t = f / 24; an orbit case uses motionVectors between consecutive cameras",
+  "output": { "width": 320, "height": 200 },
+  "cases": [
+    { "id": "bands-flicker", "preset": "bands6", "sequence": "flicker", "frames": 12 },
+    { "id": "palette-flicker", "preset": "pico8", "sequence": "flicker", "frames": 12 },
+    { "id": "bands-orbit", "preset": "bands6", "sequence": "orbit", "frames": 8 }
+  ],
+  "bounds": { "max_decision_mismatch_fraction": 2e-4, "over2_fraction": 2e-4, "mean_abs_code": 0.05 },
+  "tests": {
+    "zero_margin_equals_plain": "exact, every frame",
+    "static_sequence_equals_plain": "exact, every frame",
+    "flicker_toggle_ratio_max": 0.25,
+    "flicker_frames": 48,
+    "band_lag_max": 1,
+    "ramp_changed_fraction_min_ratio": 0.9,
+    "ramp": "lamp intensity scaled from 1 to 2 over 48 frames"
+  },
+  "rules": "No criterion uses a measured display reading or calibrate-pro (author, 2026-10-10).",
+  "why": "Decisions are discrete. f32 against f64 can flip a decision only where the input sits within rounding of a threshold or a margin edge; hysteresis then carries that flip, so the bound is a fraction of decisions, not zero."
+}

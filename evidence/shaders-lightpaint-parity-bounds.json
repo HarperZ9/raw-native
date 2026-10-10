@@ -1,0 +1,24 @@
+{
+  "what": "Pigment-space lighting (web/shaders/lightpaint/): GPU passes against the float64 CPU reference, and the falsification tests",
+  "fixed_before_first_run": "2026-10-10",
+  "source": "fixtures/street.mjs streetScene(320, 200, 0) albedo and irradiance outputs (dusk), and (day) for one case",
+  "output": { "width": 320, "height": 200 },
+  "cases": [
+    { "id": "street-disco", "preset": "disco", "frame": "street" },
+    { "id": "street-grotesque", "preset": "grotesque", "frame": "street" },
+    { "id": "street-complement", "preset": "complement", "frame": "street" },
+    { "id": "day-disco", "preset": "disco", "frame": "day" }
+  ],
+  "bounds": { "max_abs_code": 2, "p999_abs_code": 1, "mean_abs_code": 0.05 },
+  "tests": {
+    "strength_zero_equals_multiply_max_dev": 1e-12,
+    "luminance_monotone_in_irradiance_tolerance": 1e-12,
+    "monotone_grid": "125 albedos (5 per channel) x 64 irradiance levels, every preset",
+    "yellow_in_shadow_hue_shift_min_deg": 5,
+    "yellow_rgb_multiply_hue_shift_max_deg": 0.5,
+    "yellow_test": { "albedo_linear": [0.8, 0.7, 0.1], "value": 0.1, "preset": "disco" },
+    "output_range": [0, 1]
+  },
+  "rules": "No criterion uses a measured display reading or calibrate-pro (author, 2026-10-10).",
+  "why": "Per-pixel arithmetic only, with the paint's shared trilinear latent lookup on both sides; differences are f32 rounding in 31-wavelength KM sums."
+}

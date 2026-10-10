@@ -1,0 +1,11 @@
+{
+  "what": "Every run of the interference-glaze checks, failures included. Bounds file unchanged since 5d0dfb1.",
+  "runs": [
+    { "date": "2026-10-10", "check": "node tests, first run", "result": "5 of 5 pass (peaks by golden-section search on the continuous Airy reflectance)" },
+    { "date": "2026-10-10", "check": "GPU parity, SwiftShader, first run (2D screen-space thickness noise)", "result": "4 of 4 pass: max 1, p99.9 0, mean under 1.4e-4 codes" },
+    { "date": "2026-10-10", "check": "look review of the CPU sheets", "result": "the value-noise lattice showed as squares through the interference colours, and screen-space noise would swim under camera motion",
+      "change": "Thickness now from 3D value noise on the surface's world position (depth and camera), quintic fade, two octaves; noise scale in metres. Depth travels in the aux buffer (a ninth storage binding exceeded the default limit of 8)." },
+    { "date": "2026-10-10", "check": "node tests and GPU parity after the change", "result": "5 of 5; 4 of 4 at max 1 code, mean under 1.4e-4. Lightpaint parity rerun after the shared aux change: 4 of 4 at max 1." }
+  ],
+  "note": "Interference shows strongly over dark grounds (the puddle) and weakly over light ones, as with real pearlescent paint over a white ground."
+}

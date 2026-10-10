@@ -1,0 +1,40 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Shader lab 2: frame times</title>
+<link rel="icon" href="data:,">
+<!-- Run by tests/web/lab2_timing.py. For each technique, renders frames at the requested size on
+     the GPU only and reports the median and p90 wall time per frame, from submit to
+     onSubmittedWorkDone (so it includes queue latency; it is an upper bound on GPU time).
+     Sources are the owned street fixture, rendered once on the CPU at the requested size. -->
+<script type="module">
+import { createHost } from "../raw-gpu.mjs";
+import { streetScene } from "../shaders/fixtures/street.mjs";
+import { toSignal } from "../shaders/lab/sources.mjs";
+import { createGpuAdjacency } from "../shaders/adjacency/gpu.mjs";
+import { createGpuSag } from "../shaders/sag/gpu.mjs";
+import { createGpuLightpaint } from "../shaders/lightpaint/gpu.mjs";
+import { createGpuGlaze } from "../shaders/glaze/gpu.mjs";
+import { createGpuHysteresis } from "../shaders/hysteresis/gpu.mjs";
+const q = new URLSearchParams(location.search), W = +(q.get("w") || 1920), H = +(q.get("h") || 1080), N = +(q.get("frames") || 30);
+const only = (q.get("shaders") || "adjacency,sag,lightpaint,glaze,hysteresis").split(",");
+try {
+  const host = await createHost({ timing: false });
+  const gpuErrors = []; host.device.onuncapturederror = (e) => gpuErrors.push(e.error.message);
+  const s = streetScene(W, H, 0), sig = toSignal(s), size = { w: W, h: H }, rows = [];
+  const make = {
+    adjacency: async (p) => { const r = await createGpuAdjacency(host, p, {}, size); r.upload(s.data); return [r, () => r.frame(null), { steps: r.plan.steps, scale: r.plan.s }]; },
+    sag: async (p) => { const r = await createGpuSag(host, p, {}, size); r.upload(sig.data); return [r, () => r.frame(null), {}]; },
+    lightpaint: async (p) => { const r = await createGpuLightpaint(host, p, {}, size); r.upload(s); return [r, () => r.frame(null), {}]; },
+    glaze: async (p) => { const r = await createGpuGlaze(host, p, {}, size); r.upload(s); return [r, () => r.frame(null), {}]; },
+    hysteresis: async (p) => { const r = await createGpuHysteresis(host, p, {}, size); return [r, () => r.frame(s.data, null, s.depth), { note: "includes the per-frame upload of the frame and motion buffers" }]; },
+  };
+  const presets = { adjacency: ["eberhard", "exhausted"], sag: ["consumer", "thriller"], lightpaint: ["disco"], glaze: ["oil-slick"], hysteresis: ["bands6", "pico8"] };
+  for (const k of only) for (const p of presets[k]) {
+    const [r, go, extra] = await make[k](p), t = [];
+    for (let i = 0; i < N + 3; i++) { const t0 = performance.now(); go(); await host.done(); if (i >= 3) t.push(performance.now() - t0); }
+    t.sort((a, b) => a - b); r.destroy();
+    rows.push({ shader: k, preset: p, width: W, height: H, frames: N, median_ms: t[t.length >> 1], p90_ms: t[Math.floor(t.length * 0.9)], ...extra });
+  }
+  window.__result = { rows, adapter: host.info, gpuErrors, method: "wall time per frame, submit to onSubmittedWorkDone, 3 warm-up frames dropped" };
+} catch (e) { window.__result = { error: String(e && e.stack || e) }; }
+</script>
