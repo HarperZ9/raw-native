@@ -354,6 +354,8 @@ jobs:
         run: |
           node tools/fuzz/tiles_fuzz.mjs --n 50000 > /dev/null
           python tests/web/tiles_check.py --adapter swiftshader
+      - name: Low-resolution frames scale to the output exactly, and a slow pan moves edges smoothly (M2 criterion 7)
+        run: python tests/web/pixel_scaling.py --adapter swiftshader
       - name: Every scene wrote a video, a poster, captions and a manifest, from this commit
         shell: bash
         run: |
