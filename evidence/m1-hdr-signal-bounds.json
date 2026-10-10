@@ -1,0 +1,27 @@
+{
+ "criterion": "M1 exit criterion 3, HDR signal (amended 2026-10-10; replaces the measured 1,000-nit patch)",
+ "written": "2026-10-10, before the first run of tests/web/hdr_signal.py",
+ "scope": "This checks the encoded signal: the numbers the engine writes for an HDR display. It does not check the light leaving a panel, and no display or meter takes part.",
+ "reference": {
+  "file": "tools/colour/hdr_signal_ref.py",
+  "arithmetic": "Python float64, standard library only, transcribed from the published formulas and not from the engine's code",
+  "pq": "SMPTE ST 2084:2014 (also ITU-R BT.2100-2 Table 4): m1 = 2610/16384, m2 = 2523/4096 * 128, c1 = 3424/4096, c2 = 2413/4096 * 32, c3 = 2392/4096 * 32; 1.0 linear = 100 nits, so Y = L / 100 of 10,000 nits",
+  "srgb_extended": "IEC 61966-2-1 sRGB curve (0.0031308 / 12.92 / 1.055 / 2.4 / 0.055) applied to |x| and given the sign of x, unclamped",
+  "tone_map": "ACES 2.0 output transform tonescale (the Daniele Evo curve of the ACES 2.0 output transforms): n_r = 100, g = 1.15, c = 0.18, c_d = 10.013, w_g = 0.14, t_1 = 0.04, r_hit from 128 to 896 over log(n / n_r) / log(100), at peak n = 1,000 nits. On the neutral axis the ACES 2.0 transform reduces to this curve on luminance, so a grey input g gives display luminance tonescale(100 g) nits, clamped at the peak."
+ },
+ "checks": {
+  "a1_pq_encode": {"what": "C++ pqEncode (double, via raw_native_cli colour encode pq) on 0 nits and 4,001 log-spaced luminances from 1e-4 to 1e4 nits", "bound": "absolute signal difference at most 1e-12"},
+  "a2_pq_decode": {"what": "C++ pqDecode on 4,097 signal values 0, 1/4096, ..., 1", "bound": "difference at most max(1e-12, 1e-9 x reference) in linear (1.0 = 100 nits)"},
+  "a3_srgb_extended": {"what": "C++ srgbEncodeExtended on 4,001 values from -4 to 16 plus 0.0031308 and its neighbours at +-1e-9, both signs", "bound": "absolute difference at most 1e-12"},
+  "a4_tone_pq": {"what": "the whole pipeline aces2-hdr1000/rec2100-pq (C++, float32 output) on the committed grey ramp g = 2^(-12 + 20k/255), k = 0..255, against pqEncode(min(tonescale(100 g), 1000) / 100) in float64", "bound": "absolute signal difference at most 1e-4, a tenth of one 10-bit code (1/1023)"},
+  "a5_tone_srgb_extended": {"what": "the same ramp through aces2-hdr1000/srgb-extended against srgbExtended(min(tonescale(100 g), 1000) / 100)", "bound": "difference at most 1e-4 x max(1, |reference|)"},
+  "b_gpu": {"what": "the WGSL pipelines aces2-hdr1000/rec2100-pq and aces2-hdr1000/srgb-extended over the committed criterion 2 grid (36,787 inputs), read back from the GPU as float32 storage, against the C++ float32 output", "bound": "rec2100-pq: every channel within one 10-bit code, 1/1023, absolute. srgb-extended: within max(1/1023, 0.005 x |cpu|), since that path feeds an rgba16float canvas whose step near 10 is about 0.004. No NaN."},
+  "b_canvas": "The extended-range canvas path keeps its own test (tests/web/hdr_output.py, evidence/m1-hdr-output-*.json).",
+  "controls": {
+   "cpu": "the float64 PQ reference with m1 = 2610/4096 (the factor of 4 dropped, a known transcription slip) against the C++ encode and the tone-mapped PQ ramp: both must exceed their bounds, or the run fails",
+   "gpu": "the WGSL with 2610.0 / 16384.0 replaced by 2610.0 / 4096.0 in pq_encode: rec2100-pq must exceed 1/1023, or the run fails"
+  }
+ },
+ "known_before_writing": "The criterion 2 runs (evidence/m1-colour-gpu-swiftshader.json and the RTX run) already held float differences for both HDR pipelines: rec2100-pq at most 2.8e-4 on SwiftShader and 1.1e-5 on the RTX. The GPU bound was chosen from the 10-bit signal quantum and the rgba16float step, with those numbers in view.",
+ "does_not_prove": "What any display shows; that a browser or operating system passes the signal to the panel unchanged; that a panel tracks ST 2084; or anything off the neutral axis for the tone map's formula (off-axis, criterion 2's OCIO comparison is the check)."
+}

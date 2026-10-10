@@ -45,6 +45,7 @@ jobs:
           "$d/test_pbr_energy" --full
           "$d/test_lighting" --full
           "$d/test_bake" --full
+          "$d/test_shadows" --full
       - name: Render and check the default certificate
         shell: bash
         run: |
@@ -206,6 +207,23 @@ jobs:
         run: |
           python tools/assets/fetch_gltf.py gltf-models
           build/Release/raw_native_cli.exe raster-identity --models gltf-models --out rhi3-warp.json
+      - name: Cascaded shadow maps on WARP with the debug layer; lookups, contact shadows and controls gate, the map identity is a recorded failure (evidence/m3-shadows-runs.json)
+        shell: bash
+        env:
+          RAW_NATIVE_D3D12_WARP: "1"
+          RAW_NATIVE_D3D12_DEBUG: "1"
+        run: |
+          python tools/assets/fetch_gltf.py gltf-models --manifest evidence/m3-scene-models.json
+          build/Release/raw_native_cli.exe shadow-parity --models gltf-models --out shadow-warp.json > /dev/null || true
+          python tests/gpu/shadow_gate.py shadow-warp.json --min-scenes 4
+      - name: GTAO, SSR and the TAA resolve on WARP with the debug layer; TAA parity is a recorded open failure (evidence/m3-post-runs.json)
+        shell: bash
+        env:
+          RAW_NATIVE_D3D12_WARP: "1"
+          RAW_NATIVE_D3D12_DEBUG: "1"
+        run: |
+          build/Release/raw_native_cli.exe post-parity --models gltf-models --out post-warp.json > /dev/null || true
+          python tests/gpu/post_gate.py post-warp.json --min-scenes 6
       - name: Clusters, the environment prefilter and lit shading on WARP match the float64 reference (M3 lighting)
         shell: bash
         env:
@@ -339,6 +357,14 @@ jobs:
         run: |
           python tests/web/rhi_texture.py --command raster-identity --dir build-wasm-gpu --adapter swiftshader --out rhi3-webgpu.json || true
           python -c "import json,sys; d=json.load(open('rhi3-webgpu.json')); ok=not d['error'] and all(f['mismatches']==0 for f in d['formats']) and d['depth_order_equal'] and d['depth_control_differs'] and d['control_moved_triangle_fails'] and d['subpixel_bits']==4; print(json.dumps(d['gbuffer'])); sys.exit(0 if ok else 1)"
+      - name: Cascaded shadow maps in Chrome on SwiftShader; lookups, contact shadows and controls gate, the map identity is a recorded failure (evidence/m3-shadows-runs.json)
+        run: |
+          python tests/web/rhi_texture.py --command shadow-parity --dir build-wasm-gpu --adapter swiftshader --out shadow-webgpu.json || true
+          python tests/gpu/shadow_gate.py shadow-webgpu.json --min-scenes 2
+      - name: GTAO, SSR and the TAA resolve in Chrome on SwiftShader; TAA parity is a recorded open failure (evidence/m3-post-runs.json)
+        run: |
+          python tests/web/rhi_texture.py --command post-parity --dir build-wasm-gpu --adapter swiftshader --out post-webgpu.json || true
+          python tests/gpu/post_gate.py post-webgpu.json --min-scenes 2
       - name: The WebGPU build's material model matches its float64 reference in Chrome on SwiftShader (M3 materials)
         run: python tests/web/rhi_texture.py --command pbr-parity --dir build-wasm-gpu --adapter swiftshader --out pbr-webgpu.json
       - name: The default native build carries no GPU code
@@ -462,8 +488,10 @@ jobs:
         run: node tools/media/tex_coverage.mjs --scenes docs/motion --atlas docs/motion/hanken-grotesk-500.atlas.json --scenes docs/media/scenes --atlas docs/motion/hanken-grotesk-500.atlas.json
       - name: Colour pipelines in WGSL match the C++ reference within one 8-bit code (M1 criterion 2)
         run: python tests/web/colour_grid.py --cli build/raw_native_cli --adapter swiftshader
-      - name: Extended-range output reaches the canvas and matches the C++ reference (M1 criterion 3, engine half)
+      - name: Extended-range output reaches the canvas and matches the C++ reference (M1 criterion 3, canvas path)
         run: python tests/web/hdr_output.py --cli build/raw_native_cli --adapter swiftshader
+      - name: The HDR signal matches a float64 reference of the published PQ, sRGB and tone-map formulas, with a failing control (M1 criterion 3, CPU half; the GPU half is recorded in evidence until SwiftShader passes it)
+        run: python tests/web/hdr_signal.py --cli build/raw_native_cli --cpu-only
       - name: The vector corpus on the GPU matches the CPU reference within its bounds (M1 criterion 4)
         run: python tests/web/vector_corpus.py --adapter swiftshader
       - name: Post passes match their CPU references; the stack runs inside Motion (M1 criteria 9 and 10)

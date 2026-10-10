@@ -38,6 +38,7 @@ GBuffer rasterize(const Scene& scene, int w, int h, Arena* arena, Buffer<uint16_
                 sp[k].x = (ndc[k].x*0.5f+0.5f)*w;
                 sp[k].y = (1.0f-(ndc[k].y*0.5f+0.5f))*h;
                 sp[k].z = cs[k].w; // view-space distance proxy (-z_view = w)
+                sp[k].x += opt.jitterX; sp[k].y += opt.jitterY;
                 if (opt.subpixelBits > 0){
                     const float q = float(1 << opt.subpixelBits);
                     sp[k].x = std::nearbyint(sp[k].x * q) / q; sp[k].y = std::nearbyint(sp[k].y * q) / q;

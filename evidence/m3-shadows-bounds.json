@@ -1,0 +1,71 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "M3 shadows (dated addition 8, 2026-10-10): cascaded shadow maps with stable cascades, filtered soft shadows and contact shadows, against CPU ray-cast visibility",
+ "written": "2026-10-10, before the implementation and the first run",
+ "model": {
+  "cascades": "Four cascades for the scene's directional light over the first 40 units of the view, split by the practical scheme (lambda 0.75 between uniform and logarithmic). Each cascade is an orthographic box around the bounding sphere of its frustum slice, so its size does not change as the camera turns, and its origin snaps to whole shadow-map texels in light space, so it does not swim as the camera moves. Shadow maps are 1024 x 1024, drawn by the hardware G-buffer path of RHI version 3 (depth and a linear-depth target), read in compute after a copy.",
+  "filtering": "Hard: one compare with a slope-scaled bias and a normal offset of one texel. PCF: a 5 x 5 tent. PCSS (Fernando 2005): a blocker search over the light's angular radius, then a PCF kernel sized by the estimated penumbra.",
+  "contact": "A screen-space march of 16 steps over the G-buffer's view-space depth toward the light, up to 0.5 units, with a thickness of 0.1 units.",
+  "reference": "Ray casts on raw/renderer/bvh.hpp from each receiver point (offset by the same normal offset) toward the light: one ray for hard visibility; for the soft light, the fraction of 256 stratified directions over the sun's disc that reach it."
+ },
+ "checks": {
+  "shadow_map_identity": {
+   "what": "each cascade's hardware shadow map against a CPU rasterization of the same light-space triangles (snapped at the precision the RHI v3 probe measures)",
+   "bound": "same coverage except within 0.01 px of an edge; normalised depth within 1e-5 where both cover the same triangle"
+  },
+  "stability": {
+   "what": "4,096 seeded receiver points; the camera pans over 32 positions in steps of 0.37 shadow-map texels, then turns through 16 yaw steps of 0.25 degrees; the hard shadow result at every point and position",
+   "bound": "results that change across the path <= 0.1% of point-positions; the control (no texel snapping, a frustum-tight fit) changes > 1%"
+  },
+  "hard_visibility": {
+   "what": "hard CSM shadows at the G-buffer pixels of the test scene, Suzanne and the helmet role's model at 256 x 256, against the one-ray reference, on interior pixels (where the reference agrees at the pixel's point and at 8 points two shadow-map texels away on the receiver)",
+   "bound": "mismatches <= 0.1% of interior pixels"
+  },
+  "pcss_soft": {
+   "what": "PCSS against the 256-direction soft reference for a sun of 1.5 degrees angular radius, same pixels",
+   "bound": "mean |difference| <= 0.05, 95th percentile <= 0.20 (PCSS is an approximation; this records how good it is)"
+  },
+  "gpu_lookup_parity": {
+   "what": "the WGSL shadow lookup (hard, PCF and PCSS) against the CPU lookup on the same read-back shadow maps and G-buffer",
+   "bound": "|gpu - cpu| <= 1e-3 on all but 0.1% of pixels (depth comparisons at exact ties may flip between float32 and float64)"
+  },
+  "contact_parity": {
+   "what": "the WGSL contact-shadow march against the CPU march on the same depth buffer",
+   "bound": "differing pixels <= 0.1%"
+  },
+  "controls": {
+   "what": "one shadow caster moved on the GPU side; the stability control above",
+   "bound": "each fails its check"
+  }
+ },
+ "does_not_prove": "Shadows from point and spot lights (cube or perspective maps come later); transparency and alpha-tested casters; frame times; that the stand-in scenes show every shadowing case of a Sponza-class level.",
+ "method_note_2026_10_10": {
+  "written": "2026-10-10, after the first CPU run and before any change to the checks or the scenes",
+  "first_run": "The first CPU run (stable 0 changes, control 0.008%; hard mismatches 0, 1, 0; PCSS mean 0.0004 to 0.0025) is not a result. The test scene's light travels away from the camera, so the box hides its own shadow: 35 of 37,734 sampled pixels were shadowed in the test scene, 484 for Suzanne, 358 for the helmet. A check over almost no shadow passes for any shadow map. The stability control failed to reach its bound for the same reason and one more: at these cascade sizes a shadow-map texel is about a third of a screen pixel, so few receiver points sit close enough to an edge to flip.",
+  "scene_change": "The shadow checks set the scene's sun to travel along normalize(0.55, -0.45, 0.35) (35 degrees elevation, toward the camera's side), so every model casts a long shadow the camera sees. Other tests keep the scene's own light.",
+  "coverage_bound": "Each scene must have at least 2,000 shadowed pixels (one-ray reference) and at least 300 penumbra pixels (soft reference strictly between 0 and 1) at full sampling, or its hard and soft checks count as failed.",
+  "stability_original": "The stability check above stays as written and is reported. If its control again stays at or under 1%, that is recorded as the check failing to discriminate, and the gate uses the addition below.",
+  "texel_registration": "Dated addition 9 (2026-10-10). Swimming is measured directly: for each of the 4,096 points and each consecutive pair of path positions where the point stays in the same cascade, the change counts if the cascade's texel size changes or the point's sub-texel position in the map moves by more than 1e-3 texel on either axis. Bound: changes <= 0.1% of such point-position pairs; the control (no snapping, frustum-tight fit) must exceed 1%."
+ },
+ "method_note_2_2026_10_10": {
+  "written": "2026-10-10, after the first GPU runs and before this scene's first run",
+  "gap": "No scene in the checks reaches cascade 0 (view depth under about 2.9 units): the cameras sit 7 or more units from the models. The near cascade's lookups were untested.",
+  "addition": "A fourth scene for the hard, soft, coverage and GPU parity checks: the built-in test scene seen from eye (1.6, 1.4, 2.4) toward (0, 0.6, 0), so the box and its shadow fall in cascades 0 and 1. Same bounds; it must also put at least 2,000 G-buffer pixels in cascade 0."
+ },
+ "method_note_3_2026_10_10": {
+  "written": "2026-10-10, after the near scene's first run and before the new camera's first run",
+  "result_of_note_2": "The near scene failed the coverage bound: its camera faced the box's unlit side, so 54,201 of 54,224 pixels were shadowed and 3 were penumbra (bound 300). Hard 0 mismatches, cascade 0 held 52,425 pixels. Recorded as a failed run.",
+  "change": "The near scene's camera moves to the lit side: eye (-1.5, 1.6, 2.4) toward (0.6, 0.4, 0.6). The bounds and the cascade-0 requirement stay."
+ },
+ "method_note_4_2026_10_10": {
+  "written": "2026-10-10, after the lit-side camera's run and before the next camera's first run",
+  "result_of_note_3": "The lit-side camera also failed the coverage bound: 299 penumbra pixels against 300 (41,919 shadowed, 37,091 in cascade 0, 0 hard mismatches). An image of the reference shows why: the camera stands inside the ground quad, and the CPU rasterizer drops triangles with a vertex behind the near plane (it does not clip), so the ground vanished and the box's unlit face filled the view. Recorded as a failed run.",
+  "change": "The near scene's camera moves to eye (2.2, 2.4, 3.6) toward (1.8, 0.2, 1.6), chosen by geometry alone before any run: every ground corner sits at least 0.45 units in front of the camera (near plane 0.1), the box top is at view depth 2.6 (cascade 0) and the shadow's far edge near 3.0 (cascade 1). The bounds and the cascade-0 requirement stay. If this camera fails coverage too, that run is recorded and the near scene is reported, not gated, until a scene that passes coverage is fixed in advance."
+ },
+ "method_note_5_2026_10_10": {
+  "written": "2026-10-10, after note 4's run and before the next camera's first shadow run",
+  "result_of_note_4": "Note 4's camera failed the cascade-0 requirement: 0 pixels in cascade 0, because the box fell outside its 26-degree half field of view (my geometry check tested depth, not the frustum). Coverage passed (44,327 shadowed, 6,573 penumbra; hard 0 mismatches). Recorded as a failed run.",
+  "tool": "test_shadows --scene-stats prints each scene's G-buffer pixels per cascade and computes no shadow, so a camera can be checked for cascade use before any shadow result exists.",
+  "change": "The near scene's camera: eye (1.8, 3.2, 2.4) toward (0.8, 0.2, 1.0). --scene-stats before any shadow run: 10,749 pixels in cascade 0, 54,787 in cascade 1, all 65,536 covered. Also, the CPU checks now take the perspective-correct view depth (RasterOptions::perspectiveDepth), the depth the GPU G-buffer carries; the screen-linear default overstates depth across large triangles and picks cascades wrongly. All scenes are rerun."
+ }
+}

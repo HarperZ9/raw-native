@@ -22,6 +22,6 @@
    "p99": 0.25
   }
  },
- "screen": "Criterion 3's measured half (a 1,000-nit patch within 5% on a colorimeter, through calibrate-pro) needs the author's display and colorimeter; it is not part of this file.",
+ "screen": "Criterion 3 was amended on 2026-10-10: no display measurement is part of it. The signal check is evidence/m1-hdr-signal-bounds.json.",
  "does_not_prove": "What any display shows, or that a browser maps 1.0 to 100 nits: the canvas maps 1.0 to the system's SDR white, which the viewer sets."
 }

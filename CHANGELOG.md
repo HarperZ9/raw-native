@@ -6,6 +6,26 @@ the day the release was published on GitHub, in UTC.
 
 ## Unreleased
 
+- **GTAO, screen-space reflections and TAA** (roadmap M3), on the CPU, D3D12 and WebGPU.
+  - GTAO and mirror SSR match ray casts on the open test scenes. Open failure: on a dense
+    close-up of a chess set, GTAO is 0.104 off on average (bound 0.05) and SSR finds 80% of
+    the reflections (bound 90%).
+  - TAA keeps ghosting behind a moving object to 0.014 (bound 0.03). Open failure: under a slow
+    pan its error is 0.735 of a single sample's (bound 0.5).
+  - The GPU passes match the CPU on WARP and SwiftShader for GTAO and SSR. Open failure: TAA's
+    GPU history drifts from the CPU's over 32 frames, from one pixel a step.
+  - `raw_native_cli post-parity` runs the GPU checks.
+- **Cascaded shadow maps** (roadmap M3). Four stable cascades for the sun, with hard, PCF and
+  PCSS filtering and screen-space contact shadows, on the CPU, D3D12 and WebGPU.
+  - Against BVH ray casts toward the sun, hard shadows disagree on at most 2 of about 36,000
+    interior pixels, and PCSS is within 0.006 on average of a 256-ray soft reference.
+  - The cascades do not swim: no fixed point moves within its texel across a 48-step camera
+    path, where an unsnapped fit moves every point.
+  - The GPU lookups and contact march match the CPU on WARP and SwiftShader.
+  - Open failure: the GPU shadow maps differ from the CPU rasterizer on 3 texels on WARP and
+    about 11 on SwiftShader, outside the committed bound. It stays open until the RTX 4090 run
+    is in; `evidence/m3-shadows-runs.json` records each texel's cause.
+  - `raw_native_cli shadow-parity` runs the GPU checks.
 - **M3 models by role.** `evidence/m3-scene-models.json` lists the criterion's models with their
   licences and git blob hashes. One `use` field per role picks FlightHelmet or DamagedHelmet, and a
   stand-in or Sponza. `--model-role` and `fetch_gltf.py --manifest` read it.

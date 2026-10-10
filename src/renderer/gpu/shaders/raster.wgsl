@@ -140,3 +140,38 @@ fn fs(v: GbOut) -> GbTargets {
     o.id = vec4f(f32(v.tri), v.dist, 0.0, 1.0);
     return o;
 }
+
+//@raster shadow_depth
+// One cascade of a directional light's shadow map (ROADMAP M3 shadows): the triangles of
+// the gbuffer pass, through the cascade's orthographic light-space matrix (rows; clip z is
+// already in [0, 1] and w = 1), depth-tested in hardware. Target: (triangle index + 1,
+// normalised depth); the CPU twin is raw::shadows::rasterizeCascade.
+struct Light {
+    m: array<vec4f, 4>,
+}
+@group(0) @binding(0) var<uniform> U: Light;
+@group(0) @binding(1) var<storage, read> T: array<f32>;
+struct SdOut {
+    @builtin(position) clip: vec4f,
+    @location(0) @interpolate(flat) tri: u32,
+    @location(1) z: f32,
+}
+fn mrow(r: vec4f, v: vec4f) -> f32 { return r.x * v.x + r.y * v.y + r.z * v.z + r.w * v.w; }
+
+@vertex
+fn vs(@builtin(vertex_index) i: u32) -> SdOut {
+    let t: u32 = i / 3u;
+    let k: u32 = i % 3u;
+    let b: u32 = t * 24u;
+    let wp: vec4f = vec4f(T[b + 3u * k], T[b + 3u * k + 1u], T[b + 3u * k + 2u], 1.0);
+    var o: SdOut;
+    o.z = mrow(U.m[2], wp);
+    o.clip = vec4f(mrow(U.m[0], wp), mrow(U.m[1], wp), o.z, 1.0);
+    o.tri = t + 1u;
+    return o;
+}
+
+@fragment
+fn fs(v: SdOut) -> @location(0) vec4f {
+    return vec4f(f32(v.tri), v.z, 0.0, 1.0);
+}

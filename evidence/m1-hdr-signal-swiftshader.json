@@ -1,0 +1,172 @@
+{
+ "criterion": "M1 exit criterion 3, HDR signal (amended 2026-10-10)",
+ "cpu": {
+  "checks": [
+   {
+    "check": "a1_pq_encode",
+    "n": 4002,
+    "maxRatio": 0.0,
+    "over": 0,
+    "worstInput": 0.0,
+    "got": 7.309559025783966e-07,
+    "reference": 7.309559025783966e-07
+   },
+   {
+    "check": "a2_pq_decode",
+    "n": 4097,
+    "maxRatio": 0.0,
+    "over": 0,
+    "worstInput": 0.0,
+    "got": 0.0,
+    "reference": 0.0
+   },
+   {
+    "check": "a3_srgb_extended",
+    "n": 4007,
+    "maxRatio": 0.0,
+    "over": 0,
+    "worstInput": -4.0,
+    "got": -1.8247962952761159,
+    "reference": -1.8247962952761159
+   },
+   {
+    "check": "a4_tone_pq",
+    "n": 768,
+    "maxRatio": 0.0022655118087078208,
+    "over": 0,
+    "worstInput": 0.337128978950143,
+    "got": 0.3985263407230377,
+    "reference": 0.3985265672742186
+   },
+   {
+    "check": "a5_tone_srgb_extended",
+    "n": 768,
+    "maxRatio": 0.01768055387166298,
+    "over": 0,
+    "worstInput": 1.5448330990327372,
+    "got": 1.2379720211029053,
+    "reference": 1.2379742099098763
+   }
+  ],
+  "controls": [
+   {
+    "check": "control_pq_encode",
+    "n": 4002,
+    "maxRatio": 626968719708.5006,
+    "over": 4000,
+    "worstInput": 572.7960309858292,
+    "got": 0.6912710832693347,
+    "reference": 0.0643023635608342
+   },
+   {
+    "check": "control_tone_pq",
+    "n": 768,
+    "maxRatio": 6269.687093193772,
+    "over": 768,
+    "worstInput": 9.290049440731545,
+    "got": 0.6915232539176941,
+    "reference": 0.06455454459831686
+   }
+  ],
+  "spot": {
+   "pq_100_nits": 0.508078421517399,
+   "pq_1000_nits": 0.751827096247041,
+   "aces2_hdr1000_grey_0_18_nits": 14.51155200724637
+  }
+ },
+ "gpu": {
+  "adapter": "google swiftshader",
+  "inputs": 36787,
+  "pipelines": {
+   "aces2-hdr1000/rec2100-pq": {
+    "maxAbs": 0.00028395652770996094,
+    "maxRatio": 0.29048752784729004,
+    "over": 0,
+    "overBy": {
+     "abs<0.05": 0,
+     "0.05..1": 0,
+     ">=1": 0
+    },
+    "nan": 0,
+    "worstInput": [
+     0.2923576831817627,
+     0.09346986562013626,
+     8.946294784545898
+    ],
+    "worstGpu": [
+     0.4528151750564575,
+     0.31719619035720825,
+     0.7326794266700745
+    ],
+    "worstCpu": [
+     0.45276695489883423,
+     0.3169122338294983,
+     0.7327081561088562
+    ]
+   },
+   "aces2-hdr1000/srgb-extended": {
+    "maxAbs": 0.006156412069685757,
+    "maxRatio": 6.29800954728853,
+    "over": 185,
+    "overBy": {
+     "abs<0.05": 92,
+     "0.05..1": 93,
+     ">=1": 0
+    },
+    "nan": 0,
+    "worstInput": [
+     0.2923576831817627,
+     0.09346986562013626,
+     8.946294784545898
+    ],
+    "worstGpu": [
+     0.5490617156028748,
+     -0.0009836562676355243,
+     2.6240296363830566
+    ],
+    "worstCpu": [
+     0.5487532019615173,
+     -0.007140068337321281,
+     2.624297857284546
+    ]
+   }
+  },
+  "control": {
+   "what": "pq_encode with m1 = 2610/4096",
+   "replaced": true,
+   "maxAbs": 0.6269919946789742,
+   "maxRatio": 641.4128105565906,
+   "over": 110314,
+   "overBy": {
+    "abs<0.05": 3313,
+    "0.05..1": 107001,
+    ">=1": 0
+   },
+   "nan": 0,
+   "worstInput": [
+    0.029883312061429024,
+    0.0009765625,
+    6.117334842681885
+   ],
+   "worstGpu": [
+    9.169127588393167e-05,
+    9.21855553315254e-06,
+    0.06499796360731125
+   ],
+   "worstCpu": [
+    0.38629400730133057,
+    0.2756149470806122,
+    0.6919899582862854
+   ]
+  },
+  "grid_sha256": "310cdee0f3ad2c7822d50d4d35c2217132d4b865604c1ae2782b06437cbb79e7",
+  "table_problems": []
+ },
+ "adapter_kind": "swiftshader",
+ "commit": "01c9f15b6259cb04db977f7f1e72b58add9b8d2b",
+ "bounds": "evidence/m1-hdr-signal-bounds.json",
+ "problems": [
+  "aces2-hdr1000/srgb-extended: 185 over the bound, 0 non-finite (worst ratio 6.3 at [0.2923576831817627, 0.09346986562013626, 8.946294784545898])"
+ ],
+ "does_not_prove": "What any display shows or emits. This checks the encoded signal against the published formulas and the GPU against the CPU, on this adapter."
+}

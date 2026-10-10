@@ -126,6 +126,9 @@ int main(int argc, char** argv){
     if (argc >= 2 && std::strcmp(argv[1], "material-gallery") == 0) return galleryCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "bake-room") == 0) return bakeCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "raster-identity") == 0) return rasterIdentityCommand(argc - 1, argv + 1);
+    if (argc >= 2 && std::strcmp(argv[1], "shadow-parity") == 0) return shadowParityCommand(argc - 1, argv + 1);
+    if (argc >= 2 && std::strcmp(argv[1], "post-parity") == 0) return postParityCommand(argc - 1, argv + 1);
+    if (argc >= 2 && std::strcmp(argv[1], "shadow-parity") == 0) return shadowParityCommand(argc - 1, argv + 1);
     // The sampled-texture identity check on this build's GPU backend (ROADMAP M2
     // criterion 3): JSON on stdout; exit 0 when it passes, 1 when it fails, 4 without
     // a GPU backend or adapter.

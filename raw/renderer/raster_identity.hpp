@@ -35,6 +35,8 @@ struct RasterIdentity {
 // subpixelBits: the CPU reference snaps vertices to 1 / 2^bits of a pixel, as the rasterizer
 // does (D3D12 mandates 8; WebGPU leaves it to the implementation, and SwiftShader uses 4).
 // 0 (the default) measures it with a probe triangle first.
+// The rasterizer's sub-pixel precision in bits (4 or 8), from a probe triangle; 0 with `err` set on error.
+int probeSubpixelBits(rhi::Device& dev, std::string& err);
 RasterIdentity rasterIdentity(rhi::Device& dev, const std::vector<std::pair<std::string, const Scene*>>& scenes, int size = 256, int subpixelBits = 0);
 
 }  // namespace raw::gpu_check

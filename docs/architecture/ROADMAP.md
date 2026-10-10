@@ -59,7 +59,7 @@ Scope: gaps 1, 2, 3, 4 and 10, web first (A1).
 Exit criteria:
 1. **Studio host.** `web/raw-gpu.mjs` exposes textures, samplers, canvas-as-texture compositing and `host.share()` (the Studio's C0 pull request). A browser test composites a 2D canvas and matches a CPU composite within 1/255 on SwiftShader and on the RTX 4090. The count of `requestDevice` calls is 1 with two consumers. The no-WebGPU fallback draws.
 2. **Colour.** The tone mappers and output transforms have a C++ reference and WGSL implementations. Over a committed grid of 33 x 33 x 33 RGB values plus grey and saturation ramps, the GPU result is within 1/255 of the C++ reference at 8-bit output, and the C++ reference is within a colour-difference bound (stated in `evidence/m1-colour-bounds.json` before the first run) of an OCIO 2.6.0 result produced offline. The default build keeps no new dependency.
-3. **HDR.** The extended-range path works on a browser that offers it, and `evidence/m1-hdr-patch.json` holds a calibrate-pro measurement of a 1,000-nit patch within 5%.
+3. **HDR signal** (amended 2026-10-10; it replaced a measured 1,000-nit patch, by the author's decision). Checked in software only. It checks the encoded signal, not the light leaving a panel. Bounds are in `evidence/m1-hdr-signal-bounds.json`, written before the first run. (a) The PQ (SMPTE ST 2084) encode and decode, the extended sRGB curve and the ACES 2.0 HDR tone map on the neutral axis match a float64 reference of the published formulas (`tools/colour/hdr_signal_ref.py`). (b) The WGSL HDR pipelines, read back from the GPU as float32 over the criterion 2 grid, match the C++ encode: PQ within one 10-bit code, extended sRGB within max(1/1023, 0.5%). This holds on SwiftShader and the RTX 4090. (c) A control with a wrong PQ exponent fails both. The extended-range canvas path keeps its own test (`tests/web/hdr_output.py`).
 4. **Vector.** Stroke dashes, joins and caps, gradients, clip paths and image fills pass a corpus listed in `evidence/m1-vector-corpus.json` before the first run, each within the stated coverage error of the CPU reference. Node tests cover flattening, dash and join geometry.
 5. **Text and maths.** Every equation in films 1 to 5 renders from the engine's TeX subset or the documented MathJax path with no manual patch, checked by a script that lists the unsupported macros (expected: none).
 6. **Media output.** The manifest of each scene records an encoder probe for the machine. Two runs of `ao-check` on the same device class produce identical frame hashes for every frame. An offline audio mix matches the `superstack.sound/1` vectors sample for sample. The CPU-adapter smoke job stays inside a wall-clock budget stated in `media.json`.
@@ -119,6 +119,25 @@ Dated additions (2026-10-10). They add checks and never loosen the five above:
 9. **Baked lighting.** Source-style directional lightmaps (radiosity normal mapping) and ambient cubes
    (Mitchell, McTaggart and Green 2006) as an optional path, baked by the CPU ray tracer, with the
    bake's error against a converged path trace recorded.
+
+Status of the M3 criteria (2026-10-10). A row passes only when every check behind it passes on
+every backend it names.
+
+| Criterion | Status | Evidence |
+|---|---|---|
+| 1. Scenes verified, path-traced error recorded | Open: not started; the model substitution waits on the author | `evidence/m3-scene-models.json` |
+| 2. TAA ghosting and RMSE | Ghosting passes. **Open failure**: pan RMSE 0.735 of single-sample (bound 0.5); GPU parity drifts (31 of 16,384 pixels, bound 16) | `evidence/m3-post-runs.json` |
+| 3. Aliasing and the validation layer | Open: not started | |
+| 4. The Studio viewer (A4) | Open: not started | |
+| 5. API snapshot | Open: not started | |
+| 6. Materials | Passes on WARP, SwiftShader and the RTX 4090 | `evidence/m3-materials-*.json` |
+| 7. Lighting | Passes on WARP and SwiftShader; the RTX run is queued | `evidence/m3-lighting-*.json` |
+| 8. Shadows: CPU checks against ray casts | Passes | `evidence/m3-shadows-cpu-run.json` |
+| 8. Shadows: GPU lookups and contact march | Passes on WARP and SwiftShader | `evidence/m3-shadows-gpu-*.json` |
+| 8. Shadows: GPU shadow map against the CPU rasterizer | **Open failure**: 3 texels on WARP, about 11 on SwiftShader; the RTX run is queued | `evidence/m3-shadows-runs.json` |
+| 8. GTAO and SSR against ray casts | GTAO passes on the near scene and is within bounds on four scenes too sparse to gate; SSR passes on the two test-scene views. **Open failure** on the interior close-up (GTAO mean 0.104, SSR 80% correct, 17.6% false hits); ungated, SSR reaches 84% on the helmet and 65% on the interior model | `evidence/m3-post-cpu-run.json` |
+| 8. GTAO and SSR GPU parity | Passes on WARP and SwiftShader | `evidence/m3-post-gpu-*.json` |
+| 9. Baked lighting | Passes | `evidence/m3-bake-*.json` |
 
 Licence note on criterion 1 (2026-10-10). `DamagedHelmet` derives from a CC-BY-NC-4.0 model and the
 Khronos `Sponza` is under the CRYENGINE agreement, so neither can ship in this repository's evidence
