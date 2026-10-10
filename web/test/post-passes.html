@@ -1,0 +1,64 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Post pass check</title>
+<!-- M1 exit criteria 9 and 10: every registered post pass with a CPU reference, run on the
+     GPU over the committed frame set (tests/web/post_frames.mjs) and compared at 8 bits.
+     ?modules=a.mjs,b.mjs loads pass modules (the shader library) before the run. -->
+<script type="module">
+import { PostRunner } from '../motion/post_run.mjs';
+import { getPass, registeredPasses } from '../motion/post.mjs';
+import { frameSet, toHalf, fromHalf } from '../../tests/web/post_frames.mjs';
+
+async function run() {
+  const q = new URLSearchParams(location.search);
+  for (const m of (q.get('modules') || '').split(',').filter(Boolean)) await import(m);
+  const adapter = await navigator.gpu?.requestAdapter();
+  if (!adapter) return { error: 'no adapter' };
+  const device = await adapter.requestDevice();
+  const host = { device, buffer: ({ size, usage }) => device.createBuffer({ size, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST }),
+    write: (b, data) => device.queue.writeBuffer(b, 0, data) };
+  const sampler = device.createSampler({ magFilter: 'linear', minFilter: 'linear', addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge' });
+  const frames = frameSet();
+  const W = frames.width, H = frames.height;
+  const res = { adapter: (adapter.info && adapter.info.description) || '', frames: frames.names, size: [W, H], passes: {} };
+  for (const name of registeredPasses()) {
+    const pass = getPass(name);
+    if (!pass.cpu) { res.passes[name] = { skipped: 'no CPU reference' }; continue; }
+    const out = [];
+    for (const spec of pass.tests) {
+      const runner = new PostRunner(host, sampler);
+      let prevCpu = null, maxCode = 0, over = 0, worst = null;
+      for (let f = 0; f < frames.data.length; f++) {
+        // The input is what the GPU sees: half floats.
+        const half = toHalf(frames.data[f]), input = fromHalf(half);
+        const src = device.createTexture({ size: [W, H], format: 'rgba16float', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.COPY_SRC });
+        device.queue.writeTexture({ texture: src }, half, { bytesPerRow: W * 8 }, [W, H]);
+        const dst = device.createTexture({ size: [W, H], format: 'rgba16float', usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC });
+        const enc = device.createCommandEncoder();
+        runner.run(enc, [{ pass: name, ...spec }], src, W, H, f, f / 30, { view: dst.createView(), format: 'rgba16float' }, pass.stage);
+        const bpr = Math.ceil(W * 8 / 256) * 256, read = device.createBuffer({ size: bpr * H, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });
+        enc.copyTextureToBuffer({ texture: dst }, { buffer: read, bytesPerRow: bpr }, [W, H]);
+        device.queue.submit([enc.finish()]);
+        await read.mapAsync(GPUMapMode.READ);
+        const raw = new Uint16Array(read.getMappedRange()), gpuHalf = new Uint16Array(W * H * 4);
+        for (let y = 0; y < H; y++) gpuHalf.set(raw.subarray(y * bpr / 2, y * bpr / 2 + W * 4), y * W * 4);
+        read.unmap(); read.destroy(); src.destroy(); dst.destroy();
+        const gpu = fromHalf(gpuHalf), cpu = pass.cpu(input, W, H, spec, prevCpu);
+        prevCpu = cpu;
+        const code = (v) => Math.round(255 * Math.min(1, Math.max(0, v)));
+        for (let i = 0; i < cpu.length; i++) {
+          const d = Math.abs(code(gpu[i]) - code(cpu[i]));
+          if (d > 1) over++;
+          if (d > maxCode) { maxCode = d; worst = { frame: frames.names[f], pixel: [Math.floor(i / 4) % W, Math.floor(i / 4 / W)], channel: i % 4, gpu: gpu[i], cpu: cpu[i] }; }
+        }
+      }
+      runner.destroy();
+      out.push({ spec, maxCode, over, worst });
+    }
+    res.passes[name] = { stage: pass.stage, history: pass.history, runs: out };
+  }
+  device.destroy();
+  return res;
+}
+run().then((r) => { window.__result = r; }, (e) => { window.__result = { error: String(e && e.stack || e) }; });
+</script>

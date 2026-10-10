@@ -1,0 +1,29 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Motion post stack check</title>
+<!-- The post stack inside the Motion renderer: a frame with an exposure pass at 0 EV
+     (scene stage) and a pass-through display pass must match the frame without them
+     within one 8-bit code; exposure at +1 EV must brighten it. -->
+<script type="module">
+import { createHost } from '../raw-gpu.mjs';
+import { createMotion } from '../motion/renderer.mjs';
+import { registerPass } from '../motion/post.mjs';
+import { rect, circle } from '../motion/path.mjs';
+
+registerPass('test-identity', { stage: 'display', wgsl: `@fragment fn main(@builtin(position) q: vec4f) -> @location(0) vec4f { return texel(q); }` });
+
+async function run() {
+  const host = await createHost({});
+  const mo = await createMotion(host, { design: [320, 180] });
+  mo.resize(320, 180);
+  const items = [{ shape: rect(20, 20, 120, 80), fill: '#e8e4da' }, { shape: circle(220, 90, 50), fill: '#5fb3a1' }];
+  const base = { items, post: { grain: 0, vignette: 0.3 } };
+  const a = await mo.capture(base, { frame: 3 });
+  const b = await mo.capture({ ...base, post: { ...base.post, passes: [{ pass: 'exposure', ev: 0 }, { pass: 'test-identity' }] } }, { frame: 3 });
+  const c = await mo.capture({ ...base, post: { ...base.post, passes: [{ pass: 'exposure', ev: 1 }] } }, { frame: 3 });
+  let maxAB = 0, sumA = 0, sumC = 0;
+  for (let i = 0; i < a.data.length; i++) { maxAB = Math.max(maxAB, Math.abs(a.data[i] - b.data[i])); if (i % 4 < 3) { sumA += a.data[i]; sumC += c.data[i]; } }
+  return { maxAB, brighter: sumC > sumA * 1.2, sumA, sumC };
+}
+run().then((r) => { window.__result = r; }, (e) => { window.__result = { error: String(e && e.stack || e) }; });
+</script>
