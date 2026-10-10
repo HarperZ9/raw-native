@@ -16,6 +16,7 @@
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <thread>
@@ -24,6 +25,11 @@ using namespace raw;
 using namespace raw::shadows;
 
 namespace {
+// The G-buffer with the perspective-correct view depth, the depth the cascades are chosen by.
+GBuffer gbufferOf(const Scene& s) {
+    RasterOptions ro; ro.perspectiveDepth = true;
+    return rasterize(s, 256, 256, nullptr, nullptr, ro);
+}
 int threads() { return int(std::max(1u, std::thread::hardware_concurrency())); }
 D3 d3(Vec3 v) { return {v.x, v.y, v.z}; }
 std::array<ShadowMap, kCascades> mapsFor(const Scene& s, const CascadeSet& cs) {
@@ -44,7 +50,7 @@ bool visible(const Bvh& b, D3 q, D3 dir) { return !b.occluded({{float(q.x), floa
 struct Stability { long checks{0}, changes{0}, regChecks{0}, regChanges{0}; };
 Stability stability(const Scene& base, bool stable) {
     Stability r;
-    const GBuffer g = rasterize(base, 256, 256);
+    const GBuffer g = gbufferOf(base);
     std::vector<std::pair<D3, D3>> pts;
     uint64_t s = 99;
     while (pts.size() < 4096) {
@@ -101,10 +107,10 @@ Stability stability(const Scene& base, bool stable) {
     return r;
 }
 
-struct SceneResult { std::string name; long interior{0}, mismatches{0}, softPixels{0}, shadowed{0}, penumbra{0}; double softMean{0}, softP95{0}, penumbraMean{0}; };
+struct SceneResult { std::string name; long interior{0}, mismatches{0}, softPixels{0}, shadowed{0}, penumbra{0}, cascade0{0}; double softMean{0}, softP95{0}, penumbraMean{0}; };
 SceneResult visibilityChecks(const std::string& name, const Scene& sc, int stride) {
     SceneResult r; r.name = name;
-    const GBuffer g = rasterize(sc, 256, 256);
+    const GBuffer g = gbufferOf(sc);
     const D3 L = d3(sc.lights[0].dir), toL{-L.x, -L.y, -L.z};
     const CascadeSet cs = fitCascades(sc.camera, L, 40.0, 1024, true);
     const auto maps = mapsFor(sc, cs);
@@ -154,15 +160,27 @@ SceneResult visibilityChecks(const std::string& name, const Scene& sc, int strid
                      toL.z + (u.z * std::cos(ph) + w.z * std::sin(ph)) * rr};
                 lit += visible(bvh, q, d);
             }
-            kind[std::size_t(y) * 256 + x] = (lit > 0 && lit < 256 ? 2 : 0) | (ref ? 0 : 1);
+            kind[std::size_t(y) * 256 + x] = (lit > 0 && lit < 256 ? 2 : 0) | (ref ? 0 : 1) | (k == 0 ? 4 : 0);
             soft[std::size_t(y) * 256 + x] = std::fabs(lookup(cs, ptrs(maps), p, n, depth, Filter::Pcss, lp) - lit / 256.0);
         }
     });
     std::vector<double> sv;
     for (int m : mism) if (m >= 0) { ++r.interior; r.mismatches += m; }
     for (double v : soft) if (v >= 0.0) sv.push_back(v);
-    for (int v : kind) { r.shadowed += v & 1; r.penumbra += (v >> 1) & 1; }
+    for (int v : kind) { r.shadowed += v & 1; r.penumbra += (v >> 1) & 1; r.cascade0 += (v >> 2) & 1; }
     for (std::size_t i = 0; i < kind.size(); ++i) if (kind[i] & 2) r.penumbraMean += soft[i] / double(r.penumbra);   // reported, not bounded
+    if (const char* dir = std::getenv("RAW_NATIVE_SHADOW_DUMP")) {   // diagnosis: the reference's classes as a PGM
+        std::string path = std::string(dir) + "/" + name + ".pgm";
+        for (char& ch : path) if (ch == ' ' || ch == ',') ch = '_';
+        if (FILE* f = std::fopen(path.c_str(), "wb")) {
+            std::fprintf(f, "P5 256 256 255\n");
+            for (int i = 0; i < 256 * 256; ++i) {
+                const unsigned char v = !g.mask.px[std::size_t(i)] ? 0 : (kind[std::size_t(i)] & 2) ? 128 : (kind[std::size_t(i)] & 1) ? 60 : 255;
+                std::fputc(v, f);
+            }
+            std::fclose(f);
+        }
+    }
     std::sort(sv.begin(), sv.end());
     r.softPixels = long(sv.size());
     for (double v : sv) r.softMean += v / double(sv.size());
@@ -172,15 +190,18 @@ SceneResult visibilityChecks(const std::string& name, const Scene& sc, int strid
 }  // namespace
 
 int main(int argc, char** argv) {
-    bool json = false, full = false;
+    bool json = false, full = false, stats = false;
     std::string models;
     for (int i = 1; i < argc; ++i) {
         json = json || !std::strcmp(argv[i], "--json"); full = full || !std::strcmp(argv[i], "--full");
         if (!std::strcmp(argv[i], "--models") && i + 1 < argc) models = argv[++i];
+        stats = stats || !std::strcmp(argv[i], "--scene-stats");
     }
     full = full || json;
     CliParams p; p.width = p.height = 256;
     std::vector<std::pair<std::string, Scene>> scenes{{"built-in test scene", sceneFromParams(p, nullptr)}};
+    scenes.push_back({"test scene, near camera", scenes[0].second});   // method note 2: cascade 0 in use
+    scenes[1].second.camera.eye = {1.8f, 3.2f, 2.4f}; scenes[1].second.camera.center = {0.8f, 0.2f, 1.0f};   // method note 5
     if (!models.empty()) {
         std::string err;
         p.model = models + "/Models/Suzanne/glTF/Suzanne.gltf";
@@ -193,6 +214,17 @@ int main(int argc, char** argv) {
         if (!p.model.empty()) scenes.push_back({"helmet role", sceneFromParams(p, nullptr)});
     }
     for (auto& sc : scenes) sc.second.lights[0].dir = normalize(Vec3{0.55f, -0.45f, 0.35f});   // the method note's visible sun
+    if (stats) {   // scene design only: G-buffer pixels per cascade, no shadow result
+        for (const auto& sc : scenes) {
+            const GBuffer g = gbufferOf(sc.second);
+            const CascadeSet cs = fitCascades(sc.second.camera, d3(sc.second.lights[0].dir), 40.0, 1024, true);
+            long n[kCascades + 1] = {0, 0, 0, 0, 0};
+            for (int y = 0; y < 256; ++y) for (int x = 0; x < 256; ++x)
+                if (g.mask.at(x, y)) { const int k = cascadeOf(cs, g.depth.at(x, y)); ++n[k < 0 ? kCascades : k]; }
+            std::printf("%s: cascade pixels %ld %ld %ld %ld, beyond %ld\n", sc.first.c_str(), n[0], n[1], n[2], n[3], n[4]);
+        }
+        return 0;
+    }
     const Stability st = stability(scenes[0].second, true), ctl = stability(scenes[0].second, false);
     const double stRate = double(st.changes) / double(st.checks), ctlRate = double(ctl.changes) / double(ctl.checks);
     // The original check is reported; its control's power is recorded, not gated (method note).
@@ -208,9 +240,10 @@ int main(int argc, char** argv) {
         CHECK(r.shadowed >= 2000 / (full ? 1 : 4) && r.penumbra >= 300 / (full ? 1 : 4));   // the method note's coverage bound
         CHECK(double(r.mismatches) <= 0.001 * double(r.interior));
         CHECK(r.softMean <= 0.05 && r.softP95 <= 0.20);
-        char b[400];
-        std::snprintf(b, sizeof b, "%s  {\"scene\": \"%s\", \"interior_pixels\": %ld, \"hard_mismatches\": %ld, \"soft_pixels\": %ld, \"shadowed\": %ld, \"penumbra\": %ld, \"pcss_mean_abs\": %.4f, \"pcss_p95_abs\": %.4f, \"pcss_penumbra_mean_abs\": %.4f}",
-                      rows.empty() ? "" : ",\n", r.name.c_str(), r.interior, r.mismatches, r.softPixels, r.shadowed, r.penumbra, r.softMean, r.softP95, r.penumbraMean);
+        if (s.first == "test scene, near camera") CHECK(r.cascade0 >= 2000 / (full ? 1 : 4));
+        char b[600];
+        std::snprintf(b, sizeof b, "%s  {\"scene\": \"%s\", \"interior_pixels\": %ld, \"hard_mismatches\": %ld, \"soft_pixels\": %ld, \"shadowed\": %ld, \"penumbra\": %ld, \"cascade0_pixels\": %ld, \"pcss_mean_abs\": %.4f, \"pcss_p95_abs\": %.4f, \"pcss_penumbra_mean_abs\": %.4f}",
+                      rows.empty() ? "" : ",\n", r.name.c_str(), r.interior, r.mismatches, r.softPixels, r.shadowed, r.penumbra, r.cascade0, r.softMean, r.softP95, r.penumbraMean);
         rows += b;
     }
     if (json) std::printf("{\n \"stability\": {\"checks\": %ld, \"changes\": %ld, \"rate\": %.5f, \"control_rate\": %.5f, \"control_discriminates\": %s},\n"

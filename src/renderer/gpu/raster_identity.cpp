@@ -50,7 +50,7 @@ FormatCase formatCase(rhi::Device& dev, TextureFormat f, const char* name, std::
 // covers the centre of pixel 10 (x = 10.5) only if the edge snaps to 10.5, which 4 bits of
 // precision do (168.32 / 16 rounds to 168) and 8 bits do not (2693 / 256 = 10.5195). The
 // left edge is inside under the top-left rule. Returns 4 or 8, or 0 on error.
-int probeSubpixelBits(rhi::Device& dev, std::string& err) {
+int probeBits(rhi::Device& dev, std::string& err) {
     const float W = 32, H = 8, xs[3] = {10.52f, 30.0f, 10.52f}, ys[3] = {-1.0f, -1.0f, 20.0f};
     std::vector<float> tri;
     for (int k = 0; k < 3; ++k) { tri.push_back(xs[k] / W * 2.0f - 1.0f); tri.push_back(1.0f - ys[k] / H * 2.0f); tri.push_back(0.5f); }
@@ -112,6 +112,8 @@ bool depthImage(rhi::Device& dev, bool depth, bool reverse, std::vector<uint8_t>
     return true;
 }
 }  // namespace
+
+int probeSubpixelBits(rhi::Device& dev, std::string& err) { return probeBits(dev, err); }
 
 std::string joined(const std::vector<std::string>& v) { std::string s; for (std::size_t k = 0; k < v.size(); ++k) s += (k ? ", " : "") + v[k]; return s; }
 
