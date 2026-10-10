@@ -1,7 +1,7 @@
 // raw_native_cli post-parity: see raw/tools/raster_cmd.hpp.
 #include "raw/tools/raster_cmd.hpp"
 #include "raw/tools/model_scene.hpp"
-#include "raw/tools/model_manifest.hpp"
+#include "raw/tools/owned_assets.hpp"
 #include "raw/renderer/post_parity.hpp"
 #include "raw/assets/json.hpp"
 #include <cstdio>
@@ -11,12 +11,10 @@
 #include <vector>
 namespace raw {
 int postParityCommand(int argc, char** argv) {
-    std::string models, out, manifest = "evidence/m3-scene-models.json";
+    std::string out;
     for (int i = 1; i < argc; ++i) {
-        if (!std::strcmp(argv[i], "--models") && i + 1 < argc) models = argv[++i];
-        else if (!std::strcmp(argv[i], "--out") && i + 1 < argc) out = argv[++i];
-        else if (!std::strcmp(argv[i], "--model-manifest") && i + 1 < argc) manifest = argv[++i];
-        else { std::printf("usage: raw_native_cli post-parity [--models DIR] [--model-manifest PATH] [--out FILE]\n"); return 2; }
+        if (!std::strcmp(argv[i], "--out") && i + 1 < argc) out = argv[++i];
+        else { std::printf("usage: raw_native_cli post-parity [--out FILE]\n"); return 2; }
     }
     std::string why;
     rhi::Device* dev = rhi::device(why);
@@ -27,25 +25,14 @@ int postParityCommand(int argc, char** argv) {
     scenes.push_back(sceneFromParams(p, nullptr));
     scenes.push_back(scenes[0]);
     scenes[1].camera.eye = {1.8f, 3.2f, 2.4f}; scenes[1].camera.center = {0.8f, 0.2f, 1.0f};
-    if (!models.empty()) {
-        // Suzanne, then the helmet and interior roles as the manifest names them.
-        std::vector<std::pair<std::string, std::string>> want{{"Suzanne", models + "/Models/Suzanne/glTF/Suzanne.gltf"}};
-        for (const char* role : {"helmet", "interior"}) {
-            std::string err;
-            const std::string path = resolveModelRole(manifest, role, models, err);
-            if (path.empty()) { std::printf("post-parity: %s\n", err.c_str()); return 2; }
-            want.push_back({std::string(role) + " role", path});
-        }
-        for (const auto& m : want) {
-            p.model = m.second;
-            try { scenes.push_back(sceneFromParams(p, nullptr)); }
-            catch (const assets::AssetError& e) { std::printf("post-parity: cannot load %s: %s\n", p.model.c_str(), e.what()); return 2; }
-            names.push_back(m.first);
-        }
-        scenes.push_back(scenes.back());
-        scenes.back().camera.eye = {0.9f, 1.2f, 1.6f}; scenes.back().camera.center = {0.0f, 0.3f, 0.0f};
-        names.push_back("interior close-up");
-    }
+    // The owned assets (author's decision, 2026-10-10; evidence/m3-post-bounds.json method note 9).
+    const owned::Asset hall = owned::hall();
+    scenes.push_back(owned::inTestScene(owned::hero(), 256, 256));
+    names.push_back("raw-hero");
+    scenes.push_back(owned::hallScene(hall));
+    names.push_back("raw-hall nave");
+    scenes.push_back(owned::hallScene(hall, true));
+    names.push_back("raw-hall gallery");
     std::vector<std::pair<std::string, const Scene*>> list;
     for (std::size_t k = 0; k < scenes.size(); ++k) list.push_back({names[k], &scenes[k]});
     const gpu_check::PostParity r = gpu_check::postParity(*dev, list);

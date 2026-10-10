@@ -2,34 +2,145 @@
  "schema": "raw-native.evidence/1",
  "criterion": "M3 shadows (dated addition 8 and addition 9, 2026-10-10): every run against evidence/m3-shadows-bounds.json, failures included",
  "runs": [
-  {"run": "cpu-1", "date": "2026-10-10", "what": "test_shadows --full --models, with each scene's own light",
+  {
+   "run": "cpu-1",
+   "date": "2026-10-10",
+   "what": "test_shadows --full --models, with each scene's own light",
    "result": "not a result: every check passed over almost no shadow (35, 484 and 358 shadowed pixels of about 37,000), and the stability control reached 0.008%",
-   "action": "method note 1 before any change: a sun the camera sees, a coverage bound, and the texel-registration check (addition 9)"},
-  {"run": "cpu-2", "date": "2026-10-10", "what": "test_shadows --json --models with the method note's sun",
-   "result": "pass. Texel registration 0 of 192,415 pairs moved, control 100%. Hard 0, 2, 0 mismatches over about 36,000 interior pixels. PCSS mean 0.0047 at worst. The original edge-flip check passes but its control reached only 0.108% against the 1% it needed: it does not discriminate, stays reported, and is not the gate"},
-  {"run": "warp-1", "date": "2026-10-10", "what": "raw_native_cli shadow-parity --models on D3D12 WARP",
-   "result": "fail, partly from my check: it required every cascade to hold geometry, and no scene reached cascade 0. The check now requires coverage per scene. The controls were confirmed to fail on their own counts"},
-  {"run": "warp-2", "date": "2026-10-10", "what": "gpu_shadow_parity on WARP with the debug layer: test scene, Suzanne, FlightHelmet",
-   "result": "fail on one texel: Suzanne, cascade 3, normalised depth 1.3e-5 off (bound 1e-5) on a triangle of 0.07 square texels; the CPU float rasterizer matches a float64 plane there to 1e-8. Also my error: this run's check exempted depth ties from the coverage comparison, which the bound does not allow. Removed in warp-4; this run's FlightHelmet differences were edge-explained anyway"},
-  {"run": "swiftshader-1", "date": "2026-10-10", "what": "shadow-parity in Chrome on SwiftShader, test scene only",
-   "result": "pass under the same tie exemption (superseded by swiftshader-2)"},
-  {"run": "near-1", "date": "2026-10-10", "what": "method note 2's near camera, CPU checks",
-   "result": "fail: coverage, 3 penumbra pixels (bound 300); the camera faced the box's unlit side"},
-  {"run": "near-2", "date": "2026-10-10", "what": "method note 3's lit-side camera, CPU checks",
-   "result": "fail: coverage, 299 penumbra pixels (bound 300). The camera stood inside the ground quad, and the CPU rasterizer drops triangles with a vertex behind the near plane, so the ground vanished"},
-  {"run": "near-3", "date": "2026-10-10", "what": "method note 4's camera, CPU checks",
-   "result": "fail: 0 pixels in cascade 0; the box fell outside the field of view (my pre-check tested depth, not the frustum)"},
-  {"run": "cpu-3", "date": "2026-10-10", "what": "test_shadows --json --models with method note 5 (near camera checked by --scene-stats first; perspective-correct depth)",
+   "action": "method note 1 before any change: a sun the camera sees, a coverage bound, and the texel-registration check (addition 9)"
+  },
+  {
+   "run": "cpu-2",
+   "date": "2026-10-10",
+   "what": "test_shadows --json --models with the method note's sun",
+   "result": "pass. Texel registration 0 of 192,415 pairs moved, control 100%. Hard 0, 2, 0 mismatches over about 36,000 interior pixels. PCSS mean 0.0047 at worst. The original edge-flip check passes but its control reached only 0.108% against the 1% it needed: it does not discriminate, stays reported, and is not the gate"
+  },
+  {
+   "run": "warp-1",
+   "date": "2026-10-10",
+   "what": "raw_native_cli shadow-parity --models on D3D12 WARP",
+   "result": "fail, partly from my check: it required every cascade to hold geometry, and no scene reached cascade 0. The check now requires coverage per scene. The controls were confirmed to fail on their own counts"
+  },
+  {
+   "run": "warp-2",
+   "date": "2026-10-10",
+   "what": "gpu_shadow_parity on WARP with the debug layer: test scene, Suzanne, FlightHelmet",
+   "result": "fail on one texel: Suzanne, cascade 3, normalised depth 1.3e-5 off (bound 1e-5) on a triangle of 0.07 square texels; the CPU float rasterizer matches a float64 plane there to 1e-8. Also my error: this run's check exempted depth ties from the coverage comparison, which the bound does not allow. Removed in warp-4; this run's FlightHelmet differences were edge-explained anyway"
+  },
+  {
+   "run": "swiftshader-1",
+   "date": "2026-10-10",
+   "what": "shadow-parity in Chrome on SwiftShader, test scene only",
+   "result": "pass under the same tie exemption (superseded by swiftshader-2)"
+  },
+  {
+   "run": "near-1",
+   "date": "2026-10-10",
+   "what": "method note 2's near camera, CPU checks",
+   "result": "fail: coverage, 3 penumbra pixels (bound 300); the camera faced the box's unlit side"
+  },
+  {
+   "run": "near-2",
+   "date": "2026-10-10",
+   "what": "method note 3's lit-side camera, CPU checks",
+   "result": "fail: coverage, 299 penumbra pixels (bound 300). The camera stood inside the ground quad, and the CPU rasterizer drops triangles with a vertex behind the near plane, so the ground vanished"
+  },
+  {
+   "run": "near-3",
+   "date": "2026-10-10",
+   "what": "method note 4's camera, CPU checks",
+   "result": "fail: 0 pixels in cascade 0; the box fell outside the field of view (my pre-check tested depth, not the frustum)"
+  },
+  {
+   "run": "cpu-3",
+   "date": "2026-10-10",
+   "what": "test_shadows --json --models with method note 5 (near camera checked by --scene-stats first; perspective-correct depth)",
    "result": "pass on all four scenes. Registration 0 of 192,415 (control 100%). Hard 0, 0, 2, 0 mismatches. PCSS mean 0.0058 at worst, p95 0.016 at worst; over penumbra pixels only (reported) 0.074 to 0.088. The near scene puts 10,749 pixels in cascade 0",
-   "evidence": "evidence/m3-shadows-cpu-run.json"},
-  {"run": "warp-4", "date": "2026-10-10", "what": "gpu_shadow_parity on WARP with the debug layer, four scenes, no tie exemption",
+   "evidence": "evidence/m3-shadows-cpu-run.json"
+  },
+  {
+   "run": "warp-4",
+   "date": "2026-10-10",
+   "what": "gpu_shadow_parity on WARP with the debug layer, four scenes, no tie exemption",
    "result": "fail on 3 texels of about 2.3 million compared. Suzanne cascade 3: the 1.3e-5 depth texel. Near scene cascade 0: 2 texels where the ground meets the cascade's far plane; the GPU kept depth 0.99999994, the CPU computed 1 or more and clipped, which the bound does not exempt. Lookups: more than 1e-3 off at 4 to 11 points (PCF) and at most 2 (PCSS) of 36,656 to 65,536 a scene (bound 0.1%). Contact: 0 differing pixels. Controls fail (18,850 map texels, 10,195 lookup values, 797 contact pixels)",
-   "evidence": "evidence/m3-shadows-gpu-d3d12-warp.json"},
-  {"run": "swiftshader-2", "date": "2026-10-10", "what": "shadow-parity in Chrome on SwiftShader, the test scene and the near scene (the browser build carries no model files)",
+   "evidence": "evidence/m3-shadows-gpu-d3d12-warp.json"
+  },
+  {
+   "run": "swiftshader-2",
+   "date": "2026-10-10",
+   "what": "shadow-parity in Chrome on SwiftShader, the test scene and the near scene (the browser build carries no model files)",
    "result": "fail on the near scene's maps: cascade 0 has 15 differing texels, 5 within 0.01 texel of an edge and 11 at the far-plane tie; cascade 1 has 6, 5 at an edge. The inferred cause of the rest is SwiftShader's 4-bit sub-pixel precision, as in the RHI v3 G-buffer run. Lookups within bound (at most 13 PCF points), contact 0 differing, controls fail",
-   "evidence": "evidence/m3-shadows-gpu-webgpu-swiftshader.json"},
-  {"run": "rtx-1", "date": "2026-10-10", "what": "gpu_shadow_parity on the RTX 4090, queued behind D:/gpu.lock.d",
-   "result": "pending: the MMBU run holds the lock"}
+   "evidence": "evidence/m3-shadows-gpu-webgpu-swiftshader.json"
+  },
+  {
+   "run": "cpu-owned-1",
+   "date": "2026-10-10",
+   "what": "test_shadows --json on the owned scenes (method note 6): test scene from two cameras, raw-hero, raw-hall nave",
+   "result": "pass. Hard mismatches 0, 0, 6 and 2 over 36,000 to 65,000 interior pixels; PCSS mean 0.0071 at worst, p95 0.027 at worst; coverage 4,225 and 37,507 shadowed, 602 and 2,225 penumbra pixels on the two assets; registration 0 of 192,415 (control 100%).",
+   "superseded": "raw-hall had long triangles crossing the near plane, which the CPU rasterizer drops, so walls and slabs were missing from the CPU G-buffer. Superseded by the -2 runs after the hall generator cut long boxes at every bay line."
+  },
+  {
+   "run": "warp-owned-1",
+   "date": "2026-10-10",
+   "what": "gpu_shadow_parity on WARP, debug layer, the four owned-era scenes",
+   "result": "Lookups and contact shadows within bounds on all four; controls fail. Map identity: raw-hero passes; raw-hall fails (cascade 2 depth 1.1e-5 against 1e-5; cascade 3 three texels not within 0.01 texel of an edge, all at depth ties); the near test scene keeps its two far-plane texels.",
+   "superseded": "raw-hall had long triangles crossing the near plane, which the CPU rasterizer drops, so walls and slabs were missing from the CPU G-buffer. Superseded by the -2 runs after the hall generator cut long boxes at every bay line."
+  },
+  {
+   "run": "swiftshader-owned-1",
+   "date": "2026-10-10",
+   "what": "shadow-parity in Chrome on SwiftShader; the owned assets are built in, so all four scenes run in the browser too",
+   "result": "Lookups and contact within bounds on all four; controls fail. Map identity: raw-hero passes; raw-hall fails (24, 70 and 0 unexplained texels in cascades 1 to 3, depth up to 3.2e-5), most at depth ties or SwiftShader's 4-bit edges; the near test scene as before.",
+   "superseded": "raw-hall had long triangles crossing the near plane, which the CPU rasterizer drops, so walls and slabs were missing from the CPU G-buffer. Superseded by the -2 runs after the hall generator cut long boxes at every bay line."
+  },
+  {
+   "run": "cpu-owned-2",
+   "date": "2026-10-10",
+   "what": "test_shadows --json, owned scenes, hall cut at bay lines",
+   "result": "pass. Hard mismatches 0, 0, 6, 1; PCSS mean 0.0071 at worst; raw-hall coverage 47,122 shadowed, 2,673 penumbra pixels.",
+   "superseded": "by the -3 runs: the hall's drapery became two-sided (asset run 4); the nave camera sees the same faces, and the numbers barely move"
+  },
+  {
+   "run": "warp-owned-2",
+   "date": "2026-10-10",
+   "what": "gpu_shadow_parity on WARP, debug layer",
+   "result": "Lookups and contact within bounds on all four scenes; controls fail. Map identity: raw-hero passes; raw-hall fails (cascade 2: 2 texels not explained by an edge and depth 1.1e-5 against 1e-5; cascade 3: 1 texel), at depth ties; the near test scene keeps its 2 far-plane texels.",
+   "superseded": "by the -3 runs: the hall's drapery became two-sided (asset run 4); the nave camera sees the same faces, and the numbers barely move"
+  },
+  {
+   "run": "swiftshader-owned-2",
+   "date": "2026-10-10",
+   "what": "shadow-parity in Chrome on SwiftShader, all four scenes",
+   "result": "Lookups and contact within bounds; controls fail. Map identity: raw-hero passes; raw-hall fails (71, 50 and 0 unexplained texels in cascades 1 to 3; depth up to 3.2e-5).",
+   "superseded": "by the -3 runs: the hall's drapery became two-sided (asset run 4); the nave camera sees the same faces, and the numbers barely move"
+  },
+  {
+   "run": "cpu-owned-3",
+   "date": "2026-10-10",
+   "what": "test_shadows --json, final hall",
+   "result": "pass. raw-hall nave: 0 hard mismatches, PCSS mean 0.0071; the other scenes as cpu-owned-2.",
+   "evidence": "evidence/m3-shadows-cpu-run.json"
+  },
+  {
+   "run": "warp-owned-3",
+   "date": "2026-10-10",
+   "what": "gpu_shadow_parity, WARP, debug layer, final hall",
+   "result": "As warp-owned-2: lookups, contact and controls pass; map identity an open failure on raw-hall (3 texels at depth ties, depth 1.1e-5) and the near test scene (2 far-plane texels).",
+   "evidence": "evidence/m3-shadows-gpu-d3d12-warp.json"
+  },
+  {
+   "run": "swiftshader-owned-3",
+   "date": "2026-10-10",
+   "what": "shadow-parity, SwiftShader, final hall",
+   "result": "As swiftshader-owned-2: map identity an open failure on raw-hall (71, 50 and 0 unexplained texels in cascades 1 to 3).",
+   "evidence": "evidence/m3-shadows-gpu-webgpu-swiftshader.json"
+  },
+  {
+   "run": "rtx-1",
+   "date": "2026-10-10",
+   "what": "gpu_shadow_parity on the RTX 4090, queued behind D:/gpu.lock.d; the queued binary now runs the owned scenes",
+   "result": "pending: the MMBU run holds the lock"
+  }
  ],
- "gate": "CI gates the lookups, the contact march, coverage and the controls (tests/gpu/shadow_gate.py). The shadow-map identity is printed and recorded as failing on WARP and SwiftShader; it is not counted as passed."
+ "gate": "CI gates the lookups, the contact march, coverage and the controls (tests/gpu/shadow_gate.py) on all four scenes. The shadow-map identity is an open failure on WARP and SwiftShader and is never counted as passed."
 }

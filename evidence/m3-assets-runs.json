@@ -1,0 +1,34 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "M3 criterion 1 amendment (owned assets): every run against evidence/m3-assets-bounds.json",
+ "runs": [
+  {
+   "run": "assets-1",
+   "date": "2026-10-10",
+   "what": "test_owned_assets --json --write-hashes, MSVC",
+   "result": "fail: the hall had 1,248 vertex normals more than 90 degrees from their triangle (the flutes switched on and off abruptly at the shaft's ends, so the finite-difference normal there pointed down), and 1.3 million triangles, more than intended. Everything else passed.",
+   "action": "flutes fade over 0.2 m; the lathe uses one row per profile segment (a design change, not a bound)"
+  },
+  {
+   "run": "assets-2",
+   "date": "2026-10-10",
+   "what": "after the fix; vents moved onto the shell surface after a visual check of the preview",
+   "result": "pass on MSVC. raw-hero 111,136 triangles, all nine extensions on 2.2% (emissive strength) to 31% of its area, plain metal 3.4%, plain dielectric 12.1%; raw-hall 486,656 triangles, 37.2 x 14.4 x 16.8 m, 52 columns, 48 arches, 8 drapery panels (98,304 triangles), 10 lanterns; no degenerate triangle, bad normal or flipped normal; the glTF round trip matches; both controls fail as required. GCC determinism is checked by CI.",
+   "evidence": "evidence/m3-assets.json"
+  },
+  {
+   "run": "assets-3",
+   "date": "2026-10-10",
+   "what": "after cutting the hall's long boxes at every bay line (a defect the RHI v3 and shadow checks exposed: the CPU rasterizer drops triangles that cross the near plane)",
+   "result": "pass on MSVC: raw-hall 488,120 triangles; everything else as run 2; hashes rewritten.",
+   "evidence": "evidence/m3-assets.json"
+  },
+  {
+   "run": "assets-4",
+   "date": "2026-10-10",
+   "what": "the drapery made two-sided (a 4 mm back sheet), after the GTAO check viewed it from behind and its single sheet's normal faced away from the camera",
+   "result": "pass on MSVC: raw-hall 586,424 triangles (196,608 in the drapery); everything else as before; hashes rewritten.",
+   "evidence": "evidence/m3-assets.json"
+  }
+ ]
+}

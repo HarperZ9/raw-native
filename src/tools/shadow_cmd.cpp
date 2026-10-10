@@ -1,7 +1,7 @@
 // raw_native_cli shadow-parity: see raw/tools/raster_cmd.hpp.
 #include "raw/tools/raster_cmd.hpp"
 #include "raw/tools/model_scene.hpp"
-#include "raw/tools/model_manifest.hpp"
+#include "raw/tools/owned_assets.hpp"
 #include "raw/renderer/shadow_parity.hpp"
 #include "raw/assets/json.hpp"
 #include <cstdio>
@@ -13,13 +13,11 @@
 namespace raw {
 int shadowParityCommand(int argc, char** argv) {
     int size = 256;
-    std::string models, out, manifest = "evidence/m3-scene-models.json";
+    std::string out;
     for (int i = 1; i < argc; ++i) {
         if (!std::strcmp(argv[i], "--size") && i + 1 < argc) size = std::atoi(argv[++i]);
-        else if (!std::strcmp(argv[i], "--models") && i + 1 < argc) models = argv[++i];
         else if (!std::strcmp(argv[i], "--out") && i + 1 < argc) out = argv[++i];
-        else if (!std::strcmp(argv[i], "--model-manifest") && i + 1 < argc) manifest = argv[++i];
-        else { std::printf("usage: raw_native_cli shadow-parity [--size N] [--models DIR] [--out FILE]\n"); return 2; }
+        else { std::printf("usage: raw_native_cli shadow-parity [--size N] [--out FILE]\n"); return 2; }
     }
     if (size < 16 || size > 1024) { std::printf("shadow-parity: --size 16..1024\n"); return 2; }
     std::string why;
@@ -32,18 +30,11 @@ int shadowParityCommand(int argc, char** argv) {
     scenes.push_back(scenes[0]);                     // method note 5: a near camera, so cascade 0 is in use
     scenes[1].camera.eye = {1.8f, 3.2f, 2.4f}; scenes[1].camera.center = {0.8f, 0.2f, 1.0f};
     names.push_back("test scene, near camera");
-    if (!models.empty()) {
-        // Suzanne, and the helmet role's model as the manifest names it (one field swaps it).
-        std::string err;
-        const std::string helmet = resolveModelRole(manifest, "helmet", models, err);
-        if (helmet.empty()) { std::printf("shadow-parity: %s\n", err.c_str()); return 2; }
-        for (const std::string& m : std::vector<std::string>{models + "/Models/Suzanne/glTF/Suzanne.gltf", helmet}) {
-            p.model = m;
-            try { scenes.push_back(sceneFromParams(p, nullptr)); }
-            catch (const assets::AssetError& e) { std::printf("shadow-parity: cannot load %s: %s\n", p.model.c_str(), e.what()); return 2; }
-            names.push_back(m == helmet ? "helmet role" : "Suzanne");
-        }
-    }
+    // The owned assets (author's decision, 2026-10-10; evidence/m3-shadows-bounds.json method note 6).
+    scenes.push_back(owned::inTestScene(owned::hero(), size, size));
+    names.push_back("raw-hero");
+    scenes.push_back(owned::hallScene(owned::hall()));
+    names.push_back("raw-hall nave");
     std::vector<std::pair<std::string, const Scene*>> list;
     for (std::size_t k = 0; k < scenes.size(); ++k) {
         scenes[k].lights[0].dir = normalize(Vec3{0.55f, -0.45f, 0.35f});   // the shadow checks' sun

@@ -306,8 +306,9 @@ the GPU passes `post_gtao`, `post_ssr` and `post_taa`.
 - **Checks.** `tests/test_post.cpp` compares GTAO and SSR with BVH ray casts on six scenes, and
   `tests/test_taa.cpp` compares TAA with a 16 x 16 supersampled reference.
   `raw_native_cli post-parity` compares the GPU passes with the CPU.
-  - GTAO and SSR pass on the open scenes and fail on the dense interior close-up, where screen
-    space cannot see behind the pieces.
+  - GTAO passes on the near test scene and the raw-hall nave and fails in the hall's gallery,
+    where thin drapery and columns read as solid. SSR passes on the test scene and fails in the
+    hall, where its 0.2-unit thickness is short for a scene measured in metres.
   - TAA passes its ghosting bound and fails its RMSE bound under a slow pan.
   - GTAO and SSR GPU parity pass on WARP and SwiftShader. TAA GPU parity, each side feeding back
     its own history, fails; from the same history one pixel differs at most.

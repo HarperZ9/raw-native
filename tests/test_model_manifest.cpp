@@ -13,21 +13,21 @@ int main() {
     const std::string manifest = std::string(RAW_SOURCE_DIR) + "/evidence/m3-scene-models.json";
     std::string err;
     const auto roles = modelRoles(manifest, err);
-    CHECK(err.empty() && roles.size() == 3);
-    CHECK(resolveModelRole(manifest, "helmet", "M", err) == "M/Models/FlightHelmet/glTF/FlightHelmet.gltf");
-    CHECK(resolveModelRole(manifest, "metal_rough_spheres", "M", err) == "M/Models/MetalRoughSpheres/glTF/MetalRoughSpheres.gltf");
-    CHECK(resolveModelRole(manifest, "interior", "M", err) == "M/Models/ABeautifulGame/glTF/ABeautifulGame.gltf");
-    // The swap: the same manifest with the helmet role using DamagedHelmet.
+    CHECK(err.empty() && roles.size() == 2);
+    CHECK(resolveModelRole(manifest, "helmet", "M", err) == "M/raw-hero.gltf");
+    CHECK(resolveModelRole(manifest, "interior", "M", err) == "M/raw-hall.gltf");
+    // The swap: one changed 'use' field changes what the role resolves to (here to a candidate the
+    // role does not list, which must be refused with an error, never resolved silently).
     std::ifstream f(manifest, std::ios::binary);
     std::string text{std::istreambuf_iterator<char>(f), {}};
-    const std::string from = "\"use\": \"FlightHelmet\"", to = "\"use\": \"DamagedHelmet\"";
+    const std::string from = "\"use\": \"raw-hero\"", to = "\"use\": \"raw-hero-next\"";
     const auto at = text.find(from);
     CHECK(at != std::string::npos);
     if (at != std::string::npos) text.replace(at, from.size(), to);
     const std::string swapped = "test_model_manifest_swapped.json";
     std::ofstream(swapped, std::ios::binary) << text;
     std::string e2;
-    CHECK(resolveModelRole(swapped, "helmet", "M", e2) == "M/Models/DamagedHelmet/glTF/DamagedHelmet.gltf");
+    CHECK(resolveModelRole(swapped, "helmet", "M", e2).empty() && e2.find("raw-hero-next") != std::string::npos);
     std::string e3;
     CHECK(resolveModelRole(manifest, "no-such-role", "M", e3).empty() && !e3.empty());
     std::remove(swapped.c_str());
