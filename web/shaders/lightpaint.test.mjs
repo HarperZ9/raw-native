@@ -41,8 +41,13 @@ test("luminance is monotone in irradiance for every preset (by construction; a g
 test("yellow in shadow turns toward olive under KM, and keeps its hue under RGB multiply", () => {
   const T = B.yellow_test, plan = resolveLightpaint(T.preset), p = plan.p, e = (p.Emid * T.value) / (1 - T.value);
   const out = shade(plan, T.albedo_linear, [e, e, e])[0], mult = T.albedo_linear.map((v) => v * e);
-  const h0 = oklabHue(T.albedo_linear), dKM = oklabHue(out) - h0, dRGB = Math.abs(oklabHue(mult) - h0);
+  // Hue differences wrap to (-180, 180]. The first run lacked the wrap (a test bug: it read +80.9 as
+  // -279.1); the same run showed the old disco preset going teal, not olive. Added after that run, a
+  // stricter check that the bounds file does not have: the shift must also stay under 40 degrees.
+  const wrap = (d) => ((((d + 180) % 360) + 360) % 360) - 180;
+  const h0 = oklabHue(T.albedo_linear), dKM = wrap(oklabHue(out) - h0), dRGB = Math.abs(wrap(oklabHue(mult) - h0));
   assert.ok(dKM >= B.yellow_in_shadow_hue_shift_min_deg, `KM hue shift ${dKM} degrees (toward green is positive)`);
+  assert.ok(dKM <= 40, `KM hue shift ${dKM} degrees: teal, not olive`);
   assert.ok(dRGB <= B.yellow_rgb_multiply_hue_shift_max_deg, `RGB hue shift ${dRGB}`);
 });
 

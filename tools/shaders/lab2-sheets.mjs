@@ -45,3 +45,12 @@ if (on("sag")) {
     }
   }
 }
+
+if (on("lightpaint")) {
+  const { resolveLightpaint, runLightpaint } = await import("../../web/shaders/lightpaint/lightpaint.mjs");
+  for (const frame of ["street", "day"]) {
+    const src = labSource(frame, W, H);
+    save(`lightpaint-${frame}-0-multiply`, img8(src));
+    for (const preset of ["disco", "grotesque", "complement"]) save(`lightpaint-${frame}-${preset}`, img8(runLightpaint(resolveLightpaint(preset), src)));
+  }
+}
