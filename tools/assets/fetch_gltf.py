@@ -38,6 +38,17 @@ def main(argv: list[str]) -> int:
     if "roles" in spec:                                   # an M3 roles manifest
         every = "--all-candidates" in argv
         spec["models"] = [c for r in spec["roles"] for c in r["candidates"] if every or c["name"] == r["use"]]
+    if "generator" in spec["source"]:                     # owned assets: generated, never fetched
+        root, bad, total = Path(args[0]), 0, 0
+        for model in spec["models"]:
+            for f in model["files"]:
+                total += 1
+                dest = root / f["path"]
+                if not dest.is_file() or hashlib.sha256(dest.read_bytes()).hexdigest() != f["sha256"]:
+                    print(f"MISSING OR CHANGED {f['path']}: generate with {spec['source']['generator']}", file=sys.stderr)
+                    bad += 1
+        print(f"fetch_gltf: {total - bad} of {total} generated files verified, none fetched")
+        return 1 if bad else 0
     repo, commit = spec["source"]["repository"].rstrip("/"), spec["source"]["commit"]
     raw = repo.replace("https://github.com/", "https://raw.githubusercontent.com/")
     root, bad, fetched = Path(args[0]), 0, 0

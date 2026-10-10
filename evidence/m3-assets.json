@@ -1,0 +1,8 @@
+{
+ "schema": "raw-native.evidence/1",
+ "what": "SHA-256 of each owned asset's glTF JSON and binary buffer (json:bin), as test_owned_assets --write-hashes wrote them",
+ "hashes": {
+  "raw-hero": "aa9c9bc290705706922fb698b58fa20af9ee046d00435321a8bf67d424b2f7af:9765de597e308c8ff0c68ec6baeeeb229deee7cf7530ad36b048ace6ab1cc358",
+  "raw-hall": "afbfe5ac0b0682b5aa10e5187965270b9d7a13bf1268005d377b284f99c31415:b0b1c31ff759a6e0554e461a4f41fa1657e6632edc0d7845a61a5e929c4aa411"
+ }
+}
