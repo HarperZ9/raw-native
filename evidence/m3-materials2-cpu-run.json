@@ -1,0 +1,6 @@
+{
+ "iridescence_exact": {"worst": 0.0185, "at_cos": 1.00, "at_base_ior": 2.00, "control_schlick": 0.2600, "control_spec": 0.2605},
+ "volume_path_length": {"points": 120, "worst": 1.11e-16, "control": 0.2757},
+ "clearcoat_energy": {"points": 864, "worst": 0.2302, "max_excess": -5.55e-03, "at": {"mu": 0.20, "coat_roughness": 0.05, "anisotropy": 0.6, "roughness": 0.2}, "control": 0.1283},
+ "failures": 1
+}

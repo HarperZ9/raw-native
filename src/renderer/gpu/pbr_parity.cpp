@@ -81,6 +81,7 @@ std::vector<float> packTables(const pbr::Tables& t) {
     std::vector<float> v;
     for (const auto* g : {&t.gridA(), &t.gridB(), &t.rowAavg(), &t.rowBavg(), &t.gridSh(), &t.gridA4(), &t.gridB4(), &t.gridAavg2(), &t.gridBavg2(), &t.gridDom()})
         for (double x : *g) v.push_back(float(x));
+    for (double x : pbr::iridescenceSensitivityGrid()) v.push_back(float(x));   // OFF_SENS in pbr.wgsl
     return v;
 }
 
