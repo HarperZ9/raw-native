@@ -100,6 +100,17 @@ export function walkthroughScene({ spec, cast, atlas, timing = null, fps = 30 })
       this.captions = () => walkthroughVtt(pl);
       return { A, pl, rows, titleShape, sub, recorded, captions };
     },
+    // Sound cues (web/sound): a soft pluck as each command starts, a step higher
+    // each time so the ear hears progress; the hot-mark motif on a failing exit.
+    sound(ctx) {
+      const out = [];
+      for (const s of ctx.assets.pl.steps) {
+        out.push({ t: s.start, type: "land", pitch: 2 * s.k, gain_db: -7, why: `step ${s.k + 1} starts: ${s.chapter || s.cmd.slice(0, 40)}` });
+        const last = s.lines.length ? s.lines[s.lines.length - 1].at : s.end - 0.5;
+        if (s.exit !== 0) out.push({ t: last, type: "motif", gain_db: -6, why: `hot mark: step ${s.k + 1} exits ${s.exit}` });
+      }
+      return out;
+    },
     frame(t, ctx) {
       const { pl, rows, titleShape, sub, recorded, captions } = ctx.assets, items = [];
       const title = window(t, 0, TITLE + 0.2, 0.6, 0.8);

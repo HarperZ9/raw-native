@@ -108,6 +108,10 @@ sheet (superstack.sound/1 scene: cues, score, buses, master)
 
 **Levels are resolved offline.** `resolve()` measures the narration and the score, sets the music gain, the duck depth and the effects gain from the rules in section 3, and iterates the master gain until the mastered mix reads the target. It writes every number into `sheet.resolved.json`. The live player plays that file and measures nothing, so live playback is at the levels the offline render was checked at.
 
+**Scenes declare their cues.** A Motion scene may add a `sound(ctx)` method that returns `[{ t, type, why, x?, ... }]` in seconds, computed from the same timeline its `frame()` uses (`ctx.assets` is what `load` returned). `scene-sheet.mjs` loads the scene in Node with no renderer and turns those cues into a sheet, with the score changing chord at each chapter. A scene without `sound()` gets one `chapter` cue per chapter. "Checking the light" marks its two fields gathering, the merge, the comparison and the verdict; a refuted verdict gets the hot-mark motif. A walkthrough plucks once as each command starts, a step higher each time, and plays the motif on a non-zero exit.
+
+**In the release loop.** When `raw-native media render` has narration for a scene, it builds the sheet from the bundled scene, renders the mix, checks the loudness verdict, and muxes the mix in place of the bare narration. The bundle keeps `sound/sheet.json`, `sheet.resolved.json`, `report.json` and `receipt.json`, and the manifest records the loudness, true peak, music under speech, cue count and PCM hash. A mix that misses its loudness target stops the render. `--no-sound` restores the bare narration. The hosted CI renders have no narration and stay silent.
+
 ## 5. Checks and measurements
 
 Tests (`node --test web/sound/sound.test.mjs`, 11 tests, about 6 s):

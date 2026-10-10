@@ -18,10 +18,10 @@ export function quantizeS16(samples) {
   return out;
 }
 
-// s16 back to float: v / 32768.
+// s16 back to float: v / 32767, superstack's s16ToFloats, so quantizeS16(fromS16(pcm)) is pcm.
 export function fromS16(pcm) {
   const out = new Float64Array(pcm.length);
-  for (let i = 0; i < pcm.length; i++) out[i] = pcm[i] / 32768;
+  for (let i = 0; i < pcm.length; i++) out[i] = pcm[i] / 32767;
   return out;
 }
 

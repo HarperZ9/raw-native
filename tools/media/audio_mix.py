@@ -42,7 +42,9 @@ def read_wav(path: Path) -> tuple[list[float], int, int]:
         pcm = array("h", w.readframes(w.getnframes()))
     if sys.byteorder == "big":
         pcm.byteswap()
-    return [v / 32768.0 for v in pcm], rate, ch
+    # v / 32767 is superstack's s16ToFloats: it makes read-then-quantize the identity,
+    # so an already-mastered s16 track at gain 1 passes through bit for bit.
+    return [v / 32767.0 for v in pcm], rate, ch
 
 
 def mix_tracks(tracks: list[dict], channels: int, frames: int) -> list[float]:

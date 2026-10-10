@@ -16,6 +16,8 @@ import { panGains } from "./dsp.mjs";
 import { validateSheet, interleaveS16 } from "./sheet.mjs";
 import { resolve, report } from "./offline.mjs";
 import { speechLike, testSheet } from "./fixtures.mjs";
+import { sceneSheet } from "./scene-sheet.mjs";
+import { fileURLToPath } from "node:url";
 
 const here = (p) => new URL(p, import.meta.url);
 const R = 48000;
@@ -138,4 +140,12 @@ test("the limiter holds a +3 dBTP signal under its ceiling", () => {
   const raw = new Float64Array(n);
   for (let i = 0; i < n; i++) raw[i] = 1.41 * Math.sin((Math.PI * i) / 2 + Math.PI / 4) * Math.min(1, i / 480);
   assert.ok(M.truePeak([raw, raw]) > 2.5);
+});
+
+test("a scene's own sound() cues and chapters become a sheet, on exact samples", async () => {
+  const sheet = await sceneSheet(fileURLToPath(new URL(".", import.meta.url)), "fixture.scene.mjs");
+  assert.deepEqual(validateSheet(sheet), []);
+  assert.equal(sheet.duration_samples, 6 * R);
+  assert.deepEqual(sheet.cues.map((c) => c.at), [48000, 120000, 145600]); // 3.0333 s is frame 91 at 30 fps: 91 x 1,600 samples
+  assert.deepEqual(sheet.score.sections.map((s) => s.at), [0, 96000, 192000]);
 });
