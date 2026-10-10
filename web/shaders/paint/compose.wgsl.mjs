@@ -1,8 +1,12 @@
+import { CANVAS_SAMPLER_WGSL } from "./canvas.wgsl.mjs";
 export const RELIEF_WGSL = /* wgsl */ `
 @group(0) @binding(2) var<storage, read> os: array<vec4f>;
 @group(0) @binding(3) var<storage, read> Hs: array<vec2f>;
 @group(0) @binding(4) var<storage, read> T: array<vec4f>;
 @group(0) @binding(5) var<storage, read_write> Rl: array<vec4f>;
+@group(0) @binding(6) var<storage, read> Cv: array<vec4f>;
+@group(0) @binding(7) var<storage, read> Kv: array<f32>;
+` + CANVAS_SAMPLER_WGSL + `
 fn xdog(x: i32, y: i32) -> f32 {
   let sg = P[P_lineSigma]; let k = 1.6; let R = i32(ceil(3.0 * sg * k)); var a = 0.0; var b = 0.0; var wa = 0.0; var wb = 0.0;
   for (var dy = -R; dy <= R; dy++) { for (var dx = -R; dx <= R; dx++) {
@@ -15,7 +19,7 @@ fn xdog(x: i32, y: i32) -> f32 {
 }
 fn hs(x: i32, y: i32) -> f32 {
   let xx = clamp(x, 0, W() - 1); let yy = clamp(y, 0, H() - 1);
-  return P[P_impasto] * Hs[yy * W() + xx].x + 0.12 * canvas_height(f32(xx) + P[P_ox], f32(yy) + P[P_oy]);
+  return P[P_impasto] * Hs[yy * W() + xx].x + 0.12 * cnoise(2u, f32(xx), f32(yy), 0.5);
 }
 @compute @workgroup_size(8, 8) fn main(@builtin(global_invocation_id) id: vec3u) {
   _ = pig[0];
@@ -30,10 +34,12 @@ fn hs(x: i32, y: i32) -> f32 {
 // WGSL for the painterly compose pass and the display encode. Mirrors compose.mjs.
 export const COMPOSE_WGSL = /* wgsl */ `
 @group(0) @binding(2) var<storage, read> olat: array<vec4f>;
-@group(0) @binding(3) var<storage, read> os: array<vec4f>;
-@group(0) @binding(4) var<storage, read> Hs: array<vec2f>;
-@group(0) @binding(5) var<storage, read> Rl: array<vec4f>;
-@group(0) @binding(6) var<storage, read_write> img: array<vec4f>;
+@group(0) @binding(3) var<storage, read> Hs: array<vec2f>;
+@group(0) @binding(4) var<storage, read> Rl: array<vec4f>;
+@group(0) @binding(5) var<storage, read_write> img: array<vec4f>;
+@group(0) @binding(6) var<storage, read> Cv: array<vec4f>;
+@group(0) @binding(7) var<storage, read> Kv: array<f32>;
+` + CANVAS_SAMPLER_WGSL + `
 fn bil4(x: f32, y: f32) -> vec4f {
   let fx = clamp(x, 0.0, f32(W() - 1)); let fy = clamp(y, 0.0, f32(H() - 1));
   let x0 = i32(floor(fx)); let y0 = i32(floor(fy)); let x1 = min(W() - 1, x0 + 1); let y1 = min(H() - 1, y0 + 1); let tx = fx - f32(x0); let ty = fy - f32(y0);
@@ -67,10 +73,10 @@ fn glaze(c: vec4f, X: f32, Rg: f32) -> vec3f {
   return o;
 }
 @compute @workgroup_size(8, 8) fn main(@builtin(global_invocation_id) id: vec3u) {
-  _ = os[0];   // bound for the layout; the lines now come from the relief pass
   let x = i32(id.x); let y = i32(id.y); if (x >= W() || y >= H()) { return; }
   let ox = P[P_ox]; let oy = P[P_oy]; var wv = vec2f(0.0);
-  if (P[P_warp] > 0.0) { wv = warp_field(f32(x) + ox, f32(y) + oy); }
+  _ = ox; _ = oy;
+  if (P[P_warp] > 0.0) { wv = vec2f(cnoise(5u, f32(x), f32(y), 0.0), cnoise(6u, f32(x), f32(y), 0.0)); }
   let sx = f32(x) + wv.x * P[P_warp]; let sy = f32(y) + wv.y * P[P_warp];
   let l = bil(sx, sy); var c = l[0]; let res = l[1].xyz;
   let base = km_decode(c) + res; let v = clamp(0.2126 * base.x + 0.7152 * base.y + 0.0722 * base.z, 0.0, 1.0);
@@ -85,9 +91,9 @@ fn glaze(c: vec4f, X: f32, Rg: f32) -> vec3f {
     let vq = max(0.02, (fl + smooth_(0.3, 0.7, f - fl)) / P[P_valueBands]);
     rgb = rgb * vq / vy;
   }
-  let paper = paper_height(f32(x) + ox, f32(y) + oy);
+  let paper = cnoise(3u, f32(x), f32(y), 0.5);
   if (P[P_medium] > 1.5) {
-    let valley = paper_height((f32(x) + ox) / 2.0, (f32(y) + oy) / 2.0); let Rg = 0.86 * (0.93 + 0.07 * paper);
+    let valley = cnoise(4u, f32(x), f32(y), 0.5); let Rg = 0.86 * (0.93 + 0.07 * paper);
     let X0 = 1.5; let X = X0 * (1.0 + P[P_granulation] * (0.5 - valley) * 2.0) * (1.0 + P[P_edge] * rel.w);
     let g0 = glaze(c, X0, 0.86); let g1 = glaze(c, X, Rg);
     rgb = vec3f(1.0) - (vec3f(1.0) - rgb * (g1 / max(g0, vec3f(1e-4)))) * P[P_dilution];

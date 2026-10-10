@@ -67,6 +67,10 @@ def check(res: dict) -> list[str]:
     if "mismatched_pixels" in b:
         return [f"{c['id']}: {c['mismatched']} pixels differ (first at {c['firstMismatch']})" for c in res["cases"] if c["mismatched"] > b["mismatched_pixels"]]
     for c in res["cases"]:
+        if c.get("motionBounds"):
+            if not c["pass"]:
+                problems.append(f"{c['id']}: max {c['max']}, p99.9 {c['p999']}, mean {c['mean']:.4f} (bounds {res['motionBounds']})")
+            continue
         if c["max"] > b["max_abs_code"] or c["p999"] > b["p999_abs_code"] or c["mean"] > b["mean_abs_code"]:
             problems.append(f"{c['id']}: max {c['max']}, p99.9 {c['p999']}, mean {c['mean']:.4f} (bounds {b})")
     return problems

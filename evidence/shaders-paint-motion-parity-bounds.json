@@ -1,0 +1,12 @@
+{
+  "what": "GPU painterly passes in advected-canvas mode (motion vectors) against the CPU reference",
+  "fixed_before_first_run": "2026-10-10",
+  "frames": "fixtures/street.mjs streetScene(160, 100, 0, camera) with motionVectors() between consecutive frames; compared on the last frame",
+  "cases": [
+    { "id": "orbit-grotesque", "preset": "oil-grotesque", "camera": "orbit", "frames": 6 },
+    { "id": "dolly-watercolour", "preset": "watercolour", "camera": "dolly", "frames": 6 },
+    { "id": "pan-oil", "preset": "oil", "camera": "pan", "frames": 5 }
+  ],
+  "bounds": { "max_abs_code": 8, "p999_abs_code": 3, "mean_abs_code": 0.2 },
+  "why": "Canvas coordinates are advected frame to frame in f32 on the GPU and f64 on the CPU; they drift apart by a small fraction of a pixel, and the noise sampled at them follows. Layer decisions use integer sums and agree unless a mean sits within f32 rounding of the threshold."
+}

@@ -38,9 +38,9 @@ function softShadow(p, l, maxT, t) {
 }
 function ao(p, n, t) { let o = 0; for (let i = 1; i <= 5; i++) { const h = 0.06 * i; o += (h - map(add(p, mul(n, h)), t)[0]) / (i * i); } return Math.max(0, 1 - 2.2 * o); }
 
-export function streetScene(w = 480, h = 300, t = 0, { daylight = false } = {}) {
+export function streetScene(w = 480, h = 300, t = 0, { daylight = false, eye: eyeIn = null, target: targetIn = null } = {}) {
   const color = new Float32Array(w * h * 4), depth = new Float32Array(w * h), normals = new Float32Array(w * h * 4);
-  const eye = V(5.2, 4.6, 6.4), target = V(0.2, 0.8, 0), fwd = norm(sub(target, eye)), right = norm([fwd[2], 0, -fwd[0]]).map((v) => -v), up = norm([right[1] * fwd[2] - right[2] * fwd[1], right[2] * fwd[0] - right[0] * fwd[2], right[0] * fwd[1] - right[1] * fwd[0]]);
+  const eye = eyeIn || V(5.2, 4.6, 6.4), target = targetIn || V(0.2, 0.8, 0), fwd = norm(sub(target, eye)), right = norm([fwd[2], 0, -fwd[0]]).map((v) => -v), up = norm([right[1] * fwd[2] - right[2] * fwd[1], right[2] * fwd[0] - right[0] * fwd[2], right[0] * fwd[1] - right[1] * fwd[0]]);
   const lampPos = V(-0.6, 2.56, 0.6), flick = 1 + 0.08 * Math.sin(t * 17) * Math.sin(t * 5.3);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     const sx = ((x + 0.5) / w - 0.5) * 2 * (w / h) * 0.42, sy = (0.5 - (y + 0.5) / h) * 2 * 0.42;
@@ -68,5 +68,21 @@ export function streetScene(w = 480, h = 300, t = 0, { daylight = false } = {}) 
     }
     color.set([c[0], c[1], c[2], 1], i4);
   }
-  return { width: w, height: h, data: color, depth, normals };
+  return { width: w, height: h, data: color, depth, normals, camera: { eye, fwd, right, up, tan: 0.42, aspect: w / h } };
+}
+
+// Screen-space motion vectors from frame A's camera to frame B's: for each pixel of B, where its
+// surface point was in A, as B pixel minus A pixel (what a renderer's velocity buffer holds).
+// Sky pixels (depth 30) get the motion of a point at that distance. Also returns, per pixel, A's
+// view distance of that point, for the disocclusion test.
+export function motionVectors(A, B) {
+  const { width: w, height: h } = B, mv = new Float32Array(w * h * 2), dA = new Float32Array(w * h), cb = B.camera, ca = A.camera;
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const sx = ((x + 0.5) / w - 0.5) * 2 * cb.aspect * cb.tan, sy = (0.5 - (y + 0.5) / h) * 2 * cb.tan;
+    const rd = norm(add(add(cb.fwd, mul(cb.right, sx)), mul(cb.up, sy))), p = add(cb.eye, mul(rd, B.depth[y * w + x])), v = sub(p, ca.eye);
+    const z = dot(v, ca.fwd), ax = dot(v, ca.right) / (z * ca.aspect * ca.tan), ay = dot(v, ca.up) / (z * ca.tan);
+    const px = ((ax / 2) + 0.5) * w - 0.5, py = (0.5 - ay / 2) * h - 0.5;
+    mv[(y * w + x) * 2] = x - px; mv[(y * w + x) * 2 + 1] = y - py; dA[y * w + x] = len(v);
+  }
+  return { mv, dA };
 }

@@ -4,6 +4,11 @@
     "p999_abs_code": 2,
     "mean_abs_code": 0.1
   },
+  "motionBounds": {
+    "max_abs_code": 8,
+    "p999_abs_code": 3,
+    "mean_abs_code": 0.2
+  },
   "cases": [
     {
       "id": "oil-grotesque",
@@ -12,7 +17,7 @@
       "mean": 0.001888888888888889,
       "over1": 5,
       "worstPixel": 17771,
-      "cpu_ms": 4058
+      "cpu_ms": 5061
     },
     {
       "id": "oil",
@@ -21,7 +26,7 @@
       "mean": 0.0009351851851851852,
       "over1": 0,
       "worstPixel": 2495,
-      "cpu_ms": 3035
+      "cpu_ms": 3684
     },
     {
       "id": "gouache",
@@ -30,7 +35,7 @@
       "mean": 0.000675925925925926,
       "over1": 0,
       "worstPixel": 4583,
-      "cpu_ms": 2886
+      "cpu_ms": 3074
     },
     {
       "id": "watercolour",
@@ -39,7 +44,7 @@
       "mean": 0.00021296296296296298,
       "over1": 0,
       "worstPixel": 5395,
-      "cpu_ms": 2119
+      "cpu_ms": 2241
     },
     {
       "id": "watercolour-day",
@@ -48,7 +53,7 @@
       "mean": 5.555555555555556e-05,
       "over1": 0,
       "worstPixel": 9233,
-      "cpu_ms": 2119
+      "cpu_ms": 2265
     },
     {
       "id": "grotesque-panned",
@@ -57,7 +62,40 @@
       "mean": 0.0018611111111111111,
       "over1": 0,
       "worstPixel": 430,
-      "cpu_ms": 3940
+      "cpu_ms": 4250
+    },
+    {
+      "id": "motion-orbit-grotesque",
+      "max": 1,
+      "p999": 1,
+      "mean": 0.0021041666666666665,
+      "over1": 0,
+      "worstPixel": 34,
+      "cpu_ms": 0,
+      "motionBounds": true,
+      "pass": true
+    },
+    {
+      "id": "motion-dolly-watercolour",
+      "max": 1,
+      "p999": 0,
+      "mean": 0.00020833333333333335,
+      "over1": 0,
+      "worstPixel": 1500,
+      "cpu_ms": 0,
+      "motionBounds": true,
+      "pass": true
+    },
+    {
+      "id": "motion-pan-oil",
+      "max": 1,
+      "p999": 1,
+      "mean": 0.0014375,
+      "over1": 0,
+      "worstPixel": 1185,
+      "cpu_ms": 0,
+      "motionBounds": true,
+      "pass": true
     }
   ],
   "adapter": {
@@ -66,5 +104,6 @@
     "device": "",
     "description": ""
   },
+  "gpuErrors": [],
   "adapter_kind": "swiftshader"
 }

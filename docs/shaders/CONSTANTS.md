@@ -85,6 +85,7 @@ Each physical number the CRT and film shaders use, where it comes from, and how 
 | Relative scattering | white 1.0, yellow 0.35, magenta 0.18, blue 0.12 | assumed (white scatters most, organic pigments are transparent) | low |
 | Latent lookup | 17^3, Levenberg-Marquardt in a cube-root colour space | this library | engineered |
 | Kuwahara | 8 sectors, zeta 0.33, q 6 to 10, radius 5 to 7 px | Kyprianidis et al. 2009, 2010 (form); values chosen by eye | form high, values tuned |
+| Advected canvas | regenerate at mean scale departure 0.35; 8-frame ramp; 12-frame minimum age; 2% depth test; seams (departure over 1) excluded | Neyret 2003 (method); thresholds are this library's choices | method high, values chosen |
 | XDoG | k 1.6, tau 0.985, epsilon -0.004, phi 25 to 45 | Winnemoeller et al. 2012 (form); values chosen by eye | form high, values tuned |
 
 ## Pixel art (`web/shaders/pixel/`)

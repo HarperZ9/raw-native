@@ -8,7 +8,7 @@
 //             ratio to the unmodified glaze so the colour stays the target's on average
 //   lines     XDoG (Winnemoeller, Kyprianidis, Olsen, 2012) on the abstracted luminance
 import { kmDecode, K_TAB, S_TAB, W_TAB, LAMBDA } from "./pigments.mjs";
-import { paperHeight, canvasHeight, warp as warpField } from "./noise.mjs";
+import { paperHeight, canvasHeight, warpX, warpY, paperHalf } from "./noise.mjs";
 
 const clamp = (x, a, b) => (x < a ? a : x > b ? b : x);
 const smooth = (a, b, x) => { const t = clamp((x - a) / (b - a), 0, 1); return t * t * (3 - 2 * t); };
@@ -51,11 +51,11 @@ function xdog(plan, s, x, y) {
 // Relief, per unwarped pixel: the XDoG line, the lit impasto (shade and sheen) and the
 // watercolour wet edge. Compose samples it bilinearly at the warped position, so a warp never
 // snaps to a pixel (which would alias the lines and differ between f32 and f64 at half pixels).
-export function relief(plan, ak, H, T) {
-  const { w, h } = plan.out, p = plan.p, [ox, oy] = p.canvasOffset, out = new Float32Array(w * h * 4), lc = [-0.5, -0.6, 0.62], ll = Math.hypot(...lc), L = lc.map((v) => v / ll);
+export function relief(plan, ak, H, T, cv) {
+  const { w, h } = plan.out, p = plan.p, out = new Float32Array(w * h * 4), lc = [-0.5, -0.6, 0.62], ll = Math.hypot(...lc), L = lc.map((v) => v / ll);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     const i = y * w + x, line = p.lines > 0 ? xdog(plan, ak.s, x, y) : 1;
-    const hs = (dx, dy) => { const xx = clamp(x + dx, 0, w - 1), yy = clamp(y + dy, 0, h - 1); return p.impasto * H[(yy * w + xx) * 2] + 0.12 * canvasHeight(xx + ox, yy + oy); };
+    const hs = (dx, dy) => { const xx = clamp(x + dx, 0, w - 1), yy = clamp(y + dy, 0, h - 1); return p.impasto * H[(yy * w + xx) * 2] + 0.12 * cv.n(canvasHeight, xx, yy); };
     const nx = -(hs(1, 0) - hs(-1, 0)) * 2.5, ny = -(hs(0, 1) - hs(0, -1)) * 2.5, nl = Math.hypot(nx, ny, 1), n = [nx / nl, ny / nl, 1 / nl];
     const ndl = n[0] * L[0] + n[1] * L[1] + n[2] * L[2], rz = 2 * ndl * n[2] - L[2];
     out.set([line, 1 + 0.9 * (ndl - L[2]), p.gloss * Math.pow(Math.max(0, rz), 24) * 0.35, smooth(0.012, 0.05, Math.sqrt(T[i * 4] + T[i * 4 + 2]))], i * 4);
@@ -63,10 +63,10 @@ export function relief(plan, ak, H, T) {
   return out;
 }
 
-export function compose(plan, ak, H, Rl) {
-  const { w, h } = plan.out, p = plan.p, [ox, oy] = p.canvasOffset, img = new Float32Array(w * h * 4);
+export function compose(plan, ak, H, Rl, cv) {
+  const { w, h } = plan.out, p = plan.p, img = new Float32Array(w * h * 4);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-    const [wx, wy] = p.warp > 0 ? warpField(x + ox, y + oy) : [0, 0], sx = x + wx * p.warp, sy = y + wy * p.warp;
+    const [wx, wy] = p.warp > 0 ? [cv.n(warpX, x, y, 0), cv.n(warpY, x, y, 0)] : [0, 0], sx = x + wx * p.warp, sy = y + wy * p.warp;
     const lat = sample(ak.lat, 7, w, h, sx, sy, 8), c = [lat[0], lat[1], lat[2], lat[3]], res = [lat[4], lat[5], lat[6]];
     const base = kmDecode(c), v = clamp(0.2126 * (base[0] + res[0]) + 0.7152 * (base[1] + res[1]) + 0.0722 * (base[2] + res[2]), 0, 1);
     // Complementary temperature: violet (phthalo and magenta) into the shadows, hansa into the lights.
@@ -83,11 +83,11 @@ export function compose(plan, ak, H, Rl) {
       const vq = Math.max(0.02, (fl + smooth(0.3, 0.7, f - fl)) / p.valueBands);
       rgb = rgb.map((q) => (q * vq) / vy);
     }
-    const paper = paperHeight(x + ox, y + oy);
+    const paper = cv.n(paperHeight, x, y);
     if (p.medium === "water") {
       // The wet edge: pigment carried to the boundary of a wash; rel[3] is that edge (relief pass).
       // Pigment settles in the paper's broader valleys (half the tooth frequency).
-      const valley = paperHeight((x + ox) / 2, (y + oy) / 2), Rg = 0.86 * (0.93 + 0.07 * paper);
+      const valley = cv.n(paperHalf, x, y), Rg = 0.86 * (0.93 + 0.07 * paper);
       const X0 = 1.5, X = X0 * (1 + p.granulation * (0.5 - valley) * 2) * (1 + p.edge * rel[3]);
       const g0 = glaze(c, X0, 0.86), g1 = glaze(c, X, Rg);
       // A thinner wash than the target lets the paper through: lift toward white by the dilution.

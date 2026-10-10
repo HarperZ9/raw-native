@@ -96,17 +96,17 @@ export function akf(plan, s, lat, T) {
 }
 
 // Brush relief: bristle noise averaged along the flow, a triangle-weighted line integral.
-export function stroke(plan, T) {
-  const { w, h } = plan.out, { strokeLen: L } = plan.p, [ox, oy] = plan.p.canvasOffset, H = new Float32Array(w * h * 2);
+export function stroke(plan, T, cv) {
+  const { w, h } = plan.out, { strokeLen: L } = plan.p, H = new Float32Array(w * h * 2);
   const dirAt = (px, py) => { const i = Math.min(h - 1, Math.max(0, Math.floor(py + 0.5))) * w + Math.min(w - 1, Math.max(0, Math.floor(px + 0.5))); return flow(T[i * 4], T[i * 4 + 1], T[i * 4 + 2]); };
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-    let acc = bristle(x + ox, y + oy) * (L + 1), ids = strokeId(x + ox, y + oy) * (L + 1), ws = L + 1;
+    let acc = cv.n(bristle, x, y) * (L + 1), ids = cv.n(strokeId, x, y) * (L + 1), ws = L + 1;
     for (const sgn of [1, -1]) {
       let px = x, py = y, [tx, ty] = dirAt(x, y); tx *= sgn; ty *= sgn;
       for (let k = 1; k <= L; k++) {
         px += tx; py += ty;
         const [nx, ny] = dirAt(px, py), d = nx * tx + ny * ty; tx = d < 0 ? -nx : nx; ty = d < 0 ? -ny : ny;
-        const wk = L + 1 - k; acc += wk * bristle(px + ox, py + oy); ids += wk * strokeId(px + ox, py + oy); ws += wk;
+        const wk = L + 1 - k; acc += wk * cv.n(bristle, px, py); ids += wk * cv.n(strokeId, px, py); ws += wk;
       }
     }
     H[(y * w + x) * 2] = acc / ws; H[(y * w + x) * 2 + 1] = ids / ws;
