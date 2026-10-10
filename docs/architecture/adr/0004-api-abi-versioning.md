@@ -1,7 +1,7 @@
 # ADR 0004: Public API, ABI and versioning
 
 **Status:** Accepted for 0.x. The 1.0 terms (author decision
-A6) are **Accepted**. Accepted by the author on 2026-10-04 ("approve all six engine decisions as proposed"). **Date:** 2026-10-04.
+A6) are **Accepted**. Accepted by the author on 2026-10-04 ("approve all six engine decisions as proposed"). **Date:** 2026-10-04. **Amended 2026-10-09 by [0015](0015-api-snapshot.md):** M3 takes a versioned snapshot; the freeze waits for a complete engine.
 
 ## Context
 

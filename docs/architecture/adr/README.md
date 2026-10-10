@@ -21,6 +21,9 @@ supersedes it and both stay.
 | [0011](0011-motion.md) | Motion: a scene and timeline layer for mathematical animation, live and offline | Accepted |
 | [0012](0012-media-engine.md) | The media engine: per-repo scene specs read from the release, one render command, a release workflow split between CI and the author's machine | Accepted |
 | [0013](0013-media-grade-roadmap.md) | The media-grade roadmap (M1 to M5) and five decisions: A5 reading, ffmpeg external, no MPL muxer, no binary-only upscalers | Accepted |
+| [0014](0014-game-runtime.md) | A game runtime in scope, staged G0 to G4, and M6 authoring (amends A3) | Accepted |
+| [0015](0015-api-snapshot.md) | A versioned API snapshot at M3; the freeze waits for a complete engine (amends A6) | Accepted |
+| [0016](0016-style-templates.md) | Three starter templates as the style acceptance corpus | Accepted |
 
 To add one, copy the shape of an existing record: status and date, context,
 decision, consequences, alternatives, and the signal that would reverse it.
