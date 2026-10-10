@@ -16,6 +16,7 @@ import { PostRunner } from "./post_run.mjs";
 import { getPass } from "./post.mjs";
 import { ColourFinish } from "./colour_finish.mjs";
 import { TileDraw } from "./tiles_gpu.mjs";
+import { PixelMode, readRGBA8, readHalf } from "./pixel_mode.mjs";
 
 const HDR = "rgba16float";
 const OVER = { color: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }, alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" } };
@@ -127,7 +128,13 @@ class Motion {
     return this.worldTex;
   }
   // Record and submit one frame; target is a texture view in the finish format.
-  #frame(list, { frame = 0, time = 0 }, target, capture) {
+  #frame(list, { frame = 0, time = 0, noReadback = false }, target, capture) {
+    // Pixel mode (list.pixel, pixel_mode.mjs): a low-resolution render, then the scale pass.
+    if (list.pixel) {
+      const pm = this.#pixel();
+      if (pm.ready(list)) { pm.render(list, { frame, time }, target, capture || this.outFormat); return capture ? this.#readback(capture) : null; }
+      pm.prepare(list);           // a live draw renders full size until the low-resolution one is ready
+    }
     const d = this.device, W = this.w, H = this.h, host = this.host;
     const cam = { ...DEFAULT_CAMERA, ...(list.camera || {}) };
     const t0 = performance.now();
@@ -231,19 +238,11 @@ class Motion {
       this.post.run(enc, displayPasses, this.dispTex, W, H, frame, time, { view: target, format: outFmt }, "display", scenePasses.length);
     } else if (capture === HDR) full(target, this.finishHDR, pb.finishHDR, "finish");
     else full(target, capture ? this.finishCapture : this.finishCanvas, capture ? pb.finishCapture : pb.finishCanvas, "finish");
-    let read = null;
-    if (capture) {
-      const px = capture === HDR ? 8 : 4, tex = capture === HDR ? this.capTexF : this.capTex;
-      const bpr = Math.ceil((W * px) / 256) * 256;
-      read = this.#ensure("readback", bpr * H, ["map-read", "copy-dst"]);
-      enc.copyTextureToBuffer({ texture: tex }, { buffer: read, bytesPerRow: bpr }, [W, H]);
-      read = { buf: read, bpr };
-    }
     if (host.timer) host.timer.resolve(enc, timed);
     d.queue.submit([enc.finish()]);
     if (host.timer) host.timer.collect();
     this.stats = { ...c.stats, cpuMs: performance.now() - t0 };
-    return read;
+    return capture && !noReadback ? this.#readback(capture) : null;
   }
   #drawWorld(item, W, H) {
     const wo = this.worlds;
@@ -257,23 +256,26 @@ class Motion {
     wo.resize(W, H);
     wo.frame(0, { target: { view: this.#worldTexture().createView(), width: W, height: H } });
   }
-  // Draw to the attached canvas.
-  draw(list, opts = {}) {
-    this.#frame(list, opts, this.host.context.getCurrentTexture().createView(), false);
+  #pixel() { return this.pixelMode || (this.pixelMode = new PixelMode(this, createMotion)); }
+  // Copy the capture texture to a mappable buffer.
+  #readback(capture) {
+    const W = this.w, H = this.h, px = capture === HDR ? 8 : 4, tex = capture === HDR ? this.capTexF : this.capTex;
+    const bpr = Math.ceil((W * px) / 256) * 256, buf = this.#ensure("readback", bpr * H, ["map-read", "copy-dst"]);
+    const enc = this.device.createCommandEncoder({ label: "motion readback" });
+    enc.copyTextureToBuffer({ texture: tex }, { buffer: buf, bytesPerRow: bpr }, [W, H]);
+    this.device.queue.submit([enc.finish()]);
+    return { buf, bpr };
   }
+  renderTo(list, opts, view, format) { this.#frame(list, { ...opts, noReadback: true }, view, format); }   // a view the caller owns
+  draw(list, opts = {}) { this.#frame(list, opts, this.host.context.getCurrentTexture().createView(), false); }   // to the canvas
   // Draw off screen and return { width, height, data: Uint8Array RGBA rows }.
   async capture(list, opts = {}) {
     await this.post.prepare((list.post && list.post.passes) || [], this.w, this.h);
+    if (list.pixel) await this.#pixel().prepare(list);
     if (opts.float) return this.#captureFloat(list, opts);
     if (!this.capTex) this.capTex = this.device.createTexture({ label: "motion capture", size: [this.w, this.h], format: "rgba8unorm", usage: TEX.RENDER | TEX.COPY_SRC });
     const r = this.#frame(list, opts, this.capTex.createView(), "rgba8unorm");
-    await r.buf.mapAsync(1);
-    const src = new Uint8Array(r.buf.getMappedRange()), W = this.w, H = this.h, row = W * 4;
-    const data = new Uint8Array(row * H);
-    if (r.bpr === row) data.set(src.subarray(0, row * H));
-    else for (let y = 0; y < H; y++) data.set(src.subarray(y * r.bpr, y * r.bpr + row), y * row);
-    r.buf.unmap();
-    return { width: W, height: H, data };
+    return readRGBA8(r, this.w, this.h);
   }
   // The frame in rgba16float, before any 8-bit rounding: for extended-range output.
   async #captureFloat(list, opts) {
@@ -282,14 +284,7 @@ class Motion {
       this.capTexF = this.device.createTexture({ label: "motion capture float", size: [this.w, this.h], format: HDR, usage: TEX.RENDER | TEX.COPY_SRC });
     }
     const r = this.#frame(list, opts, this.capTexF.createView(), HDR);
-    await r.buf.mapAsync(1);
-    const src = new Uint16Array(r.buf.getMappedRange()), W = this.w, H = this.h, data = new Float32Array(W * H * 4);
-    for (let y = 0; y < H; y++) for (let x = 0; x < W * 4; x++) {
-      const h = src[(y * r.bpr) / 2 + x], e = (h >> 10) & 31, f = h & 1023, s = h & 0x8000 ? -1 : 1;
-      data[y * W * 4 + x] = e === 0 ? s * f * 2 ** -24 : e === 31 ? s * Infinity : s * (1 + f / 1024) * 2 ** (e - 15);
-    }
-    r.buf.unmap();
-    return { width: W, height: H, data };
+    return readHalf(r, this.w, this.h);
   }
   timings() { return this.host.timings(); }
   destroy() {
@@ -297,5 +292,6 @@ class Motion {
     for (const t of [this.accum, this.glowA, this.glowB, this.capTex, this.worldTex, this.atlasTex, this.dispTex, this.linTex, this.capTexF]) if (t) t.destroy();
     this.post.destroy();
     this.colour.destroy();
+    if (this.pixelMode) this.pixelMode.destroy();
   }
 }

@@ -1,0 +1,76 @@
+{
+ "cases": [
+  {
+   "check": "integer",
+   "max": 0,
+   "bad": 0,
+   "first": null,
+   "lowNonGround": 3871
+  },
+  {
+   "check": "sharp",
+   "want": 0,
+   "off": [
+    0,
+    0
+   ],
+   "max": 0,
+   "bad": 0,
+   "first": null
+  },
+  {
+   "check": "sharp",
+   "want": 0.25,
+   "off": [
+    0.25,
+    0.25
+   ],
+   "max": 0,
+   "bad": 0,
+   "first": null
+  },
+  {
+   "check": "sharp",
+   "want": 0.5,
+   "off": [
+    -0.5,
+    -0.5
+   ],
+   "max": 0,
+   "bad": 0,
+   "first": null
+  },
+  {
+   "check": "sharp",
+   "want": 0.75,
+   "off": [
+    -0.25,
+    -0.25
+   ],
+   "max": 0,
+   "bad": 0,
+   "first": null
+  }
+ ],
+ "pan": {
+  "frames": 121,
+  "maxErr": 0.08616352201261179,
+  "backwards": 0,
+  "missing": 0,
+  "first": {
+   "t": 0,
+   "want": 456,
+   "got": 456
+  },
+  "last": {
+   "t": 120,
+   "want": 444,
+   "got": 444
+  }
+ },
+ "adapter": null,
+ "adapter_kind": "swiftshader",
+ "problems": [],
+ "commit": "e7757b7152322e992071092ddbb626233482876c",
+ "does_not_prove": "Behaviour on content other than these frames and hard-edged squares, or on a display."
+}
