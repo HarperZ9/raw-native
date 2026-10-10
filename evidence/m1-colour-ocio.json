@@ -3,7 +3,7 @@
  "criterion": "M1 exit criterion 2: C++ reference against OCIO 2.6.0",
  "ocio": "2.6.0",
  "config": "studio-config-v5.0.0_aces-v2.1_ocio-v2.6",
- "commit": "61aaf9e498f51bd2c6c29099cb0b1fb151687e0b",
+ "commit": "e593861d4e8619f7485b799cb38c182204dd5bf0",
  "inputs": 36787,
  "grid_sha256": "310cdee0f3ad2c7822d50d4d35c2217132d4b865604c1ae2782b06437cbb79e7",
  "pass": true,
@@ -105,8 +105,8 @@
    "metric": "ciede2000",
    "max": 0.002431,
    "p99": 0.001998,
-   "mean": 0.000496,
-   "median": 0.000367,
+   "mean": 0.000497,
+   "median": 0.000368,
    "bound": {
     "max": 0.5,
     "p99": 0.1
@@ -131,10 +131,10 @@
   },
   "aces2-sdr/display-p3": {
    "metric": "ciede2000",
-   "max": 0.002668,
-   "p99": 0.002406,
+   "max": 0.002644,
+   "p99": 0.002407,
    "mean": 0.000571,
-   "median": 0.000398,
+   "median": 0.000399,
    "bound": {
     "max": 0.5,
     "p99": 0.1
@@ -160,9 +160,9 @@
   "aces2-hdr1000/rec2100-pq": {
    "metric": "delta_e_itp",
    "max": 0.03914,
-   "p99": 0.000294,
-   "mean": 6.4e-05,
-   "median": 4.7e-05,
+   "p99": 0.000321,
+   "mean": 7e-05,
+   "median": 5.2e-05,
    "bound": {
     "max": 1.0,
     "p99": 0.25
@@ -188,9 +188,9 @@
   "aces2-hdr1000/srgb-extended": {
    "metric": "delta_e_itp",
    "max": 0.006658,
-   "p99": 0.004526,
-   "mean": 0.000846,
-   "median": 0.000731,
+   "p99": 0.004524,
+   "mean": 0.000847,
+   "median": 0.000729,
    "bound": {
     "metric": "Delta E ITP between the two outputs decoded to absolute luminance with 1.0 = 100 nits",
     "max": 1.0,

@@ -26,8 +26,13 @@
    "what": "run 4, SwiftShader, after the fix (hue_atan2; cos and sin as a / M and b / M), bounds unchanged",
    "date": "2026-10-10",
    "result": "CPU half within bounds as before; controls exceed their bounds (6.3e11, 6.3e3, GPU 641). GPU: rec2100-pq max 1.17e-05, 0.012 of the bound; srgb-extended max 6.24e-05, 0.0639 of the bound; 0 over, 0 non-finite. Criterion 2 on SwiftShader still passes, with the committed ACES tables matching."
+  },
+  {
+   "what": "run 5, RTX 4090 (WebGPU, nvidia lovelace), commit e593861 (the head of #90), bounds unchanged",
+   "date": "2026-10-10",
+   "result": "CPU half within bounds; controls exceed their bounds (6.3e11, 6.3e3, GPU 641). GPU: rec2100-pq max 1.16e-05, 0.0118 of the bound; srgb-extended max 9.26e-05, 0.0947 of the bound; 0 over, 0 non-finite. Evidence: evidence/m1-hdr-signal-rtx.json."
   }
  ],
- "status": "SwiftShader half met after the fix (run 4), bounds unchanged. The RTX 4090 half waits for the GPU lock; criterion 3 needs both.",
+ "status": "met (2026-10-10): SwiftShader on Windows (run 4) and in Linux CI, and the RTX 4090 (run 5), with the bounds written before the first run. This checks the signal, not the light a panel emits.",
  "reading": "Tested, not read: see evidence/m1-hdr-f32-diagnosis.json. The earlier reading (the P3 to Rec.709 step and the sRGB slope near zero) described where the error showed, not where it came from."
 }

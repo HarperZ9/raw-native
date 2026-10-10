@@ -473,7 +473,9 @@ jobs:
     # The release media path on a runner with no GPU: build, read the facts, record the
     # walkthrough, and render the first seconds of each scene on Chrome's CPU WebGPU adapter.
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    # 45, not 30 (2026-10-10): on main this job took 18 to 28 minutes and was cancelled at 30
+    # once (19f458b); an evidence-only PR was cancelled at 30 three times. Every check still runs.
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
