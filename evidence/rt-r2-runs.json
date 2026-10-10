@@ -100,6 +100,14 @@
    "my_error": "The sqrt guard of run 8's fix was added to pt.wgsl but not regenerated into HLSL before run 9's evidence and the first R2 part 2 commit; a shell chain ran the commit although the translator check failed. Regenerated and rerun.",
    "result": "identical to run 9 on every number (the guard does not trigger on WARP); P4 open failure unchanged",
    "evidence": "evidence/rt-r2-pt-gpu-d3d12-warp.json"
+  },
+  {
+   "run": 12,
+   "when": "2026-10-10 18:56Z",
+   "backend": "D3D12 WARP (debug layer)",
+   "checks": "H1, H2",
+   "result": "H1 and H2 within bounds on retro_room and iso_street with 0 shadow and 0 reflection differences; H1 control (no origin offset) fails through its grazing clause only (4 and 13 non-grazing differences; weak); H2 control (negated normal) agrees on every pixel, so H2 is NON-DISCRIMINATING in this run",
+   "diagnosis": "Reflection about -n equals reflection about n; the control was ill-posed. See addendum 2, H2 method note 1."
   }
  ]
 }
