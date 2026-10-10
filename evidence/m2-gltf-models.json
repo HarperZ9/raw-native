@@ -1,0 +1,140 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "M2 exit criterion 1 (ROADMAP.md): ten named glTF models import and render on the CPU reference, D3D12 and WebGPU",
+ "written": "2026-10-10, before the first run",
+ "source": {
+  "repository": "https://github.com/KhronosGroup/glTF-Sample-Assets",
+  "commit": "edc7c9e67c639d230715049ee31f9a96a6babbbe",
+  "verification": "each file's git blob hash (git hash-object) equals the hash in the repository tree at that commit"
+ },
+ "approval": "The author approved this download on 2026-10-10 (relayed verbatim: \"You have my yes.\"). The files are kept outside the repository, on D:, and are not redistributed.",
+ "licences": "Every model is CC0-1.0 or CC-BY-4.0 only. Four first picks were replaced before any run: DamagedHelmet (CC-BY-NC), Duck (SCEA licence), CesiumMilkTruck (trademark notice) and BrainStem (Poser EULA), so that none carries a non-commercial or proprietary term.",
+ "models": [
+  {
+   "name": "Box",
+   "exercises": "embedded buffer (data URI)",
+   "files": [
+    {
+     "path": "Models/Box/glTF-Embedded/Box.gltf",
+     "git_blob": "ea0e8ada690fe2a7fa49bd7bde5cf6251c176589",
+     "bytes": 3791
+    }
+   ]
+  },
+  {
+   "name": "BoxInterleaved",
+   "exercises": "interleaved vertex buffer",
+   "files": [
+    {
+     "path": "Models/BoxInterleaved/glTF-Binary/BoxInterleaved.glb",
+     "git_blob": "25cb4046fc4d00d40738c9289f96516b40330220",
+     "bytes": 1632
+    }
+   ]
+  },
+  {
+   "name": "Suzanne",
+   "exercises": "external .bin",
+   "files": [
+    {
+     "path": "Models/Suzanne/glTF/Suzanne.gltf",
+     "git_blob": "56607849b3a28262bfb577ed459742db2cec0498",
+     "bytes": 3730
+    },
+    {
+     "path": "Models/Suzanne/glTF/Suzanne.bin",
+     "git_blob": "60f54db70ebc7b8d7101ab1e8ba6142950da6eca",
+     "bytes": 590400
+    }
+   ]
+  },
+  {
+   "name": "SciFiHelmet",
+   "exercises": "external .bin, larger mesh",
+   "files": [
+    {
+     "path": "Models/SciFiHelmet/glTF/SciFiHelmet.gltf",
+     "git_blob": "dd331468248b36301a214c56336d739934a24b6c",
+     "bytes": 4461
+    },
+    {
+     "path": "Models/SciFiHelmet/glTF/SciFiHelmet.bin",
+     "git_blob": "3b8f70e21e1742394c8ae363f3a7a693d38ce2b1",
+     "bytes": 3643848
+    }
+   ]
+  },
+  {
+   "name": "Avocado",
+   "exercises": "GLB",
+   "files": [
+    {
+     "path": "Models/Avocado/glTF-Binary/Avocado.glb",
+     "git_blob": "dd79cb8043a835f8589bf9f8e55c9a2c672360b5",
+     "bytes": 8110040
+    }
+   ]
+  },
+  {
+   "name": "WaterBottle",
+   "exercises": "GLB",
+   "files": [
+    {
+     "path": "Models/WaterBottle/glTF-Binary/WaterBottle.glb",
+     "git_blob": "27894ec0ce010ba689e04e4801520ebb5ccc849f",
+     "bytes": 8966700
+    }
+   ]
+  },
+  {
+   "name": "Lantern",
+   "exercises": "GLB, several nodes",
+   "files": [
+    {
+     "path": "Models/Lantern/glTF-Binary/Lantern.glb",
+     "git_blob": "0c97893aee066b6fa36f7725443b7536c3510d09",
+     "bytes": 9564264
+    }
+   ]
+  },
+  {
+   "name": "Fox",
+   "exercises": "GLB, skinned (imported in bind pose; skins are not read)",
+   "files": [
+    {
+     "path": "Models/Fox/glTF-Binary/Fox.glb",
+     "git_blob": "1ef5c0d05658caea339680fe581aa2c8302b3365",
+     "bytes": 162852
+    }
+   ]
+  },
+  {
+   "name": "BarramundiFish",
+   "exercises": "GLB",
+   "files": [
+    {
+     "path": "Models/BarramundiFish/glTF-Binary/BarramundiFish.glb",
+     "git_blob": "145f6e0fa39dbd0393e3002edb49907943f176d4",
+     "bytes": 12488144
+    }
+   ]
+  },
+  {
+   "name": "ToyCar",
+   "exercises": "GLB, many nodes and material extensions (geometry only is read)",
+   "files": [
+    {
+     "path": "Models/ToyCar/glTF-Binary/ToyCar.glb",
+     "git_blob": "6b3eaab83218894ab27bcf48fcc9a0f7a04be45e",
+     "bytes": 5422412
+    }
+   ]
+  }
+ ],
+ "bounds": {
+  "import": "every model loads with no AssetError",
+  "cpu": "the CPU render's output hashes are byte-identical on MSVC, GCC and WebAssembly and are recorded in a golden manifest",
+  "gpu": "on D3D12 and WebGPU the GPU certificate's verdict is verified against the CPU reference (the same reconcile the built-in scene uses)"
+ },
+ "does_not_prove": "Textures, materials beyond base colour, skinning or animation (none is read), or how the models look."
+}
