@@ -1,0 +1,29 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>glTF models on WebGPU</title>
+<!-- ROADMAP M2 criterion 1, the WebGPU half: the WebGPU build of raw_native_cli renders each
+     model with --gpu (128 x 128, no ray-traced pass) and writes a GPU certificate against the
+     CPU reference. The driver, tests/web/gpu_models.py, serves the models under /models/ and
+     passes the list and the module hashes. -->
+<script type="module">
+import { loadRawNative } from '../../wasm/raw-loader.mjs';
+const q = new URLSearchParams(location.search), dir = q.get('dir') || 'build-wasm-gpu';
+const out = { models: [] };
+try {
+  const list = await (await fetch('/models/list.json')).json();
+  const raw = await loadRawNative({ moduleUrl: `../../${dir}/raw-native-gpu.mjs`, moduleSha256: q.get('m'),
+    wasmUrl: `../../${dir}/raw-native-gpu.wasm`, wasmSha256: q.get('w') });
+  const FS = raw.module.FS;
+  for (const [k, m] of list.entries()) {
+    const vdir = `/m${k}`, odir = `/o${k}`;
+    FS.mkdir(vdir); FS.mkdir(odir);
+    for (const f of m.files) FS.writeFile(`${vdir}/${f.split('/').pop()}`, new Uint8Array(await (await fetch('/models/' + f)).arrayBuffer()));
+    const main = m.files.find((f) => /\.(gltf|glb)$/.test(f)).split('/').pop();
+    const r = await raw.runCliAsync(['--out', odir, '--gpu', '--model', `${vdir}/${main}`, '--width', '128', '--height', '128', '--no-rt']);
+    let verdict = null;
+    try { verdict = JSON.parse(new TextDecoder().decode(FS.readFile(`${odir}/gpu_certificate.json`))).verdict; } catch {}
+    out.models.push({ name: m.name, exit: r.exitCode, verdict, tail: r.stdout.split('\n').slice(-3).join(' | ') });
+  }
+} catch (e) { out.error = String(e && e.stack || e); }
+window.__result = out;
+</script>

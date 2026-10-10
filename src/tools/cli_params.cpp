@@ -1,4 +1,5 @@
 #include "raw/tools/cli_params.hpp"
+#include "raw/core/sha256.hpp"
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
@@ -89,6 +90,9 @@ std::optional<CliParams> parseArgs(int argc, const char* const* argv, std::strin
             if (!parseInt(v, p.bench) || p.bench < 1 || p.bench > 1000){ err = "bad --bench (1..1000)"; return std::nullopt; } }
         else if (a == "--no-rt"){ p.rtao = false; }
         else if (a == "--gpu"){ p.gpu = true; }
+        else if (a == "--model"){ const char* v = need(i); if (!v) return std::nullopt;
+            p.model = v; p.modelSha256 = sha256File(v);
+            if (p.modelSha256.empty()){ err = std::string("cannot read --model ") + v; return std::nullopt; } }
         else if (a == "--eye"){ const char* v = need(i); if (!v) return std::nullopt;
             if (!parseVec3(v, p.eye)){ err = "bad --eye (want x,y,z)"; return std::nullopt; } }
         else if (a == "--target"){ const char* v = need(i); if (!v) return std::nullopt;
@@ -181,6 +185,11 @@ std::string canonicalParamsJson(const CliParams& p){
     o += "\"eye\":" + cv(p.eye);
     o += ",\"fovy\":" + cf(p.fovy);
     o += ",\"height\":" + std::to_string(p.height);
+    if (!p.model.empty()){
+        // The file name and hash, not the path, so the parameters do not depend on where the file sits.
+        const size_t slash = p.model.find_last_of("/\\");
+        o += ",\"model\":{\"file\":\"" + p.model.substr(slash == std::string::npos ? 0 : slash + 1) + "\",\"sha256\":\"" + p.modelSha256 + "\"}";
+    }
     o += ",\"prev_eye\":" + cov(p.prevEye);
     o += ",\"prev_target\":" + cov(p.prevCenter);
     o += ",\"prev_up\":" + cov(p.prevUp);

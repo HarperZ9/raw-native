@@ -1,4 +1,5 @@
 #include "raw/tools/gpu_run.hpp"
+#include "raw/tools/model_scene.hpp"
 #include "raw/renderer/gpu.hpp"
 #include "raw/tools/run.hpp"
 #include "raw/tools/channels_json.hpp"
@@ -27,7 +28,7 @@ std::string jsonStr(const std::string& s){
 }
 struct GpuJob { Scene scene; Mat4 prevVP; RenderOptions opts; };
 GpuJob jobFor(const CliParams& p){
-    GpuJob j{buildTestScene(p.width, p.height), {}, {}};
+    GpuJob j{sceneFromParams(p, nullptr), {}, {}};
     j.scene.camera = cameraFromParams(p);
     j.prevVP = mul(j.scene.camera.proj(), j.scene.camera.view());
     if (p.hasPrevCamera()){ Camera pc = prevCameraFromParams(p); j.prevVP = mul(pc.proj(), pc.view()); }

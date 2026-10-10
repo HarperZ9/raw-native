@@ -14,14 +14,16 @@ carry wall-clock time and nothing else:
 Every other byte is compared as written.
 
 Usage:
-  identity_matrix.py run <raw_native_cli> <manifest.json> <work dir> [--gpu | --no-gpu-build] [--quick]
+  identity_matrix.py run <raw_native_cli> <manifest.json> <work dir> [--gpu | --no-gpu-build] [--quick] [--models DIR]
   identity_matrix.py compare <before.json> <after.json> [--except <file name>]...
 --gpu renders every case on the GPU backend (each also writes the CPU reference
 under cpu/). --no-gpu-build adds one --gpu case that a build without a GPU
 backend must answer with exit code 4 and an unverifiable certificate. run exits
 0 when every case rendered (exit code 0, or 4 for --gpu with no adapter, which
 is recorded). compare exits 0 only when both manifests list the
-same cases, the same files and the same hashes. --except leaves out a file
+same cases, the same files and the same hashes. --models DIR runs only the glTF
+model cases of ROADMAP M2 criterion 1 (evidence/m2-gltf-models.json; fetch them with
+tools/assets/fetch_gltf.py), each at 128 x 128 without the ray-traced reference (--no-rt). --except leaves out a file
 name that is expected to differ between the two manifests: arena_certificate.json
 between toolchains, whose standard libraries allocate differently (MSVC and
 libstdc++ give different allocation counts for the same render).
@@ -50,6 +52,19 @@ CASES = {
 }
 NO_GPU_CASE = ["--gpu", "--width", "64", "--height", "64"]
 QUICK = ("default", "motion-256", "nort-256", "threads4-256")
+MODELS_LIST = Path(__file__).resolve().parents[1] / "evidence" / "m2-gltf-models.json"
+
+
+def model_cases(models_dir):
+    """One case per model: its first .gltf or .glb file, at 128 x 128."""
+    cases = {}
+    for m in json.loads(MODELS_LIST.read_text(encoding="utf-8"))["models"]:
+        main = next(f["path"] for f in m["files"] if f["path"].endswith((".gltf", ".glb")))
+        # --no-rt: the ray-traced AO reference uses a linear accelerator (raw/renderer/accel.hpp),
+        # which a 109,000-triangle model makes impractically slow; the criterion's bounds (CPU
+        # goldens, GPU against CPU) do not need it.
+        cases["model-" + m["name"]] = ["--model", str(Path(models_dir) / main), "--width", "128", "--height", "128", "--no-rt"]
+    return cases
 TIMING = re.compile(rb'"timing_ms":\{[^}]*\}')
 
 
@@ -71,25 +86,36 @@ def file_hash(path):
     return digest(data)
 
 
-def run(cli, manifest, work, gpu, quick, no_gpu_build):
+# A .mjs CLI is the WebAssembly build, run under Node by wasm/run-node.mjs.
+NODE_RUNNER = Path(__file__).resolve().parents[1] / "wasm" / "run-node.mjs"
+
+
+def command(cli, out, args):
+    if cli.endswith(".mjs"):
+        return ["node", str(NODE_RUNNER), cli, str(out)] + args
+    return [cli, "--out", str(out)] + args
+
+
+def run(cli, manifest, work, gpu, quick, no_gpu_build, models=None):
     work.mkdir(parents=True, exist_ok=True)
-    names = [n for n in CASES if not quick or n in QUICK]
+    cases = model_cases(models) if models else CASES
+    names = [n for n in cases if not quick or n in QUICK or models]
     if no_gpu_build:
         names.append("no-gpu-64")
     out, ok = {}, True
     for name in names:
-        variants = [(name, CASES.get(name, NO_GPU_CASE))]
+        variants = [(name, cases.get(name, NO_GPU_CASE))]
         if gpu:
-            variants = [(f"{name}.gpu", ["--gpu"] + CASES[name])]
+            variants = [(f"{name}.gpu", ["--gpu"] + cases[name])]
         for key, args in variants:
             d = work / key
-            proc = subprocess.run([cli, "--out", str(d)] + args, capture_output=True, text=True)
+            proc = subprocess.run(command(cli, d, args), capture_output=True, text=True)
             files = {str(p.relative_to(d)).replace("\\", "/"): file_hash(p)
                      for p in sorted(d.rglob("*")) if p.is_file()}
             out[key] = {"args": args, "exit": proc.returncode, "files": files}
             ok &= proc.returncode == (4 if name == "no-gpu-64" else 0) or (gpu and proc.returncode == 4)
             print(f"{key}: exit {proc.returncode}, {len(files)} files", flush=True)
-    version = subprocess.run([cli, "--version"], capture_output=True, text=True).stdout.strip()
+    version = subprocess.run(command(cli, work / "version", ["--version"]), capture_output=True, text=True).stdout.strip()
     manifest.write_text(json.dumps({"cli_version": version, "gpu": gpu, "cases": out}, indent=1, sort_keys=True) + "\n")
     return 0 if ok else 1
 
@@ -119,8 +145,9 @@ def compare(a_path, b_path, skip=()):
 
 def main(argv):
     if len(argv) >= 5 and argv[1] == "run":
+        models = argv[argv.index("--models") + 1] if "--models" in argv else None
         return run(str(Path(argv[2]).resolve()), Path(argv[3]), Path(argv[4]), "--gpu" in argv, "--quick" in argv,
-                   "--no-gpu-build" in argv)
+                   "--no-gpu-build" in argv, models)
     if len(argv) >= 4 and argv[1] == "compare":
         skip = [argv[i + 1] for i in range(4, len(argv) - 1) if argv[i] == "--except"]
         return compare(argv[2], argv[3], tuple(skip))
