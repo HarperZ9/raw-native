@@ -466,8 +466,10 @@ jobs:
         run: node tools/media/tex_coverage.mjs --scenes docs/motion --atlas docs/motion/hanken-grotesk-500.atlas.json --scenes docs/media/scenes --atlas docs/motion/hanken-grotesk-500.atlas.json
       - name: Colour pipelines in WGSL match the C++ reference within one 8-bit code (M1 criterion 2)
         run: python tests/web/colour_grid.py --cli build/raw_native_cli --adapter swiftshader
-      - name: Extended-range output reaches the canvas and matches the C++ reference (M1 criterion 3, engine half)
+      - name: Extended-range output reaches the canvas and matches the C++ reference (M1 criterion 3, canvas path)
         run: python tests/web/hdr_output.py --cli build/raw_native_cli --adapter swiftshader
+      - name: The HDR signal matches a float64 reference of the published PQ, sRGB and tone-map formulas, with a failing control (M1 criterion 3, CPU half; the GPU half is recorded in evidence until SwiftShader passes it)
+        run: python tests/web/hdr_signal.py --cli build/raw_native_cli --cpu-only
       - name: The vector corpus on the GPU matches the CPU reference within its bounds (M1 criterion 4)
         run: python tests/web/vector_corpus.py --adapter swiftshader
       - name: Post passes match their CPU references; the stack runs inside Motion (M1 criteria 9 and 10)

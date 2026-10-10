@@ -260,7 +260,10 @@ in extended tone-mapping mode. `host.hdr` says whether the browser granted it. T
 pipeline `aces2-hdr1000/srgb-extended` then carries light above SDR white to the
 screen: on the canvas, 1.0 is SDR white and brighter values use the display's
 headroom. `tests/web/hdr_output.py` checks this end to end against the C++
-reference. A colorimeter reading of what a display shows is still to come.
+reference. `tests/web/hdr_signal.py` checks the HDR signal itself: the PQ and
+extended sRGB encodes and the HDR tone map against a float64 reference of the
+published formulas, and the GPU encode against the CPU. It checks the signal, not
+the light a panel emits.
 
 The shader library's looks are post passes too. `web/shaders/post.mjs` registers:
 - `crt-classic`, the Studio's tube: scanlines, masks, bloom, halation, curvature,

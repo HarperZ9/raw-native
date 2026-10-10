@@ -11,8 +11,8 @@ headless Chrome on Linux with SwiftShader has no WebGPU canvas, so CI records th
 result without requiring it):
 - both patches match the C++ reference for the same inputs within 0.5%;
 - the bright patch is above 1, so above SDR white.
-The measured half of criterion 3 (a 1,000-nit patch on a colorimeter) needs a display
-and is not this test.
+The HDR signal itself (PQ, the extended sRGB curve, the tone map) is checked against
+the published formulas by tests/web/hdr_signal.py (criterion 3, amended 2026-10-10).
 """
 
 from __future__ import annotations

@@ -1,0 +1,18 @@
+{
+ "criterion": "M1 exit criterion 3, HDR signal (amended 2026-10-10)",
+ "bounds": "evidence/m1-hdr-signal-bounds.json (commit 01c9f15, before any run)",
+ "runs": [
+  {
+   "what": "run 1, SwiftShader, CPU and GPU halves",
+   "date": "2026-10-10",
+   "result": "CPU: a1 to a5 within bounds (PQ encode and decode and the extended sRGB curve bit-identical to the float64 reference; tone-mapped PQ at 0.0023 of its bound; tone-mapped extended sRGB at 0.018). Controls exceed their bounds (6.3e11 and 6.3e3 times). GPU: rec2100-pq at 0.29 of the bound; srgb-extended FAILS, 185 of 110,361 channels over, worst 6.3 times the bound (6.2e-3 at input (0.292, 0.093, 8.95), a channel the CPU puts at -0.0071 and the GPU at -0.0010). GPU control exceeds its bound 641 times."
+  },
+  {
+   "what": "run 2, SwiftShader, the same code plus a breakdown of where the over-bound values sit",
+   "date": "2026-10-10",
+   "result": "identical numbers to run 1; srgb-extended over-bound values: 92 with |signal| < 0.05, 93 between 0.05 and 1, none at 1 or above"
+  }
+ ],
+ "status": "not met: the srgb-extended GPU half fails its bound on SwiftShader. The bound is kept. The RTX 4090 run waits for the GPU lock.",
+ "reading": "Both HDR pipelines share the ACES 2.0 stage; rec2100-pq passes and srgb-extended fails. The extended path converts the P3-limited output to Rec.709, where saturated colours land near or below zero and the sRGB curve's slope (12.92 near 0) amplifies a float32 difference in the gamut-compression stage. This is a reading of run 2, not a tested cause."
+}
