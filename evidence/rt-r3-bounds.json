@@ -58,5 +58,10 @@
   "written": "2026-10-10 19:07Z, after M1's second run and before its third",
   "finding": "With method note 1 the sphere passes (worst 0.041), but 4 box and 2 torus hits stay over the t bound (worst 2.38 and 16.2). A dense scan of the exact distance shows they are near-tangent hits: penetration depths 4.2e-5 and 1.3e-4, inside chords under 1e-3. The doubling bracket (5e-4, 1e-3, 2e-3, ...) steps over chords that short, so those hits were never refined.",
   "change": "The bracket steps linearly by 1e-4 (1 + t) for up to 64 steps, then doubles up to 16 times; the bisection is unchanged. The bound is unchanged."
+ },
+ "method_note_3": {
+  "written": "2026-10-10 19:08Z, after M1's third run and before its fourth",
+  "finding": "With method note 2 every primitive meets the t bound (worst ratios 0.041, 0.523, 0.000), but the sphere's control (stop at d < 1e-2) now passes as well: the refinement repairs a coarse stop too, so that control no longer discriminates. Run 3 is therefore not a pass.",
+  "change": "M1's control becomes the coarse march (d < 1e-2) with the refinement off, which must exceed the t bound on every primitive. The bound is unchanged."
  }
 }
