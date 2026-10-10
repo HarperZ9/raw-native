@@ -58,6 +58,8 @@ def run(shader: str, adapter: str, query: dict, timeout_ms: int) -> dict:
 def check(res: dict) -> list[str]:
     if "error" in res:
         return [res["error"]]
+    if res.get("gpuErrors"):
+        return ["WebGPU error: " + m for m in res["gpuErrors"]]
     b, problems = res["bounds"], []
     if "mismatched_pixels" in b:
         return [f"{c['id']}: {c['mismatched']} pixels differ (first at {c['firstMismatch']})" for c in res["cases"] if c["mismatched"] > b["mismatched_pixels"]]
@@ -86,7 +88,7 @@ def main() -> int:
         if a.overrides:
             q["overrides"] = a.overrides
         res = run(a.shader, a.adapter, q, 600000)
-        problems = [res["error"]] if "error" in res else []
+        problems = [res["error"]] if "error" in res else ["WebGPU error: " + m for m in res.get("gpuErrors", [])]
     else:
         q = {"case": a.case} if a.case else {}
         if a.exhaustive:
