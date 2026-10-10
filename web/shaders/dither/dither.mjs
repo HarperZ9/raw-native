@@ -63,9 +63,14 @@ export async function createGpuDither(host, { palette = "pico8", mode = "bayer4"
     buffers: B, packed: B.out8, palette: pal,
     frame(rgba8) {
       if (rgba8) host.write(B.src, rgba8);
-      const enc = host.device.createCommandEncoder(), cp = enc.beginComputePass();
-      cp.setPipeline(pipe); cp.setBindGroup(0, host.bind(pipe, list)); cp.dispatchWorkgroups(Math.ceil(size.w / 8), Math.ceil(size.h / 8)); cp.end();
+      const enc = host.device.createCommandEncoder();
+      this.record(enc);
       host.device.queue.submit([enc.finish()]);
+    },
+    // Record into an encoder the caller owns (the Motion post stack), plate already in buffers.src.
+    record(enc) {
+      const cp = enc.beginComputePass();
+      cp.setPipeline(pipe); cp.setBindGroup(0, host.bind(pipe, list)); cp.dispatchWorkgroups(Math.ceil(size.w / 8), Math.ceil(size.h / 8)); cp.end();
     },
     async read() {
       const rd = async (buf) => {

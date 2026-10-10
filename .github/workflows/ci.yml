@@ -345,7 +345,7 @@ jobs:
       - name: The vector corpus on the GPU matches the CPU reference within its bounds (M1 criterion 4)
         run: python tests/web/vector_corpus.py --adapter swiftshader
       - name: Post passes match their CPU references; the stack runs inside Motion (M1 criteria 9 and 10)
-        run: python tests/web/post_passes.py --adapter swiftshader
+        run: python tests/web/post_passes.py --adapter swiftshader --modules web/shaders/post.mjs
       - name: Every scene wrote a video, a poster, captions and a manifest, from this commit
         shell: bash
         run: |

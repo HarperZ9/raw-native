@@ -262,6 +262,17 @@ screen: on the canvas, 1.0 is SDR white and brighter values use the display's
 headroom. `tests/web/hdr_output.py` checks this end to end against the C++
 reference. A colorimeter reading of what a display shows is still to come.
 
+The shader library's looks are post passes too. `web/shaders/post.mjs` registers:
+- `crt-classic`, the Studio's tube: scanlines, masks, bloom, halation, curvature,
+  chromatic aberration;
+- `crt`, a physical tube;
+- `film`, colour negative printed, with grain and halation;
+- `dither`, old palettes with ordered, noise or blue-noise dither.
+
+The Motion pages load it. The same stack runs outside Motion, so a Studio layer can
+use it: `new PostRunner(host, sampler).run(encoder, passes, texture, ...)`. The
+release scene "Looks" shows each one.
+
 A display list can name post passes in `post.passes`. Scene passes run in linear
 light before bloom, and display passes run after the finish. The shader library
 registers the looks (CRT, film, dither) through `registerPass()` in
