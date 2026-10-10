@@ -1,0 +1,27 @@
+{
+  "what": "Blind paired comparison of raw-native's CRT and film shaders against the strongest existing shaders, on identical frames",
+  "fixed_before_first_run": "2026-10-10",
+  "status": "protocol only; no comparison has run. The competitor renders need RetroArch or librashader and the libretro slang-shaders repository on this machine, which needs the author's approval to download.",
+  "claim_rule": "No superiority claim is made for any shader unless this protocol has run and its decision rule is met. Losses are recorded with the same prominence as wins.",
+  "crt": {
+    "competitors": ["crt-royale (GPL-2.0)", "crt-guest-advanced (GPL-2.0+)", "Sony Megatron (licence to check)", "crt-lottes (public domain)", "crt-beans (MIT)"],
+    "competitor_use": "Rendered output only, run unmodified in their own runtime. No line of their code enters raw-native.",
+    "settings": "Each competitor at its own default preset, plus the one preset its documentation recommends for the matching mask type. raw-native at the matching preset (pvm-20 for aperture grille RGB, slot-tv for slot mask composite, vga-14 for delta).",
+    "frames": ["web/shaders/fixtures/testcard.mjs testCard(256, 224)", "three game-like frames at 256 x 224 and 320 x 240 chosen by the author before the run"],
+    "output": "3840 x 2880 and 1920 x 1440, the same crop for every shader, shown at 1:1 on the same display",
+    "reference": "Best case: macro photographs of a real tube (aperture grille, slot mask) showing the same frame, if the author can provide them; then the task is 'which is closer to the photograph'. Otherwise the task is 'which looks more like a real CRT'.",
+    "raters": "The author plus any other volunteers. Model judges are not used as raters.",
+    "design": "Two-alternative forced choice. Each pair shown twice with sides swapped. Order and sides randomised with a seed committed here before the run: 20261010.",
+    "metric": "Win rate of raw-native against each competitor with a 95% Wilson interval, per frame set and per resolution.",
+    "decision_rule": "raw-native 'preferred' over a competitor only when the lower bound of the 95% interval is above 0.5. 'Not distinguishable' when the interval spans 0.5. 'Lost' when the upper bound is below 0.5."
+  },
+  "film": {
+    "competitors": ["Dehancer (commercial, rendered output only)", "FilmConvert Nitrate (commercial)", "Resolve's built-in Film Look Creator", "an open GPL or MIT film emulation if one is found and licensed for running"],
+    "frames": ["web/shaders/fixtures/scene.mjs sceneCard", "three scene-linear frames from the films or the Studio, chosen before the run"],
+    "reference": "Best case: the same scene shot on film and scanned. Otherwise 'which looks more like a film print'.",
+    "design": "As for the CRT.",
+    "metric": "As for the CRT.",
+    "decision_rule": "As for the CRT."
+  },
+  "internal_baseline": "Before the external panel, raw-native's physical CRT is shown beside the Studio's own retro-crt.js on the same frame (tools/shaders/sheets.mjs). That shows a difference, not a preference, and is not a superiority claim."
+}

@@ -1,0 +1,17 @@
+{
+  "what": "GPU (web/shaders/film/gpu.mjs) against the CPU reference (web/shaders/film/run.mjs) for the spectral film shader",
+  "fixed_before_first_run": "2026-10-10",
+  "frame": "web/shaders/fixtures/scene.mjs sceneCard(480, 270), scene-linear Rec.709",
+  "output": { "width": 480, "height": 270 },
+  "compare": "8-bit sRGB from the display encode (encodeFilm8 / ENCODE_FILM8_WGSL), per channel, all pixels",
+  "cases": [
+    { "id": "500t-print", "preset": "500t-print", "frames": 1 },
+    { "id": "no-remjet-halation", "preset": "500t-no-remjet", "frames": 1 },
+    { "id": "bleach-bypass", "preset": "bleach-bypass", "frames": 1 },
+    { "id": "250d-timed-overexposed", "preset": "250d-print", "overrides": { "ev": 1.5, "printerPoints": [3, -2, 1] }, "frames": 1 },
+    { "id": "underexposed", "preset": "500t-print", "overrides": { "ev": -3 }, "frames": 1 },
+    { "id": "grain-monte-carlo-weave", "preset": "500t-no-remjet", "overrides": { "gateWidthMm": 2.4, "grainAmount": 4 }, "frames": 2 }
+  ],
+  "bounds": { "max_abs_code": 6, "p999_abs_code": 1, "mean_abs_code": 0.05 },
+  "why_not_bit_equal": "f32 against f64 through a spectral path with exp and log; and the Monte Carlo grain tests points against cloud discs, so a point on a disc edge can flip between the two, moving one pixel by a few codes. The bound allows that and nothing structural."
+}

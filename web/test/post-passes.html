@@ -6,17 +6,66 @@
      ?modules=a.mjs,b.mjs loads pass modules (the shader library) before the run. -->
 <script type="module">
 import { PostRunner } from '../motion/post_run.mjs';
-import { getPass, registeredPasses } from '../motion/post.mjs';
+import { getPass, registeredPasses, registerPass } from '../motion/post.mjs';
+import { createHost } from '../raw-gpu.mjs';
+import { Access } from '../frame-graph.mjs';
+
+// A test-only effect: a one-pass graph that halves the colour, recorded into the frame's
+// encoder. It checks the effect path (texture to buffer, the graph, buffer to texture).
+registerPass('test-effect-half', {
+  stage: 'display',
+  effect: async (host, { width, height }) => {
+    const n = width * height, st = (label) => host.buffer({ size: 16 * n, usage: ['storage', 'copy-dst', 'copy-src'], label });
+    const input = st('half in'), output = st('half out');
+    const pipe = await host.compute('half', `@group(0) @binding(0) var<storage, read> a: array<vec4f>;
+@group(0) @binding(1) var<storage, read_write> b: array<vec4f>;
+@compute @workgroup_size(64) fn main(@builtin(global_invocation_id) g: vec3u) { if (g.x < arrayLength(&a)) { b[g.x] = vec4f(a[g.x].rgb * 0.5, a[g.x].a); } }`);
+    const g = host.graph(), ri = g.importBuffer('in', input), ro = g.importBuffer('out', output);
+    g.addPass('half', [[ri, Access.StorageRead], [ro, Access.StorageWrite]], (c) => c.dispatch(pipe, [input, output], Math.ceil(n / 64)));
+    g.markOutput(ro);
+    g.compile();
+    return { input, output, record: (enc) => host.record(g, enc, false), destroy() { input.destroy(); output.destroy(); } };
+  },
+  cpu: (input) => { const o = new Float32Array(input.length); for (let i = 0; i < o.length; i++) o[i] = i % 4 === 3 ? input[i] : input[i] * 0.5; return o; },
+});
 import { frameSet, toHalf, fromHalf } from '../../tests/web/post_frames.mjs';
+
+// A test-only effect with a smaller input: the stack box-filters the frame to half size,
+// and the effect draws each input pixel as a 2 x 2 block.
+registerPass('test-effect-lowres', {
+  stage: 'display',
+  effect: async (host, { width, height }) => {
+    const iw = width / 2, ih = height / 2;
+    const input = host.buffer({ size: 16 * iw * ih, usage: ['storage', 'copy-dst', 'copy-src'], label: 'lowres in' });
+    const output = host.buffer({ size: 16 * width * height, usage: ['storage', 'copy-dst', 'copy-src'], label: 'lowres out' });
+    const pipe = await host.compute('lowres', `@group(0) @binding(0) var<storage, read> a: array<vec4f>;
+@group(0) @binding(1) var<storage, read_write> b: array<vec4f>;
+@compute @workgroup_size(64) fn main(@builtin(global_invocation_id) g: vec3u) {
+  let w = ${width}u; let n = arrayLength(&b);
+  if (g.x >= n) { return; }
+  let x = g.x % w; let y = g.x / w;
+  b[g.x] = a[(y / 2u) * (w / 2u) + x / 2u];
+}`);
+    const g = host.graph(), ri = g.importBuffer('in', input), ro = g.importBuffer('out', output);
+    g.addPass('lowres', [[ri, Access.StorageRead], [ro, Access.StorageWrite]], (c) => c.dispatch(pipe, [input, output], Math.ceil(width * height / 64)));
+    g.markOutput(ro); g.compile();
+    return { input, output, inputSize: [iw, ih], record: (enc) => host.record(g, enc, false), destroy() { input.destroy(); output.destroy(); } };
+  },
+  cpu: (input, w, h) => {
+    const o = new Float32Array(input.length);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) for (let k = 0; k < 4; k++) {
+      const bx = x & ~1, by = y & ~1, at = (xx, yy) => input[4 * (yy * w + xx) + k];
+      o[4 * (y * w + x) + k] = (at(bx, by) + at(bx + 1, by) + at(bx, by + 1) + at(bx + 1, by + 1)) / 4;
+    }
+    return o;
+  },
+});
 
 async function run() {
   const q = new URLSearchParams(location.search);
   for (const m of (q.get('modules') || '').split(',').filter(Boolean)) await import(m);
-  const adapter = await navigator.gpu?.requestAdapter();
-  if (!adapter) return { error: 'no adapter' };
-  const device = await adapter.requestDevice();
-  const host = { device, buffer: ({ size, usage }) => device.createBuffer({ size, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST }),
-    write: (b, data) => device.queue.writeBuffer(b, 0, data) };
+  const host = await createHost({ timing: false });
+  const device = host.device, adapter = host.adapter;
   const sampler = device.createSampler({ magFilter: 'linear', minFilter: 'linear', addressModeU: 'clamp-to-edge', addressModeV: 'clamp-to-edge' });
   const frames = frameSet();
   const W = frames.width, H = frames.height;
@@ -34,6 +83,7 @@ async function run() {
         const src = device.createTexture({ size: [W, H], format: 'rgba16float', usage: GPUTextureUsage.TEXTURE_BINDING | GPUTextureUsage.COPY_DST | GPUTextureUsage.COPY_SRC });
         device.queue.writeTexture({ texture: src }, half, { bytesPerRow: W * 8 }, [W, H]);
         const dst = device.createTexture({ size: [W, H], format: 'rgba16float', usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC });
+        await runner.prepare([{ pass: name, ...spec }], W, H);
         const enc = device.createCommandEncoder();
         runner.run(enc, [{ pass: name, ...spec }], src, W, H, f, f / 30, { view: dst.createView(), format: 'rgba16float' }, pass.stage);
         const bpr = Math.ceil(W * 8 / 256) * 256, read = device.createBuffer({ size: bpr * H, usage: GPUBufferUsage.MAP_READ | GPUBufferUsage.COPY_DST });

@@ -1,0 +1,97 @@
+{
+  "bounds": {
+    "max_abs_code": 3,
+    "p999_abs_code": 1,
+    "mean_abs_code": 0.05
+  },
+  "cases": [
+    {
+      "id": "pvm-rgb",
+      "max": 1,
+      "p999": 0,
+      "mean": 0.0005457899305555555,
+      "over1": 0,
+      "worstPixel": 11223,
+      "cpu_ms": 2329
+    },
+    {
+      "id": "trinitron-composite-comb",
+      "max": 1,
+      "p999": 0,
+      "mean": 0.00035481770833333334,
+      "over1": 0,
+      "worstPixel": 14133,
+      "cpu_ms": 5020
+    },
+    {
+      "id": "slot-composite-notch",
+      "max": 1,
+      "p999": 0,
+      "mean": 0.00038953993055555557,
+      "over1": 0,
+      "worstPixel": 13118,
+      "cpu_ms": 5853
+    },
+    {
+      "id": "slot-pal",
+      "max": 1,
+      "p999": 1,
+      "mean": 0.0032562934027777777,
+      "over1": 0,
+      "worstPixel": 13027,
+      "cpu_ms": 5482
+    },
+    {
+      "id": "delta-vga",
+      "max": 1,
+      "p999": 0,
+      "mean": 0.000634765625,
+      "over1": 0,
+      "worstPixel": 13004,
+      "cpu_ms": 3076
+    },
+    {
+      "id": "bw-p4",
+      "max": 1,
+      "p999": 0,
+      "mean": 0.0003439670138888889,
+      "over1": 0,
+      "worstPixel": 13737,
+      "cpu_ms": 2990
+    },
+    {
+      "id": "radar-p7-persistence",
+      "max": 1,
+      "p999": 0,
+      "mean": 0.000224609375,
+      "over1": 0,
+      "worstPixel": 349,
+      "cpu_ms": 5415
+    },
+    {
+      "id": "pvm-interlace-zoom",
+      "max": 1,
+      "p999": 0,
+      "mean": 0.0008517795138888889,
+      "over1": 0,
+      "worstPixel": 170,
+      "cpu_ms": 2847
+    },
+    {
+      "id": "convergence",
+      "max": 1,
+      "p999": 0,
+      "mean": 0.0003862847222222222,
+      "over1": 0,
+      "worstPixel": 12363,
+      "cpu_ms": 4744
+    }
+  ],
+  "adapter": {
+    "vendor": "google",
+    "architecture": "swiftshader",
+    "device": "",
+    "description": ""
+  },
+  "adapter_kind": "swiftshader"
+}

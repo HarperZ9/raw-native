@@ -16,6 +16,16 @@
 // from params()). cpu(input, width, height, spec, prev) is the pass's CPU reference
 // on Float32Array RGBA rows; tests/web/post_passes.py holds every pass with one to
 // its GPU output within 1/255 at 8 bits.
+//
+// An effect is a pass with its own multi-pass graph (the shader library's CRT and film):
+//   registerPass("crt", { stage: "display", effect: async (host, { width, height, spec }) => ({
+//     input, output,        // GPUBuffers, one vec4f per pixel, rows from the top; output is width x height
+//     inputSize,            // optional [w, h] of input (a CRT's source resolution); default width x height
+//     record(enc, frame),   // record the effect into the frame's encoder (host.record(g, enc, false))
+//     destroy() }), cpu, tests });
+// The stack copies its texture into input, records the effect, and copies output back.
+// Effects are created ahead of the frame (Motion.capture awaits them; a live draw skips
+// an effect until it is ready).
 
 export const PASS_HEADER = /* wgsl */ `
 struct PostPass { size: vec4f, p: array<vec4f, 4>, }
@@ -33,9 +43,10 @@ fn texel(q: vec4f) -> vec4f { return textureLoad(src, vec2i(q.xy), 0); }
 const registry = new Map();
 
 // tests: the parameter specs the CPU comparison runs (default: one, with no parameters).
-export function registerPass(name, { wgsl, stage = "scene", history = false, params = () => [], cpu = null, tests = [{}] }) {
+export function registerPass(name, { wgsl = null, effect = null, stage = "scene", history = false, params = () => [], cpu = null, tests = [{}] }) {
   if (!["scene", "display"].includes(stage)) throw new Error(`post pass ${name}: stage must be "scene" or "display"`);
-  registry.set(name, { name, wgsl, stage, history, params, cpu, tests });
+  if (!wgsl === !effect) throw new Error(`post pass ${name}: give wgsl or effect`);
+  registry.set(name, { name, wgsl, effect, stage, history, params, cpu, tests });
 }
 export const getPass = (name) => {
   const p = registry.get(name);

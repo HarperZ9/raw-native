@@ -1,0 +1,61 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Physical CRT: GPU against the CPU reference</title>
+<link rel="icon" href="data:,">
+<!-- Run by tests/web/shaders_parity.py --shader crt. Parity mode (default): for every case in
+     evidence/shaders-crt-parity-bounds.json, renders the test card through the CPU reference
+     and through the GPU passes, compares the 8-bit encodes, and reports the differences.
+     Timing mode (?timing=1&preset=..&w=..&h=..&frames=..): renders frames on the GPU only and
+     reports the per-pass GPU time from timestamp queries. -->
+<script type="module">
+import { createHost } from "../raw-gpu.mjs";
+import { createCrt, encode8 } from "../shaders/crt/crt.mjs";
+import { createGpuCrt } from "../shaders/crt/gpu.mjs";
+import { testCard } from "../shaders/fixtures/testcard.mjs";
+
+const q = new URLSearchParams(location.search);
+function stats(a, b) {
+  const hist = new Uint32Array(256); let sum = 0, n = 0, max = 0, at = -1;
+  for (let i = 0; i < a.length; i++) { if ((i & 3) === 3) continue; const d = Math.abs(a[i] - b[i]); hist[d]++; sum += d; n++; if (d > max) { max = d; at = i >> 2; } }
+  let acc = 0, p999 = 0; for (let d = 0; d < 256; d++) { acc += hist[d]; if (acc >= n * 0.999) { p999 = d; break; } }
+  return { max, p999, mean: sum / n, over1: n - hist[0] - hist[1], worstPixel: at };
+}
+async function parity(host) {
+  const bounds = await (await fetch("../../evidence/shaders-crt-parity-bounds.json")).json();
+  const src = testCard(), { width: W, height: H } = bounds.output, cases = [];
+  const only = q.get("case");
+  for (const c of bounds.cases) {
+    if (only && c.id !== only) continue;
+    const s = { w: src.width, h: src.height }, o = { w: W, h: H };
+    const cpu = createCrt(c.preset, c.overrides || {}, s, o), gpu = await createGpuCrt(host, c.preset, c.overrides || {}, s, o);
+    let ref, t0 = performance.now();
+    for (let f = 0; f < c.frames; f++) ref = cpu.frame(src, f);
+    const cpuMs = performance.now() - t0, want = encode8(ref.img, W, H, 1);
+    for (let f = 0; f < c.frames; f++) gpu.frame(src.data, f);
+    const got = (await gpu.read()).packed;
+    gpu.destroy();
+    cases.push({ id: c.id, ...stats(want, got), cpu_ms: Math.round(cpuMs) });
+  }
+  return { bounds: bounds.bounds, cases };
+}
+async function timing(host) {
+  const src = testCard(), W = +q.get("w") || 1920, H = +q.get("h") || 1440, frames = +q.get("frames") || 60;
+  const overrides = q.get("overrides") ? JSON.parse(q.get("overrides")) : {};
+  const gpu = await createGpuCrt(host, q.get("preset") || "pvm-20", overrides, { w: src.width, h: src.height }, { w: W, h: H });
+  const per = [];
+  for (let f = 0; f < frames; f++) {
+    const t = performance.now(); gpu.frame(f === 0 ? src.data : null, f); await host.done(); per.push(performance.now() - t);
+  }
+  await new Promise((r) => setTimeout(r, 300));
+  per.sort((a, b) => a - b);
+  const out = { preset: q.get("preset") || "pvm-20", width: W, height: H, frames, wall_ms_median: per[per.length >> 1], gpu_ms: host.timings() };
+  gpu.destroy();
+  return out;
+}
+try {
+  const host = await createHost({ timing: true });
+  const res = q.get("timing") ? await timing(host) : await parity(host);
+  res.adapter = host.info;
+  window.__result = res;
+} catch (e) { window.__result = { error: String(e && e.stack || e) }; }
+</script>
