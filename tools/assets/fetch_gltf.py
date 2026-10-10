@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """Fetch the glTF models of ROADMAP M2 criterion 1 and verify every file.
 
-    python tools/assets/fetch_gltf.py <dir>
+    python tools/assets/fetch_gltf.py <dir> [--manifest PATH] [--all-candidates]
 
-Reads evidence/m2-gltf-models.json (repository, commit, and each file's path and git blob
-hash), downloads each file from that commit into <dir>, keeping the repository's paths, and
+Reads evidence/m2-gltf-models.json, or with --manifest an M3 roles manifest such as
+evidence/m3-scene-models.json (the candidate each role uses, or every candidate with
+--all-candidates), for the repository, commit, and each file's path and git blob hash; downloads each file from that commit into <dir>, keeping the repository's paths, and
 checks it against the blob hash (the SHA-1 of "blob <size>\\0" + bytes, as git computes it).
 A file already present with the right hash is not fetched again. Exits 1 on any mismatch,
 and removes the bad file. The models are not stored in this repository.
@@ -26,13 +27,20 @@ def blob_hash(data: bytes) -> str:
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) != 2:
+    args = [a for a in argv[1:] if not a.startswith("--")]
+    manifest = argv[argv.index("--manifest") + 1] if "--manifest" in argv else None
+    if manifest:
+        args = [a for a in args if a != manifest]
+    if len(args) != 1:
         print(__doc__)
         return 2
-    spec = json.loads(LIST.read_text(encoding="utf-8"))
+    spec = json.loads((Path(manifest) if manifest else LIST).read_text(encoding="utf-8"))
+    if "roles" in spec:                                   # an M3 roles manifest
+        every = "--all-candidates" in argv
+        spec["models"] = [c for r in spec["roles"] for c in r["candidates"] if every or c["name"] == r["use"]]
     repo, commit = spec["source"]["repository"].rstrip("/"), spec["source"]["commit"]
     raw = repo.replace("https://github.com/", "https://raw.githubusercontent.com/")
-    root, bad, fetched = Path(argv[1]), 0, 0
+    root, bad, fetched = Path(args[0]), 0, 0
     for model in spec["models"]:
         for f in model["files"]:
             dest = root / f["path"]

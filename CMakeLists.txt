@@ -75,6 +75,7 @@ if(RAW_NATIVE_BUILD_TESTS)
         target_link_libraries(${name} PRIVATE raw_native)
         target_include_directories(${name} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}/tests"
             "${CMAKE_CURRENT_SOURCE_DIR}/third_party/superstack")
+        target_compile_definitions(${name} PRIVATE RAW_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
         add_test(NAME ${name} COMMAND ${name})
     endforeach()
     # The glTF fuzzer (ROADMAP M2 criterion 2). ctest runs a short pass; CI runs a

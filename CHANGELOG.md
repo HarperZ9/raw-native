@@ -6,6 +6,9 @@ the day the release was published on GitHub, in UTC.
 
 ## Unreleased
 
+- **M3 models by role.** `evidence/m3-scene-models.json` lists the criterion's models with their
+  licences and git blob hashes. One `use` field per role picks FlightHelmet or DamagedHelmet, and a
+  stand-in or Sponza. `--model-role` and `fetch_gltf.py --manifest` read it.
 - **Spec-exact material forms behind a flag.** `Material::specExact` gives KHR_materials_clearcoat's
   view-weighted coat and KHR_materials_iridescence's two-harmonic sum, on the CPU and the GPU, so either
   form can be the default once decided.

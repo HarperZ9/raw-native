@@ -125,6 +125,10 @@ Khronos `Sponza` is under the CRYENGINE agreement, so neither can ship in this r
 or media. The proposal, for the author's decision, keeps the criterion's difficulty: `FlightHelmet`
 (CC0-1.0) in place of `DamagedHelmet`, and an interior scene of Sponza's size under CC0 or CC-BY in
 place of `Sponza`, named before its first run.
+Until the author decides, `evidence/m3-scene-models.json` lists the candidates by role. Each role's
+`use` field picks one (`FlightHelmet` and the `ABeautifulGame` stand-in today), so the decision is a
+one-field change. `--model-role` renders by role, and `tools/assets/fetch_gltf.py --manifest` fetches
+and verifies by role.
 
 ## M4: Scale and reach
 
