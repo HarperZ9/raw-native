@@ -346,7 +346,7 @@ jobs:
     # The release media path on a runner with no GPU: build, read the facts, record the
     # walkthrough, and render the first seconds of each scene on Chrome's CPU WebGPU adapter.
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45   # the post-pass gate includes paint, whose CPU reference is slow on the runner
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
