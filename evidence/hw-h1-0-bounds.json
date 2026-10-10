@@ -1,0 +1,30 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "HW H1.0: the hardware capability probe and GPU timestamp queries (mission-control 2026-10-10-engine-hw/PLAN.md)",
+ "written": "2026-10-10, before the implementation and the first run",
+ "scope": {
+  "probe": "raw_native_cli hw-probe and tests/gpu/hw_probe.cpp report, for the adapter the RHI picked, every H1 feature the D3D12 API can state: highest shader model, raytracing tier (pipeline 1.0, inline ray query 1.1, opacity micromaps 1.2), mesh shader tier, wave operations and lane counts, native 16-bit shader operations, 64-bit integer shader operations, resource binding tier, enhanced barriers, work graphs tier, timestamp frequency of the direct and compute queues. Shader execution reordering and cooperative vectors have no query in the Windows SDK 10.0.26100 headers; the probe reports them as not exposed by this API path. The Vulkan probe is a separate slice step (raw_native_vk_probe, optional build) with its own bounds.",
+  "forced_off": "RAW_NATIVE_HW_DISABLE, a comma list of feature names or 'all', makes the probe report a feature off whatever the device says, and records forced_off true",
+  "timestamps": "a compute queue owned by the hw module records timestamps around dispatches of a busy kernel (an integer hash chain of N iterations a thread, 1,024 groups of 64 threads)"
+ },
+ "checks": {
+  "probe_function_agreement": {
+   "what": "for wave operations (cs_6_0 WaveActiveSum and WavePrefixSum), native 16-bit (cs_6_2 compiled with -enable-16bit-types) and inline ray query (cs_6_5 RayQuery): the compute pipeline is created and, for the first two, dispatched and checked against the CPU",
+   "bound": "pipeline creation succeeds exactly when the probe reports the feature supported; every dispatched result is bit-equal to the CPU answer"
+  },
+  "forced_off": {
+   "what": "the probe and the dispatcher run with RAW_NATIVE_HW_DISABLE=all, then with each feature named alone",
+   "bound": "with all: zero features reported supported, and every functional check takes its fallback and still matches the CPU; with one name: exactly that feature changes"
+  },
+  "timestamp_linearity": {
+   "what": "median over 21 repetitions of the measured GPU time of the busy kernel at N and at 2N iterations, N chosen so the N run takes at least 1 ms on the adapter (doubled from 1,024 until it does, at most 2^24)",
+   "bound": "time(2N) / time(N) within [1.8, 2.2]"
+  },
+  "timestamp_control": {
+   "what": "the same measurement with a kernel that ignores N (fixed work)",
+   "bound": "the ratio falls outside [1.8, 2.2], so the linearity check can fail"
+  }
+ },
+ "adapters": "D3D12 WARP locally and in CI (debug layer on); the RTX 4090 only under D:/gpu.lock.d",
+ "does_not_prove": "That a supported feature is fast, or that its results are right beyond the three functional checks; that WARP's software timestamps measure what hardware timestamps measure; anything about Vulkan, which has its own probe and bounds."
+}

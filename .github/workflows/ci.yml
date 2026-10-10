@@ -235,6 +235,11 @@ jobs:
           build/Release/raw_native_cli.exe material-gallery --out gallery-warp --size 64 --spp 1
           grep -q '"backend": "d3d12"' gallery-warp/gallery.json
           test -s gallery-warp/gallery-gpu.png && test -s gallery-warp/gallery-cpu.pfm
+      - name: The hardware probe on WARP agrees with functional checks, timestamps scale with work, and every feature can be forced off (HW H1.0)
+        shell: bash
+        run: |
+          RAW_NATIVE_D3D12_WARP=1 RAW_NATIVE_D3D12_DEBUG=1 build/Release/gpu_hw_probe.exe hw-warp.json
+          RAW_NATIVE_D3D12_WARP=1 RAW_NATIVE_D3D12_DEBUG=1 python scripts/hw_forced_off.py build/Release/gpu_hw_probe.exe hw-forced-off.json
       - name: Textures, samplers and raster passes on WARP match the CPU sampler reference (M2 criterion 3)
         shell: bash
         env:
