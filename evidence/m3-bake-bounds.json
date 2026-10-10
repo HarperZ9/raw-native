@@ -1,0 +1,18 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "M3 baked lighting (dated addition 9, 2026-10-10; roadmap S10, Source-style directional lightmaps and ambient cubes)",
+ "written": "2026-10-10, before the implementation and the first run",
+ "model": {
+  "source": "Mitchell, McTaggart and Green, 'Shading in Valve's Source Engine', SIGGRAPH 2006 course, chapter 7: radiosity normal mapping with three tangent-space basis vectors (-1/sqrt6, 1/sqrt2, 1/sqrt3), (-1/sqrt6, -1/sqrt2, 1/sqrt3), (sqrt(2/3), 0, 1/sqrt3); a lightmap texel stores, per basis vector, the irradiance a surface facing that vector would receive (divided by pi), integrated over the hemisphere above the surface; a normal n is shaded with weights max(0, n.b)^2, normalised. Ambient cubes store six irradiances (divided by pi) for the axis normals and shade n with n_x^2, n_y^2, n_z^2 on the matching faces.",
+  "baker": "A Lambertian path tracer on the CPU (raw/renderer/bvh.hpp for visibility), with next-event estimation toward the point light (KHR_lights_punctual units) and the emissive panel, Russian roulette after the third bounce, seeded per texel so a bake is identical for any thread count.",
+  "room": "A closed room 4 x 3 x 4 m: white floor, ceiling and back wall (albedo 0.75), a red left wall (0.75, 0.12, 0.1), a green right wall (0.12, 0.6, 0.15), two white boxes, a 1 x 1 m emissive ceiling panel (10 nits) and a point light of 80 candela. Lightmaps at 8 texels a metre."
+ },
+ "checks": {
+  "pt_furnace": {"what": "the path tracer in a closed box whose walls all have albedo 0.5 and emit 1 nit: the exact answer is irradiance / pi = 2 at every point; 64 points, 16,384 paths each", "bound": "|estimate / 2 - 1| <= 1% at every point (checks the reference before it is used as one)"},
+  "rnm_face_normal": {"what": "the baked radiosity normal map (1,024 paths a texel and basis) shading the face normal, against the converged path-traced irradiance / pi (16,384 paths) at the same texel centre, 256 seeded texels where the reference exceeds 1% of the room's mean", "bound": "relative error: median <= 10%, 95th percentile <= 25% (records how close the three-vector basis comes; the basis lobes are not the cosine lobe)"},
+  "rnm_bumped": {"what": "the same texels shading normals tilted up to 30 degrees from the face normal, against the path-traced irradiance for that normal", "bound": "relative error: median <= 15%, 95th percentile <= 35%"},
+  "ambient_cube": {"what": "64 seeded points inside the room, ambient cubes baked with 4,096 paths a face, shading 16 seeded normals each, against the path-traced irradiance / pi for that normal (16,384 paths)", "bound": "relative error: median <= 15%, 95th percentile <= 40% (the cube holds six numbers)"},
+  "determinism": {"what": "the room's lightmaps and ambient cubes baked twice, with 1 thread and with every thread", "bound": "byte-identical"}
+ },
+ "does_not_prove": "That lightmaps line up with a rasterised frame (the viewer and scene renderer do that); GPU evaluation (it lands with the scene renderer); seams between charts; that the room stands for game levels; glossy (non-Lambertian) transport, which the Source model does not bake."
+}
