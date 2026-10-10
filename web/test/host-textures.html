@@ -68,7 +68,9 @@ async function readback(host, tex) {
 }
 const maxDiff = (a, b) => { let m = 0; for (let i = 0; i < a.length; i++) m = Math.max(m, Math.abs(a[i] - b[i])); return m; };
 // How many channel values differ by more than one code, and the first such pixel.
-const over1 = (a, b) => { let n = 0, first = null; for (let i = 0; i < a.length; i++) if (Math.abs(a[i] - b[i]) > 1) { n++; if (!first) first = { x: (i >> 2) % W, y: Math.floor((i >> 2) / W), c: i & 3, got: a[i], want: b[i] }; } return { n, first }; };
+// Every value that differs by more than one code, with the layers that cover its pixel
+// (the additive layer C covers x 64..191, y 32..127).
+const over1 = (a, b) => { let n = 0, first = null; const all = []; for (let i = 0; i < a.length; i++) if (Math.abs(a[i] - b[i]) > 1) { n++; const x = (i >> 2) % W, y = Math.floor((i >> 2) / W); const e = { x, y, c: i & 3, got: a[i], want: b[i], inC: x >= 64 && x < 192 && y >= 32 && y < 128 }; if (!first) first = e; if (all.length < 400) all.push(e); } return { n, first, all }; };
 
 try {
   const ca = canvasA();
