@@ -68,7 +68,7 @@ long treeDiff(const rt::Tree& a, const rt::Tree& b) {
 }
 struct Case {
     std::string name;
-    std::size_t tris{0};
+    std::size_t tris{0}, rays{0};
     long nodeDiff{0}, cpuOfGpuTreeDiff{0}, gpuTriDiff{0}, gpuTieExempt{0}, gpuTOver{0}, anyDiff{0}, overflows{0}, hits{0};
     double sahRatio{0}, gpuMs{0};
     std::uint64_t cpuHash{0}, gpuHash{0};
@@ -76,9 +76,9 @@ struct Case {
     std::uint32_t rounds{0};
     bool pass{false};
 };
-Case runScene(rhi::Device& dev, const char* name, const std::vector<Tri>& tris, const swr::Scene* cam, std::string& err) {
+Case runScene(rhi::Device& dev, const char* name, const std::vector<Tri>& tris, const swr::Scene* cam, std::size_t nRays, std::string& err) {
     Case c;
-    c.name = name; c.tris = tris.size();
+    c.name = name; c.tris = tris.size(); c.rays = nRays;
     const rt::Tree ref = rt::buildPloc(tris);
     const RtBuild g = buildPlocGpu(dev, tris);
     if (!g.error.empty()) { err = g.error; return c; }
@@ -92,7 +92,7 @@ Case runScene(rhi::Device& dev, const char* name, const std::vector<Tri>& tris, 
         if (!same && c.firstDiffNode < 0) c.firstDiffNode = long(i);
     }
     c.sahRatio = rt::sahCost(g.tree) / rt::binnedSahCost(tris);
-    const std::vector<Ray> rays = makeRays(cam, 100000, 0xb2b2ULL + tris.size());
+    const std::vector<Ray> rays = makeRays(cam, nRays, 0xb2b2ULL + tris.size());
     const std::vector<Scan> ref1 = bruteForce(tris, rays);
     std::vector<float> far(rays.size(), 1e30f), anyMax(rays.size());
     Rng r{77};
@@ -125,13 +125,15 @@ Case runScene(rhi::Device& dev, const char* name, const std::vector<Tri>& tris, 
 std::string RtBvhParity::json() const {
     return "{\n \"schema\": \"raw-native.evidence/1\",\n \"criterion\": \"RT stage R2, the compute BVH: B1 to B3 (evidence/rt-r2-bounds.json)\",\n"
            " \"backend\": \"" + backend + "\",\n \"adapter\": \"" + adapter + "\",\n \"error\": \"" + error + "\",\n"
-           " \"control_radius_8_nodes_differing\": " + std::to_string(controlRadiusDiffNodes) + ",\n"
+           " \"quick\": " + std::string(quick ? "true" : "false") + ",\n \"control_radius_8_nodes_differing\": " + std::to_string(controlRadiusDiffNodes) + ",\n"
            " \"control_short_far_hits_missed\": " + std::to_string(controlShortFarMissed) + ",\n"
            " \"pass\": " + (pass() ? "true" : "false") + ",\n \"scenes\": [\n" + results + "\n ]\n}\n";
 }
 
-RtBvhParity rtBvhParity(rhi::Device& dev) {
+RtBvhParity rtBvhParity(rhi::Device& dev, bool quick) {
     RtBvhParity R;
+    R.quick = quick;
+    const std::size_t nRays = quick ? 20000 : 100000;
     R.backend = dev.backendName(); R.adapter = dev.adapter().description;
     std::vector<swr::Scene> scenes = swr::ownedScenes();
     scenes.push_back(rt::denseBlock());
@@ -139,19 +141,19 @@ RtBvhParity rtBvhParity(rhi::Device& dev) {
     const auto record = [&](const Case& c) {
         char b[1000];
         std::snprintf(b, sizeof b, "  {\"scene\": \"%s\", \"triangles\": %zu, \"gpu_build_ms_with_transfers\": %.1f, \"rounds\": %u, \"nodes_differing\": %ld, "
-                      "\"cpu_traversal_of_gpu_tree_differences\": %ld, \"rays\": 100000, \"hits\": %ld, \"gpu_triangle_differences\": %ld, "
+                      "\"cpu_traversal_of_gpu_tree_differences\": %ld, \"rays\": %zu, \"hits\": %ld, \"gpu_triangle_differences\": %ld, "
                       "\"gpu_tie_exempt\": %ld, \"gpu_t_over_bound\": %ld, \"any_hit_differences\": %ld, \"stack_overflows\": %ld, \"sah_ratio\": %.4f, \"cpu_tree_hash\": \"%016llx\", \"gpu_tree_hash\": \"%016llx\", \"leaf_order_differences\": %ld, \"first_differing_node\": %ld, \"pass\": %s}",
-                      c.name.c_str(), c.tris, c.gpuMs, c.rounds, c.nodeDiff, c.cpuOfGpuTreeDiff, c.hits, c.gpuTriDiff, c.gpuTieExempt, c.gpuTOver,
+                      c.name.c_str(), c.tris, c.gpuMs, c.rounds, c.nodeDiff, c.cpuOfGpuTreeDiff, c.rays, c.hits, c.gpuTriDiff, c.gpuTieExempt, c.gpuTOver,
                       c.anyDiff, c.overflows, c.sahRatio, (unsigned long long)c.cpuHash, (unsigned long long)c.gpuHash, c.leafOrderDiff, c.firstDiffNode, c.pass ? "true" : "false");
         R.results += (R.results.empty() ? "" : ",\n") + std::string(b);
         all = all && c.pass;
     };
     for (const swr::Scene& s : scenes) {
-        const Case c = runScene(dev, s.name.c_str(), rt::trianglesOf(s.geo), &s, R.error);
+        const Case c = runScene(dev, s.name.c_str(), rt::trianglesOf(s.geo), &s, nRays, R.error);
         if (!R.error.empty()) return R;
         record(c);
     }
-    const Case soupCase = runScene(dev, "soup", rt::soup(20000, 7), nullptr, R.error);
+    const Case soupCase = runScene(dev, "soup", rt::soup(20000, 7), nullptr, nRays, R.error);
     if (!R.error.empty()) return R;
     record(soupCase);
     R.allPass = all;
