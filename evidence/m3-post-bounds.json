@@ -126,5 +126,12 @@
   "second_run": "Failed RMSE again: ratio 1.22 with Catmull-Rom history. Note 5's diagnosis was wrong. Ghosting 0.0059, control 0.308.",
   "diagnosis": "A static-camera probe (not a checked run) isolates the cause: after 48 frames TAA reads 0.0256 RMSE with the depth test and 0.0060 without it, against 0.0211 for a single sample and 0.0042 for a plain average of the jittered frames. The depth test compares against the previous frame's depth at the nearest pixel; at every silhouette the jitter makes consecutive frames sample different surfaces, so the test rejects the history exactly where anti-aliasing needs it.",
   "change": "The depth test rejects the history only when the expected previous depth lies outside the range of the previous frame's depths over the 3 x 3 pixels around the reprojected position, widened by the same tolerance (2% plus 0.02 units); a pixel with no geometry in that range counts as background, as before. Catmull-Rom history stays. Bounds unchanged."
+ },
+ "method_note_7_2026_10_10": {
+  "written": "2026-10-10, after the first GPU parity run on WARP and before any change is run",
+  "first_gpu_run": "GTAO parity passes on all six scenes (at most 28 of 35,849 pixels off by more than 1e-3, against 0.1%). SSR parity fails on all six (561 to 3,414 differing pixels, 1.5% to 9.5%), most of them a hit on one side and a miss on the other. TAA parity fails: up to 32 of 16,384 pixels in one frame (bound 16), worst 0.117. All three controls fail as required.",
+  "diagnosis": "SSR: the march's end is clipped 1e-6 pixels inside the screen. In float32 at x = 256 that margin rounds away, the GPU's end lands on x = 256, and its last steps leave the screen, so it misses hits at the right border that the float64 march finds.",
+  "change": "The clip margin becomes 1e-3 pixels on both sides. TAA: unchanged; its differences are traced in the next run's record before any change.",
+  "bounds": "Unchanged."
  }
 }
