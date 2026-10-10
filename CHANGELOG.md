@@ -6,6 +6,14 @@ the day the release was published on GitHub, in UTC.
 
 ## Unreleased
 
+- **Material model, second stage** (the author's decision, 2026-10-10: "keep engine versions, and
+  improve them.").
+  - Iridescence on dielectric bases uses exact Fresnel amplitudes for both polarizations and a
+    colour response tabulated from its reference's own colour matching fit. Against an exact
+    polarized thin-film reference, its worst error falls from 0.26 to 0.019.
+  - Volume attenuation follows each refracted direction's own path.
+  - The specification's forms stay behind `Material::specExact` as a comparison control.
+  - Open failure: a white metal under a clear coat loses up to 23% of its energy (bound 2%).
 - **HDR signal check and a float32-stable ACES 2.0 hue** (roadmap M1, criterion 3 as amended on
   2026-10-10). The HDR signal is checked in software against the published PQ, sRGB and tone-map
   formulas, and the GPU encode against the CPU. That checks the signal, not the light a panel emits.
