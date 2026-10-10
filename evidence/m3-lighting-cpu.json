@@ -1,0 +1,7 @@
+{
+ "units_worst_rel": 0.000e+00,
+ "ibl_furnace_worst": 1.332e-15,
+ "split_sum": {"samples_used": 1952, "median_rel": 0.0160, "p95_rel": 0.1688, "reference_noise_max_rel": 0.0189},
+ "clusters": {"points": 55270, "misses": 0, "overflow_cut": 0, "shading_worst_rel": 0.000e+00},
+ "failures": 0
+}

@@ -77,7 +77,7 @@ void packCase(PbrCase& c, float* o) {
 
 std::vector<float> packTables(const pbr::Tables& t) {
     std::vector<float> v;
-    for (const auto* g : {&t.gridA(), &t.gridB(), &t.rowAavg(), &t.rowBavg(), &t.gridSh(), &t.gridA4(), &t.gridB4(), &t.gridAavg2(), &t.gridBavg2()})
+    for (const auto* g : {&t.gridA(), &t.gridB(), &t.rowAavg(), &t.rowBavg(), &t.gridSh(), &t.gridA4(), &t.gridB4(), &t.gridAavg2(), &t.gridBavg2(), &t.gridDom()})
         for (double x : *g) v.push_back(float(x));
     return v;
 }
@@ -101,7 +101,7 @@ Run dispatch(rhi::Device& dev, rhi::PipelineHandle pipe, const std::vector<float
              std::uint32_t count, std::uint32_t flags) {
     using rhi::BufferUsage; using rhi::Access;
     Run r;
-    const std::uint32_t params[4] = {count, flags, 0, 0};
+    std::uint32_t params[16] = {count, flags};          // PbrParams: 64 bytes; the shading fields stay zero
     const std::uint64_t outBytes = std::uint64_t(count) * 6 * 4;
     const rhi::BufferHandle ub = dev.createBuffer({sizeof params, BufferUsage::Uniform | BufferUsage::CopyDst, "pbr params"}, r.err);
     const rhi::BufferHandle cb = dev.createBuffer({cases.size() * 4, BufferUsage::Storage | BufferUsage::CopyDst, "pbr cases"}, r.err);

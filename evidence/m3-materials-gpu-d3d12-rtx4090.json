@@ -1,0 +1,17 @@
+{
+ "check": "m3 materials gpu_parity",
+ "backend": "d3d12",
+ "adapter": "NVIDIA GeForce RTX 4090",
+ "error": "",
+ "cases": 4096,
+ "seed": 20261010,
+ "bound": "|gpu - ref| <= 1e-3 |ref| + 1e-5",
+ "worst_ratio_to_bound": 0.0243,
+ "worst_abs": 2.808e-07,
+ "worst_case": 528,
+ "worst_family": 8,
+ "values_outside": 0,
+ "control_no_multiple_scattering_worst_ratio": 814.170,
+ "control_fails": true,
+ "pass": true
+}

@@ -69,6 +69,12 @@ public:
     double Bavg(double r) const;
     double Eavg(double r) const { return Aavg(r) + Bavg(r); }
     double Sh(double mu, double r) const;
+    // Elevation from the normal (radians) of the centroid of the white single-scattering
+    // lobe f cos for a view at mu, in the plane of the normal and the view: the direction
+    // image lighting reads the prefiltered environment along (VNDF sampled, from the BRDF
+    // alone; at roughness 0 it is the mirror direction).
+    static constexpr int kDomMu = 64, kDomRough = 64;
+    double Dom(double mu, double r) const;
     // Anisotropic split albedo (KHR_materials_anisotropy): view cosine, view azimuth from
     // the anisotropy direction (radians, folded to [0, pi/2]), perceptual roughness r and
     // anisotropy k, read quadrilinearly; the means are over the whole hemisphere.
@@ -81,6 +87,7 @@ public:
     const std::vector<double>& gridA() const { return a_; }
     const std::vector<double>& gridB() const { return b_; }
     const std::vector<double>& gridSh() const { return sh_; }
+    const std::vector<double>& gridDom() const { return dom_; }
     const std::vector<double>& rowAavg() const { return aavg_; }
     const std::vector<double>& rowBavg() const { return bavg_; }
     const std::vector<double>& gridA4() const { return an_a_; }
@@ -93,6 +100,8 @@ private:
     void buildAnisotropic();
     std::vector<double> a_, b_, sh_, aavg_, bavg_;
     std::vector<double> an_a_, an_b_, an_aavg_, an_bavg_;   // [k][r][phi][mu] and [k][r]
+    std::vector<double> dom_;
+    void buildDominant();
 };
 
 // One evaluation split by lobe shape, so a test can integrate each with the quadrature
@@ -106,6 +115,17 @@ struct Terms {
 };
 
 Terms evalTerms(const Material& m, const Tables& t, D3 wo, D3 wi);
+
+// The material's response to image lighting at one view (the split sum; lighting.hpp pairs
+// each weight with one environment lookup). The same energy model as eval: for a uniform
+// environment of radiance L the weights sum to the material's directional albedo times L.
+struct IblResponse {
+    Rgb specular; double roughness{1};      // x prefiltered radiance along the reflection
+    Rgb coat; double coatRoughness{1};      // x prefiltered radiance along the coat's reflection
+    Rgb irradiance;                         // x irradiance / pi at the normal (diffuse, multiple scattering, sheen)
+    Rgb transmission;                       // x prefiltered radiance along the transmitted direction, at roughness
+};
+IblResponse iblResponse(const Material& m, const Tables& t, D3 wo);
 Rgb eval(const Material& m, const Tables& t, D3 wo, D3 wi);
 Rgb emission(const Material& m);
 
