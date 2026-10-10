@@ -1,0 +1,23 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "HW H2 scene split (evidence/rr-bounds.json)",
+ "written": "2026-10-10, before any frame is rendered",
+ "rule": "Scenes are assigned whole. A test scene is never rendered for training or validation, and no procedural variant of a test scene (any seed) enters training. A later dated amendment may add scenes to train or validation; it may never move a scene out of test, and it may add to test only scenes no model has seen.",
+ "train": [
+  {"owner": "M3", "scene": "the Source-style bake test room (raw_native_cli bake-room)"},
+  {"owner": "RT", "scene": "the BRender-era room diorama"},
+  {"owner": "core", "scene": "the built-in test scene"},
+  {"owner": "HW", "scene": "terrain (src/tools/hw_scenes.cpp), seeds 0 to 15 of the height field"},
+  {"owner": "HW", "scene": "debris (src/tools/hw_scenes.cpp), seeds 0 to 15"}
+ ],
+ "validation": [
+  {"owner": "HW", "scene": "hall (src/tools/hw_scenes.cpp)"},
+  {"owner": "RT", "scene": "clip_stress"}
+ ],
+ "test": [
+  {"owner": "M3", "scene": "raw-hall (the owned interior hall)"},
+  {"owner": "M3", "scene": "raw-hero (the owned helmet-class hero asset)"},
+  {"owner": "RT", "scene": "the isometric street diorama"}
+ ],
+ "materials": "assigned per scene by the scene's owner; where a scene has none (the HW scenes), a seeded draw over M3's material families, with the seed recorded per frame"
+}
