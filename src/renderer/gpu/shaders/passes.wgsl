@@ -28,9 +28,9 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     }
     let area: f32 = (sx[1] - sx[0]) * (sy[2] - sy[0]) - (sy[1] - sy[0]) * (sx[2] - sx[0]);
     if (abs(area) < 1e-9) { return; }
-    for (var k: u32 = 0u; k < 3u; k++) {
-        setupF[o + 1u + k] = sx[k]; setupF[o + 4u + k] = sy[k];
-        setupF[o + 7u + k] = sz[k]; setupF[o + 10u + k] = iw[k];
+    for (var j: u32 = 0u; j < 3u; j++) {
+        setupF[o + 1u + j] = sx[j]; setupF[o + 4u + j] = sy[j];
+        setupF[o + 7u + j] = sz[j]; setupF[o + 10u + j] = iw[j];
     }
     setupF[o + 13u] = area;
     let oi: u32 = t * 4u;

@@ -227,8 +227,8 @@ fn fMaking(p: vec2f, t0: f32) -> f32 {
     let hy: f32 = 0.62 - 0.3 * smoothstep(2.0, 9.0, t);
     d = min(d, seg(p, vec2f(0.3, 0.7), vec2f(0.3, hy)));
     d = min(d, ring(p, vec2f(0.3, hy - 0.03), 0.02));
-    for (var k: i32 = 0; k < 6; k++) {
-        let fk: f32 = f32(k);
+    for (var q: i32 = 0; q < 6; q++) {
+        let fk: f32 = f32(q);
         let ph: vec2f = vec2f(-0.75 + fk * 0.3, 0.7 - fmodf(t * 0.05 + hash1(fk) * 1.4, 1.5));
         d = min(d, abs(box2(rotv(p - ph, sin(t * 0.8 + fk) * 0.6), vec2f(0.035, 0.045))));
     }
@@ -389,9 +389,9 @@ fn fForest(p: vec2f, t: f32) -> f32 {
         let x: f32 = -0.9 + f32(k) * 0.36;
         d = min(d, abs(p.x - x - 0.01 * sin(p.y * 7.0 + f32(k))) + max(-0.1 - p.y, 0.0));
     }
-    for (var k: i32 = 0; k < 5; k++) {
-        let sx: f32 = -0.5 + f32(k) * 0.25;
-        let hh: f32 = 0.35 * smoothstep(5.0 + f32(k) * 1.5, 16.0 + f32(k), t);
+    for (var q: i32 = 0; q < 5; q++) {
+        let sx: f32 = -0.5 + f32(q) * 0.25;
+        let hh: f32 = 0.35 * smoothstep(5.0 + f32(q) * 1.5, 16.0 + f32(q), t);
         d = min(d, seg(p, vec2f(sx, logY + 0.07), vec2f(sx, logY + 0.07 + hh)) + select(0.0, 1.0, hh < 0.01));
     }
     let my: f32 = abs(fract(fbm(p * 7.0 + 5.0) * 6.0) - 0.5) * 0.04 + max(p.y + 0.27, 0.0) * 2.0;

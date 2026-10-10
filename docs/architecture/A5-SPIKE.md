@@ -62,6 +62,12 @@ Slang's WGSL is generated code. It wraps the uniform in a std140 struct (`@align
 - 13 of 15 compute passes compile to both targets, about 0.2 s each.
 - 2 fail: `setup` and `threads_advance`, with "ambiguous reference to 'k'". Slang applies the old HLSL rule that a `for` loop's variable belongs to the enclosing block, so two loops in one function that both declare `k` collide. dxc with `-HV 2021` scopes the variable to the loop. The fix is mechanical: unique loop variable names, or a block around each loop, in the translator or the WGSL.
 
+**Update (2026-10-10, raw-native fix/hlsl-loop-scope):**
+
+- The translator now refuses a loop variable declared twice in one function, and the three reuses in the WGSL are renamed (in `setup`, and in `fMaking` and `fForest` in Threads).
+- With that, all 15 compute passes compile to DXIL with Slang.
+- To WGSL, 14 do. `threads_advance` does not, because its `InterlockedAdd` on a plain `uint` buffer has no WGSL form. WGSL needs typed `atomic<u32>`, so moving that pass to Slang means rewriting its atomics in Slang's typed form. That is a real porting cost.
+
 **Not measured:** running the compute passes' Slang output through the full GPU renderer's identity matrix. That needs the shader library to load compiled code from files, which this spike did not build. The raster pass is the only one run end to end.
 
 **Costs, measured:**
