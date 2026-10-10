@@ -25,5 +25,8 @@ struct TextureIdentity {
     std::string json() const;
 };
 TextureIdentity textureIdentity(rhi::Device& dev);
+// The same check with shader code supplied by the caller (the A5 spike runs Slang's output
+// through it); vs and fs as the RHI takes them for this device.
+TextureIdentity textureIdentity(rhi::Device& dev, const rhi::ShaderCode& vs, const rhi::ShaderCode& fs);
 
 }  // namespace raw::gpu_check

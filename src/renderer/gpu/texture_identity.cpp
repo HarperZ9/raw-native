@@ -59,11 +59,13 @@ std::string TextureIdentity::json() const {
 }
 
 TextureIdentity textureIdentity(rhi::Device& dev) {
+    return textureIdentity(dev, gpu_shaders::find("texture_identity.vs", dev.shaderFormat()), gpu_shaders::find("texture_identity.fs", dev.shaderFormat()));
+}
+TextureIdentity textureIdentity(rhi::Device& dev, const rhi::ShaderCode& vs, const rhi::ShaderCode& fs) {
     TextureIdentity r;
     r.backend = dev.backendName(); r.adapter = dev.adapter().description;
     std::string err;
-    const rhi::ShaderCode vs = gpu_shaders::find("texture_identity.vs", dev.shaderFormat()), fs = gpu_shaders::find("texture_identity.fs", dev.shaderFormat());
-    if (!vs.bytes || !fs.bytes) { r.error = "this build carries no texture_identity shader"; return r; }
+    if (!vs.bytes || !fs.bytes) { r.error = "no texture_identity shader code"; return r; }
     const auto& L = raster_passes::kRasters[0];
     rhi::RasterPipelineDesc pd{"texture_identity", vs, fs, std::span<const rhi::RasterBinding>(L.binds, L.bindCount)};
     const rhi::RasterPipelineHandle pipe = dev.createRasterPipeline(pd, err);

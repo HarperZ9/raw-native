@@ -1,0 +1,101 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "M2 exit criterion 4 (A5 spike), the Slang half",
+ "date": "2026-10-10",
+ "slangc": "2026.19, zip sha256 fc922f214b5d115f663932e59e80e0f6b6cc6fae140979cf307da6459b6f8f33 (equals GitHub's published digest)",
+ "d3d12_warp_slang_dxil": {
+  "backend": "d3d12",
+  "adapter": "Microsoft Basic Render Driver",
+  "cases": [
+   {
+    "case": "nearest/clamp",
+    "pixels": 3072,
+    "exempt": 0,
+    "max_codes": 0,
+    "pass": true
+   },
+   {
+    "case": "nearest/repeat",
+    "pixels": 3072,
+    "exempt": 0,
+    "max_codes": 0,
+    "pass": true
+   },
+   {
+    "case": "linear/clamp",
+    "pixels": 3072,
+    "exempt": 0,
+    "max_codes": 1,
+    "pass": true
+   },
+   {
+    "case": "linear/repeat",
+    "pixels": 3072,
+    "exempt": 0,
+    "max_codes": 1,
+    "pass": true
+   }
+  ],
+  "control_fails": true,
+  "pass": true
+ },
+ "d3d12_warp_translator_dxil": {
+  "backend": "d3d12",
+  "adapter": "Microsoft Basic Render Driver",
+  "cases": [
+   {
+    "case": "nearest/clamp",
+    "pixels": 3072,
+    "exempt": 0,
+    "max_codes": 0,
+    "pass": true
+   },
+   {
+    "case": "nearest/repeat",
+    "pixels": 3072,
+    "exempt": 0,
+    "max_codes": 0,
+    "pass": true
+   },
+   {
+    "case": "linear/clamp",
+    "pixels": 3072,
+    "exempt": 0,
+    "max_codes": 1,
+    "pass": true
+   },
+   {
+    "case": "linear/repeat",
+    "pixels": 3072,
+    "exempt": 0,
+    "max_codes": 1,
+    "pass": true
+   }
+  ],
+  "control_fails": true,
+  "pass": true
+ },
+ "webgpu_swiftshader_slang_wgsl_vs_translator_wgsl": {
+  "differing_values": [
+   0,
+   0,
+   0,
+   0
+  ],
+  "cases": [
+   "nearest/clamp-to-edge",
+   "nearest/repeat",
+   "linear/clamp-to-edge",
+   "linear/repeat"
+  ]
+ },
+ "hlsl_sweep": {
+  "compute_passes": 15,
+  "compiled_to_dxil_and_wgsl": 13,
+  "failed": {
+   "setup": "ambiguous reference to 'k' (loop variable scope)",
+   "threads_advance": "ambiguous reference to 'k' (loop variable scope)"
+  }
+ },
+ "does_not_prove": "That the compute passes' Slang output renders identically through the full renderer (not run), or anything about permutations."
+}
