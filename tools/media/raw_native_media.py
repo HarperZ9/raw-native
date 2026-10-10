@@ -23,6 +23,7 @@ import hashlib
 import json
 import shutil
 import subprocess
+import tempfile
 import sys
 from pathlib import Path
 
@@ -138,14 +139,31 @@ def render(args) -> int:
         cmd = [sys.executable, str(ENGINE / "scripts" / "motion_render.py"), "--root", str(out), "--page", "engine/motion/capture.html",
                "--scene", scene_rel, "--shaders", "../", "--out", str(video), "--width", str(args.width), "--height", str(h),
                "--adapter", args.adapter]
+        sound = None
         if nar:
-            cmd += ["--audio", str(nar / "narration.wav")]
+            sound = mix_sound(out, scene_rel, nar) if not args.no_sound else None
+            cmd += ["--audio", str(sound["wav"] if sound else nar / "narration.wav")]
+        if args.hash_frames:
+            cmd += ["--hash-frames"]
         if args.max_seconds:
             cmd += ["--to", str(args.max_seconds)]
         print(f"render {s['id']} at {args.width}x{h} on {args.adapter}", flush=True)
-        subprocess.run(cmd, check=True)
+        try:
+            subprocess.run(cmd, check=True)
+        finally:
+            if sound:
+                shutil.rmtree(sound["tmp"], ignore_errors=True)
         stats = json.loads(Path(str(video) + ".stats.json").read_text(encoding="utf-8"))
+        # The video's audio, before AAC, must be the sound engine's mastered PCM, sample for sample.
+        if sound and not args.max_seconds and (stats.get("audio") or {}).get("pcm_sha256") != sound["summary"]["pcm_sha256"]:
+            raise SystemExit(f"sound: the muxed PCM differs from the mastered mix: {stats.get('audio')} vs {sound['summary']}")
         Path(str(video) + ".stats.json").unlink()
+        frames_file = Path(str(video) + ".frames.sha256")
+        if frames_file.is_file():
+            frames_file.replace(out / "frames.sha256")
+        mixwav = video.with_suffix(".mix.wav")
+        if mixwav.is_file():
+            mixwav.unlink()     # its hash and loudness are in the manifest; the MP4 carries the audio
         if h > 1080:
             web = out / f"{s['id']}-1080p.mp4"
             subprocess.run([ff, "-y", "-loglevel", "error", "-i", str(video), "-vf", "scale=1920:1080:flags=lanczos", "-c:v", "libx264",
@@ -165,11 +183,42 @@ def render(args) -> int:
             "duration": round(stats["duration"], 3), "frames": stats["frames"], "adapter": stats.get("adapter"), "adapter_kind": args.adapter,
             "frame_ms_median": round(stats["frame_ms_median"], 2), "frame_ms_p95": round(stats["frame_ms_p95"], 2), "wall_seconds": stats["wall_seconds"],
             "chapters": stats.get("chapters", []),
+            "audio": stats.get("audio") or None,
+            "frame_chain_sha256": stats.get("frame_chain_sha256"),
+            "encoder_probe": stats.get("encoder_probe"), "user_agent": stats.get("user_agent"),
+            "gpu_ms": stats.get("gpu_ms"),
+            "sound": sound["summary"] if sound else None,
             "files": {str(p.relative_to(out)).replace("\\", "/"): sha(p) for p in files},
         }
         (out / "media.json").write_text(json.dumps(manifest, indent=1), encoding="utf-8", newline="\n")
         print(f"{s['id']}: {stats['frames']} frames, median {stats['frame_ms_median']:.1f} ms, {stats['wall_seconds']} s", flush=True)
     return 0
+
+
+def mix_sound(out: Path, scene_rel: str, nar: Path) -> dict:
+    """The scene's sound (web/sound): a sheet from the scene's own timeline, then the
+    mastered mix of narration, score and cues. The sheet, report and receipt stay in
+    the bundle under sound/; the WAV goes to a temporary folder, removed once the video carries it."""
+    node = shutil.which("node")
+    if not node:
+        raise SystemExit("sound: node is not on PATH; install Node 20.6 or later, or pass --no-sound")
+    snd = out / "sound"
+    snd.mkdir(exist_ok=True)
+    wav_dir = Path(tempfile.mkdtemp(prefix=f"raw-native-sound-{out.name}-"))
+    # bundle() gives the scene relative to engine/motion/capture.html; the sheet tool wants it relative to the bundle.
+    subprocess.run([node, str(ENGINE / "web" / "sound" / "scene-sheet.mjs"), str(out), "scene/" + Path(scene_rel).name, str(snd / "sheet.json"),
+                    "--narration", str(nar / "narration.wav")], check=True)
+    subprocess.run([node, str(ENGINE / "web" / "sound" / "render.mjs"), str(snd / "sheet.json"), "--narration", str(nar / "narration.wav"),
+                    "--timing", str(nar / "timing.json"), "--out", str(wav_dir)], check=True, stdout=subprocess.DEVNULL)
+    for f in ("sheet.resolved.json", "report.json", "receipt.json"):
+        shutil.copyfile(wav_dir / f, snd / f)
+    rep = json.loads((snd / "report.json").read_text(encoding="utf-8"))
+    rec = json.loads((snd / "receipt.json").read_text(encoding="utf-8"))
+    keys = ("integrated_lufs", "true_peak_dbtp", "loudness_range_lu", "music_under_speech_lu", "loudness_verdict", "cues")
+    summary = {k: rep.get(k) for k in keys} | {"pcm_sha256": rec["content_sha256"], "meter": rep.get("meter")}
+    if rep.get("loudness_verdict") != "verified":
+        raise SystemExit(f"sound: the mix missed its loudness target: {summary}")
+    return {"wav": wav_dir / "mix.wav", "tmp": wav_dir, "summary": summary}
 
 
 def engine_commit() -> str:
@@ -240,7 +289,9 @@ def main(argv=None) -> int:
             p.add_argument("--height", type=int, default=1080)
             p.add_argument("--adapter", choices=["gpu", "swiftshader"], default="gpu")
             p.add_argument("--narration")
+            p.add_argument("--no-sound", action="store_true", help="narrated scenes: mux the bare narration instead of the web/sound mix")
             p.add_argument("--max-seconds", type=float, default=None, help="render only the first N seconds (a smoke test)")
+            p.add_argument("--hash-frames", action="store_true", help="read back and hash every frame (frames.sha256 in the bundle)")
         p.set_defaults(fn=render, facts_only=(name == "facts"))
     p = sub.add_parser("attach")
     p.add_argument("dir")

@@ -12,6 +12,7 @@ cmake-build-*/
 # The media spec (docs/architecture/adr/0012-media-engine.md).
 !docs/media/media.json
 !web/colour/tables/*.json
+!tests/web/*.json
 
 # CMake artifacts
 CMakeCache.txt
@@ -55,3 +56,5 @@ build-wasm-sums.json
 /_inst/
 /build-*/
 !third_party/superstack/vectors/*.json
+!third_party/superstack/examples/sound/sound.json
+!web/sound/fixture.scene.json

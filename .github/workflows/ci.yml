@@ -76,7 +76,7 @@ jobs:
           grep -q '"verdict":"unverifiable"' gpu-none/gpu_certificate.json
           grep -q '"backend":"none"' gpu-none/gpu_certificate.json
       - name: The web frame graph matches the C++ graph's golden output, and the Motion tests pass
-        run: node --test web/frame-graph.test.mjs web/camera.test.mjs web/motion/motion.test.mjs
+        run: node --test web/frame-graph.test.mjs web/camera.test.mjs web/motion/motion.test.mjs web/sound/sound.test.mjs
       - name: Without a GPU backend, threads exits 4
         shell: bash
         run: |
@@ -320,6 +320,10 @@ jobs:
         run: python tools/media/test_media.py
       - name: Host textures, compositing and one shared device (M1 criterion 1), on the CPU adapter
         run: python tests/web/host_textures.py --adapter swiftshader
+      - name: The sound engine's live path (AudioWorklet in Chrome) matches its offline render within the PCM tolerance
+        run: |
+          node web/sound/smoke.mjs build/sound-smoke
+          python scripts/sound_live_check.py build/sound-smoke
       - name: Render four seconds of each scene on the CPU WebGPU adapter
         run: python tools/media/raw_native_media.py render --setup --out media-out --adapter swiftshader --width 960 --height 540 --max-seconds 4
       - name: Colour pipelines in WGSL match the C++ reference within one 8-bit code (M1 criterion 2)
@@ -333,6 +337,10 @@ jobs:
             python -c "import json,sys; m=json.load(open('$d/media.json')); assert m['commit']=='$GITHUB_SHA', m['commit']; assert m['adapter_kind']=='swiftshader'; assert m['frames']>=100; print('$id', m['frames'], 'frames', m['frame_ms_median'], 'ms median')"
           done
           python -c "import json; f=json.load(open('media-out/ao-check/facts.json'))['facts']; print({k: f[k]['value'] for k in ('version','verdict','rmse','tolerance','pixels')})"
+      - name: Each smoke render stays inside its wall-clock budget
+        run: python tools/media/budget.py media-out --smoke
+      - name: Two renders of the same seconds draw identical frames
+        run: python tools/media/determinism.py first-run --adapter swiftshader --width 640 --height 360 --max-seconds 2 --out media-out/determinism.json
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with: { name: media-smoke, path: media-out, retention-days: 7 }

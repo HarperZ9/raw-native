@@ -136,25 +136,36 @@ def encoder(ffmpeg: str, w: int, h: int, fps: int, codec: str, quality: int, out
     return cmd + ["-color_primaries", "bt709", "-color_trc", "bt709", "-colorspace", "bt709", "-movflags", "+faststart", str(out)]
 
 
-def mux(ffmpeg: str, video: Path, out: Path, audio: str | None, score: str | None, score_db: float, seconds: float) -> None:
-    """Lay the narration (and the score under it) on the video, padded or cut to exactly its length."""
-    cmd = [ffmpeg, "-y", "-loglevel", "error", "-i", str(video)]
+def mux(ffmpeg: str, video: Path, out: Path, audio: str | None, score: str | None, score_db: float, seconds: float) -> dict:
+    """Mix the narration (and the score under it) sample-exactly with tools/media/audio_mix.py,
+    to exactly the video's length, and lay the mix on the video as AAC. Returns the mix's
+    record: its PCM hash, loudness and peak. The mix WAV is kept beside the output."""
     if not audio and not score:
         shutil.copyfile(video, out)
-        return
-    inputs = [a for a in (audio, score) if a]
-    for a in inputs:
-        cmd += ["-i", a]
-    # apad with -shortest can stall ffmpeg 7 once the video stream ends; pad to the exact length instead.
-    pad = f"apad=whole_dur={seconds:.6f},atrim=0:{seconds:.6f}"
-    if audio and score:
-        # A mono narration is centred in stereo so a stereo score keeps its width.
-        cmd += ["-filter_complex", f"[1:a]aformat=channel_layouts=stereo[n];[2:a]aformat=channel_layouts=stereo,volume={score_db}dB[s];"
-                f"[n][s]amix=inputs=2:duration=longest:normalize=0,{pad}[a]", "-map", "0:v", "-map", "[a]"]
-    else:
-        cmd += ["-filter_complex", f"[1:a]{pad}[a]", "-map", "0:v", "-map", "[a]"]
-    cmd += ["-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-t", f"{seconds:.6f}", "-map_metadata", "-1", "-movflags", "+faststart", str(out)]
-    subprocess.run(cmd, check=True)
+        return {}
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "tools" / "media"))
+    import audio_mix as am
+    tracks = []
+    for path, gain in ((audio, 1.0), (score, 10.0 ** (score_db / 20.0))):
+        if not path:
+            continue
+        samples, rate, ch = am.read_wav(Path(path))
+        if rate != 48000:
+            raise SystemExit(f"{path}: {rate} Hz; the mix is 48000 Hz")
+        tracks.append({"samples": samples, "channels": ch, "gain": gain})
+    frames = round(seconds * 48000)
+    mix = am.mix_tracks(tracks, 2, frames)
+    pcm = am.quantize_s16(mix)
+    wav = out.with_suffix(".mix.wav")
+    am.write_wav(wav, pcm, 48000, 2)
+    import hashlib
+    record = {"rule": "superstack.sound/1 s16, float64 sum (tools/media/audio_mix.py)", "frames": frames, "rate": 48000, "channels": 2,
+              "pcm_sha256": hashlib.sha256(pcm.tobytes()).hexdigest(), "integrated_lufs": am.integrated_lufs(mix, 48000, 2),
+              "peak_dbfs": am.peak_dbfs(mix), "score_db": score_db if score else None}
+    subprocess.run([ffmpeg, "-y", "-loglevel", "error", "-i", str(video), "-i", str(wav), "-map", "0:v", "-map", "1:a",
+                    "-c:v", "copy", "-c:a", "aac", "-b:a", "192k", "-t", f"{seconds:.6f}", "-map_metadata", "-1",
+                    "-movflags", "+faststart", str(out)], check=True)
+    return record
 
 
 def main(argv=None) -> int:
@@ -185,6 +196,7 @@ def main(argv=None) -> int:
     ap.add_argument("--adapter", choices=["gpu", "swiftshader"], default="gpu",
                     help="swiftshader: Chrome's CPU WebGPU adapter, for machines with no GPU (CI)")
     ap.add_argument("--timeout", type=float, default=7200)
+    ap.add_argument("--hash-frames", action="store_true", help="read back and hash every frame (written to OUT.frames.sha256)")
     a = ap.parse_args(argv)
 
     root = Path(a.root).resolve()
@@ -211,7 +223,8 @@ def main(argv=None) -> int:
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     port = srv.server_address[1]
     q = (f"scene={a.scene}&w={a.width}&h={a.height}&fps={a.fps}&from={first}&warm={a.warm}"
-         f"&transport={a.transport}&codec={a.wc_codec}&qp={a.qp}&readback={1 if a.adapter == 'swiftshader' else 0}")
+         f"&transport={a.transport}&codec={a.wc_codec}&qp={a.qp}&readback={1 if a.adapter == 'swiftshader' else 0}"
+         f"&hash={1 if a.hash_frames else 0}")
     if a.t1 is not None:
         q += f"&to={round(a.t1 * a.fps)}"
     if a.shaders:
@@ -244,10 +257,15 @@ def main(argv=None) -> int:
                         "-c:v", "copy", *(["-tag:v", "hvc1"] if fmt == "hevc" else []), "-movflags", "+faststart", str(silent)], check=True)
         stream.unlink()
     frames = int(sink.stats.get("frames") or 0)
-    mux(ffmpeg, silent, out, a.audio, a.score, a.score_db, frames / a.fps)
+    audio_record = mux(ffmpeg, silent, out, a.audio, a.score, a.score_db, frames / a.fps)
     silent.unlink(missing_ok=True)
+    hashes = sink.stats.pop("frame_hashes", None)
+    if hashes:
+        import hashlib
+        Path(str(out) + ".frames.sha256").write_text("".join(f"{first + i} {h}\n" for i, h in enumerate(hashes)), encoding="utf-8", newline="\n")
+        sink.stats["frame_chain_sha256"] = hashlib.sha256("".join(hashes).encode()).hexdigest()
     stats = {**sink.stats, "wall_seconds": round(time.time() - t0, 1), "width": a.width, "height": a.height, "fps": a.fps,
-             "transport": a.transport}
+             "transport": a.transport, "audio": audio_record}
     Path(str(out) + ".stats.json").write_text(json.dumps(stats, indent=1), encoding="utf-8")
     print(json.dumps({k: stats[k] for k in ("frames", "frame_ms_median", "frame_ms_p95", "wall_seconds") if k in stats}))
     return 0
