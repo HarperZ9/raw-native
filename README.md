@@ -70,9 +70,15 @@ tolerance, and can run the WebAssembly build in the page. Its source is
 
 ## Watch
 
-No concept film fits this tool closely yet. The walkthrough below covers it in text, with real commands and output.
+Rendered by this repository's v0.6.0 release from its own output, so every number on screen is one that release produced.
 
-Video walkthrough: coming with the next release.
+[![Checking the light: a film rendered by the v0.6.0 release](https://harperz9.github.io/media/releases/raw-native/v0.6.0/ao-check/poster.jpg)](https://harperz9.github.io/media/releases/raw-native/v0.6.0/ao-check/index.html)
+
+**[Checking the light](https://harperz9.github.io/media/releases/raw-native/v0.6.0/ao-check/index.html)** (53 s). Rendered from values read at commit 158afa8: [facts.json](https://harperz9.github.io/media/releases/raw-native/v0.6.0/ao-check/facts.json). The narration is a synthesized version of the author's voice.
+
+[![raw-native: build, render, check: a film rendered by the v0.6.0 release](https://harperz9.github.io/media/releases/raw-native/v0.6.0/first-run/poster.jpg)](https://harperz9.github.io/media/releases/raw-native/v0.6.0/first-run/index.html)
+
+**[raw-native: build, render, check](https://harperz9.github.io/media/releases/raw-native/v0.6.0/first-run/index.html)** (37 s). Rendered from values read at commit 158afa8: [facts.json](https://harperz9.github.io/media/releases/raw-native/v0.6.0/first-run/facts.json). The narration is a synthesized version of the author's voice.
 
 ## Walkthrough
 
