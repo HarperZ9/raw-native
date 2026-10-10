@@ -1,0 +1,40 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/hw-h1-7-bounds.json (committed 2cc03ec before any code or run; method note 1 committed 5f8a5b0 before its control ran)",
+ "runs": [
+  {
+   "run": 1,
+   "adapter": "SwiftShader Vulkan 1.3, validation on",
+   "sizes": [
+    1024
+   ],
+   "result": "pass: fallback only (no cooperative matrix); worst element 0.0015 of its bound; RMS against a sequential fp32 CPU sum 1.0 (the fallback's order matches it exactly). Showed that no control ran on this adapter, which led to method note 1."
+  },
+  {
+   "run": 2,
+   "adapter": "same",
+   "sizes": [
+    1024,
+    2048
+   ],
+   "result": "pass: fallback within the bound (worst 0.0015, 0.0011 of it); the fallback skip-K control fails as required (24,117 and 22,722 of 24,576 checked elements over the bound); validation errors 0. Timings recorded, not a claim (3.3 s and 22.3 s a dispatch on the CPU adapter)."
+  },
+  {
+   "run": "forced off",
+   "adapter": "same",
+   "sizes": [
+    1024
+   ],
+   "result": "pass: path 'fallback only'"
+  },
+  {
+   "run": "RTX",
+   "adapter": "RTX 4090, driver 610.88 (DXGI 32.0.16.1088), under D:/gpu.lock.d, 2026-10-10 19:47 to 19:53Z",
+   "result": "timed run (validation off) pass: tensor-core GEMM within the bound at 1024, 2048, 4096 (worst 0.0038 of it; RMS 3 to 6 times a sequential fp32 CPU sum, consistent with lower-precision accumulation inside the bound); skip-K, wrong-layout and fallback controls fail. 47.3, 47.0 and 47.0 TFLOPS against 6.7, 7.2 and 7.1 for the fallback: speedups 7.07 [7.06, 7.09], 6.54 [6.50, 6.90], 6.64 [6.09, 6.69]. The validation-on correctness run failed with 9 validation errors, the same missing vulkanMemoryModel enable as H1.0 Vulkan; after the fix the validation-on run passes with 0 errors (hw-h1-7-vk-rtx4090-validation-run2.json, 20:03Z)."
+  },
+  {
+   "run": "RTX rerun",
+   "result": "20:39Z, quiet GPU with snapshots: tensor-core speedups 7.06 [7.05, 7.09], 6.91 [6.72, 6.94], 6.39 [6.35, 6.46] at 1024, 2048, 4096; 47.3, 47.5 and 45.2 TFLOPS. Consistent with the first window (7.07, 6.54, 6.64): the GEMM result holds across both windows. Validation-off run; validation-on correctness passes (run2 file)."
+  }
+ ]
+}

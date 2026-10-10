@@ -1,0 +1,14 @@
+#version 460
+// HW H1.0 (Vulkan): the smallest ray query; only pipeline creation is checked here (H1.1 runs it).
+// The acceleration structure is binding 1; the harness creates the pipeline with a layout of its own.
+#extension GL_EXT_ray_query : require
+layout(local_size_x = 64) in;
+layout(std430, binding = 0) buffer Dst { float dst[]; };
+layout(binding = 1) uniform accelerationStructureEXT scene;
+void main() {
+    rayQueryEXT q;
+    rayQueryInitializeEXT(q, scene, gl_RayFlagsOpaqueEXT, 0xFF, vec3(0, 0, -1), 0.0, vec3(0, 0, 1), 10.0);
+    while (rayQueryProceedEXT(q)) {}
+    dst[gl_GlobalInvocationID.x] = rayQueryGetIntersectionTypeEXT(q, true) == gl_RayQueryCommittedIntersectionTriangleEXT
+        ? rayQueryGetIntersectionTEXT(q, true) : -1.0;
+}

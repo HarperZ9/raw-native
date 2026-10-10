@@ -1,0 +1,15 @@
+#version 460
+// HW H1.0 (Vulkan): the busy kernel for timestamp linearity; FLAT=1 is the fixed-work control.
+layout(local_size_x = 64) in;
+layout(push_constant) uniform P { uint n; };
+layout(std430, binding = 0) buffer Dst { uint dst[]; };
+void main() {
+#if FLAT
+    const uint rounds = 4096u + (n & 0u);
+#else
+    const uint rounds = n;
+#endif
+    uint h = gl_GlobalInvocationID.x;
+    for (uint i = 0u; i < rounds; i++) { h = h * 1664525u + 1013904223u; h ^= h >> 13u; }
+    dst[gl_GlobalInvocationID.x] = h;
+}

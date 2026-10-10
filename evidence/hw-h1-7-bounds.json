@@ -1,0 +1,31 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "HW H1.7: cooperative matrix GEMM on tensor cores through VK_KHR_cooperative_matrix, with a portable compute fallback (mission-control 2026-10-10-engine-hw/PLAN.md)",
+ "written": "2026-10-10, before the implementation and the first run",
+ "kernel": "C = A B with A (M x K) and B (K x N) in fp16 row-major, C in fp32 row-major. The tensor-core kernel: one subgroup a workgroup, each subgroup owns a 32 x 32 tile of C as four 16 x 16 fp32 accumulators and loops over K in steps of 16 with coopMatLoad and coopMatMulAdd from global memory. The fallback: 16 x 16 workgroups, a 16 x 16 shared-memory tile each of A and B, fp32 multiply-add of fp16 values unpacked with unpackHalf2x16 (no 16-bit feature needed).",
+ "sizes": "M = N = K in {1024, 2048, 4096}. Inputs: fp16 values of a seeded uniform draw in [-1, 1].",
+ "plan_note": "The plan's placeholder bound for H1.7 (2^-20 times the sum of |a||b|) is replaced here before any run: a correct fp32 accumulation over K = 4096 terms has a typical error near sqrt(K) 2^-24 and a worst case near K 2^-24 times that sum, both above 2^-20 for large K.",
+ "checks": {
+  "accuracy": {
+   "what": "every element of the top-left 128 x 128 block and 8,192 seeded random elements, against a float64 dot product of the same fp16 inputs",
+   "bound": "|c - ref| <= K * 2^-23 * sum_k |a_ik b_kj| + 1e-6 on every checked element (the deterministic bound for any summation order of K terms; 2^-23 covers round-toward-zero accumulation, which some tensor-core generations use)",
+   "reported": "the RMS of (c - ref) over the checked elements, divided by the RMS error of a sequential fp32 CPU sum of the same products; reported, not bounded"
+  },
+  "control_skip_k": {
+   "what": "the tensor-core kernel with the last 16-wide K step skipped",
+   "bound": "the accuracy bound fails"
+  },
+  "control_layout": {
+   "what": "the tensor-core kernel loading B as column-major",
+   "bound": "the accuracy bound fails"
+  },
+  "fallback": {
+   "what": "the fallback kernel on the same inputs, and RAW_NATIVE_HW_DISABLE=cooperative_matrix",
+   "bound": "the fallback meets the same accuracy bound; with the feature forced off the tool runs only the fallback and says so"
+  }
+ },
+ "timing": "GPU timestamps, 10 warm-up and 100 measured dispatches a size on the RTX 4090 (3 on SwiftShader, fallback only, not a claim). Reported: median, p5, p95, p99, IQR and TFLOPS at the median (2 M N K flops). The speedup of the tensor-core kernel over the fallback is the ratio of medians with a 95% bootstrap interval (10,000 resamples); 'faster' needs an interval above 1. No comparison with vendor libraries is made.",
+ "adapters": "SwiftShader Vulkan locally (no cooperative matrix: the fallback and the forced-off path only); the RTX 4090 only under D:/gpu.lock.d",
+ "does_not_prove": "Peak tensor-core throughput (the kernel is not tuned: no shared-memory staging, no double buffering); correctness for other types or shapes than those run; anything about D3D12.",
+ "method_note_1": "Added 2026-10-10 after the first SwiftShader run and before any run of the new control. The two committed controls apply to the tensor-core kernel only, so on an adapter without cooperative matrices nothing showed that the accuracy check can fail. Added: control_fallback_skip_k, the fallback kernel with its last 16-wide K tile skipped; bound: the accuracy bound fails. It runs on every adapter."
+}

@@ -120,4 +120,68 @@ struct Timing {
 // flat = true runs the control kernel, whose work ignores n.
 Timing timestampLinearity(Device& dev, bool flat, int repetitions = 21);
 
+// H1.1: closest hits by inline ray query (bounds in evidence/hw-h1-1-bounds.json).
+struct RayIn { float ox, oy, oz, tmin, dx, dy, dz, tmax; };
+struct HitOut { float t, u, v; int32_t tri; };   // tri -1 on a miss; u, v weight vertices b and c
+struct TraceOptions {
+    float offset[3]{0, 0, 0};   // added to the instance transform (the offset control)
+    int warmup{0}, repeats{0};  // timed repeats of the trace dispatch after the first
+};
+struct TraceResult {
+    bool ran{false};            // false: unsupported, forced off, or an error (see error)
+    std::string error;
+    double buildMs{0};          // GPU time of the bottom- and top-level builds
+    std::vector<double> traceMs;   // one GPU time per measured repeat
+};
+// H1.4: the async-compute schedules (bounds in evidence/hw-h1-4-bounds.json).
+enum class Schedule : uint8_t { Serial, Async, WrongWaitControl };
+struct AsyncRun {
+    bool ran{false};
+    std::string error;
+    std::vector<uint32_t> z;   // the consumer's output
+    double wallMs{0};          // first submission to both fences complete (QueryPerformanceCounter)
+};
+// Run one schedule with fresh buffers. Async and the control need the async_compute feature.
+AsyncRun asyncSchedule(Device& dev, Schedule s, uint32_t n);
+
+// H1.2 (bounds in evidence/hw-h1-2-bounds.json): a full prefix sum and a bilateral filter, each
+// in its hardware form and its portable form, timed with GPU timestamps.
+enum class ScanForm : uint8_t { Shared, Wave, WaveDropControl };
+struct KernelRun {
+    bool ran{false};
+    std::string error;
+    std::vector<uint32_t> u;    // scan output
+    std::vector<float> f;       // filter output
+    std::vector<double> ms;     // GPU time of each measured dispatch sequence
+};
+KernelRun scanFull(Device& dev, const std::vector<uint32_t>& in, ScanForm form, int warmup, int repeats);
+// rgb: 3 floats a pixel. fp16: the native 16-bit form (needs native_16bit), else fp32.
+KernelRun bilateral(Device& dev, const std::vector<float>& rgb, uint32_t w, uint32_t h, bool fp16, int warmup, int repeats);
+
+// H1.3 (bounds in evidence/hw-h1-3-bounds.json): a visibility buffer drawn by vertex pulling or by
+// amplification and mesh shaders. Meshlets are 12 words each: first triangle, count, two pad
+// words, centre xyz, radius, cone axis xyz, cone half-angle (negative: no cone). Constants are
+// 48 words: view-projection rows (16), six frustum planes (24), eye xyz and a pad (4), meshlet
+// count and three pads (4), as src/rhi/d3d12/hw_shaders/hw_mesh.hlsl declares them.
+enum class GeomPath : uint8_t { Vertex, Mesh, MeshConeFlipControl };
+struct VisInput {
+    std::vector<float> triangles;       // 9 floats a triangle
+    std::vector<uint32_t> meshlets;     // 12 words a meshlet
+    uint32_t constants[48]{};
+    uint32_t width{0}, height{0};
+};
+struct VisDraw {
+    bool ran{false};
+    std::string error;
+    std::vector<uint32_t> ids;          // triangle index per pixel, 0xFFFFFFFF where nothing was drawn
+    std::vector<float> depth;
+    uint32_t keptMeshlets{0};           // mesh paths: survivors of the amplification shader (first draw)
+    std::vector<double> ms;
+};
+VisDraw drawVisibility(Device& dev, const VisInput& in, GeomPath path, int warmup, int repeats);
+
+// Triangles are 9 floats each (a, b, c). Hits are written for every ray.
+TraceResult traceRayQuery(Device& dev, const std::vector<float>& triangles, const std::vector<RayIn>& rays,
+                          const TraceOptions& opt, std::vector<HitOut>& hits);
+
 }  // namespace raw::rhi::hw

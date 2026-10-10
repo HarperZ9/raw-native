@@ -1,0 +1,34 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "HW H1.3: mesh and amplification shaders with meshlet culling, against vertex pulling (mission-control 2026-10-10-engine-hw/PLAN.md)",
+ "written": "2026-10-10, before the implementation and the first run",
+ "reference_note": "PLAN.md names the RHI v3 vertex-pulling path as the reference. A new pass through the RHI needs the shared WGSL translator, so the reference here is a vertex-pulling pipeline in the hw module that shares the pixel shader, root signature, render targets and raster state with the mesh pipeline; only the geometry stage differs. A comparison through the RHI itself is left for a later dated step.",
+ "geometry": "the H1.1 procedural scenes terrain and hall (src/tools/hw_scenes.cpp), non-indexed, split in order into meshlets of at most 32 triangles (96 vertices), each with a bounding sphere and a normal cone computed on the CPU",
+ "pipelines": {
+  "vertex": "VS pulls positions from a buffer and passes the triangle index (SV_VertexID / 3) without interpolation; back faces culled (counter-clockwise front), depth test Less into D32_FLOAT",
+  "mesh": "an amplification shader (one thread a meshlet) drops meshlets outside the view frustum and meshlets whose normal cone shows only back faces, then a mesh shader emits the survivors' triangles with the triangle index as a per-primitive attribute; same raster and depth state",
+  "pixel": "one pixel shader for both: writes the triangle index to an R32_UINT target"
+ },
+ "cameras": "three per scene (wide, close, grazing), 1920 x 1080, stated in src/tools/hw_mesh_cmd.cpp before the run",
+ "checks": {
+  "identity": {
+   "what": "the triangle-index target and the depth target of the two pipelines, every pixel, every scene and camera",
+   "bound": "bit-equal (0 differing pixels in either target)"
+  },
+  "culling_works": {
+   "what": "meshlets the amplification shader keeps, read back through a counter",
+   "bound": "reported per camera; the close camera must drop at least one meshlet, or the culling path was not exercised and that is reported as non-discriminating"
+  },
+  "control_cone": {
+   "what": "the amplification shader with the cone test's sign flipped (drops front-facing meshlets)",
+   "bound": "pixels differ on every scene and camera"
+  },
+  "fallback": {
+   "what": "RAW_NATIVE_HW_DISABLE=mesh_shader",
+   "bound": "the tool runs the vertex pipeline only and says so"
+  }
+ },
+ "timing": "GPU timestamps around each draw, 50 warm-up and 500 measured on the RTX 4090 (5 on WARP, not a claim); median, p5, p95, p99, IQR; speedup of the mesh pipeline over vertex pulling as the ratio of medians with a 95% bootstrap interval; 'faster' needs an interval above 1; a null is reported as one",
+ "adapters": "D3D12 WARP (mesh shader tier 1) with the debug layer locally and in CI; the RTX 4090 only under D:/gpu.lock.d",
+ "does_not_prove": "Identity with the RHI v3 raster path (see reference_note); gains in a full frame with shading; behaviour with indexed meshes or vertex reuse inside meshlets."
+}

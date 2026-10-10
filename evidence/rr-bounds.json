@@ -1,0 +1,41 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "HW H2: ray reconstruction, our own learned denoiser and 2x upscaler for path-traced signal (mission-control 2026-10-10-engine-hw/PLAN.md)",
+ "written": "2026-10-10, before any dataset, model or training job exists",
+ "data": {
+  "renderer": "RT's compute path tracer (mission-control 2026-10-10-engine-rt), or the H1 hardware tracer only after it matches RT's within RT's own convergence bounds. The renderer commit is recorded per frame.",
+  "assets": "owned only: procedural scenes in raw-native and the owned assets of the M3 and RT sessions. No third-party model.",
+  "inputs": "per frame at the input resolution: radiance at 1 sample a pixel divided by albedo (demodulated), albedo, normal, linear depth, roughness, motion vectors to the previous frame, and the network's previous output reprojected",
+  "targets": "per frame at the output resolution: radiance at no fewer than 4,096 samples a pixel, and until the per-pixel standard error of the mean is below 1% of the mean on at least 99% of pixels (checked per frame; a frame that misses it is re-rendered with more samples, never kept)",
+  "camera_paths": "64 frames each",
+  "modes": "denoise (input and output at 1920 x 1080) and denoise plus 2x upscale (input 960 x 540, output 1920 x 1080)",
+  "provenance": "evidence/rr-dataset.json lists for every frame the scene, generator commit, seed, camera, sample count, renderer commit and the SHA-256 of every file"
+ },
+ "split": "evidence/rr-split.json, fixed before any frame is rendered: scenes are assigned whole to train, validation or test. A test scene is never rendered for training, and a hash check over every training frame against every test frame runs before each training job and fails the job on any match.",
+ "model": {
+  "shape": "a small recurrent U-Net with kernel prediction, our own design and code",
+  "budget": "at most 2.0 ms at 1920 x 1080 output on the RTX 4090 through cooperative matrix (median of 500 frames after 50 warm-up); the portable compute fallback has no time bound",
+  "inference_parity": "our cooperative-matrix kernels and the fallback each within 1e-2 absolute of the PyTorch forward pass in linear radiance, on every pixel of every test frame"
+ },
+ "training": "PyTorch from an existing environment, read only, version recorded; jobs of at most 60 minutes, checkpointed every 10 minutes, queued under D:/gpu.lock.d. Hyperparameters are chosen on validation scenes only.",
+ "baselines": "SVGF (Schied et al. 2017) implemented by us from the paper, and SVGF followed by M3's TAA. Both run on the same inputs. No vendor denoiser or upscaler binary is used or compared.",
+ "metrics": {
+  "flip": "FLIP (Andersson et al. 2020), our implementation; LDR FLIP on the tone-mapped frame (one fixed tone mapper, recorded) at 67 pixels per degree. Before it is used for any verdict, it must agree with the BSD-3 reference implementation within 1e-3 mean FLIP on the reference implementation's own test pair, or that check is recorded as not done and every FLIP number is labelled unchecked.",
+  "psnr": "PSNR in linear radiance (peak: the 99.9th percentile of the target) and on the tone-mapped frame",
+  "temporal_instability": "mean over pixels and frames of |(out_t - warp(out_{t-1})) - (ref_t - warp(ref_{t-1}))|, warping with the true motion vectors and skipping disoccluded pixels",
+  "ghosting": "M3's TAA ghosting metric as M3 defines it, applied unchanged"
+ },
+ "success": {
+  "quality": "on the held-out test scenes, in each mode: mean FLIP lower and mean PSNR higher than SVGF, each with a paired bootstrap 95% interval (10,000 resamples over frames) that excludes zero",
+  "temporal": "temporal instability no worse than SVGF plus TAA: the paired bootstrap 95% interval of (ours - baseline) has an upper end at or below zero",
+  "ghosting": "no worse than SVGF plus TAA by the same interval rule",
+  "budget": "the model budget above"
+ },
+ "controls_that_must_fail": {
+  "shuffled_targets": "the same network trained on targets shuffled across frames must fail the quality criterion",
+  "zero_motion": "the trained network evaluated with motion vectors set to zero must fail the ghosting criterion",
+  "train_on_test_guard": "the leakage hash check, given a training set with one test frame inserted, must fail the job"
+ },
+ "reporting": "results on test scenes are reported whatever they are; the gap between train and test scores is reported beside them",
+ "does_not_prove": "Quality on scenes, materials or lighting unlike the owned set; that our numbers compare to any vendor reconstruction (none is run); anything about real-time use beyond the stated budget."
+}

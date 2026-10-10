@@ -1,0 +1,19 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/hw-h1-7-bounds.json",
+ "adapter": "NVIDIA GeForce RTX 4090",
+ "backend": "vulkan 1.4.341",
+ "disable": "",
+ "cooperative_matrix": true,
+ "path": "tensor cores and fallback",
+ "error": "",
+ "warmup": 1,
+ "repeats": 3,
+ "sizes": [
+  {"n":1024,"fallback":{"ran":true,"checked":24576,"over_bound":0,"worst_over_bound":0.00153806,"rms_vs_cpu_fp32":1,"within_bound":true,"timing":{"n":3,"median_ms":0.305152,"p5_ms":0.303683,"p95_ms":0.305469,"p99_ms":0.305497,"iqr_ms":0.000992,"tflops_at_median":7.03742}},"control_fallback_skip_k":{"ran":true,"checked":24576,"over_bound":24117,"worst_over_bound":172.254,"rms_vs_cpu_fp32":213798,"within_bound":false},"control_fallback_fails":true,"tensor":{"ran":true,"checked":24576,"over_bound":0,"worst_over_bound":0.00377125,"rms_vs_cpu_fp32":3.05172,"within_bound":true,"timing":{"n":3,"median_ms":0.043008,"p5_ms":0.0428928,"p95_ms":0.0433536,"p99_ms":0.0433843,"iqr_ms":0.000256,"tflops_at_median":49.9322}},"control_skip_k":{"ran":true,"checked":24576,"over_bound":24116,"worst_over_bound":172.254,"rms_vs_cpu_fp32":213798,"within_bound":false},"control_layout":{"ran":true,"checked":24576,"over_bound":24531,"worst_over_bound":1795.12,"rms_vs_cpu_fp32":2.3951e+06,"within_bound":false},"controls_fail":true,"speedup":{"median_ratio":7.09524,"ci95":[6.99484,7.12463]}},
+  {"n":2048,"fallback":{"ran":true,"checked":24576,"over_bound":0,"worst_over_bound":0.00105613,"rms_vs_cpu_fp32":1,"within_bound":true,"timing":{"n":3,"median_ms":2.38179,"p5_ms":2.37494,"p95_ms":2.38188,"p99_ms":2.38189,"iqr_ms":0.003856,"tflops_at_median":7.213}},"control_fallback_skip_k":{"ran":true,"checked":24576,"over_bound":22722,"worst_over_bound":41.4717,"rms_vs_cpu_fp32":110852,"within_bound":false},"control_fallback_fails":true,"tensor":{"ran":true,"checked":24576,"over_bound":0,"worst_over_bound":0.00213316,"rms_vs_cpu_fp32":4.18492,"within_bound":true,"timing":{"n":3,"median_ms":0.36768,"p5_ms":0.337699,"p95_ms":0.371856,"p99_ms":0.372227,"iqr_ms":0.018976,"tflops_at_median":46.7251}},"control_skip_k":{"ran":true,"checked":24576,"over_bound":22721,"worst_over_bound":41.4716,"rms_vs_cpu_fp32":110852,"within_bound":false},"control_layout":{"ran":true,"checked":24576,"over_bound":24473,"worst_over_bound":738.312,"rms_vs_cpu_fp32":1.70363e+06,"within_bound":false},"controls_fail":true,"speedup":{"median_ratio":6.47789,"ci95":[6.37671,7.12355]}},
+  {"n":4096,"fallback":{"ran":true,"checked":24576,"over_bound":0,"worst_over_bound":0.00040987,"rms_vs_cpu_fp32":1,"within_bound":true,"timing":{"n":3,"median_ms":20.3824,"p5_ms":20.3766,"p95_ms":20.388,"p99_ms":20.3885,"iqr_ms":0.006304,"tflops_at_median":6.74302}},"control_fallback_skip_k":{"ran":true,"checked":24576,"over_bound":17209,"worst_over_bound":10.7197,"rms_vs_cpu_fp32":53365.4,"within_bound":false},"control_fallback_fails":true,"tensor":{"ran":true,"checked":24576,"over_bound":0,"worst_over_bound":0.00151772,"rms_vs_cpu_fp32":5.83996,"within_bound":true,"timing":{"n":3,"median_ms":10.5476,"p5_ms":9.9355,"p95_ms":11.0479,"p99_ms":11.0923,"iqr_ms":0.617984,"tflops_at_median":13.0303}},"control_skip_k":{"ran":true,"checked":24576,"over_bound":17209,"worst_over_bound":10.7195,"rms_vs_cpu_fp32":53365.4,"within_bound":false},"control_layout":{"ran":true,"checked":24576,"over_bound":24234,"worst_over_bound":228.078,"rms_vs_cpu_fp32":1.19527e+06,"within_bound":false},"controls_fail":true,"speedup":{"median_ratio":1.93242,"ci95":[1.8351,2.06624]}}
+ ],
+ "validation_errors": 0,
+ "pass": true
+}

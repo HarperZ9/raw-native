@@ -1,0 +1,14 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/hw-h1-3-bounds.json",
+ "adapter": "Microsoft Basic Render Driver",
+ "disable": "mesh_shader",
+ "warmup": 0,
+ "repeats": 1,
+ "scenes": [
+  {"scene":"terrain","views":[{"camera":"wide","covered_pixels":792915,"id_differences":null,"depth_differences":null,"meshlets":1600,"kept":null,"control_id_differences":null,"error":"mesh shaders forced off","vertex_time":{"n":1,"median_ms":9.3174,"p5_ms":9.3174,"p95_ms":9.3174,"p99_ms":9.3174,"iqr_ms":0},"mesh_time":null,"mesh_speedup":null,"pass":true},{"camera":"close","covered_pixels":1425792,"id_differences":null,"depth_differences":null,"meshlets":1600,"kept":null,"control_id_differences":null,"error":"mesh shaders forced off","vertex_time":{"n":1,"median_ms":6.2011,"p5_ms":6.2011,"p95_ms":6.2011,"p99_ms":6.2011,"iqr_ms":0},"mesh_time":null,"mesh_speedup":null,"pass":true},{"camera":"grazing","covered_pixels":1250076,"id_differences":null,"depth_differences":null,"meshlets":1600,"kept":null,"control_id_differences":null,"error":"mesh shaders forced off","vertex_time":{"n":1,"median_ms":9.5942,"p5_ms":9.5942,"p95_ms":9.5942,"p99_ms":9.5942,"iqr_ms":0},"mesh_time":null,"mesh_speedup":null,"pass":true}]},
+  {"scene":"hall","views":[{"camera":"wide","covered_pixels":1383725,"id_differences":null,"depth_differences":null,"meshlets":352,"kept":null,"control_id_differences":null,"error":"mesh shaders forced off","vertex_time":{"n":1,"median_ms":2.593,"p5_ms":2.593,"p95_ms":2.593,"p99_ms":2.593,"iqr_ms":0},"mesh_time":null,"mesh_speedup":null,"pass":true},{"camera":"close","covered_pixels":533531,"id_differences":null,"depth_differences":null,"meshlets":352,"kept":null,"control_id_differences":null,"error":"mesh shaders forced off","vertex_time":{"n":1,"median_ms":1.9926,"p5_ms":1.9926,"p95_ms":1.9926,"p99_ms":1.9926,"iqr_ms":0},"mesh_time":null,"mesh_speedup":null,"pass":true},{"camera":"grazing","covered_pixels":990151,"id_differences":null,"depth_differences":null,"meshlets":352,"kept":null,"control_id_differences":null,"error":"mesh shaders forced off","vertex_time":{"n":1,"median_ms":2.6948,"p5_ms":2.6948,"p95_ms":2.6948,"p99_ms":2.6948,"iqr_ms":0},"mesh_time":null,"mesh_speedup":null,"pass":true}]}
+ ],
+ "culling_exercised_on_close_cameras": false,
+ "pass": true
+}

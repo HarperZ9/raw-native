@@ -1,0 +1,34 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/hw-h1-4-bounds.json (committed 3facfc2 before any code or run)",
+ "runs": [
+  {
+   "run": 1,
+   "adapter": "D3D12 WARP, debug layer on",
+   "n": 4096,
+   "result": "pass: serial and async bit-equal to the CPU over 11 repetitions; the wrong-wait control differs on 65,536 of 65,536 elements, as required. Wall medians 84.9 ms serial, 76.6 ms async; gain 1.11 with interval [0.99, 1.18], which includes 1: no overlap claim (and WARP is not a claim in any case)."
+  },
+  {
+   "run": "forced off",
+   "adapter": "same",
+   "result": "pass: serial schedule only, matching the CPU"
+  },
+  {
+   "run": 2,
+   "adapter": "D3D12 WARP, debug layer on",
+   "n": 4096,
+   "result": "after moving the async branch into a helper (no behaviour change): pass, 0 mismatches, control differs on 65,536 elements. The overlap numbers in hw-h1-4-d3d12-warp.json are from this run."
+  },
+  {
+   "run": "RTX",
+   "adapter": "RTX 4090, driver 610.88 (DXGI 32.0.16.1088), under D:/gpu.lock.d, 2026-10-10 19:47 to 19:53Z",
+   "n": 262144,
+   "result": "pass: bit-equal over 210 repetitions; the wrong-wait control differs on all 65,536 elements. Overlap gain 0.999 [0.94, 1.06]: a null, no overlap measured for two identical compute kernels. hw-h1-4-d3d12-rtx4090.json"
+  },
+  {
+   "run": "RTX reruns",
+   "n": 262144,
+   "result": "Timing note (2026-10-10, after the reruns): the first RTX window (19:47 to 19:53Z) was disturbed by GPU use outside the lock protocol (inferred: the H1.2 shared scan's own distribution turned bimodal mid-run, p95 9.3 ms against a 0.28 ms median, while no lock holder overlapped). Its timings are kept and marked unreliable; they are not used for any statement. Quiet reruns: overlap gain 0.985 [0.978, 0.999] and 0.994 [0.987, 0.997]: async is about 1% slower than serial for two identical compute kernels; no overlap gain. Correctness and the control passed in every run."
+  }
+ ]
+}

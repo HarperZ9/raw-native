@@ -1,0 +1,19 @@
+#version 460
+// HW H1.0 (Vulkan): one 16 x 16 x 16 fp16 multiply-accumulate on cooperative matrices
+// (VK_KHR_cooperative_matrix); only pipeline creation is checked here (H1.7 measures it).
+#extension GL_KHR_cooperative_matrix : require
+#extension GL_KHR_memory_scope_semantics : require
+#extension GL_EXT_shader_explicit_arithmetic_types_float16 : require
+layout(local_size_x = 32) in;
+layout(std430, binding = 0) buffer A { float16_t a[]; };
+layout(std430, binding = 1) buffer B { float16_t b[]; };
+layout(std430, binding = 2) buffer C { float c[]; };
+void main() {
+    coopmat<float16_t, gl_ScopeSubgroup, 16, 16, gl_MatrixUseA> ma;
+    coopmat<float16_t, gl_ScopeSubgroup, 16, 16, gl_MatrixUseB> mb;
+    coopmat<float, gl_ScopeSubgroup, 16, 16, gl_MatrixUseAccumulator> mc = coopmat<float, gl_ScopeSubgroup, 16, 16, gl_MatrixUseAccumulator>(0.0);
+    coopMatLoad(ma, a, 0, 16, gl_CooperativeMatrixLayoutRowMajor);
+    coopMatLoad(mb, b, 0, 16, gl_CooperativeMatrixLayoutRowMajor);
+    mc = coopMatMulAdd(ma, mb, mc);
+    coopMatStore(mc, c, 0, 16, gl_CooperativeMatrixLayoutRowMajor);
+}

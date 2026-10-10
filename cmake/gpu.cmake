@@ -138,13 +138,20 @@ endfunction()
 # each with its own profile and flags, embedded in raw_hw_dxil.hpp for src/rhi/d3d12/hw_*.cpp.
 function(raw_native_hw_shaders gen out_header)
     set(dir "${CMAKE_CURRENT_SOURCE_DIR}/src/rhi/d3d12/hw_shaders")
-    # name|source|profile|extra flags (semicolons in flags are spaces here)
+    # name|source|profile|extra flags|entry point (flags are space-separated; entry defaults to main)
     set(entries
         "hw_scan_wave|hw_scan_wave|cs_6_0|"
         "hw_scan_shared|hw_scan_shared|cs_6_0|"
         "hw_half|hw_half|cs_6_2|-enable-16bit-types"
         "hw_half_fallback|hw_half_fallback|cs_6_0|"
         "hw_rayquery_probe|hw_rayquery_probe|cs_6_5|"
+        "hw_rayquery|hw_rayquery|cs_6_5|"
+        "hw_scan_level_shared|hw_scan_level|cs_6_0|-DMODE=0 -DDROP=0" "hw_scan_level_wave|hw_scan_level|cs_6_0|-DMODE=1 -DDROP=0"
+        "hw_scan_level_drop|hw_scan_level|cs_6_0|-DMODE=1 -DDROP=1" "hw_scan_add|hw_scan_add|cs_6_0|"
+        "hw_bilateral_fp32|hw_bilateral|cs_6_0|-DMODE=0" "hw_bilateral_fp16|hw_bilateral|cs_6_2|-enable-16bit-types -DMODE=1"
+        "hw_mesh_vs|hw_mesh|vs_6_5||vs" "hw_mesh_as|hw_mesh|as_6_5||as" "hw_mesh_as_flip|hw_mesh|as_6_5|-DCONE_FLIP=1|as"
+        "hw_mesh_ms|hw_mesh|ms_6_5||ms" "hw_mesh_ps|hw_mesh|ps_6_5||ps"
+        "hw_async_p|hw_async|cs_6_0|-DMODE=0" "hw_async_w|hw_async|cs_6_0|-DMODE=1" "hw_async_c|hw_async|cs_6_0|-DMODE=2"
         "hw_busy|hw_busy|cs_6_0|-DFLAT=0"
         "hw_busy_flat|hw_busy|cs_6_0|-DFLAT=1")
     set(headers "")
@@ -161,9 +168,13 @@ function(raw_native_hw_shaders gen out_header)
             list(GET f 3 extra)
             separate_arguments(extra)
         endif()
+        set(entry main)   # optional fifth field: the entry point
+        if(nf GREATER 4)
+            list(GET f 4 entry)
+        endif()
         set(h "${gen}/hwdxil_${name}.h")
         add_custom_command(OUTPUT "${h}"
-            COMMAND "${RAW_NATIVE_DXC}" -T ${profile} -E main -HV 2021 -Gis -O3 -Qstrip_debug -Qstrip_reflect ${extra}
+            COMMAND "${RAW_NATIVE_DXC}" -T ${profile} -E ${entry} -HV 2021 -Gis -O3 -Qstrip_debug -Qstrip_reflect ${extra}
                     -Fh "${h}" -Vn "kHwDxil_${name}" "${dir}/${src}.hlsl"
             DEPENDS "${dir}/${src}.hlsl" VERBATIM
             COMMENT "dxc ${src}.hlsl (${name})")
@@ -198,7 +209,7 @@ if(RAW_NATIVE_GPU_D3D12)
     add_library(raw_native_d3d12 STATIC src/rhi/d3d12/d3d12_device.cpp src/rhi/d3d12/d3d12_commands.cpp
         src/rhi/d3d12/d3d12_raster.cpp src/rhi/d3d12/d3d12_texture.cpp
         src/renderer/gpu/shaders_dxil.cpp
-        src/rhi/d3d12/hw_queue.cpp src/rhi/d3d12/hw_probe.cpp src/rhi/d3d12/hw_checks.cpp
+        src/rhi/d3d12/hw_queue.cpp src/rhi/d3d12/hw_probe.cpp src/rhi/d3d12/hw_checks.cpp src/rhi/d3d12/hw_rayquery.cpp src/rhi/d3d12/hw_async.cpp src/rhi/d3d12/hw_wave16.cpp src/rhi/d3d12/hw_mesh.cpp
         ${RAW_NATIVE_DXIL_HEADERS} ${RAW_NATIVE_HW_DXIL_HEADERS})
     target_include_directories(raw_native_d3d12 PRIVATE "${gen}")
     target_link_libraries(raw_native_d3d12 PUBLIC raw_native d3d12 dxgi)
@@ -247,8 +258,61 @@ if(RAW_NATIVE_GPU_D3D12)
         target_link_libraries(gpu_hw_probe PRIVATE raw_native_d3d12)
         add_test(NAME gpu_hw_probe COMMAND gpu_hw_probe)
         set_tests_properties(gpu_hw_probe PROPERTIES SKIP_RETURN_CODE 77)
+        # HW H1.1: inline ray query against the CPU BVH (evidence/hw-h1-1-bounds.json).
+        add_executable(gpu_hw_rayquery tests/gpu/hw_rayquery.cpp)
+        target_link_libraries(gpu_hw_rayquery PRIVATE raw_native_d3d12)
+        add_test(NAME gpu_hw_rayquery COMMAND gpu_hw_rayquery)
+        set_tests_properties(gpu_hw_rayquery PROPERTIES SKIP_RETURN_CODE 77)
     endif()
     message(STATUS "raw-native: D3D12 backend on, shaders compiled by ${RAW_NATIVE_DXC}")
 else()
     target_sources(raw_native_cli PRIVATE ${RAW_NATIVE_NULL_BACKEND})
+endif()
+
+# HW workstream, Vulkan half (evidence/hw-h1-0-vk-bounds.json). Optional and off by default:
+# RAW_NATIVE_VULKAN=ON builds raw_native_vk_probe against the Vulkan SDK's loader and headers,
+# with the GLSL kernels in src/rhi/vulkan/shaders/ compiled to SPIR-V by its glslangValidator.
+option(RAW_NATIVE_VULKAN "Build the Vulkan hardware probe tool (needs the Vulkan SDK)" OFF)
+if(RAW_NATIVE_VULKAN AND NOT EMSCRIPTEN)
+    find_package(Vulkan REQUIRED COMPONENTS glslangValidator)
+    set(vkgen "${CMAKE_CURRENT_BINARY_DIR}/gen-vk")
+    set(vkdir "${CMAKE_CURRENT_SOURCE_DIR}/src/rhi/vulkan/shaders")
+    # name|source|defines
+    set(vk_entries "vk_scan_subgroup|vk_scan_subgroup|" "vk_scan_shared|vk_scan_shared|" "vk_half|vk_half|"
+        "vk_half_fallback|vk_half_fallback|" "vk_busy|vk_busy|-DFLAT=0" "vk_busy_flat|vk_busy|-DFLAT=1"
+        "vk_rayquery_probe|vk_rayquery_probe|" "vk_coopmat_probe|vk_coopmat_probe|"
+        "vk_gemm_coop|vk_gemm_coop|" "vk_gemm_coop_skipk|vk_gemm_coop|-DSKIP_K=1" "vk_gemm_coop_bcol|vk_gemm_coop|-DB_COLMAJOR=1"
+        "vk_gemm_tiled|vk_gemm_tiled|" "vk_gemm_tiled_skipk|vk_gemm_tiled|-DSKIP_K=1")
+    set(vk_headers "")
+    set(vk_includes "")
+    set(vk_table "")
+    foreach(e ${vk_entries})
+        string(REPLACE "|" ";" f "${e}")
+        list(GET f 0 name)
+        list(GET f 1 src)
+        list(LENGTH f nf)
+        set(defs "")
+        if(nf GREATER 2)
+            list(GET f 2 defs)
+        endif()
+        set(h "${vkgen}/spv_${name}.h")
+        add_custom_command(OUTPUT "${h}"
+            COMMAND Vulkan::glslangValidator -V --target-env vulkan1.3 ${defs} --vn "kSpv_${name}" -o "${h}" "${vkdir}/${src}.comp"
+            DEPENDS "${vkdir}/${src}.comp" VERBATIM
+            COMMENT "glslang ${src}.comp (${name})")
+        list(APPEND vk_headers "${h}")
+        string(APPEND vk_includes "#include \"spv_${name}.h\"\n")
+        string(APPEND vk_table "    {\"${name}\", kSpv_${name}, sizeof kSpv_${name}},\n")
+    endforeach()
+    file(WRITE "${vkgen}/raw_vk_spirv.hpp.tmp"
+        "#pragma once\n// Generated by cmake/gpu.cmake. Do not edit.\n#include <cstddef>\n#include <cstdint>\n${vk_includes}"
+        "struct VkSpirvBlob { const char* name; const uint32_t* words; std::size_t bytes; };\n"
+        "inline constexpr VkSpirvBlob kVkSpirv[] = {\n${vk_table}};\n")
+    configure_file("${vkgen}/raw_vk_spirv.hpp.tmp" "${vkgen}/raw_vk_spirv.hpp" COPYONLY)
+    add_executable(raw_native_vk_probe app/vk_probe.cpp src/rhi/vulkan/vk_context.cpp src/rhi/vulkan/vk_probe.cpp
+        src/rhi/vulkan/vk_compute.cpp src/rhi/vulkan/vk_checks.cpp src/rhi/vulkan/vk_gemm.cpp ${vk_headers})
+    target_include_directories(raw_native_vk_probe PRIVATE "${vkgen}" "${CMAKE_CURRENT_SOURCE_DIR}")
+    target_compile_features(raw_native_vk_probe PRIVATE cxx_std_23)
+    target_link_libraries(raw_native_vk_probe PRIVATE Vulkan::Vulkan)
+    message(STATUS "raw-native: Vulkan probe tool on (${Vulkan_LIBRARY})")
 endif()
