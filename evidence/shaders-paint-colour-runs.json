@@ -1,0 +1,366 @@
+{
+ "what": "Runs of tools/shaders/paint_colour_check.mjs against evidence/shaders-paint-colour-bounds.json",
+ "runs": [
+  {
+   "name": "main",
+   "commit": "3b84cba",
+   "date": "2026-10-11",
+   "note": "before the fix: the diagnosis",
+   "result": {
+    "bounds": "evidence/shaders-paint-colour-bounds.json",
+    "colours": 348,
+    "presets": {
+     "oil-grotesque": {
+      "counts": {
+       "dark": 131,
+       "saturated": 175,
+       "neutral": 9,
+       "mid": 193
+      },
+      "checks": [
+       {
+        "name": "dark mean chroma gain",
+        "value": 0.305,
+        "limit": 0.05,
+        "worst": [
+         12,
+         12,
+         12
+        ],
+        "pass": false
+       },
+       {
+        "name": "dark pixel chroma gain",
+        "value": 0.3225,
+        "limit": 0.08,
+        "worst": [
+         0,
+         0,
+         0
+        ],
+        "pass": false
+       },
+       {
+        "name": "dark lightness gain",
+        "value": 0.6903,
+        "limit": 0.12,
+        "worst": [
+         0,
+         0,
+         0
+        ],
+        "pass": false
+       },
+       {
+        "name": "saturated chroma kept",
+        "value": 0.1193,
+        "limit": 0.7,
+        "worst": [
+         255,
+         153,
+         204
+        ],
+        "pass": false
+       },
+       {
+        "name": "saturated hue shift",
+        "value": 139.0316,
+        "limit": 20,
+        "worst": [
+         102,
+         102,
+         0
+        ],
+        "pass": false
+       },
+       {
+        "name": "neutral cast",
+        "value": 0.0921,
+        "limit": 0.05,
+        "worst": [
+         255,
+         255,
+         255
+        ],
+        "pass": false
+       },
+       {
+        "name": "mid lightness",
+        "value": 0.3271,
+        "limit": 0.22,
+        "worst": [
+         255,
+         0,
+         0
+        ],
+        "pass": false
+       }
+      ]
+     },
+     "oil": {
+      "counts": {
+       "dark": 131,
+       "saturated": 175,
+       "neutral": 9,
+       "mid": 193
+      },
+      "checks": [
+       {
+        "name": "dark mean chroma gain",
+        "value": 0.0782,
+        "limit": 0.05,
+        "worst": [
+         12,
+         12,
+         12
+        ],
+        "pass": false
+       },
+       {
+        "name": "dark pixel chroma gain",
+        "value": 0.0914,
+        "limit": 0.08,
+        "worst": [
+         12,
+         12,
+         12
+        ],
+        "pass": false
+       },
+       {
+        "name": "dark lightness gain",
+        "value": 0.1688,
+        "limit": 0.12,
+        "worst": [
+         0,
+         0,
+         0
+        ],
+        "pass": false
+       },
+       {
+        "name": "saturated chroma kept",
+        "value": 0.3053,
+        "limit": 0.7,
+        "worst": [
+         255,
+         153,
+         204
+        ],
+        "pass": false
+       },
+       {
+        "name": "saturated hue shift",
+        "value": 52.0607,
+        "limit": 20,
+        "worst": [
+         102,
+         204,
+         255
+        ],
+        "pass": false
+       },
+       {
+        "name": "neutral cast",
+        "value": 0.0597,
+        "limit": 0.05,
+        "worst": [
+         255,
+         255,
+         255
+        ],
+        "pass": false
+       },
+       {
+        "name": "mid lightness",
+        "value": 0.1696,
+        "limit": 0.12,
+        "worst": [
+         255,
+         51,
+         0
+        ],
+        "pass": false
+       }
+      ]
+     },
+     "gouache": {
+      "counts": {
+       "dark": 131,
+       "saturated": 175,
+       "neutral": 9,
+       "mid": 193
+      },
+      "checks": [
+       {
+        "name": "dark mean chroma gain",
+        "value": 0.3161,
+        "limit": 0.05,
+        "worst": [
+         3,
+         3,
+         3
+        ],
+        "pass": false
+       },
+       {
+        "name": "dark pixel chroma gain",
+        "value": 0.3225,
+        "limit": 0.08,
+        "worst": [
+         0,
+         0,
+         0
+        ],
+        "pass": false
+       },
+       {
+        "name": "dark lightness gain",
+        "value": 0.6814,
+        "limit": 0.12,
+        "worst": [
+         0,
+         0,
+         0
+        ],
+        "pass": false
+       },
+       {
+        "name": "saturated chroma kept",
+        "value": 0.3485,
+        "limit": 0.7,
+        "worst": [
+         255,
+         153,
+         204
+        ],
+        "pass": false
+       },
+       {
+        "name": "saturated hue shift",
+        "value": 48.7825,
+        "limit": 20,
+        "worst": [
+         0,
+         0,
+         51
+        ],
+        "pass": false
+       },
+       {
+        "name": "neutral cast",
+        "value": 0.0526,
+        "limit": 0.05,
+        "worst": [
+         255,
+         255,
+         255
+        ],
+        "pass": false
+       },
+       {
+        "name": "mid lightness",
+        "value": 0.1929,
+        "limit": 0.2,
+        "worst": [
+         204,
+         0,
+         0
+        ],
+        "pass": true
+       }
+      ]
+     },
+     "watercolour": {
+      "counts": {
+       "dark": 131,
+       "saturated": 175,
+       "neutral": 9,
+       "mid": 193
+      },
+      "checks": [
+       {
+        "name": "dark mean chroma gain",
+        "value": 0.0758,
+        "limit": 0.05,
+        "worst": [
+         12,
+         12,
+         12
+        ],
+        "pass": false
+       },
+       {
+        "name": "dark pixel chroma gain",
+        "value": 0.1502,
+        "limit": 0.08,
+        "worst": [
+         12,
+         12,
+         0
+        ],
+        "pass": false
+       },
+       {
+        "name": "dark lightness gain",
+        "value": 0.4327,
+        "limit": null,
+        "worst": [
+         0,
+         0,
+         0
+        ],
+        "pass": true
+       },
+       {
+        "name": "saturated chroma kept",
+        "value": 0.2237,
+        "limit": 0.55,
+        "worst": [
+         153,
+         0,
+         51
+        ],
+        "pass": false
+       },
+       {
+        "name": "saturated hue shift",
+        "value": 86.2993,
+        "limit": 20,
+        "worst": [
+         153,
+         102,
+         0
+        ],
+        "pass": false
+       },
+       {
+        "name": "neutral cast",
+        "value": 0.0368,
+        "limit": 0.05,
+        "worst": [
+         255,
+         255,
+         255
+        ],
+        "pass": true
+       },
+       {
+        "name": "mid lightness",
+        "value": 0.2421,
+        "limit": null,
+        "worst": [
+         48,
+         48,
+         36
+        ],
+        "pass": true
+       }
+      ]
+     }
+    },
+    "pass": false
+   }
+  }
+ ]
+}

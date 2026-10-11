@@ -1,0 +1,23 @@
+{
+  "what": "The painterly shader's colour on flat regions: the CPU reference (web/shaders/paint) on flat patches, every preset. Defect found 2026-10-11 by the explainer-characters work: near-black came out magenta (sRGB 3,3,3 gave 255,0,255) and saturated orange came out muddy (240,107,31 gave 150,135,74).",
+  "fixed_before_first_run": "2026-10-11, after the diagnosis below and before any run of the fix",
+  "diagnosis": {
+    "measured_on_main_3b84cba": "tools/shaders/paint_colour_check.mjs on main 3b84cba fails 25 of 28 checks: oil-grotesque dark patches gain up to 0.305 OKLab chroma and black rises to L 0.69, saturated patches keep as little as 12% of their chroma and turn up to 139 degrees, white takes a 0.092 chroma cast; gouache and watercolour fail the same way; plain oil least (dark +0.078 chroma, chroma kept 31%, 52 degrees). Full output: evidence/shaders-paint-colour-runs.json, entry main.",
+    "causes": [
+      "Value massing divides by the pixel's luminance clamped at 1e-4 and multiplies by a band value floored at 0.02. Below the pigments' gamut the residual drives the luminance to or below zero, so a near-black pixel is scaled by up to 200x and its hue error becomes full magenta. The floor also lifts every value under Y 0.075 to 0.02.",
+      "The temperature push and broken colour add phthalo blue, magenta or hansa yellow by fixed concentration, whatever the pixel's chroma. In Kubelka-Munk, a tenth of phthalo in an orange is mud. A residual computed for the unpushed pigments is then added to the pushed ones; where the residual is large (colours outside the four pigments' gamut, such as near-black) the sum leaves the gamut."
+    ]
+  },
+  "method": "Flat 48 x 48 patches of 348 sRGB colours (a 6-level cube, a 5-level cube over 0 to 48, and 3,3,3; 23,18,14; 240,107,31; 224,172,105; 20,60,200; 250,250,250; 128,128,128) in one frame, decoded to linear light. Each preset paints the frame on the CPU. The 16 x 16 interior of each patch is read (16 px from its edges), clamped to [0, 1], in OKLab. 'Dark' is source L at most 0.30, 'saturated' source chroma at least 0.10, 'neutral' chroma under 0.03 and L over 0.30, 'mid' L in (0.30, 0.90).",
+  "bounds": {
+    "dark_mean_chroma_gain": "at most 0.05 over the source's chroma, every preset",
+    "dark_pixel_chroma_gain": "at most 0.08 over the source's chroma, every interior pixel, every preset",
+    "dark_lightness_gain": "mean L at most 0.12 over the source's for oil, oil-grotesque and gouache; watercolour exempt (a thin wash shows the paper by design)",
+    "saturated_chroma_kept": "mean chroma at least 0.70 of the source's for oil, oil-grotesque and gouache, at least 0.55 for watercolour (dilution lifts toward the paper)",
+    "saturated_hue_shift": "mean hue within 20 degrees of the source's, every preset",
+    "neutral_cast": "mean chroma at most 0.05, every preset (a temperature tint, not a cast)",
+    "mid_lightness": "mean |L - source L| at most 0.12 for oil, 0.22 for oil-grotesque (its 4 value bands alone shift L by up to 0.181, computed from the band function) and 0.20 for gouache (5 bands, 0.152 alone); watercolour exempt (dilution lifts toward the paper by design)",
+    "gpu_parity": "unchanged: evidence/shaders-paint-parity-bounds.json, shaders-paint-postframes-parity-bounds.json, shaders-paint-motion-parity-bounds.json, and the post-pass gate's 1 code"
+  },
+  "does_not_prove": "That the look is good, or that the presets keep their character; colours only on flat regions (edges, strokes and lines are covered by the parity tests, not by this)."
+}
