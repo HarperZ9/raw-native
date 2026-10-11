@@ -129,20 +129,23 @@ export function crane(ci, cj) {
 }
 
 // A small fishing boat moored in the water, drawn in screen space round the cell it floats
-// on: a dark hull, a pale deck line, a wheelhouse, a mast with a lantern.
+// on: a hull with a sheer that rises to the bow, a rust strake and tyre fenders, a low
+// wheelhouse with one lit window, a net pile on the stern, a mast with a lantern.
 export function boat(ci, cj, z = -0.6) {
-  const [x, y] = S(ci, cj, z), items = [];
-  items.push({ shape: P(`M ${x - 190} ${y + 8} C ${x - 120} ${y + 40} ${x + 120} ${y + 40} ${x + 210} ${y - 4} Z`), fill: [0.01, 0.02, 0.03, 0.55] });
-  items.push({ shape: P(`M ${x - 200} ${y - 70} L ${x + 230} ${y - 96} C ${x + 210} ${y - 40} ${x + 150} ${y + 6} ${x + 60} ${y + 10} L ${x - 150} ${y + 6} C ${x - 186} ${y - 20} ${x - 200} ${y - 50} ${x - 200} ${y - 70} Z`),
-    fill: lin(x, y - 90, x, y + 10, [0, C.hull], [1, C.hullDark]), stroke: INK, width: 4 });
-  items.push({ shape: P(`M ${x - 196} ${y - 70} L ${x + 228} ${y - 96}`), fill: null, stroke: "#c9bfa4", width: 5 });
-  items.push({ shape: P(`M ${x - 120} ${y - 46} L ${x + 120} ${y - 60}`), fill: null, stroke: "#8a3a24", width: 7 });
-  items.push({ shape: P(`M ${x - 70} ${y - 74} L ${x + 30} ${y - 80} L ${x + 26} ${y - 160} L ${x - 66} ${y - 154} Z`), fill: "#5d4c3c", stroke: INK, width: 4 });
-  items.push({ shape: P(`M ${x - 52} ${y - 120} L ${x - 6} ${y - 124} L ${x - 8} ${y - 148} L ${x - 54} ${y - 144} Z`), fill: "#e7b45c", stroke: INK, width: 3 });
-  items.push({ shape: P(`M ${x - 76} ${y - 152} L ${x + 36} ${y - 160} L ${x + 30} ${y - 172} L ${x - 70} ${y - 166} Z`), fill: "#2c2420", stroke: INK, width: 3 });
-  const mx = x + 110, my = y - 84;
-  items.push({ shape: line([[mx, my], [mx - 6, my - 260]]), fill: null, stroke: "#2a201a", width: 6 }, { shape: line([[mx - 6, my - 260], [x - 190, y - 74]]), fill: null, stroke: "#2a201a", width: 2 });
-  const lx = mx - 5, ly = my - 200;
+  const [x, y] = S(ci, cj, z), items = [], q = (dx, dy) => `${(x + dx).toFixed(1)} ${(y + dy).toFixed(1)}`;
+  items.push({ shape: P(`M ${q(-200, 6)} C ${q(-120, 36)} ${q(130, 36)} ${q(220, 0)} C ${q(130, 20)} ${q(-120, 20)} ${q(-200, 6)} Z`), fill: [0.01, 0.02, 0.03, 0.6] });
+  items.push({ shape: P(`M ${q(-180, -58)} C ${q(-60, -70)} ${q(120, -82)} ${q(214, -118)} C ${q(200, -60)} ${q(170, -18)} ${q(120, 2)} C ${q(40, 10)} ${q(-120, 10)} ${q(-162, 0)} C ${q(-176, -18)} ${q(-182, -40)} ${q(-180, -58)} Z`),
+    fill: lin(x, y - 100, x, y + 8, [0, "#2f4652"], [0.55, C.hull], [1, C.hullDark]), stroke: INK, width: 4 });
+  items.push({ shape: P(`M ${q(-178, -58)} C ${q(-60, -70)} ${q(120, -82)} ${q(212, -116)}`), fill: null, stroke: "#d8cfb4", width: 5 });
+  items.push({ shape: P(`M ${q(-170, -30)} C ${q(-60, -40)} ${q(110, -50)} ${q(190, -74)}`), fill: null, stroke: "#8a3a24", width: 9 });
+  for (const dx of [-110, -20, 70]) items.push({ shape: P(ellipse(x + dx, y - 40 - dx * 0.06, 13, 15)), fill: "#151414", stroke: INK, width: 2 });
+  items.push({ shape: P(`M ${q(-140, -64)} C ${q(-120, -96)} ${q(-80, -100)} ${q(-60, -70)} Z`), fill: "#5e6a52", stroke: INK, width: 3 });
+  items.push({ shape: P(`M ${q(-30, -74)} L ${q(70, -82)} L ${q(66, -150)} L ${q(-26, -144)} Z`), fill: lin(x - 30, 0, x + 70, 0, [0, "#7a6550"], [1, "#4c3d30"]), stroke: INK, width: 4 });
+  items.push({ shape: P(`M ${q(-14, -112)} L ${q(30, -116)} L ${q(28, -138)} L ${q(-16, -134)} Z`), fill: "#f0bf62", stroke: INK, width: 3 });
+  items.push({ shape: P(`M ${q(-40, -142)} L ${q(80, -152)} L ${q(74, -164)} L ${q(-34, -156)} Z`), fill: "#2c2420", stroke: INK, width: 3 });
+  const mx = x + 120, my = y - 86;
+  items.push({ shape: line([[mx, my], [mx - 6, my - 250]]), fill: null, stroke: "#2a201a", width: 6 }, { shape: line([[mx - 6, my - 250], [x - 176, y - 62]]), fill: null, stroke: "#2a201a", width: 2 });
+  const lx = mx - 5, ly = my - 190;
   items.push({ shape: P(ellipse(lx, ly, 10, 13)), fill: rad(lx, ly, 13, [0, "#fff4d0"], [1, C.lamp]), stroke: INK, width: 2 });
   return { d: depth(ci, cj, -1), items, light: [lx, ly] };
 }

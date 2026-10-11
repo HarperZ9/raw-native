@@ -28,10 +28,10 @@ export const GUIDES = {
       { name: "one more drip for the jar", o: { armL: -8, elbL: -78, propL: "jar", armR: 30, elbR: 110, prop: null, lid: 0.55, mouth: 0.6, look: [-9, 6] } },
     ],
     light(style, cam, b) {
-      const [fx, fy] = toScreen(cam, b.x + FLAME[0] * b.s, b.y + FLAME[1] * b.s), k = cam.zoom * b.s;
-      if (style === "thriller") return [darkness(fx, fy + 260 * k, 1500 * k, 0.93), glow(fx, fy, 700 * k, [1, 0.6, 0.25], 0.55)];
+      const [fx, fy] = toScreen(cam, b.x + FLAME[0] * b.s, b.y + FLAME[1] * b.s), k = cam.zoom * b.s, fl = (b.o && b.o.flame) ?? 1;
+      if (style === "thriller") return [darkness(fx, fy + 260 * k, 1500 * k, 0.93 + 0.05 * (1 - fl)), glow(fx, fy, 700 * k * (0.6 + 0.4 * fl), [1, 0.6, 0.25], 0.55 * fl)];
       // No glow in pixel mode: a smooth falloff posterises into rings on a fixed palette.
-      return style === "pixel" ? [] : [glow(fx, fy, 520 * k, [1, 0.62, 0.3], 0.35)];
+      return style === "pixel" ? [] : [glow(fx, fy, 520 * k * (0.6 + 0.4 * fl), [1, 0.62, 0.3], 0.35 * fl)];
     },
   },
   pylon: {
@@ -42,7 +42,7 @@ export const GUIDES = {
       { name: "your call", o: { tilt: 8, lid: 0.5, flipR: 55, look: [2, 2] } },
       { name: "balances a claim, learns nothing", o: { tilt: -3, lid: 0.55, card: true, look: [3, -8] } },
       { name: "an estimate: a 15 degree tilt", o: { tilt: 15, lid: 0.5 }, yaw: 15 },
-      { name: "noted (one bark)", o: { bark: 1, lid: 0.42, tilt: -4, flipL: 25 } },
+      { name: "noted (one bark)", o: { bark: 0.7, lid: 0.55, tilt: 3, look: [0, -4], flipL: 25 } },
     ],
     light(style, cam, b) {
       const [cx, cy] = toScreen(cam, b.x, b.y - 560 * b.s), k = cam.zoom * b.s;

@@ -28,7 +28,7 @@ const one = (name, img) => {
 };
 
 // The beach and shelf, by hand. Base layer: surf, wet sand, sand. Rock layer: the shelf.
-const BEACH_W = 34;
+const BEACH_W = 42;
 const fit = (s) => s.padEnd(BEACH_W, s.slice(-1)).slice(0, BEACH_W);
 const BASE = [
   "fFfFfFfFfFfFfFfFfFfFfFfFfFfFfFfFfF",
@@ -38,6 +38,9 @@ const BASE = [
   "..3.s....S.....3..s......%.....s..",
   ".s....3......s......S..3.....S....",
   "S...%....s.3.....s.......s..3....s",
+  "..s....3.....S......%......s..3...",
+  "s.....S...3......s.....3.......s..",
+  "...3.......s..S.......s.....%.....",
 ].map(fit);
 const ROCK = [
   "..................................",
@@ -47,6 +50,9 @@ const ROCK = [
   "bx-o---O-pxoE.....................",
   "-O-bxo--x--bE.....................",
   "||||||||||||#.....................",
+  "..................................",
+  "..................................",
+  "..................................",
 ].map(fit);
 const BASE_KEY = { f: "foam", F: "foam2", w: "wet", t: "wetToSand", s: "sand", S: "sand2", 3: "sand3", ".": "sandPlain", "%": "sandShell" };
 const ROCK_KEY = { ".": null, "-": "rockPlain", x: "rockShade", l: "shelfTop", L: "shelfTop2", e: "shelfEndR", o: "rockFlat", O: "rockFlat2", b: "rockBarnacle", p: "rockPit", E: "rockEdgeR", "|": "shelfFace", "#": "shelfFaceEndR" };
@@ -59,14 +65,14 @@ const SKY = [
   ["b", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"],
   ["c", "cccccccccccccccccccccccccccccccccc"],
   ["z", "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"],
-].map(([, r]) => r);
+].map(([, r]) => fit(r));
 const SKY_KEY = { v: "void", V: "voidStar", n: "voidNight", N: "voidNightStar", g: "night", h: "nightBlue", b: "blue", c: "blueSlate", z: "horizon" };
 const SEA = [
   "ffffffffffffffffffffffFfffffffffff",
   "mmmmmmmmmmmmmmmmmmmmmmMmmmmmmmmmmm",
   "mmmmmmmmmmmmmmmmmmmmmmMmmmmmmmmmmm",
   "mmmmmmmmmmmmmmmmmmmmmmmMmmmmmmmmmm",
-];
+].map(fit);
 const SEA_KEY = { f: "far", F: "farGlint", m: "mid", M: "midGlint" };
 
 export async function loadTidepool(motion) {
@@ -95,7 +101,7 @@ export async function loadTidepool(motion) {
 export const sprite = (W, name, lx, ly, f = 1) => place(W.sprites[name].map, "tp-" + name, lx, ly, f);
 
 // The world's layers behind the characters, and the foreground in front of them.
-export function tidepool(W) {
+export function tidepool(W, { front: withFront = true } = {}) {
   const back = [
     place(W.sky, "tp-sky", -32, 0, DEPTH.sky),
     sprite(W, "moon", 316, 26, DEPTH.sky),
@@ -106,7 +112,7 @@ export function tidepool(W) {
     sprite(W, "boulder", 166, 168),
     sprite(W, "driftwood", 228, 186), sprite(W, "pebbles", 214, 252), sprite(W, "starfish", 438, 200), sprite(W, "pebbles", 400, 262),
   ];
-  const front = [sprite(W, "kelp", -8, 204, DEPTH.front), sprite(W, "kelpR", 452, 216, DEPTH.front)];
+  const front = withFront ? [sprite(W, "kelp", -8, 204, DEPTH.front), sprite(W, "kelpR", 452, 216, DEPTH.front)] : [];
   return { back, front };
 }
 

@@ -55,17 +55,17 @@ function door(A, x, y, w, h) {
 
 export function thrillerSet(A) {
   const items = [
-    { shape: rect(0, 0, 1920, HORIZON), fill: lin(0, 0, 0, HORIZON, [0, "#121716"], [1, "#1f2522"]) },
-    { shape: P(hatch(0, 0, 1920, HORIZON, { gap: 22, angle: 90, wobble: 1.5, seed: "wallpaper", step: 40 })), fill: null, stroke: [0.55, 0.6, 0.5, 0.08], width: 2 },
-    { shape: rect(0, 470, 1920, HORIZON - 470), fill: "#17110e" },
-    { shape: rect(0, 462, 1920, 12), fill: "#2c2119", stroke: INK, width: 2 },
-    { shape: rect(0, HORIZON, 1920, 1080 - HORIZON), fill: lin(0, HORIZON, 0, 1080, [0, "#2a241f"], [1, "#100d0b"]) },
+    { shape: rect(-800, -400, 3520, HORIZON + 400), fill: lin(0, 0, 0, HORIZON, [0, "#121716"], [1, "#1f2522"]) },
+    { shape: P(hatch(-800, -400, 2720, HORIZON, { gap: 22, angle: 90, wobble: 1.5, seed: "wallpaper", step: 40 })), fill: null, stroke: [0.55, 0.6, 0.5, 0.08], width: 2 },
+    { shape: rect(-800, 470, 3520, HORIZON - 470), fill: "#17110e" },
+    { shape: rect(-800, 462, 3520, 12), fill: "#2c2119", stroke: INK, width: 2 },
+    { shape: rect(-800, HORIZON, 3520, 1080 - HORIZON + 400), fill: lin(0, HORIZON, 0, 1080, [0, "#2a241f"], [1, "#100d0b"]) },
   ];
-  for (let i = -12; i <= 12; i++) {
+  for (let i = -20; i <= 20; i++) {
     const xb = 960 + i * 150, t = (HORIZON - 1080) / (VP[1] - 1080), xh = xb + (VP[0] - xb) * t;
     items.push({ shape: P(`M ${xb} 1080 L ${xh.toFixed(1)} ${HORIZON}`), fill: null, stroke: [0, 0, 0, 0.55], width: 2.5 });
   }
-  items.push({ shape: rect(0, HORIZON - 2, 1920, 6), fill: "#0c0907" });
+  items.push({ shape: rect(-800, HORIZON - 2, 3520, 6), fill: "#0c0907" });
   items.push(...cabinet(A, 170, 300, 230, 340), ...door(A, 1360, 150, 250, 490));
   // A wall clock past three, a framed notice.
   items.push({ shape: P(ellipse(960, 190, 46, 46)), fill: "#6f6a5c", stroke: INK, width: 4 },

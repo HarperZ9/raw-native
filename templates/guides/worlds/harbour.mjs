@@ -12,6 +12,8 @@ import { office, shed, crates, bollard, lamp, noticeboard, crane, boat, pier, li
 export const HARBOUR_CAMERA = { x: 1000, y: 500, zoom: 0.9 };
 export const LAMP = [4.75, 5.9];                   // the lamp's ground cell: shadows fall away from it
 export const WATER_Z = -0.6;
+// The net shed stands clear of the office so its fallen roof reads (PROGRESS.md, step 12).
+const SHED = { i0: 5.4, j0: 0.3, i1: 8.4, j1: 2.5, h: 2.6 };
 
 // The ground, one character per cell (column i, row j). c cobbles, m mossy cobbles, p the worn
 // path from the door to the pier, f flags in front of the door, g a drain grate, k the granite
@@ -130,7 +132,7 @@ export function harbour(W, extra = []) {
   for (let j = 0; j < L.height; j++) for (let i = 0; i < L.width; i++) ground.push(...cell(NAMES[L.gids[j * L.width + i]], i, j));
   const lp = lamp(LAMP[0], LAMP[1]), bt = boat(17.6, 9.8);
   const things = [
-    shed(), office(W.atlas), crates(5.6, 0.6, 3), crates(9.4, 12.6, 2), noticeboard(4.35, 8.9), lp, crane(11.2, 2.6),
+    shed(SHED), office(W.atlas), crates(6.4, 3.4, 3), crates(9.4, 12.6, 2), noticeboard(4.35, 8.9), lp, crane(11.2, 2.6),
     bollard(12.4, 1.4), bollard(12.4, 4.6), bollard(12.4, 9.0), bollard(12.4, 13.4), pier(12, 16.5, 5.3, 6.7), bt, ...extra,
   ];
   const pools = [

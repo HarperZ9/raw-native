@@ -21,9 +21,11 @@ export function rerun(o = {}) {
   // Legs: three a side, jointed, behind the body.
   for (const sgn of [-1, 1]) for (let i = 0; i < 3; i++) {
     const hx = sgn * (46 + i * 14), hy = -78 + i * 6, kx = sgn * (110 + i * 26), ky = -120 + i * 18, fx = sgn * (128 + i * 34), fy = -2;
-    const z = 20 - i * 25;
-    add({ d: limb(hx, hy, kx, ky, 18, 14, -6 * sgn), pivot: [hx, hy, z], fill: lin(hx, hy, kx, ky, [0, C.body], [1, C.bodyDark]), stroke: INK, width: 3, dz: -20 });
-    add({ d: limb(kx, ky, fx, fy, 14, 4, 4 * sgn), pivot: [kx, ky, z], fill: lin(kx, ky, fx, fy, [0, C.body], [1, C.bodyLit]), stroke: INK, width: 3, dz: -19 });
+    // Legs spread front to back in depth, so a side view fans them out instead of stacking
+    // them; they narrow side on. The far side's legs sit a little deeper.
+    const z = 60 - i * 60 + (sgn < 0 ? 6 : 0);
+    add({ d: limb(hx, hy, kx, ky, 18, 14, -6 * sgn), pivot: [hx, hy, z], side: 0.45, fill: lin(hx, hy, kx, ky, [0, C.body], [1, C.bodyDark]), stroke: INK, width: 3, dz: -20 });
+    add({ d: limb(kx, ky, fx, fy, 14, 4, 4 * sgn), pivot: [kx, ky, z], side: 0.45, fill: lin(kx, ky, fx, fy, [0, C.body], [1, C.bodyLit]), stroke: INK, width: 3, dz: -19 });
   }
   // The shell, on its back.
   if (shell === "prism") {

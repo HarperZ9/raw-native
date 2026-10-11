@@ -9,6 +9,7 @@ export const PYLON = {
   sash: "#7e2a1f", brass: "#c79a2b", board: "#7a5230", paper: "#ece2c8", eye: "#0c0b0d", whisker: "#efe9d8",
 };
 const C = PYLON;
+export let BARK = "round";
 
 // Seal mottling: irregular dark rings and spots with alpha, seeded.
 export function pylonTextures() {
@@ -85,7 +86,10 @@ export function pylon(o = {}) {
   F({ d: ellipse(-24, -404, 30, 22), fill: rad(-30, -410, 30, [0, "#c9c3b2"], [1, "#8d8a80"]), stroke: INK, width: 2.5, dz: 40 });
   F({ d: ellipse(24, -404, 30, 22), fill: rad(18, -410, 30, [0, "#c9c3b2"], [1, "#8d8a80"]), stroke: INK, width: 2.5, dz: 40 });
   F({ d: "M -16 -432 C -10 -442 10 -442 16 -432 C 10 -420 -10 -420 -16 -432 Z", fill: "#1a1718", stroke: INK, width: 2, dz: 42 });
-  if (bark > 0) F({ d: `M -22 -384 C -12 ${-382 + 26 * bark} 12 ${-382 + 26 * bark} 22 -384 C 10 -380 -10 -380 -22 -384 Z`, fill: "#3a1a1c", stroke: INK, width: 2.5, dz: 41 });
+  // The bark: "wide" is the round 1 open jaw; "round" is a small round "o", level and calm
+  // (PROGRESS.md, step 12, for the test between them).
+  if (bark > 0 && (o.barkShape ?? BARK) === "round") F({ d: ellipse(0, -378 + 6 * bark, 9 + 3 * bark, 5 + 9 * bark), fill: "#3a1a1c", stroke: INK, width: 2.5, dz: 41 });
+  else if (bark > 0) F({ d: `M -22 -384 C -12 ${-382 + 26 * bark} 12 ${-382 + 26 * bark} 22 -384 C 10 -380 -10 -380 -22 -384 Z`, fill: "#3a1a1c", stroke: INK, width: 2.5, dz: 41 });
   else F({ d: "M -17 -381 L 17 -381", fill: null, stroke: INK, width: 2.5, dz: 41 });
   for (const sgn of [-1, 1]) for (let i = 0; i < 4; i++) {
     const y0 = -410 + i * 7;
@@ -101,6 +105,20 @@ export function pylon(o = {}) {
     F({ d: `M ${ex - 24} ${ey - 4} C ${ex - 22} ${ey - 32} ${ex + 22} ${ey - 32} ${ex + 24} ${ey - 4} L ${ex + 22} ${lidY} L ${ex - 22} ${lidY} Z`,
       fill: lin(0, ey - 28, 0, lidY, [0, "#8c929a"], [1, "#737981"]), stroke: null, dz: 46, clip: sgn < 0 ? "eyeL" : "eyeR" });
     F({ d: `M ${ex - 19} ${lidY} L ${ex + 19} ${lidY}`, fill: null, stroke: INK, width: 3, dz: 47 });
+  }
+  // Profile parts, seen only near a side view (the front-facing face is hidden there): a
+  // snout, one eye with its level lid, a nostril, the mouth line and whiskers. Drawn for the
+  // side the guide turns toward; the far side's set is the mirror.
+  for (const sgn of [1, -1]) {
+    const Pf = (p) => H({ face: -90 * sgn, vis: 0.85, side: 1, dz: 60, ...p });
+    const m = (x) => sgn * x;
+    Pf({ d: `M ${m(50)} -440 C ${m(96)} -446 ${m(122)} -420 ${m(118)} -396 C ${m(112)} -378 ${m(80)} -372 ${m(52)} -384 Z`, fill: rad(m(80), -420, 60, [0, "#a3a9b1"], [1, C.body]), stroke: INK, width: 3.5 });
+    Pf({ d: `M ${m(108)} -424 C ${m(116)} -426 ${m(122)} -418 ${m(120)} -410 C ${m(114)} -408 ${m(108)} -414 ${m(108)} -424 Z`, fill: "#1a1718", stroke: INK, width: 2 });
+    Pf({ d: `M ${m(116)} -392 L ${m(78)} -386`, fill: null, stroke: INK, width: 2.5 });
+    Pf({ d: ellipse(m(40), -456, 13, 18), fill: C.eye, stroke: INK, width: 2, name: sgn > 0 ? "eyeP" : "eyeQ" });
+    Pf({ d: `M ${m(26)} -476 L ${m(54)} -476 L ${m(54)} ${-475 + 30 * lid} L ${m(26)} ${-475 + 30 * lid} Z`, fill: "#7a8088", clip: sgn > 0 ? "eyeP" : "eyeQ", dz: 61 });
+    Pf({ d: `M ${m(26)} ${-475 + 30 * lid} L ${m(54)} ${-475 + 30 * lid}`, fill: null, stroke: INK, width: 3, dz: 62 });
+    for (let i = 0; i < 3; i++) Pf({ d: `M ${m(96)} ${-404 + i * 6} C ${m(130)} ${-410 + i * 8} ${m(160)} ${-402 + i * 10} ${m(184 - i * 8)} ${-392 + i * 12}`, fill: null, stroke: C.whisker, width: 1.8, dz: 63 });
   }
   if (hat) for (const p of coneParts(4, -500, { scale: 1, pivot: [0, -384, 30] })) H({ ...p, rot: 7 + (p.rot || 0), dz: 80 + (p.dz || 0) });
   if (card) {

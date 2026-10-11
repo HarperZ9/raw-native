@@ -11,6 +11,7 @@ import { thrillerSet } from "./sets.mjs";
 import { loadTidepool, tidepool, REF } from "./worlds/tidepool.mjs";
 import { loadHarbour, harbour, HARBOUR_CAMERA, LAMP } from "./worlds/harbour.mjs";
 import { S as isoS, depth as isoDepth, sorted, castShadow } from "./worlds/iso_kit.mjs";
+import { clipBeat, framing, CLIPS } from "./motion.mjs";
 const ATLAS = new URL("../../docs/motion/hanken-grotesk-500.atlas.json", import.meta.url).href;
 
 let atlasP = null;
@@ -28,9 +29,9 @@ async function loadAll(ctx) {
 // The world behind a guide and the part of it in front, with the world's own camera. In the
 // painted harbour, things that stand on the ground (the guide among them, passed in `extra`
 // as { d, items }) are drawn in depth order with the buildings and props.
-export function world(style, A, extra = []) {
+export function world(style, A, extra = [], opts = {}) {
   if (style === "thriller") return { items: [...thrillerSet(A), ...extra.flatMap((t) => t.items)], front: [], camera: { x: 960, y: 540, zoom: 1 } };
-  if (style === "pixel") { const w = tidepool(A.pixel); return { items: [...w.back, ...extra.flatMap((t) => t.items)], front: w.front, camera: { ...REF, zoom: 1 } }; }
+  if (style === "pixel") { const w = tidepool(A.pixel, { front: !opts.noFront }); return { items: [...w.back, ...extra.flatMap((t) => t.items)], front: w.front, camera: { ...REF, zoom: 1 } }; }
   const w = harbour(A.painted, extra);
   return { items: [...w.back, ...sorted(w.things)], front: w.front, camera: { ...HARBOUR_CAMERA } };
 }
@@ -63,6 +64,7 @@ function sceneFrame(g, style, A, beat) {
   const L = LOOKS[style];
   let { x, y } = beat;
   if (beat.cell) [x, y] = isoS(...beat.cell);
+  if (beat.offset) { x += beat.offset[0]; y += beat.offset[1]; }
   const guide = [...g.under(x, y, beat.s, style), ...pose(g.parts(beat.o), { x, y, s: beat.s, yaw: beat.yaw || 0, flip: beat.flip, shear: g.shear || 0 })];
   const extra = [];
   if (beat.cell) {
@@ -73,13 +75,13 @@ function sceneFrame(g, style, A, beat) {
     if (beat.props) extra.push({ d: 0, items: beat.props(style, A) });
     extra.push({ d: 1, items: guide });
   }
-  const w = world(style, A, extra), cam = { ...w.camera, ...(beat.camera || {}) };
+  const w = world(style, A, extra, { noFront: beat.noFront }), cam = { ...w.camera, ...(beat.camera || {}) };
   const items = [...w.items];
   if (beat.front) items.push(...beat.front(style, A, cam));
   if (g.light) items.push(...g.light(style, cam, { ...beat, x, y }));
   items.push(...w.front);
   const hud = beat.hud ? beat.hud(style, A, L) : [];
-  return { background: L.ground, camera: cam, items, hud, post: L.post, ...pixelOf(style, false) };
+  return { background: L.ground, camera: cam, items, hud, post: L.post, ...pixelOf(style, false), ...(beat.pixel ? { pixel: beat.pixel } : {}) };
 }
 
 // Labels and key terms (the hud) go on top of the art. A painted shot renders them apart,
@@ -94,15 +96,24 @@ function layered(f, layer) {
   return { ...f, items: layer === "art" ? f.items : [...f.items, ...f.hud] };
 }
 
-// shot({ guide, style, kind, beat, layer }) -> a Motion scene module.
-export function shot({ guide, style, kind = "scene", beat = null, title, layer = null }) {
+// shot({ guide, style, kind, beat, layer, clip, frame }) -> a Motion scene module. clip is
+// "idle", "talk" or "action" (motion.mjs) and makes the scene move; frame is "wide",
+// "medium" or "close".
+export function shot({ guide, style, kind = "scene", beat = null, title, layer = null, clip = null, frame = null }) {
   const g = GUIDES[guide];
   return {
-    title: title || `${g.title}: ${kind} (${style})`, duration: 1, fps: 30,
+    title: title || `${g.title}: ${kind} (${style})`, duration: clip ? CLIPS[clip] : 1, fps: 30,
     async load(ctx) { return loadAll(ctx); },
     frame(t, ctx) {
       const A = ctx.assets;
-      const f = kind === "sheet" ? sheetFrame(g, style, A) : sceneFrame(g, style, A, beat || g.beats[style]);
+      let b = beat || g.beats[style];
+      if (kind !== "sheet") {
+        if (clip) b = clipBeat(guide, clip, b, t);
+        const base = world(style, A).camera;
+        b = { ...b, ...framing(guide, style, b, frame, { ...base, ...(b.camera || {}) }) };
+        if (frame && frame !== "wide" && b.hud) b = { ...b, hud: null };
+      }
+      const f = kind === "sheet" ? sheetFrame(g, style, A) : sceneFrame(g, style, A, b);
       return layered(f, layer === "all" ? null : layer || (style === "painted" ? "art" : null));
     },
   };

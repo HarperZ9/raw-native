@@ -3,8 +3,9 @@
 
     python tools/guides/render_all.py --out DIR [--only NAME ...] [--jobs 2]
 
-Each shot is drawn by the Motion renderer on Chrome's SwiftShader adapter (software WebGPU,
-so no GPU lock is needed) through tools/guides/still.py, with its style's post stack in the
+Each shot is drawn by the Motion renderer through tools/guides/still.py, on Chrome's
+SwiftShader adapter by default (software WebGPU, no GPU lock) or with --adapter gpu under
+the D:/gpu.lock.d protocol, with its style's post stack in the
 display list: the paint pass for the painted harbour, film then the soft tube for the
 thriller, and pixel mode with the tidepool's fixed palette for the pixel shore. Nothing is
 finished by hand afterwards. The one extra step is for painted shots with labels: the hud
@@ -34,9 +35,22 @@ def style_of(name: str) -> str:
     return HOME.get(name) or next(s for s in ("thriller", "painted", "pixel") if s in name)
 
 
+ADAPTER = ["--adapter", "swiftshader"]
+
+
 def still(scene: str, out: Path) -> None:
-    r = subprocess.run([sys.executable, str(ROOT / "tools" / "guides" / "still.py"), "--scene", scene, "--out", str(out), "--t", "0.2"],
-                       capture_output=True, text=True)
+    # The local page server sometimes drops a fetch under load ("Failed to fetch"): retry twice.
+    for _ in range(3):
+        # A render that hangs (seen once on the GPU adapter) is stopped after 5 minutes and retried.
+        try:
+            r = subprocess.run([sys.executable, str(ROOT / "tools" / "guides" / "still.py"), "--scene", scene, "--out", str(out), "--t", "0.2", *ADAPTER],
+                               capture_output=True, text=True, timeout=300)
+        except subprocess.TimeoutExpired:
+            continue
+        if r.returncode == 0 or "Failed to fetch" not in (r.stdout + r.stderr):
+            break
+    else:
+        raise RuntimeError(f"{scene}: three attempts failed or timed out")
     if r.returncode != 0:
         raise RuntimeError(f"{scene}: render failed\n{r.stdout[-2000:]}\n{r.stderr[-2000:]}")
 
@@ -66,7 +80,9 @@ def main() -> int:
     ap.add_argument("--out", required=True)
     ap.add_argument("--only", nargs="*")
     ap.add_argument("--jobs", type=int, default=2)
+    ap.add_argument("--adapter", choices=["swiftshader", "gpu"], default="swiftshader", help="gpu only under the D:/gpu.lock.d protocol")
     a = ap.parse_args()
+    ADAPTER[1] = a.adapter
     out = Path(a.out).resolve()
     (out / "raw").mkdir(parents=True, exist_ok=True)
     names = sorted(p.stem for p in SHOTS.glob("*.mjs"))
@@ -76,7 +92,7 @@ def main() -> int:
         record = dict(ex.map(lambda n: render(n, out), names))
     prev = out / "renders.json"
     old = json.loads(prev.read_text(encoding="utf-8")).get("renders", {}) if prev.exists() else {}
-    meta = {"adapter": "swiftshader", "size": [1920, 1080], "renders": {**old, **record}}
+    meta = {"adapter": a.adapter, "size": [1920, 1080], "renders": {**old, **record}}
     prev.write_text(json.dumps(meta, indent=1), encoding="utf-8")
     return 0
 
