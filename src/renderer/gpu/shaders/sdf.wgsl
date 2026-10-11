@@ -14,6 +14,28 @@ struct SdfParams {
 // flags: 1 force sun visibility to 1 (M5 control), 2 SDF always in front (M6 control)
 const PI: f32 = 3.14159265;
 
+// Power 8 without trigonometry (evidence/rt-r3-bounds.json, method note 6): with rho^2 = x^2 + y^2,
+// z' = Re((z + i rho)^8) and x' + i y' = (Im((z + i rho)^8) / rho) (x + i y)^8 / rho^7.
+fn bulb8_step(z: vec3f, p: vec3f) -> vec3f {
+    let q2: f32 = z.x * z.x + z.y * z.y;
+    let w2: f32 = z.z * z.z;
+    let w4: f32 = w2 * w2;
+    let w6: f32 = w4 * w2;
+    let q4: f32 = q2 * q2;
+    let q6: f32 = q4 * q2;
+    let im: f32 = 8.0 * z.z * (((w6 - 7.0 * w4 * q2) + 7.0 * w2 * q4) - q6);
+    let re: f32 = (((w4 * w4 - 28.0 * w6 * q2) + 70.0 * w4 * q4) - 28.0 * w2 * q6) + q4 * q4;
+    let c2r: f32 = z.x * z.x - z.y * z.y;
+    let c2i: f32 = 2.0 * z.x * z.y;
+    let c4r: f32 = c2r * c2r - c2i * c2i;
+    let c4i: f32 = 2.0 * c2r * c2i;
+    let c8r: f32 = c4r * c4r - c4i * c4i;
+    let c8i: f32 = 2.0 * c4r * c4i;
+    let rho7: f32 = q6 * sqrt(q2);
+    var xy: vec2f = vec2f(0.0, 0.0);
+    if (rho7 > 0.0) { xy = vec2f(im * c8r / rho7, im * c8i / rho7); }
+    return vec3f(xy.x, xy.y, re) + p;
+}
 fn bulb_de(p: vec3f, iters: i32, power: f32) -> f32 {
     var z: vec3f = p;
     var dr: f32 = 1.0;
@@ -21,6 +43,12 @@ fn bulb_de(p: vec3f, iters: i32, power: f32) -> f32 {
     for (var i: i32 = 0; i < iters; i++) {
         r = length(z);
         if (r > 2.0) { break; }
+        if (power == 8.0) {
+            let r2: f32 = r * r;
+            dr = 8.0 * (r2 * r2 * r2 * r) * dr + 1.0;
+            z = bulb8_step(z, p);
+            continue;
+        }
         let theta: f32 = acos(clamp(z.z / r, -1.0, 1.0)) * power;
         let phi: f32 = atan2(z.y, z.x) * power;
         dr = pow(r, power - 1.0) * power * dr + 1.0;
@@ -275,19 +303,22 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 //@pass sdf_fog
 // One invocation per case of C (origin, direction, distance, pad: 8 floats; P.count cases):
 // homogeneous transmittance (sigma = P.fogA), the height fog in closed form, and its numerical
-// march with 256 and with 4 midpoint samples. O: 4 floats a case.
+// march by composite Simpson with 256 and with 4 intervals. O: 4 floats a case.
 @group(0) @binding(0) var<uniform> P: SdfParams;
 @group(0) @binding(1) var<storage, read> N: array<f32>;
 @group(0) @binding(2) var<storage, read> C: array<f32>;
 @group(0) @binding(3) var<storage, read_write> O: array<f32>;
 
+// Composite Simpson over n intervals (n even; method note 5): weights 1, 4, 2, ..., 4, 1 times dt / 3.
 fn fog_march(o: vec3f, d: vec3f, t: f32, n: u32) -> f32 {
     let dt: f32 = t / f32(n);
-    var optical: f32 = 0.0;
-    for (var i: u32 = 0u; i < n; i++) {
-        optical = optical + P.fogA * exp(-P.fogB * (o.y + d.y * (f32(i) + 0.5) * dt)) * dt;
+    var sum: f32 = 0.0;
+    for (var i: u32 = 0u; i <= n; i++) {
+        var w: f32 = 2.0;
+        if (i == 0u || i == n) { w = 1.0; } else if ((i & 1u) == 1u) { w = 4.0; }
+        sum = sum + w * (P.fogA * exp(-P.fogB * (o.y + d.y * f32(i) * dt)));
     }
-    return exp(-optical);
+    return exp(-(sum * dt / 3.0));
 }
 
 @compute @workgroup_size(64)
