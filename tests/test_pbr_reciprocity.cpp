@@ -82,12 +82,14 @@ int main(int argc, char** argv) {
     }
     CHECK(zeroSame);
 
-    // Iridescence: the fast path against the spectral Airy reference.
+    // Iridescence: the series with the specification's interfaces (polarized = false) against the
+    // spectral Airy reference with the same interfaces; it checks the harmonic truncation and the
+    // Gaussian sensitivity. The default polarized path has its own exact reference (test_pbr_improve).
     double worstIr = 0.0, atIor = 0, atD = 0, atCos = 0;
     const Rgb bases[2] = {{0.04, 0.04, 0.04}, {0.95, 0.78, 0.34}};
     for (const Rgb& f0 : bases) for (int fi = 0; fi <= 4; ++fi) for (int d = 1; d <= 10; ++d) for (int c = 1; c <= 10; ++c) {
         const double ior = 1.2 + 0.2 * fi, th = 100.0 * d, cs = 0.1 * c;
-        const Rgb fast = iridescentFresnel(1.0, ior, th, f0, cs), ref = iridescentSpectral(1.0, ior, th, f0, cs);
+        const Rgb fast = iridescentFresnel(1.0, ior, th, f0, cs, kIridescenceHarmonics, false), ref = iridescentSpectral(1.0, ior, th, f0, cs);
         const double e = std::max({std::fabs(fast.r - ref.r), std::fabs(fast.g - ref.g), std::fabs(fast.b - ref.b)});
         if (e > worstIr) { worstIr = e; atIor = ior; atD = th; atCos = cs; }
     }

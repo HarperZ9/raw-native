@@ -10,6 +10,7 @@
 #include <algorithm>
 #include <cmath>
 #include <map>
+#include <type_traits>
 #include <vector>
 namespace pbr_test {
 using namespace raw::pbr;
@@ -58,7 +59,9 @@ Rgb peaked(const Material& m, const Tables& t, D3 o, double alpha, Map map, doub
                 if (map == Map::Mirror) i.z = -i.z;
             }
             if ((map == Map::Reflect) != (i.z > 0.0)) continue;
-            const Rgb f = pick(evalTerms(m, t, o, i));
+            Rgb f;
+            if constexpr (std::is_invocable_v<Pick, const Terms&, D3>) f = pick(evalTerms(m, t, o, i), i);   // a weight by direction
+            else f = pick(evalTerms(m, t, o, i));
             sum = add(sum, f, R.w[a] * P.w[b] * 2.0 * kPi * std::fabs(i.z) * jac * sh * dth);
         }
     }

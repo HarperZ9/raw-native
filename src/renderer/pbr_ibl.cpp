@@ -34,9 +34,12 @@ IblResponse iblResponse(const Material& m, const Tables& t, D3 wo) {
     }
     r.irradiance = (s.kmsMetal * mt + s.kmsDiel * (1.0 - mt)) * (1.0 - e) + m.baseColor * under * ((1.0 - mt) * (1.0 - tr));
     if (tr > 0.0 && mt < 1.0) {
+        // The path along the view's refracted direction, as eval's per-direction path for a smooth interface.
+        const double cosT = std::sqrt(std::max(1e-12, 1.0 - (1.0 - o.z * o.z) / (m.ior * m.ior)));
+        const double path = m.specExact ? m.thickness : m.thickness / cosT;
         const Rgb att = each([&](int k) {
             if (!m.volume || m.attenuationDistance <= 0.0 || m.thickness <= 0.0) return 1.0;
-            return std::exp(std::log(std::max(ch(m.attenuationColor, k), 1e-300)) / m.attenuationDistance * m.thickness);
+            return std::exp(std::log(std::max(ch(m.attenuationColor, k), 1e-300)) / m.attenuationDistance * path);
         });
         r.transmission = m.baseColor * att * under * (tr * (1.0 - mt));
     }

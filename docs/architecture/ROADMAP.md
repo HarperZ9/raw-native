@@ -130,7 +130,7 @@ every backend it names.
 | 3. Aliasing and the validation layer | Open: not started | |
 | 4. The Studio viewer (A4) | Open: not started | |
 | 5. API snapshot | Open: not started | |
-| 6. Materials | Passes on WARP, SwiftShader and the RTX 4090 | `evidence/m3-materials-*.json` |
+| 6. Materials | First stage passes on WARP, SwiftShader and the RTX 4090. Second stage: iridescence against an exact reference and volume path length pass; **open failure**: clearcoat energy over white metal (loss up to 0.23, bound 0.02) | `evidence/m3-materials-*.json`, `evidence/m3-materials2-*.json` |
 | 7. Lighting | Passes on WARP and SwiftShader; the RTX run is queued | `evidence/m3-lighting-*.json` |
 | 8. Shadows: CPU checks against ray casts | Passes | `evidence/m3-shadows-cpu-run.json` |
 | 8. Shadows: GPU lookups and contact march | Passes on WARP and SwiftShader | `evidence/m3-shadows-gpu-*.json` |

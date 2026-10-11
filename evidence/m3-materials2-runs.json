@@ -1,0 +1,24 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "M3 materials second stage: every run against evidence/m3-materials2-bounds.json, failures and abandoned attempts included",
+ "runs": [
+  {"run": "iridescence-1", "date": "2026-10-10", "what": "exact Fresnel amplitudes for s and p at both interfaces, averaged, with the specification's Gaussian sensitivity",
+   "result": "fail: 0.0562 at cos 0.2 on base index 2.0 (bound 0.04), down from 0.26. Harmonics 8 against 24 made no difference; the rest came from the Gaussian sensitivity, a different fit to the colour matching functions than the reference integrates."},
+  {"run": "iridescence-2", "date": "2026-10-10", "what": "the sensitivity tabulated from the reference's own colour matching fit (every 10 nm of optical path, 0 to 40,000 nm), white-balanced the same way; conductors (F0 above 0.25) keep the Schlick path until a complex-index reference exists",
+   "result": "pass: worst 0.0185 at cos 1 on base index 2.0; controls fail (Schlick interfaces 0.260, the specification's two harmonics 0.261).", "evidence": "evidence/m3-materials2-cpu-run.json"},
+  {"run": "volume-1", "date": "2026-10-10", "what": "Beer-Lambert along each refracted direction's own path, thickness / |cos|, in eval; image lighting takes the view's refracted path",
+   "result": "pass: 1.1e-16 at 120 points; control (one attenuation for every direction) 0.276. Limit, stated plainly: the reference shares the model's interface, so this checks that the path length is applied, not the interface itself; an independent slab path tracer stays in not_covered_yet.", "evidence": "evidence/m3-materials2-cpu-run.json"},
+  {"run": "clearcoat-1", "date": "2026-10-10", "what": "attempt: base weight (1 - c E_o)(1 - c E_i) / (1 - c sqrt(E_o E_i)) for the peaked base, / (1 - c E_avg) for the smooth base",
+   "result": "fail: albedo 1.059 at grazing view (energy gained) on anisotropic bases. Abandoned."},
+  {"run": "clearcoat-2", "date": "2026-10-10", "what": "attempt: 1 - c max(E_o, E_i) for the peaked base, the smooth base as attempt 1",
+   "result": "fail: worst loss 0.070 (bound 0.02), and the energy test's conservation family exceeded 1 + 1e-3 at 36 points (smooth-base excess). Abandoned."},
+  {"run": "clearcoat-3", "date": "2026-10-10", "what": "probe, not kept: sqrt((1 - c E_o)(1 - c E_i))",
+   "result": "fail: albedo 1.213 at grazing view."},
+  {"run": "clearcoat-4", "date": "2026-10-10", "what": "attempt: 1 - c max(E_o, E_i) for everything the base reflects",
+   "result": "fail: worst loss 0.071; conservation exceeded 1 + 1e-3 at 4 points (worst 3.8e-3), all at view cosine 0.02 with coat roughness 0.05. A converged quadrature shows the cause: there the split-albedo table reads E 0.0037 below the coat lobe's true energy (the table's theta grid is coarse at grazing), and the old form's extra loss had hidden it. Reverted: the default coat stays as it was (loss up to 0.230), and the bound stays an open failure. Next: a sqrt(mu) axis for the A and B tables (as the sheen table has) and a tabulated coat-over-base compensation."},
+  {"run": "no-regression", "date": "2026-10-10", "what": "test_pbr_energy --full, test_pbr_reciprocity, test_pbr_spec, test_lighting --full, and the material and lighting GPU parity on D3D12 WARP and WebGPU SwiftShader",
+   "result": "pass on every existing bound. Two tests were retargeted with reasons: the reciprocity test's spectral check now compares the series with the specification's interfaces (polarized = false) against the spectral reference with the same interfaces, which is what it measures; the spec-form test's expected value uses the text's Schlick interfaces. One process error of mine: the first GPU run used HLSL generated before my last WGSL edit and failed (ratio 943 on the volume family); after regenerating, both backends pass.",
+   "evidence": "evidence/m3-materials2-gpu.json"}
+ ],
+ "status": "Passing: iridescence against the exact polarized reference (0.26 down to 0.0185) and the volume path length. Open failure, not loosened: clearcoat energy over white metal (worst loss 0.230 with the default coat)."
+}

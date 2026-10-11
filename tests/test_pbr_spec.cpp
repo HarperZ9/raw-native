@@ -35,7 +35,7 @@ int main() {
         Material ir; ir.baseColor = base.baseColor; ir.metallic = 1; ir.roughness = base.roughness; ir.iridescence = 1;
         ir.iridescenceThickness = 100 + 900 * r.next(); ir.specExact = true;
         const double ar = alphaOf(ir.roughness);
-        const Rgb f2 = iridescentFresnel(1.0, ir.iridescenceIor, ir.iridescenceThickness, ir.baseColor, o.x * h.x + o.y * h.y + o.z * h.z, 2);
+        const Rgb f2 = iridescentFresnel(1.0, ir.iridescenceIor, ir.iridescenceThickness, ir.baseColor, o.x * h.x + o.y * h.y + o.z * h.z, 2, false);   // the text's Schlick interfaces
         const Rgb spec = evalTerms(ir, t, o, i).specular;
         const double dv = ggxD(h, ar, ar) * smithV(o, i, ar, ar);
         worstIrid = std::max({worstIrid, rel(spec.r, f2.r * dv), rel(spec.b, f2.b * dv)});
