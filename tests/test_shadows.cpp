@@ -109,7 +109,8 @@ SceneResult visibilityChecks(const std::string& name, const Scene& sc, int strid
     SceneResult r; r.name = name;
     const GBuffer g = gbufferOf(sc);
     const D3 L = d3(sc.lights[0].dir), toL{-L.x, -L.y, -L.z};
-    const CascadeSet cs = fitCascades(sc.camera, L, 40.0, 1024, true);
+    CascadeSet cs = fitCascades(sc.camera, L, 40.0, 1024, true);
+    enclose(cs, sc);   // method note 7
     const auto maps = mapsFor(sc, cs);
     const Bvh bvh = bvhOf(sc);
     const LookupParams lp;

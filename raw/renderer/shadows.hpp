@@ -18,6 +18,7 @@ struct Cascade {
     double radius{1};              // half the box's width
     double zNear{0}, zFar{1};      // light-space depth range the map covers
     double split{0};               // far end of this cascade, as view depth
+    double fitRange{0};            // zFar - zNear before enclose() widened it (0: not widened)
 };
 struct CascadeSet {
     D3 light, right, up;           // light basis: `light` is the travel direction
@@ -30,6 +31,10 @@ struct CascadeSet {
 // stable: bounding-sphere boxes snapped to whole texels (the engine's mode); false gives the
 // frustum-tight, unsnapped fit used as the stability control.
 CascadeSet fitCascades(const Camera& cam, D3 lightDir, double shadowFar = 40.0, int size = 1024, bool stable = true);
+// Widens (never narrows) each cascade's depth range so every vertex of `scene` lies strictly
+// inside it, with 1% of the range to spare at each end: no depth plane then cuts geometry, so no
+// map texel sits on a clip plane (evidence/m3-shadows-bounds.json, method note 7).
+void enclose(CascadeSet& cs, const Scene& scene);
 // The cascade a point at this view depth falls in, or -1 past the last.
 int cascadeOf(const CascadeSet& cs, double viewDepth);
 

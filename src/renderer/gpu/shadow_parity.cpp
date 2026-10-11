@@ -144,7 +144,8 @@ ShadowParity shadowParity(rhi::Device& dev, const std::vector<std::pair<std::str
         const D3 L{s.lights[0].dir.x, s.lights[0].dir.y, s.lights[0].dir.z};
         const double ll = std::sqrt(L.x * L.x + L.y * L.y + L.z * L.z);
         const D3 toL{-L.x / ll, -L.y / ll, -L.z / ll};
-        const shadows::CascadeSet cs = shadows::fitCascades(s.camera, L, 40.0, mapSize, true);
+        shadows::CascadeSet cs = shadows::fitCascades(s.camera, L, 40.0, mapSize, true);
+        shadows::enclose(cs, s);   // method note 7: no depth plane cuts geometry
         const std::vector<float> tris = gpu_host::packTriangles(s);
         std::array<shadow_gpu::GpuMap, shadows::kCascades> gm;
         if (!shadow_gpu::maps(dev, tris, cs, gm, r.error)) return r;
@@ -153,6 +154,8 @@ ShadowParity shadowParity(rhi::Device& dev, const std::vector<std::pair<std::str
         for (int k = 0; k < shadows::kCascades; ++k) {
             cm[std::size_t(k)] = shadows::rasterizeCascade(s, cs, k, r.subpixelBits);
             c.maps.push_back(compareMap(k, gm[std::size_t(k)].map, cm[std::size_t(k)], tris, tris, cs.matrix(k), r.subpixelBits));
+            c.maps.back().range = cs.c[std::size_t(k)].zFar - cs.c[std::size_t(k)].zNear;
+            c.maps.back().fitRange = cs.c[std::size_t(k)].fitRange;
         }
         RasterOptions ro; ro.perspectiveDepth = true;
         const GBuffer g = rasterize(s, size, size, nullptr, nullptr, ro);
@@ -209,12 +212,12 @@ std::string ShadowParity::json() const {
         const ShadowSceneCase& c = scenes[k];
         std::string m;
         for (const ShadowMapCase& q : c.maps) {
-            char b[256];
-            std::snprintf(b, sizeof b, "%s{\"cascade\": %d, \"same_triangle_texels\": %ld, \"differing_texels\": %ld, \"explained\": %ld, \"worst_depth\": %.3e, \"depth_over_1e-5\": %ld, \"depth_ties\": %ld}",
-                          m.empty() ? "" : ", ", q.cascade, q.both, q.coverageDiffs, q.explained, q.worstDepth, q.depthOver, q.depthTies);
+            char b[320];
+            std::snprintf(b, sizeof b, "%s{\"cascade\": %d, \"same_triangle_texels\": %ld, \"differing_texels\": %ld, \"explained\": %ld, \"worst_depth\": %.3e, \"depth_over_1e-5\": %ld, \"depth_ties\": %ld, \"range\": %.3f, \"range_before_enclose\": %.3f}",
+                          m.empty() ? "" : ", ", q.cascade, q.both, q.coverageDiffs, q.explained, q.worstDepth, q.depthOver, q.depthTies, q.range, q.fitRange);
             m += b;
         }
-        char b[2048];
+        char b[4096];
         std::snprintf(b, sizeof b, "  {\"scene\": \"%s\", \"maps\": [%s], \"points\": %ld, \"per_cascade\": [%ld, %ld, %ld, %ld], \"outside_1e-3\": {\"hard\": %ld, \"pcf\": %ld, \"pcss\": %ld},"
                       " \"worst\": {\"hard\": %.3e, \"pcf\": %.3e, \"pcss\": %.3e}, \"contact_pixels\": %ld, \"contact_diffs\": %ld, \"pass\": %s}%s\n",
                       c.scene.c_str(), m.c_str(), c.points, c.perCascade[0], c.perCascade[1], c.perCascade[2], c.perCascade[3], c.outside[0], c.outside[1], c.outside[2], c.worst[0], c.worst[1], c.worst[2], c.contactPixels,
