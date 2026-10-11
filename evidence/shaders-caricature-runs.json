@@ -1,0 +1,28 @@
+{
+  "what": "Every run of the caricature-warp checks, failures included. Bounds file unchanged since 679f718.",
+  "runs": [
+    {
+      "date": "2026-10-10",
+      "check": "node tests, first run",
+      "result": "2 of 3 pass",
+      "failure": "my precondition that the salience peak lies on the head or hat: with sigma 0.06 the head (11 px at 160 x 100) merges with the coat and the peak sits on the coat. The criterion itself held: magnification 5.18 at the peak, 5.14 at the head centre (bound 1.2).",
+      "fix": "grotesque sigma 0.06 to 0.035: the peak moves onto the head."
+    },
+    {
+      "date": "2026-10-10",
+      "check": "look review",
+      "result": "one clamped step bulged too little at 640 x 400",
+      "change": "Composed steps (grotesque 4). A first composed version kept the one-step clamp per step; a new test of the composed map's own Jacobian (added with the steps, stricter than before) found its minimum determinant 0.001, under the committed 0.03. Fix: each step is clamped to c = 1 - 0.04^(1 / (2 steps)), so the composition keeps det >= 0.04. Per-step magnification at the head is then 1.62."
+    },
+    {
+      "date": "2026-10-10",
+      "check": "node tests after the changes",
+      "result": "4 of 4 (identity, single-step fold-free on random salience with lambda 100, head magnified, composed map fold-free on the street and random salience)"
+    },
+    {
+      "date": "2026-10-10",
+      "check": "GPU parity, SwiftShader, first run",
+      "result": "3 of 3: max 1, mean under 4e-5"
+    }
+  ]
+}

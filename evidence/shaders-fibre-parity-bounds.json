@@ -1,0 +1,41 @@
+{
+  "what": "Watercolour on a random fibre network (web/shaders/fibre/): GPU passes against the float64 CPU reference, and the falsification tests",
+  "fixed_before_first_run": "2026-10-10",
+  "source": "fixtures/street.mjs streetScene(320, 200, 0) albedo as the wash colours; lab sources edges plate",
+  "output": {
+    "width": 320,
+    "height": 200
+  },
+  "cases": [
+    {
+      "id": "street-cold-press",
+      "preset": "cold-press",
+      "frame": "street"
+    },
+    {
+      "id": "street-hot-press",
+      "preset": "hot-press",
+      "frame": "street"
+    },
+    {
+      "id": "edges-rough",
+      "preset": "rough",
+      "frame": "edges"
+    }
+  ],
+  "bounds": {
+    "max_abs_code": 3,
+    "p999_abs_code": 1,
+    "mean_abs_code": 0.05
+  },
+  "tests": {
+    "isotropic_paper_spread_ratio_max": 1.05,
+    "aligned_fibres_elongation_rel_error_max": 0.1,
+    "pigment_mass_conservation_rel_error": 1e-09,
+    "flocculation_crossing_correlation_min": 0.3,
+    "control_no_flocculation_correlation_max": 0.05,
+    "uniform_wash_no_fibres_max_dev": 1e-09
+  },
+  "rules": "No criterion uses a measured display reading or calibrate-pro (author, 2026-10-10). Colour checks are in software against float64 references.",
+  "why": "Explicit diffusion steps on both sides, contractive; the fibre network is rasterised from integer hashes identically."
+}
