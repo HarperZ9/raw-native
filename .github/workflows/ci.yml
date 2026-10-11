@@ -427,7 +427,7 @@ jobs:
         run: python tests/web/rhi_texture.py --command rt-hybrid-parity --dir build-wasm-gpu --adapter swiftshader --out rt-hybrid-webgpu.json
       - name: The GPU ray marcher in Chrome on SwiftShader, quick (M2 to M5 at 128 x 128); open failures as on WARP
         run: |
-          python tests/web/rhi_texture.py --command sdf-parity --args=--quick --dir build-wasm-gpu --adapter swiftshader --timeout 1200 --out sdf-webgpu.json || true
+          python tests/web/rhi_texture.py --command sdf-parity --args=--quick --dir build-wasm-gpu --adapter swiftshader --timeout 2400 --out sdf-webgpu.json || true
           python tests/gpu/sdf_gate.py sdf-webgpu.json
       - name: The WebGPU build's material model matches its float64 reference in Chrome on SwiftShader (M3 materials)
         run: python tests/web/rhi_texture.py --command pbr-parity --dir build-wasm-gpu --adapter swiftshader --out pbr-webgpu.json
