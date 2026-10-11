@@ -75,7 +75,8 @@ try {
   const from = +(q.get("from") || 0), to = q.has("to") ? +q.get("to") : Math.ceil(eng.scene.duration * fps);
   status({ ready: true, from, to, width: eng.size[0], height: eng.size[1], transport });
   // History layers (Threads) need the frames before `from` to look the same as a full run.
-  for (let i = Math.max(0, from - (+q.get("warm") || 0)); i < from; i++) { eng.ctx.dt = 1 / fps; eng.motion.draw(eng.list(i / fps), { frame: i, time: i / fps }); }
+  // draw() skips effects and pixel mode until they are ready, so each drawn frame is prepared first.
+  for (let i = Math.max(0, from - (+q.get("warm") || 0)); i < from; i++) { eng.ctx.dt = 1 / fps; const l = eng.list(i / fps); await eng.motion.prepare(l); eng.motion.draw(l, { frame: i, time: i / fps }); }
   const enc = transport === "webcodecs" ? await makeEncoder() : null;
   const cpu = [];
   // hash=1: every frame is read back and hashed (SHA-256 of its RGBA rows), so two runs can
@@ -94,7 +95,9 @@ try {
       if (!readback) {
         try {
           eng.ctx.dt = 1 / fps;
-          eng.motion.draw(eng.list(i / fps), { frame: i, time: i / fps });
+          const l = eng.list(i / fps);
+          await eng.motion.prepare(l);
+          eng.motion.draw(l, { frame: i, time: i / fps });
           await enc.frame(eng.host.canvas, i);
           done = true;
         } catch (e) { readback = true; status({ readback: String(e) }); }

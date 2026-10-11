@@ -1,0 +1,65 @@
+{
+ "what": "Runs of the checks in evidence/motion-colour-pixel-bounds.json, Chrome on SwiftShader, 2026-10-11",
+ "film_contract": {
+  "result": {
+   "maxCode": 1,
+   "worst": {
+    "pixel": [
+     99,
+     0
+    ],
+    "channel": 2,
+    "gpu": 126,
+    "cpu": 125
+   },
+   "nearBlack": {
+    "gpu": [
+     15,
+     17,
+     18
+    ],
+    "decodedRef": [
+     15,
+     17,
+     18
+    ],
+    "undecodedRef": [
+     44,
+     43,
+     44
+    ]
+   },
+   "controlLift": 29,
+   "refusedWithColour": "post pass film writes display values (it is its own tone mapper), so the list must not set post.colour"
+  },
+  "srgb_decode_pass_maxCode": 1,
+  "problems": []
+ },
+ "pixel_cold_dither": {
+  "main_before_fix": {
+   "cold": {
+    "max": 0,
+    "bad": 0,
+    "first": null,
+    "colours": 47,
+    "offPalette": 47
+   },
+   "note": "main's renderer, the same page: the dither never ran in the child (47 colours, all off the palette)"
+  },
+  "fixed": {
+   "cold": {
+    "max": 0,
+    "bad": 0,
+    "first": null,
+    "colours": 6,
+    "offPalette": 0
+   },
+   "draw": {
+    "colours": 6,
+    "offPalette": 0
+   }
+  },
+  "problems": []
+ },
+ "within_bounds": true
+}

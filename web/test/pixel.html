@@ -10,6 +10,8 @@ import { createHost } from '../raw-gpu.mjs';
 import { createMotion } from '../motion/renderer.mjs';
 import { rect, circle } from '../motion/path.mjs';
 import { integerUpscale, sharpBilinear } from '../shaders/pixel/scale.mjs';
+import { labPalette } from '../shaders/reference/retro-palettes.mjs';
+import '../shaders/post.mjs';
 
 const LW = 160, LH = 90, K = 6, W = LW * K, H = LH * K;
 const post = { bloom: 0, vignette: 0, grain: 0 };
@@ -35,8 +37,34 @@ function leftEdge(img, y) {
   return null;
 }
 
+// Pixel mode with a post effect, cold (evidence/motion-colour-pixel-bounds.json): the first
+// capture of a new Motion, and a prepared draw, must both run the dither in the child.
+async function coldDither(host) {
+  const mo = await createMotion(host, { design: [W, H] });
+  mo.resize(W, H);
+  const items = [{ shape: rect(0, 0, W, H), fill: '#3a5a8c' }, { shape: circle(480, 270, 200), fill: '#c9a227' }, { shape: rect(100, 300, 300, 200), fill: [0.9, 0.3, 0.2, 0.7] }];
+  const list = { items, camera: { x: W / 2, y: H / 2 }, background: ground, post: { ...post, passes: [{ pass: 'dither', palette: 'pico8', mode: 'bayer4' }] }, pixel: { width: LW, height: LH, mode: 'integer' } };
+  const pal = new Set(labPalette('pico8').map((e) => e.rgb.join(',')));
+  const colours = (img) => { const s = new Set(); for (let i = 0; i < img.data.length; i += 4) s.add(img.data[i] + ',' + img.data[i + 1] + ',' + img.data[i + 2]); return [...s]; };
+  const gpu = await mo.capture(list), low = await mo.pixelMode.readLow(), cg = colours(gpu);
+  const cold = { ...diff(gpu.data, integerUpscale(low, K).data), colours: cg.length, offPalette: cg.filter((c) => !pal.has(c)).length };
+  const mo2 = await createMotion(host, { design: [W, H] });
+  mo2.resize(W, H);
+  await mo2.prepare(list);
+  const tex = await scratch(host);
+  mo2.renderTo(list, { frame: 0 }, tex.createView(), 'rgba8unorm');   // the draw path: no await inside
+  tex.destroy();
+  const low2 = colours(await mo2.pixelMode.readLow());
+  mo.destroy(); mo2.destroy();
+  return { cold, draw: { colours: low2.length, offPalette: low2.filter((c) => !pal.has(c)).length } };
+}
+async function scratch(host) {
+  return host.device.createTexture({ size: [W, H], format: 'rgba8unorm', usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC });
+}
+
 async function run() {
   const host = await createHost({});
+  const coldResult = await coldDither(host);
   const mo = await createMotion(host, { design: [W, H] });
   mo.resize(W, H);
   const items = [
@@ -76,6 +104,7 @@ async function run() {
   }
   out.pan = { frames: pan.length, maxErr, backwards, missing, first: pan[0], last: pan[pan.length - 1] };
   out.adapter = host.adapterInfo || null;
+  out.coldDither = coldResult;
   mo.destroy();
   return out;
 }

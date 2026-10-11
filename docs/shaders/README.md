@@ -33,6 +33,8 @@ film.frame(sceneLinearRGBA, frameNo);   // scene-linear Rec.709 in, display-line
 
 The CPU references have the same shape: `createCrt` in `web/shaders/crt/crt.mjs` and `createFilm` in `web/shaders/film/run.mjs`.
 
+In a Motion display list the film is the post pass `film`. It reads scene-linear light and writes display values, and the stack checks that contract (`planScenePasses` in `web/motion/post.mjs`). Without `post.colour` Motion's colours are display values, so the stack decodes sRGB before the film. With `post.colour` set the list is refused, because the film is its own tone mapper.
+
 ## The tube (`web/shaders/crt/`)
 
 Presets: `pvm-20` (aperture grille, RGB), `trinitron-tv` (grille, composite, comb filter), `slot-tv` (slot mask, composite, notch filter), `vga-14` (delta mask), `bw-tv` (P4 white), `radar-p7` (P7 blue flash and yellow-green afterglow), `scope-p31`. Any field can be overridden.
