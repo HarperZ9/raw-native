@@ -81,11 +81,15 @@ double fogHeight(double a, double b, D3 o, D3 d, double t) {
     const double optical = std::fabs(k) < 1e-9 ? base * t : base * (1.0 - std::exp(-k * t)) / k;
     return std::exp(-optical);
 }
+// Composite Simpson over n intervals (n even; evidence/rt-r3-bounds.json, method note 5).
 double fogHeightMarch(double a, double b, D3 o, D3 d, double t, int n) {
     const double dt = t / double(n);
-    double optical = 0.0;
-    for (int i = 0; i < n; ++i) optical += a * std::exp(-b * (o.y + d.y * (double(i) + 0.5) * dt)) * dt;
-    return std::exp(-optical);
+    double sum = 0.0;
+    for (int i = 0; i <= n; ++i) {
+        const double w = (i == 0 || i == n) ? 1.0 : (i % 2 ? 4.0 : 2.0);
+        sum += w * a * std::exp(-b * (o.y + d.y * double(i) * dt));
+    }
+    return std::exp(-sum * dt / 3.0);
 }
 
 double henyeyGreenstein(double c, double g) {

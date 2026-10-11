@@ -72,7 +72,7 @@ bool hardShadow(const Program& p, D3 x, D3 l);   // true when the sun is blocked
 // Fog (M4): closed forms and the numerical march of the height fog.
 double fogHomogeneous(double sigma, double t);
 double fogHeight(double a, double b, D3 o, D3 d, double t);
-double fogHeightMarch(double a, double b, D3 o, D3 d, double t, int samples);
+double fogHeightMarch(double a, double b, D3 o, D3 d, double t, int intervals);   // composite Simpson, intervals even
 
 // God rays (M5): single scattering along the view ray; visible receives the number of
 // samples whose sun ray is clear.
