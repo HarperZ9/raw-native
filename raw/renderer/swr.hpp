@@ -9,6 +9,8 @@
 //   - Depth z/w interpolated in screen space, tested strictly less (ties keep the lower slot),
 //     optionally quantized to D bits with a 4 x 4 ordered dither (retro).
 //   - Perspective-correct or affine (retro) attributes; nearest, wrapping texels.
+//   - On the default grid, setup is snap-corrected: coverage uses the snapped vertices, while
+//     depth and attributes come from the unsnapped planes (evidence/rt-r2-bounds.json, addendum 3).
 //
 // Setup records are laid out exactly as the GPU reads them, so the same bytes can be fed to
 // both rasterizers (check C4) or produced by each from the same vertices (check C5).
@@ -71,6 +73,7 @@ struct Setup {
     std::vector<std::int32_t> ints;
     std::vector<float> floats;
     std::vector<float> screen;                  // CPU only: unsnapped screen x, y of each slot's vertices (6 floats)
+    std::size_t uncorrected{0};                 // CPU only: fan triangles left without the snap correction (setup)
     std::size_t slots() const { return ints.size() / kSetupInts; }
 };
 
