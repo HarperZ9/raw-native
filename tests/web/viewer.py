@@ -36,7 +36,9 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 def run(page, url):
     page.goto(url)
-    page.wait_for_function("window.__viewer && window.__viewer.done", timeout=600000)
+    # A time budget per model, not a check bound. 1200 s (2026-10-11): raw-hall took 220 s on one CI
+    # runner and 565 s on another, so 600 s left 6 percent headroom; 1200 s leaves 53 percent.
+    page.wait_for_function("window.__viewer && window.__viewer.done", timeout=1200000)
     return page.evaluate("window.__viewer")
 
 
