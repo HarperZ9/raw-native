@@ -162,13 +162,13 @@ PostParity postParity(rhi::Device& dev, const std::vector<std::pair<std::string,
         taa::jitter(k, jx, jy);
         const taa::Frame f = taa::render(s, s.camera, k ? Vec3{dx, 0, 0} : Vec3{}, 128, 128, jx, jy);
         std::vector<float> og;
-        if (!runTaa(dev, f, hg, pd, 3u, og, r.error)) return r;
+        if (!runTaa(dev, f, hg, pd, 11u, og, r.error)) return r;
         if (k == 8) {   // control: the GPU history shifted one pixel
             std::vector<float> shifted(hg.size());
             for (int y = 0; y < 128; ++y) for (int x = 0; x < 128; ++x)
                 for (int c = 0; c < 3; ++c) shifted[(std::size_t(y) * 128 + x) * 3 + std::size_t(c)] = hg[(std::size_t(y) * 128 + std::min(127, x + 1)) * 3 + std::size_t(c)];
             std::vector<float> oc;
-            if (!runTaa(dev, f, shifted, pd, 3u, oc, r.error)) return r;
+            if (!runTaa(dev, f, shifted, pd, 11u, oc, r.error)) return r;
             const std::vector<float> cc = taa::resolve(f, hc, pd);
             for (std::size_t i = 0; i < std::size_t(r.taaPixels); ++i)
                 for (int c = 0; c < 3; ++c) if (std::fabs(double(oc[i * 3 + std::size_t(c)]) - cc[i * 3 + std::size_t(c)]) > 1e-3) { ++ctlOff; break; }
@@ -183,6 +183,9 @@ PostParity postParity(rhi::Device& dev, const std::vector<std::pair<std::string,
                 bad = bad || e > 1e-3;
             }
             off += bad;
+            if (bad && std::getenv("RAW_NATIVE_TAA_DUMP"))   // diagnosis
+                std::fprintf(stderr, "frame %d px %d %d gpu %.5f %.5f %.5f cpu %.5f %.5f %.5f prev %.4f %.4f ed %.4f depth %.4f\n", k, int(i % 128), int(i / 128),
+                             og[i * 3], og[i * 3 + 1], og[i * 3 + 2], hc[i * 3], hc[i * 3 + 1], hc[i * 3 + 2], f.prev[i * 3], f.prev[i * 3 + 1], f.prev[i * 3 + 2], f.depth[i]);
         }
         r.taaWorstOutside = std::max(r.taaWorstOutside, off);
         {   // reported, not bounded: the same step on the GPU's own history (method note 8)
@@ -190,8 +193,13 @@ PostParity postParity(rhi::Device& dev, const std::vector<std::pair<std::string,
             long step = 0;
             for (std::size_t i = 0; i < std::size_t(r.taaPixels); ++i) {
                 bool bad = false;
-                for (int c = 0; c < 3; ++c) bad = bad || std::fabs(double(og[i * 3 + std::size_t(c)]) - one[i * 3 + std::size_t(c)]) > 1e-3;
+                double worst = 0.0;
+                for (int c = 0; c < 3; ++c) worst = std::max(worst, std::fabs(double(og[i * 3 + std::size_t(c)]) - one[i * 3 + std::size_t(c)]));
+                bad = worst > 1e-3;
                 step += bad;
+                if (worst > 1e-5 && std::getenv("RAW_NATIVE_TAA_DUMP"))   // diagnosis
+                    std::fprintf(stderr, "step %d px %d %d gpu %.6f cpu %.6f hist %.6f cur %.6f prev %.4f %.4f ed %.4f\n", k, int(i % 128), int(i / 128), og[i * 3], one[i * 3],
+                                 hg.empty() ? 0.0f : hg[i * 3], f.rgb[i * 3], f.prev[i * 3], f.prev[i * 3 + 1], f.prev[i * 3 + 2]);
             }
             r.taaWorstOneStep = std::max(r.taaWorstOneStep, step);
         }

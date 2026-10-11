@@ -83,7 +83,18 @@ std::vector<float> resolve(const Frame& f, const std::vector<float>& hist, const
     if (hist.empty()) return out;
     for (int y = 0; y < h; ++y) for (int x = 0; x < w; ++x) {
         const std::size_t i = std::size_t(y) * w + x;
-        const double px = f.prev[i * 3], py = f.prev[i * 3 + 1], ed = f.prev[i * 3 + 2];
+        double px = f.prev[i * 3], py = f.prev[i * 3 + 1], ed = f.prev[i * 3 + 2];
+        if (o.dilate) {   // method note 10: the motion of the nearest surface in the 3 x 3 neighbourhood; the pixel's own expected depth
+            double best = f.depth[i] >= 0.0f ? double(f.depth[i]) : 1e30;
+            for (int b = -1; b <= 1; ++b) for (int a = -1; a <= 1; ++a) {
+                const int qx = x + a, qy = y + b;
+                if ((a == 0 && b == 0) || qx < 0 || qy < 0 || qx >= w || qy >= h) continue;
+                const std::size_t j = std::size_t(qy) * w + qx;
+                if (f.depth[j] < 0.0f || double(f.depth[j]) >= best) continue;
+                best = f.depth[j];
+                px = f.prev[j * 3] - a; py = f.prev[j * 3 + 1] - b;
+            }
+        }
         if (px < 0.5 || py < 0.5 || px > w - 0.5 || py > h - 0.5) continue;            // off screen: the current frame
         if (o.depthTest) {
             // Method note 6: the expected depth against the range of the previous depths over 3 x 3 pixels.
@@ -127,7 +138,7 @@ std::vector<float> resolve(const Frame& f, const std::vector<float>& hist, const
             double hy[3], scale = 0.0;
             toYcocg(hc, hy);
             for (int k = 0; k < 3; ++k) {
-                const double ext = kClipSigma * std::sqrt(var[k] / n) + 1e-7;
+                const double ext = kClipSigma * std::sqrt(var[k] / n) + 1e-4;   // floor: method note 11
                 scale = std::max(scale, std::fabs(hy[k] - m[k]) / ext);
             }
             if (scale > 1.0) for (int k = 0; k < 3; ++k) hy[k] = m[k] + (hy[k] - m[k]) / scale;

@@ -2,10 +2,9 @@
 
     python tests/gpu/post_gate.py RESULT.json [--min-scenes N]
 
-GTAO and SSR parity must hold on every scene (at most 0.1% of pixels off), and all three
-controls must fail. The TAA parity, each side feeding back its own history, is a recorded open
-failure (evidence/m3-post-runs.json): it is printed with its one-step count and never counted as
-passed. Exit 0 when the gated parts hold, 1 otherwise.
+GTAO and SSR parity must hold on every scene (at most 0.1% of pixels off), the TAA parity
+(each side feeding back its own history) on every frame since method note 11 of 2026-10-11,
+and all three controls must fail. Exit 0 when the gated parts hold, 1 otherwise.
 """
 import json
 import sys
@@ -24,9 +23,10 @@ def main(argv):
         ok = ok and good
         print(f"{s['scene']}: GTAO {s['gtao_outside_1e-3']} and SSR {s['ssr_diffs']} of {px} pixels differ: {'ok' if good else 'FAIL'}")
     t = d["taa"]
-    taa_ok = t["worst_frame_outside_1e-3"] <= 1e-3 * t["pixels"]
+    taa_ok = t["frames"] > 0 and t["worst_frame_outside_1e-3"] <= 1e-3 * t["pixels"]
+    ok = ok and taa_ok
     print(f"TAA: worst frame {t['worst_frame_outside_1e-3']} of {t['pixels']} pixels "
-          f"({'pass' if taa_ok else 'open failure, recorded, not gated'}); one step from the same history: {t['reported_one_step_worst_frame']}")
+          f"({'pass' if taa_ok else 'FAIL'}); one step from the same history: {t['reported_one_step_worst_frame']}")
     print("controls fail:", d["controls_fail"], "gate:", "pass" if ok else "FAIL")
     return 0 if ok else 1
 

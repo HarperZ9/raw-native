@@ -110,7 +110,32 @@
    "what": "post-parity in Chrome on SwiftShader, five scenes (the owned assets are built in)",
    "result": "GTAO and SSR parity pass on all five; TAA parity open failure (31; one step 1); controls fail.",
    "evidence": "evidence/m3-post-gpu-webgpu-swiftshader.json"
+  },
+  {
+   "run": "taa-probes-10",
+   "date": "2026-10-11",
+   "what": "exploration before method note 10 (not checked runs): history filters, clip widths, blend weights, a lag search against shifted references, and warping the previous frame by scaled motion",
+   "result": "Filters bilinear, Catmull-Rom and Lanczos-3: pan ratios 0.754, 0.735, 0.738. The TAA output matched the reference 0.3 pixels behind the camera; a history warped with no new samples drifted about 0.1 pixel per frame; the motion vectors themselves fit at scale 1.0. Cause: background pixels carried no motion, so silhouettes lagged in the history."
+  },
+  {
+   "run": "taa-cpu-note10",
+   "date": "2026-10-11",
+   "what": "test_taa --json with motion from the nearest surface in 3 x 3, the pixel keeping its own expected depth",
+   "result": "pass: pan ratio 0.4465 (bound 0.5; without the dilation 0.7352, reported); ghosting 0.0056 over 12,166 trail pixels (bound 0.03); control (a) no jitter 0.566 fails the rmse bound; control (b) no clip, no depth 0.200 fails ghosting."
+  },
+  {
+   "run": "taa-gpu-warp-note10",
+   "date": "2026-10-11",
+   "what": "gpu_post_parity on WARP with the dilation in WGSL",
+   "result": "TAA parity still failed: 23 of 16,384 pixels in the worst frame (bound 16). A dump traced it to grey pixels on the ground edge, where float32 chroma noise crossed the 1e-7 clip floor (method note 11)."
+  },
+  {
+   "run": "taa-note11",
+   "date": "2026-10-11",
+   "what": "clip box floor 1e-4 on the CPU and in WGSL; test_taa, gpu_post_parity on WARP, post-parity on SwiftShader",
+   "result": "pass. CPU: pan 0.4419, ghosting 0.00557, controls fail (0.564; 0.200). TAA GPU parity: 0 pixels off in every frame on WARP and on SwiftShader, worst 1.7e-6 (bound 16 pixels); one-step 0. GTAO and SSR parity pass on all five scenes on both; every control fails. The gate now counts the TAA parity.",
+   "evidence": "evidence/m3-taa-cpu-run.json, evidence/m3-post-gpu-d3d12-warp.json, evidence/m3-post-gpu-webgpu-swiftshader.json"
   }
  ],
- "status": "Open failures, not loosened: GTAO on raw-hall gallery; SSR on raw-hall nave and gallery; TAA RMSE under the pan (0.735 against 0.5); TAA GPU parity with each side's own history (31 of 16,384 against 16). Passing: GTAO on the near test scene and raw-hall nave, SSR on both test-scene views, TAA ghosting, GTAO and SSR GPU parity on WARP and SwiftShader on five scenes, every control."
+ "status": "Open failures, not loosened: GTAO on raw-hall gallery; SSR on raw-hall nave and gallery. Passing since 2026-10-11: TAA RMSE under the pan (0.442 against 0.5) and TAA GPU parity (0 pixels on WARP and SwiftShader). Passing: GTAO on the near test scene and raw-hall nave, SSR on both test-scene views, TAA ghosting, GTAO and SSR GPU parity on WARP and SwiftShader on five scenes, every control."
 }
