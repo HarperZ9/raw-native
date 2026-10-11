@@ -44,5 +44,11 @@
   "finding": "With the compensation lobe and projected hat coefficients, every isotropic point passes (albedo 0.9948 to 1.0001). The anisotropic points exceed 1 + 1e-3 by up to 3.1e-3. The same white anisotropic metal without a coat already reaches 1.0033: the coat passes the base's own furnace error through. A quadrature probe puts that error in the anisotropic split-albedo table A4 + B4 itself: -0.003 at normal view for anisotropy 0.6 (linear interpolation in k of a quantity that depends on k^2) and +0.018 at view cosine 0.05 across the anisotropy direction (the theta axis is coarse at grazing).",
   "change": "The anisotropic tables (A4, B4 and the hat tables HA4, HB4 on the same grid) change two axes: view u = sqrt(mu) in place of theta, and anisotropy k^2 in place of k. Grid sizes, sample counts and every bound are unchanged. This departs from method note 1, which kept the anisotropic axes; recorded here before the run.",
   "bounds": "Unchanged: clearcoat_energy |albedo - 1| <= 2e-2 and albedo <= 1 + 1e-3; the anisotropic furnace in test_pbr_energy keeps its 2e-2."
+ },
+ "method_note_3_2026_10_11": {
+  "written": "2026-10-11, after run clearcoat-7 and before the change below runs",
+  "finding": "After note 2 every point over 1 + 1e-3 (26 of 864, worst 1.00265) sits where the same base without a coat is already over it (worst 1.00269). The coat compensation adds nothing there. The base's excess is the A4 + B4 table: at grid nodes it reads about 5e-4 to 1.4e-3 low or high (1,024 samples), and between azimuth nodes up to 2.9e-3 low (a concave function of the azimuth read linearly).",
+  "change": "The azimuth axis of the anisotropic tables becomes v = sin^2(phi) (8 nodes), since the lobe depends on the azimuth through cos^2 and sin^2. Sample counts unchanged.",
+  "if_it_still_fails": "The excess part of clearcoat_energy stays an open failure, recorded with the uncoated base's own figure beside it; the next step would be more samples per anisotropic table entry, which costs table build time in every test."
  }
 }
