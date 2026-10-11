@@ -282,6 +282,37 @@
   "key_sha256_before_judging": "ade9fff1905c6b9eb5a76c3e1cf510ccf1b4a845e056399ec7052d6a92985f92",
   "key_path": "D:/shader-work/judge3-key/key.json (private, not committed)",
   "images": "D:/shader-work/judge3/p (8 images, trials.json)",
-  "built": "2026-10-11, seed 20261011, 4 pairs, 8 trials"
+  "built": "2026-10-11, seed 20261011, 4 pairs, 8 trials",
+  "votes_sha256_before_unblind": {
+   "judge1": "6063a0cdff5f02d8235d97b7bacbdf1ab3849fad07a84679d1fc4488bf3b74cb",
+   "judge2": "1bdfb458f169bb6af51592653f0e9edf1a8ca19125c6396588eb164f1e669c67",
+   "judge3": "69dd5073dc3f457f786e160e3e53c41ccb9278a96ed700753c99dd68d7bc932d"
+  },
+  "key_sha256_at_unblind": "ade9fff1905c6b9eb5a76c3e1cf510ccf1b4a845e056399ec7052d6a92985f92 (matches the hash committed in 20ff9e8)",
+  "judges": "three fresh agents with no conversation context: two on the session model (Opus 5.5), one on Sonnet; each saw only D:/shader-work/judge3/p",
+  "kind": "MODEL JUDGES, same model family as the builder. Not human ratings.",
+  "result": {
+   "mix-bayer4 vs bayer4-ega": "2/12 = 0.17 [0.05, 0.45], LOST (judges 0/4, 0/4, 2/4)",
+   "mix-blue vs bluenoise-ega": "12/12 = 1.00 [0.76, 1.00], preferred",
+   "consistency": "every judge picked the same image on both sides of all 4 pairs; each chose side A 4 of 8 times"
+  },
+  "reasons_given": "Against mix-bayer4: 'Green hills and blue mountains read clearly; A is murky' (game); 'Swatches cleaner and truer in hue; A swatches muddy' (scene). For mix-blue: the blue-noise competitor shows a broken, undithered strip at the right edge, which every judge named.",
+  "reading": "Lower low-pass error did not win preference. The mix spreads a colour over up to 16 palette entries, which at 3x nearest reads as speckle; the per-channel dither pushes dark teal hills to bold EGA greens, less accurate and judged more readable. Inference, not tested: these judges prefer bold, clean two-colour patterns over accurate means.",
+  "default_decision": "The rule committed in 1c69ec1 keeps mix-bayer4 from becoming the default (it lost). That rule also said the default stays bayer4; the author's direction relayed for this work (2026-10-11) was to fix the loss or stop making bayer4 the default, and I wrote the rule without carrying that clause over, which was my error. Following the direction: dither has no default mode now; a caller names one. Every caller in the repo already did.",
+  "does_not_prove": [
+   "Model judges are the same family as the builder; shared biases can favour one look.",
+   "A model preference is not a human preference.",
+   "Repeats are near copies, so the intervals are too narrow.",
+   "Three judges, two frames, one palette."
+  ]
+ },
+ "gpu_parity": {
+  "date": "2026-10-11",
+  "adapter": "Chrome SwiftShader",
+  "cases": 114,
+  "mix_cases": 38,
+  "mismatched_pixels_in_mix_cases": 0,
+  "old_modes_mismatched": 0,
+  "file": "evidence/shaders-dither-parity-swiftshader.json"
  }
 }

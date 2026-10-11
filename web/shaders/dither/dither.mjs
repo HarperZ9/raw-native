@@ -1,6 +1,6 @@
 // Palette quantisation and dither: the CPU reference (the author's retro-dither.js, vendored
 // unchanged, plus a blue-noise mode on its orderedPick) and the GPU runner.
-//   const q = await createGpuDither(host, { palette: "pico8", mode: "bayer8", strength: 1 }, { w, h });
+//   const q = await createGpuDither(host, { palette: "pico8", mode: "bayer8", strength: 1 }, { w, h });   // mode is required
 //   q.frame(rgba8 /* Uint8Array of the plate */);  await q.read() -> { idx: Uint32Array, rgba: Uint8Array }
 import { ditherPlate, orderedPick, BAYER, BAYER_MAX } from "../reference/retro-dither.mjs";
 import { mixPalette, mixPick } from "./mix.mjs";
@@ -12,7 +12,13 @@ import { DITHER_WGSL } from "./dither.wgsl.mjs";
 export const MODES = { none: 0, bayer2: 1, bayer4: 2, bayer8: 3, noise: 4, blue: 5, "mix-bayer4": 6, "mix-bayer8": 7, "mix-blue": 8 };
 // The mix modes (mix.mjs) and the threshold source each one uses.
 const MIX = { "mix-bayer4": 4, "mix-bayer8": 8, "mix-blue": "blue" };
-export const DEFAULT_MODE = "bayer4";
+// No default mode (author direction, 2026-10-11): bayer4 lost a blind model-judge panel to a
+// plain per-channel Bayer dither on EGA (0 of 12), and mix-bayer4, though closer to the source
+// (evidence/shaders-dither-mix-runs.json), lost too (2 of 12). A caller names the mode.
+function needMode(mode) {
+  if (mode === undefined) throw new Error(`dither: name a mode (${Object.keys(MODES).join(", ")})`);
+  if (!(mode in MODES)) throw new Error(`dither: unknown mode ${mode}`);
+}
 const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
 
 // Plate bytes to OKLab, as retro-engine's quantizeGrid does with gamma 1.
@@ -26,9 +32,9 @@ export function plateLab(bytes, w, h, brightness = 0) {
 }
 
 // CPU reference: palette indices for a plate.
-export function ditherRef(bytes, w, h, { palette = "pico8", mode = DEFAULT_MODE, strength = 1, brightness = 0 } = {}) {
+export function ditherRef(bytes, w, h, { palette = "pico8", mode, strength = 1, brightness = 0 } = {}) {
+  needMode(mode);
   const pal = typeof palette === "string" ? labPalette(palette) : palette;
-  if (!(mode in MODES)) throw new Error(`dither: unknown mode ${mode}`);
   if (MIX[mode]) return mixRef(bytes, w, h, pal, mode, strength, brightness);
   const lab = plateLab(bytes, w, h, brightness);
   if (mode !== "blue") return ditherPlate(lab, w, h, pal, mode, strength);
@@ -65,8 +71,8 @@ export function packPalette(pal) {
 }
 export const DITHER_PASS = DS_WGSL + DITHER_WGSL;
 
-export async function createGpuDither(host, { palette = "pico8", mode = DEFAULT_MODE, strength = 1, brightness = 0 } = {}, size) {
-  if (!(mode in MODES)) throw new Error(`dither: unknown mode ${mode}`);
+export async function createGpuDither(host, { palette = "pico8", mode, strength = 1, brightness = 0 } = {}, size) {
+  needMode(mode);
   if (MIX[mode] && brightness !== 0) throw new Error(`dither: ${mode} takes brightness 0 only`);
   const pal = typeof palette === "string" ? labPalette(palette) : palette, pp = packPalette(pal), n = size.w * size.h;
   const pipe = await host.compute("dither", DITHER_PASS);
