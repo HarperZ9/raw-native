@@ -74,6 +74,13 @@ def check(res: dict) -> list[str]:
         problems.append(f"motion: a neutral stack changed the frame by {m.get('maxAB')} codes, or +1 EV did not brighten it")
     elif abs(m.get("clip", 0) - 118) > 1 or abs(m.get("aces", 0) - 89) > 2:
         problems.append(f"motion: colour-managed grey encoded to {m.get('clip')} (clip, expect 118) and {m.get('aces')} (ACES 2.0, expect about 89)")
+    f = m.get("film") or {}
+    if f.get("maxCode", 99) > 1:
+        problems.append(f"motion: film on sRGB fills without post.colour is {f.get('maxCode')} codes from the reference on the decoded frame (bound 1), worst {f.get('worst')}")
+    if f.get("controlLift", 0) <= 20:
+        problems.append(f"motion: control failed, the undecoded reference lifts near black by only {f.get('controlLift')} codes (needs over 20)")
+    if not f.get("refusedWithColour"):
+        problems.append("motion: film with post.colour was not refused")
     for name, p in res["passes"].items():
         for r in p.get("runs", []):
             if r["maxCode"] > 1:

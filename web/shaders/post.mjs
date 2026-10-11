@@ -6,7 +6,8 @@
 //           the tube is drawn at the frame's size and encoded to display values.
 //           spec: { preset: "pvm-20" | ..., source: [w, h], exposure, ...overrides }
 //   "film"  scene stage: scene-linear light in, the print out as display values (the film
-//           is its own tone mapper, so use it without post.colour).
+//           is its own tone mapper, so use it without post.colour; a list that sets both is
+//           refused). On display-encoded colours the stack decodes sRGB first (motion/post.mjs).
 //           spec: { preset: "500t-print" | ..., ev, ...overrides }
 //   "crt-classic"  display stage: the Studio's tube (retro-crt.js) on the GPU: scanlines,
 //           masks, bloom, halation, curvature, chromatic aberration, vignette.
@@ -104,6 +105,10 @@ registerPass("crt", {
 
 registerPass("film", {
   stage: "scene",
+  // Reads scene-linear light, writes the print as display values. Without post.colour the
+  // stack inserts the sRGB decode first; with post.colour the list is refused (two tone mappers).
+  input: "linear",
+  output: "display",
   tests: [{ preset: "500t-print" }],
   effect: async (host, { width, height, spec }) => {
     const film = await createGpuFilm(host, spec.preset || "500t-print", SPLIT(spec, ["preset"]), { w: width, h: height }, { w: width, h: height });

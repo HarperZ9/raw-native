@@ -62,6 +62,15 @@ def main() -> int:
             problems.append(f"{c['check']} {c.get('want', '')}: off by {c['max']} ({c['bad']} values), first {c['first']}")
     if res.get("cases") and res["cases"][0].get("lowNonGround", 0) < 1000:
         problems.append("the low-resolution frame is almost empty, so the comparison proves little")
+    cd = res.get("coldDither")
+    if not cd:
+        problems.append("no cold pixel-mode dither result")
+    else:
+        c = cd["cold"]
+        if c["max"] > 0 or c["colours"] > 16 or c["offPalette"]:
+            problems.append(f"cold capture with dither: off by {c['max']} from integerUpscale, {c['colours']} colours, {c['offPalette']} off the PICO-8 palette")
+        if cd["draw"]["colours"] > 16 or cd["draw"]["offPalette"]:
+            problems.append(f"prepared draw with dither: {cd['draw']['colours']} colours, {cd['draw']['offPalette']} off the palette")
     pan = res.get("pan")
     if pan:
         if pan["missing"]:

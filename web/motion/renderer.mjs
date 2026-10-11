@@ -13,7 +13,7 @@ import { compile, DEFAULT_CAMERA } from "./vector.mjs";
 import { VECTOR_WGSL, PARTICLE_WGSL, SPRITE_WGSL, LAYER_BUFFER_WGSL, LAYER_TEXTURE_WGSL, POST_WGSL } from "./shaders.mjs";
 import { ParticleSystem } from "./particles.mjs";
 import { PostRunner } from "./post_run.mjs";
-import { getPass } from "./post.mjs";
+import { getPass, planScenePasses } from "./post.mjs";
 import { ColourFinish } from "./colour_finish.mjs";
 import { TileDraw } from "./tiles_gpu.mjs";
 import { PixelMode, readRGBA8, readHalf } from "./pixel_mode.mjs";
@@ -132,7 +132,7 @@ class Motion {
     // Pixel mode (list.pixel, pixel_mode.mjs): a low-resolution render, then the scale pass.
     if (list.pixel) {
       const pm = this.#pixel();
-      if (pm.ready(list)) { pm.render(list, { frame, time }, target, capture || this.outFormat); return capture ? this.#readback(capture) : null; }
+      if (pm.ready(list)) { pm.render(list, { frame, time }, target, capture || this.outFormat); return capture && !noReadback ? this.#readback(capture) : null; }
       pm.prepare(list);           // a live draw renders full size until the low-resolution one is ready
     }
     const d = this.device, W = this.w, H = this.h, host = this.host;
@@ -201,7 +201,9 @@ class Motion {
     // after the finish.
     const post = { bloom: 0.45, threshold: 0.8, vignette: 0.35, grain: 0.01, ...(list.post || {}) };
     const specs = post.passes || [];
-    const scenePasses = specs.filter((s) => getPass(s.pass).stage === "scene"), displayPasses = specs.filter((s) => getPass(s.pass).stage === "display");
+    // The scene passes checked against the encoding contract (post.mjs): a decode is inserted
+    // where a pass needs linear light, and an impossible list throws here.
+    const scenePasses = planScenePasses(specs, !!post.colour), displayPasses = specs.filter((s) => getPass(s.pass).stage === "display");
     if (scenePasses.length) {
       const res = this.post.run(enc, scenePasses, this.accum, W, H, frame, time, null, "scene");
       if (res !== this.accum) enc.copyTextureToTexture({ texture: res }, { texture: this.accum }, [W, H]);
@@ -266,12 +268,23 @@ class Motion {
     this.device.queue.submit([enc.finish()]);
     return { buf, bpr };
   }
+  // Create everything a list needs before its first frame: the post effects at the output
+  // size, and in pixel mode the low-resolution child and its post effects at the child's size
+  // (the passes run there). draw() skips what is not ready, so await this before a draw that
+  // must be complete (a still, the first frame of a capture).
+  async prepare(list) {
+    const passes = (list.post && list.post.passes) || [];
+    planScenePasses(passes, !!(list.post && list.post.colour));   // throws on a list that breaks the encoding contract
+    if (!list.pixel) return this.post.prepare(passes, this.w, this.h);
+    const pm = this.#pixel();
+    await pm.prepare(list);
+    await pm.child.post.prepare(passes, pm.child.w, pm.child.h);
+  }
   renderTo(list, opts, view, format) { this.#frame(list, { ...opts, noReadback: true }, view, format); }   // a view the caller owns
   draw(list, opts = {}) { this.#frame(list, opts, this.host.context.getCurrentTexture().createView(), false); }   // to the canvas
   // Draw off screen and return { width, height, data: Uint8Array RGBA rows }.
   async capture(list, opts = {}) {
-    await this.post.prepare((list.post && list.post.passes) || [], this.w, this.h);
-    if (list.pixel) await this.#pixel().prepare(list);
+    await this.prepare(list);
     if (opts.float) return this.#captureFloat(list, opts);
     if (!this.capTex) this.capTex = this.device.createTexture({ label: "motion capture", size: [this.w, this.h], format: "rgba8unorm", usage: TEX.RENDER | TEX.COPY_SRC });
     const r = this.#frame(list, opts, this.capTex.createView(), "rgba8unorm");

@@ -8,7 +8,8 @@
 <script type="module">
 import { createHost } from '../raw-gpu.mjs';
 import { createMotion } from '../motion/renderer.mjs';
-import { registerPass } from '../motion/post.mjs';
+import { registerPass, getPass } from '../motion/post.mjs';
+import '../shaders/post.mjs';
 import { rect, circle } from '../motion/path.mjs';
 
 registerPass('test-identity', { stage: 'display', wgsl: `@fragment fn main(@builtin(position) q: vec4f) -> @location(0) vec4f { return texel(q); }` });
@@ -29,7 +30,34 @@ async function run() {
   const grey = { items: [{ shape: rect(0, 0, 320, 180), fill: [0.18, 0.18, 0.18, 1] }], camera, background: [0, 0, 0], post: { bloom: 0, vignette: 0, grain: 0 } };
   const px = async (colour) => (await mo.capture({ ...grey, post: { ...grey.post, colour } }, { frame: 0 })).data[4 * (90 * 320 + 160)];
   const clip = await px('clip/srgb'), aces = await px('aces2-sdr/srgb');
-  return { maxAB, brighter: sumC > sumA * 1.2, sumA, sumC, clip, aces };
+  const film = await filmContract(mo, camera);
+  let refused = null;
+  try { await mo.capture({ ...grey, post: { ...grey.post, colour: 'clip/srgb', passes: [{ pass: 'film' }] } }, { frame: 0 }); } catch (e) { refused = String(e.message || e); }
+  return { maxAB, brighter: sumC > sumA * 1.2, sumA, sumC, clip, aces, film: { ...film, refusedWithColour: refused } };
+}
+
+// The encoding contract (evidence/motion-colour-pixel-bounds.json): sRGB fills through film
+// without post.colour must match the film CPU reference on the sRGB-decoded frame within one
+// code. Control: the reference on the undecoded values lifts near black by more than 20 codes.
+async function filmContract(mo, camera) {
+  const W = 320, H = 180, post = { bloom: 0, vignette: 0, grain: 0 };
+  const items = [{ shape: rect(0, 0, 80, 90), fill: '#050505' }, { shape: rect(80, 0, 80, 90), fill: '#808080' }, { shape: rect(160, 0, 80, 90), fill: '#f06b1f' }, { shape: rect(240, 0, 80, 90), fill: '#2a4f9c' }];
+  for (let i = 0; i < 16; i++) { const v = Math.round((i / 15) * 255).toString(16).padStart(2, '0'); items.push({ shape: rect(i * 20, 90, 20, 90), fill: '#' + v + v + v }); }
+  const list = { items, camera, background: [0, 0, 0], post };
+  const flat = await mo.capture(list, { frame: 0, float: true });
+  const gpu = await mo.capture({ ...list, post: { ...post, passes: [{ pass: 'film' }] } }, { frame: 0 });
+  const decode = getPass('srgb-decode').cpu, film = getPass('film').cpu;
+  const ref = film(decode(flat.data), W, H, { pass: 'film' }), raw = film(flat.data, W, H, { pass: 'film' });
+  const code = (v) => Math.round(255 * Math.min(1, Math.max(0, v)));
+  let maxCode = 0, worst = null;
+  for (let i = 0; i < ref.length; i++) {
+    if (i % 4 === 3) continue;
+    const d = Math.abs(gpu.data[i] - code(ref[i]));
+    if (d > maxCode) { maxCode = d; worst = { pixel: [Math.floor(i / 4) % W, Math.floor(i / 4 / W)], channel: i % 4, gpu: gpu.data[i], cpu: code(ref[i]) }; }
+  }
+  const at = (img, x, y, enc) => [0, 1, 2].map((c) => enc ? code(img[4 * (y * W + x) + c]) : img[4 * (y * W + x) + c]);
+  return { maxCode, worst, nearBlack: { gpu: at(gpu.data, 40, 45, false), decodedRef: at(ref, 40, 45, true), undecodedRef: at(raw, 40, 45, true) },
+    controlLift: code(raw[4 * (45 * W + 40)]) - code(ref[4 * (45 * W + 40)]) };
 }
 run().then((r) => { window.__result = r; }, (e) => { window.__result = { error: String(e && e.stack || e) }; });
 </script>

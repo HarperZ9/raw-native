@@ -1,0 +1,20 @@
+{
+  "what": "Two Motion defects found on 2026-10-11 while rendering the explainer guide characters, and the checks that hold their fixes",
+  "fixed_before_first_run": "2026-10-11, after the diagnosis (read from the code, not from a run) and before any fix ran",
+  "defects": {
+    "film_colour_space": "Without post.colour, Motion's accumulation holds display values (sRGB-encoded colours, as colour_finish.mjs documents). The film pass is a scene-stage pass that reads its input as scene-linear light, so on that accumulation it read sRGB codes as light and printed a flat, lifted frame (blacks near 0.27). Nothing checked the encoding.",
+    "pixel_capture": "Two paths skip preparation. (1) capture() prepares the parent's post effects at the output size, but in pixel mode the passes run in the low-resolution child, whose effects (dither) were never prepared, so the first frames skip them. (2) The capture page's canvas path calls draw(), which renders full size until pixel mode is ready, so a one-frame still comes out full size."
+  },
+  "contract": {
+    "rule": "A scene-stage pass declares input 'linear' or 'any' and output 'linear' or 'display'. The accumulation is display-encoded without post.colour and linear with it. A pass that needs linear input on display-encoded values gets the sRGB decode inserted before it (built-in pass 'srgb-decode'). A scene pass that writes display values with post.colour set, or a linear-input pass after a display-output pass, throws before anything renders.",
+    "node_checks": "planScenePasses: inserts the decode for film without post.colour; inserts nothing with post.colour; throws for film with post.colour; throws for film then film; leaves 'any' passes alone."
+  },
+  "bounds": {
+    "srgb_decode_pass": "GPU within 1 code of its CPU reference over the committed post frame set (the post-pass gate's own bound)",
+    "film_in_motion": "A Motion capture of sRGB fills (near black #050505, grey #808080, orange #f06b1f, a ramp) through film without post.colour, bloom, vignette and grain 0, against the film CPU reference run on the sRGB-decoded float capture of the same list without film: at most 1 code at 8 bits",
+    "film_control": "The film CPU reference on the undecoded values must put the near-black patch more than 20 codes above the decoded reference, or the check cannot see the defect",
+    "pixel_cold_capture": "A new Motion, first capture of a 160 x 90 pixel-mode list (integer, factor 6) with a dither pass (pico8, bayer4): equal bit for bit to integerUpscale of readLow, at most 16 distinct colours, every one in the PICO-8 palette",
+    "pixel_draw_path": "The same list through prepare() then draw() to the canvas texture: the low frame read back has at most 16 colours, all in PICO-8"
+  },
+  "does_not_prove": "Other passes' contracts beyond the ones registered here; colour accuracy of the film look itself; pixel mode with history passes."
+}
