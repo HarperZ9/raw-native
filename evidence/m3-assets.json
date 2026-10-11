@@ -3,6 +3,6 @@
  "what": "SHA-256 of each owned asset's glTF JSON and binary buffer (json:bin), as test_owned_assets --write-hashes wrote them",
  "hashes": {
   "raw-hero": "aa9c9bc290705706922fb698b58fa20af9ee046d00435321a8bf67d424b2f7af:9765de597e308c8ff0c68ec6baeeeb229deee7cf7530ad36b048ace6ab1cc358",
-  "raw-hall": "f6a0afab7132e62da9cfd496fa40a661a5e2b88c5f4e1a25d0ce814e19cb78fc:fabf0c022436624909ade5440925b2b649acd4599cc7a304387676dba6f9d3d8"
+  "raw-hall": "bdaec612f3adfc30fd9a75ee497fdd2b7d9c63194a3e7c065738f0ef474c61f5:017b0d276ac2f2a09358e1c24ef36c9aeb2d3807c9d562440d6d6f8e2077c9f6"
  }
 }

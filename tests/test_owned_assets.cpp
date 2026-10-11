@@ -1,5 +1,6 @@
 // The owned M3 assets against evidence/m3-assets-bounds.json: determinism, geometry, scale, the
-// hero's material coverage, the hall's content and the glTF round trip, with two controls.
+// hero's material coverage, the hall's content, the glTF round trip and the coplanar-overlap
+// scan (method note 1 of 2026-10-11), with three controls.
 //   test_owned_assets [--json] [--write-hashes]
 // --write-hashes rewrites evidence/m3-assets.json from this build (run once, on the producing
 // compiler; every other compiler then has to match it).
@@ -7,6 +8,7 @@
 #include "raw/assets/gltf.hpp"
 #include "raw/core/sha256.hpp"
 #include "check.hpp"
+#include "coplanar_scan.hpp"
 #include <cmath>
 #include <cstdio>
 #include <cstring>
@@ -87,6 +89,13 @@ bool heroMaterialsOk(const Stats& s) {
     for (double v : s.extArea) ok = ok && v >= 0.02 * s.area;
     return ok;
 }
+// Replaces the row's closing brace with the coplanar fields (which end in their own brace).
+void rowTail(char* row, const char* tail) {
+    std::string r(row);
+    r.pop_back();
+    r += tail;
+    std::snprintf(row, 1100, "%s", r.c_str());
+}
 }  // namespace
 
 int main(int argc, char** argv) {
@@ -105,7 +114,11 @@ int main(int argc, char** argv) {
         if (!write) CHECK(h == want);
         CHECK(s.degenerate == 0 && s.badNormals == 0 && s.flipped == 0);
         CHECK(trip);
-        char b[900];
+        const coplanar::Result cp = coplanar::scan(a);
+        CHECK(cp.sameFacing == 0);
+        char cps[160];
+        std::snprintf(cps, sizeof cps, ", \"coplanar_same_facing\": %ld, \"coplanar_area\": %.6f, \"coplanar_opposite_facing_contacts\": %ld}", cp.sameFacing, cp.sameArea, cp.oppositeFacing);
+        char b[1100];
         if (a.name == "raw-hero") {
             CHECK(s.triangles >= 40000);
             CHECK(heroMaterialsOk(s));
@@ -115,6 +128,7 @@ int main(int argc, char** argv) {
                           " \"area_fraction\": {%s, \"plain_metal\": %.4f, \"plain_dielectric\": %.4f}}",
                           a.name.c_str(), s.triangles, s.degenerate, s.badNormals, s.flipped, h == want ? "true" : "false", trip ? "true" : "false", ext.c_str(),
                           s.metalArea / s.area, s.dielectricArea / s.area);
+        rowTail(b, cps);
         } else {
             long drapeTris = 0;
             const int cols = kindCount(a, "column"), arches = kindCount(a, "arch"), drapes = kindCount(a, "drapery", &drapeTris), lanterns = kindCount(a, "lantern");
@@ -125,6 +139,7 @@ int main(int argc, char** argv) {
                           " \"extent\": [%.3f, %.3f, %.3f], \"columns\": %d, \"arches\": %d, \"drapery_panels\": %d, \"drapery_triangles\": %ld, \"lanterns\": %d}",
                           a.name.c_str(), s.triangles, s.degenerate, s.badNormals, s.flipped, h == want ? "true" : "false", trip ? "true" : "false",
                           s.extent[0], s.extent[1], s.extent[2], cols, arches, drapes, drapeTris, lanterns);
+        rowTail(b, cps);
         }
         rows += std::string(rows.empty() ? "" : ",\n") + b;
         // Control: one byte changed in the export.
@@ -139,10 +154,18 @@ int main(int argc, char** argv) {
     for (std::size_t i = 0; i < noVisor.parts.size(); ++i) if (noVisor.parts[i].name == "visor") noVisor.parts.erase(noVisor.parts.begin() + std::ptrdiff_t(i));
     const bool ctl = heroMaterialsOk(stats(noVisor));
     CHECK(!ctl);
+    // Control: raw-hall with one floor tile's box drawn twice (every face coplanar with its twin).
+    owned::Asset twin = owned::hall();
+    owned::Part copy = twin.parts[0];
+    copy.indices.resize(36);
+    twin.parts.push_back(copy);
+    const long twinFaces = coplanar::scan(twin).sameFacing;
+    CHECK(twinFaces > 0);
     if (write) {
         std::ofstream f(std::string(RAW_SOURCE_DIR) + "/evidence/m3-assets.json", std::ios::binary);
         f << "{\n \"schema\": \"raw-native.evidence/1\",\n \"what\": \"SHA-256 of each owned asset's glTF JSON and binary buffer (json:bin), as test_owned_assets --write-hashes wrote them\",\n \"hashes\": {\n" << hashes << "\n }\n}\n";
     }
-    std::printf("{\n \"assets\": [\n%s\n ],\n \"control_no_visor_passes\": %s,\n \"failures\": %d\n}\n", rows.c_str(), ctl ? "true" : "false", raw_test_failures());
+    std::printf("{\n \"assets\": [\n%s\n ],\n \"control_no_visor_passes\": %s,\n \"control_twin_tile_coplanar\": %ld,\n \"failures\": %d\n}\n", rows.c_str(), ctl ? "true" : "false",
+                twinFaces, raw_test_failures());
     return json ? (raw_test_failures() ? 1 : 0) : raw_test_summary();
 }
