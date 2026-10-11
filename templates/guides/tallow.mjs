@@ -11,12 +11,16 @@ export const TALLOW = {
 const C = TALLOW;
 // The flame's tip, for lights and glows the scene adds.
 export const FLAME = [6, -738];
+// The flame's default look; set from the flame test in PROGRESS.md, step 9.
+export let FLAME_STYLE = "over";
+export const setFlameStyle = (v) => { FLAME_STYLE = v; };
 
-// opts: armL, armR (degrees at the shoulder, + swings the hand outward), prop ("ledger" | "card" |
+// opts: armL, armR (degrees at the shoulder, + swings the hand outward), elbL, elbR (degrees
+// at the elbow, added to the shoulder angle), prop ("ledger" | "card" |
 // "jar" | "loupe" | null), propL ("ledger" | "jar" | null), lid (0 open .. 1 shut), look ([dx, dy]
 // of the iris), flame (scale), lean (flame lean in degrees), drip (0..1 of a drip pinched off)
 export function tallow(o = {}) {
-  const { armL = 10, armR = 6, prop = null, propL = "ledger", lid = 0.42, look = [0, 0], flame = 1, lean = 0, mouth = 0 } = o;
+  const { armL = 10, armR = 6, prop = null, propL = "ledger", lid = 0.5, look = [0, 0], flame = 1, lean = 0, mouth = 0 } = o;
   const parts = [];
   const add = (p) => parts.push(p);
   // Shoes and legs.
@@ -53,49 +57,80 @@ export function tallow(o = {}) {
   add({ d: "M -38 -650 C -26 -664 30 -664 40 -650 C 28 -642 -26 -642 -38 -650 Z", pivot: [0, -652, 10], fill: "#fff5dc", stroke: null, opacity: 0.95 });
   add({ d: "M 2 -655 C 0 -668 8 -676 4 -688", pivot: [2, -670, 12], fill: null, stroke: INK, width: 4 });
   // The eye: sclera, iris, pupil, a highlight, a heavy lid and a bag beneath.
-  const [lx, ly] = look, ey = -572, lidY = -592 + 34 * lid;
+  const [lx, ly] = look, ey = -572, lidY = -590 + 30 * lid;
   add({ d: "M -28 -572 C -14 -590 14 -590 28 -572 C 14 -556 -14 -556 -28 -572 Z", pivot: [0, ey, 46], fill: "#f6eedd", stroke: INK, width: 2.5, face: 0, flat: 1, name: "eye" });
   add({ d: ellipse(2 + lx, ey + ly, 11, 11), pivot: [0, ey, 47], fill: rad(2 + lx, ey + ly, 11, [0, "#e3a24a"], [0.55, C.iris], [1, "#2a1a0e"]), clip: "eye", face: 0, flat: 1 });
   add({ d: ellipse(2 + lx, ey + ly, 5, 5), pivot: [0, ey, 48], fill: "#090808", clip: "eye", face: 0, flat: 1 });
   add({ d: ellipse(6 + lx, ey + ly - 4, 2.5, 2.5), pivot: [0, ey, 49], fill: "#ffffff", clip: "eye", face: 0, flat: 1 });
-  add({ d: `M -30 -571 C -14 -594 14 -594 30 -571 C 14 ${lidY} -14 ${lidY} -30 -571 Z`, pivot: [0, ey, 50], fill: lin(0, -594, 0, lidY, [0, C.wax], [1, C.waxMid]), stroke: INK, width: 2.5, face: 0, flat: 1 });
+  // The lid: a dome whose lower edge is a straight line, level with the eye, so the look is
+  // half-shut and flat, never a scowl.
+  add({ d: `M -31 -571 C -15 -596 15 -596 31 -571 L 31 ${lidY} L -31 ${lidY} Z`, pivot: [0, ey, 50], fill: lin(0, -594, 0, lidY, [0, C.wax], [1, C.waxMid]), stroke: INK, width: 2.5, face: 0, flat: 1, clip: "eye" });
+  add({ d: `M -31 ${lidY} L 31 ${lidY}`, pivot: [0, ey, 51], fill: null, stroke: INK, width: 3, face: 0, flat: 1 });
+  add({ d: "M -28 -572 C -14 -590 14 -590 28 -572 C 14 -556 -14 -556 -28 -572 Z", pivot: [0, ey, 52], fill: null, stroke: INK, width: 2.5, face: 0, flat: 1 });
   add({ d: "M -20 -555 C -8 -549 8 -549 20 -555", pivot: [0, -553, 46], fill: null, stroke: C.waxShade, width: 2.5, face: 0, flat: 1 });
   if (mouth) add({ d: `M -12 -528 C -4 ${-528 + 10 * mouth} 6 ${-528 + 10 * mouth} 14 -530`, pivot: [0, -528, 45], fill: null, stroke: C.waxShade, width: 3, face: 0, flat: 1 });
-  // Arms: sleeves that swing at the shoulder, each with a hand and an optional prop.
-  const arm = (sgn, ang, held) => {
-    const sx = 84 * sgn, sy = -488, rot = -ang * sgn;
-    const sleeve = { d: `M ${sx - 6 * sgn} ${sy - 12} C ${sx + 30 * sgn} ${sy} ${sx + 40 * sgn} ${sy + 70} ${sx + 40 * sgn} ${sy + 140} L ${sx + 44 * sgn} ${sy + 226} L ${sx + 10 * sgn} ${sy + 230} L ${sx + 4 * sgn} ${sy + 140} C ${sx} ${sy + 80} ${sx - 10 * sgn} ${sy + 40} ${sx - 26 * sgn} ${sy + 20} Z`,
-      pivot: [sx, sy, 0], rot, fill: lin(sx - 30, sy, sx + 40, sy + 220, [0, "#5a5163"], [1, "#2e2c38"]), stroke: INK, width: 3.5, dz: 30 };
-    const hx = sx + 28 * sgn, hy = sy + 236;
-    const hand = { d: `M ${hx - 16} ${hy - 6} C ${hx - 22} ${hy + 20} ${hx - 14} ${hy + 50} ${hx - 4} ${hy + 58} C ${hx + 4} ${hy + 50} ${hx + 2} ${hy + 30} ${hx + 6} ${hy + 46} C ${hx + 12} ${hy + 56} ${hx + 20} ${hy + 40} ${hx + 16} ${hy - 6} Z`,
-      pivot: [sx, sy, 0], rot, fill: C.hand, stroke: INK, width: 2.5, dz: 29 };
-    const out = [hand, sleeve];
-    const P = (d, fill, extra = {}) => out.push({ d, pivot: [sx, sy, 0], rot, fill, stroke: INK, width: 2.5, dz: 31, ...extra });
+  // Arms: an upper sleeve that swings at the shoulder, a forearm that bends at the elbow, a cuff
+  // and a mitten hand with a thumb. Angles: 0 hangs down, + swings the hand outward; the elbow
+  // adds to the shoulder angle. Props are held at the fingers and turn with the forearm.
+  const arm = (sgn, ang, elb, held) => {
+    const sx = 76 * sgn, sy = -482, L1 = 116, L2 = 100, R = Math.PI / 180;
+    const dir = (t) => [sgn * Math.sin(t * R), Math.cos(t * R)];
+    const [ux, uy] = dir(ang), ex = sx + 8 * sgn + ux * L1, ey = sy + 6 + uy * L1;
+    const t2 = ang + elb, [vx, vy] = dir(t2), wx = ex + vx * L2, wy = ey + vy * L2, rot = -sgn * t2;
+    const sleeve = (d, fill, dz) => ({ d, pivot: [sx, sy, 0], fill, stroke: INK, width: 3.5, dz });
+    const out = [
+      sleeve(limb(sx, sy - 4, ex, ey, 46, 36, 5 * sgn), lin(sx - 30, sy, sx + 40, sy + 120, [0, "#5a5163"], [1, "#3a3646"]), 30),
+      sleeve(ellipse(ex, ey, 18, 18), "#3a3646", 30.5),
+      sleeve(limb(ex, ey, wx, wy, 36, 31, -3 * sgn), lin(ex, ey, wx, wy, [0, "#443f52"], [1, "#2e2c38"]), 31),
+    ];
+    // Cuff and hand in the forearm's own frame: the wrist at the origin, fingers toward +y.
+    const H = (d, fill, extra = {}) => out.push({ d, pivot: [wx, wy, 0], rot, fill, stroke: INK, width: 2.5, dz: 32, ...extra });
+    const q = (x, y) => `${(wx + x).toFixed(1)} ${(wy + y).toFixed(1)}`;
+    H(`M ${q(-18, -6)} L ${q(18, -6)} L ${q(17, 8)} L ${q(-17, 8)} Z`, "#1e1c25", { dz: 32.2 });
+    H(`M ${q(-15, 6)} C ${q(-19, 22)} ${q(-17, 42)} ${q(-8, 50)} C ${q(-2, 55)} ${q(8, 55)} ${q(13, 48)} C ${q(19, 38)} ${q(18, 20)} ${q(15, 6)} Z`, C.hand, { dz: 32.1 });
+    H(`M ${q(-14 * sgn, 14)} C ${q(-28 * sgn, 16)} ${q(-30 * sgn, 30)} ${q(-18 * sgn, 34)} C ${q(-14 * sgn, 34)} ${q(-12 * sgn, 28)} ${q(-12 * sgn, 24)}`, C.hand, { dz: 32.15 });
+    H(`M ${q(-4, 34)} L ${q(-4, 48)} M ${q(5, 34)} L ${q(5, 48)}`, null, { stroke: C.waxShade, width: 2, dz: 32.3 });
+    // Props stay upright and hang from the fingertips (the loupe turns with the hand).
+    const fx = wx + vx * 44, fy = wy + vy * 44;
+    const Pp = (d, fill, extra = {}) => out.push({ d, pivot: [wx, wy, 0], fill, stroke: INK, width: 2.5, dz: 33, ...extra });
+    const g = (x, y) => `${(fx + x).toFixed(1)} ${(fy + y).toFixed(1)}`;
     if (held === "ledger") {
-      P(`M ${hx - 40} ${hy - 30} L ${hx + 34} ${hy - 44} L ${hx + 46} ${hy + 50} L ${hx - 28} ${hy + 64} Z`, C.ledger);
-      P(`M ${hx + 34} ${hy - 44} L ${hx + 40} ${hy - 40} L ${hx + 52} ${hy + 52} L ${hx + 46} ${hy + 50} Z`, C.page);
-      P(`M ${hx - 22} ${hy + 4} L ${hx + 22} ${hy - 4}`, null, { stroke: C.brass, width: 3 });
+      Pp(`M ${g(-44, -26)} L ${g(30, -36)} L ${g(40, 56)} L ${g(-34, 66)} Z`, C.ledger, { dz: 31.5 });
+      Pp(`M ${g(30, -36)} L ${g(36, -32)} L ${g(46, 58)} L ${g(40, 56)} Z`, C.page, { dz: 31.6 });
+      Pp(`M ${g(-28, 10)} L ${g(20, 4)}`, null, { stroke: C.brass, width: 3, dz: 31.7 });
     } else if (held === "card" || held === "blank") {
-      P(`M ${hx - 52} ${hy - 70} L ${hx + 40} ${hy - 82} L ${hx + 48} ${hy - 22} L ${hx - 44} ${hy - 10} Z`, C.page, { dz: 40 });
-      if (held === "card") for (let i = 0; i < 4; i++) P(`M ${hx - 36} ${hy - 58 + i * 11 - i * 0.5} L ${hx + (i === 3 ? 0 : 30)} ${hy - 68 + i * 11}`, null, { stroke: "#5b4e3c", width: 2.5, dz: 41 });
+      const cx = vx * 30, cy = vy * 30;
+      Pp(`M ${g(cx - 48, cy - 34)} L ${g(cx + 44, cy - 44)} L ${g(cx + 50, cy + 18)} L ${g(cx - 42, cy + 28)} Z`, C.page);
+      if (held === "card") for (let i = 0; i < 4; i++) Pp(`M ${g(cx - 32, cy - 20 + i * 11)} L ${g(cx + (i === 3 ? 4 : 34), cy - 28 + i * 11)}`, null, { stroke: "#5b4e3c", width: 2.5, dz: 33.1 });
     } else if (held === "jar") {
-      P(`M ${hx - 30} ${hy + 4} L ${hx + 30} ${hy + 4} L ${hx + 34} ${hy + 86} C ${hx + 20} ${hy + 96} ${hx - 20} ${hy + 96} ${hx - 34} ${hy + 86} Z`, [0.75, 0.82, 0.8, 0.35], { dz: 40 });
-      P(`M ${hx - 28} ${hy + 60} C ${hx - 10} ${hy + 52} ${hx + 10} ${hy + 66} ${hx + 30} ${hy + 56} L ${hx + 32} ${hy + 86} C ${hx + 20} ${hy + 94} ${hx - 20} ${hy + 94} ${hx - 32} ${hy + 86} Z`, C.waxMid, { dz: 39, stroke: null });
-      P(`M ${hx - 24} ${hy + 22} L ${hx + 24} ${hy + 22} L ${hx + 24} ${hy + 40} L ${hx - 24} ${hy + 40} Z`, C.page, { dz: 41, width: 1.5 });
-      P(`M ${hx - 34} ${hy - 6} L ${hx + 34} ${hy - 6} L ${hx + 32} ${hy + 6} L ${hx - 32} ${hy + 6} Z`, C.brass, { dz: 41 });
+      Pp(`M ${g(-30, -6)} L ${g(30, -6)} L ${g(34, 76)} C ${g(20, 86)} ${g(-20, 86)} ${g(-34, 76)} Z`, [0.75, 0.82, 0.8, 0.35]);
+      Pp(`M ${g(-28, 50)} C ${g(-10, 42)} ${g(10, 56)} ${g(30, 46)} L ${g(32, 76)} C ${g(20, 84)} ${g(-20, 84)} ${g(-32, 76)} Z`, C.waxMid, { stroke: null, dz: 32.9 });
+      Pp(`M ${g(-24, 12)} L ${g(24, 12)} L ${g(24, 30)} L ${g(-24, 30)} Z`, C.page, { width: 1.5, dz: 33.1 });
+      Pp(`M ${g(-34, -16)} L ${g(34, -16)} L ${g(32, -4)} L ${g(-32, -4)} Z`, C.brass, { dz: 33.1 });
     } else if (held === "loupe") {
-      P(ellipse(hx + 4, hy - 40, 30, 30), [0.85, 0.9, 0.95, 0.22], { stroke: C.brass, width: 7, dz: 40 });
-      P(`M ${hx - 2} ${hy - 10} L ${hx + 2} ${hy + 30}`, null, { stroke: "#3b2a1a", width: 9, dz: 39 });
+      const L = (d, fill, extra) => out.push({ d, pivot: [wx, wy, 0], rot, fill, stroke: INK, width: 2.5, dz: 33, ...extra });
+      L(`M ${q(-3, 40)} L ${q(1, 78)}`, null, { stroke: "#3b2a1a", width: 9, dz: 32.9 });
+      L(ellipse(wx + 2, wy + 106, 30, 30), [0.85, 0.9, 0.95, 0.22], { stroke: C.brass, width: 7 });
     }
     return out;
   };
-  arm(-1, armL, propL).forEach(add);
-  arm(1, armR, prop).forEach(add);
-  // The flame, last: an outer tongue and a hot core, leaning by `lean`.
-  const fx = FLAME[0], h = 92 * flame;
-  add({ d: `M 4 -686 C ${-20 * flame} ${-700 - h * 0.15} ${-22 * flame} ${-700 - h * 0.6} ${fx} ${-686 - h} C ${26 * flame} ${-700 - h * 0.55} ${28 * flame} ${-700 - h * 0.15} 4 -686 Z`,
-    pivot: [4, -686, 12], rot: lean, fill: rad(4, -700 - h * 0.25, h * 0.75, [0, "#fff8e8"], [0.35, "#ffd27a"], [0.75, "#ff8a2a"], [1, [1, 0.35, 0.05, 0]]), blend: "add", dz: 200 });
-  add({ d: `M 4 -688 C -6 -696 -8 ${-700 - h * 0.3} 4 ${-690 - h * 0.55} C 14 ${-700 - h * 0.3} 12 -696 4 -688 Z`,
-    pivot: [4, -686, 12], rot: lean, fill: rad(4, -700, h * 0.4, [0, "#ffffff"], [0.6, "#fff0c8"], [1, [0.6, 0.75, 1, 0.6]]), blend: "add", dz: 201 });
+  // Default elbows: a little bend when hanging, a crook when raised, folded up when the arm
+  // crosses the body (the loupe to the eye).
+  const elbow = (a) => (a > 90 ? 22 : a < -20 ? -75 : 12);
+  arm(-1, armL, o.elbL ?? elbow(armL), propL).forEach(add);
+  arm(1, armR, o.elbR ?? elbow(armR), prop).forEach(add);
+  // The flame, last: an outer tongue and a hot core, leaning by `lean`. flameStyle "add" lays
+  // them on as light; "over" paints them as opaque colour with an ink edge, so a paint pass or
+  // a palette keeps the hue (see PROGRESS.md, step 9, for the test that chose between them).
+  const fx = FLAME[0], h = 92 * flame, over = (o.flameStyle ?? FLAME_STYLE) === "over";
+  const outer = `M 4 -686 C ${-20 * flame} ${-700 - h * 0.15} ${-22 * flame} ${-700 - h * 0.6} ${fx} ${-686 - h} C ${26 * flame} ${-700 - h * 0.55} ${28 * flame} ${-700 - h * 0.15} 4 -686 Z`;
+  const core = `M 4 -688 C -6 -696 -8 ${-700 - h * 0.3} 4 ${-690 - h * 0.55} C 14 ${-700 - h * 0.3} 12 -696 4 -688 Z`;
+  if (over) {
+    add({ d: outer, pivot: [4, -686, 12], rot: lean, fill: lin(4, -686, 4, -686 - h, [0, "#e8641c"], [0.45, "#f59a2e"], [1, "#ffc04a"]), stroke: INK, width: 2.5, dz: 200 });
+    add({ d: core, pivot: [4, -686, 12], rot: lean, fill: lin(4, -688, 4, -690 - h * 0.55, [0, "#ffd36b"], [1, "#fff2c2"]), dz: 201 });
+  } else {
+    add({ d: outer, pivot: [4, -686, 12], rot: lean, fill: rad(4, -700 - h * 0.25, h * 0.75, [0, "#fff8e8"], [0.35, "#ffd27a"], [0.75, "#ff8a2a"], [1, [1, 0.35, 0.05, 0]]), blend: "add", dz: 200 });
+    add({ d: core, pivot: [4, -686, 12], rot: lean, fill: rad(4, -700, h * 0.4, [0, "#ffffff"], [0.6, "#fff0c8"], [1, [1, 0.8, 0.45, 0.6]]), blend: "add", dz: 201 });
+  }
   return parts;
 }

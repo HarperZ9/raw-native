@@ -43,7 +43,7 @@ export function coneParts(cx, by, { scale = 1, tilt = 0, pivot = null, z = 0, dz
 // the head), card (true: a claim card balanced on the nose), flipL, flipR (front flippers, degrees
 // at the shoulder, + raises outward), board (true: clipboard in the right flipper)
 export function pylon(o = {}) {
-  const { tilt = 0, lid = 0.45, bark = 0, hat = true, card = false, flipL = 0, flipR = 0, board = true, look = [0, 0] } = o;
+  const { tilt = 0, lid = 0.5, bark = 0, hat = true, card = false, flipL = 0, flipR = 0, board = true, look = [0, 0] } = o;
   const parts = [], add = (p) => parts.push(p);
   // Rear flippers, splayed behind.
   add({ d: "M -40 -6 C -100 10 -170 30 -206 16 C -200 -6 -150 -24 -60 -26 Z", pivot: [-60, -10, -40], fill: C.dark, stroke: INK, width: 3.5 });
@@ -86,18 +86,21 @@ export function pylon(o = {}) {
   F({ d: ellipse(24, -404, 30, 22), fill: rad(18, -410, 30, [0, "#c9c3b2"], [1, "#8d8a80"]), stroke: INK, width: 2.5, dz: 40 });
   F({ d: "M -16 -432 C -10 -442 10 -442 16 -432 C 10 -420 -10 -420 -16 -432 Z", fill: "#1a1718", stroke: INK, width: 2, dz: 42 });
   if (bark > 0) F({ d: `M -22 -384 C -12 ${-382 + 26 * bark} 12 ${-382 + 26 * bark} 22 -384 C 10 -380 -10 -380 -22 -384 Z`, fill: "#3a1a1c", stroke: INK, width: 2.5, dz: 41 });
-  else F({ d: "M -18 -380 C -8 -384 8 -384 18 -380", fill: null, stroke: INK, width: 2.5, dz: 41 });
+  else F({ d: "M -17 -381 L 17 -381", fill: null, stroke: INK, width: 2.5, dz: 41 });
   for (const sgn of [-1, 1]) for (let i = 0; i < 4; i++) {
     const y0 = -410 + i * 7;
     F({ d: `M ${sgn * 36} ${y0} C ${sgn * 80} ${y0 - 12 + i * 4} ${sgn * 120} ${y0 - 4 + i * 8} ${sgn * (150 - i * 6)} ${y0 + 6 + i * 10}`, fill: null, stroke: C.whisker, width: 1.8, dz: 43, flat: 0.6 });
   }
-  // Eyes: large and dark, under heavy lids. The deadpan lives in the lids.
+  // Eyes: large and dark, under heavy lids. The deadpan lives in the lids: each lid's lower
+  // edge is level (no slant toward the nose, which read as a scowl), so the look is flat and
+  // unbothered.
   for (const sgn of [-1, 1]) {
-    const ex = sgn * 40, ey = -456, lidY = ey - 22 + 40 * lid;
+    const ex = sgn * 40, ey = -456, lidY = ey - 21 + 34 * lid;
     F({ d: ellipse(ex, ey, 18, 21), fill: C.eye, stroke: INK, width: 2, dz: 44, name: sgn < 0 ? "eyeL" : "eyeR" });
-    F({ d: ellipse(ex - 5 + look[0], ey - 8 + look[1], 5, 6), fill: "#f4f4f4", dz: 45 });
-    F({ d: `M ${ex - 22} ${ey - 2} C ${ex - 20} ${ey - 30} ${ex + 20} ${ey - 30} ${ex + 22} ${ey - 2} C ${ex + 12} ${lidY} ${ex - 12} ${lidY} ${ex - 22} ${ey - 2} Z`,
-      fill: lin(0, ey - 28, 0, lidY, [0, "#8c929a"], [1, "#6c727b"]), stroke: INK, width: 2.5, dz: 46 });
+    F({ d: ellipse(ex - 5 + look[0], ey - 8 + look[1] + 12 * lid, 5, 6), fill: "#f4f4f4", dz: 45 });
+    F({ d: `M ${ex - 24} ${ey - 4} C ${ex - 22} ${ey - 32} ${ex + 22} ${ey - 32} ${ex + 24} ${ey - 4} L ${ex + 22} ${lidY} L ${ex - 22} ${lidY} Z`,
+      fill: lin(0, ey - 28, 0, lidY, [0, "#8c929a"], [1, "#737981"]), stroke: null, dz: 46, clip: sgn < 0 ? "eyeL" : "eyeR" });
+    F({ d: `M ${ex - 19} ${lidY} L ${ex + 19} ${lidY}`, fill: null, stroke: INK, width: 3, dz: 47 });
   }
   if (hat) for (const p of coneParts(4, -500, { scale: 1, pivot: [0, -384, 30] })) H({ ...p, rot: 7 + (p.rot || 0), dz: 80 + (p.dz || 0) });
   if (card) {

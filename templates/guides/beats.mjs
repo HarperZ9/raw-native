@@ -6,6 +6,8 @@ import { coneParts } from "./pylon.mjs";
 import { rect } from "../../web/motion/path.mjs";
 import { label } from "./look.mjs";
 import { floorCards } from "./sets.mjs";
+import { sprite, shellGrid, beach } from "./worlds/tidepool.mjs";
+import { S as isoS, depth as isoDepth, groundShadow } from "./worlds/iso_kit.mjs";
 
 const PAPER = "#d9cdb0";
 
@@ -47,6 +49,28 @@ export function shells(cols, rows, x0, y0, dx, dy, state) {
   return out;
 }
 
+// Things on the harbour's ground, each { d, items } for the painter's sort.
+const onGround = (ci, cj, draw, r = 0.3) => ({ d: isoDepth(ci, cj), items: [...groundShadow(ci, cj, r, 0.8), ...draw(...isoS(ci, cj))] });
+const paperBoat = (ci, cj, coned, k = 1) => onGround(ci, cj, (x, y) => {
+  const w = 30 * k, out = [
+    { shape: P(`M ${x - w} ${y - 8 * k} L ${x + w} ${y - 8 * k} L ${x + w * 0.6} ${y + 6 * k} L ${x - w * 0.6} ${y + 6 * k} Z`), fill: "#ddd2b6", stroke: INK, width: 2.5 },
+    { shape: P(`M ${x - w * 0.5} ${y - 8 * k} L ${x + 2} ${y - 44 * k} L ${x + w * 0.5} ${y - 8 * k} Z`), fill: "#efe6d0", stroke: INK, width: 2.5 },
+  ];
+  if (coned) for (const p of coneParts(x, y + 6 * k, { scale: 0.36 * k })) out.push({ shape: P(p.d), fill: p.fill, stroke: INK, width: 2 });
+  return out;
+}, 0.28 * k);
+const claimCard = (ci, cj, a = 0) => onGround(ci, cj, (x, y) => {
+  const c = Math.cos(a), s = Math.sin(a), pt = (u, v) => `${(x + u * c - v * s).toFixed(1)} ${(y + (u * s + v * c) * 0.5).toFixed(1)}`;
+  return [{ shape: P(`M ${pt(-30, -20)} L ${pt(30, -20)} L ${pt(30, 20)} L ${pt(-30, 20)} Z`), fill: "#e2d8bd", stroke: INK, width: 2 },
+    { shape: P(`M ${pt(-20, -6)} L ${pt(18, -6)} M ${pt(-20, 6)} L ${pt(8, 6)}`), fill: null, stroke: "#5b4e3c", width: 2 }];
+}, 0.25);
+const coneStack = (ci, cj, n = 4) => onGround(ci, cj, (x, y) => Array.from({ length: n }, (_, k) => coneParts(x, y - k * 16, { scale: 0.42 }).map((p) => ({ shape: P(p.d), fill: p.fill, stroke: INK, width: 2 }))).flat(), 0.4);
+const isoShell = (ci, cj, st) => onGround(ci, cj, (x, y) => {
+  const fill = st === 2 ? "#1d2333" : "#e9dfc6";
+  return [{ shape: P(`M ${x - 26} ${y} C ${x - 28} ${y - 30} ${x - 6} ${y - 42} ${x + 10} ${y - 38} C ${x + 28} ${y - 30} ${x + 30} ${y - 8} ${x + 26} ${y} Z`), fill, stroke: INK, width: 3 },
+    { shape: P(`M ${x - 12} ${y - 4} C ${x - 10} ${y - 20} ${x + 8} ${y - 26} ${x + 14} ${y - 14}`), fill: null, stroke: st === 2 ? "#4a4f5e" : "#8a7d68", width: 3 }];
+}, 0.3);
+
 // A key term on a calm ground, bottom centre (the bible's 1 to 6 words).
 const keyTerm = (A, s, L, size = 44, y = 968, x = 960) => [
   { shape: rect(x - s.length * size * 0.27 - 40, y - size - 18, s.length * size * 0.54 + 80, size + 44), screen: true, fill: [0.03, 0.028, 0.03, 0.82] },
@@ -58,41 +82,49 @@ const tallowHome = {
   props: () => floorCards(40, "night-floor", { lit: (i) => 0.55 + 0.45 * ((i * 7) % 5 === 0) }),
   hud: (style, A, L) => keyTerm(A, "Does this work exist?", L, 44, 1000, 1380),
 };
+// Pylon on the quay in front of the claims office; paper boats (claims) washed up along the
+// kerb, the coned ones checked-pending, her cone stack running down.
 const pylonHome = {
-  x: 930, y: 700, s: 0.55, camera: { x: 960, y: 560, zoom: 1.15 }, o: { tilt: 8, lid: 0.15, flipR: 55, look: [2, 2] },
-  props: () => [
-    ...boats(40, 520, 420, 1420, 860, "harbour", (i) => i % 3 === 0),
-    ...[0].flatMap((k) => coneParts(1150, 760 - k * 18, { scale: 0.42 }).map((p) => ({ shape: P(p.d), fill: p.fill, stroke: INK, width: 2 }))),
+  cell: [8.6, 7.3], s: 0.48, height: 3.2, o: { tilt: 6, lid: 0.5, flipR: 55, look: [2, 2] },
+  things: () => [
+    ...[[10.4, 3.4, 1], [11.2, 5.0, 0], [10.6, 6.0, 1], [11.6, 8.6, 0], [10.6, 9.2, 1], [11.4, 10.6, 0], [9.9, 11.4, 0], [8.4, 12.2, 1], [10.6, 12.2, 0], [7.0, 10.6, 0]]
+      .map(([i, j, c]) => paperBoat(i, j, c)),
+    coneStack(9.6, 8.9, 3),
   ],
   hud: (style, A, L) => keyTerm(A, "1 boat = 1 reference", L, 48),
 };
+// Rerun on the shelf by the tidepool; the claims are a grid of shells on the sand.
 const rerunHome = {
-  x: 640, y: 560, s: 0.5, camera: { x: 800, y: 470, zoom: 2 }, o: { clawR: 70, look: [4, -3] },
-  props: () => shells(6, 3, 800, 470, 56, 50, (k) => (k < 10 ? ((k * 5) % 9 < 5 ? 2 : 1) : 0)),
-  hud: (style, A, L) => [label(A.atlas, "1 shell = 1 reference", 64, 960, 1010, "#fff1e8")],
+  x: beach(140, 0)[0], y: beach(0, 236)[1], s: 0.62, o: { clawR: 70, look: [4, -3] },
+  props: (style, A) => shellGrid(A.pixel, 6, 3, 258, 196, (k) => (k < 10 ? ((k * 5) % 9 < 5 ? "hollow" : "holds") : "unknocked")),
+  hud: (style, A) => [label(A.atlas, "1 shell = 1 reference", 64, 1300, 1030, "#efe6cf")],
 };
 
 export const BEATS = {
   tallow: {
     thriller: tallowHome,
-    painted: { x: 960, y: 660, s: 0.5, camera: { x: 960, y: 520, zoom: 1.15 }, o: { armR: -40, prop: "loupe", lid: 0.5 }, yaw: 20,
-      props: () => cards(26, 640, 520, 1280, 780, "plaza-cards") },
-    pixel: { x: 640, y: 560, s: 0.3, camera: { x: 760, y: 450, zoom: 2 }, o: { armR: 160, prop: "card", look: [6, -7], lid: 0.15 },
-      props: () => cards(10, 740, 440, 1060, 640, "beach-cards", { w: 40, h: 26 }) },
+    painted: { cell: [10.2, 9.4], s: 0.55, height: 4, o: { armR: 22, elbR: 140, prop: "loupe", lid: 0.5 }, yaw: 20,
+      things: () => [[8.6, 8.6, 0.3], [9.0, 10.4, -0.5], [8.2, 11.8, 0.9], [11.2, 11.0, 0.1], [9.8, 12.4, -0.3], [11.6, 8.2, 0.6], [7.4, 10.0, 0.4]].map(([i, j, a]) => claimCard(i, j, a)) },
+    pixel: { x: beach(300, 0)[0], y: beach(0, 238)[1], s: 0.36, o: { armR: 160, prop: "card", look: [6, -7], lid: 0.4 },
+      props: (style, A) => [[200, 214], [236, 230], [330, 222], [372, 246], [262, 252], [404, 212], [176, 244]].map(([x, y]) => sprite(A.pixel, "card", x, y)) },
   },
   pylon: {
     painted: pylonHome,
     thriller: { x: 760, y: 1000, s: 0.95, o: { tilt: 15, lid: 0.5 },
       props: () => floorCards(30, "dock-floor", { lit: () => 0.6 }) },
-    pixel: { x: 640, y: 580, s: 0.36, camera: { x: 760, y: 470, zoom: 2 }, o: { bark: 1, lid: 0.05, tilt: -4 },
-      props: () => boats(8, 740, 440, 1060, 640, "pixel-boats", (i) => i % 2 === 0) },
+    pixel: { x: beach(290, 0)[0], y: beach(0, 240)[1], s: 0.37, o: { bark: 1, lid: 0.4, tilt: -4 },
+      props: (style, A) => [
+        ...[[196, 168], [232, 172], [356, 166], [404, 170], [440, 174]].map(([x, y]) => sprite(A.pixel, "boat", x, y)),
+        ...[[200, 162], [360, 160]].map(([x, y]) => sprite(A.pixel, "cone", x + 2, y - 4)),
+        ...[[338, 224], [372, 236], [214, 230]].map(([x, y]) => sprite(A.pixel, "boat", x, y)),
+      ] },
   },
   rerun: {
     pixel: rerunHome,
     thriller: { x: 760, y: 1010, s: 1.05, o: { clawR: 70, look: [6, 2] },
       props: () => [...floorCards(24, "pool-floor", { lit: () => 0.5 }), ...shells(1, 1, 1190, 1000, 0, 0, () => 2)] },
-    painted: { x: 900, y: 690, s: 0.75, camera: { x: 960, y: 520, zoom: 1.15 }, o: { stalk: 1.6, look: [0, -6] }, yaw: 20,
-      props: () => shells(4, 2, 1120, 640, 70, 60, (k) => (k % 3 === 0 ? 2 : 1)) },
+    painted: { cell: [7.6, 8.8], s: 0.6, height: 1.6, o: { stalk: 1.6, look: [0, -6] }, yaw: 20,
+      things: () => [[9.2, 7.6, 2], [9.7, 8.4, 1], [10.2, 9.2, 1], [9.4, 9.9, 2], [10.0, 10.6, 1], [10.6, 7.9, 1], [11.0, 8.8, 2]].map(([i, j, st]) => isoShell(i, j, st)) },
   },
 };
 

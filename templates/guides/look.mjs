@@ -3,14 +3,21 @@
 import { rad } from "./rig.mjs";
 import { rect, circle } from "../../web/motion/path.mjs";
 import { text } from "../../web/motion/text.mjs";
+import { SHORE_PALETTE } from "./worlds/tidepool_tiles.mjs";
 
 // Looks per style: ground colour, ink for labels, and the template's post stack.
 export const LOOKS = {
+  // The retro-thriller template's own stack: colour negative film (the Motion pass, which
+  // decodes the sRGB colours first, raw-native #101), then the soft tube.
   thriller: { ground: [0.012, 0.011, 0.014], ink: "#d9cdb4", dim: "#8a8070",
-    post: { bloom: 0.2, threshold: 1.0, vignette: 0.2, grain: 0, passes: [] }, node: "film" },
-  painted: { ground: [0.2, 0.15, 0.11], ink: "#f1e4c8", dim: "#b29d7e", post: { bloom: 0.08, vignette: 0.25, grain: 0, passes: [] }, node: "paint" },
-  pixel: { ground: [0.02, 0.02, 0.05], ink: "#fff1e8", dim: "#c2c3c7", post: { bloom: 0, vignette: 0.1, grain: 0, passes: [{ pass: "dither", palette: "pico8", mode: "bayer4" }] },
-  },
+    post: { bloom: 0.2, threshold: 1.0, vignette: 0.2, grain: 0, passes: [{ pass: "film", preset: "500t-print" },
+      { pass: "crt-classic", cell: 3, scanlines: true, scanStrength: 0.25, mask: "grille", maskStrength: 0.15, bloom: 0.1, curvature: 0.06, aberration: 0.08, vignette: 0.35 }] } },
+  // The painted isometric template: the registered paint pass (raw-native #55).
+  painted: { ground: [0.02, 0.022, 0.03], ink: "#f1e4c8", dim: "#b29d7e", post: { bloom: 0.06, threshold: 1.0, vignette: 0.3, grain: 0, passes: [{ pass: "paint", preset: "oil-grotesque" }] } },
+  // Pixel 2.5D: pixel mode at 480 x 270 (or 960 x 540 for a sheet), quantised to the tidepool's
+  // own fixed palette (worlds/tidepool_tiles.mjs) with an ordered dither.
+  pixel: { ground: [0.043, 0.039, 0.07], ink: "#efe6cf", dim: "#9cc4b2", pixelSize: [480, 270],
+    post: { bloom: 0, vignette: 0, grain: 0, passes: [{ pass: "dither", palette: SHORE_PALETTE, mode: "none" }] } },
 };
 
 export const label = (A, s, size, x, y, fill, anchor = "center") => ({ shape: text(s, { atlas: A, size, x, y, anchor }).shape, fill, screen: true });

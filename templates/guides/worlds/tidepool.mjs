@@ -1,0 +1,118 @@
+// Rerun's shore: a tidepool on a rock shelf at dusk, the pixel 2.5D world. Six layers at
+// their own depths, so a camera move gives parallax: the sky and moon (farthest), the sea
+// stacks, the sea, the beach and shelf with its props, and kelp in the foreground. Every
+// layer is hand-placed tiles or sprites (tidepool_tiles.mjs) drawn by the tile pass, on one
+// fixed palette, in pixel mode.
+//
+// Positions are given in screen pixels of the 480 x 270 frame as seen from the reference
+// camera (x 960, y 540, zoom 1); place() turns them into the depth and scale that keep one
+// art pixel on one frame pixel at every depth.
+import { tileAtlas, authoredMap, parallaxZ } from "../../../web/world/author.mjs";
+import * as A from "./tidepool_tiles.mjs";
+
+export const PX = 4;                               // design units per frame pixel (1920 / 480)
+export const REF = { x: 960, y: 540 };
+export const DEPTH = { sky: 0.15, stacks: 0.3, sea: 0.55, beach: 1, front: 1.5 };
+
+// A tilemap item for a map whose top-left lands at screen pixel (lx, ly) under the reference
+// camera, on the layer that scrolls at factor f.
+export function place(map, tileset, lx, ly, f) {
+  return { kind: "tilemap", map, tileset, x: REF.x + (lx * PX - 960) / f, y: REF.y + (ly * PX - 540) / f, scale: PX / f, z: parallaxZ(f) };
+}
+// Design coordinates of a screen pixel on the beach layer (factor 1), for characters and vector props.
+export const beach = (lx, ly) => [lx * PX, ly * PX];
+
+const one = (name, img) => {
+  const atlas = tileAtlas([[name, img]], { tileW: img.width, tileH: img.height });
+  return { atlas, map: authoredMap({ atlas, layers: [{ rows: ["x"], legend: { x: name } }] }) };
+};
+
+// The beach and shelf, by hand. Base layer: surf, wet sand, sand. Rock layer: the shelf.
+const BEACH_W = 34;
+const fit = (s) => s.padEnd(BEACH_W, s.slice(-1)).slice(0, BEACH_W);
+const BASE = [
+  "fFfFfFfFfFfFfFfFfFfFfFfFfFfFfFfFfF",
+  "wwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwwww",
+  "tttttttttttttttttttttttttttttttttt",
+  "s.S..3.s....%..S.....3...s...S..3.",
+  "..3.s....S.....3..s......%.....s..",
+  ".s....3......s......S..3.....S....",
+  "S...%....s.3.....s.......s..3....s",
+].map(fit);
+const ROCK = [
+  "..................................",
+  "lLlLlLlLlLlLe.....................",
+  "o-b-xp-o-bo-E.....................",
+  "-o--O-xb--O-E.....................",
+  "bx-o---O-pxoE.....................",
+  "-O-bxo--x--bE.....................",
+  "||||||||||||#.....................",
+].map(fit);
+const BASE_KEY = { f: "foam", F: "foam2", w: "wet", t: "wetToSand", s: "sand", S: "sand2", 3: "sand3", ".": "sandPlain", "%": "sandShell" };
+const ROCK_KEY = { ".": null, "-": "rockPlain", x: "rockShade", l: "shelfTop", L: "shelfTop2", e: "shelfEndR", o: "rockFlat", O: "rockFlat2", b: "rockBarnacle", p: "rockPit", E: "rockEdgeR", "|": "shelfFace", "#": "shelfFaceEndR" };
+
+const SKY = [
+  ["vV", "vvvvVvvvvvvvvvVvvvvvvvvvVvvvvvvvvv"],
+  ["n", "nnnnnnNnnnnnnnnnnnNnnnnnnnnnnnnNnn"],
+  ["g", "gggggggggggggggggggggggggggggggggg"],
+  ["h", "hhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh"],
+  ["b", "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"],
+  ["c", "cccccccccccccccccccccccccccccccccc"],
+  ["z", "zzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz"],
+].map(([, r]) => r);
+const SKY_KEY = { v: "void", V: "voidStar", n: "voidNight", N: "voidNightStar", g: "night", h: "nightBlue", b: "blue", c: "blueSlate", z: "horizon" };
+const SEA = [
+  "ffffffffffffffffffffffFfffffffffff",
+  "mmmmmmmmmmmmmmmmmmmmmmMmmmmmmmmmmm",
+  "mmmmmmmmmmmmmmmmmmmmmmMmmmmmmmmmmm",
+  "mmmmmmmmmmmmmmmmmmmmmmmMmmmmmmmmmm",
+];
+const SEA_KEY = { f: "far", F: "farGlint", m: "mid", M: "midGlint" };
+
+export async function loadTidepool(motion) {
+  const at = (tiles) => tileAtlas(tiles, { tileW: 16, tileH: 16 });
+  const ground = at(A.GROUND_TILES), sky = at(A.SKY_TILES), sea = at(A.SEA_TILES);
+  const W = {
+    beach: authoredMap({ atlas: ground, layers: [{ name: "base", rows: BASE, legend: BASE_KEY }, { name: "rock", rows: ROCK, legend: ROCK_KEY }] }),
+    sky: authoredMap({ atlas: sky, layers: [{ rows: SKY, legend: SKY_KEY }] }),
+    sea: authoredMap({ atlas: sea, layers: [{ rows: SEA, legend: SEA_KEY }] }),
+    sprites: {
+      moon: one("moon", A.moon()), stacks: one("stacks", A.stacks()), boulder: one("boulder", A.boulder), pool: one("pool", A.pool),
+      kelp: one("kelp", A.kelp()), kelpR: one("kelpR", A.kelp(36, 60, [[8, 1.9, 7], [20, 0.4, 9], [30, 2.8, 6]])),
+      unknocked: one("unknocked", A.shellTiles.unknocked), holds: one("holds", A.shellTiles.holds), hollow: one("hollow", A.shellTiles.hollow),
+      starfish: one("starfish", A.starfish), pebbles: one("pebbles", A.pebbles), driftwood: one("driftwood", A.driftwood),
+      card: one("card", A.card), boat: one("boat", A.boat), cone: one("cone", A.cone),
+    },
+  };
+  if (motion) {
+    motion.image("tp-ground", ground.image); motion.image("tp-sky", sky.image); motion.image("tp-sea", sea.image);
+    for (const [k, s] of Object.entries(W.sprites)) motion.image("tp-" + k, s.atlas.image);
+  }
+  return W;
+}
+
+// A sprite on a layer, its top-left at screen pixel (lx, ly).
+export const sprite = (W, name, lx, ly, f = 1) => place(W.sprites[name].map, "tp-" + name, lx, ly, f);
+
+// The world's layers behind the characters, and the foreground in front of them.
+export function tidepool(W) {
+  const back = [
+    place(W.sky, "tp-sky", -32, 0, DEPTH.sky),
+    sprite(W, "moon", 316, 26, DEPTH.sky),
+    sprite(W, "stacks", 14, 69, DEPTH.stacks),
+    place(W.sea, "tp-sea", -16, 112, DEPTH.sea),
+    place(W.beach, "tp-ground", -16, 160, DEPTH.beach),
+    sprite(W, "pool", 36, 210),
+    sprite(W, "boulder", 166, 168),
+    sprite(W, "driftwood", 228, 186), sprite(W, "pebbles", 214, 252), sprite(W, "starfish", 438, 200), sprite(W, "pebbles", 400, 262),
+  ];
+  const front = [sprite(W, "kelp", -8, 204, DEPTH.front), sprite(W, "kelpR", 452, 216, DEPTH.front)];
+  return { back, front };
+}
+
+// A shell grid on the sand: state(i) is "unknocked", "holds" or "hollow".
+export function shellGrid(W, cols, rows, lx, ly, state, dx = 20, dy = 14) {
+  const out = [];
+  for (let j = 0; j < rows; j++) for (let i = 0; i < cols; i++) out.push(sprite(W, state(j * cols + i), lx + i * dx + (j % 2) * (dx >> 1), ly + j * dy));
+  return out;
+}

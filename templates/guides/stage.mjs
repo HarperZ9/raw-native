@@ -1,18 +1,16 @@
-// Stages for the explainer guides: each guide posed inside the three style templates of
-// ADR 0016 (the template's own tile map and look), and on a turnaround sheet. A shot is a
-// Motion scene; tools/guides/render_all.py renders each one as a still on the software
-// adapter. The painted look runs afterwards on the paint shader's CPU reference
-// (tools/guides/paint_still.mjs), because its GPU pass is not registered yet (PR #55).
+// Stages for the explainer guides: each guide posed inside the three style worlds of ADR
+// 0016, and on a turnaround sheet. The worlds are hand-made: the thriller's night desk
+// (sets.mjs), the painted harbour claims office (worlds/harbour.mjs) and the pixel tidepool
+// (worlds/tidepool.mjs). A shot is a Motion scene with the style's own post stack (look.mjs);
+// tools/guides/render_all.py renders each one as a still on the software adapter.
 import { pose, lin, rad, INK } from "./rig.mjs";
 import { rect } from "../../web/motion/path.mjs";
 import { LOOKS, label } from "./look.mjs";
-import thriller from "../retro-thriller/scene.mjs";
-import painted from "../painted-iso-rpg/scene.mjs";
-import pixel from "../pixel-2.5d/scene.mjs";
 import { GUIDES } from "./guides.mjs";
 import { thrillerSet } from "./sets.mjs";
-
-const TEMPLATES = { thriller, painted, pixel };
+import { loadTidepool, tidepool, REF } from "./worlds/tidepool.mjs";
+import { loadHarbour, harbour, HARBOUR_CAMERA, LAMP } from "./worlds/harbour.mjs";
+import { S as isoS, depth as isoDepth, sorted, castShadow } from "./worlds/iso_kit.mjs";
 const ATLAS = new URL("../../docs/motion/hanken-grotesk-500.atlas.json", import.meta.url).href;
 
 let atlasP = null;
@@ -20,19 +18,24 @@ const atlas = () => (atlasP = atlasP || fetch(ATLAS).then((r) => r.json()));
 
 async function loadAll(ctx) {
   const A = { atlas: await atlas() };
-  for (const [k, tm] of Object.entries(TEMPLATES)) A[k] = await tm.load(ctx);
+  A.pixel = await loadTidepool(ctx.motion);
+  A.painted = await loadHarbour(ctx.motion);
+  A.painted.atlas = A.atlas;
   for (const g of Object.values(GUIDES)) if (g.textures && ctx.motion) for (const [k, v] of Object.entries(g.textures())) ctx.motion.image(k, v);
   return A;
 }
 
-// The template's world items at time t, with its own camera, without its post.
-// The thriller guides stand in a front-on set (sets.mjs) under the template's look; the
-// painted and pixel guides stand on the template's own tile map.
-export function world(style, A, t) {
-  if (style === "thriller") return { items: thrillerSet(A), camera: { x: 960, y: 540, zoom: 1 } };
-  const f = TEMPLATES[style].frame(t, { assets: A[style], params: {} });
-  return { items: style === "thriller" ? f.items.slice(0, 1) : f.items, camera: f.camera };
+// The world behind a guide and the part of it in front, with the world's own camera. In the
+// painted harbour, things that stand on the ground (the guide among them, passed in `extra`
+// as { d, items }) are drawn in depth order with the buildings and props.
+export function world(style, A, extra = []) {
+  if (style === "thriller") return { items: [...thrillerSet(A), ...extra.flatMap((t) => t.items)], front: [], camera: { x: 960, y: 540, zoom: 1 } };
+  if (style === "pixel") { const w = tidepool(A.pixel); return { items: [...w.back, ...extra.flatMap((t) => t.items)], front: w.front, camera: { ...REF, zoom: 1 } }; }
+  const w = harbour(A.painted, extra);
+  return { items: [...w.back, ...sorted(w.things)], front: w.front, camera: { ...HARBOUR_CAMERA } };
 }
+// Pixel mode for the pixel style: the frame renders at the low resolution and scales by an integer.
+const pixelOf = (style, sheet) => (style === "pixel" ? { pixel: { width: sheet ? 960 : LOOKS.pixel.pixelSize[0], height: sheet ? 540 : LOOKS.pixel.pixelSize[1], mode: "integer" } } : {});
 
 // A turnaround (four views) over four poses, labelled, on the home style's ground.
 function sheetFrame(g, style, A) {
@@ -52,19 +55,31 @@ function sheetFrame(g, style, A) {
   hud.push(label(A.atlas, g.title, 38, 60, 60, L.ink, "left"));
   hud.push(label(A.atlas, g.subtitle, 22, 60, 94, L.dim, "left"));
   if (style === "thriller") items.unshift({ shape: rect(0, 0, 1920, 1080), screen: true, fill: rad(960, 420, 1100, [0, [0.07, 0.06, 0.06, 1]], [1, [0.01, 0.01, 0.012, 1]]) });
-  return { background: L.ground, items, hud, post: L.post };
+  return { background: L.ground, items, hud, post: L.post, ...pixelOf(style, true) };
 }
 
 // The guide inside a template's world, in that template's look, with the scene's props.
 function sceneFrame(g, style, A, beat) {
-  const L = LOOKS[style], w = world(style, A, beat.t ?? 0), cam = { ...w.camera, ...(beat.camera || {}) };
+  const L = LOOKS[style];
+  let { x, y } = beat;
+  if (beat.cell) [x, y] = isoS(...beat.cell);
+  const guide = [...g.under(x, y, beat.s, style), ...pose(g.parts(beat.o), { x, y, s: beat.s, yaw: beat.yaw || 0, flip: beat.flip, shear: g.shear || 0 })];
+  const extra = [];
+  if (beat.cell) {
+    // In the harbour the guide is a thing on the ground: a long shadow away from the lamp, then the figure.
+    extra.push({ d: isoDepth(...beat.cell), items: [...castShadow(...beat.cell, LAMP, beat.height || 3), ...guide] });
+    if (beat.things) extra.push(...beat.things(A));
+  } else {
+    if (beat.props) extra.push({ d: 0, items: beat.props(style, A) });
+    extra.push({ d: 1, items: guide });
+  }
+  const w = world(style, A, extra), cam = { ...w.camera, ...(beat.camera || {}) };
   const items = [...w.items];
-  if (beat.props) items.push(...beat.props(style, A, cam));
-  items.push(...g.under(beat.x, beat.y, beat.s, style), ...pose(g.parts(beat.o), { x: beat.x, y: beat.y, s: beat.s, yaw: beat.yaw || 0, flip: beat.flip, shear: g.shear || 0 }));
   if (beat.front) items.push(...beat.front(style, A, cam));
-  if (g.light) items.push(...g.light(style, cam, beat));
+  if (g.light) items.push(...g.light(style, cam, { ...beat, x, y }));
+  items.push(...w.front);
   const hud = beat.hud ? beat.hud(style, A, L) : [];
-  return { background: L.ground, camera: cam, items, hud, post: L.post };
+  return { background: L.ground, camera: cam, items, hud, post: L.post, ...pixelOf(style, false) };
 }
 
 // Labels and key terms (the hud) go on top of the art. A painted shot renders them apart,
@@ -88,7 +103,7 @@ export function shot({ guide, style, kind = "scene", beat = null, title, layer =
     frame(t, ctx) {
       const A = ctx.assets;
       const f = kind === "sheet" ? sheetFrame(g, style, A) : sceneFrame(g, style, A, beat || g.beats[style]);
-      return layered(f, layer || (style === "painted" ? "art" : null));
+      return layered(f, layer === "all" ? null : layer || (style === "painted" ? "art" : null));
     },
   };
 }
