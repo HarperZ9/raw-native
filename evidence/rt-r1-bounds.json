@@ -46,5 +46,9 @@
  "method_note_1": {
   "written": "2026-10-11 07:50Z, before the change",
   "change": "R1's setup on its default grid becomes snap-corrected: coverage from the snapped vertices, attributes and depth from the unsnapped planes evaluated at the snapped vertices. Full text, cause and prediction: evidence/rt-r2-bounds.json, addendum_3_P4_method_note_1. C1 to C5 are rerun under their committed bounds, which are unchanged; the specification's 'depth' and 'interpolation' entries describe the uncorrected form and stay as the record of runs 1 to 6."
+ },
+ "method_note_2": {
+  "written": "2026-10-11 07:58Z, after runs 7 to 9",
+  "change": "The snap correction is an option (Options::snapCorrect, default off); the four committed modes run without it, as in runs 1 to 6. A fifth mode (modern with snapCorrect) is reported in C4 and C5, not gated. See evidence/rt-r2-bounds.json, addendum_4_P4_method_note_2."
  }
 }
