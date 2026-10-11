@@ -147,5 +147,12 @@
   "scenes": "The built-in test scene from its two cameras, raw-hero in the test scene, raw-hall from its nave camera, and raw-hall from its gallery camera (eye -12, 9, 6.6 toward 4, 5, -4; fovy 1.1), the dense scene in place of the interior close-up. Fixed now, before any GTAO or SSR result on them; test_post --scene-stats reports their reference coverage.",
   "gating": "As method note 2: a scene that misses a coverage bound is reported, not gated, for that metric; each metric must pass on at least two gated scenes. The open-failure handling in ctest (method note 2's successor in test_post) moves from the interior close-up to whichever scene fails, named in the runs record.",
   "bounds": "Unchanged. The runs on the Khronos models stay in evidence/m3-post-runs.json as history."
+ },
+ "method_note_10_2026_10_11": {
+  "written": "2026-10-11, after exploration probes (not checked runs, recorded here) and before the change runs",
+  "exploration": "With the camera static, TAA reaches 0.265 of the single-sample RMSE; on the 0.3-pixel pan, 0.735. Resampling the history with bilinear, Catmull-Rom or Lanczos-3 gives 0.754, 0.735 and 0.738, so resampling blur is not the cause. Warping the previous frame by the motion vectors fits best at scale 1.0, so the vectors are right where there is geometry. The TAA output under the pan best matches the reference rendered 0.3 pixels behind the camera, and a history warped with no new samples drifts about 0.1 pixel per frame. Cause: pixels with no geometry carry no motion, so where the box's silhouette leaves a background pixel, that pixel reads its history in place and keeps the box's edge one frame behind.",
+  "change": "The resolve reads each pixel's motion from the nearest surface (smallest view depth) in its 3 x 3 neighbourhood of the current frame (Karis, High Quality Temporal Supersampling, SIGGRAPH 2014). The depth disocclusion test keeps the pixel's own expected depth: a probe that also took the nearest surface's depth rejected history along silhouettes on a static camera (0.443 instead of 0.265). The same change goes into the WGSL resolve. Probe figures with the change: pan 0.447, static 0.269.",
+  "bounds": "Unchanged: pan RMSE at most 0.5 of the single-sample RMSE, ghosting at most 0.03 with its coverage, every control failing, and the GPU parity bound.",
+  "reported": "The resolve without the dilation is run and reported beside the result."
  }
 }
