@@ -11,7 +11,7 @@ struct SwrParams {
     affine: u32, depthBits: u32, cullBack: u32, snapShift: u32,
     scale: f32, guard: f32, tris: u32, maxQ: f32,
     m0: vec4f, m1: vec4f, m2: vec4f, m3: vec4f,
-    light: vec4f,
+    light: vec4f,                       // w: 1.0 when the snap correction is on
 }
 const SI_N: u32 = 12u;
 const SF_N: u32 = 16u;
@@ -114,9 +114,63 @@ fn clear_slot(slot: u32) {
 }
 
 // One fan triangle (vertex columns a, b, c of the snapped arrays) into `slot`.
-fn write_slot(slot: u32, src: u32, ax: i32, ay: i32, bx0: i32, by0: i32, cx0: i32, cy0: i32, za: f32, zb0: f32, zc0: f32, wa: f32, wb0: f32, wc0: f32, sa: f32, sb0: f32, sc0: f32, ta: f32, tb0: f32, tc0: f32) {
+// Snap correction (evidence/rt-r2-bounds.json, addendum 3), as swr_setup.cpp's correct(): on the
+// default grid the unsnapped planes of z/w, 1/w, s/w and t/w are evaluated at the snapped vertices.
+fn write_slot(slot: u32, src: u32, ax: i32, ay: i32, bx0: i32, by0: i32, cx0: i32, cy0: i32, za0: f32, zb1: f32, zc1: f32, wa0: f32, wb1: f32, wc1: f32, sa0: f32, sb1: f32, sc1: f32, ta0: f32, tb1: f32, tc1: f32, ua: vec2f, ub: vec2f, uc: vec2f) {
     var area: vec2u = edge64(ax, ay, bx0, by0, cx0, cy0);
     if (is_zero(area)) { return; }
+    var Z: array<f32, 3>;
+    var IW: array<f32, 3>;
+    var S: array<f32, 3>;
+    var T: array<f32, 3>;
+    Z[0] = za0; Z[1] = zb1; Z[2] = zc1;
+    IW[0] = wa0; IW[1] = wb1; IW[2] = wc1;
+    S[0] = sa0; S[1] = sb1; S[2] = sc1;
+    T[0] = ta0; T[1] = tb1; T[2] = tc1;
+    if (P.light.w > 0.5 && P.snapShift == 0u && P.affine == 0u) {
+        let dx1: f32 = ub.x - ua.x;
+        let dy1: f32 = ub.y - ua.y;
+        let dx2: f32 = uc.x - ua.x;
+        let dy2: f32 = uc.y - ua.y;
+        let det: f32 = dx1 * dy2 - dy1 * dx2;
+        var ok: bool = abs(det) >= 0.00390625 && (det > 0.0) == !is_neg(area);
+        var qx: array<i32, 3>;
+        var qy: array<i32, 3>;
+        qx[0] = ax; qx[1] = bx0; qx[2] = cx0;
+        qy[0] = ay; qy[1] = by0; qy[2] = cy0;
+        var z: array<f32, 3>;
+        var iw: array<f32, 3>;
+        var s: array<f32, 3>;
+        var t: array<f32, 3>;
+        for (var k: u32 = 0u; k < 3u; k++) {
+            if (!ok) { break; }
+            let ex: f32 = f32(qx[k]) * 0.00390625 - ua.x;
+            let ey: f32 = f32(qy[k]) * 0.00390625 - ua.y;
+            let l1: f32 = (ex * dy2 - ey * dx2) / det;
+            let l2: f32 = (dx1 * ey - dy1 * ex) / det;
+            let l0: f32 = (1.0 - l1) - l2;
+            iw[k] = (l0 * wa0 + l1 * wb1) + l2 * wc1;
+            z[k] = (l0 * za0 + l1 * zb1) + l2 * zc1;
+            s[k] = ((l0 * (sa0 * wa0) + l1 * (sb1 * wb1)) + l2 * (sc1 * wc1)) / iw[k];
+            t[k] = ((l0 * (ta0 * wa0) + l1 * (tb1 * wb1)) + l2 * (tc1 * wc1)) / iw[k];
+            ok = iw[k] > 0.0;
+        }
+        if (ok) {
+            for (var j: u32 = 0u; j < 3u; j++) { Z[j] = z[j]; IW[j] = iw[j]; S[j] = s[j]; T[j] = t[j]; }
+        }
+    }
+    let za: f32 = Z[0];
+    let zb0: f32 = Z[1];
+    let zc0: f32 = Z[2];
+    let wa: f32 = IW[0];
+    let wb0: f32 = IW[1];
+    let wc0: f32 = IW[2];
+    let sa: f32 = S[0];
+    let sb0: f32 = S[1];
+    let sc0: f32 = S[2];
+    let ta: f32 = T[0];
+    let tb0: f32 = T[1];
+    let tc0: f32 = T[2];
     var bx: i32 = bx0;
     var by: i32 = by0;
     var cx: i32 = cx0;
@@ -209,6 +263,8 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     if (n < 3u) { return; }
     var fx: array<i32, 9>;
     var fy: array<i32, 9>;
+    var ux: array<f32, 9>;
+    var uy: array<f32, 9>;
     let grid: i32 = i32(1u << P.snapShift);
     for (var s: u32 = 0u; s < n; s++) {
         let iw: f32 = 1.0 / cw[s];
@@ -218,13 +274,15 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
         cw[s] = iw;
         let sx: f32 = (nx * 0.5 + 0.5) * f32(P.w);
         let sy: f32 = (1.0 - (ny * 0.5 + 0.5)) * f32(P.h);
+        ux[s] = sx;
+        uy[s] = sy;
         fx[s] = i32(floor(sx * P.scale + 0.5)) * grid;
         fy[s] = i32(floor(sy * P.scale + 0.5)) * grid;
     }
     for (var k2: u32 = 1u; k2 + 1u < n; k2++) {
         let b: u32 = k2;
         let c2: u32 = k2 + 1u;
-        write_slot(t * SLOTS + k2 - 1u, t, fx[0], fy[0], fx[b], fy[b], fx[c2], fy[c2], cz[0], cz[b], cz[c2], cw[0], cw[b], cw[c2], cs[0], cs[b], cs[c2], ct[0], ct[b], ct[c2]);
+        write_slot(t * SLOTS + k2 - 1u, t, fx[0], fy[0], fx[b], fy[b], fx[c2], fy[c2], cz[0], cz[b], cz[c2], cw[0], cw[b], cw[c2], cs[0], cs[b], cs[c2], ct[0], ct[b], ct[c2], vec2f(ux[0], uy[0]), vec2f(ux[b], uy[b]), vec2f(ux[c2], uy[c2]));
     }
 }
 

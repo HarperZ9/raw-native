@@ -108,6 +108,13 @@ the day the release was published on GitHub, in UTC.
     about 11 on SwiftShader, outside the committed bound. It stays open until the RTX 4090 run
     is in; `evidence/m3-shadows-runs.json` records each texel's cause.
   - `raw_native_cli shadow-parity` runs the GPU checks.
+- **RT open failures narrowed** (method notes in `evidence/rt-r2-bounds.json` addenda 3 and 4,
+  `evidence/rt-r3-bounds.json` notes 5 and 6). R1 gains `swr::Options::snapCorrect` (off by default):
+  coverage from snapped vertices, depth and attributes from the unsnapped planes. With it, P4 goes
+  from 133 and 137 albedo pixels to 0 and 1. The height-fog march uses composite Simpson, so M4
+  passes at 2.9e-5. A trig-free power-8 Mandelbulb estimator on the GPU lifts the bulb to 99.475%
+  (t) and 98.2% (normals); it stays open, limited by the float32 march. M3's raster identity
+  failure is diagnosed in `evidence/rt-raster-identity-diagnosis.json`, with no raster change.
 - **Ray marching: an SDF scene graph on the CPU and the GPU** (RT stage R3, `evidence/rt-r3-bounds.json`).
   - A postfix SDF program provides primitives, smooth union, subtraction, intersection, frames and
     repetition. It also includes the Mandelbulb and Mandelbox estimators the site's fractal work uses.

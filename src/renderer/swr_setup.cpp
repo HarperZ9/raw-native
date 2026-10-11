@@ -40,12 +40,36 @@ int clip(CV* poly, int n, float g) {
 }
 std::int32_t ceilDiv256(std::int32_t v) { return -((-v) >> 8); }
 struct SV { std::int32_t x, y; float z, iw, s, t, fx, fy; };
+// Snap correction (evidence/rt-r2-bounds.json, addendum 3): on the default grid, the unsnapped
+// screen-space planes of z/w, 1/w, s/w and t/w are evaluated at each snapped vertex, so the
+// snapped triangle interpolates the unsnapped surface. Coverage keeps the snapped vertices.
+// swr.wgsl's write_slot performs the same float32 operations in the same order. Returns false
+// (values unchanged) when the unsnapped triangle is too thin, flipped by the snap, or 1/w <= 0.
+bool correct(SV& a, SV& b, SV& c, std::int64_t area) {
+    const float dx1 = b.fx - a.fx, dy1 = b.fy - a.fy, dx2 = c.fx - a.fx, dy2 = c.fy - a.fy;
+    const float det = dx1 * dy2 - dy1 * dx2;
+    if (!(std::fabs(det) >= 0.00390625f) || (det > 0.0f) != (area > 0)) return false;
+    SV* v[3] = {&a, &b, &c};
+    float z[3], iw[3], s[3], t[3];
+    for (int k = 0; k < 3; ++k) {
+        const float ex = float(v[k]->x) * 0.00390625f - a.fx, ey = float(v[k]->y) * 0.00390625f - a.fy;
+        const float l1 = (ex * dy2 - ey * dx2) / det, l2 = (dx1 * ey - dy1 * ex) / det, l0 = (1.0f - l1) - l2;
+        iw[k] = (l0 * a.iw + l1 * b.iw) + l2 * c.iw;
+        z[k] = (l0 * a.z + l1 * b.z) + l2 * c.z;
+        s[k] = ((l0 * (a.s * a.iw) + l1 * (b.s * b.iw)) + l2 * (c.s * c.iw)) / iw[k];
+        t[k] = ((l0 * (a.t * a.iw) + l1 * (b.t * b.iw)) + l2 * (c.t * c.iw)) / iw[k];
+        if (!(iw[k] > 0.0f)) return false;
+    }
+    for (int k = 0; k < 3; ++k) { v[k]->z = z[k]; v[k]->iw = iw[k]; v[k]->s = s[k]; v[k]->t = t[k]; }
+    return true;
+}
 // One fan triangle into slot `slot`; a degenerate or culled triangle leaves the slot empty.
 void writeSlot(Setup& S, std::size_t slot, SV a, SV b, SV c, std::uint32_t source, const Options& o) {
     std::int32_t* I = &S.ints[slot * kSetupInts];
     float* F = &S.floats[slot * kSetupFloats];
     std::int64_t area = edge(a.x, a.y, b.x, b.y, c.x, c.y);
     if (area == 0) return;
+    if (o.snapCorrect && o.snapShift == 0 && !o.affine && !correct(a, b, c, area)) ++S.uncorrected;
     if (area < 0) {                              // counter-clockwise on screen: clockwise in NDC (y flips)
         if (o.cullBack) return;
         std::swap(b, c);
@@ -165,6 +189,7 @@ std::vector<std::uint32_t> params(const Options& o, int w, int h, std::uint32_t 
     for (int i = 0; i < 16; ++i) p[16 + i] = f(M.m[i]);
     const float len = std::sqrt(light.x * light.x + light.y * light.y + light.z * light.z);
     p[32] = f(light.x / len); p[33] = f(light.y / len); p[34] = f(light.z / len);
+    p[35] = f(o.snapCorrect ? 1.0f : 0.0f);
     return p;
 }
 
