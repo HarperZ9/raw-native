@@ -2,7 +2,7 @@
 // wax under the wick. The wax is the budget of hours; the flame is what has been checked.
 // Original character, drawn here in code (raw-native licence). Front view, feet at the
 // origin, about 800 units from the soles to the flame tip.
-import { ellipse, lin, rad, limb, hatch, INK } from "./rig.mjs";
+import { ellipse, lin, rad, limb, hatch, INK, deform, shearBelow } from "./rig.mjs";
 
 export const TALLOW = {
   coat: "#262531", coatLit: "#4a4252", trouser: "#17161c", shoe: "#0d0c0e", wax: "#efe3c9", waxMid: "#d6c29b",
@@ -14,6 +14,8 @@ export const FLAME = [6, -738];
 // The flame's default look; set from the flame test in PROGRESS.md, step 9.
 export let FLAME_STYLE = "over";
 export const setFlameStyle = (v) => { FLAME_STYLE = v; };
+export let MOUTH = "open";
+export const setMouth = (v) => { MOUTH = v; };
 
 // opts: armL, armR (degrees at the shoulder, + swings the hand outward), elbL, elbR (degrees
 // at the elbow, added to the shoulder angle), prop ("ledger" | "card" |
@@ -31,22 +33,22 @@ export function tallow(o = {}) {
     add({ d: limb(x, -330, x + 2 * sgn, -18, 40, 26, 4 * sgn), pivot: [x, -170, 0], dz: -60, fill: lin(x - 20, 0, x + 20, 0, [0, "#232129"], [1, C.trouser]), stroke: INK, width: 3, side: 0.9 });
   }
   // The coat: long, flared, stooped.
-  add({ d: "M -80 -505 C -104 -470 -114 -380 -120 -300 C -126 -220 -140 -160 -156 -104 C -96 -90 -36 -98 0 -108 C 36 -98 96 -90 156 -104 C 140 -160 126 -220 120 -300 C 114 -380 104 -470 80 -505 C 40 -520 -40 -520 -80 -505 Z",
+  add({ tag: "coat", d: "M -80 -505 C -104 -470 -114 -380 -120 -300 C -126 -220 -140 -160 -156 -104 C -96 -90 -36 -98 0 -108 C 36 -98 96 -90 156 -104 C 140 -160 126 -220 120 -300 C 114 -380 104 -470 80 -505 C 40 -520 -40 -520 -80 -505 Z",
     pivot: [0, -300, 0], side: 0.62, fill: lin(-150, -500, 150, -110, [0, C.coatLit], [0.45, C.coat], [1, "#16151c"]), stroke: INK, width: 4, name: "coat" });
   // Folds and the front edge, drawn as ink.
-  add({ d: "M -4 -470 C -2 -380 -8 -250 -2 -110", pivot: [0, -300, 30], fill: null, stroke: INK, width: 3, face: 0, flat: 0.8 });
-  add({ d: "M -70 -330 C -84 -260 -96 -190 -110 -120 M 64 -360 C 78 -280 92 -200 112 -118", pivot: [0, -300, 20], fill: null, stroke: "#0f0e14", width: 2.5, face: 0, flat: 0.6 });
-  for (const yb of [-430, -372, -314]) add({ d: ellipse(10, yb, 6, 6), pivot: [10, yb, 34], fill: C.brass, stroke: INK, width: 2, face: 0, flat: 1 });
+  add({ tag: "coat", d: "M -4 -470 C -2 -380 -8 -250 -2 -110", pivot: [0, -300, 30], fill: null, stroke: INK, width: 3, face: 0, flat: 0.8 });
+  add({ tag: "coat", d: "M -70 -330 C -84 -260 -96 -190 -110 -120 M 64 -360 C 78 -280 92 -200 112 -118", pivot: [0, -300, 20], fill: null, stroke: "#0f0e14", width: 2.5, face: 0, flat: 0.6 });
+  for (const yb of [-430, -372, -314]) add({ tag: "coat", d: ellipse(10, yb, 6, 6), pivot: [10, yb, 34], fill: C.brass, stroke: INK, width: 2, face: 0, flat: 1 });
   // Lapels and the high collar.
-  add({ d: "M -6 -470 L -44 -505 L -70 -500 C -56 -470 -36 -440 -10 -400 Z", pivot: [-30, -470, 30], fill: "#1c1b23", stroke: INK, width: 3, face: 0, flat: 0.7 });
-  add({ d: "M 6 -470 L 44 -505 L 70 -500 C 56 -470 36 -440 10 -400 Z", pivot: [30, -470, 30], fill: "#1c1b23", stroke: INK, width: 3, face: 0, flat: 0.7 });
-  add({ d: hatch(-160, -520, 160, -90, { gap: 8, angle: 62, wobble: 5, seed: "tallow-coat" }), pivot: [0, -300, 1], side: 0.62, fill: null, stroke: [0.02, 0.02, 0.03, 0.55], width: 1.4, clip: "coat" });
-  add({ d: hatch(-160, -520, 160, -90, { gap: 13, angle: -30, wobble: 7, seed: "tallow-coat-2" }), pivot: [0, -300, 1], side: 0.62, fill: null, stroke: [0.02, 0.02, 0.03, 0.3], width: 1.2, clip: "coat" });
+  add({ tag: "coat", d: "M -6 -470 L -44 -505 L -70 -500 C -56 -470 -36 -440 -10 -400 Z", pivot: [-30, -470, 30], fill: "#1c1b23", stroke: INK, width: 3, face: 0, flat: 0.7 });
+  add({ tag: "coat", d: "M 6 -470 L 44 -505 L 70 -500 C 56 -470 36 -440 10 -400 Z", pivot: [30, -470, 30], fill: "#1c1b23", stroke: INK, width: 3, face: 0, flat: 0.7 });
+  add({ tag: "coat", d: hatch(-160, -520, 160, -90, { gap: 8, angle: 62, wobble: 5, seed: "tallow-coat" }), pivot: [0, -300, 1], side: 0.62, fill: null, stroke: [0.02, 0.02, 0.03, 0.55], width: 1.4, clip: "coat" });
+  add({ tag: "coat", d: hatch(-160, -520, 160, -90, { gap: 13, angle: -30, wobble: 7, seed: "tallow-coat-2" }), pivot: [0, -300, 1], side: 0.62, fill: null, stroke: [0.02, 0.02, 0.03, 0.3], width: 1.2, clip: "coat" });
   // Wax spattered on the shoulders: hours already spent.
-  add({ d: "M -70 -500 C -66 -512 -50 -512 -48 -500 C -50 -486 -56 -470 -60 -478 C -62 -488 -72 -490 -70 -500 Z", pivot: [-60, -495, 12], fill: C.waxMid, stroke: INK, width: 2 });
-  add({ d: "M 52 -498 C 56 -508 72 -506 72 -496 C 70 -488 66 -462 60 -470 C 58 -480 50 -488 52 -498 Z", pivot: [62, -490, 12], fill: C.waxMid, stroke: INK, width: 2 });
-  add({ d: "M -78 -500 C -86 -540 -64 -566 -46 -548 L -34 -500 Z", pivot: [-56, -520, 4], dz: -30, fill: C.coat, stroke: INK, width: 3 });
-  add({ d: "M 78 -500 C 86 -540 64 -566 46 -548 L 34 -500 Z", pivot: [56, -520, 4], dz: -30, fill: C.coat, stroke: INK, width: 3 });
+  add({ tag: "coat", d: "M -70 -500 C -66 -512 -50 -512 -48 -500 C -50 -486 -56 -470 -60 -478 C -62 -488 -72 -490 -70 -500 Z", pivot: [-60, -495, 12], fill: C.waxMid, stroke: INK, width: 2 });
+  add({ tag: "coat", d: "M 52 -498 C 56 -508 72 -506 72 -496 C 70 -488 66 -462 60 -470 C 58 -480 50 -488 52 -498 Z", pivot: [62, -490, 12], fill: C.waxMid, stroke: INK, width: 2 });
+  add({ tag: "coat", d: "M -78 -500 C -86 -540 -64 -566 -46 -548 L -34 -500 Z", pivot: [-56, -520, 4], dz: -30, fill: C.coat, stroke: INK, width: 3 });
+  add({ tag: "coat", d: "M 78 -500 C 86 -540 64 -566 46 -548 L 34 -500 Z", pivot: [56, -520, 4], dz: -30, fill: C.coat, stroke: INK, width: 3 });
   // The candle head, with its drips, the pool and the wick.
   add({ d: "M -44 -492 L -46 -636 C -46 -650 -30 -658 -14 -654 C -4 -662 8 -661 16 -655 C 30 -660 46 -650 46 -638 L 44 -492 C 20 -484 -20 -484 -44 -492 Z",
     pivot: [0, -570, 0], fill: lin(-46, 0, 46, 0, [0, C.waxShade], [0.28, C.wax], [0.62, C.wax], [1, C.waxMid]), stroke: INK, width: 3.5, name: "head" });
@@ -68,7 +70,12 @@ export function tallow(o = {}) {
   add({ d: `M -31 ${lidY} L 31 ${lidY}`, pivot: [0, ey, 51], fill: null, stroke: INK, width: 3, face: 0, flat: 1 });
   add({ d: "M -28 -572 C -14 -590 14 -590 28 -572 C 14 -556 -14 -556 -28 -572 Z", pivot: [0, ey, 52], fill: null, stroke: INK, width: 2.5, face: 0, flat: 1 });
   add({ d: "M -20 -555 C -8 -549 8 -549 20 -555", pivot: [0, -553, 46], fill: null, stroke: C.waxShade, width: 2.5, face: 0, flat: 1 });
-  if (mouth) add({ d: `M -12 -528 C -4 ${-528 + 10 * mouth} 6 ${-528 + 10 * mouth} 14 -530`, pivot: [0, -528, 45], fill: null, stroke: C.waxShade, width: 3, face: 0, flat: 1 });
+  // The mouth: "line" is a drawn crease that bends open; "open" is a dark opening in the wax
+  // with a lip of shadow, readable at medium size (PROGRESS.md, step 14).
+  if (mouth && (o.mouthStyle ?? MOUTH) === "open") {
+    add({ d: `M -20 -531 C -11 ${-530 + 26 * mouth} 11 ${-530 + 26 * mouth} 20 -531 C 10 ${-527 + 3 * mouth} -10 ${-527 + 3 * mouth} -20 -531 Z`, pivot: [0, -528, 45], fill: "#24120a", stroke: C.waxShade, width: 2.5, face: 0, flat: 1 });
+    add({ d: `M -14 -533 C -6 -536 6 -536 14 -533`, pivot: [0, -533, 45.5], fill: null, stroke: C.waxShade, width: 2, face: 0, flat: 1 });
+  } else if (mouth) add({ d: `M -12 -528 C -4 ${-528 + 10 * mouth} 6 ${-528 + 10 * mouth} 14 -530`, pivot: [0, -528, 45], fill: null, stroke: C.waxShade, width: 3, face: 0, flat: 1 });
   // Arms: an upper sleeve that swings at the shoulder, a forearm that bends at the elbow, a cuff
   // and a mitten hand with a thumb. Angles: 0 hangs down, + swings the hand outward; the elbow
   // adds to the shoulder angle. Props are held at the fingers and turn with the forearm.
@@ -132,5 +139,6 @@ export function tallow(o = {}) {
     add({ d: outer, pivot: [4, -686, 12], rot: lean, fill: rad(4, -700 - h * 0.25, h * 0.75, [0, "#fff8e8"], [0.35, "#ffd27a"], [0.75, "#ff8a2a"], [1, [1, 0.35, 0.05, 0]]), blend: "add", dz: 200 });
     add({ d: core, pivot: [4, -686, 12], rot: lean, fill: rad(4, -700, h * 0.4, [0, "#ffffff"], [0.6, "#fff0c8"], [1, [1, 0.8, 0.45, 0.6]]), blend: "add", dz: 201 });
   }
-  return parts;
+  // Secondary motion: the coat's skirt trails below the collar (coatSway, a shear).
+  return deform(parts, "coat", shearBelow(o.coatSway || 0, -505));
 }

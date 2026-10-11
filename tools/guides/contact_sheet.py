@@ -28,8 +28,13 @@ LAYOUTS = {
         ("Rerun", ["rerun-sheet", "rerun-pixel", "rerun-pixel-medium", "rerun-pixel-close", "rerun-thriller", "rerun-painted"]),
         ("Lesson", ["lesson-night-shift"]),
     ],
+    # Round 4: every guide in every world in every framing (wide, medium, close), home world first.
+    "r4": [
+        (g.title(), [f"{g}-sheet"] + [f"{g}-{w}{f}" for w in ws for f in ("", "-medium", "-close")])
+        for g, ws in (("tallow", ("thriller", "painted", "pixel")), ("pylon", ("painted", "thriller", "pixel")), ("rerun", ("pixel", "thriller", "painted")))
+    ] + [("Lesson", ["lesson-night-shift"])],
 }
-TW, TH, PAD, CAP = 640, 360, 16, 30
+TW, TH, PAD, CAP = 480, 270, 12, 26
 
 
 def main() -> int:

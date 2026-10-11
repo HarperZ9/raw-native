@@ -2,7 +2,7 @@
 // sash and a clipboard. A cone marks a claim nobody has checked yet. Original character,
 // drawn here in code (raw-native licence). Front view, sitting up, tail at the origin,
 // about 650 units to the cone's tip.
-import { ellipse, lin, rad, hatch, seeded, INK } from "./rig.mjs";
+import { ellipse, lin, rad, hatch, seeded, INK, deform, rotAbout } from "./rig.mjs";
 
 export const PYLON = {
   body: "#7d838c", dark: "#444a54", belly: "#c2bba8", cone: "#f06a1e", coneDark: "#b8410f", band: "#f3eee2",
@@ -93,18 +93,21 @@ export function pylon(o = {}) {
   else F({ d: "M -17 -381 L 17 -381", fill: null, stroke: INK, width: 2.5, dz: 41 });
   for (const sgn of [-1, 1]) for (let i = 0; i < 4; i++) {
     const y0 = -410 + i * 7;
-    F({ d: `M ${sgn * 36} ${y0} C ${sgn * 80} ${y0 - 12 + i * 4} ${sgn * 120} ${y0 - 4 + i * 8} ${sgn * (150 - i * 6)} ${y0 + 6 + i * 10}`, fill: null, stroke: C.whisker, width: 1.8, dz: 43, flat: 0.6 });
+    F({ tag: sgn < 0 ? "whiskL" : "whiskR", d: `M ${sgn * 36} ${y0} C ${sgn * 80} ${y0 - 12 + i * 4} ${sgn * 120} ${y0 - 4 + i * 8} ${sgn * (150 - i * 6)} ${y0 + 6 + i * 10}`, fill: null, stroke: C.whisker, width: 1.8, dz: 43, flat: 0.6 });
   }
+  // Eye style "calm" (default since round 4): a heavier lid line that the paint pass cannot bend
+  // into a slant, and the catch-lights toward the outer corners; the round 3 drawing read as a
+  // scowl at medium size after painting (PROGRESS.md, step 15).
   // Eyes: large and dark, under heavy lids. The deadpan lives in the lids: each lid's lower
   // edge is level (no slant toward the nose, which read as a scowl), so the look is flat and
   // unbothered.
   for (const sgn of [-1, 1]) {
     const ex = sgn * 40, ey = -456, lidY = ey - 21 + 34 * lid;
     F({ d: ellipse(ex, ey, 18, 21), fill: C.eye, stroke: INK, width: 2, dz: 44, name: sgn < 0 ? "eyeL" : "eyeR" });
-    F({ d: ellipse(ex - 5 + look[0], ey - 8 + look[1] + 12 * lid, 5, 6), fill: "#f4f4f4", dz: 45 });
+    F({ d: ellipse(ex + ((o.eyeStyle ?? "calm") === "calm" ? 5 * sgn : -5) + look[0], ey - 8 + look[1] + 12 * lid, 5, 6), fill: "#f4f4f4", dz: 45 });
     F({ d: `M ${ex - 24} ${ey - 4} C ${ex - 22} ${ey - 32} ${ex + 22} ${ey - 32} ${ex + 24} ${ey - 4} L ${ex + 22} ${lidY} L ${ex - 22} ${lidY} Z`,
       fill: lin(0, ey - 28, 0, lidY, [0, "#8c929a"], [1, "#737981"]), stroke: null, dz: 46, clip: sgn < 0 ? "eyeL" : "eyeR" });
-    F({ d: `M ${ex - 19} ${lidY} L ${ex + 19} ${lidY}`, fill: null, stroke: INK, width: 3, dz: 47 });
+    F({ d: `M ${ex - 19} ${lidY} L ${ex + 19} ${lidY}`, fill: null, stroke: INK, width: (o.eyeStyle ?? "calm") === "calm" ? 5.5 : 3, dz: 47 });
   }
   // Profile parts, seen only near a side view (the front-facing face is hidden there): a
   // snout, one eye with its level lid, a nostril, the mouth line and whiskers. Drawn for the
@@ -126,5 +129,6 @@ export function pylon(o = {}) {
     H({ d: "M -60 -636 L 84 -648 L 90 -626 L -54 -614 Z", fill: C.paper, stroke: INK, width: 3, dz: 90, rot: 7 });
     for (let i = 0; i < 2; i++) H({ d: `M -40 ${-628 + i * 8} L ${i ? 20 : 70} ${-638 + i * 8}`, fill: null, stroke: "#5b4e3c", width: 2.5, dz: 91, rot: 7 });
   }
-  return parts;
+  // Secondary motion: whiskers swing about their roots (whisk, degrees; mirrored per side).
+  return deform(deform(parts, "whiskL", rotAbout(-(o.whisk || 0), -36, -404)), "whiskR", rotAbout(o.whisk || 0, 36, -404));
 }

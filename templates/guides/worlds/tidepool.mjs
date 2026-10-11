@@ -13,6 +13,7 @@ import * as A from "./tidepool_tiles.mjs";
 export const PX = 4;                               // design units per frame pixel (1920 / 480)
 export const REF = { x: 960, y: 540 };
 export const DEPTH = { sky: 0.15, stacks: 0.3, sea: 0.55, beach: 1, front: 1.5 };
+export const KELP_FRAMES = 12, KELP_LOOP = 2.4;
 
 // A tilemap item for a map whose top-left lands at screen pixel (lx, ly) under the reference
 // camera, on the layer that scrolls at factor f.
@@ -85,6 +86,12 @@ export async function loadTidepool(motion) {
     sprites: {
       moon: one("moon", A.moon()), stacks: one("stacks", A.stacks()), boulder: one("boulder", A.boulder), pool: one("pool", A.pool),
       kelp: one("kelp", A.kelp()), kelpR: one("kelpR", A.kelp(36, 60, [[8, 1.9, 7], [20, 0.4, 9], [30, 2.8, 6]])),
+      // The kelp's sway, drawn as KELP_FRAMES sprites a loop apart (stepped, as sprite animation is).
+      ...Object.fromEntries(Array.from({ length: KELP_FRAMES }, (_, k) => {
+        const p = (Math.PI * 2 * k) / KELP_FRAMES, sh = (x) => 0.35 * Math.sin(p + x);
+        return [[`kelp${k}`, one(`kelp${k}`, A.kelp(40, 72, [[6, 0.0 + sh(0), 9], [16, 1.3 + sh(1), 7], [27, 2.4 + sh(2), 10], [34, 0.7 + sh(3), 6]]))],
+          [`kelpR${k}`, one(`kelpR${k}`, A.kelp(36, 60, [[8, 1.9 + sh(0.5), 7], [20, 0.4 + sh(1.5), 9], [30, 2.8 + sh(2.5), 6]]))]];
+      }).flat()),
       unknocked: one("unknocked", A.shellTiles.unknocked), holds: one("holds", A.shellTiles.holds), hollow: one("hollow", A.shellTiles.hollow),
       starfish: one("starfish", A.starfish), pebbles: one("pebbles", A.pebbles), driftwood: one("driftwood", A.driftwood),
       card: one("card", A.card), boat: one("boat", A.boat), cone: one("cone", A.cone),
@@ -101,7 +108,7 @@ export async function loadTidepool(motion) {
 export const sprite = (W, name, lx, ly, f = 1) => place(W.sprites[name].map, "tp-" + name, lx, ly, f);
 
 // The world's layers behind the characters, and the foreground in front of them.
-export function tidepool(W, { front: withFront = true } = {}) {
+export function tidepool(W, { front: withFront = true, t = null } = {}) {
   const back = [
     place(W.sky, "tp-sky", -32, 0, DEPTH.sky),
     sprite(W, "moon", 316, 26, DEPTH.sky),
@@ -112,7 +119,8 @@ export function tidepool(W, { front: withFront = true } = {}) {
     sprite(W, "boulder", 166, 168),
     sprite(W, "driftwood", 228, 186), sprite(W, "pebbles", 214, 252), sprite(W, "starfish", 438, 200), sprite(W, "pebbles", 400, 262),
   ];
-  const front = withFront ? [sprite(W, "kelp", -8, 204, DEPTH.front), sprite(W, "kelpR", 452, 216, DEPTH.front)] : [];
+  const k = t == null ? null : Math.floor(((t % KELP_LOOP) / KELP_LOOP) * KELP_FRAMES) % KELP_FRAMES, kn = (n) => (k == null ? n : n + k);
+  const front = withFront ? [sprite(W, kn("kelp"), -8, 204, DEPTH.front), sprite(W, kn("kelpR"), 452, 216, DEPTH.front)] : [];
   return { back, front };
 }
 

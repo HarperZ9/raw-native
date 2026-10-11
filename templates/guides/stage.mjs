@@ -31,7 +31,7 @@ async function loadAll(ctx) {
 // as { d, items }) are drawn in depth order with the buildings and props.
 export function world(style, A, extra = [], opts = {}) {
   if (style === "thriller") return { items: [...thrillerSet(A), ...extra.flatMap((t) => t.items)], front: [], camera: { x: 960, y: 540, zoom: 1 } };
-  if (style === "pixel") { const w = tidepool(A.pixel, { front: !opts.noFront }); return { items: [...w.back, ...extra.flatMap((t) => t.items)], front: w.front, camera: { ...REF, zoom: 1 } }; }
+  if (style === "pixel") { const w = tidepool(A.pixel, { front: !opts.noFront, t: opts.t ?? null }); return { items: [...w.back, ...extra.flatMap((t) => t.items)], front: w.front, camera: { ...REF, zoom: 1 } }; }
   const w = harbour(A.painted, extra);
   return { items: [...w.back, ...sorted(w.things)], front: w.front, camera: { ...HARBOUR_CAMERA } };
 }
@@ -65,7 +65,7 @@ function sceneFrame(g, style, A, beat) {
   let { x, y } = beat;
   if (beat.cell) [x, y] = isoS(...beat.cell);
   if (beat.offset) { x += beat.offset[0]; y += beat.offset[1]; }
-  const guide = [...g.under(x, y, beat.s, style), ...pose(g.parts(beat.o), { x, y, s: beat.s, yaw: beat.yaw || 0, flip: beat.flip, shear: g.shear || 0 })];
+  const guide = [...g.under(x, y, beat.s, style), ...pose(g.parts(beat.o), { x, y, s: beat.s, yaw: beat.yaw || 0, flip: beat.flip, shear: g.shear || 0, squash: (beat.o && beat.o.squash) || 0 })];
   const extra = [];
   if (beat.cell) {
     // In the harbour the guide is a thing on the ground: a long shadow away from the lamp, then the figure.
@@ -75,7 +75,7 @@ function sceneFrame(g, style, A, beat) {
     if (beat.props) extra.push({ d: 0, items: beat.props(style, A) });
     extra.push({ d: 1, items: guide });
   }
-  const w = world(style, A, extra, { noFront: beat.noFront }), cam = { ...w.camera, ...(beat.camera || {}) };
+  const w = world(style, A, extra, { noFront: beat.noFront, t: beat.t }), cam = { ...w.camera, ...(beat.camera || {}) };
   const items = [...w.items];
   if (beat.front) items.push(...beat.front(style, A, cam));
   if (g.light) items.push(...g.light(style, cam, { ...beat, x, y }));
@@ -99,19 +99,21 @@ function layered(f, layer) {
 // shot({ guide, style, kind, beat, layer, clip, frame }) -> a Motion scene module. clip is
 // "idle", "talk" or "action" (motion.mjs) and makes the scene move; frame is "wide",
 // "medium" or "close".
-export function shot({ guide, style, kind = "scene", beat = null, title, layer = null, clip = null, frame = null }) {
+export function shot({ guide, style, kind = "scene", beat = null, title, layer = null, clip = null, frame = null, move = null, duration = null }) {
   const g = GUIDES[guide];
   return {
-    title: title || `${g.title}: ${kind} (${style})`, duration: clip ? CLIPS[clip] : 1, fps: 30,
+    title: title || `${g.title}: ${kind} (${style})`, duration: duration || (clip ? CLIPS[clip] : 1), fps: 30,
     async load(ctx) { return loadAll(ctx); },
     frame(t, ctx) {
       const A = ctx.assets;
       let b = beat || g.beats[style];
       if (kind !== "sheet") {
-        if (clip) b = clipBeat(guide, clip, b, t);
+        if (clip) b = { ...clipBeat(guide, clip, b, t), t };
         const base = world(style, A).camera;
         b = { ...b, ...framing(guide, style, b, frame, { ...base, ...(b.camera || {}) }) };
         if (frame && frame !== "wide" && b.hud) b = { ...b, hud: null };
+        // A camera move: move(t, camera, beat) returns the camera (and pixel settings) at time t.
+        if (move) b = { ...b, ...move(t, { ...base, ...(b.camera || {}) }, b) };
       }
       const f = kind === "sheet" ? sheetFrame(g, style, A) : sceneFrame(g, style, A, b);
       return layered(f, layer === "all" ? null : layer || (style === "painted" ? "art" : null));

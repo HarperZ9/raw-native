@@ -22,7 +22,10 @@ ROOT = Path(__file__).resolve().parents[2]
 CLIPS = {"idle": 2.4, "talk": 2.4, "action": 3.2}
 # The module query is percent-encoded: the capture page takes the scene as one parameter.
 # (guide, clip, framing): talk is close on the face, idle and action are medium.
-PLAN = [(g, c, "close" if c == "talk" else "medium") for g in ("tallow", "pylon", "rerun") for c in ("idle", "talk", "action")]
+# Each entry: (name, module query, seconds). The two camera moves come last.
+PLAN = [(f"{g}-{c}", f"guide={g}&clip={c}&frame={'close' if c == 'talk' else 'medium'}", CLIPS[c]) for g in ("tallow", "pylon", "rerun") for c in ("idle", "talk", "action")]
+PLAN += [("rerun-pan", "guide=rerun&clip=idle&frame=wide&move=pan&mode=sharp", 4.8),
+         ("pylon-push", "guide=pylon&clip=idle&frame=close&move=push&ease=inout", 4.8)]
 
 
 def main() -> int:
@@ -32,18 +35,21 @@ def main() -> int:
     ap.add_argument("--fps", type=int, default=30)
     ap.add_argument("--loops", type=int, default=2, help="times each loop clip repeats in the reel")
     ap.add_argument("--only", nargs="*")
+    ap.add_argument("--extra", nargs="*", default=[], help="NAME=QUERY=SECONDS clips to render instead of the plan (tests)")
     a = ap.parse_args()
     out = Path(a.out).resolve()
     out.mkdir(parents=True, exist_ok=True)
     made = []
-    for g, c, f in PLAN:
-        name = f"{g}-{c}"
+    plan = [tuple(e.split("=", 1)[0:1] + e.split("=", 1)[1].rsplit("=", 1)) for e in a.extra] if a.extra else PLAN
+    plan = [(n, q, float(d)) for n, q, d in plan]
+    for name, query, dur in plan:
+        c = "action" if ("clip=action" in query or "move=" in query) else "loop"
         if a.only and name not in a.only:
             continue
         t0 = time.time()
         mp4 = out / f"{name}.mp4"
         cmd = [sys.executable, str(ROOT / "scripts" / "motion_render.py"), "--root", str(ROOT), "--scene",
-               f"../../templates/guides/clips/clip.mjs%3Fguide={g}%26clip={c}%26frame={f}", "--out", str(mp4), "--from", "0", "--to", str(CLIPS[c]),
+               "../../templates/guides/clips/clip.mjs%3F" + query.replace("&", "%26"), "--out", str(mp4), "--from", "0", "--to", str(dur),
                "--fps", str(a.fps), "--transport", "raw", "--codec", "libx264", "--quality", "16", "--adapter", a.adapter]
         # The local page server sometimes drops a fetch under load ("Failed to fetch"): retry twice.
         for _ in range(3):
@@ -61,7 +67,7 @@ def main() -> int:
             return 1
         print(f"{name}: {time.time() - t0:.1f} s", flush=True)
         made.append((name, mp4, c))
-    if not a.only:
+    if not a.only and not a.extra:
         lst = out / "reel.txt"
         lines = []
         for name, mp4, c in made:

@@ -8,7 +8,8 @@
 //           rot (degrees, about the pivot), side (width seen side on, 0..1, default 1),
 //           face (degrees the part faces; hidden when turned away), flat (0..1: how much a
 //           facing part narrows as it turns), dz (depth bias), clip (part name),
-//           off ([x, z]: a turning offset that leaves the rotation pivot in place) }
+//           off ([x, z]: a turning offset that leaves the rotation pivot in place),
+//           hideSide (0..1: hidden when |sin yaw| passes it), tag (for deform) }
 //   pose(parts, { x, y, s, yaw, shear }) -> Motion items, back to front.
 import { parsePath, transform } from "../../web/motion/path.mjs";
 
@@ -61,16 +62,23 @@ export function pose(parts, opt) {
   const o = { x: 960, y: 900, s: 1, yaw: 0, flip: false, shear: 0, ...opt };
   const c = Math.cos(o.yaw * DEG), sn = Math.sin(o.yaw * DEG);
   const named = {}, list = [];
+  // Squash and stretch about the feet: q > 0 squashes (wider, shorter), q < 0 stretches; the
+  // area stays near constant. Applied to every shape before clips resolve, so a clipped part
+  // (a lid in its eye) stays inside its clip.
+  const q = o.squash || 0, sqm = q ? [1 + q, 0, 0, 1 / (1 + q), -q * o.x, o.y - o.y / (1 + q)] : null;
   parts.forEach((p, i) => {
     if (!p || p.hide) return;
     if (p.face != null && Math.cos((o.yaw + p.face) * DEG) < (p.vis ?? 0.08)) return;
+    // hideSide: a part drawn for the front and back views only, hidden near side on.
+    if (p.hideSide != null && Math.abs(Math.sin(o.yaw * DEG)) > p.hideSide) return;
     const [px, , pz = 0] = p.pivot || [0, 0, 0];
     const [ox = 0, oz = 0] = p.off || [];
     const Z = -px * sn + pz * c + (p.dz || 0) + (-ox * sn + oz * c - oz);
     const m = partMatrix(p, o);
     // off: [x, z] moves a part on the turning circle without moving its rotation pivot.
     if (p.off) m[4] += (o.flip ? -1 : 1) * o.s * (ox * c + oz * sn - ox);
-    const shape = shearShape(transform(p.shape || P(p.d), m), o.shear, o.s, o.x, o.y);
+    let shape = shearShape(transform(p.shape || P(p.d), m), o.shear, o.s, o.x, o.y);
+    if (sqm) shape = transform(shape, sqm);
     const item = { shape, fill: mapPaint(p.fill, m, o.s), stroke: mapPaint(p.stroke, m, o.s), width: (p.width || 0) * o.s,
       opacity: p.opacity ?? 1, blend: p.blend, blur: p.blur ? p.blur * o.s : undefined };
     if (p.name) named[p.name] = shape;
@@ -78,6 +86,22 @@ export function pose(parts, opt) {
   });
   list.sort((a, b) => a.Z - b.Z);
   return list.map(({ item, clipName }) => (clipName && named[clipName] ? { ...item, clip: named[clipName] } : item));
+}
+
+// Secondary motion on tagged parts: a shear about a line (cloth that trails below a fixed
+// edge) or a rotation about a point (whiskers, stalks), applied to the part's own front-view
+// shape before posing. tag is the part's `tag`; affine is [a, b, c, d, e, f].
+export function deform(parts, tag, m) {
+  if (!m) return parts;
+  return parts.map((p) => (p && p.tag === tag ? { ...p, shape: transform(p.shape || P(p.d), m), d: undefined } : p));
+}
+// x += k (y - y0): everything below y0 slides sideways by k per unit of drop.
+export const shearBelow = (k, y0) => (k ? [1, 0, k, 1, -k * y0, 0] : null);
+// A rotation by deg about (cx, cy).
+export function rotAbout(deg, cx, cy) {
+  if (!deg) return null;
+  const r = (deg * Math.PI) / 180, c = Math.cos(r), s = Math.sin(r);
+  return [c, s, -s, c, cx - c * cx + s * cy, cy - s * cx - c * cy];
 }
 
 // Helpers for authoring.

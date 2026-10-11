@@ -2,7 +2,7 @@
 // visible inside. The shell is the evidence a claim carries with it. Original character,
 // drawn here in code (raw-native licence). Front view, feet at the origin, about 400 units
 // to the top of the shell.
-import { ellipse, lin, rad, limb, INK } from "./rig.mjs";
+import { ellipse, lin, rad, limb, INK, deform, shearBelow } from "./rig.mjs";
 
 export const RERUN = {
   shell: "#1b2b3a", glassLit: "#bfe6ea", glassMid: "#6fa9b8", glassDark: "#2b4b5e", line: "#e6f3ee",
@@ -11,6 +11,10 @@ export const RERUN = {
 const C = RERUN;
 // The point where light leaves the prism; the spectral flare starts here.
 export const FLARE = [146, -318];
+// Legs in side view: "front" keeps the front-view legs at every yaw; "profile" swaps them for
+// legs drawn side on near 90 degrees (PROGRESS.md, step 14).
+export let LEGS = "profile";
+export const setLegs = (v) => { LEGS = v; };
 
 // opts: stalk (eye-stalk length, 1 = rest), clawR, clawL (degrees at the shoulder, + raises),
 // look ([dx, dy] of the pupils), flare (0..1), shell ("prism" | "pretty" | "none"), tally (bad
@@ -24,8 +28,19 @@ export function rerun(o = {}) {
     // Legs spread front to back in depth, so a side view fans them out instead of stacking
     // them; they narrow side on. The far side's legs sit a little deeper.
     const z = 60 - i * 60 + (sgn < 0 ? 6 : 0);
-    add({ d: limb(hx, hy, kx, ky, 18, 14, -6 * sgn), pivot: [hx, hy, z], side: 0.45, fill: lin(hx, hy, kx, ky, [0, C.body], [1, C.bodyDark]), stroke: INK, width: 3, dz: -20 });
-    add({ d: limb(kx, ky, fx, fy, 14, 4, 4 * sgn), pivot: [kx, ky, z], side: 0.45, fill: lin(kx, ky, fx, fy, [0, C.body], [1, C.bodyLit]), stroke: INK, width: 3, dz: -19 });
+    const hs = (o.legs ?? LEGS) === "profile" ? 0.8 : null;
+    add({ d: limb(hx, hy, kx, ky, 18, 14, -6 * sgn), pivot: [hx, hy, z], side: 0.45, hideSide: hs, fill: lin(hx, hy, kx, ky, [0, C.body], [1, C.bodyDark]), stroke: INK, width: 3, dz: -20 });
+    add({ d: limb(kx, ky, fx, fy, 14, 4, 4 * sgn), pivot: [kx, ky, z], side: 0.45, hideSide: hs, fill: lin(kx, ky, fx, fy, [0, C.body], [1, C.bodyLit]), stroke: INK, width: 3, dz: -19 });
+  }
+  if ((o.legs ?? LEGS) === "profile") {
+    // Side-on legs, shown only near 90 degrees: three a side, the near three in front of the
+    // body and the far three behind it in a darker shade; front legs reach forward, back legs back.
+    for (const [near, dz, shade] of [[true, 30, 0], [false, -40, 1]]) for (const sgn of [1, -1]) for (let i = 0; i < 3; i++) {
+      const x = (i - 1) * 46 + (near ? 0 : 10), d = i === 0 ? -1 : i === 2 ? 1 : 0.2, kx = x + d * 26, fx = x + d * 50;
+      const fill = shade ? C.bodyDark : C.body;
+      add({ d: limb(x, -80, kx, -128, 16, 13, 0), pivot: [0, -80, 0], side: 1, face: -90 * sgn, vis: 0.85, fill, stroke: INK, width: 3, dz });
+      add({ d: limb(kx, -128, fx, -2, 13, 4, 0), pivot: [0, -80, 0], side: 1, face: -90 * sgn, vis: 0.85, fill, stroke: INK, width: 3, dz: dz + 0.1 });
+    }
   }
   // The shell, on its back.
   if (shell === "prism") {
@@ -65,9 +80,9 @@ export function rerun(o = {}) {
   // Eye stalks and eyes, which reach for small print.
   for (const sgn of [-1, 1]) {
     const bx = sgn * 26, by = -150, tx = sgn * (40 + 6 * (stalk - 1)), ty = by - 92 * stalk;
-    add({ d: limb(bx, by, tx, ty, 14, 9, 6 * sgn), pivot: [bx, by, 60], fill: C.body, stroke: INK, width: 3, dz: 10 });
-    add({ d: ellipse(tx, ty - 6, 16, 18), pivot: [tx, ty, 60], fill: rad(tx - 4, ty - 12, 18, [0, "#3a3540"], [1, C.eye]), stroke: INK, width: 2.5, dz: 11 });
-    add({ d: ellipse(tx - 4 + look[0], ty - 12 + look[1], 4.5, 5), pivot: [tx, ty, 61], fill: "#ffffff", dz: 12 });
+    add({ tag: "stalks", d: limb(bx, by, tx, ty, 14, 9, 6 * sgn), pivot: [bx, by, 60], fill: C.body, stroke: INK, width: 3, dz: 10 });
+    add({ tag: "stalks", d: ellipse(tx, ty - 6, 16, 18), pivot: [tx, ty, 60], fill: rad(tx - 4, ty - 12, 18, [0, "#3a3540"], [1, C.eye]), stroke: INK, width: 2.5, dz: 11 });
+    add({ tag: "stalks", d: ellipse(tx - 4 + look[0], ty - 12 + look[1], 4.5, 5), pivot: [tx, ty, 61], fill: "#ffffff", dz: 12 });
   }
   // Claws: a small left one and a big right one with the tally of its own bad guesses.
   const claw = (sgn, ang, k) => {
@@ -85,5 +100,6 @@ export function rerun(o = {}) {
   for (let i = 0; i < Math.min(tally, 4); i++) tl += `M ${big.m(30 + i * 10, -20)} L ${big.m(26 + i * 10, 6)} `;
   if (tally >= 5) tl += `M ${big.m(22, -10)} L ${big.m(72, -2)} `;
   add({ d: tl || "M 0 0", pivot: [84, -86, 70], rot: -clawR, fill: null, stroke: C.tally, width: 3, dz: 42, opacity: tl ? 1 : 0 });
-  return parts;
+  // Secondary motion: the stalks lean from their base (stalkLag, a shear above the body).
+  return deform(parts, "stalks", shearBelow(-(o.stalkLag || 0), -150));
 }
