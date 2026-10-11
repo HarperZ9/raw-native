@@ -507,7 +507,7 @@ jobs:
           test "$c" = fd0f81417e7d6ce807e409292fe5b5a40a581e56ba9d80156420b77d6f87e5a3
   shader-lab-2:
     # Shader lab 2 techniques, GPU against their float64 CPU references on Chrome's CPU WebGPU
-    # adapter. Its own job, so the media-smoke time budget is unchanged.
+    # adapter. Its own job, apart from the media jobs.
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     steps:
@@ -540,13 +540,33 @@ jobs:
         run: node tools/shaders/dither_quality.mjs --out media-out/shaders-dither-quality.json
       - name: Frame times on the CPU adapter, for the record (not a gate)
         run: python tests/web/lab2_timing.py --adapter swiftshader --width 480 --height 300 --frames 5 --out media-out/shaders-lab2-timing.json
-  media-smoke:
-    # The release media path on a runner with no GPU: build, read the facts, record the
-    # walkthrough, and render the first seconds of each scene on Chrome's CPU WebGPU adapter.
+  # media-smoke used to be one job (31 minutes on 88b1999, cancelled at its 45-minute limit on
+  # every branch from 2026-10-11 once the hosted runners ran about 1.7x slower). It is now
+  # seven jobs that run in parallel on the same free runners, plus media-smoke, which fails
+  # unless all seven pass. Every step that ran before still runs and gates, unchanged.
+  # Limits: each job's time at 2.2x its 88b1999 duration (the slowest runner seen was 1.74x)
+  # stays under 50 percent of its timeout-minutes, so a slow runner has more than 50 percent
+  # headroom. The build is made once and shared as a tarball (a zip artifact would drop the
+  # executable bit). The determinism job renders both runs on one runner against one build.
+  media-build:
+    # cmake configure and build, once. Baseline 1 minute, about 2 on a slow runner.
     runs-on: ubuntu-24.04
-    # 45, not 30 (2026-10-10): on main this job took 18 to 28 minutes and was cancelled at 30
-    # once (19f458b); an evidence-only PR was cancelled at 30 three times. Every check still runs.
-    timeout-minutes: 45
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure and build (the same commands as the media spec's setup)
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+          cmake --build build --config Release -j 4
+      - name: Pack the build, keeping modes and times
+        run: tar -czf media-build.tar.gz build
+      - uses: actions/upload-artifact@v4
+        with: { name: media-build, path: media-build.tar.gz, retention-days: 1, compression-level: 0 }
+  media-shaders:
+    # The quick GPU-against-CPU checks, the sound engine's live path, and the pixel and tile checks.
+    # Baseline about 4.5 minutes; 10 at 2.2x; limit 25.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -563,10 +583,6 @@ jobs:
         run: python tests/web/shaders_parity.py --shader film --adapter swiftshader --out media-out/shaders-film-parity.json
       - name: Shader library, palette and dither, GPU palette indices equal the f64 reference's (M1 criterion 10), on the CPU adapter
         run: python tests/web/shaders_parity.py --shader dither --adapter swiftshader --out media-out/shaders-dither-parity.json
-      - name: Shader library, crt-classic within 1/255 of retro-crt.js (M1 criterion 9), on the CPU adapter
-        run: python tests/web/shaders_parity.py --shader classic --adapter swiftshader --out media-out/shaders-classic-parity.json
-      - name: Shader library, painterly, GPU against the CPU reference within the committed bounds, on the CPU adapter
-        run: python tests/web/shaders_parity.py --shader paint --adapter swiftshader --out media-out/shaders-paint-parity.json
       - name: Shader library, pixel art and scaling, GPU against the CPU reference within the committed bounds, on the CPU adapter
         run: python tests/web/shaders_parity.py --shader pixel --adapter swiftshader --out media-out/shaders-pixel-parity.json
       - name: Shader library, VHS, GPU against the CPU reference within the committed bounds, on the CPU adapter
@@ -575,20 +591,10 @@ jobs:
         run: |
           node web/sound/smoke.mjs build/sound-smoke
           python scripts/sound_live_check.py build/sound-smoke
-      - name: Render four seconds of each scene on the CPU WebGPU adapter
-        run: python tools/media/raw_native_media.py render --setup --out media-out --adapter swiftshader --width 960 --height 540 --max-seconds 4
       - name: Every equation in raw-native's scenes renders from the TeX subset (M1 criterion 5)
         run: node tools/media/tex_coverage.mjs --scenes docs/motion --atlas docs/motion/hanken-grotesk-500.atlas.json --scenes docs/media/scenes --atlas docs/motion/hanken-grotesk-500.atlas.json
-      - name: Colour pipelines in WGSL match the C++ reference within one 8-bit code (M1 criterion 2)
-        run: python tests/web/colour_grid.py --cli build/raw_native_cli --adapter swiftshader
-      - name: Extended-range output reaches the canvas and matches the C++ reference (M1 criterion 3, canvas path)
-        run: python tests/web/hdr_output.py --cli build/raw_native_cli --adapter swiftshader
-      - name: The HDR signal matches a float64 reference of the published PQ, sRGB and tone-map formulas, and the GPU encode matches the CPU, with failing controls (M1 criterion 3)
-        run: python tests/web/hdr_signal.py --cli build/raw_native_cli --adapter swiftshader
       - name: The vector corpus on the GPU matches the CPU reference within its bounds (M1 criterion 4)
         run: python tests/web/vector_corpus.py --adapter swiftshader
-      - name: Post passes match their CPU references; the stack runs inside Motion (M1 criteria 9 and 10)
-        run: python tests/web/post_passes.py --adapter swiftshader --modules web/shaders/post.mjs
       - name: Tile loaders survive 50,000 fuzzed inputs (the full million is in evidence/), and the tile pass matches its CPU twin (M2 criterion 10)
         run: |
           node tools/fuzz/tiles_fuzz.mjs --n 50000 > /dev/null
@@ -597,10 +603,83 @@ jobs:
         run: python tests/web/retro3d_check.py --adapter swiftshader
       - name: The isometric fade on the GPU matches its CPU twin and changes only the faded cells (M2 criterion 9)
         run: python tests/web/iso_fade.py --adapter swiftshader
-      - name: The style template scaffolds render, the same twice (ADR 0016)
-        run: python tests/web/templates_check.py --adapter swiftshader --seconds 1
       - name: Low-resolution frames scale to the output exactly, and a slow pan moves edges smoothly (M2 criterion 7)
         run: python tests/web/pixel_scaling.py --adapter swiftshader
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with: { name: media-smoke-shaders, path: media-out, retention-days: 7, if-no-files-found: ignore }
+  media-paint:
+    # The painterly parity check, the longest single step. Baseline 6.6 minutes; 14.7 at 2.2x; limit 30.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Tools (Playwright drives the installed Chrome; ffmpeg from imageio-ffmpeg)
+        run: python -m pip install playwright==1.58.0 imageio-ffmpeg==0.6.0
+      - name: Shader library, crt-classic within 1/255 of retro-crt.js (M1 criterion 9), on the CPU adapter
+        run: python tests/web/shaders_parity.py --shader classic --adapter swiftshader --out media-out/shaders-classic-parity.json
+      - name: Shader library, painterly, GPU against the CPU reference within the committed bounds, on the CPU adapter
+        run: python tests/web/shaders_parity.py --shader paint --adapter swiftshader --out media-out/shaders-paint-parity.json
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with: { name: media-smoke-paint, path: media-out, retention-days: 7, if-no-files-found: ignore }
+  media-post:
+    # Post passes against their CPU references. Baseline 5.6 minutes; 12.4 at 2.2x; limit 25.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Tools (Playwright drives the installed Chrome; ffmpeg from imageio-ffmpeg)
+        run: python -m pip install playwright==1.58.0 imageio-ffmpeg==0.6.0
+      - name: Post passes match their CPU references; the stack runs inside Motion (M1 criteria 9 and 10)
+        run: python tests/web/post_passes.py --adapter swiftshader --modules web/shaders/post.mjs
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with: { name: media-smoke-post, path: media-out, retention-days: 7, if-no-files-found: ignore }
+  media-templates:
+    # The three style templates, each rendered twice. Baseline 4.7 minutes; 10.3 at 2.2x; limit 25.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Tools (Playwright drives the installed Chrome; ffmpeg from imageio-ffmpeg)
+        run: python -m pip install playwright==1.58.0 imageio-ffmpeg==0.6.0
+      - name: The style template scaffolds render, the same twice (ADR 0016)
+        run: python tests/web/templates_check.py --adapter swiftshader --seconds 1
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with: { name: media-smoke-templates, path: media-out, retention-days: 7, if-no-files-found: ignore }
+  media-render:
+    # Four seconds of each scene, the colour and HDR checks that need the C++ CLI, and the checks on
+    # what the renders wrote. Baseline 5 minutes; 11.2 at 2.2x; limit 25.
+    needs: media-build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Download the build from media-build
+        uses: actions/download-artifact@v4
+        with: { name: media-build }
+      - name: Unpack the build, keeping modes and times
+        run: tar -xzf media-build.tar.gz
+      - name: Tools (Playwright drives the installed Chrome; ffmpeg from imageio-ffmpeg)
+        run: python -m pip install playwright==1.58.0 imageio-ffmpeg==0.6.0
+      - name: Render four seconds of each scene on the CPU WebGPU adapter
+        run: python tools/media/raw_native_media.py render --setup --out media-out --adapter swiftshader --width 960 --height 540 --max-seconds 4
+      - name: Colour pipelines in WGSL match the C++ reference within one 8-bit code (M1 criterion 2)
+        run: python tests/web/colour_grid.py --cli build/raw_native_cli --adapter swiftshader
+      - name: Extended-range output reaches the canvas and matches the C++ reference (M1 criterion 3, canvas path)
+        run: python tests/web/hdr_output.py --cli build/raw_native_cli --adapter swiftshader
+      - name: The HDR signal matches a float64 reference of the published PQ, sRGB and tone-map formulas, and the GPU encode matches the CPU, with failing controls (M1 criterion 3)
+        run: python tests/web/hdr_signal.py --cli build/raw_native_cli --adapter swiftshader
       - name: Every scene wrote a video, a poster, captions and a manifest, from this commit
         shell: bash
         run: |
@@ -612,8 +691,40 @@ jobs:
           python -c "import json; f=json.load(open('media-out/ao-check/facts.json'))['facts']; print({k: f[k]['value'] for k in ('version','verdict','rmse','tolerance','pixels')})"
       - name: Each smoke render stays inside its wall-clock budget
         run: python tools/media/budget.py media-out --smoke
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with: { name: media-smoke-render, path: media-out, retention-days: 7, if-no-files-found: ignore }
+  media-determinism:
+    # Two renders of one scene on this runner, against one build, then compared frame by frame.
+    # Baseline 4.1 minutes; 9.1 at 2.2x; limit 25.
+    needs: media-build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Download the build from media-build
+        uses: actions/download-artifact@v4
+        with: { name: media-build }
+      - name: Unpack the build, keeping modes and times
+        run: tar -xzf media-build.tar.gz
+      - name: Tools (Playwright drives the installed Chrome; ffmpeg from imageio-ffmpeg)
+        run: python -m pip install playwright==1.58.0 imageio-ffmpeg==0.6.0
       - name: Two renders of the same seconds draw identical frames
         run: python tools/media/determinism.py first-run --adapter swiftshader --width 640 --height 360 --max-seconds 2 --out media-out/determinism.json
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
-        with: { name: media-smoke, path: media-out, retention-days: 7 }
+        with: { name: media-smoke-determinism, path: media-out, retention-days: 7, if-no-files-found: ignore }
+  media-smoke:
+    # The one check name for the whole media path: red unless every media job above passed.
+    if: ${{ always() }}
+    needs: [media-build, media-shaders, media-paint, media-post, media-templates, media-render, media-determinism]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - name: Every media job passed
+        env: { RESULTS: "${{ join(needs.*.result, ' ') }}" }
+        run: |
+          echo "results: $RESULTS"
+          for r in $RESULTS; do test "$r" = success || { echo "a media job did not pass: $r"; exit 1; }; done
