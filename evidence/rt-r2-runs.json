@@ -169,6 +169,22 @@
    "checks": "P1 to P4, H1, H2",
    "result": "the same P4 result (0 and 1 pixel); H1 and H2 pass.",
    "evidence": "evidence/rt-r2-pt-note1-d3d12-rtx4090.json"
+  },
+  {
+   "run": 20,
+   "when": "2026-10-11 08:03Z",
+   "backend": "D3D12 WARP, commit 7591baa (P4 with R1 snapCorrect on)",
+   "checks": "P1 to P4, H1, H2",
+   "result": "as run 17: P4 retro_room passes; iso_street 1 albedo pixel, on which float64 agrees with R1. P4 stays open. H1 and H2 pass (R1 default options).",
+   "evidence": "evidence/rt-r2-pt-note2-d3d12-warp.json"
+  },
+  {
+   "run": 21,
+   "when": "2026-10-11 08:12Z",
+   "backend": "WebGPU in Chrome on SwiftShader (quick), the same commit",
+   "checks": "P1 to P4",
+   "result": "as run 18: P4 0 and 1 pixel.",
+   "evidence": "evidence/rt-r2-pt-note2-webgpu-swiftshader.json"
   }
  ]
 }
