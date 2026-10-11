@@ -29,8 +29,7 @@ import { shoulder } from "./crt/glass.mjs";
 import { createGpuFilm } from "./film/gpu.mjs";
 import { createFilm } from "./film/run.mjs";
 import { createGpuClassic, classicRef } from "./crt-classic/classic.mjs";
-import { createGpuDither, ditherRef } from "./dither/dither.mjs";
-import { labPalette } from "./reference/retro-palettes.mjs";
+import { createGpuDither, ditherRef, resolvePalette } from "./dither/dither.mjs";
 import { createGpuPaint } from "./paint/gpu.mjs";
 import { createPaint } from "./paint/paint.mjs";
 
@@ -183,14 +182,15 @@ registerPass("crt-classic", {
 
 registerPass("dither", {
   stage: "display",
-  tests: [{ palette: "pico8", mode: "bayer4" }, { palette: "gameboy", mode: "bayer8" }, { palette: "ega", mode: "blue" }, { palette: "nes", mode: "noise", strength: 0.7, brightness: 0.05 }],
+  tests: [{ palette: "pico8", mode: "bayer4" }, { palette: "gameboy", mode: "bayer8" }, { palette: "ega", mode: "blue" }, { palette: "nes", mode: "noise", strength: 0.7, brightness: 0.05 },
+    { palette: ["#141018", "#3a4a5c", "#8aa39b", "#e8dcc0", "#d9622b"], mode: "bayer4" }],
   effect: async (host, { width, height, spec }) => {
     const d = await createGpuDither(host, optsOf(spec), { w: width, h: height });
     return plateEffect(host, width, height, { src: d.buffers.src, packed: d.packed, record: (enc) => d.record(enc), destroy: () => d.destroy() });
   },
   cpu: (input, W, H, spec) => {
     const bytes = toBytes(input), idx = ditherRef(bytes, W, H, optsOf(spec));
-    const d = labPalette(spec.palette || "pico8").map((e) => e.rgb), out = new Float32Array(W * H * 4);
+    const d = resolvePalette(spec.palette || "pico8").map((e) => e.rgb), out = new Float32Array(W * H * 4);
     for (let p = 0; p < W * H; p++) { const c = d[idx[p]]; out[4 * p] = c[0] / 255; out[4 * p + 1] = c[1] / 255; out[4 * p + 2] = c[2] / 255; out[4 * p + 3] = 1; }
     return out;
   },
