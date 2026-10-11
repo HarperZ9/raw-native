@@ -178,9 +178,12 @@ int main(int argc, char** argv){
     if (!parsed){ std::printf("param error: %s\n", err.c_str()); return 2; }
     CliParams p = *parsed;
     if (p.gpu) p.gpuBackend = gpuBackendName();
-    if (p.gpu && p.bench > 0){ std::printf("%s\n", benchGpuJson(p).c_str()); return 0; }
+    // A model that fails to load is bad input (exit 2) on every path, the bench included.
+    try {
+        if (p.gpu && p.bench > 0){ std::printf("%s\n", benchGpuJson(p).c_str()); return 0; }
+        if (p.bench > 0){ std::printf("%s\n", benchJson(p).c_str()); return 0; }
+    } catch (const raw::assets::AssetError& e){ std::printf("cannot load --model: %s\n", e.what()); return 2; }
     if (p.gpu) return runGpu(p);
-    if (p.bench > 0){ std::printf("%s\n", benchJson(p).c_str()); return 0; }
     const std::string out = p.out;
     const int W = p.width, H = p.height;
     // Create the output directory up front. A render whose files cannot be

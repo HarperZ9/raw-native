@@ -6,6 +6,7 @@
 #include "raw/tools/receipt.hpp"
 #include "raw/core/sha256.hpp"
 #include "raw/core/version.hpp"
+#include "raw/assets/json.hpp"
 #include <algorithm>
 #include <chrono>
 #include <cstdio>
@@ -57,7 +58,17 @@ int noGpu(const CliParams& p, const GpuAdapterInfo& info, const std::string& why
     return 4;
 }
 }
+namespace {
+int runGpuChecked(const CliParams& p);
+}
+// A model that fails to load is bad input (exit 2), as on the CPU path. Before 2026-10-11 the
+// exception escaped main; the verified viewer's broken-file control found it.
 int runGpu(const CliParams& p){
+    try { return runGpuChecked(p); }
+    catch (const raw::assets::AssetError& e){ std::printf("cannot load --model: %s\n", e.what()); return 2; }
+}
+namespace {
+int runGpuChecked(const CliParams& p){
     CliParams pc = p; pc.gpu = false; pc.out = p.out + "/cpu";
     std::error_code ec;
     std::filesystem::create_directories(pc.out, ec);
@@ -83,6 +94,7 @@ int runGpu(const CliParams& p){
     std::printf("gpu-certificate: %s\n", cert.c_str());
     return 0;
 }
+}  // namespace
 namespace {
 // Time p.bench GPU renders; frameOnly reads back only the frame.
 bool timeRuns(const CliParams& p, const GpuJob& job, bool frameOnly, std::vector<double>& ms, std::string& err){

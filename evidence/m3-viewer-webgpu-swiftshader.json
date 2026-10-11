@@ -1,0 +1,60 @@
+{
+ "adapter": "swiftshader",
+ "cases": [
+  {
+   "case": "raw-hero",
+   "done": true,
+   "runs": [
+    {
+     "model": "raw-hero.gltf",
+     "exitCode": 0,
+     "ms": 11206.29999999702,
+     "verdict": "verified",
+     "identity": "DRIFT",
+     "frames": {
+      "width": 128,
+      "height": 128
+     },
+     "errorWorst": 0.03137254901960784,
+     "errorMean": 1.914828431372549e-06
+    }
+   ],
+   "pass": true
+  },
+  {
+   "case": "raw-hall",
+   "done": true,
+   "runs": [
+    {
+     "model": "raw-hall.gltf",
+     "exitCode": 0,
+     "ms": 61770.5,
+     "verdict": "verified",
+     "identity": "MATCH",
+     "frames": {
+      "width": 128,
+      "height": 128
+     },
+     "errorWorst": 0,
+     "errorMean": 0
+    }
+   ],
+   "pass": true
+  },
+  {
+   "case": "control: broken GLB",
+   "done": true,
+   "runs": [
+    {
+     "model": "broken.glb",
+     "exitCode": 2,
+     "ms": 10.600000001490116,
+     "verdict": null,
+     "identity": null
+    }
+   ],
+   "pass": true
+  }
+ ],
+ "pass": true
+}

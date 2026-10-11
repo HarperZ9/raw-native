@@ -128,7 +128,7 @@ every backend it names.
 | 1. Scenes verified, path-traced error recorded | Open. The owned assets exist and pass their checks (`evidence/m3-assets-runs.json`); the verified renders and path-traced errors are not started | `evidence/m3-assets-bounds.json` |
 | 2. TAA ghosting and RMSE | Passes on the CPU: pan RMSE 0.442 of single-sample (bound 0.5), ghosting 0.0056 (bound 0.03), controls fail. GPU parity passes on WARP, SwiftShader and the RTX 4090 (0 pixels, bound 16) | `evidence/m3-post-runs.json` |
 | 3. Aliasing and the validation layer | Open: not started | |
-| 4. The Studio viewer (A4) | Open: not started | |
+| 4. The Studio viewer (A4) | The viewer is built in the engine (`web/viewer/`): it opens a glTF or GLB file, renders it through WebGPU and on the CPU reference, and shows both frames, the error map and the GPU certificate; checked headless in CI on raw-hero and raw-hall (both verified on SwiftShader) with a broken-file control. **Open:** hosting it inside the site's Studio page | `tests/web/viewer.py` |
 | 5. API snapshot | Snapshot 1 taken: 25 renderer and scene headers, dump checked in CI, compatibility suite (`tests/test_api_snapshot.cpp`). **Open:** the plugin C ABI part, since the C ABI is not built (ADR 0007 is proposed) | `api/README.md` |
 | 6. Materials | First stage passes on WARP, SwiftShader and the RTX 4090. Second stage: iridescence against an exact reference and volume path length pass; **open failure**: clearcoat energy over white metal (loss up to 0.23, bound 0.02) | `evidence/m3-materials-*.json`, `evidence/m3-materials2-*.json` |
 | 7. Lighting | Passes on WARP, SwiftShader and the RTX 4090 | `evidence/m3-lighting-*.json` |
