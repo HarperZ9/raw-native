@@ -68,7 +68,7 @@ def check(res: dict) -> list[str]:
         return [f"{c['id']}: {100 * c['over2_fraction']:.2f}% of values off by more than 2 codes, mean {c['mean']:.3f} (bounds {b})"
                 for c in res["cases"] if c["over2_fraction"] > b["over2_fraction"] or c["mean"] > b["mean_abs_code"]]
     if "mismatched_pixels" in b:
-        return [f"{c['id']}: {c['mismatched']} pixels differ (first at {c['firstMismatch']})" for c in res["cases"] if c["mismatched"] > b["mismatched_pixels"]]
+        return [f"{c['id']}: {c['mismatched']} pixels differ (first at {c['firstMismatch']}, limit {c.get('limit', b['mismatched_pixels'])})" for c in res["cases"] if c["mismatched"] > c.get("limit", b["mismatched_pixels"])]
     for c in res["cases"]:
         if c.get("motionBounds"):
             if not c["pass"]:

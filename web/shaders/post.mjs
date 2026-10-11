@@ -13,7 +13,7 @@
 //           masks, bloom, halation, curvature, chromatic aberration, vignette.
 //           spec: the retro-crt.js options ({ cell, scanlines, mask, aberration, ... })
 //   "dither"  display stage: palette quantisation with ordered, noise or blue-noise dither.
-//           spec: { palette: "pico8" | ..., mode: "bayer4" | ..., strength, brightness }
+//           spec: { palette: "pico8" | ..., mode (required): "bayer4" | "mix-bayer4" | ..., strength, brightness }
 // The last two work on 8-bit plates, as their references do: the frame is rounded to
 // bytes going in, and their bytes come back out.
 // Each pass carries the library's CPU reference, run the way the stack feeds the GPU, so
