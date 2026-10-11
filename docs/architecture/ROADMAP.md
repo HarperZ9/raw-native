@@ -126,7 +126,7 @@ every backend it names.
 | Criterion | Status | Evidence |
 |---|---|---|
 | 1. Scenes verified, path-traced error recorded | Open. The owned assets exist and pass their checks (`evidence/m3-assets-runs.json`); the verified renders and path-traced errors are not started | `evidence/m3-assets-bounds.json` |
-| 2. TAA ghosting and RMSE | Passes on the CPU: pan RMSE 0.442 of single-sample (bound 0.5), ghosting 0.0056 (bound 0.03), controls fail. GPU parity passes on WARP and SwiftShader (0 pixels, bound 16); the RTX 4090 rerun is queued | `evidence/m3-post-runs.json` |
+| 2. TAA ghosting and RMSE | Passes on the CPU: pan RMSE 0.442 of single-sample (bound 0.5), ghosting 0.0056 (bound 0.03), controls fail. GPU parity passes on WARP, SwiftShader and the RTX 4090 (0 pixels, bound 16) | `evidence/m3-post-runs.json` |
 | 3. Aliasing and the validation layer | Open: not started | |
 | 4. The Studio viewer (A4) | Open: not started | |
 | 5. API snapshot | Open: not started | |
