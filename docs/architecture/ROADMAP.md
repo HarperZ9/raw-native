@@ -129,9 +129,9 @@ every backend it names.
 | 2. TAA ghosting and RMSE | Passes on the CPU: pan RMSE 0.442 of single-sample (bound 0.5), ghosting 0.0056 (bound 0.03), controls fail. GPU parity passes on WARP, SwiftShader and the RTX 4090 (0 pixels, bound 16) | `evidence/m3-post-runs.json` |
 | 3. Aliasing and the validation layer | Open: not started | |
 | 4. The Studio viewer (A4) | Open: not started | |
-| 5. API snapshot | Open: not started | |
-| 6. Materials | First stage passes on WARP, SwiftShader and the RTX 4090. Second stage: iridescence against an exact reference and volume path length pass; clearcoat energy within 0.0105 of a white furnace (bound 0.02, was 0.23); **open failure**: the 1 + 1e-3 ceiling on anisotropic bases (1.00265), inherited from the uncoated anisotropic base (1.00269) | `evidence/m3-materials-*.json`, `evidence/m3-materials2-*.json` |
-| 7. Lighting | Passes on WARP and SwiftShader; the RTX run is queued | `evidence/m3-lighting-*.json` |
+| 5. API snapshot | Snapshot 1 taken: 25 renderer and scene headers, dump checked in CI, compatibility suite (`tests/test_api_snapshot.cpp`). **Open:** the plugin C ABI part, since the C ABI is not built (ADR 0007 is proposed) | `api/README.md` |
+| 6. Materials | First stage passes on WARP, SwiftShader and the RTX 4090. Second stage: iridescence against an exact reference and volume path length pass; **open failure**: clearcoat energy over white metal (loss up to 0.23, bound 0.02) | `evidence/m3-materials-*.json`, `evidence/m3-materials2-*.json` |
+| 7. Lighting | Passes on WARP, SwiftShader and the RTX 4090 | `evidence/m3-lighting-*.json` |
 | 8. Shadows: CPU checks against ray casts | Passes | `evidence/m3-shadows-cpu-run.json` |
 | 8. Shadows: GPU lookups and contact march | Passes on WARP and SwiftShader | `evidence/m3-shadows-gpu-*.json` |
 | 8. Shadows: GPU shadow map against the CPU rasterizer | Passes on WARP and the RTX 4090 since the cascade depth range encloses the scene and raw-hall's coplanar wall tops were removed (2026-10-11). Thin margin: one raw-hall flute sliver sits at 9.9e-6 against 1e-5. **Open failure** on SwiftShader (4-bit edges; recorded, not gated) | `evidence/m3-shadows-runs.json` |
