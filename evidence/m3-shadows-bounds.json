@@ -74,5 +74,14 @@
   "scenes": "The checks run on the built-in test scene from its two cameras, raw-hero in the test scene in place of its box (scaled to a largest extent of 2, as a loaded model was), and raw-hall from its nave camera (eye -15.5, 2, 0 toward 10, 5.5, 0; fovy 1.1), all lit by method note 1's sun. raw-hall is at its own scale in metres, so the cascades' 40-unit reach covers the nave.",
   "history": "The runs on Suzanne and FlightHelmet stay in evidence/m3-shadows-runs.json as history; they are not evidence for the new scenes.",
   "bounds": "Unchanged, coverage bound included."
+ },
+ "method_note_7_2026_10_11": {
+  "written": "2026-10-11, after the diagnosis of the RTX and WARP shadow runs and before any change to the code or the asset",
+  "finding": "The RTX 4090 run (2026-10-10 19:50Z) and WARP both fail the near scene's cascade 0 on 2 ground texels at the cascade's far plane: one side drew 0.99999994 and the other kept the cleared 1. The cascade's depth range ends at its bounding sphere (zFar = centre + radius), so the far plane cuts the ground and every texel on that line is a float coin toss. The raw-hall failures in cascades 2 and 3 are two different wall triangles at one depth: the arcade walls' tops and the end walls' tops are coplanar at 14 m and overlap by 0.1 m. The one raw-hall depth over 1e-5 is a 0.22-texel flute sliver where the CPU equals the snapped float64 plane and the GPU sits within one snap step's worth of the plane's gradient.",
+  "change_engine": "fitCascades takes the scene's world bounds. Each cascade's depth range is widened, never narrowed, so that every scene vertex lies strictly inside it: zFar = max(centre + radius, scene max + 1% of the range), zNear = min(centre - radius - caster reach, scene min - 1% of the range). The far plane then cuts no geometry. The CPU and GPU maps use the same CascadeSet, so the change is on both sides.",
+  "effect_on_the_bound": "The depth bound stays 1e-5 in normalised depth. Widening the range makes 1e-5 cover more metres: the run records each cascade's range before and after, so the reader can see the world-unit size of the bound change. If any cascade's range grows by more than 2x, that is reported next to the result.",
+  "change_asset": "raw-hall: the outer and end walls rise from 14.0 m to 14.3 m, the top of the aisle roof slab, so no wall top is coplanar with another face. This is asset run 5, with new hashes. See evidence/m3-assets-bounds.json method note 1.",
+  "not_changed": "Every bound, the edge exemption (0.01 px from a triangle edge) and the rule that depth ties stay failures. The sliver case is not exempted; if it remains, it stays an open failure.",
+  "controls": "Unchanged, and each must still fail."
  }
 }

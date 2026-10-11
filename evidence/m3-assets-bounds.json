@@ -19,5 +19,11 @@
   "external_paths": {"what": "M3 tests and CI steps", "bound": "no path into a glTF-Sample-Assets checkout and no fetch of Khronos models in any M3 test or CI step; the model manifest names only owned assets"},
   "controls": {"what": "a mutated export (one byte changed) and a hero without its transmission part", "bound": "the first fails determinism; the second fails hero_materials"}
  },
- "does_not_prove": "That the assets look good or match any art direction; that they cover every shading case of a production level; anything about the M2 corpus, which keeps its Khronos models in the explainers session's lane."
+ "does_not_prove": "That the assets look good or match any art direction; that they cover every shading case of a production level; anything about the M2 corpus, which keeps its Khronos models in the explainers session's lane.",
+ "method_note_1_2026_10_11": {
+  "written": "2026-10-11, after the diagnosis of the RTX and WARP shadow runs and before any change to the code or the asset",
+  "defect": "raw-hall's upper arcade walls (x -18.3 to 18.3) run 0.1 m into the end walls (x -18.6 to -18.2 and mirrored), and both tops sit at 14.0 m: coplanar overlapping faces, which z-fight in any renderer. The shadow-map identity found it (triangles 385781 against 385109, and 385794 against 385265, at equal depth).",
+  "change": "The outer and end walls rise to 14.3 m, the top of the aisle roof slabs. The arcade walls' ends then sit inside the end walls' volume and no top face is shared. Asset run 5; new hashes in evidence/m3-assets.json and the model manifest; the asset checks are rerun with the same bounds.",
+  "audit": "A coplanar-overlap scan is added to the asset checks: for every pair of axis-aligned faces in raw-hall's boxes, overlapping area on one plane with opposite or equal normals is counted, excluding faces hidden inside another box. Bound: 0 exposed coplanar overlaps."
+ }
 }

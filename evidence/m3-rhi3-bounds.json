@@ -33,5 +33,11 @@
   "decision": "The author decided on 2026-10-10: \"No test models, only full owned assets.\" Suzanne and SciFiHelmet leave the G-buffer check.",
   "scenes": "The built-in test scene, raw-hero in the test scene in place of its box, and raw-hall from its nave camera, at 256 x 256. The first scene stays the control's scene.",
   "bounds": "Unchanged. Earlier runs on Suzanne and SciFiHelmet stay in evidence/m3-rhi3-runs.json as history."
+ },
+ "method_note_3_2026_10_11": {
+  "written": "2026-10-11, after the diagnosis of the RTX and WARP shadow runs and before any change to the code or the asset",
+  "finding": "raw-hall nave fails the normal bound (ratio 14.36 on WARP) on four pixels in the top two rows, all on column-flute slivers of 0.40 to 0.56 px^2 with one vertex just above the screen, where neighbouring vertex normals differ by about 47 degrees. The CPU equals the snapped float64 perspective-correct interpolation to five digits; WARP differs by about 0.01, which a positional difference under one 1/256-px snap step produces on such slivers. Only triangles that cross the top edge show it.",
+  "next_runs": "The same check on the RTX 4090 under the GPU lock, with RAW_NATIVE_RASTER_DUMP=1, which now also prints the float64 interpolation, unsnapped and snapped, for every pixel over the normal bound. If the RTX passes, WARP's handling of triangles that cross the viewport edge is the inferred cause; if it fails on the same pixels, the cause is the conditioning of slivers on any backend.",
+  "not_changed": "The bound. No condition-scaled exemption is added; that would be a change of the bound's form and is the author's call. The failure stays open until a fix makes it pass."
  }
 }
