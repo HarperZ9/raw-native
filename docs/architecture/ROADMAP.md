@@ -120,24 +120,25 @@ Dated additions (2026-10-10). They add checks and never loosen the five above:
    (Mitchell, McTaggart and Green 2006) as an optional path, baked by the CPU ray tracer, with the
    bake's error against a converged path trace recorded.
 
-Status of the M3 criteria (2026-10-10). A row passes only when every check behind it passes on
+Status of the M3 criteria (2026-10-11). A row passes only when every check behind it passes on
 every backend it names.
 
 | Criterion | Status | Evidence |
 |---|---|---|
 | 1. Scenes verified, path-traced error recorded | Open. The owned assets exist and pass their checks (`evidence/m3-assets-runs.json`); the verified renders and path-traced errors are not started | `evidence/m3-assets-bounds.json` |
-| 2. TAA ghosting and RMSE | Ghosting passes. **Open failure**: pan RMSE 0.735 of single-sample (bound 0.5); GPU parity drifts (31 of 16,384 pixels, bound 16) | `evidence/m3-post-runs.json` |
+| 2. TAA ghosting and RMSE | Ghosting passes. **Open failure**: pan RMSE 0.735 of single-sample (bound 0.5); GPU parity drifts (31 of 16,384 pixels on WARP, 26 on the RTX 4090; bound 16) | `evidence/m3-post-runs.json` |
 | 3. Aliasing and the validation layer | Open: not started | |
 | 4. The Studio viewer (A4) | Open: not started | |
 | 5. API snapshot | Open: not started | |
 | 6. Materials | First stage passes on WARP, SwiftShader and the RTX 4090. Second stage: iridescence against an exact reference and volume path length pass; **open failure**: clearcoat energy over white metal (loss up to 0.23, bound 0.02) | `evidence/m3-materials-*.json`, `evidence/m3-materials2-*.json` |
-| 7. Lighting | Passes on WARP and SwiftShader; the RTX run is queued | `evidence/m3-lighting-*.json` |
+| 7. Lighting | Passes on WARP, SwiftShader and the RTX 4090 | `evidence/m3-lighting-*.json` |
 | 8. Shadows: CPU checks against ray casts | Passes | `evidence/m3-shadows-cpu-run.json` |
 | 8. Shadows: GPU lookups and contact march | Passes on WARP and SwiftShader | `evidence/m3-shadows-gpu-*.json` |
-| 8. Shadows: GPU shadow map against the CPU rasterizer | **Open failure**: 3 texels on WARP, about 11 on SwiftShader; the RTX run is queued | `evidence/m3-shadows-runs.json` |
+| 8. Shadows: GPU shadow map against the CPU rasterizer | Passes on WARP and the RTX 4090 since the cascade depth range encloses the scene and raw-hall's coplanar wall tops were removed (2026-10-11). Thin margin: one raw-hall flute sliver sits at 9.9e-6 against 1e-5. **Open failure** on SwiftShader (4-bit edges; recorded, not gated) | `evidence/m3-shadows-runs.json` |
 | 8. GTAO and SSR against ray casts | GTAO passes on the near test scene and raw-hall nave; SSR passes on both test-scene views. **Open failure**: GTAO in raw-hall gallery (mean 0.073, p95 0.634); SSR in raw-hall nave and gallery (68% and 65% correct) | `evidence/m3-post-cpu-run.json` |
 | 8. GTAO and SSR GPU parity | Passes on WARP and SwiftShader | `evidence/m3-post-gpu-*.json` |
-| 9. Baked lighting | Passes | `evidence/m3-bake-*.json` |
+| 9. Baked lighting | Passes |
+| RHI v3 G-buffer identity (the base of 6 to 8) | Passes on the test scene and raw-hero. **Open failure** on raw-hall nave: normal ratio 1.26 on the RTX 4090 (one pixel) and 14.4 on WARP (four), bound 1, all on column-flute slivers whose normal turns tens of degrees within one snap step. SwiftShader fails on 4-bit edges | `evidence/m3-rhi3-runs.json` | `evidence/m3-bake-*.json` |
 
 Licence note on criterion 1 (2026-10-10). `DamagedHelmet` derives from a CC-BY-NC-4.0 model and the
 Khronos `Sponza` is under the CRYENGINE agreement, so neither can ship in this repository's evidence

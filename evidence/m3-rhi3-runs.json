@@ -43,6 +43,17 @@
    "what": "WARP and SwiftShader, final hall (two-sided drapery)",
    "result": "Unchanged from the previous owned-scene runs: WARP raw-hall nave 4 normal pixels (open failure); SwiftShader 2, 2 and 4 unexplained pixels (open failure).",
    "evidence": "evidence/m3-rhi3-d3d12-warp.json, evidence/m3-rhi3-webgpu-swiftshader.json"
+  },
+  {
+   "what": "method note 3 diagnosis, WARP, main 4734734",
+   "result": "raw-hall nave normal ratio 14.36 from four top-row pixels on column-flute slivers (0.40 to 0.56 px^2) whose neighbouring vertex normals differ by about 47 degrees. CPU equals the snapped float64 interpolation; WARP is about 0.01 off. The 63 coverage differences are all edges or ties.",
+   "evidence": "diagnosis output (RAW_NATIVE_RASTER_DUMP) recorded in the M3 progress log"
+  },
+  {
+   "what": "RTX 4090 under the lock, pinned 947dac5 (asset run 5), with the float64 dump",
+   "result": "Formats exact, depth order equal, control differs. Built-in scene and raw-hero pass. raw-hall nave fails: normal ratio 1.258 (bound 1) on one pixel (215, 121), a 0.34 px^2 flute sliver mid-screen; the CPU equals the snapped float64 value; the RTX differs by less than one snap step's worth. The four top-row WARP pixels pass on the RTX, so WARP's handling of triangles crossing the viewport edge adds to the WARP figure. 40 coverage differences, all edges or ties.",
+   "judgement": "Open failure on both backends. The cause is the conditioning of slivers whose normal turns tens of degrees inside one snap step, on any backend. The bound stays; changing its form is the author's call.",
+   "evidence": "evidence/m3-rhi3-d3d12-rtx4090.json, evidence/m3-rhi3-d3d12-warp.json"
   }
  ],
  "does_not_prove": "Anything under does_not_prove in the bounds file."

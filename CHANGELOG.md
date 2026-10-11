@@ -6,6 +6,17 @@ the day the release was published on GitHub, in UTC.
 
 ## Unreleased
 
+- **Shadow maps match the CPU rasterizer on D3D12** (roadmap M3, criterion 8). Each cascade's depth
+  range now encloses the whole scene, so no depth plane cuts geometry; before, the far plane crossed
+  the ground and texels on that line were a float coin toss on every backend, the RTX 4090 included.
+  raw-hall's arcade and end walls had coplanar tops that z-fought; the walls now rise to the roof
+  slab and stand on footings, and an overlap scan keeps coplanar faces out of the owned assets.
+  The map identity passes on WARP and the RTX 4090 and is gated in CI on WARP. One flute sliver
+  passes by a thin margin (9.9e-6 against 1e-5). Open failure: SwiftShader's 4-bit edges.
+  - Open failure, unchanged: the G-buffer normal identity on raw-hall fails on column-flute slivers
+    (RTX 4090 one pixel, ratio 1.26; WARP four pixels, 14.4). The CPU matches the snapped float64
+    value; the GPUs differ by less than one snap step's worth on triangles whose normal turns tens
+    of degrees across them.
 - **Material model, second stage** (the author's decision, 2026-10-10: "keep engine versions, and
   improve them.").
   - Iridescence on dielectric bases uses exact Fresnel amplitudes for both polarizations and a

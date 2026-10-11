@@ -72,6 +72,22 @@ CascadeSet fitCascades(const Camera& cam, D3 lightDir, double shadowFar, int siz
     return cs;
 }
 
+void enclose(CascadeSet& cs, const Scene& scene) {
+    double lo = 1e300, hi = -1e300;
+    for (const Mesh& m : scene.meshes)
+        for (const Vec3& p : m.positions) { const double z = dot(d3(p), cs.light); lo = std::min(lo, z); hi = std::max(hi, z); }
+    if (lo > hi) return;
+    for (Cascade& q : cs.c) {
+        const double before = q.zFar - q.zNear;
+        double zn = q.zNear, zf = q.zFar;
+        for (int pass = 0; pass < 2; ++pass) {   // the 1% margin is of the widened range
+            const double margin = 0.01 * (zf - zn);
+            zn = std::min(q.zNear, lo - margin); zf = std::max(q.zFar, hi + margin);
+        }
+        q.fitRange = before; q.zNear = zn; q.zFar = zf;
+    }
+}
+
 int cascadeOf(const CascadeSet& cs, double viewDepth) {
     for (int k = 0; k < kCascades; ++k) if (viewDepth <= cs.c[std::size_t(k)].split) return k;
     return -1;

@@ -19,6 +19,7 @@ struct ShadowMapCase {
     long depthTies{0};                 // of the differing texels, those at a depth tie (reported; not exempt)
     double worstDepth{0};              // |gpu - cpu| normalised depth where both cover the same triangle
     long depthOver{0};                 // of those texels, how many exceed 1e-5
+    double range{0}, fitRange{0};      // the cascade's light-space depth range, and before enclose() (method note 7)
     bool pass() const { return explained == coverageDiffs && worstDepth <= 1e-5; }   // an empty cascade passes; the scene needs coverage
 };
 struct ShadowSceneCase {

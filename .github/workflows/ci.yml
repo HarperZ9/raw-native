@@ -217,7 +217,7 @@ jobs:
           RAW_NATIVE_D3D12_DEBUG: "1"
         run: |
           build/Release/raw_native_cli.exe shadow-parity --out shadow-warp.json > /dev/null || true
-          python tests/gpu/shadow_gate.py shadow-warp.json --min-scenes 4
+          python tests/gpu/shadow_gate.py shadow-warp.json --min-scenes 4 --gate-maps
       - name: GTAO, SSR and the TAA resolve on WARP with the debug layer; TAA parity is a recorded open failure (evidence/m3-post-runs.json)
         shell: bash
         env:

@@ -1,13 +1,15 @@
 """Gate a shadow-parity JSON (raw_native_cli shadow-parity) on the parts the backends pass.
 
-    python tests/gpu/shadow_gate.py RESULT.json [--min-scenes N]
+    python tests/gpu/shadow_gate.py RESULT.json [--min-scenes N] [--gate-maps]
 
 The shadow-map identity has recorded failures (evidence/m3-shadows-runs.json): a WARP depth
 value on a sub-texel triangle, texels where the cleared far value and a surface tie, and
 SwiftShader's 4-bit edge precision. This gate requires, for every scene, the lookups within
 1e-3 on all but 0.1% of points, contact shadows differing on at most 0.1% of pixels, shadow
-map coverage, and all three controls failing. It prints the map identity per scene and never
-counts it as passed. Exit 0 when the gated parts hold, 1 otherwise.
+map coverage, and all three controls failing. It prints the map identity per scene; with
+--gate-maps it also gates on it (D3D12 WARP since method note 7 of 2026-10-11, where the map
+identity passes; SwiftShader keeps it recorded, not gated). Exit 0 when the gated parts hold,
+1 otherwise.
 """
 import json
 import sys
@@ -19,6 +21,7 @@ def main(argv):
         return 2
     d = json.load(open(argv[0], encoding="utf-8"))
     need = int(argv[argv.index("--min-scenes") + 1]) if "--min-scenes" in argv else 1
+    gate_maps = "--gate-maps" in argv
     ok = not d["error"] and len(d["scenes"]) >= need and all(d["controls_fail"].values())
     for s in d["scenes"]:
         pts, px = s["points"], s["contact_pixels"]
@@ -26,9 +29,9 @@ def main(argv):
         within = pts > 0 and all(v <= 1e-3 * pts for v in s["outside_1e-3"].values())
         contact = px > 0 and s["contact_diffs"] <= 1e-3 * px
         maps = all(m["differing_texels"] == m["explained"] and m["worst_depth"] <= 1e-5 for m in s["maps"])
-        ok = ok and within and contact and covered > 0
+        ok = ok and within and contact and covered > 0 and (maps or not gate_maps)
         print(f"{s['scene']}: lookups {'ok' if within else 'FAIL'}, contact {'ok' if contact else 'FAIL'}, "
-              f"map identity {'pass' if maps else 'fail (recorded, not gated)'}: "
+              f"map identity {'pass' if maps else ('FAIL' if gate_maps else 'fail (recorded, not gated)')}: "
               + json.dumps([[m["differing_texels"], m["explained"], m["depth_ties"], m["worst_depth"]] for m in s["maps"]]))
     print("controls fail:", d["controls_fail"], "gate:", "pass" if ok else "FAIL")
     return 0 if ok else 1

@@ -140,6 +140,27 @@
    "date": "2026-10-10",
    "what": "gpu_shadow_parity on the RTX 4090, queued behind D:/gpu.lock.d; the queued binary now runs the owned scenes",
    "result": "pending: the MMBU run holds the lock"
+  },
+  {
+   "run": "rtx-1 result",
+   "date": "2026-10-11 (recorded; the run itself was 2026-10-10 19:50Z)",
+   "what": "gpu_shadow_parity on the RTX 4090 under the lock, binary from the feat/m3-owned-assets working tree (owned scenes), not a pinned commit",
+   "result": "Fails, like WARP. Differing/explained/ties/depth over 1e-5: near test scene c0 2/0/2/0; raw-hero c1 1/1/1/0, c2 3/3/3/0, c3 2/2/2/0; raw-hall nave c1 1/1/1/0, c2 14/12/14/1 (1.121e-5), c3 6/6/6/0. Lookups, contact and controls as on WARP. Informative only: the binary is not pinned."
+  },
+  {
+   "run": "diagnosis-7",
+   "date": "2026-10-11",
+   "what": "RAW_NATIVE_SHADOW_DUMP on WARP at main 4734734",
+   "result": "Near scene c0: both texels are ground at the cascade's far plane (GPU 0.99999994, CPU cleared 1). raw-hall c2 and c3: arcade-wall and end-wall tops coplanar at 14 m (triangles 385781/385109, 385794/385265 at equal depth). raw-hall c2 depth 1.10e-5: a 0.22-texel flute sliver; the CPU equals the snapped float64 plane."
+  },
+  {
+   "run": "method-note-7",
+   "date": "2026-10-11",
+   "what": "enclose() (cascade depth range widened to the scene's bounds plus 1%) and raw-hall asset run 5; commit 947dac5",
+   "result": "WARP: pass on all four scenes; every differing texel is an edge. RTX 4090 (pinned 947dac5, lock 03:43:47Z to 03:43:51Z): pass on all four scenes; near scene 0 differing texels; raw-hall c2 10 differing, all edges, worst depth 9.894e-6; c3 5, all edges. Controls fail on both.",
+   "range_change": "Depth ranges grew by 0% to 46% (raw-hall c0 55.69 to 81.33 units; c2 75.84 to 86.03; c3 unchanged; the test scenes by at most 6%). None grew 2x.",
+   "caveat": "The raw-hall c2 flute sliver now passes by a thin margin, and only because its range grew 13%: in world units the GPU-CPU difference is unchanged (about 0.83 mm before and after). The sliver mechanism is not fixed; it is inside the bound as written.",
+   "evidence": "evidence/m3-shadows-gpu-d3d12-warp.json, evidence/m3-shadows-gpu-d3d12-rtx4090.json, evidence/m3-shadows-cpu-run.json"
   }
  ],
  "gate": "CI gates the lookups, the contact march, coverage and the controls (tests/gpu/shadow_gate.py) on all four scenes. The shadow-map identity is an open failure on WARP and SwiftShader and is never counted as passed."

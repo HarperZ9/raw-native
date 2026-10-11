@@ -100,6 +100,25 @@ GbufferCase gbufferCase(rhi::Device& dev, const std::string& name, const Scene& 
             if (std::getenv("RAW_NATIVE_RASTER_DUMP") && ((1.0 - dot) / 1e-5 > 1.0 || (x == size / 2 && y == size / 2)))   // diagnosis
                 std::fprintf(stderr, "px %d %d tri %u gpu n %.5f %.5f %.5f cpu n %.5f %.5f %.5f gpu alb %d %d %d cpu alb %.4f %.4f %.4f\n", x, y, gt,
                              nrm[0], nrm[1], nrm[2], cn.x, cn.y, cn.z, alb[0], alb[1], alb[2], ca.x, ca.y, ca.z);
+            if (std::getenv("RAW_NATIVE_RASTER_DUMP") && (1.0 - dot) / 1e-5 > 1.0) {   // diagnosis: the float64 plane, unsnapped and snapped
+                double X[3], Y[3], Wc[3], N[3][3];
+                for (int k = 0; k < 3; ++k) { const float* p = &tris[(gt - 1) * 24 + std::size_t(k) * 3];
+                    double cc[4]; for (int r = 0; r < 4; ++r) cc[r] = double(vp.m[r*4+0])*p[0] + double(vp.m[r*4+1])*p[1] + double(vp.m[r*4+2])*p[2] + vp.m[r*4+3];
+                    Wc[k] = cc[3]; X[k] = (cc[0]/cc[3]*0.5+0.5)*size; Y[k] = (1-(cc[1]/cc[3]*0.5+0.5))*size;
+                    for (int q = 0; q < 3; ++q) N[k][q] = tris[(gt - 1) * 24 + 9 + std::size_t(k) * 3 + std::size_t(q)];
+                    std::fprintf(stderr, "   v%d screen %.3f %.3f w %.6f n %.5f %.5f %.5f\n", k, X[k], Y[k], Wc[k], N[k][0], N[k][1], N[k][2]); }
+                const double px = x + 0.5, py = y + 0.5, A = (X[1]-X[0])*(Y[2]-Y[0])-(Y[1]-Y[0])*(X[2]-X[0]);
+                const double b0 = ((X[1]-px)*(Y[2]-py)-(Y[1]-py)*(X[2]-px))/A, b1 = ((X[2]-px)*(Y[0]-py)-(Y[2]-py)*(X[0]-px))/A, b2 = 1-b0-b1;
+                const double q0 = b0/Wc[0], q1 = b1/Wc[1], q2 = b2/Wc[2], qs = q0+q1+q2; double n[3], l = 0;
+                for (int q = 0; q < 3; ++q) { n[q] = (q0*N[0][q]+q1*N[1][q]+q2*N[2][q])/qs; l += n[q]*n[q]; }
+                l = std::sqrt(l); std::fprintf(stderr, "   double n %.5f %.5f %.5f  bary %.4f %.4f %.4f\n", n[0]/l, n[1]/l, n[2]/l, b0, b1, b2);
+                for (int k = 0; k < 3; ++k) { X[k] = std::nearbyint(X[k] * 256.0) / 256.0; Y[k] = std::nearbyint(Y[k] * 256.0) / 256.0; }
+                const double A2 = (X[1]-X[0])*(Y[2]-Y[0])-(Y[1]-Y[0])*(X[2]-X[0]);
+                const double c0 = ((X[1]-px)*(Y[2]-py)-(Y[1]-py)*(X[2]-px))/A2, c1 = ((X[2]-px)*(Y[0]-py)-(Y[2]-py)*(X[0]-px))/A2, c2 = 1-c0-c1;
+                const double r0 = c0/Wc[0], r1 = c1/Wc[1], r2 = c2/Wc[2], rs = r0+r1+r2; l = 0;
+                for (int q = 0; q < 3; ++q) { n[q] = (r0*N[0][q]+r1*N[1][q]+r2*N[2][q])/rs; l += n[q]*n[q]; }
+                l = std::sqrt(l); std::fprintf(stderr, "   snapped n %.5f %.5f %.5f  bary %.4f %.4f %.4f area %.4f\n", n[0]/l, n[1]/l, n[2]/l, c0, c1, c2, A2);
+            }
             c.worstDistance = std::max(c.worstDistance, std::fabs(double(id[1]) - g.depth.at(x, y)) / g.depth.at(x, y) / 1e-4);
             const float want[3] = {ca.x, ca.y, ca.z};
             // The APIs' float-to-unorm conversion rounds to nearest, ties to even (0.3 * 255 = 76.5 gives 76).

@@ -90,10 +90,13 @@ Asset hall() {
             longBox(walls, {kX0 - 0.3, spring + ro, z - 0.3}, {-kX0 + 0.3, storey == 0 ? 7.2 : 14.0, z + 0.3});
         }
     }
-    longBox(walls, {kX0 - 0.6, 0.0, -8.4}, {-kX0 + 0.6, 14.0, -8.0});    // outer walls
-    longBox(walls, {kX0 - 0.6, 0.0, 8.0}, {-kX0 + 0.6, 14.0, 8.4});
-    box(walls, {kX0 - 0.6, 0.0, -8.0}, {kX0 - 0.2, 14.0, 8.0});     // end walls
-    box(walls, {-kX0 + 0.2, 0.0, -8.0}, {-kX0 + 0.6, 14.0, 8.0});
+    // Outer and end walls rise to the aisle roof's top (14.3 m), so the arcade walls' tops at 14 m end
+    // inside them, and stand on footings 0.1 m deep, so the end columns' bases do not share the walls'
+    // bottom plane: no two faces are coplanar (asset run 5; the tops z-fought at 14 m before).
+    longBox(walls, {kX0 - 0.6, -0.1, -8.4}, {-kX0 + 0.6, 14.3, -8.0});    // outer walls
+    longBox(walls, {kX0 - 0.6, -0.1, 8.0}, {-kX0 + 0.6, 14.3, 8.4});
+    box(walls, {kX0 - 0.6, -0.1, -8.0}, {kX0 - 0.2, 14.3, 8.0});     // end walls
+    box(walls, {-kX0 + 0.2, -0.1, -8.0}, {-kX0 + 0.6, 14.3, 8.0});
     for (double s : {-1.0, 1.0}) {                                      // gallery floors and aisle roofs
         longBox(walls, {kX0, 7.0, s > 0 ? 5.3 : -8.0}, {-kX0, 7.2, s > 0 ? 8.0 : -5.3});
         longBox(walls, {kX0, 14.0, s > 0 ? 5.3 : -8.0}, {-kX0, 14.3, s > 0 ? 8.0 : -5.3});
