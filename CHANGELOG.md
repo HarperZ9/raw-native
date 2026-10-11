@@ -6,6 +6,19 @@ the day the release was published on GitHub, in UTC.
 
 ## Unreleased
 
+- **Verified viewer** (roadmap M3, criterion 4; decision A4). `web/viewer/` opens a glTF or GLB
+  file, renders it on the GPU through WebGPU and on the CPU reference, and shows the two frames,
+  the error map between them and the GPU certificate with its verdict. The owned assets load with
+  one click. CI drives it headless on SwiftShader: raw-hero and raw-hall render `verified`, and a
+  broken GLB must render nothing.
+  - Fixed, found by that control: a model that failed to load on the `--gpu` or `--bench` paths
+    escaped `main` as an exception; it now exits 2 with `cannot load --model`, as the CPU path did.
+- **API snapshot 1** (roadmap M3, criterion 5; ADR 0015). The renderer and scene APIs are a
+  numbered snapshot: `kApiSnapshot` in `raw/core/api_snapshot.hpp`, a declaration dump of 25
+  headers in `api/snapshot-1/`, a CI check that fails when a declaration is removed or changed,
+  and a compatibility suite written the way a user writes code against the snapshot. Additions
+  never break it; a break moves to snapshot 2 with a migration note. The plugin C ABI is not
+  built, so that part of the criterion stays open.
 - **Clear coat energy compensation** (roadmap M3, criterion 6, second stage). Light the coat
   reflects back down to the base is now returned by a reciprocal lobe, on the CPU reference and
   in `pbr.wgsl`. A white metal under a clear coat stays within 1.05% of a white furnace; it lost

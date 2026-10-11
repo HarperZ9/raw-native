@@ -148,6 +148,18 @@
    "what": "gpu_post_parity on the RTX 4090 under the GPU lock (04:56:42Z), pinned 773efcb",
    "result": "pass: TAA parity 0 pixels in every frame (worst 1.7e-6); GTAO and SSR parity pass on all five scenes; controls fail.",
    "evidence": "evidence/m3-post-gpu-d3d12-rtx4090.json"
+  },
+  {
+   "run": "ssr-dual-layer-probe",
+   "date": "2026-10-11",
+   "what": "exploration, not a checked run: a second depth layer (the next surface along each view ray, from the BVH) with a hit required between the layers",
+   "result": "Negative. Nave 83.0% correct with 22.1% false hits (256 steps, unlimited march; the current SSR 68.3% and 11.8%); gallery 56% to 66%. A ray passing behind a column is not the main cause; the hypothesis recorded with run ssr-probes-2026-10-11 was wrong."
+  },
+  {
+   "run": "ssr-error-categories",
+   "date": "2026-10-11",
+   "what": "exploration: SSR answers on raw-hall sorted by the source surface and the error",
+   "result": "Nave: misses dominate (4,898 floor pixels, mostly beyond the 20-unit march; 1,783 vertical), then 2,651 false hits on vertical surfaces whose true reflection is off screen or hidden. Gallery: roof undersides dominate; 2,363 hits land more than 8 pixels away on a farther surface because the 64-step march steps over the near, thin hit. Candidates, not started: a march in pixel steps (DDA) with the length set by the screen, and a confidence that fades hits whose true point leaves the screen. Each needs a method note first."
   }
  ],
  "status": "Open failures, not loosened: GTAO on raw-hall gallery; SSR on raw-hall nave and gallery. Passing since 2026-10-11: TAA RMSE under the pan (0.442 against 0.5) and TAA GPU parity (0 pixels on WARP, SwiftShader and the RTX 4090). Passing: GTAO on the near test scene and raw-hall nave, SSR on both test-scene views, TAA ghosting, GTAO and SSR GPU parity on WARP and SwiftShader on five scenes, every control."

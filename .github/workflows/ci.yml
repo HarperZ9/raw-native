@@ -108,6 +108,12 @@ jobs:
           if command -v python3 >/dev/null && python3 --version >/dev/null 2>&1; then py=python3; else py=python; fi
           "$py" scripts/check_layers.py --selftest
           "$py" scripts/check_layers.py
+      - name: The renderer and scene APIs keep API snapshot 1 (ADR 0015, M3 criterion 5)
+        shell: bash
+        run: |
+          if command -v python3 >/dev/null && python3 --version >/dev/null 2>&1; then py=python3; else py=python; fi
+          "$py" scripts/api_dump.py --selftest
+          "$py" scripts/api_dump.py --check
       - name: Every third-party file matches third_party/MANIFEST.md (M2 criterion 6)
         shell: bash
         run: |
@@ -374,6 +380,8 @@ jobs:
           python tests/gpu/post_gate.py post-webgpu.json --min-scenes 5
       - name: The WebGPU build's material model matches its float64 reference in Chrome on SwiftShader (M3 materials)
         run: python tests/web/rhi_texture.py --command pbr-parity --dir build-wasm-gpu --adapter swiftshader --out pbr-webgpu.json
+      - name: The verified viewer renders the owned assets with a certificate and refuses a broken file (M3 criterion 4)
+        run: python tests/web/viewer.py --dir build-wasm-gpu --adapter swiftshader --out viewer-webgpu.json
       - name: The default native build carries no GPU code
         run: |
           ! grep -q "emdawnwebgpu\|wgpu" build/raw_native_cli
