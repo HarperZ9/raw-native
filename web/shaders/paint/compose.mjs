@@ -68,20 +68,28 @@ export function compose(plan, ak, H, Rl, cv) {
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     const [wx, wy] = p.warp > 0 ? [cv.n(warpX, x, y, 0), cv.n(warpY, x, y, 0)] : [0, 0], sx = x + wx * p.warp, sy = y + wy * p.warp;
     const lat = sample(ak.lat, 7, w, h, sx, sy, 8), c = [lat[0], lat[1], lat[2], lat[3]], res = [lat[4], lat[5], lat[6]];
-    const base = kmDecode(c), v = clamp(0.2126 * (base[0] + res[0]) + 0.7152 * (base[1] + res[1]) + 0.0722 * (base[2] + res[2]), 0, 1);
+    const dec0 = kmDecode(c), D = dec0.map((d, k) => Math.max(0, d + res[k])), v = clamp(0.2126 * D[0] + 0.7152 * D[1] + 0.0722 * D[2], 0, 1);
+    // Saturated colours keep their identity: the push and broken colour act mostly on neutrals
+    // (in Kubelka-Munk a tenth of phthalo turns an orange to mud).
+    const keep = smooth(0.15, 0.6, (Math.max(...D) - Math.min(...D)) / Math.max(Math.max(...D), 1e-3));
     // Complementary temperature: violet (phthalo and magenta) into the shadows, hansa into the lights.
-    c[3] += p.push * (1 - v) * (1 - v); c[2] += 0.6 * p.push * (1 - v) * (1 - v); c[1] += p.push * 0.6 * v * v;
+    const pk = p.push * (1 - 0.85 * keep);
+    c[3] += pk * (1 - v) * (1 - v); c[2] += 0.6 * pk * (1 - v) * (1 - v); c[1] += pk * 0.08 * v * v;
     // Broken colour: each stroke carries its own extra pigment, warm or cool.
     const jit = (sample(H, 2, w, h, sx, sy, 2)[1] - 0.5) * 2, rel = sample(Rl, 4, w, h, sx, sy, 4);
-    const bk = p.broken * (1 - 0.85 * v * v);   // highlights stay clean
+    const bk = p.broken * (1 - 0.85 * v * v) * (1 - 0.7 * keep);   // highlights and saturated colours stay clean
     c[1] += bk * Math.max(jit, 0); c[3] += bk * Math.max(-jit, 0); c[2] += 0.5 * bk * Math.abs(jit) * (1 - v);
     const cs = c[0] + c[1] + c[2] + c[3]; for (let i = 0; i < 4; i++) c[i] /= cs;
-    let rgb = kmDecode(c).map((d, k) => d + res[k]);
-    // Value massing: a painter's few soft value bands.
+    // The pigment change reaches the colour as a ratio of the decoded paints, so a colour outside
+    // the pigments' gamut (near-black) changes in proportion and cannot leave it.
+    let rgb = kmDecode(c).map((d, k) => D[k] * Math.min(4, (d + 0.01) / (dec0[k] + 0.01)));
+    // Value massing: a painter's few soft value bands. Values under 0.02 keep their own, and a
+    // saturated colour moves only part of the way (a full band step would grey it).
     if (p.valueBands > 0) {
-      const vy = Math.max(1e-4, 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2]), f = Math.min(vy, 1) * p.valueBands, fl = Math.floor(f);
-      const vq = Math.max(0.02, (fl + smooth(0.3, 0.7, f - fl)) / p.valueBands);
-      rgb = rgb.map((q) => (q * vq) / vy);
+      const vy = 0.2126 * rgb[0] + 0.7152 * rgb[1] + 0.0722 * rgb[2], f = Math.min(vy, 1) * p.valueBands, fl = Math.floor(f);
+      const vq = Math.max(Math.min(vy, 0.02), (fl + smooth(0.3, 0.7, f - fl)) / p.valueBands);
+      const g = 1 + (vq / Math.max(vy, 1e-6) - 1) * (1 - 0.6 * keep);
+      rgb = rgb.map((q) => q * g);
     }
     const paper = cv.n(paperHeight, x, y);
     if (p.medium === "water") {
@@ -90,8 +98,13 @@ export function compose(plan, ak, H, Rl, cv) {
       const valley = cv.n(paperHalf, x, y), Rg = 0.86 * (0.93 + 0.07 * paper);
       const X0 = 1.5, X = X0 * (1 + p.granulation * (0.5 - valley) * 2) * (1 + p.edge * rel[3]);
       const g0 = glaze(c, X0, 0.86), g1 = glaze(c, X, Rg);
-      // A thinner wash than the target lets the paper through: lift toward white by the dilution.
-      rgb = rgb.map((v2, k) => 1 - (1 - v2 * (g1[k] / Math.max(g0[k], 1e-4))) * p.dilution);
+      // The thickness change as a ratio: its luminance for neutrals, per channel only for
+      // saturated colours (an out-of-gamut pigment mix would otherwise tint a grey wash).
+      const lum = (q) => 0.2126 * q[0] + 0.7152 * q[1] + 0.0722 * q[2], sr = lum(g1) / Math.max(lum(g0), 1e-4);
+      const ratio = [0, 1, 2].map((k) => clamp(sr + (g1[k] / Math.max(g0[k], 1e-4) - sr) * keep, 0.5, 2));
+      // A thinner wash than the target lets the paper through: a thinner layer transmits
+      // T^dilution of what the full one does (Beer-Lambert), so the colour rises as a power.
+      rgb = rgb.map((v2, k) => Math.pow(clamp(v2 * ratio[k], 0, 1), p.dilution));
     } else rgb = rgb.map((v2) => v2 * rel[1] + rel[2]);
     const t = 1 - p.lines * (1 - rel[0]);
     img.set([Math.max(0, rgb[0] * t), Math.max(0, rgb[1] * t), Math.max(0, rgb[2] * t), 1], (y * w + x) * 4);

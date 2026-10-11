@@ -7,7 +7,10 @@ export const PREP_WGSL = /* wgsl */ `
 @compute @workgroup_size(8, 8) fn main(@builtin(global_invocation_id) id: vec3u) {
   let x = i32(id.x); let y = i32(id.y); if (x >= W() || y >= H()) { return; }
   let i = y * W() + x; let k = P[P_exposure];
-  let D = vec3f(1.0) - exp(-max(scene[i].xyz, vec3f(0.0)) * k);
+  let sc = max(scene[i].xyz, vec3f(0.0)); let m = max(sc.x, max(sc.y, sc.z)); let t = m * k;
+  var gain = k * (1.0 - t / 2.0 + t * t / 6.0);
+  if (t >= 1e-3) { gain = (1.0 - exp(-t)) / m; }
+  let D = sc * gain;
   let e = vec3f(linear_to_srgb(D.x), linear_to_srgb(D.y), linear_to_srgb(D.z));
   let c = lut_conc(e); let dec = km_decode(c);
   sb[i] = vec4f(e, 0.2126 * D.x + 0.7152 * D.y + 0.0722 * D.z);

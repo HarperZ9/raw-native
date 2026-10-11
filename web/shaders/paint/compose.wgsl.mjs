@@ -79,24 +79,30 @@ fn glaze(c: vec4f, X: f32, Rg: f32) -> vec3f {
   if (P[P_warp] > 0.0) { wv = vec2f(cnoise(5u, f32(x), f32(y), 0.0), cnoise(6u, f32(x), f32(y), 0.0)); }
   let sx = f32(x) + wv.x * P[P_warp]; let sy = f32(y) + wv.y * P[P_warp];
   let l = bil(sx, sy); var c = l[0]; let res = l[1].xyz;
-  let base = km_decode(c) + res; let v = clamp(0.2126 * base.x + 0.7152 * base.y + 0.0722 * base.z, 0.0, 1.0);
-  let push = P[P_push];
-  c.w += push * (1.0 - v) * (1.0 - v); c.z += 0.6 * push * (1.0 - v) * (1.0 - v); c.y += push * 0.6 * v * v;
-  let jit = (bilH(sx, sy).y - 0.5) * 2.0; let rel = bil4(sx, sy); let bk = P[P_broken] * (1.0 - 0.85 * v * v);
+  let dec0 = km_decode(c); let D = max(dec0 + res, vec3f(0.0)); let v = clamp(0.2126 * D.x + 0.7152 * D.y + 0.0722 * D.z, 0.0, 1.0);
+  let mx = max(D.x, max(D.y, D.z)); let mn = min(D.x, min(D.y, D.z));
+  let keep = smooth_(0.15, 0.6, (mx - mn) / max(mx, 1e-3));
+  let pk = P[P_push] * (1.0 - 0.85 * keep);
+  c.w += pk * (1.0 - v) * (1.0 - v); c.z += 0.6 * pk * (1.0 - v) * (1.0 - v); c.y += pk * 0.08 * v * v;
+  let jit = (bilH(sx, sy).y - 0.5) * 2.0; let rel = bil4(sx, sy); let bk = P[P_broken] * (1.0 - 0.85 * v * v) * (1.0 - 0.7 * keep);
   c.y += bk * max(jit, 0.0); c.w += bk * max(-jit, 0.0); c.z += 0.5 * bk * abs(jit) * (1.0 - v);
   c = c / (c.x + c.y + c.z + c.w);
-  var rgb = km_decode(c) + res;
+  var rgb = D * min(vec3f(4.0), (km_decode(c) + vec3f(0.01)) / (dec0 + vec3f(0.01)));
   if (P[P_valueBands] > 0.0) {
-    let vy = max(1e-4, 0.2126 * rgb.x + 0.7152 * rgb.y + 0.0722 * rgb.z); let f = min(vy, 1.0) * P[P_valueBands]; let fl = floor(f);
-    let vq = max(0.02, (fl + smooth_(0.3, 0.7, f - fl)) / P[P_valueBands]);
-    rgb = rgb * vq / vy;
+    let vy = 0.2126 * rgb.x + 0.7152 * rgb.y + 0.0722 * rgb.z; let f = min(vy, 1.0) * P[P_valueBands]; let fl = floor(f);
+    let vq = max(min(vy, 0.02), (fl + smooth_(0.3, 0.7, f - fl)) / P[P_valueBands]);
+    let g = 1.0 + (vq / max(vy, 1e-6) - 1.0) * (1.0 - 0.6 * keep);
+    rgb = rgb * g;
   }
   let paper = cnoise(3u, f32(x), f32(y), 0.5);
   if (P[P_medium] > 1.5) {
     let valley = cnoise(4u, f32(x), f32(y), 0.5); let Rg = 0.86 * (0.93 + 0.07 * paper);
     let X0 = 1.5; let X = X0 * (1.0 + P[P_granulation] * (0.5 - valley) * 2.0) * (1.0 + P[P_edge] * rel.w);
     let g0 = glaze(c, X0, 0.86); let g1 = glaze(c, X, Rg);
-    rgb = vec3f(1.0) - (vec3f(1.0) - rgb * (g1 / max(g0, vec3f(1e-4)))) * P[P_dilution];
+    let lw = vec3f(0.2126, 0.7152, 0.0722); let sr = dot(lw, g1) / max(dot(lw, g0), 1e-4);
+    let ratio = clamp(vec3f(sr) + (g1 / max(g0, vec3f(1e-4)) - vec3f(sr)) * keep, vec3f(0.5), vec3f(2.0));
+    let wc = clamp(rgb * ratio, vec3f(0.0), vec3f(1.0));
+    rgb = select(pow(wc, vec3f(P[P_dilution])), vec3f(0.0), wc <= vec3f(0.0));   // pow(0, y) is undefined in WGSL
   } else { rgb = rgb * rel.y + rel.z; }
   let t = 1.0 - P[P_lines] * (1.0 - rel.x);
   img[y * W() + x] = vec4f(max(rgb * t, vec3f(0.0)), 1.0);
