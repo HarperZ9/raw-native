@@ -75,7 +75,7 @@
   "change": "The numerical march becomes composite Simpson over the same 256 intervals (257 density evaluations, weights 1, 4, 2, ..., 4, 1, times dt / 3), on the GPU and in the CPU's fogHeightMarch. Simpson is a general quadrature, not one exact for exponential densities. The control is the same rule with 4 intervals. The god-ray march (M5) is not changed.",
   "prediction": "From the offline replica: worst relative error about 2.8e-5 in float32 (8.7e-8 in float64); the 4-interval control about 0.69, so it still breaks 1e-3.",
   "bounds": "Unchanged.",
-  "written_correction": "2026-10-11 08:25Z: the 'written' time above ran ahead of the clock; the note was committed at about 08:03Z, before the change (bf7d31c, about 08:04Z) and its run."
+  "written_correction": "2026-10-11 08:17Z: the 'written' time above ran ahead of the clock; the note was committed at about 08:03Z, before the change (bf7d31c, about 08:04Z) and its run."
  },
  "method_note_6": {
   "written": "2026-10-11 08:10Z, after R3 runs 5 to 10 recorded M2 on the bulb as an open failure, before any change",
@@ -83,6 +83,6 @@
   "change": "For power 8, the GPU's Mandelbulb estimator uses a trig-free form derived from complex powers: with rho^2 = x^2 + y^2, z' = Re((z + i rho)^8), x' + i y' = (Im((z + i rho)^8) / rho) (x + i y)^8 / rho^7, and dr' = 8 r^7 dr + 1, using only multiply, add, sqrt and divide (x' = y' = 0 where rho = 0). Other powers keep the trigonometric form. The CPU float64 reference keeps the trigonometric form, so the check compares two formulations; they agree to 1.5e-13 in float64 offline.",
   "prediction": "Bulb normals and t within their bounds on WARP and the RTX. If not, M2 stays open and the cause is recorded.",
   "bounds": "Unchanged.",
-  "written_correction": "2026-10-11 08:25Z: the 'written' time above ran ahead of the clock; the note was committed at about 08:03Z, before the change (bf7d31c, about 08:04Z) and its run."
+  "written_correction": "2026-10-11 08:17Z: the 'written' time above ran ahead of the clock; the note was committed at about 08:03Z, before the change (bf7d31c, about 08:04Z) and its run."
  }
 }

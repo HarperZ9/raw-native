@@ -106,7 +106,7 @@
   },
   {
    "run": 13,
-   "when": "2026-10-11 08:25Z",
+   "when": "2026-10-11 08:15Z",
    "backend": "WebGPU in Chrome on SwiftShader, --quick (M2 to M5 at 128 x 128), commit a5f8cb3",
    "checks": "M2 to M7",
    "result": "M4 passes (2.40e-5). M2 bulb t within 13,180 of 13,240 (99.55%), normals 13,008 (98.25%): fails on normals. A first SwiftShader attempt straddled a branch switch in the worktree and was discarded unread.",
