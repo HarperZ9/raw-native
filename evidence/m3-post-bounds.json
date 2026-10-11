@@ -154,5 +154,11 @@
   "change": "The resolve reads each pixel's motion from the nearest surface (smallest view depth) in its 3 x 3 neighbourhood of the current frame (Karis, High Quality Temporal Supersampling, SIGGRAPH 2014). The depth disocclusion test keeps the pixel's own expected depth: a probe that also took the nearest surface's depth rejected history along silhouettes on a static camera (0.443 instead of 0.265). The same change goes into the WGSL resolve. Probe figures with the change: pan 0.447, static 0.269.",
   "bounds": "Unchanged: pan RMSE at most 0.5 of the single-sample RMSE, ghosting at most 0.03 with its coverage, every control failing, and the GPU parity bound.",
   "reported": "The resolve without the dilation is run and reported beside the result."
+ },
+ "method_note_11_2026_10_11": {
+  "written": "2026-10-11, after a diagnosis run of the GPU TAA parity with note 10 in place (23 of 16,384 pixels off in the worst frame, bound 16) and before the change runs",
+  "diagnosis": "The pixels that differ lie along the ground's far edge against the background, where the colours are grey. A dump of single steps (the CPU resolve fed the GPU's own history) shows differences of 1e-4 to 9e-3 on those pixels. For a grey colour the YCoCg chroma channels are exactly 0 in float64, but in float32 they hold rounding noise of a few 1e-8. The clip box's half-extent is 1.25 sigma plus 1e-7, so on the GPU that noise alone can push the clip scale past 1. The scale is shared by all three channels, so the luma is clipped too, by an amount the CPU never applies.",
+  "change": "The clip box's half-extent floor rises from 1e-7 to 1e-4 (linear colour units, a fortieth of an 8-bit step), on the CPU and in WGSL, so float32 rounding in a channel cannot trigger the clip.",
+  "bounds": "Unchanged. The CPU TAA checks (pan RMSE, ghosting, controls) are rerun with the change."
  }
 }
