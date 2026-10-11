@@ -42,5 +42,9 @@
  },
  "scenes": "procedural, built in raw/renderer/swr_scenes (no external file): retro_room (a BRender-era room: tiled floor receding past the near plane, brick walls, pillars, stairs, a low-poly figure), iso_street (a narrow-FOV isometric street: tile blocks, facades, lamp posts), clip_stress (a large floor crossing the near plane and every guard-band plane), and the C1 screen-space meshes; textures are procedural RGBA8 (brick, tiles, planks, checker)",
  "backends": "D3D12 WARP (debug layer on) and WebGPU SwiftShader for the gates; the RTX 4090 only under D:/gpu.lock.d, reported separately",
- "does_not_prove": "Frame times or scaling (the binning is O(bins x triangles) and is not a performance claim); anti-aliasing (one sample a pixel); that any console or historical renderer behaved exactly so (the retro modes are our specification of the look); identity on hardware not run."
+ "does_not_prove": "Frame times or scaling (the binning is O(bins x triangles) and is not a performance claim); anti-aliasing (one sample a pixel); that any console or historical renderer behaved exactly so (the retro modes are our specification of the look); identity on hardware not run.",
+ "method_note_1": {
+  "written": "2026-10-11 07:50Z, before the change",
+  "change": "R1's setup on its default grid becomes snap-corrected: coverage from the snapped vertices, attributes and depth from the unsnapped planes evaluated at the snapped vertices. Full text, cause and prediction: evidence/rt-r2-bounds.json, addendum_3_P4_method_note_1. C1 to C5 are rerun under their committed bounds, which are unchanged; the specification's 'depth' and 'interpolation' entries describe the uncorrected form and stay as the record of runs 1 to 6."
+ }
 }
