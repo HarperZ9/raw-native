@@ -67,7 +67,7 @@ Resolved resolve(const Setup& s, const Visibility& v, const Geometry& g, const T
     Resolved r;
     const std::size_t n = std::size_t(s.width) * std::size_t(s.height);
     r.uv.assign(n * 2, 0.0f); r.texelCoord.assign(n * 2, 0.0f);
-    r.texel.assign(n, 0xffffffffu); r.colour.assign(n, 0u);
+    r.texel.assign(n, 0xffffffffu); r.colour.assign(n, 0u); r.normal.assign(n * 3, 0.0f);
     const float len = std::sqrt(light.x * light.x + light.y * light.y + light.z * light.z);
     const Vec3 L{light.x / len, light.y / len, light.z / len};
     for (int y = 0; y < s.height; ++y)
@@ -114,6 +114,7 @@ Resolved resolve(const Setup& s, const Visibility& v, const Geometry& g, const T
             r.texelCoord[p * 2] = tu; r.texelCoord[p * 2 + 1] = tv;
             r.texel[p] = tx | (ty << 12) | (texId << 24);
             r.colour[p] = out;
+            r.normal[p * 3] = nx * nl; r.normal[p * 3 + 1] = ny * nl; r.normal[p * 3 + 2] = nz * nl;
         }
     return r;
 }

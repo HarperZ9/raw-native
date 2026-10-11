@@ -65,6 +65,41 @@ fn threshold(x: u32, y: u32, mode: u32) -> vec2f {
   }
   return ds((f32(bn[(y % 64u) * 64u + x % 64u]) + 0.5) / 4096.0);
 }
+// The mix modes (6, 7, 8; dither/mix.mjs): a plan of 16 entries, each the one that brings the
+// sum closest in OKLab to (i + 1) times the colour, sorted by OKLab L (ties by index).
+fn lab3(r: vec2f, g: vec2f, b: vec2f) -> array<vec2f, 3> {
+  let l = ds_cbrt(mat3ds(K_M1, r, g, b, 0u)); let m = ds_cbrt(mat3ds(K_M1, r, g, b, 1u)); let s = ds_cbrt(mat3ds(K_M1, r, g, b, 2u));
+  return array<vec2f, 3>(mat3ds(K_M2, l, m, s, 0u), mat3ds(K_M2, l, m, s, 1u), mat3ds(K_M2, l, m, s, 2u));
+}
+fn pal_lin(k: u32, c: u32) -> vec2f { return K[(palrgb[k] >> (8u * c)) & 255u]; }
+fn before(a: u32, b: u32) -> bool {
+  let La = palc(a, 0u); let Lb = palc(b, 0u);
+  if (ds_lt(La, Lb)) { return true; }
+  if (ds_lt(Lb, La)) { return false; }
+  return a < b;
+}
+fn mix_pick(r: vec2f, g: vec2f, b: vec2f, n: u32, th: vec2f) -> u32 {
+  var plan: array<u32, 16>;
+  var sr = ds(0.0); var sg = ds(0.0); var sb = ds(0.0);
+  for (var i = 0u; i < 16u; i++) {
+    let w = ds(f32(i + 1u));
+    let T = lab3(ds_mul(w, r), ds_mul(w, g), ds_mul(w, b));
+    var k = 0u; var bd = vec2f(0.0); var have = false;
+    for (var j = 0u; j < n; j++) {
+      let C = lab3(ds_add(sr, pal_lin(j, 0u)), ds_add(sg, pal_lin(j, 1u)), ds_add(sb, pal_lin(j, 2u)));
+      let dL = ds_sub(C[0], T[0]); let dA = ds_sub(C[1], T[1]); let dB = ds_sub(C[2], T[2]);
+      let d = ds_add(ds_add(ds_mul(dL, dL), ds_mul(dA, dA)), ds_mul(dB, dB));
+      if (!have || ds_lt(d, bd)) { bd = d; k = j; have = true; }
+    }
+    var q = i;
+    loop { if (q == 0u || !before(k, plan[q - 1u])) { break; } plan[q] = plan[q - 1u]; q--; }
+    plan[q] = k;
+    sr = ds_add(sr, pal_lin(k, 0u)); sg = ds_add(sg, pal_lin(k, 1u)); sb = ds_add(sb, pal_lin(k, 2u));
+  }
+  let f = ds_floor(ds_mul(th, ds(16.0)));
+  let idx = min(15, i32(f.x) + i32(f.y));
+  return plan[u32(max(idx, 0))];
+}
 @compute @workgroup_size(8, 8) fn main(@builtin(global_invocation_id) id: vec3u) {
   let W = u32(P[0]); let H = u32(P[1]); let n = u32(P[2]); let mode = u32(P[3]);
   if (id.x >= W || id.y >= H) { return; }
@@ -75,6 +110,15 @@ fn threshold(x: u32, y: u32, mode: u32) -> vec2f {
   let A = mat3ds(K_M2, l, m, s, 1u); let Bv = mat3ds(K_M2, l, m, s, 2u);
   var i = nearest(L, A, Bv, n);
   let strength = K[K_STRENGTH];
+  if (mode >= 6u) {
+    if (n >= 2u && ds_gt(strength, ds(0.0))) {
+      let src = select(select(5u, 3u, mode == 7u), 2u, mode == 6u);
+      let th = ds_add(ds(0.5), ds_mul(ds_sub(threshold(id.x, id.y, src), ds(0.5)), strength));
+      i = mix_pick(r, g, b, n, th);
+    }
+    idx[p] = i; out8[p] = palrgb[i];
+    return;
+  }
   if (mode != 0u && n >= 2u && ds_gt(strength, ds(0.0))) {
     let j = far_side(L, A, Bv, i, n);
     if (j >= 0) {

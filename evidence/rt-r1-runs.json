@@ -46,6 +46,15 @@
     "evidence/rt-r1-gpu-d3d12-warp.json",
     "evidence/rt-r1-gpu-webgpu-swiftshader.json"
    ]
+  },
+  {
+   "run": 6,
+   "when": "2026-10-10 19:51Z (lock held 19:51:31Z to 19:51:42Z)",
+   "backend": "D3D12 on the RTX 4090 (driver 610.88), under D:/gpu.lock.d, binaries at 5d00b3f",
+   "checks": "C4, C5",
+   "result": "fail on the RTX: C4 passes on every case but one, clip_stress affine (1 pixel's UV at 1.14x the bound); C5 fails on every scene: 335 of 635 (retro_room), 518 of 1,436 (iso_street) and 10 of 23 (clip_stress) valid slots differ from the CPU's (bound 1%); coordinates stay within one grid step except 8 on clip_stress; pixel triangle ids agree or are explained by a differing slot on every pixel; clip_stress also exceeds the depth bound (13,303 pixels over 1e-6, worst 8.3e-6) and, in affine and whole-pixel modes, the UV bound (worst 59x and 122x). Controls fail as required (14,831; 1; 2).",
+   "diagnosis": "Inferred, not yet confirmed: D3D12 allows fp32 division to be approximate (2.5 ulp) and the NVIDIA driver compiles 1/w and the affine w/sum that way, while WARP and SwiftShader divide exactly. 1/w feeds every snapped coordinate and every z, which explains near-tie snaps one unit apart and the depth drift; on clip_stress the UVs reach 300, so a 2-ulp weight error is large in UV. A follow-up would move the reciprocals to the host-side setup data or test a correctly rounded division; the bounds stay as committed.",
+   "evidence": "evidence/rt-r1-gpu-d3d12-rtx4090.json"
   }
  ]
 }

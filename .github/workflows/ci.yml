@@ -255,6 +255,27 @@ jobs:
           build/Release/gpu_swr_parity.exe swr-warp.json
           build/Release/raw_native_cli.exe swr-render --out swr-warp
           python -c "import json,sys; d=json.load(open('swr-warp/swr.json')); f=d['frames']; print(json.dumps(f)); sys.exit(0 if len(f)==6 and all(x['pixels_differing']==0 for x in f) else 1)"
+      - name: The compute PLOC BVH on WARP equals its CPU reference node for node, and its traversal gives the brute-force answer (RT stage R2, B1 to B3)
+        shell: bash
+        env:
+          RAW_NATIVE_D3D12_WARP: "1"
+        run: |
+          build/Release/gpu_rt_bvh_parity.exe rt-bvh-warp.json > /dev/null
+          grep -q '"pass": true' rt-bvh-warp.json
+      - name: The compute path tracer on WARP against its CPU reference and the R1 rasterizer; P4's albedo and depth are a recorded open failure (evidence/rt-r2-runs.json)
+        shell: bash
+        env:
+          RAW_NATIVE_D3D12_WARP: "1"
+        run: |
+          build/Release/gpu_rt_pt_parity.exe rt-pt-warp.json > /dev/null || true
+          python tests/gpu/pt_gate.py rt-pt-warp.json
+      - name: Hybrid ray-traced sun shadows and reflections over the R1 visibility buffer on WARP match CPU rays (RT stage R2, H1 and H2)
+        shell: bash
+        env:
+          RAW_NATIVE_D3D12_WARP: "1"
+        run: |
+          build/Release/gpu_rt_hybrid_parity.exe rt-hybrid-warp.json > /dev/null
+          grep -q '"pass": true' rt-hybrid-warp.json
       - name: Textures, samplers and raster passes on WARP match the CPU sampler reference (M2 criterion 3)
         shell: bash
         env:
@@ -389,6 +410,14 @@ jobs:
           python tests/gpu/post_gate.py post-webgpu.json --min-scenes 5
       - name: raw-native's own rasterizer in Chrome on SwiftShader matches its CPU reference (RT stage R1, C4 and C5)
         run: python tests/web/rhi_texture.py --command swr-parity --dir build-wasm-gpu --adapter swiftshader --out swr-webgpu.json
+      - name: The compute PLOC BVH and its traversal in Chrome on SwiftShader, quick (20,000 rays a scene; RT stage R2, B1 to B3)
+        run: python tests/web/rhi_texture.py --command rt-bvh-parity --args=--quick --dir build-wasm-gpu --adapter swiftshader --out rt-bvh-webgpu.json
+      - name: The compute path tracer in Chrome on SwiftShader, quick; P4's albedo and depth are a recorded open failure
+        run: |
+          python tests/web/rhi_texture.py --command rt-pt-parity --args=--quick --dir build-wasm-gpu --adapter swiftshader --out rt-pt-webgpu.json || true
+          python tests/gpu/pt_gate.py rt-pt-webgpu.json
+      - name: Hybrid ray-traced shadows and reflections in Chrome on SwiftShader match CPU rays (RT stage R2, H1 and H2)
+        run: python tests/web/rhi_texture.py --command rt-hybrid-parity --dir build-wasm-gpu --adapter swiftshader --out rt-hybrid-webgpu.json
       - name: The WebGPU build's material model matches its float64 reference in Chrome on SwiftShader (M3 materials)
         run: python tests/web/rhi_texture.py --command pbr-parity --dir build-wasm-gpu --adapter swiftshader --out pbr-webgpu.json
       - name: The verified viewer renders the owned assets with a certificate and refuses a broken file (M3 criterion 4)
@@ -496,6 +525,8 @@ jobs:
         run: python tests/web/shaders_parity.py --shader caricature --adapter swiftshader --out media-out/shaders-caricature-parity.json
       - name: The painterly shader keeps colour on flat regions in every preset (evidence/shaders-paint-colour-bounds.json)
         run: node tools/shaders/paint_colour_check.mjs --out media-out/shaders-paint-colour.json
+      - name: The mix dither is closer to the source than bayer4 and a per-channel Bayer dither on every committed frame (evidence/shaders-dither-mix-bounds.json)
+        run: node tools/shaders/dither_quality.mjs --out media-out/shaders-dither-quality.json
       - name: Frame times on the CPU adapter, for the record (not a gate)
         run: python tests/web/lab2_timing.py --adapter swiftshader --width 480 --height 300 --frames 5 --out media-out/shaders-lab2-timing.json
   media-smoke:

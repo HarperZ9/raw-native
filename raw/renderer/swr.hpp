@@ -96,6 +96,7 @@ struct Resolved {
     std::vector<float> texelCoord;              // two a pixel: uv times the texture size, before the floor
     std::vector<std::uint32_t> texel;           // x | y << 12 | texture << 24, or 0xffffffff where nothing covers
     std::vector<std::uint32_t> colour;          // RGBA8
+    std::vector<float> normal;                  // three a pixel, the unit interpolated normal (CPU resolve only)
 };
 Resolved resolve(const Setup& s, const Visibility& v, const Geometry& g, const TextureSet& t, Vec3 light, const Options& o);
 

@@ -13,7 +13,7 @@
 //           masks, bloom, halation, curvature, chromatic aberration, vignette.
 //           spec: the retro-crt.js options ({ cell, scanlines, mask, aberration, ... })
 //   "dither"  display stage: palette quantisation with ordered, noise or blue-noise dither.
-//           spec: { palette: "pico8" | ..., mode: "bayer4" | ..., strength, brightness }
+//           spec: { palette: "pico8" | ..., mode (required): "bayer4" | "mix-bayer4" | ..., strength, brightness }
 //   "paint"  scene stage: the painterly shader (structure tensor, anisotropic Kuwahara,
 //           Kubelka-Munk pigment, strokes and medium); scene light in, display values out.
 //           spec: { preset: "oil-grotesque" | "oil" | "gouache" | "watercolour", ...overrides }
