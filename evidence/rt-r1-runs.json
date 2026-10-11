@@ -80,6 +80,22 @@
    "checks": "C4, C5",
    "result": "fail, as in run 6, and worse in one place: C5 modern differs on 625 of 635 slots (run 6: 335) and clip_stress modern now has 17 pixels with UV over the bound (worst 2.98x; it passed in run 6). Coordinates stay within one step and every triangle id difference is explained. The inferred cause is run 6's approximate division, now applied to the correction's divisions too.",
    "evidence": "evidence/rt-r1-note1-d3d12-rtx4090.json"
+  },
+  {
+   "run": 10,
+   "when": "2026-10-11 08:03Z",
+   "backend": "CPU and D3D12 WARP, commit 7591baa (method note 2: snapCorrect off by default)",
+   "checks": "C1 to C5, plus the reported fifth mode",
+   "result": "pass, as runs 1 to 6 on WARP: C3 max 1.6e-4, median 3.1e-6; C4 bit-identical; C5 0 differing slots. Fifth mode (modern_snap_corrected, not gated): C4 and C5 pass. Controls fail as required.",
+   "evidence": "evidence/rt-r1-note2-d3d12-warp.json"
+  },
+  {
+   "run": 11,
+   "when": "2026-10-11 08:10Z",
+   "backend": "WebGPU in Chrome on SwiftShader, the same commit",
+   "checks": "C4, C5, plus the reported fifth mode",
+   "result": "pass on the four gated modes (as before method note 1). Fifth mode, not gated: C4 passes; C5 fails (223 of 635, 587 of 1,436 and 4 of 23 slots differ; retro_room UV 1.15x on 4 pixels).",
+   "evidence": "evidence/rt-r1-note2-webgpu-swiftshader.json"
   }
  ]
 }
