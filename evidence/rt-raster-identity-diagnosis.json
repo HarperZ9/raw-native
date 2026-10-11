@@ -1,0 +1,22 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "Diagnosis (engine-rt, owner of src/renderer/raster.cpp) of M3's open RHI v3 G-buffer identity failure on the raw-hall nave. M3's bound (evidence/m3-rhi3-bounds.json: 1 - dot <= 1e-5 per pixel) is not changed and no M3 file is edited.",
+ "written": "2026-10-11, 07:35Z to 08:01Z",
+ "question": "Is there a change to the CPU reference rasterizer (raster.cpp) that keeps the per-value normal bound on both WARP and the RTX 4090?",
+ "answer": "No change was found, and the reason is recorded below. On the RTX the remaining pixel depends on how the driver's viewport arithmetic resolves a sub-pixel snap tie; seventeen documented float32 and float64 orderings were tried and every one that fixes that pixel breaks another. On WARP, clipping at the viewport makes the nave pass, but an independent probe shows that this is not WARP's rule, so adopting it would fit the CPU model to the test scene.",
+ "observations": {
+  "warp_four_pixels": "The four failing top-row pixels (23,0), (223,0), (232,0), (23,1) are reproduced to 5 printed digits by: clip each triangle at the viewport edge y = 0 in clip space, snap the new corners to 1/256 px, fan, interpolate. Ratios against WARP -0.42, 0.32, -0.21, -0.16 (print noise), against 13.9, 1.5, 12.8 and 5.2 for the current model.",
+  "rtx_one_pixel": "(215, 121), triangle 107647, a 0.34 px^2 sliver: vertex 1's x lies at 0.498 of a snap step. The CPU's float32 (x * (1/w) * 0.5 + 0.5) * 256 rounds it down; one step up gives ratio 0.03 against the RTX's normal. With x / w and the D3D viewport form the value lands exactly on the tie and rounds up, which fixes this pixel and breaks (88, 167) at 4.27.",
+  "nave_models": "Full-frame nave comparison, worst ratio (pixels over 1): current model WARP 14.37 (4), RTX 1.26 (1); x/w with nW/2 + W/2: WARP 14.37 (6), RTX 4.27 (1); clip at viewport: WARP 0.097 (0), RTX 14.35 (6); float64 exact viewport: WARP 14.37 (7), RTX 2.54 (4); vertex-shader multiply-add chains in three orders with both divide forms: WARP >= 14.37, RTX >= 1.26. Seventeen models in all; table in the harness output.",
+  "m3_check_with_viewport_clip_on_warp": "With the clip-at-viewport model wired in locally (uncommitted, reverted), M3's full raster identity passes on WARP: nave normal ratio 0.091, 67 of 67 differing pixels explained by edge or tie.",
+  "probe": "16 sliver triangles crossing the top edge of a 64 x 8 target, normals far apart, independent of the test scenes. RTX: the guard-band model (no clipping) matches, worst ratio 0.013, so the probe discriminates. WARP: no model matches: no clipping 33.6, viewport clip 53.1, guard bands 1.03 to 1.5 between 8.8 and 33.6. Per triangle, WARP agrees with no clipping on one sliver, with viewport clipping on another, and with neither on a third."
+ },
+ "conclusion": "Neither renderer computes a wrong value; the bound asks the CPU to reproduce implementation-defined rasterizer arithmetic exactly on slivers whose normals differ by about 47 degrees, where one 1/256 px snap step moves the normal past 1e-5. WARP's viewport clipping rule and the RTX's viewport rounding are not documented, and no model tried reproduces either on independent geometry. raster.cpp is unchanged.",
+ "options_for_the_author": [
+  "Keep the per-value bound and the open failure (the current state).",
+  "M3's proposal: a condition-scaled bound, |error| <= 1e-5 + |gradient| x one snap step. It loosens the bound on slivers, so it needs the author's decision.",
+  "Not recommended: removing the flute slivers from raw-hall. That changes the test, not the renderer."
+ ],
+ "does_not_prove": "That no model exists: the search covered seventeen arithmetic orderings, Sutherland-Hodgman clipping with one plane order and fan start, and six guard bands. A model of WARP's clipper with another plane order, fan or snapping of clipped corners could still exist.",
+ "artifacts": "Harness sources and outputs in the engine-rt mission-control folder (gpu/bin-ri2: ident.cpp, probe.cpp, diag.cpp, model2.py; ri-rtx.err, ri2-rtx-final.txt, ri3-probe-rtx.txt). RTX runs under D:/gpu.lock.d at 07:37:32Z, 07:54:29Z, 07:55:06Z, 07:55:36Z and 08:00:44Z, each a few seconds."
+}
