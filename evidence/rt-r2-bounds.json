@@ -1,0 +1,88 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "RT workstream stage R2: our own BVH built by compute, a compute path tracer with a stable interface and AOVs, and hybrid ray-traced shadows and reflections over the R1 visibility buffer",
+ "written": "2026-10-10, before the implementation and the first run",
+ "method": {
+  "bvh": "PLOC (Meister and Bittner, 'Parallel Locally-Ordered Clustering for Bounding Volume Hierarchy Construction', IEEE TVCG 2018), from the paper: 30-bit Morton codes of triangle centroids in the scene box, a bitonic sort of (code, index), then rounds of nearest-neighbour search within radius 16 by the surface area of the merged box (ties to the lower index), merging of mutual neighbours, and compaction by prefix sums. No atomics: node ids and positions come from scans. A CPU reference runs the same algorithm in the same float32 operation order. Leaves hold one triangle.",
+  "traversal": "closest hit and any hit with a stack, the ray-triangle test of raw/math/primitives.hpp (Moeller-Trumbore) written in the same operation order",
+  "sah_cost": "C_trav = 1, C_isect = 1: sum over internal nodes of A(n) / A(root) plus sum over leaves of A(l) / A(root) times its triangle count",
+  "path_tracer": "unidirectional, next-event estimation for a sun and emissive triangles, multiple importance sampling between BSDF sampling and emitter sampling, Russian roulette after bounce 3 with the survival probability recorded; materials: Lambert plus a GGX metal-roughness lobe (Walter et al. 2007; VNDF sampling, Heitz 2018), our own implementation, base colour from the R1 procedural textures; the counter-based hash RNG PCG2D seeded from (seed, pixel, sample, bounce)",
+  "interface": "raw/renderer/rt_pathtrace.hpp, version 1: PathTraceDesc {seed, spp, maxBounces, width, height, camera, previous camera}; outputs per pixel: radiance (RGB, linear, unclamped), albedo (first-hit base colour), normal (first-hit shading normal, world), depth (first-hit view distance, 0 for a miss), motion (screen-space pixel offset to the previous camera, for static scenes), variance (per-pixel sample variance of radiance luminance, divided by spp); the same seed, spp and scene give the same bytes on one backend"
+ },
+ "checks": {
+  "B1_build_identity": {
+   "what": "the GPU PLOC build against the CPU PLOC reference on the owned scenes (retro_room, iso_street, clip_stress), a procedural 100,000-triangle city block (dense_block, owned) and a seeded 20,000-triangle soup",
+   "bound": "the same tree: node for node, the same children, the same leaf triangles and bit-identical boxes",
+   "control": "the GPU build with radius 8 instead of 16 must give a different tree on dense_block"
+  },
+  "B2_traversal": {
+   "what": "100,000 seeded rays per scene (half random, half camera rays), closest hit and any hit",
+   "bound": "the CPU traversal of the GPU-built tree returns exactly the brute-force scan's answer (same triangle, same t, ties to the lower index); the GPU traversal returns the same triangle except where the brute-force scan's two nearest hits lie within 1e-5 relative t (counted), with |t difference| <= 1e-5 t; any-hit answers equal",
+   "control": "the GPU traversal with the box test's far limit shortened by 10% must miss hits"
+  },
+  "B3_sah": {
+   "what": "SAH cost of the GPU-built tree against the M3 binned-SAH BVH (raw/renderer/bvh.hpp, leaves of up to 4 triangles), same scenes",
+   "bound": "ratio <= 1.25 on every scene",
+   "reported": "build time on WARP and on the RTX 4090 (under the GPU lock), not bounded"
+  },
+  "P1_furnace": {
+   "what": "a closed box with emission E on every face and Lambert albedo a = 0.5 and 0.8 on every face, GPU path tracer at 64 spp, no Russian roulette cut-off beyond 64 bounces",
+   "bound": "image mean within 4 standard errors of E / (1 - a); every pixel within 6 of its own standard errors",
+   "control": "the tracer with the cosine factor dropped from the Lambert estimator must fail"
+  },
+  "P2_convergence": {
+   "what": "the GPU path tracer against the CPU path tracer on retro_room (sun plus an emissive ceiling panel) and iso_street at 128 x 96, each at 256 spp with different seeds",
+   "bound": "per-pixel z = (gpu - cpu) / sqrt(var_gpu / n + var_cpu / n) on luminance: mean |z| <= 0.9 (0.80 expected for normal noise), fraction |z| > 4 <= 0.2%; image mean luminance within 3 combined standard errors",
+   "control": "the GPU tracer with next-event estimation's MIS weight forced to 1 (double counting) must fail"
+  },
+  "P3_determinism": {
+   "what": "the GPU path tracer run twice with the same seed and spp; and once with seed + 1",
+   "bound": "the same seed gives bit-identical radiance and AOVs; seed + 1 changes at least 99% of radiance pixels on retro_room"
+  },
+  "P4_aovs": {
+   "what": "albedo, normal, depth and triangle of the first hit against the R1 rasterizer's visibility buffer for the same camera, pixel centres, no jitter",
+   "bound": "triangle equal except within 1 px of an edge (counted); depth relative difference <= 1e-4; normal dot >= 1 - 1e-5; albedo equal (same texel) except at texel boundaries (counted)"
+  },
+  "H1_shadows": {
+   "what": "ray-traced sun shadows from the R1 visibility buffer (position from the perspective-correct interpolation), on the GPU, against CPU any-hit rays from the same positions",
+   "bound": "at most 0.1% of covered pixels differ, every difference within 1e-3 of grazing (|n . l| < 1e-3) or with an occluder hit within 1e-4 relative distance of the light-side limit (counted)",
+   "control": "shadow rays from the position without the offset along the normal must show self-shadowing (acne) above the bound"
+  },
+  "H2_reflections": {
+   "what": "one mirror bounce from every visibility-buffer pixel on retro_room and iso_street, GPU closest hit against the CPU brute-force scan",
+   "bound": "the same reflected triangle on at least 99.9% of pixels; every other within 1 px of a primary edge or at a t tie (1e-5 relative), counted",
+   "control": "reflection about the face normal negated must fail"
+  }
+ },
+ "scenes": "owned and procedural: R1's retro_room, iso_street and clip_stress; dense_block (a 100,000-triangle city block of boxes, stairs and cylinders, generated in code); a seeded triangle soup; the furnace box",
+ "backends": "D3D12 WARP and WebGPU SwiftShader gate; the RTX 4090 only under D:/gpu.lock.d, reported separately",
+ "does_not_prove": "That the path tracer agrees with the M3 material model (it implements Lambert plus GGX only; the M3 model is a later interface version); performance against hardware ray tracing; denoising quality; any claim about scenes not run.",
+ "addendum_1": {
+  "written": "2026-10-10 18:27Z, after the BVH runs (B1 to B3) and before any path-tracer code or run",
+  "aov_definitions": "depth is the first hit's distance along the camera's forward axis (positive; 0 for a miss) and motion the pixel offset of that hit under the previous camera, both from the unjittered ray through the pixel centre; albedo and normal are means over every primary sample (the convention of learned denoisers); radiance is the mean of all samples; variance is the sample variance of radiance luminance divided by spp",
+  "materials": "Lambert weight albedo (1 - metallic) / pi; GGX with F0 = mix(0.04 specular, albedo, metallic), Schlick Fresnel, height-correlated Smith G2; lobe choice probability metallic + (1 - metallic) 0.5 specular; the furnace uses specular 0 and metallic 0 (pure Lambert)",
+  "added_check": {
+   "P0_bsdf_consistency": {
+    "what": "CPU: for 400 seeded (material, outgoing direction) cases over roughness 0.05 to 1, metallic 0 to 1, the directional albedo by the tracer's own importance sampling (65,536 samples) against cosine-weighted hemisphere sampling (262,144 samples) of the same BSDF evaluation",
+    "bound": "|difference| <= 4 combined standard errors + 1e-3 on every case",
+    "control": "the importance-sampled estimate with the VNDF pdf replaced by the plain NDF pdf (D cos theta_h / (4 |wo . h|) without G1) must fail on at least one case",
+    "method_note_1": {
+     "written": "2026-10-10 18:31Z, after P0's first run failed and before its second",
+     "finding": "Case 64 (roughness 0.095, mu 0.084): the tracer's VNDF estimate 0.7640 (se 0.0033) against the cosine-weighted reference 0.2926 (se 0.0633). A third, independent estimator (classic NDF sampling of h mixed one-sample with cosine sampling, weighted by the mixture pdf) gave 0.7653 (se 0.0017), agreeing with VNDF within 0.3 standard errors. Cosine sampling almost never lands in a lobe this narrow, so its mean and standard error are both unreliable there.",
+     "change": "The gated reference becomes that NDF-mixture estimator (262,144 samples); the cosine-weighted estimate stays in the evidence, reported. Bound (4 combined standard errors + 1e-3) and control unchanged. The first run stays recorded as a failure."
+    }
+   }
+  }
+ },
+ "addendum_2": {
+  "written": "2026-10-10 18:54Z, before any hybrid code or run",
+  "method": "A GPU pass (swr_gbuffer) turns the R1 GPU visibility buffer into world position, geometric normal and shading normal, by the perspective-correct source weights of R1's resolve. A second pass (pt_hybrid) casts from each covered pixel: a sun shadow ray (any hit, unbounded) and one mirror reflection ray about the shading normal (closest hit). Rays start at the position offset along the geometric normal by the path tracer's rule, 2e-4 (1 + max |p|), toward the ray's side. The CPU reference interpolates its own positions and normals from the CPU R1 visibility buffer (bit-identical to the GPU's by C4) and casts with the CPU traversal (shadows) and a brute-force scan (reflections). Scenes retro_room and iso_street at 256 x 256, R1 modern options.",
+  "H1_note": "The sun is directional, so the 'light-side limit' exemption of H1 does not apply; only the grazing exemption (|n . l| < 1e-3, geometric normal) is counted.",
+  "H2_note": "The edge exemption uses the visible slot's screen-space edges, as C2 and P4 do; reflection hits that miss on both sides count as agreeing.",
+  "H2_method_note_1": {
+   "written": "2026-10-10 18:57Z, after the first hybrid run and before the second",
+   "finding": "The committed H2 control (reflection about the negated normal) cannot fail: r = d - 2 (d . n) n is unchanged when n is negated. In the first run it agreed on every pixel, so H2 had no working control and is reported as non-discriminating for that run.",
+   "change": "The H2 control becomes reflection about the shading normal tilted by 0.05 rad toward its basis tangent (Duff et al. 2017), which must fail H2. The H1 control is unchanged; it failed in the first run through the grazing clause only (4 and 13 non-grazing differences, below 0.1%), which is recorded as weak. Bounds unchanged."
+  }
+ }
+}
