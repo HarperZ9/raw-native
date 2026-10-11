@@ -32,16 +32,20 @@ try {
   for (const palette of ["gameboy", "cga", "ega", "pico8", "nes", "mono1"]) for (const mode of ["none", "bayer2", "bayer4", "bayer8", "noise", "blue"]) for (const plate of Object.keys(plates))
     cases.push({ palette, mode, plate, strength: 1, brightness: 0 });
   for (const mode of ["bayer8", "noise"]) for (const plate of Object.keys(plates)) cases.push({ palette: "pico8", mode, plate, strength: 0.7, brightness: 0.05 });
+  // The mix modes (evidence/shaders-dither-mix-bounds.json): at most 0.001% of pixels may differ.
+  for (const palette of ["gameboy", "cga", "ega", "pico8", "nes", "mono1"]) for (const mode of ["mix-bayer4", "mix-bayer8", "mix-blue"]) for (const plate of Object.keys(plates))
+    cases.push({ palette, mode, plate, strength: 1, brightness: 0, mix: true });
+  for (const plate of Object.keys(plates)) cases.push({ palette: "pico8", mode: "mix-bayer4", plate, strength: 0.7, brightness: 0, mix: true });
   const only = q.get("case"), out = [];
   for (const c of cases) {
     const id = `${c.palette}-${c.mode}-${c.plate}-s${c.strength}-b${c.brightness}`;
     if (only && !id.startsWith(only)) continue;
-    const pl = plates[c.plate], want = ditherRef(pl.data, pl.width, pl.height, c);
-    const g = await createGpuDither(host, c, { w: pl.width, h: pl.height });
+    const { mix, ...opts } = c, pl = plates[c.plate], want = ditherRef(pl.data, pl.width, pl.height, opts);
+    const g = await createGpuDither(host, opts, { w: pl.width, h: pl.height });
     g.frame(pl.data); const got = (await g.read()).idx; g.destroy();
     let bad = 0, first = -1;
     for (let i = 0; i < want.length; i++) if (want[i] !== got[i]) { bad++; if (first < 0) first = i; }
-    out.push({ id, mismatched: bad, firstMismatch: first });
+    out.push({ id, mismatched: bad, firstMismatch: first, limit: c.mix ? Math.floor(1e-5 * want.length) : 0 });
   }
   await host.done();
   window.__result = { bounds: { mismatched_pixels: 0 }, cases: out, adapter: host.info, gpuErrors };

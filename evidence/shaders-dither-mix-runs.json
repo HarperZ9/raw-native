@@ -1,0 +1,287 @@
+{
+ "what": "Runs against evidence/shaders-dither-mix-bounds.json",
+ "quality_runs": [
+  {
+   "run": 1,
+   "date": "2026-10-11",
+   "design": "plan by nearest palette colour in OKLab to the colour plus the linear error",
+   "result": "21 of 22 comparisons hold; fails scene-320x180 pico8 (mix 5.006, per-channel 4.793): dark greys drift to dark blue because the nearest pick in OKLab of a clamped target ignores the linear error's hue"
+  },
+  {
+   "run": 2,
+   "date": "2026-10-11",
+   "design": "nearest in linear light",
+   "result": "21 of 22 hold; fails testcard ega (mix 5.364, per-channel 4.124): near-black rounds to all-black, because linear nearest ignores that 1/16 of dark grey is perceptually closer"
+  },
+  {
+   "run": 3,
+   "date": "2026-10-11",
+   "design": "each step adds the entry that brings the plan's linear mean closest to the colour in OKLab (shipped)",
+   "result": {
+    "bounds": "evidence/shaders-dither-mix-bounds.json",
+    "scores": {
+     "scene-320x180 ega": {
+      "bayer4": 9.272,
+      "mix-bayer4": 1.487,
+      "mix-blue": 2.479,
+      "blue": 9.269,
+      "per-channel-bayer4": 6.343,
+      "competitor bayer4-ega": 8.89,
+      "competitor bluenoise-ega": 16.727
+     },
+     "scene-320x180 pico8": {
+      "bayer4": 5.609,
+      "mix-bayer4": 1.996,
+      "mix-blue": 2.563,
+      "blue": 5.631,
+      "per-channel-bayer4": 4.793
+     },
+     "game-320x240 ega": {
+      "bayer4": 9.143,
+      "mix-bayer4": 2.177,
+      "mix-blue": 3.148,
+      "blue": 9.173,
+      "per-channel-bayer4": 8.558,
+      "competitor bayer4-ega": 11.141,
+      "competitor bluenoise-ega": 14.974
+     },
+     "game-320x240 pico8": {
+      "bayer4": 4.847,
+      "mix-bayer4": 1.563,
+      "mix-blue": 2.194,
+      "blue": 4.779,
+      "per-channel-bayer4": 5.673
+     },
+     "testcard-256x224 ega": {
+      "bayer4": 8.607,
+      "mix-bayer4": 3.278,
+      "mix-blue": 4.142,
+      "blue": 8.805,
+      "per-channel-bayer4": 4.124
+     },
+     "testcard-256x224 pico8": {
+      "bayer4": 8.139,
+      "mix-bayer4": 4.111,
+      "mix-blue": 4.935,
+      "blue": 8.231,
+      "per-channel-bayer4": 7.624
+     },
+     "gradient-320x180 ega": {
+      "bayer4": 5.833,
+      "mix-bayer4": 2.425,
+      "mix-blue": 2.914,
+      "blue": 5.894,
+      "per-channel-bayer4": 6.289
+     },
+     "gradient-320x180 pico8": {
+      "bayer4": 6.937,
+      "mix-bayer4": 4.514,
+      "mix-blue": 4.849,
+      "blue": 7.003,
+      "per-channel-bayer4": 7.799
+     },
+     "street-480x300 ega": {
+      "bayer4": 4.338,
+      "mix-bayer4": 1.131,
+      "mix-blue": 1.699,
+      "blue": 4.413,
+      "per-channel-bayer4": 3.995
+     },
+     "street-480x300 pico8": {
+      "bayer4": 2.173,
+      "mix-bayer4": 0.688,
+      "mix-blue": 1.137,
+      "blue": 2.208,
+      "per-channel-bayer4": 2.623
+     }
+    },
+    "comparisons": [
+     {
+      "frame": "scene-320x180",
+      "palette": "ega",
+      "against": "bayer4",
+      "mix": 1.487,
+      "other": 9.272,
+      "pass": true
+     },
+     {
+      "frame": "scene-320x180",
+      "palette": "ega",
+      "against": "per-channel-bayer4",
+      "mix": 1.487,
+      "other": 6.343,
+      "pass": true
+     },
+     {
+      "frame": "scene-320x180",
+      "palette": "ega",
+      "against": "competitor bayer4-ega",
+      "mix": 1.487,
+      "other": 8.89,
+      "pass": true
+     },
+     {
+      "frame": "scene-320x180",
+      "palette": "pico8",
+      "against": "bayer4",
+      "mix": 1.996,
+      "other": 5.609,
+      "pass": true
+     },
+     {
+      "frame": "scene-320x180",
+      "palette": "pico8",
+      "against": "per-channel-bayer4",
+      "mix": 1.996,
+      "other": 4.793,
+      "pass": true
+     },
+     {
+      "frame": "game-320x240",
+      "palette": "ega",
+      "against": "bayer4",
+      "mix": 2.177,
+      "other": 9.143,
+      "pass": true
+     },
+     {
+      "frame": "game-320x240",
+      "palette": "ega",
+      "against": "per-channel-bayer4",
+      "mix": 2.177,
+      "other": 8.558,
+      "pass": true
+     },
+     {
+      "frame": "game-320x240",
+      "palette": "ega",
+      "against": "competitor bayer4-ega",
+      "mix": 2.177,
+      "other": 11.141,
+      "pass": true
+     },
+     {
+      "frame": "game-320x240",
+      "palette": "pico8",
+      "against": "bayer4",
+      "mix": 1.563,
+      "other": 4.847,
+      "pass": true
+     },
+     {
+      "frame": "game-320x240",
+      "palette": "pico8",
+      "against": "per-channel-bayer4",
+      "mix": 1.563,
+      "other": 5.673,
+      "pass": true
+     },
+     {
+      "frame": "testcard-256x224",
+      "palette": "ega",
+      "against": "bayer4",
+      "mix": 3.278,
+      "other": 8.607,
+      "pass": true
+     },
+     {
+      "frame": "testcard-256x224",
+      "palette": "ega",
+      "against": "per-channel-bayer4",
+      "mix": 3.278,
+      "other": 4.124,
+      "pass": true
+     },
+     {
+      "frame": "testcard-256x224",
+      "palette": "pico8",
+      "against": "bayer4",
+      "mix": 4.111,
+      "other": 8.139,
+      "pass": true
+     },
+     {
+      "frame": "testcard-256x224",
+      "palette": "pico8",
+      "against": "per-channel-bayer4",
+      "mix": 4.111,
+      "other": 7.624,
+      "pass": true
+     },
+     {
+      "frame": "gradient-320x180",
+      "palette": "ega",
+      "against": "bayer4",
+      "mix": 2.425,
+      "other": 5.833,
+      "pass": true
+     },
+     {
+      "frame": "gradient-320x180",
+      "palette": "ega",
+      "against": "per-channel-bayer4",
+      "mix": 2.425,
+      "other": 6.289,
+      "pass": true
+     },
+     {
+      "frame": "gradient-320x180",
+      "palette": "pico8",
+      "against": "bayer4",
+      "mix": 4.514,
+      "other": 6.937,
+      "pass": true
+     },
+     {
+      "frame": "gradient-320x180",
+      "palette": "pico8",
+      "against": "per-channel-bayer4",
+      "mix": 4.514,
+      "other": 7.799,
+      "pass": true
+     },
+     {
+      "frame": "street-480x300",
+      "palette": "ega",
+      "against": "bayer4",
+      "mix": 1.131,
+      "other": 4.338,
+      "pass": true
+     },
+     {
+      "frame": "street-480x300",
+      "palette": "ega",
+      "against": "per-channel-bayer4",
+      "mix": 1.131,
+      "other": 3.995,
+      "pass": true
+     },
+     {
+      "frame": "street-480x300",
+      "palette": "pico8",
+      "against": "bayer4",
+      "mix": 0.688,
+      "other": 2.173,
+      "pass": true
+     },
+     {
+      "frame": "street-480x300",
+      "palette": "pico8",
+      "against": "per-channel-bayer4",
+      "mix": 0.688,
+      "other": 2.623,
+      "pass": true
+     }
+    ],
+    "inputsMatchPanel": true,
+    "pass": true
+   }
+  }
+ ],
+ "rejudge": {
+  "key_sha256_before_judging": "ade9fff1905c6b9eb5a76c3e1cf510ccf1b4a845e056399ec7052d6a92985f92",
+  "key_path": "D:/shader-work/judge3-key/key.json (private, not committed)",
+  "images": "D:/shader-work/judge3/p (8 images, trials.json)",
+  "built": "2026-10-11, seed 20261011, 4 pairs, 8 trials"
+ }
+}
