@@ -135,6 +135,12 @@
    "what": "clip box floor 1e-4 on the CPU and in WGSL; test_taa, gpu_post_parity on WARP, post-parity on SwiftShader",
    "result": "pass. CPU: pan 0.4419, ghosting 0.00557, controls fail (0.564; 0.200). TAA GPU parity: 0 pixels off in every frame on WARP and on SwiftShader, worst 1.7e-6 (bound 16 pixels); one-step 0. GTAO and SSR parity pass on all five scenes on both; every control fails. The gate now counts the TAA parity.",
    "evidence": "evidence/m3-taa-cpu-run.json, evidence/m3-post-gpu-d3d12-warp.json, evidence/m3-post-gpu-webgpu-swiftshader.json"
+  },
+  {
+   "run": "ssr-probes-2026-10-11",
+   "date": "2026-10-11",
+   "what": "exploration on raw-hall, not checked runs and no model change: SSR march length, step count and thickness",
+   "result": "Nave: 5,850 of its 6,995 misses had the reference hit beyond the 20-unit march. With an unlimited march and 256 steps, 91.2% correct but 17.8% false hits (bound 10%); thickness 0.05 gives 86.2% and 11.6%; thickness 0.5 gives 90.6% and 24.1%. Gallery: 64.8% to 66.9% correct whatever the parameters, with most wrong answers hits on the wrong surface rather than misses. A single depth layer cannot tell a ray passing behind a column from one striking it. Next candidate, not started: a second depth layer (the first surface's back face, by depth peeling) so a hit requires the ray to lie between the two layers. The bounds stay; both scenes stay open failures."
   }
  ],
  "status": "Open failures, not loosened: GTAO on raw-hall gallery; SSR on raw-hall nave and gallery. Passing since 2026-10-11: TAA RMSE under the pan (0.442 against 0.5) and TAA GPU parity (0 pixels on WARP and SwiftShader). Passing: GTAO on the near test scene and raw-hall nave, SSR on both test-scene views, TAA ghosting, GTAO and SSR GPU parity on WARP and SwiftShader on five scenes, every control."
