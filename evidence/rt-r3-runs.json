@@ -87,6 +87,36 @@
    "checks": "M2 to M7",
    "result": "as on WARP, with the same two open failures; the Mandelbulb comes much closer on the RTX (t within on 52,667 of 52,951 hits, 99.46% against 99.5%; normals 98.2% against 99%) than on WARP (93.3%, 57%), consistent with float32 precision being the limit; the fog march 1.326e-3; M5 2 pixels outside, each explained by a differing shadow sample; M6 0 disagreements; M7 bit-identical; controls fail",
    "evidence": "evidence/rt-r3-sdf-gpu-d3d12-rtx4090.json"
+  },
+  {
+   "run": 11,
+   "when": "2026-10-11 08:04Z",
+   "backend": "D3D12 WARP, commit bf7d31c (tag evidence/rt-bf7d31c; d01fdb2 after the restack)",
+   "checks": "M2 to M7 after method notes 5 and 6",
+   "result": "M4 passes: march 2.92e-5 (bound 1e-3; predicted 2.8e-5), 4-interval control 0.691. M2 bulb still fails, narrowed: t within 52,673 of 52,951 (99.475%, bound 99.5%), normals 51,997 (98.2%, bound 99%); was 93.3% and 57.3%. All other checks and controls as in run 9.",
+   "evidence": "evidence/rt-r3-note56-d3d12-warp.json"
+  },
+  {
+   "run": 12,
+   "when": "2026-10-11 08:05Z (lock held 08:05:53Z to 08:06:02Z)",
+   "backend": "D3D12 on the RTX 4090 under D:/gpu.lock.d, binary at bf7d31c",
+   "checks": "M2 to M7",
+   "result": "M4 passes (2.41e-5). M2 bulb t within 52,679 (99.49%), normals 52,003 (98.21%): still open, now within a few pixels of WARP.",
+   "evidence": "evidence/rt-r3-note56-d3d12-rtx4090.json"
+  },
+  {
+   "run": 13,
+   "when": "2026-10-11 08:25Z",
+   "backend": "WebGPU in Chrome on SwiftShader, --quick (M2 to M5 at 128 x 128), commit a5f8cb3",
+   "checks": "M2 to M7",
+   "result": "M4 passes (2.40e-5). M2 bulb t within 13,180 of 13,240 (99.55%), normals 13,008 (98.25%): fails on normals. A first SwiftShader attempt straddled a branch switch in the worktree and was discarded unread.",
+   "evidence": "evidence/rt-r3-note56-webgpu-swiftshader.json"
+  },
+  {
+   "run": "diagnosis-1",
+   "when": "2026-10-11 08:08Z",
+   "backend": "CPU, float32 replica of the GPU bulb march (scratch harness bulbf.cpp, kept in the engine-rt mission-control folder, gpu/offline)",
+   "result": "With correctly rounded float32 arithmetic the replica gives exactly WARP's run 11 counts (t within 52,673, normals 51,997). The trigonometric estimator in correctly rounded float32 gives 99.475% and 98.18%, so WARP's transcendental functions caused run 9's 93.3% and 57.3%. A float64 estimator inside the float32 march gives 99.49% and 98.25%. The remaining gap is the float32 march (t accumulation, stop test, refinement), not the estimator. M2 on the bulb stays an open failure; a fix would need the march's t and position in higher precision."
   }
  ]
 }
