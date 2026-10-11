@@ -96,6 +96,14 @@
    "checks": "C4, C5, plus the reported fifth mode",
    "result": "pass on the four gated modes (as before method note 1). Fifth mode, not gated: C4 passes; C5 fails (223 of 635, 587 of 1,436 and 4 of 23 slots differ; retro_room UV 1.15x on 4 pixels).",
    "evidence": "evidence/rt-r1-note2-webgpu-swiftshader.json"
+  },
+  {
+   "run": 12,
+   "when": "2026-10-11 08:50Z (lock held 08:50:00Z to 08:50:03Z)",
+   "backend": "D3D12 on the RTX 4090 under D:/gpu.lock.d, binaries at 20e0b89 (method note 2)",
+   "checks": "C4, C5, plus the reported fifth mode",
+   "result": "fail, as run 6 and no worse: gated modes give run 6's counts (335 of 635, 518 of 1,436, 10 of 23 slots differ; clip_stress affine and whole-pixel UV at 59x and 122x; clip_stress affine C4 1 pixel at 1.14x). Fifth mode (not gated) as run 9. The open RTX failure is unchanged; its inferred cause is still approximate fp32 division.",
+   "evidence": "evidence/rt-r1-note2-d3d12-rtx4090.json"
   }
  ]
 }
