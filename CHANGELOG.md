@@ -6,6 +6,15 @@ the day the release was published on GitHub, in UTC.
 
 ## Unreleased
 
+- **Clear coat energy compensation** (roadmap M3, criterion 6, second stage). Light the coat
+  reflects back down to the base is now returned by a reciprocal lobe, on the CPU reference and
+  in `pbr.wgsl`. A white metal under a clear coat stays within 1.05% of a white furnace; it lost
+  up to 23% before. The split-albedo tables moved to a sqrt(mu) view axis, and the anisotropic
+  tables to sqrt(mu) and anisotropy-squared axes; the anisotropic furnace improved from 0.34% to
+  0.27%. GPU material parity on WARP fell from 0.62 to 0.054 of its bound.
+  - Open failure: the check's ceiling, albedo at most 1 + 1e-3, fails on anisotropic bases by up
+    to 2.65e-3. The same base without a coat reaches 1.0027, so the error is the anisotropic
+    table's, passed through the coat.
 - **TAA passes its RMSE and GPU parity bounds** (roadmap M3, criterion 2). Pixels without
   geometry carried no motion, so silhouettes lagged a frame behind in the history under a camera
   pan; each pixel now takes the motion of the nearest surface in its 3 x 3 neighbourhood, as

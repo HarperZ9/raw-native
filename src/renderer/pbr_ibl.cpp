@@ -58,7 +58,11 @@ IblResponse iblResponse(const Material& m, const Tables& t, D3 wo) {
         r.specular = r.specular * keep; r.irradiance = r.irradiance * keep; r.transmission = r.transmission * keep;
         r.coat = rgb(c * (0.04 * ac + bc));
         r.coatRoughness = rc;
-        if (!m.specExact) r.irradiance = r.irradiance + rgb(c * kc * (1.0 - ac - bc));
+        if (!m.specExact) {
+            r.irradiance = r.irradiance + rgb(c * kc * (1.0 - ac - bc));
+            const CoatComp cc = coatComp(m, t, s);   // the compensation lobe's response to a uniform environment
+            r.irradiance = r.irradiance + coatD(cc, t, s, o, mu);
+        }
     }
     return r;
 }

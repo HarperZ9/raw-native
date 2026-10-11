@@ -209,7 +209,7 @@ path, the way the CPU renderer is the oracle for frames.
 
 - **Energy.** GGX with height-correlated Smith visibility, plus Kulla-Conty multiple scattering
   with coloured Fresnel. The tables it reads (split albedo, an anisotropic split albedo in four
-  dimensions, the sheen albedo) are built at start-up by deterministic VNDF sampling and
+  dimensions, the sheen albedo, the coat compensation's tables) are built at start-up by deterministic VNDF sampling and
   quadrature; nothing is copied from another engine's tables.
 - **Layers.** Coat over sheen over base. Each layer weights what is below it by a symmetric
   attenuation, so every term stays reciprocal and no white input reflects more than it receives.
@@ -226,9 +226,15 @@ path, the way the CPU renderer is the oracle for frames.
   - Volume attenuation follows each refracted direction's own path through the thickness.
   - `Material::specExact` keeps the texts' forms as a comparison control
     (`tests/test_pbr_spec.cpp`, `tests/test_pbr_improve.cpp`).
-- **Open:** a white metal under a clear coat still loses up to 23% of its energy, against a
-  2% bound. The tried fixes either gained energy or exposed a 0.4% error in the split-albedo
-  table at grazing views, so they were reverted (`evidence/m3-materials2-runs.json`).
+- **Coat compensation.** Light the clear coat reflects back down to the base is returned by a
+  reciprocal lobe, D(o) D(i) / (pi Dbar), where D is the coat's transmittance times the base's
+  albedo weighted by the coat's reflectance at each reflected direction. That weighted albedo
+  is read from tables of the GGX lobe's energy by reflected-cosine bin (hats on sqrt(mu), with
+  the coat albedo projected onto them), isotropic and anisotropic. A white metal under a coat
+  now stays within 1.05% of a white furnace (was 23%).
+- **Open:** the same check's ceiling, albedo at most 1 + 1e-3, fails on anisotropic bases by
+  up to 2.65e-3. The uncoated anisotropic metal already reaches 1.0027 there (its own bound is
+  2%), so the coat passes the base table's error through (`evidence/m3-materials2-runs.json`).
 - Bounds and every run, failures included: `evidence/m3-materials-*.json` and
   `evidence/m3-materials2-*.json`.
 
