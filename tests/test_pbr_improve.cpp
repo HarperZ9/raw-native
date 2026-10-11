@@ -75,11 +75,14 @@ Vol volume(const Tables& t) {
 }
 struct Coat { double worst{0}, excess{-1}, worstControl{0}; int points{0}; double atMu{0}, atRc{0}, atAn{0}, atR{0}; };
 // White metal, isotropic or anisotropic, under a clear coat: the albedo should stay 1.
-Coat coat(const Tables& t) {
+// stride > 1 keeps every stride-th grid point (both forms of each), so ctest stays short; --json
+// and --strict run the full grid of the bounds file.
+Coat coat(const Tables& t, int stride) {
     struct P { Material m; double mu, az; Rgb a; };
     std::vector<P> ps;
+    int n = 0;
     for (double an : {0.0, 0.3, 0.6, 1.0}) for (double r : {0.2, 0.6, 1.0}) for (double c : {0.5, 1.0}) for (double rc : {0.05, 0.3, 1.0})
-        for (double mu : {0.05, 0.2, 0.5, 1.0}) for (double az : {0.0, 45.0, 90.0}) for (int spec = 0; spec < 2; ++spec) {
+        for (double mu : {0.05, 0.2, 0.5, 1.0}) for (double az : {0.0, 45.0, 90.0}) if (n++ % stride == 0) for (int spec = 0; spec < 2; ++spec) {
             Material m; m.baseColor = {1, 1, 1}; m.roughness = r; m.anisotropy = an; m.clearcoat = c; m.clearcoatRoughness = rc; m.specExact = spec == 1;
             ps.push_back({m, mu, az * kPi / 180.0, {}});
         }
@@ -103,7 +106,7 @@ int main(int argc, char** argv) {
     const Tables t;
     warm();
     const Vol vo = volume(t);
-    const Coat co = coat(t);
+    const Coat co = coat(t, strict ? 1 : 4);
     // The clearcoat bound is a recorded open failure (evidence/m3-materials2-runs.json): --json and
     // --strict gate it, ctest prints it. Its control is always gated.
     if (strict) CHECK(co.worst <= 2e-2 && co.excess <= 1e-3);

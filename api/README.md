@@ -25,7 +25,7 @@ declaration is not caught here.
 
 ## Snapshot 1
 
-`raw/core/api_snapshot.hpp` declares `kApiSnapshot = 1`. The snapshot covers 25 headers: the
+`raw/core/api_snapshot.hpp` declares `kApiSnapshot = 1`. The snapshot covers 25 headers (552 declarations): the
 scene description (`raw/scene/scene.hpp`) and the renderer layer (materials, lighting, shadows,
 GTAO and SSR, TAA, baked lighting, the BVH, rasterization, colour, composite and the GPU
 renderer). It leaves out the GPU check fixtures (`*_parity.hpp`, `*_identity.hpp`,

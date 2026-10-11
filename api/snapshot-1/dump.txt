@@ -312,10 +312,20 @@ raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridAavg2(
 raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridB()const
 raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridB4()const
 raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridBavg2()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridCoef()const
 raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridDom()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridG()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridHA()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridHA4()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridHB()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridHB4()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridHH()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridHbar()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridHm4()const
 raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridSh()const
 raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&rowAavg()const
 raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&rowBavg()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&rowG1()const
 raw/renderer/pbr.hpp | ::raw::pbr::Tables | double A(double mu,double r)const
 raw/renderer/pbr.hpp | ::raw::pbr::Tables | double A4(double mu,double phi,double r,double k)const
 raw/renderer/pbr.hpp | ::raw::pbr::Tables | double Aavg(double r)const
@@ -327,7 +337,25 @@ raw/renderer/pbr.hpp | ::raw::pbr::Tables | double Bavg2(double r,double k)const
 raw/renderer/pbr.hpp | ::raw::pbr::Tables | double Dom(double mu,double r)const
 raw/renderer/pbr.hpp | ::raw::pbr::Tables | double E(double mu,double r)const
 raw/renderer/pbr.hpp | ::raw::pbr::Tables | double Eavg(double r)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double G1(int j)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double GA(int j,double r)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double GA4(int j,double r,double k)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double GB(int j,double r)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double GB4(int j,double r,double k)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double HA(int j,double mu,double r)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double HA4(int j,double mu,double phi,double r,double k)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double HAA(int j,int l,double r)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double HAA4(int j,int l,double r,double k)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double HAbar(int j,double r)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double HAbar4(int j,double r,double k)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double HB(int j,double mu,double r)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double HB4(int j,double mu,double phi,double r,double k)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double HBB(int j,int l,double r)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double HBB4(int j,int l,double r,double k)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double HBbar(int j,double r)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double HBbar4(int j,double r,double k)const
 raw/renderer/pbr.hpp | ::raw::pbr::Tables | double Sh(double mu,double r)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double coef(int j,double rc)const
 raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr double kRoughMax=1.05
 raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr double kThetaPad=0.05
 raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kAnK=12
@@ -337,11 +365,17 @@ raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kAnRough=24
 raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kAnSamples=1<<10
 raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kDomMu=64
 raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kDomRough=64
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kHatMu=32
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kHatRough=32
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kHats=9
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kHm4=kHats*4 + kHats*kHats*2
 raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kRough=128
 raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kSamples=1<<12
 raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kSheenMu=64
 raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kSheenRough=64
 raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kTheta=128
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static double hat(int j,double mu)
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static double hatNode(int j)
 raw/renderer/pbr.hpp | ::raw::pbr::Terms | Rgb coat
 raw/renderer/pbr.hpp | ::raw::pbr::Terms | Rgb smooth
 raw/renderer/pbr.hpp | ::raw::pbr::Terms | Rgb specular
@@ -426,7 +460,9 @@ raw/renderer/shadows.hpp | ::raw::shadows | struct CascadeSet
 raw/renderer/shadows.hpp | ::raw::shadows | struct D3
 raw/renderer/shadows.hpp | ::raw::shadows | struct LookupParams
 raw/renderer/shadows.hpp | ::raw::shadows | struct ShadowMap
+raw/renderer/shadows.hpp | ::raw::shadows | void enclose(CascadeSet&cs,const Scene&scene)
 raw/renderer/shadows.hpp | ::raw::shadows::Cascade | D3 centre
+raw/renderer/shadows.hpp | ::raw::shadows::Cascade | double fitRange{0}
 raw/renderer/shadows.hpp | ::raw::shadows::Cascade | double radius{1}
 raw/renderer/shadows.hpp | ::raw::shadows::Cascade | double split{0}
 raw/renderer/shadows.hpp | ::raw::shadows::Cascade | double zFar{1}
@@ -465,6 +501,7 @@ raw/renderer/taa.hpp | ::raw::taa::Frame | std::vector<float>prev
 raw/renderer/taa.hpp | ::raw::taa::Frame | std::vector<float>rgb
 raw/renderer/taa.hpp | ::raw::taa::Options | bool clip{true}
 raw/renderer/taa.hpp | ::raw::taa::Options | bool depthTest{true}
+raw/renderer/taa.hpp | ::raw::taa::Options | bool dilate{true}
 raw/renderer/threads.hpp | ::raw::threads | bool render(rhi::Device&dev,const Settings&s,Result&out,std::string&err)
 raw/renderer/threads.hpp | ::raw::threads | inline constexpr int kWorlds=15
 raw/renderer/threads.hpp | ::raw::threads | struct Result
