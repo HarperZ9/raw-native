@@ -133,7 +133,7 @@ In the browser (`scripts/sound_live_check.py`, Chrome 154 headless, OfflineAudio
 | Film 1, 177.5 s | whole | 1 | 99.995% | 114.2 dB |
 | Film 1 | seek to 90 s, 20 s | 1 | 99.995% | 114.7 dB |
 
-The worklet rendered the 177.5 s film in 5.5 s of wall time, about 32 times real time, so live playback has wide headroom. CI runs the fixture check in the media-smoke job.
+The worklet rendered the 177.5 s film in 5.5 s of wall time, about 32 times real time, so live playback has wide headroom. CI runs the fixture check in the media-shaders job (part of the media-smoke group).
 
 Film 1 mix, this engine's meter and ffmpeg 7.1 `ebur128=peak=true`:
 
