@@ -37,11 +37,12 @@ class Handler(http.server.SimpleHTTPRequestHandler):
 
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--command", choices=["texture-identity", "pbr-parity", "lighting-parity", "raster-identity", "shadow-parity", "post-parity", "swr-parity", "rt-bvh-parity", "rt-pt-parity", "rt-hybrid-parity"], default="texture-identity")
+    ap.add_argument("--command", choices=["texture-identity", "pbr-parity", "lighting-parity", "raster-identity", "shadow-parity", "post-parity", "swr-parity", "rt-bvh-parity", "rt-pt-parity", "rt-hybrid-parity", "sdf-parity"], default="texture-identity")
     ap.add_argument("--dir", default="build-wasm-gpu")
     ap.add_argument("--args", default="", help="extra CLI flags, comma separated (diagnosis)")
     ap.add_argument("--adapter", choices=["gpu", "swiftshader"], default="swiftshader")
     ap.add_argument("--out")
+    ap.add_argument("--timeout", type=int, default=300, help="seconds the page may take (a time budget, not a check bound)")
     a = ap.parse_args()
     sha = lambda p: hashlib.sha256((ROOT / a.dir / p).read_bytes()).hexdigest()
     m, w = sha("raw-native-gpu.mjs"), sha("raw-native-gpu.wasm")
@@ -58,7 +59,7 @@ def main() -> int:
             logs = []
             page.on("console", lambda msg: logs.append(msg.text))
             page.goto(f"http://localhost:{srv.server_address[1]}/web/test/texture-identity.html?dir={a.dir}&m={m}&w={w}&cmd={a.command}&args={a.args}")
-            page.wait_for_function("window.__result !== undefined", timeout=300000)
+            page.wait_for_function("window.__result !== undefined", timeout=a.timeout * 1000)
             res = page.evaluate("window.__result")
             b.close()
     finally:

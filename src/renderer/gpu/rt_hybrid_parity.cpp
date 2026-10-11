@@ -1,6 +1,7 @@
 // H1 and H2 of evidence/rt-r2-bounds.json: the hybrid rays on the GPU against CPU rays from the
 // CPU rasterizer's own positions (addendum 2).
 #include "raw/renderer/rt_hybrid.hpp"
+#include "json_text.hpp"
 #include "raw/renderer/rt_scenes.hpp"
 #include "raw/renderer/swr_scenes.hpp"
 #include "raw/core/parallel.hpp"
@@ -115,7 +116,7 @@ std::string hyJson(const char* scene, const char* what, const HyCounts& k, bool 
 
 std::string RtHybridParity::json() const {
     return "{\n \"schema\": \"raw-native.evidence/1\",\n \"criterion\": \"RT stage R2, hybrid ray-traced shadows and reflections over the R1 visibility buffer: H1, H2 (evidence/rt-r2-bounds.json)\",\n"
-           " \"backend\": \"" + backend + "\",\n \"adapter\": \"" + adapter + "\",\n \"error\": \"" + error + "\",\n \"pass\": " + (pass() ? "true" : "false") +
+           " \"backend\": \"" + backend + "\",\n \"adapter\": \"" + jsonText(adapter) + "\",\n \"error\": \"" + jsonText(error) + "\",\n \"pass\": " + (pass() ? "true" : "false") +
            ",\n \"results\": [\n" + results + "\n ]\n}\n";
 }
 
