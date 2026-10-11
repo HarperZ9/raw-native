@@ -90,6 +90,13 @@
    "what": "test_pbr_energy --full, test_pbr_reciprocity, test_pbr_spec, test_lighting --full, ctest 53 of 53, and the material and lighting GPU parity on D3D12 WARP and WebGPU SwiftShader",
    "result": "pass. furnace_anisotropic worst 2.69e-3 (bound 2e-2); conservation worst 3.5e-4; reciprocity 3.75e-14 with the lobe in. GPU material parity: WARP 0.054 of the bound (was 0.62), SwiftShader 0.196; lighting shading WARP 0.47, SwiftShader 0.37. Cost: test_pbr_improve takes about 36 s alone and ctest about 48 s with 8 jobs (18 s before).",
    "evidence": "evidence/m3-materials2-gpu.json"
+  },
+  {
+   "run": "rtx-r3",
+   "date": "2026-10-11",
+   "what": "gpu_pbr_parity and gpu_lighting_parity on the RTX 4090 under the GPU lock (04:56:37Z to 04:56:42Z), pinned 82e8d81",
+   "result": "pass: material parity 0.054 of the bound, 0 values outside, control fails; lighting shading 0.36, prefilter 0.0035, clusters 0 misses off the boundary.",
+   "evidence": "evidence/m3-materials2-gpu.json"
   }
  ],
  "status": "Passing: iridescence against the exact polarized reference (0.0185) and the volume path length. Clearcoat energy: |albedo - 1| passes at 0.0105 (bound 0.02, was 0.230); open failure on the excess, albedo up to 1.00265 against 1 + 1e-3, inherited from the uncoated anisotropic base (1.00269), not loosened."
