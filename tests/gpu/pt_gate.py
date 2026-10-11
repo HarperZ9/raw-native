@@ -2,10 +2,11 @@
 """Gate the path tracer's GPU checks (evidence/rt-r2-bounds.json, P1 to P4) from the JSON of
 `raw_native_cli rt-pt-parity`.
 
-P4's albedo and depth parts are a recorded open failure (evidence/rt-r2-runs.json, runs 8 to
-10: the R1 reference's vertex snapping, not the path tracer, departs from float64 there).
-This gate prints them and gates everything else: P1 within and its control outside, P2 within
-and its control outside, P3, and P4's triangles and normals.
+P4 runs R1 with its snap correction (evidence/rt-r2-bounds.json, addenda 3 and 4). Its one
+remaining albedo pixel on iso_street is a recorded open failure (evidence/rt-r2-runs.json, run 17:
+float64 agrees with R1 there, not the path tracer); the gate prints it and allows at most that one
+pixel. Everything else is gated: P1 within and its control outside, P2 within and its control
+outside, P3, and P4's triangles, normals, depth, and albedo on retro_room.
 
     python tests/gpu/pt_gate.py result.json
 """
@@ -33,9 +34,11 @@ def main(path):
             if not r["pass"]:
                 bad.append(r)
         elif c == "P4":
-            if r["triangle_differences"] != 0 or r["normal_over_1e-5"] != 0:
+            allowed = 1 if r["scene"] == "iso_street" else 0
+            if (r["triangle_differences"] != 0 or r["normal_over_1e-5"] != 0 or r["depth_over_1e-4"] != 0
+                    or r["albedo_differences"] > allowed):
                 bad.append(r)
-            print(f"P4 {r['scene']}: open failure, albedo {r['albedo_differences']} pixels, depth {r['depth_over_1e-4']} pixels;"
+            print(f"P4 {r['scene']}: albedo {r['albedo_differences']} pixels (open failure allows {allowed}), depth {r['depth_over_1e-4']} pixels;"
                   f" float64 sides with the path tracer on {r['diagnosis_albedo_failures_matching_float64']['path_tracer']} albedo pixels")
     for r in bad:
         print("FAILED:", json.dumps(r))
