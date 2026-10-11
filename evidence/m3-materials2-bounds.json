@@ -38,5 +38,11 @@
   "gpu": "pbr.wgsl gets the same lobe and tables; the GPU material parity bound is unchanged.",
   "image_lighting": "iblResponse adds D(mu_o) to the irradiance weight, which is the lobe's response to a uniform environment.",
   "not_covered": "Sheen between coat and base, iridescence and transmission do not enter Q; the bound tests a white metal base only. Conservation (test_pbr_energy, albedo at most 1 + 1e-3 for every family) still applies to every family."
+ },
+ "method_note_2_2026_10_11": {
+  "written": "2026-10-11, after runs clearcoat-5 and clearcoat-6 (recorded in evidence/m3-materials2-runs.json) and before the change below runs",
+  "finding": "With the compensation lobe and projected hat coefficients, every isotropic point passes (albedo 0.9948 to 1.0001). The anisotropic points exceed 1 + 1e-3 by up to 3.1e-3. The same white anisotropic metal without a coat already reaches 1.0033: the coat passes the base's own furnace error through. A quadrature probe puts that error in the anisotropic split-albedo table A4 + B4 itself: -0.003 at normal view for anisotropy 0.6 (linear interpolation in k of a quantity that depends on k^2) and +0.018 at view cosine 0.05 across the anisotropy direction (the theta axis is coarse at grazing).",
+  "change": "The anisotropic tables (A4, B4 and the hat tables HA4, HB4 on the same grid) change two axes: view u = sqrt(mu) in place of theta, and anisotropy k^2 in place of k. Grid sizes, sample counts and every bound are unchanged. This departs from method note 1, which kept the anisotropic axes; recorded here before the run.",
+  "bounds": "Unchanged: clearcoat_energy |albedo - 1| <= 2e-2 and albedo <= 1 + 1e-3; the anisotropic furnace in test_pbr_energy keeps its 2e-2."
  }
 }
