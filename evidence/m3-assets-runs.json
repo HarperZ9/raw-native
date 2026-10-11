@@ -29,6 +29,14 @@
    "what": "the drapery made two-sided (a 4 mm back sheet), after the GTAO check viewed it from behind and its single sheet's normal faced away from the camera",
    "result": "pass on MSVC: raw-hall 586,424 triangles (196,608 in the drapery); everything else as before; hashes rewritten.",
    "evidence": "evidence/m3-assets.json"
+  },
+  {
+   "run": "assets-5",
+   "date": "2026-10-11",
+   "what": "method note 1 of 2026-10-11: outer and end walls rise to 14.3 m and stand on 0.1 m footings; the coplanar-overlap scan added",
+   "result": "pass on MSVC: raw-hall 586,424 triangles, extent 37.2 x 14.4 x 16.8 m; same-facing coplanar overlaps 0 (hero 0); opposite-facing contacts 8,464 reported (faces where solids touch). The scan's first run on the 14.3 m walls found 240 more pairs: the end columns' bases shared the end walls' bottom plane at y = 0; the footings fixed that. Control (a doubled floor tile) finds 12 overlaps. Hashes rewritten.",
+   "deviation_from_note": "The note said opposite-facing overlaps would be counted except where hidden inside another box. The scan counts every opposite-facing coplanar pair as a contact face and reports the number without gating it, because a face pressed against another solid's face is seen by no camera outside the solids.",
+   "evidence": "evidence/m3-assets.json"
   }
  ]
 }

@@ -1,0 +1,17 @@
+{
+ "check": "m3 rhi3 raster identity",
+ "backend": "d3d12",
+ "adapter": "NVIDIA GeForce RTX 4090",
+ "error": "",
+ "formats": [{"format": "rgba8unorm", "texels": 12288, "mismatches": 0}, {"format": "rgba16float", "texels": 12288, "mismatches": 0}, {"format": "rgba32float", "texels": 12288, "mismatches": 0}, {"format": "r32float", "texels": 3072, "mismatches": 0}],
+ "depth_order_equal": true,
+ "depth_control_differs": true,
+ "subpixel_bits": 8,
+ "gbuffer": [
+  {"scene": "built-in test scene", "size": 256, "same_triangle_pixels": 37996, "differing_pixels": 0, "explained_by_edge_or_tie": 0, "position_ratio": 0.0017, "normal_ratio": 0.0060, "distance_ratio": 0.0081, "albedo_diffs": 0, "pass": true, "unexplained": []},
+  {"scene": "raw-hero", "size": 256, "same_triangle_pixels": 36655, "differing_pixels": 1, "explained_by_edge_or_tie": 1, "position_ratio": 0.0305, "normal_ratio": 0.0182, "distance_ratio": 0.0774, "albedo_diffs": 0, "pass": true, "unexplained": []},
+  {"scene": "raw-hall nave", "size": 256, "same_triangle_pixels": 58032, "differing_pixels": 40, "explained_by_edge_or_tie": 40, "position_ratio": 0.0561, "normal_ratio": 1.2583, "distance_ratio": 0.3011, "albedo_diffs": 0, "pass": false, "unexplained": []}
+ ],
+ "control_moved_triangle_fails": true,
+ "pass": false
+}
