@@ -42,6 +42,24 @@ const OFF_SENS: u32 = 189248u;
 const SENS_N: u32 = 4001u;
 const SENS_STEP: f32 = 10.0;
 const N_DOM: u32 = 64u;
+// The coat compensation's tables (raw::pbr::Tables, method note 1 of 2026-10-11), after the
+// sensitivity table: isotropic hats [r][j][u] and their means, the projection coefficients
+// [rc][j], the anisotropic hats [j][k][r][phi][u] and their means [k][r][HM4].
+const HATS: u32 = 9u;
+const H_MU: u32 = 32u;
+const H_ROUGH: u32 = 32u;
+const AN_ALL: u32 = 73728u;
+const HM4: u32 = 198u;
+const OFF_HA: u32 = 213254u;
+const OFF_HB: u32 = 222470u;
+const OFF_HBAR: u32 = 231686u;
+const OFF_HH: u32 = 232262u;
+const OFF_G: u32 = 237446u;
+const OFF_G1: u32 = 238022u;
+const OFF_COEF: u32 = 238031u;
+const OFF_HA4: u32 = 238319u;
+const OFF_HB4: u32 = 901871u;
+const OFF_HM4: u32 = 1565423u;
 // A case: 44 floats. Material fields in pbr.hpp order, then wo and wi; the anisotropy
 // rotation arrives as its cosine (27) and sine (35), computed on the host.
 const CASE: u32 = 44u;
@@ -127,6 +145,14 @@ fn read2(off: u32, nt: u32, nr: u32, mu: f32, r: f32) -> f32 {
     let a: u32 = off + y0 * nt + x0;
     return (T[a] * (1.0 - fx) + T[a + 1u] * fx) * (1.0 - fy) + (T[a + nt] * (1.0 - fx) + T[a + nt + 1u] * fx) * fy;
 }
+// The A and B tables' view axis is u = sqrt(mu) (raw::pbr::Tables::A, since 2026-10-11).
+fn readu(off: u32, nt: u32, nr: u32, mu: f32, r: f32) -> f32 {
+    var x0: u32 = 0u; var fx: f32 = 0.0; var y0: u32 = 0u; var fy: f32 = 0.0;
+    locate(sqrt(clamp(mu, 0.0, 1.0)) * f32(nt - 1u), nt, &x0, &fx);
+    locate(r / ROUGH_MAX * f32(nr - 1u), nr, &y0, &fy);
+    let a: u32 = off + y0 * nt + x0;
+    return (T[a] * (1.0 - fx) + T[a + 1u] * fx) * (1.0 - fy) + (T[a + nt] * (1.0 - fx) + T[a + nt + 1u] * fx) * fy;
+}
 fn read1(off: u32, n: u32, r: f32) -> f32 {
     var y0: u32 = 0u; var f: f32 = 0.0;
     locate(r / ROUGH_MAX * f32(n - 1u), n, &y0, &f);
@@ -138,10 +164,10 @@ fn read4(off: u32, mu: f32, phi_in: f32, r: f32, k: f32) -> f32 {
     if (ph > 0.5 * PI) { ph = PI - ph; }
     var i0: u32 = 0u; var f0: f32 = 0.0; var i1: u32 = 0u; var f1: f32 = 0.0;
     var i2: u32 = 0u; var f2: f32 = 0.0; var i3: u32 = 0u; var f3: f32 = 0.0;
-    locate(theta_x(mu, AN_MU), AN_MU, &i0, &f0);
+    locate(sqrt(clamp(mu, 0.0, 1.0)) * f32(AN_MU - 1u), AN_MU, &i0, &f0);
     locate(ph / (0.5 * PI) * f32(AN_PHI - 1u), AN_PHI, &i1, &f1);
     locate(r / ROUGH_MAX * f32(AN_ROUGH - 1u), AN_ROUGH, &i2, &f2);
-    locate(k * f32(AN_K - 1u), AN_K, &i3, &f3);
+    locate(k * k * f32(AN_K - 1u), AN_K, &i3, &f3);
     var s: f32 = 0.0;
     for (var c: u32 = 0u; c < 16u; c++) {
         let b0: u32 = c & 1u; let b1: u32 = (c >> 1u) & 1u; let b2: u32 = (c >> 2u) & 1u; let b3: u32 = (c >> 3u) & 1u;
@@ -153,7 +179,7 @@ fn read4(off: u32, mu: f32, phi_in: f32, r: f32, k: f32) -> f32 {
 fn read2rk(off: u32, r: f32, k: f32) -> f32 {
     var ir: u32 = 0u; var fr: f32 = 0.0; var ik: u32 = 0u; var fk: f32 = 0.0;
     locate(r / ROUGH_MAX * f32(AN_ROUGH - 1u), AN_ROUGH, &ir, &fr);
-    locate(k * f32(AN_K - 1u), AN_K, &ik, &fk);
+    locate(k * k * f32(AN_K - 1u), AN_K, &ik, &fk);
     let a: u32 = off + ik * AN_ROUGH + ir;
     return (T[a] * (1.0 - fr) + T[a + 1u] * fr) * (1.0 - fk) + (T[a + AN_ROUGH] * (1.0 - fr) + T[a + AN_ROUGH + 1u] * fr) * fk;
 }
@@ -165,7 +191,7 @@ fn read_sh(mu: f32, r: f32) -> f32 {
     let a: u32 = OFF_SH + y0 * N_SH + x0;
     return (T[a] * (1.0 - fx) + T[a + 1u] * fx) * (1.0 - fy) + (T[a + N_SH] * (1.0 - fx) + T[a + N_SH + 1u] * fx) * fy;
 }
-fn tab_e(mu: f32, r: f32) -> f32 { return read2(OFF_A, N_THETA, N_ROUGH, mu, r) + read2(OFF_B, N_THETA, N_ROUGH, mu, r); }
+fn tab_e(mu: f32, r: f32) -> f32 { return readu(OFF_A, N_THETA, N_ROUGH, mu, r) + readu(OFF_B, N_THETA, N_ROUGH, mu, r); }
 fn tab_eavg(r: f32) -> f32 { return read1(OFF_AAVG, N_ROUGH, r) + read1(OFF_BAVG, N_ROUGH, r); }
 
 // Iridescence (Belcour and Barla 2017), eight harmonics as raw::pbr::iridescentFresnel.
@@ -275,7 +301,7 @@ fn split_ab(w: vec3f, r: f32, k: f32) -> vec2f {
         let ph: f32 = atan2(abs(w.y), abs(w.x));
         return vec2f(read4(OFF_A4, mu, ph, r, k), read4(OFF_B4, mu, ph, r, k));
     }
-    return vec2f(read2(OFF_A, N_THETA, N_ROUGH, mu, r), read2(OFF_B, N_THETA, N_ROUGH, mu, r));
+    return vec2f(readu(OFF_A, N_THETA, N_ROUGH, mu, r), readu(OFF_B, N_THETA, N_ROUGH, mu, r));
 }
 fn es_at(ab: vec2f, f0d: vec3f, f90: f32, kd: vec3f) -> vec3f {
     return f0d * ab.x + vec3f(f90 * ab.y) + (1.0 - ab.x - ab.y) * kd;
@@ -285,6 +311,124 @@ fn fresnel3(f0: vec3f, f90: f32, voh: f32, b: u32) -> vec3f {
     let iri: f32 = C[b + 28u];
     if (iri <= 0.0) { return f; }
     return f * (1.0 - iri) + irid_f(C[b + 29u], C[b + 30u], f0, voh, b) * iri;
+}
+// The coat compensation (raw::pbr::detail::coatComp and coatD; method note 1 of 2026-10-11):
+// the lobe D(o) D(i) / (pi Dbar) returns what the coat reflects back down to the base.
+fn hat_iso(off: u32, j: u32, mu: f32, r: f32) -> f32 {
+    var x0: u32 = 0u; var fx: f32 = 0.0; var y0: u32 = 0u; var fy: f32 = 0.0;
+    locate(sqrt(clamp(mu, 0.0, 1.0)) * f32(H_MU - 1u), H_MU, &x0, &fx);
+    locate(r / ROUGH_MAX * f32(H_ROUGH - 1u), H_ROUGH, &y0, &fy);
+    let a: u32 = off + (y0 * HATS + j) * H_MU + x0;
+    let nx: u32 = HATS * H_MU;
+    return (T[a] * (1.0 - fx) + T[a + 1u] * fx) * (1.0 - fy) + (T[a + nx] * (1.0 - fx) + T[a + nx + 1u] * fx) * fy;
+}
+fn row_r(off: u32, stride: u32, at: u32, r: f32) -> f32 {
+    var y0: u32 = 0u; var f: f32 = 0.0;
+    locate(r / ROUGH_MAX * f32(H_ROUGH - 1u), H_ROUGH, &y0, &f);
+    return T[off + y0 * stride + at] * (1.0 - f) + T[off + (y0 + 1u) * stride + at] * f;
+}
+fn row_rk(at: u32, r: f32, k: f32) -> f32 {
+    var ir: u32 = 0u; var fr: f32 = 0.0; var ik: u32 = 0u; var fk: f32 = 0.0;
+    locate(r / ROUGH_MAX * f32(AN_ROUGH - 1u), AN_ROUGH, &ir, &fr);
+    locate(k * k * f32(AN_K - 1u), AN_K, &ik, &fk);
+    let a: u32 = OFF_HM4 + (ik * AN_ROUGH + ir) * HM4 + at;
+    let dk: u32 = AN_ROUGH * HM4;
+    return (T[a] * (1.0 - fr) + T[a + HM4] * fr) * (1.0 - fk) + (T[a + dk] * (1.0 - fr) + T[a + dk + HM4] * fr) * fk;
+}
+fn coat_alb(mu: f32, rc: f32) -> f32 {
+    let kc: f32 = kms(0.04 + 0.96 / 21.0, tab_eavg(rc));
+    return 0.04 * readu(OFF_A, N_THETA, N_ROUGH, mu, rc) + readu(OFF_B, N_THETA, N_ROUGH, mu, rc) + (1.0 - tab_e(mu, rc)) * kc;
+}
+// The coat albedo's hat coefficients against 1, A and B: (sum c_j G1_j, sum c_j GA_j, sum c_j GB_j).
+fn coat_sums(rr: f32, ak: f32, rc: f32) -> vec3f {
+    var s: vec3f = vec3f(0.0);
+    for (var j: u32 = 0u; j < HATS; j++) {
+        let cj: f32 = row_r(OFF_COEF, HATS, j, rc);
+        let ga: f32 = select(row_r(OFF_G, HATS * 2u, j * 2u, rr), row_rk(HATS * 2u + j * 2u, rr, ak), ak > 0.0);
+        let gb: f32 = select(row_r(OFF_G, HATS * 2u, j * 2u + 1u, rr), row_rk(HATS * 2u + j * 2u + 1u, rr, ak), ak > 0.0);
+        s = s + cj * vec3f(T[OFF_G1 + j], ga, gb);
+    }
+    return s;
+}
+// D(w) for a base-frame direction w whose cosine against the coat normal is mu_c.
+fn coat_dir(b: u32, w: vec3f, mu_c: f32, rr: f32, ak: f32, ebar: f32, f0d: vec3f, f90: f32, kd: vec3f, km: vec3f, es_avg: vec3f) -> vec3f {
+    let c: f32 = clamp(C[b + 10u], 0.0, 1.0);
+    let rc: f32 = clamp(C[b + 11u], MIN_ROUGH, 1.0);
+    let base: vec3f = cv3(b, 0u);
+    let mt: f32 = clamp(C[b + 3u], 0.0, 1.0);
+    let tr: f32 = clamp(C[b + 19u], 0.0, 1.0);
+    let mu: f32 = abs(w.z);
+    let ph: f32 = atan2(abs(w.y), abs(w.x));
+    var ha: f32 = 0.0;
+    var hb: f32 = 0.0;
+    for (var j: u32 = 0u; j < HATS; j++) {
+        let cj: f32 = row_r(OFF_COEF, HATS, j, rc);
+        if (ak > 0.0) {
+            ha = ha + cj * read4(OFF_HA4 + j * AN_ALL, mu, ph, rr, ak);
+            hb = hb + cj * read4(OFF_HB4 + j * AN_ALL, mu, ph, rr, ak);
+        } else {
+            ha = ha + cj * hat_iso(OFF_HA, j, mu, rr);
+            hb = hb + cj * hat_iso(OFF_HB, j, mu, rr);
+        }
+    }
+    let sums: vec3f = coat_sums(rr, ak, rc);
+    let sms: f32 = sums.x - sums.y - sums.z;
+    let dk: vec3f = base * ((1.0 - mt) * (1.0 - tr)) / max(vec3f(1.0) - es_avg, vec3f(1e-12));
+    let sd: vec3f = vec3f(sums.x) - f0d * sums.y - vec3f(f90 * sums.z) - kd * sms;
+    let ab: vec2f = split_ab(w, rr, ak);
+    let msw: f32 = (1.0 - ab.x - ab.y) / max(1.0 - ebar, 1e-12) * sms;
+    let es: vec3f = es_at(ab, f0d, f90, kd);
+    let f0s: vec3f = base * mt + f0d * (1.0 - mt);
+    let f90s: f32 = mt + f90 * (1.0 - mt);
+    let q: vec3f = f0s * ha + vec3f(f90s * hb) + (km * mt + kd * (1.0 - mt)) * msw + dk * (vec3f(1.0) - es) * sd;
+    let sh: f32 = pmax3(cv3(b, 15u));
+    let keep: f32 = select(1.0, 1.0 - sh * read_sh(mu, C[b + 18u]), sh > 0.0);
+    return c * (1.0 - c * coat_alb(max(mu_c, 0.0), rc)) * keep * max(q, vec3f(0.0));
+}
+// Dbar = c (Qbar - c (E_c Q)bar), from the tables' means.
+fn coat_dbar(b: u32, rr: f32, ak: f32, ebar: f32, f0d: vec3f, f90: f32, kd: vec3f, km: vec3f, es_avg: vec3f) -> vec3f {
+    let c: f32 = clamp(C[b + 10u], 0.0, 1.0);
+    let rc: f32 = clamp(C[b + 11u], MIN_ROUGH, 1.0);
+    let base: vec3f = cv3(b, 0u);
+    let mt: f32 = clamp(C[b + 3u], 0.0, 1.0);
+    let tr: f32 = clamp(C[b + 19u], 0.0, 1.0);
+    var qa: f32 = 0.0;
+    var qb: f32 = 0.0;
+    var qqa: f32 = 0.0;
+    var qqb: f32 = 0.0;
+    for (var j: u32 = 0u; j < HATS; j++) {
+        let cj: f32 = row_r(OFF_COEF, HATS, j, rc);
+        qa = qa + cj * select(row_r(OFF_HBAR, HATS * 2u, j * 2u, rr), row_rk(j * 2u, rr, ak), ak > 0.0);
+        qb = qb + cj * select(row_r(OFF_HBAR, HATS * 2u, j * 2u + 1u, rr), row_rk(j * 2u + 1u, rr, ak), ak > 0.0);
+        let l0: u32 = select(j - 1u, 0u, j == 0u);
+        let l1: u32 = min(j + 1u, HATS - 1u);
+        for (var l: u32 = l0; l <= l1; l++) {
+            let cl: f32 = row_r(OFF_COEF, HATS, l, rc);
+            let at: u32 = (j * HATS + l) * 2u;
+            qqa = qqa + cj * cl * select(row_r(OFF_HH, HATS * HATS * 2u, at, rr), row_rk(HATS * 4u + at, rr, ak), ak > 0.0);
+            qqb = qqb + cj * cl * select(row_r(OFF_HH, HATS * HATS * 2u, at + 1u, rr), row_rk(HATS * 4u + at + 1u, rr, ak), ak > 0.0);
+        }
+    }
+    let sums: vec3f = coat_sums(rr, ak, rc);
+    let sms: f32 = sums.x - sums.y - sums.z;
+    let dk: vec3f = base * ((1.0 - mt) * (1.0 - tr)) / max(vec3f(1.0) - es_avg, vec3f(1e-12));
+    let sd: vec3f = vec3f(sums.x) - f0d * sums.y - vec3f(f90 * sums.z) - kd * sms;
+    let f0s: vec3f = base * mt + f0d * (1.0 - mt);
+    let f90s: f32 = mt + f90 * (1.0 - mt);
+    let kmt: vec3f = km * mt + kd * (1.0 - mt);
+    let qbar: vec3f = f0s * qa + vec3f(f90s * qb) + kmt * sms + dk * (vec3f(1.0) - es_avg) * sd;
+    let eq: vec3f = f0s * qqa + vec3f(f90s * qqb) + kmt * (sms * sms / max(1.0 - ebar, 1e-12)) + dk * sd * sd;
+    return c * (qbar - c * eq);
+}
+// The compensation lobe for directions o and i in the base frame (wo and wi in the shading frame).
+fn coat_lobe(b: u32, wo: vec3f, wi: vec3f, o: vec3f, i: vec3f, rr: f32, ak: f32, ebar: f32, f0d: vec3f, f90: f32, kd: vec3f, km: vec3f, es_avg: vec3f) -> vec3f {
+    if (C[b + 10u] <= 0.0 || spec_exact(b) || wi.z <= 0.0) { return vec3f(0.0); }
+    let nc: vec3f = pnorm(cv3(b, 12u));
+    let d_o: vec3f = coat_dir(b, o, max(pdot(nc, wo), 0.0), rr, ak, ebar, f0d, f90, kd, km, es_avg);
+    let d_i: vec3f = coat_dir(b, i, max(pdot(nc, wi), 0.0), rr, ak, ebar, f0d, f90, kd, km, es_avg);
+    let db: vec3f = coat_dbar(b, rr, ak, ebar, f0d, f90, kd, km, es_avg);
+    let r: vec3f = d_o * d_i / (PI * max(db, vec3f(1e-12)));
+    return vec3f(select(0.0, r.x, db.x > 1e-12), select(0.0, r.y, db.y > 1e-12), select(0.0, r.z, db.z > 1e-12));
 }
 // Sheen and clearcoat over the base result fb (raw::pbr::evalTerms).
 fn layers(b: u32, wo: vec3f, wi: vec3f, fb: vec3f, ms_on: f32) -> vec3f {
@@ -307,8 +451,8 @@ fn layers(b: u32, wo: vec3f, wi: vec3f, fb: vec3f, ms_on: f32) -> vec3f {
     let co: f32 = max(mo, 0.0);
     let ci: f32 = select(abs(mi), max(mi, 0.0), wi.z > 0.0);
     let kc: f32 = kms(0.04 + 0.96 / 21.0, tab_eavg(rc));
-    let eco: f32 = 0.04 * read2(OFF_A, N_THETA, N_ROUGH, co, rc) + read2(OFF_B, N_THETA, N_ROUGH, co, rc) + (1.0 - tab_e(co, rc)) * kc;
-    let eci: f32 = 0.04 * read2(OFF_A, N_THETA, N_ROUGH, ci, rc) + read2(OFF_B, N_THETA, N_ROUGH, ci, rc) + (1.0 - tab_e(ci, rc)) * kc;
+    let eco: f32 = 0.04 * readu(OFF_A, N_THETA, N_ROUGH, co, rc) + readu(OFF_B, N_THETA, N_ROUGH, co, rc) + (1.0 - tab_e(co, rc)) * kc;
+    let eci: f32 = 0.04 * readu(OFF_A, N_THETA, N_ROUGH, ci, rc) + readu(OFF_B, N_THETA, N_ROUGH, ci, rc) + (1.0 - tab_e(ci, rc)) * kc;
     let fr_v: f32 = schlick(0.04, 1.0, co);
     f = f * select((1.0 - c * eco) * (1.0 - c * eci), 1.0 - c * fr_v, spec_exact(b));
     if (mo > 0.0 && mi > 0.0 && wi.z > 0.0) {
@@ -390,7 +534,7 @@ fn eval_case(b: u32, wo: vec3f, wi: vec3f) -> vec3f {
             f = base * att * wt * (tr * (1.0 - mt));
         }
     }
-    return layers(b, wo, wi, f, ms_on);
+    return layers(b, wo, wi, f, ms_on) + coat_lobe(b, wo, wi, o, i, rr, ak, ebar, f0d, f90, kd, km, es_avg) * ms_on;
 }
 
 //@pass pbr_eval
@@ -570,13 +714,17 @@ fn ibl(b: u32, wo: vec3f, n: vec3f, t: vec3f, v: vec3f) -> vec3f {
     if (c > 0.0) {
         let mu: f32 = max(dot(pnorm(cv3(b, 12u)), wo), 0.0);
         let kc: f32 = kms(0.04 + 0.96 / 21.0, tab_eavg(rc));
-        let ac: f32 = read2(OFF_A, N_THETA, N_ROUGH, mu, rc);
-        let bc: f32 = read2(OFF_B, N_THETA, N_ROUGH, mu, rc);
+        let ac: f32 = readu(OFF_A, N_THETA, N_ROUGH, mu, rc);
+        let bc: f32 = readu(OFF_B, N_THETA, N_ROUGH, mu, rc);
         let ec: f32 = 0.04 * ac + bc + (1.0 - ac - bc) * kc;
         let keep: f32 = select((1.0 - c * ec) * (1.0 - c * ec), 1.0 - c * schlick(0.04, 1.0, mu), spec_exact(b));
         spec = spec * keep; irr = irr * keep; trans = trans * keep;
         coat = c * (0.04 * ac + bc);
-        if (!spec_exact(b)) { irr = irr + vec3f(c * kc * (1.0 - ac - bc)); }
+        if (!spec_exact(b)) {
+            irr = irr + vec3f(c * kc * (1.0 - ac - bc));
+            let es_avg: vec3f = f0d * abar + vec3f(f90 * bbar) + (1.0 - ebar) * kd;
+            irr = irr + coat_dir(b, o, mu, rr, ak, ebar, f0d, f90, kd, km, es_avg);
+        }
     }
     var acc: vec3f = spec * env_rough(rr, dominant(n, v, rr)) + irr * sh_irr(n);
     if (pmax3(trans) > 0.0) {

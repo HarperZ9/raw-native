@@ -111,6 +111,15 @@ double read2(const std::vector<double>& g, int nt, int nr, double mu, double r) 
     const auto at = [&](int i, int j) { return g[std::size_t(i) * nt + j]; };
     return (at(y0, x0) * (1 - fx) + at(y0, x0 + 1) * fx) * (1 - fy) + (at(y0 + 1, x0) * (1 - fx) + at(y0 + 1, x0 + 1) * fx) * fy;
 }
+// Bilinear read of a (rough rows) x (u columns) grid, u = sqrt(mu): the A and B tables.
+double readU(const std::vector<double>& g, int nt, int nr, double mu, double r) {
+    const double x = std::sqrt(std::clamp(mu, 0.0, 1.0)) * (nt - 1);
+    const double y = std::clamp(r / Tables::kRoughMax * (nr - 1), 0.0, nr - 1.0);
+    const int x0 = std::min(int(x), nt - 2), y0 = std::min(int(y), nr - 2);
+    const double fx = x - x0, fy = y - y0;
+    const auto at = [&](int i, int j) { return g[std::size_t(i) * nt + j]; };
+    return (at(y0, x0) * (1 - fx) + at(y0, x0 + 1) * fx) * (1 - fy) + (at(y0 + 1, x0) * (1 - fx) + at(y0 + 1, x0 + 1) * fx) * fy;
+}
 double read1(const std::vector<double>& g, double r) {
     const int n = int(g.size());
     const double y = std::clamp(r / Tables::kRoughMax * (n - 1), 0.0, n - 1.0);
@@ -129,7 +138,7 @@ Tables::Tables()
     parallelRows(kRough, threads, [&](int i) {
         const double a = std::max(gridRough(i, kRough) * gridRough(i, kRough), 1e-4);
         for (int j = 0; j < kTheta; ++j) {
-            const double mu = std::max(std::cos(gridTheta(j, kTheta)), 1e-4);
+            const double u = double(j) / (kTheta - 1), mu = std::max(u * u, 1e-4);   // the u = sqrt(mu) axis
             albedoSplit(mu, a, kSamples, a_[std::size_t(i) * kTheta + j], b_[std::size_t(i) * kTheta + j]);
         }
     });
@@ -151,8 +160,9 @@ Tables::Tables()
     });
     buildAnisotropic();
     buildDominant();
+    buildHats();
 }
-double Tables::A(double mu, double r) const { return read2(a_, kTheta, kRough, mu, r); }
+double Tables::A(double mu, double r) const { return readU(a_, kTheta, kRough, mu, r); }
 double Tables::Dom(double mu, double r) const { return read2(dom_, kDomMu, kDomRough, mu, r); }
 
 // The lobe centroid's elevation: VNDF samples of the white lobe, each weighted by its
@@ -169,7 +179,7 @@ void Tables::buildDominant() {
         }
     });
 }
-double Tables::B(double mu, double r) const { return read2(b_, kTheta, kRough, mu, r); }
+double Tables::B(double mu, double r) const { return readU(b_, kTheta, kRough, mu, r); }
 double Tables::Aavg(double r) const { return read1(aavg_, r); }
 double Tables::Bavg(double r) const { return read1(bavg_, r); }
 double Tables::Sh(double mu, double r) const {

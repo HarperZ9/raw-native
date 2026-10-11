@@ -6,12 +6,15 @@
 // float32-rounded inputs. Backend-neutral: it runs on whichever RHI device the build links.
 #include "raw/renderer/pbr.hpp"
 #include "raw/rhi/rhi.hpp"
+#include <cstddef>
 #include <cstdint>
 #include <string>
 #include <vector>
 namespace raw::gpu_check {
 
 inline constexpr int kPbrCaseFloats = 44;
+// Floats in the packed table buffer; pbr.wgsl's OFF_HM4 plus the last table (12 x 24 x 198).
+inline constexpr std::size_t kPbrTableFloats = 1565423 + 57024;
 inline constexpr std::uint32_t kPbrCases = 4096;
 inline constexpr std::uint64_t kPbrSeed = 20261010;
 

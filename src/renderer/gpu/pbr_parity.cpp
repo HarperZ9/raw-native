@@ -82,6 +82,10 @@ std::vector<float> packTables(const pbr::Tables& t) {
     for (const auto* g : {&t.gridA(), &t.gridB(), &t.rowAavg(), &t.rowBavg(), &t.gridSh(), &t.gridA4(), &t.gridB4(), &t.gridAavg2(), &t.gridBavg2(), &t.gridDom()})
         for (double x : *g) v.push_back(float(x));
     for (double x : pbr::iridescenceSensitivityGrid()) v.push_back(float(x));   // OFF_SENS in pbr.wgsl
+    // The coat compensation's tables, from OFF_HA in pbr.wgsl, in its order.
+    for (const auto* g : {&t.gridHA(), &t.gridHB(), &t.gridHbar(), &t.gridHH(), &t.gridG(), &t.rowG1(), &t.gridCoef(), &t.gridHA4(), &t.gridHB4(), &t.gridHm4()})
+        for (double x : *g) v.push_back(float(x));
+    if (v.size() != kPbrTableFloats) std::fprintf(stderr, "pbr tables: %zu floats packed, pbr.wgsl expects %zu\n", v.size(), kPbrTableFloats);
     return v;
 }
 

@@ -93,6 +93,11 @@ Terms evalTerms(const Material& m, const Tables& t, D3 wo, D3 wi) {
         const double ms = (1.0 - t.E(mo, rc)) * (1.0 - t.E(mi, rc)) / (kPi * (1.0 - t.Eavg(rc)));
         out.smooth = out.smooth + rgb(c * kc * ms);
     }
+    if (wi.z > 0.0) {   // what the coat reflects back down, returned (method note 1 of 2026-10-11)
+        const CoatComp cc = coatComp(m, t, s);
+        const Rgb dO = coatD(cc, t, s, rot(wo), co), dI = coatD(cc, t, s, rot(wi), ci);
+        out.smooth = out.smooth + each([&](int k) { const double db = ch(cc.dbar, k); return db > 1e-12 ? ch(dO, k) * ch(dI, k) / (kPi * db) : 0.0; });
+    }
     return out;
 }
 Rgb eval(const Material& m, const Tables& t, D3 wo, D3 wi) { return evalTerms(m, t, wo, wi).total(); }

@@ -60,7 +60,8 @@ struct Material {
 
 // Tabulated energies, built once by deterministic quadrature and VNDF sampling.
 // A, B: split directional albedo of the white GGX lobe, F = f0 A + f90 B for Schlick,
-// on a grid of view angle and perceptual roughness (bilinear). Sh: directional albedo
+// on a grid of u = sqrt(mu) and perceptual roughness (bilinear; the u axis since
+// 2026-10-11, evidence/m3-materials2-bounds.json method note 1). Sh: directional albedo
 // of the white sheen lobe. The *Avg rows are cosine-weighted means over mu.
 class Tables {
 public:
@@ -75,6 +76,37 @@ public:
     double Bavg(double r) const;
     double Eavg(double r) const { return Aavg(r) + Bavg(r); }
     double Sh(double mu, double r) const;
+    // The coat compensation's tables (method note 1 of 2026-10-11). Hat j is the
+    // piecewise-linear hat in u = sqrt(mu) centred on u_j = j / (kHats - 1).
+    // HA, HB: the white isotropic lobe's split albedo landing in hat j (view mu, roughness r);
+    // HAbar, HBbar: their cosine-weighted means; HAA, HBB (j, l): the means against hat l;
+    // GA, GB: the cosine moments 2 int A(mu) hat_j(mu) mu dmu (B likewise); G1: of the hat alone.
+    static constexpr int kHats = 9, kHatMu = 32, kHatRough = 32;
+    static double hat(int j, double mu);
+    static double hatNode(int j) { const double u = double(j) / (kHats - 1); return u * u; }
+    double HA(int j, double mu, double r) const;
+    double HB(int j, double mu, double r) const;
+    double HAbar(int j, double r) const;
+    double HBbar(int j, double r) const;
+    double HAA(int j, int l, double r) const;
+    double HBB(int j, int l, double r) const;
+    double GA(int j, double r) const;
+    double GB(int j, double r) const;
+    double G1(int j) const { return g1_[std::size_t(j)]; }
+    // The projection of the coat's albedo E_c(mu; rc) onto the hats (cosine-weighted least
+    // squares), read linearly in rc: E_c ~ sum_j coef(j, rc) hat_j.
+    double coef(int j, double rc) const;
+    // The same tables for an anisotropic lobe, on the A4 grid (view mu, azimuth, roughness,
+    // anisotropy); the means are over the whole hemisphere.
+    double HA4(int j, double mu, double phi, double r, double k) const { return read4(ha4_, mu, phi, r, k, std::size_t(j) * an_a_.size()); }
+    double HB4(int j, double mu, double phi, double r, double k) const { return read4(hb4_, mu, phi, r, k, std::size_t(j) * an_a_.size()); }
+    double HAbar4(int j, double r, double k) const { return readRk(hm4_, r, k, std::size_t(j) * 2, kHm4); }
+    double HBbar4(int j, double r, double k) const { return readRk(hm4_, r, k, std::size_t(j) * 2 + 1, kHm4); }
+    double GA4(int j, double r, double k) const { return readRk(hm4_, r, k, std::size_t(kHats * 2 + j * 2), kHm4); }
+    double GB4(int j, double r, double k) const { return readRk(hm4_, r, k, std::size_t(kHats * 2 + j * 2 + 1), kHm4); }
+    double HAA4(int j, int l, double r, double k) const { return readRk(hm4_, r, k, std::size_t(kHats * 4 + (j * kHats + l) * 2), kHm4); }
+    double HBB4(int j, int l, double r, double k) const { return readRk(hm4_, r, k, std::size_t(kHats * 4 + (j * kHats + l) * 2 + 1), kHm4); }
+    static constexpr int kHm4 = kHats * 4 + kHats * kHats * 2;   // values per (k, r) row of hm4_
     // Elevation from the normal (radians) of the centroid of the white single-scattering
     // lobe f cos for a view at mu, in the plane of the normal and the view: the direction
     // image lighting reads the prefiltered environment along (VNDF sampled, from the BRDF
@@ -100,14 +132,28 @@ public:
     const std::vector<double>& gridB4() const { return an_b_; }
     const std::vector<double>& gridAavg2() const { return an_aavg_; }
     const std::vector<double>& gridBavg2() const { return an_bavg_; }
+    const std::vector<double>& gridHA() const { return ha_; }      // [r][j][mu]
+    const std::vector<double>& gridHB() const { return hb_; }
+    const std::vector<double>& gridHbar() const { return hbar_; }  // [r][j][2]: HAbar, HBbar
+    const std::vector<double>& gridHH() const { return hh_; }      // [r][j][l][2]: HAA, HBB
+    const std::vector<double>& gridG() const { return g_; }        // [r][j][2]: GA, GB
+    const std::vector<double>& rowG1() const { return g1_; }
+    const std::vector<double>& gridCoef() const { return coef_; }  // [rc][j]
+    const std::vector<double>& gridHA4() const { return ha4_; }    // [j][k][r][phi][mu]
+    const std::vector<double>& gridHB4() const { return hb4_; }
+    const std::vector<double>& gridHm4() const { return hm4_; }    // [k][r][kHm4]
 private:
-    double read4(const std::vector<double>& g, double mu, double phi, double r, double k) const;
+    double read4(const std::vector<double>& g, double mu, double phi, double r, double k, std::size_t offset = 0) const;
+    double readRk(const std::vector<double>& g, double r, double k, std::size_t at, int stride) const;
+    void buildHatMeans4(const std::vector<double>& x, const std::vector<double>& w);
     double read2rk(const std::vector<double>& g, double r, double k) const;
     void buildAnisotropic();
     std::vector<double> a_, b_, sh_, aavg_, bavg_;
     std::vector<double> an_a_, an_b_, an_aavg_, an_bavg_;   // [k][r][phi][mu] and [k][r]
     std::vector<double> dom_;
     void buildDominant();
+    std::vector<double> ha_, hb_, hbar_, hh_, g_, g1_, coef_, ha4_, hb4_, hm4_;
+    void buildHats();
 };
 
 // One evaluation split by lobe shape, so a test can integrate each with the quadrature

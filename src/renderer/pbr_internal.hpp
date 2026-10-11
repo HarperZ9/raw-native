@@ -76,5 +76,22 @@ inline Rgb fresnel(const Material& m, Rgb f0, double f90, double voh) {
     return f * (1.0 - m.iridescence) + fi * m.iridescence;
 }
 
+// The clear coat's directional albedo (single scattering at f0 0.04 plus its multiple scattering).
+inline double coatAlbedo(const Tables& t, double mu, double rc) {
+    const double kc = kms(0.04 + 0.96 / 21.0, t.Eavg(rc)), e = t.E(mu, rc);
+    return 0.04 * t.A(mu, rc) + t.B(mu, rc) + (1.0 - e) * kc;
+}
+// The coat compensation (evidence/m3-materials2-bounds.json, method note 1 of 2026-10-11): what
+// the coat reflects back down is returned by the reciprocal lobe D(o) D(i) / (pi Dbar), per
+// channel, with D(w) = c (1 - c E_c(mu_coat)) Q(w) and Q the base's coat-weighted albedo.
+struct CoatComp {
+    bool on{false};
+    double c{0}, rc{1}, rq{1}, f90s{1}, sMs{0}, ebar{0}, shade{0}, sheenR{0};
+    double ec[Tables::kHats]{};
+    Rgb f0s, kmsTot, dK, sD, dbar;
+};
+CoatComp coatComp(const Material& m, const Tables& t, const Setup& s);
+// D(w) for a base-frame direction w whose cosine against the coat normal is muCoat.
+Rgb coatD(const CoatComp& cc, const Tables& t, const Setup& s, D3 w, double muCoat);
 
 }  // namespace raw::pbr::detail
