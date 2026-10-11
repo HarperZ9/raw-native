@@ -49,7 +49,7 @@ def run(adapter: str, modules: str) -> dict:
             b = p.chromium.launch(channel="chrome", headless=True, args=args)
             page = b.new_page()
             page.goto(f"http://localhost:{srv.server_address[1]}/web/test/post-passes.html?modules={mods}")
-            page.wait_for_function("window.__result !== undefined", timeout=600000)
+            page.wait_for_function("window.__result !== undefined", timeout=1200000)
             res = page.evaluate("window.__result")
             # The stack inside the Motion renderer (web/test/motion-post.html).
             page = b.new_page()

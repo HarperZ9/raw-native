@@ -4,7 +4,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { createHash } from "node:crypto";
 import { kmDecode, latentLut, buildLut } from "./paint/pigments.mjs";
-import { prep } from "./paint/abstract.mjs";
+import { prep, shoulderRGB } from "./paint/abstract.mjs";
 import { glaze } from "./paint/compose.mjs";
 import { createPaint, resolvePaint } from "./paint/paint.mjs";
 
@@ -27,7 +27,8 @@ test("an unmixed colour decodes back to itself (the residual closes the latent)"
   const { lat } = prep(plan, sc);
   for (let i = 0; i < 16 * 8; i++) {
     const dec = kmDecode([lat[i * 8], lat[i * 8 + 1], lat[i * 8 + 2], lat[i * 8 + 3]]);
-    for (let c = 0; c < 3; c++) near(dec[c] + lat[i * 8 + 4 + c], 1 - Math.exp(-sc.data[i * 4 + c] * plan.p.exposure), 2e-6, `pixel ${i} channel ${c}`);
+    const D = shoulderRGB([sc.data[i * 4], sc.data[i * 4 + 1], sc.data[i * 4 + 2]], plan.p.exposure);
+    for (let c = 0; c < 3; c++) near(dec[c] + lat[i * 8 + 4 + c], D[c], 2e-6, `pixel ${i} channel ${c}`);
   }
 });
 
@@ -42,7 +43,8 @@ test("the Kuwahara filter keeps a flat field and does not blur across a hard edg
   const r = createPaint("oil", {}, { w: W, h: H }).frame(sc);
   for (const x of [8, 16, 23, 32]) {
     const L = r.ak.lat.slice((12 * W + x) * 8, (12 * W + x) * 8 + 7), dec = kmDecode([L[0], L[1], L[2], L[3]]), want = x < 20 ? [0.05, 0.1, 0.4] : [0.6, 0.45, 0.05];
-    want.forEach((v, c) => near(dec[c] + L[4 + c], 1 - Math.exp(-v * 2.2), 0.02, `x ${x} channel ${c}`));
+    const D = shoulderRGB(want, 2.2);
+    want.forEach((v, c) => near(dec[c] + L[4 + c], D[c], 0.02, `x ${x} channel ${c}`));
   }
 });
 

@@ -12,11 +12,19 @@ import { bristle, strokeId } from "./noise.mjs";
 
 // Scene light to display light: a soft shoulder (1 - exp(-k x)) a painter's eye would see.
 export const shoulderExp = (x, k) => 1 - Math.exp(-Math.max(0, x) * k);
+// The shoulder on the largest channel, the others scaled with it, so a bright colour keeps its
+// hue and saturation (a per-channel shoulder turns bright orange toward yellow and grey).
+// Below m k = 1e-3 the gain is its series, where 1 - exp(-m k) cancels in f32.
+export function shoulderRGB(x, k) {
+  const r = Math.max(0, x[0]), g = Math.max(0, x[1]), b = Math.max(0, x[2]), m = Math.max(r, g, b), t = m * k;
+  const gain = t < 1e-3 ? k * (1 - t / 2 + (t * t) / 6) : (1 - Math.exp(-t)) / m;
+  return [r * gain, g * gain, b * gain];
+}
 
 export function prep(plan, scene) {
   const { w, h } = plan.out, n = w * h, s = new Float32Array(n * 4), lat = new Float32Array(n * 8);
   for (let i = 0; i < n; i++) {
-    const D = [0, 1, 2].map((c) => shoulderExp(scene.data[i * 4 + c], plan.p.exposure));
+    const D = shoulderRGB([scene.data[i * 4], scene.data[i * 4 + 1], scene.data[i * 4 + 2]], plan.p.exposure);
     const enc = D.map(linearToSrgb), c = lutConc(enc), dec = kmDecode(c);
     s.set([enc[0], enc[1], enc[2], 0.2126 * D[0] + 0.7152 * D[1] + 0.0722 * D[2]], i * 4);
     lat.set([c[0], c[1], c[2], c[3], D[0] - dec[0], D[1] - dec[1], D[2] - dec[2], 0], i * 8);
