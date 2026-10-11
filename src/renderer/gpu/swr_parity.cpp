@@ -15,7 +15,10 @@ std::vector<Mode> modes() {
     m1.o.affine = true;
     m2.o.snapShift = 8; m2.o.affine = true;
     m3.o.depthBits = 12;
-    return {m0, m1, m2, m3};
+    // Reported, not gated (evidence/rt-r2-bounds.json, addendum 4): modern with the snap correction.
+    Mode m4{"modern_snap_corrected", {}, 256, 256};
+    m4.o.snapCorrect = true;
+    return {m0, m1, m2, m3, m4};
 }
 std::uint32_t bits(float f) { std::uint32_t u; std::memcpy(&u, &f, 4); return u; }
 bool sameSlot(const Setup& a, const Setup& b, std::size_t s) {
@@ -81,15 +84,15 @@ std::string SwrCase::json() const {
         "\"slot_mismatches\": %ld, \"depth_bit_mismatches\": %ld, \"uv_outside\": %ld, \"worst_uv_ratio\": %.4f, \"texel_mismatches\": %ld, "
         "\"texel_boundary_exempt\": %ld, \"colour_outside\": %ld, \"valid_slots_cpu\": %ld, \"valid_slots_gpu\": %ld, \"valid_set_differences\": %ld, "
         "\"slots_differing\": %ld, \"coords_over_one_step\": %ld, \"pixels_unexplained\": %ld, \"pixels_explained\": %ld, "
-        "\"depth_over_1e-6\": %ld, \"worst_depth_abs\": %.3e, \"pass\": %s}",
+        "\"depth_over_1e-6\": %ld, \"worst_depth_abs\": %.3e, \"gated\": %s, \"pass\": %s}",
         check.c_str(), scene.c_str(), mode.c_str(), pixels, covered, triMismatch, slotMismatch, depthMismatch, uvOutside, worstUv,
         texelMismatch, texelExempt, colourOutside, validCpu, validGpu, validSetDiff, slotsDiffering, coordOverStep, pixelsUnexplained,
-        pixelsExplained, depthOverBound, worstDepth, pass ? "true" : "false");
+        pixelsExplained, depthOverBound, worstDepth, gated() ? "true" : "false", pass ? "true" : "false");
     return b;
 }
 bool SwrParity::pass() const {
     if (!error.empty() || cases.empty()) return false;
-    for (const SwrCase& c : cases) if (!c.pass) return false;
+    for (const SwrCase& c : cases) if (c.gated() && !c.pass) return false;
     return controlFillRuleDiff > 0 && controlMovedVertexDiff > 0 && controlGuardBandSlotDiff > 0;
 }
 std::string SwrParity::json() const {

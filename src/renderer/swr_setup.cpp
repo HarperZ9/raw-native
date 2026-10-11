@@ -69,7 +69,7 @@ void writeSlot(Setup& S, std::size_t slot, SV a, SV b, SV c, std::uint32_t sourc
     float* F = &S.floats[slot * kSetupFloats];
     std::int64_t area = edge(a.x, a.y, b.x, b.y, c.x, c.y);
     if (area == 0) return;
-    if (o.snapShift == 0 && !o.affine && !correct(a, b, c, area)) ++S.uncorrected;
+    if (o.snapCorrect && o.snapShift == 0 && !o.affine && !correct(a, b, c, area)) ++S.uncorrected;
     if (area < 0) {                              // counter-clockwise on screen: clockwise in NDC (y flips)
         if (o.cullBack) return;
         std::swap(b, c);
@@ -189,6 +189,7 @@ std::vector<std::uint32_t> params(const Options& o, int w, int h, std::uint32_t 
     for (int i = 0; i < 16; ++i) p[16 + i] = f(M.m[i]);
     const float len = std::sqrt(light.x * light.x + light.y * light.y + light.z * light.z);
     p[32] = f(light.x / len); p[33] = f(light.y / len); p[34] = f(light.z / len);
+    p[35] = f(o.snapCorrect ? 1.0f : 0.0f);
     return p;
 }
 

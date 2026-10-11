@@ -11,7 +11,7 @@ struct SwrParams {
     affine: u32, depthBits: u32, cullBack: u32, snapShift: u32,
     scale: f32, guard: f32, tris: u32, maxQ: f32,
     m0: vec4f, m1: vec4f, m2: vec4f, m3: vec4f,
-    light: vec4f,
+    light: vec4f,                       // w: 1.0 when the snap correction is on
 }
 const SI_N: u32 = 12u;
 const SF_N: u32 = 16u;
@@ -127,7 +127,7 @@ fn write_slot(slot: u32, src: u32, ax: i32, ay: i32, bx0: i32, by0: i32, cx0: i3
     IW[0] = wa0; IW[1] = wb1; IW[2] = wc1;
     S[0] = sa0; S[1] = sb1; S[2] = sc1;
     T[0] = ta0; T[1] = tb1; T[2] = tc1;
-    if (P.snapShift == 0u && P.affine == 0u) {
+    if (P.light.w > 0.5 && P.snapShift == 0u && P.affine == 0u) {
         let dx1: f32 = ub.x - ua.x;
         let dy1: f32 = ub.y - ua.y;
         let dx2: f32 = uc.x - ua.x;

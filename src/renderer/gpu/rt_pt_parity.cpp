@@ -156,7 +156,8 @@ std::string aovs(Ctx& c, const rt::PtScene& ps, const swr::Scene& base, bool& ok
     const int W = 256, H = 256;
     swr::Scene sc = base;
     sc.geo = ps.geo; sc.tex = ps.tex;
-    const swr::Options o;
+    swr::Options o;
+    o.snapCorrect = true;                       // P4 method notes 1 and 2 (evidence/rt-r2-bounds.json)
     const swr::Setup st = swr::setup(sc.geo, sc.viewProj(W, H), W, H, o);
     const swr::Visibility v = swr::rasterize(st, o);
     const swr::Resolved r = swr::resolve(st, v, sc.geo, sc.tex, sc.light, o);

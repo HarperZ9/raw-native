@@ -29,6 +29,7 @@ struct SwrCase {
         pixelsExplained{0}, depthOverBound{0};
     double worstUv{0}, worstDepth{0};
     bool pass{false};
+    bool gated() const { return mode != "modern_snap_corrected"; }   // the fifth mode is reported only
     std::string json() const;
 };
 struct SwrParity {

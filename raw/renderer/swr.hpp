@@ -9,8 +9,10 @@
 //   - Depth z/w interpolated in screen space, tested strictly less (ties keep the lower slot),
 //     optionally quantized to D bits with a 4 x 4 ordered dither (retro).
 //   - Perspective-correct or affine (retro) attributes; nearest, wrapping texels.
-//   - On the default grid, setup is snap-corrected: coverage uses the snapped vertices, while
-//     depth and attributes come from the unsnapped planes (evidence/rt-r2-bounds.json, addendum 3).
+//   - Optionally (snapCorrect, default grid only), setup is snap-corrected: coverage uses the
+//     snapped vertices, depth and attributes the unsnapped planes (evidence/rt-r2-bounds.json,
+//     addenda 3 and 4). Off by default: C5's bit-level slot bound does not hold for it on every
+//     backend.
 //
 // Setup records are laid out exactly as the GPU reads them, so the same bytes can be fed to
 // both rasterizers (check C4) or produced by each from the same vertices (check C5).
@@ -37,6 +39,7 @@ struct Options {
     FillRule rule{FillRule::TopLeft};
     bool depthTest{true};            // false only for the C2 control (the last slot drawn wins)
     float guardBand{16.0f};          // clip |x|, |y| <= guardBand * w
+    bool snapCorrect{false};         // default grid, perspective mode: depth and attributes from the unsnapped planes
 };
 
 // Procedural RGBA8 textures, every one a power of two on each side, packed one after another.
@@ -111,7 +114,8 @@ bool covers(std::int64_t e, bool tl, FillRule r);
 std::uint32_t bayer4(int x, int y);
 
 // Uniform words as the GPU passes read them (the WGSL SwrParams struct, 36 words): sizes,
-// options, the view-projection matrix (row-major) and the normalised light direction.
+// options, the view-projection matrix (row-major), the normalised light direction, and in the
+// last word 1.0 when snapCorrect is on.
 std::vector<std::uint32_t> params(const Options& o, int w, int h, std::uint32_t slots, int tile, const Mat4& viewProj,
                                   std::uint32_t triangles, Vec3 light);
 
