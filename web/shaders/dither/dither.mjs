@@ -4,7 +4,7 @@
 //   q.frame(rgba8 /* Uint8Array of the plate */);  await q.read() -> { idx: Uint32Array, rgba: Uint8Array }
 import { ditherPlate, orderedPick, BAYER, BAYER_MAX } from "../reference/retro-dither.mjs";
 import { mixPalette, mixPick } from "./mix.mjs";
-import { labPalette, nearestIndex, SRGB8_TO_LINEAR, linearToOklab } from "../reference/retro-palettes.mjs";
+import { labPalette, nearestIndex, SRGB8_TO_LINEAR, linearToOklab, srgbToOklab, RETRO_PALETTES } from "../reference/retro-palettes.mjs";
 import { blueNoise64 } from "./bluenoise.mjs";
 import { dsSplit, DS_WGSL } from "./ds.wgsl.mjs";
 import { DITHER_WGSL } from "./dither.wgsl.mjs";
@@ -21,6 +21,29 @@ function needMode(mode) {
 }
 const clamp01 = (x) => (x < 0 ? 0 : x > 1 ? 1 : x);
 
+// A palette spec to OKLab entries ({ lab, rgb }), the form every mode takes. A spec is a
+// palette name, or a fixed palette of its own: an array of "#rrggbb" strings or [r, g, b]
+// bytes, at least two. An unknown name throws; the vendored labPalette falls back to the
+// Game Boy colours instead, which turned a typo into a silent change of look.
+export function resolvePalette(palette = "pico8") {
+  if (typeof palette === "string") {
+    if (!Object.prototype.hasOwnProperty.call(RETRO_PALETTES, palette)) throw new Error(`dither: unknown palette ${palette} (${Object.keys(RETRO_PALETTES).join(", ")}, or an array of colours)`);
+    return labPalette(palette);
+  }
+  if (!Array.isArray(palette) || palette.length < 2) throw new Error("dither: a palette is a name or an array of at least two colours");
+  if (palette.every((e) => e && Array.isArray(e.lab) && Array.isArray(e.rgb))) return palette;
+  return palette.map((c, i) => {
+    let rgb = c;
+    if (typeof c === "string") {
+      const m = /^#([0-9a-f]{6})$/i.exec(c);
+      if (!m) throw new Error(`dither: palette colour ${i} is ${c.slice(0, 20)}, expected #rrggbb`);
+      rgb = [0, 2, 4].map((k) => parseInt(m[1].slice(k, k + 2), 16));
+    }
+    if (!Array.isArray(rgb) || rgb.length !== 3 || !rgb.every((v) => Number.isInteger(v) && v >= 0 && v <= 255)) throw new Error(`dither: palette colour ${i} must be #rrggbb or three integers 0..255`);
+    return { lab: srgbToOklab(rgb[0] / 255, rgb[1] / 255, rgb[2] / 255), rgb: [...rgb] };
+  });
+}
+
 // Plate bytes to OKLab, as retro-engine's quantizeGrid does with gamma 1.
 export function plateLab(bytes, w, h, brightness = 0) {
   const lab = new Array(w * h);
@@ -34,7 +57,7 @@ export function plateLab(bytes, w, h, brightness = 0) {
 // CPU reference: palette indices for a plate.
 export function ditherRef(bytes, w, h, { palette = "pico8", mode, strength = 1, brightness = 0 } = {}) {
   needMode(mode);
-  const pal = typeof palette === "string" ? labPalette(palette) : palette;
+  const pal = resolvePalette(palette);
   if (MIX[mode]) return mixRef(bytes, w, h, pal, mode, strength, brightness);
   const lab = plateLab(bytes, w, h, brightness);
   if (mode !== "blue") return ditherPlate(lab, w, h, pal, mode, strength);
@@ -74,7 +97,7 @@ export const DITHER_PASS = DS_WGSL + DITHER_WGSL;
 export async function createGpuDither(host, { palette = "pico8", mode, strength = 1, brightness = 0 } = {}, size) {
   needMode(mode);
   if (MIX[mode] && brightness !== 0) throw new Error(`dither: ${mode} takes brightness 0 only`);
-  const pal = typeof palette === "string" ? labPalette(palette) : palette, pp = packPalette(pal), n = size.w * size.h;
+  const pal = resolvePalette(palette), pp = packPalette(pal), n = size.w * size.h;
   const pipe = await host.compute("dither", DITHER_PASS);
   const st = (bytes, label, data) => host.buffer({ size: bytes, usage: ["storage", "copy-dst", "copy-src"], label, data });
   const B = {

@@ -270,7 +270,9 @@ The shader library's looks are post passes too. `web/shaders/post.mjs` registers
   chromatic aberration;
 - `crt`, a physical tube;
 - `film`, colour negative printed, with grain and halation;
-- `dither`, old palettes with ordered, noise or blue-noise dither.
+- `dither`, old palettes with ordered, noise or blue-noise dither. The palette is a
+  name or a fixed palette of a scene's own, an array of `#rrggbb` colours; an unknown
+  name throws. Art made only of palette colours passes the ordered modes unchanged.
 
 The Motion pages load it. The same stack runs outside Motion, so a Studio layer can
 use it: `new PostRunner(host, sampler).run(encoder, passes, texture, ...)`. The
@@ -305,6 +307,14 @@ layer is one quad, and texels are loaded without filtering, so pixel art stays
 exact. On Chrome's CPU adapter the pass matches its CPU twin
 (`web/world/tiles_ref.mjs`) at scales 1, 2 and 3 with every flip, and 100,000
 tiles draw identically twice (`evidence/m2-tiles-swiftshader.json`).
+
+`web/world/author.mjs` makes tiles and maps by hand. A pixel tile is rows of
+characters with a colour key; `tileAtlas` packs named tiles into one tileset image;
+`authoredMap` places tiles cell by cell from character grids, with flips, in one or
+more layers, orthogonal or isometric. `parallaxZ(f)` gives the depth at which a layer
+scrolls at f times the focal plane's rate, and `offPalette` lists pixels outside a
+fixed palette. The isometric tile pass draws each cell's diamond only, so tall
+things (walls, buildings) are sprites or vector items placed with `web/world/iso.mjs`.
 
 ## Media at every release
 

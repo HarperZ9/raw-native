@@ -39,3 +39,33 @@ test("on a two-colour palette, every patterned mode reproduces a flat grey's mix
 test("double-single split keeps an f64 to about 2^-47 (two 24-bit mantissas)", () => {
   for (const v of [0.4122214708, 1 / 3, 52.9829189, 1e-9, -2.428592205]) { const [hi, lo] = dsSplit(v); assert.ok(Math.abs(hi + lo - v) <= Math.abs(v) * 2 ** -47, `${v}: ${Math.abs(hi + lo - v) / Math.abs(v)}`); }
 });
+
+test("a fixed palette given as colours dithers exactly as the same palette given by name", async () => {
+  const { resolvePalette } = await import("./dither/dither.mjs");
+  const { RETRO_PALETTES } = await import("./reference/retro-palettes.mjs");
+  const w = 32, h = 16, b = new Uint8Array(w * h * 4);
+  for (let i = 0; i < w * h; i++) b.set([(i * 37) & 255, (i * 11) & 255, (i * 5 + 90) & 255, 255], 4 * i);
+  const hex = RETRO_PALETTES.pico8.map((c) => "#" + c.map((v) => v.toString(16).padStart(2, "0")).join(""));
+  for (const mode of ["bayer4", "blue", "mix-bayer4"]) {
+    const byName = Array.from(ditherRef(b, w, h, { palette: "pico8", mode }));
+    assert.deepEqual(Array.from(ditherRef(b, w, h, { palette: hex, mode })), byName, mode);
+    assert.deepEqual(Array.from(ditherRef(b, w, h, { palette: RETRO_PALETTES.pico8, mode })), byName, mode);
+  }
+  assert.equal(resolvePalette(hex).length, 16);
+});
+
+test("an unknown palette name or a malformed colour throws instead of falling back", async () => {
+  const { resolvePalette } = await import("./dither/dither.mjs");
+  const b = new Uint8Array(16).fill(128);
+  assert.throws(() => ditherRef(b, 2, 2, { palette: "pico-8", mode: "bayer4" }), /unknown palette pico-8/);
+  assert.throws(() => resolvePalette(["#000000"]), /at least two/);
+  assert.throws(() => resolvePalette(["#000000", "#12345"]), /colour 1/);
+  assert.throws(() => resolvePalette(["#000000", [1, 2, 300]]), /colour 1/);
+});
+
+test("art made only of palette colours passes every ordered mode unchanged", () => {
+  const pal = ["#141018", "#3a4a5c", "#8aa39b", "#e8dcc0", "#d9622b"], rgb = pal.map((c) => [1, 3, 5].map((k) => parseInt(c.slice(k, k + 2), 16)));
+  const w = 16, h = 16, b = new Uint8Array(w * h * 4), want = [];
+  for (let i = 0; i < w * h; i++) { const k = (i * 7 + (i >> 4)) % 5; want.push(k); b.set([...rgb[k], 255], 4 * i); }
+  for (const mode of ["none", "bayer2", "bayer4", "bayer8", "blue", "noise"]) assert.deepEqual(Array.from(ditherRef(b, w, h, { palette: pal, mode })), want, mode);
+});
