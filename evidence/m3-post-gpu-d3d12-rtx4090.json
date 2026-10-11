@@ -10,7 +10,7 @@
   {"scene": "raw-hall nave", "pixels": 58072, "gtao_outside_1e-3": 12, "gtao_worst": 3.090e-02, "ssr_diffs": 8, "ssr_hit_vs_miss": 8, "ssr_neighbour": 0, "pass": true},
   {"scene": "raw-hall gallery", "pixels": 63807, "gtao_outside_1e-3": 14, "gtao_worst": 4.408e-02, "ssr_diffs": 12, "ssr_hit_vs_miss": 12, "ssr_neighbour": 0, "pass": true}
  ],
- "taa": {"frames": 32, "pixels": 16384, "worst_frame_outside_1e-3": 26, "worst": 1.175e-01, "reported_one_step_worst_frame": 1},
+ "taa": {"frames": 32, "pixels": 16384, "worst_frame_outside_1e-3": 0, "worst": 1.669e-06, "reported_one_step_worst_frame": 0},
  "controls_fail": {"gtao": true, "ssr": true, "taa": true},
- "pass": false
+ "pass": true
 }

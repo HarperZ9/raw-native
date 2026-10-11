@@ -1,5 +1,5 @@
 {
- "pan": {"rmse_taa": 0.01570, "rmse_single_sample": 0.02135, "ratio": 0.7352, "control_no_jitter_ratio": 0.7958},
- "moving_box": {"trail_pixels": 12166, "ghosting": 0.01423, "control_no_clip_no_depth": 0.30769, "reported_clip_only": 0.02095, "reported_depth_only": 0.11885},
- "failures": 1
+ "pan": {"rmse_taa": 0.00944, "rmse_single_sample": 0.02135, "ratio": 0.4419, "control_no_jitter_ratio": 0.5637, "reported_no_dilation_ratio": 0.7338},
+ "moving_box": {"trail_pixels": 12166, "ghosting": 0.00557, "control_no_clip_no_depth": 0.20040, "reported_clip_only": 0.00537, "reported_depth_only": 0.13364},
+ "failures": 0
 }

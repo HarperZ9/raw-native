@@ -6,6 +6,17 @@ the day the release was published on GitHub, in UTC.
 
 ## Unreleased
 
+- **TAA passes its RMSE and GPU parity bounds** (roadmap M3, criterion 2). Pixels without
+  geometry carried no motion, so silhouettes lagged a frame behind in the history under a camera
+  pan; each pixel now takes the motion of the nearest surface in its 3 x 3 neighbourhood, as
+  Karis described in 2014. On the 0.3-pixel pan, TAA's RMSE falls from 0.735 to 0.442 of the
+  single-sample RMSE (bound 0.5); ghosting stays at 0.0056 (bound 0.03). On the GPU, float32
+  rounding noise in the chroma of grey pixels crossed the colour clip's 1e-7 floor; the floor is
+  now 1e-4 on both sides, and the GPU and CPU resolves agree on every pixel of every frame on
+  WARP and SwiftShader.
+  - Open failures, unchanged: SSR on raw-hall (68% and 65% correct, bound 90%) and GTAO in its
+    gallery. Probes show a single depth layer cannot tell a ray passing behind a column from one
+    striking it.
 - **Shadow maps match the CPU rasterizer on D3D12** (roadmap M3, criterion 8). Each cascade's depth
   range now encloses the whole scene, so no depth plane cuts geometry; before, the far plane crossed
   the ground and texels on that line were a float coin toss on every backend, the RTX 4090 included.

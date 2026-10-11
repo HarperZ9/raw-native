@@ -203,7 +203,8 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 //@pass post_taa
 // One invocation per pixel: the TAA resolve. C holds the current frame (colour, view depth),
 // R per pixel the history position x, y and the expected previous depth, D the previous depths,
-// H the history colour; flags bit 1: clip, bit 2: depth test, bit 4: first frame.
+// H the history colour; flags bit 1: clip, bit 2: depth test, bit 4: first frame, bit 8: motion
+// from the nearest surface in 3 x 3 (method note 10 of 2026-10-11).
 @group(0) @binding(0) var<uniform> P: PostParams;
 @group(0) @binding(1) var<storage, read> C: array<f32>;
 @group(0) @binding(2) var<storage, read> R: array<f32>;
@@ -240,9 +241,25 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     O[i * 3u + 1u] = cur.y;
     O[i * 3u + 2u] = cur.z;
     if ((P.flags & 4u) != 0u) { return; }
-    let px: f32 = R[i * 3u];
-    let py: f32 = R[i * 3u + 1u];
+    var px: f32 = R[i * 3u];
+    var py: f32 = R[i * 3u + 1u];
     let ed: f32 = R[i * 3u + 2u];
+    if ((P.flags & 8u) != 0u) {
+        var best: f32 = select(1.0e30, C[i * 4u + 3u], C[i * 4u + 3u] >= 0.0);
+        for (var db: i32 = -1; db <= 1; db++) {
+            for (var da: i32 = -1; da <= 1; da++) {
+                let qx: i32 = x + da;
+                let qy: i32 = y + db;
+                if ((da == 0 && db == 0) || qx < 0 || qy < 0 || qx >= w || qy >= h) { continue; }
+                let j: u32 = u32(qy * w + qx);
+                let dq: f32 = C[j * 4u + 3u];
+                if (dq < 0.0 || dq >= best) { continue; }
+                best = dq;
+                px = R[j * 3u] - f32(da);
+                py = R[j * 3u + 1u] - f32(db);
+            }
+        }
+    }
     if (px < 0.5 || py < 0.5 || px > f32(w) - 0.5 || py > f32(h) - 0.5) { return; }
     if ((P.flags & 2u) != 0u) {
         let nx: i32 = min(w - 1, i32(px));
@@ -306,7 +323,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
             }
         }
         let sd: vec3f = sqrt(vr / n);
-        let ext: vec3f = P.taa.y * sd + vec3f(1.0e-7, 1.0e-7, 1.0e-7);
+        let ext: vec3f = P.taa.y * sd + vec3f(1.0e-4, 1.0e-4, 1.0e-4);   // floor: method note 11
         var hy: vec3f = ycocg(hc);
         let q: vec3f = abs(hy - m) / ext;
         let scale: f32 = max(q.x, max(q.y, q.z));

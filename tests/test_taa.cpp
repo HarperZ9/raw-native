@@ -21,13 +21,13 @@ double rmse(const std::vector<float>& a, const std::vector<float>& b) {
 }
 void translate(Mesh& m, Vec3 d) { for (Vec3& p : m.positions) p = p + d; }
 
-struct Pan { double taa{0}, single{0}, noJitter{0}; };
+struct Pan { double taa{0}, single{0}, noJitter{0}, noDilate{0}; };
 Pan pan(const Scene& base) {
     Pan r;
     const Camera c0 = base.camera;
     const Vec3 f = normalize(c0.center - c0.eye), right = normalize(cross(f, c0.up));
     const double fp = 2.0 * length(c0.center - c0.eye) * std::tan(0.5 * c0.fovy) / kW;
-    std::vector<float> h, hn, pd, pdn;
+    std::vector<float> h, hn, pd, pdn, hd, pdd;
     Camera prev = c0;
     for (int k = 0; k < 64; ++k) {
         Scene s = base;
@@ -38,9 +38,10 @@ Pan pan(const Scene& base) {
         const taa::Frame cur = taa::render(s, prev, {}, kW, kW, jx, jy), flat = taa::render(s, prev, {}, kW, kW, 0, 0);
         h = taa::resolve(cur, h, pd); pd = cur.depth;
         hn = taa::resolve(flat, hn, pdn); pdn = flat.depth;            // control (a): no jitter
+        hd = taa::resolve(cur, hd, pdd, {true, true, false}); pdd = cur.depth;   // reported: no motion dilation (method note 10)
         if (k >= 32) {
             const taa::Frame ref = taa::render(s, prev, {}, kW, kW, 0, 0, kSS);
-            r.taa += rmse(h, ref.rgb) / 32; r.single += rmse(flat.rgb, ref.rgb) / 32; r.noJitter += rmse(hn, ref.rgb) / 32;
+            r.taa += rmse(h, ref.rgb) / 32; r.single += rmse(flat.rgb, ref.rgb) / 32; r.noJitter += rmse(hn, ref.rgb) / 32; r.noDilate += rmse(hd, ref.rgb) / 32;
         }
         prev = s.camera;
     }
@@ -92,16 +93,16 @@ int main(int argc, char** argv) {
     const Scene scene = sceneFromParams(p, nullptr);
     const Pan a = pan(scene);
     const Ghost g = ghost(scene);
-    // The pan RMSE bound is an open failure (evidence/m3-post-runs.json): --json and --strict gate it.
-    if (strict || a.taa <= 0.5 * a.single) CHECK(a.taa <= 0.5 * a.single);
-    else std::printf("OPEN FAILURE (not gated here): TAA pan RMSE ratio %.4f against 0.5\n", a.taa / a.single);
+    // The pan RMSE bound, an open failure until method note 10 (2026-10-11), is gated everywhere.
+    (void)strict;
+    CHECK(a.taa <= 0.5 * a.single);
     CHECK(!(a.noJitter <= 0.5 * a.single));        // control (a)
     CHECK(g.trail >= 500);
     CHECK(g.g[0] <= 0.03);
     CHECK(!(g.g[1] <= 0.03));                        // control (b): no clip, no depth test
-    std::printf("{\n \"pan\": {\"rmse_taa\": %.5f, \"rmse_single_sample\": %.5f, \"ratio\": %.4f, \"control_no_jitter_ratio\": %.4f},\n"
+    std::printf("{\n \"pan\": {\"rmse_taa\": %.5f, \"rmse_single_sample\": %.5f, \"ratio\": %.4f, \"control_no_jitter_ratio\": %.4f, \"reported_no_dilation_ratio\": %.4f},\n"
                 " \"moving_box\": {\"trail_pixels\": %ld, \"ghosting\": %.5f, \"control_no_clip_no_depth\": %.5f, \"reported_clip_only\": %.5f, \"reported_depth_only\": %.5f},\n"
                 " \"failures\": %d\n}\n",
-                a.taa, a.single, a.taa / a.single, a.noJitter / a.single, g.trail, g.g[0], g.g[1], g.g[2], g.g[3], raw_test_failures());
+                a.taa, a.single, a.taa / a.single, a.noJitter / a.single, a.noDilate / a.single, g.trail, g.g[0], g.g[1], g.g[2], g.g[3], raw_test_failures());
     return json ? (raw_test_failures() ? 1 : 0) : raw_test_summary();
 }
