@@ -185,6 +185,14 @@
    "checks": "P1 to P4",
    "result": "as run 18: P4 0 and 1 pixel.",
    "evidence": "evidence/rt-r2-pt-note2-webgpu-swiftshader.json"
+  },
+  {
+   "run": 22,
+   "when": "2026-10-11 08:50Z (lock held 08:50:00Z to 08:50:03Z)",
+   "backend": "D3D12 on the RTX 4090, binaries at 20e0b89",
+   "checks": "P1 to P4, H1, H2",
+   "result": "P4 0 and 1 pixel as on WARP and SwiftShader; the tightened pt_gate passes; H1 and H2 pass.",
+   "evidence": "evidence/rt-r2-pt-note2-d3d12-rtx4090.json"
   }
  ]
 }
