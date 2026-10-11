@@ -494,6 +494,8 @@ jobs:
         run: python tests/web/shaders_parity.py --shader hatch --adapter swiftshader --out media-out/shaders-hatch-parity.json
       - name: Shader lab 2, salience caricature warp, GPU against the CPU reference within the committed bounds, on the CPU adapter
         run: python tests/web/shaders_parity.py --shader caricature --adapter swiftshader --out media-out/shaders-caricature-parity.json
+      - name: The painterly shader keeps colour on flat regions in every preset (evidence/shaders-paint-colour-bounds.json)
+        run: node tools/shaders/paint_colour_check.mjs --out media-out/shaders-paint-colour.json
       - name: Frame times on the CPU adapter, for the record (not a gate)
         run: python tests/web/lab2_timing.py --adapter swiftshader --width 480 --height 300 --frames 5 --out media-out/shaders-lab2-timing.json
   media-smoke:

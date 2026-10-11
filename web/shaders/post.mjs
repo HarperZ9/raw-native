@@ -198,6 +198,10 @@ registerPass("dither", {
 
 registerPass("paint", {
   stage: "scene",
+  // Scene-linear light in, display values out, like film: on display-encoded colours the stack
+  // decodes sRGB first, and a list that also sets post.colour is refused.
+  input: "linear",
+  output: "display",
   // One preset in the gate: paint's CPU reference is slow on CI runners, and two presets over
   // the four frames passed the job's time. The shader library's own parity tests cover the rest.
   tests: [{ preset: "oil-grotesque" }],
