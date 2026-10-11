@@ -145,6 +145,30 @@
    "backend": "D3D12 on the RTX 4090, under D:/gpu.lock.d, binary at 359ad36",
    "checks": "the long-frame retest after run 15's change",
    "result": "rt-pathtrace of dense_block at 1280 x 720, 1024 spp, one submission a 16-spp slice: exit 0 in 9,434 ms with every AOV written. This supports run 15's watchdog diagnosis (the same frame in one submission failed about 5 s in) without proving it, since run 15's message was lost."
+  },
+  {
+   "run": 17,
+   "when": "2026-10-11 07:45Z",
+   "backend": "D3D12 WARP, commit ce4976d (R1 snap correction, P4 method note 1)",
+   "checks": "P1 to P4, H1, H2",
+   "result": "P4: retro_room passes (albedo 0, was 133; depth 0, was 7); iso_street has 1 albedo pixel (was 137), on which the float64 answer agrees with R1, not the path tracer. P4 stays an open failure on that one pixel. P1 to P3, H1 and H2 pass as before, controls failing.",
+   "evidence": "evidence/rt-r2-pt-note1-d3d12-warp.json"
+  },
+  {
+   "run": 18,
+   "when": "2026-10-11 07:55Z",
+   "backend": "WebGPU in Chrome on SwiftShader (quick), the same commit",
+   "checks": "P1 to P4, H1, H2",
+   "result": "the same P4 result as WARP (0 and 1 pixel); H1 and H2 pass.",
+   "evidence": "evidence/rt-r2-pt-note1-webgpu-swiftshader.json"
+  },
+  {
+   "run": 19,
+   "when": "2026-10-11 07:47Z (lock held 07:47:10Z to 07:47:14Z)",
+   "backend": "D3D12 on the RTX 4090 under D:/gpu.lock.d, the same commit",
+   "checks": "P1 to P4, H1, H2",
+   "result": "the same P4 result (0 and 1 pixel); H1 and H2 pass.",
+   "evidence": "evidence/rt-r2-pt-note1-d3d12-rtx4090.json"
   }
  ]
 }
