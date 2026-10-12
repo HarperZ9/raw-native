@@ -10,13 +10,18 @@ archive stays the CPU-only, dependency-free build.
 The wasm dir must hold raw-native.mjs and raw-native.wasm. raw-loader.mjs is
 taken from wasm/ in this repo; raw-native-gpu.mjs and raw-native-gpu.wasm are
 included when present. The wasm files are also published loose,
-so a web page can fetch them directly and check each against SHA256SUMS."""
-import argparse, gzip, hashlib, io, shutil, tarfile, zipfile
+so a web page can fetch them directly and check each against SHA256SUMS.
+
+From 0.7.0, when the WebGPU build is present, raw-native-<version>-viewer.zip
+holds the verified viewer (web/viewer/) with every file it loads, laid out as in
+this repository, so the page runs unchanged from any static host. Its own
+SHA256SUMS lists each file inside it."""
+import argparse, gzip, hashlib, io, json, shutil, tarfile, zipfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 EPOCH = (1980, 1, 1, 0, 0, 0)
-TEXT = (".md", ".mjs", ".txt", "LICENSE")
+TEXT = (".md", ".mjs", ".txt", ".html", ".json", "LICENSE")
 
 
 def read(src):
@@ -47,6 +52,30 @@ def tar_pack(dest, prefix, files):
             t.addfile(info, io.BytesIO(data))
     with open(dest, "wb") as f, gzip.GzipFile(fileobj=f, mode="wb", mtime=0, filename="") as g:
         g.write(raw.getvalue())
+
+
+def viewer_pack(dist, v, wasm_dir):
+    """The verified viewer and the files it loads, in the repository's layout (web/viewer/index.html
+    loads ../../wasm/raw-loader.mjs, ../../build-wasm-sums.json and ../../build-wasm-gpu/)."""
+    gpu = {ext: wasm_dir / f"raw-native-gpu.{ext}" for ext in ("mjs", "wasm")}
+    sums = {"wasm-gpu": {ext: hashlib.sha256(read(f)).hexdigest() for ext, f in gpu.items()}}
+    staged = dist / "viewer-staging"
+    staged.mkdir(exist_ok=True)
+    (staged / "build-wasm-sums.json").write_text(json.dumps(sums, indent=1) + "\n", newline="\n")
+    files = [("web/viewer/index.html", ROOT / "web" / "viewer" / "index.html", 0o644),
+             ("web/viewer/viewer.mjs", ROOT / "web" / "viewer" / "viewer.mjs", 0o644),
+             ("wasm/raw-loader.mjs", ROOT / "wasm" / "raw-loader.mjs", 0o644),
+             ("build-wasm-gpu/raw-native-gpu.mjs", gpu["mjs"], 0o644),
+             ("build-wasm-gpu/raw-native-gpu.wasm", gpu["wasm"], 0o644),
+             ("build-wasm-sums.json", staged / "build-wasm-sums.json", 0o644),
+             ("LICENSE", ROOT / "LICENSE", 0o644)]
+    inner = "".join(f"{hashlib.sha256(read(src)).hexdigest()}  {name}\n" for name, src, _ in sorted(files))
+    (staged / "SHA256SUMS").write_text(inner, newline="\n")
+    files.append(("SHA256SUMS", staged / "SHA256SUMS", 0o644))
+    p = f"raw-native-{v}-viewer"
+    zip_pack(dist / f"{p}.zip", p, files)
+    shutil.rmtree(staged)
+    return f"{p}.zip"
 
 
 def main():
@@ -84,6 +113,8 @@ def main():
     zip_pack(dist / f"{p}.zip", p, docs + wasm_files); names.append(f"{p}.zip")
     for name, src, _ in wasm_files:
         (dist / name).write_bytes(read(src)); names.append(name)
+    if (wasm_dir / "raw-native-gpu.wasm").exists():
+        names.append(viewer_pack(dist, v, wasm_dir))
     lines = [f"{hashlib.sha256((dist / n).read_bytes()).hexdigest()}  {n}" for n in names]
     (dist / "SHA256SUMS").write_text("\n".join(lines) + "\n", newline="\n")
     print("\n".join(lines))

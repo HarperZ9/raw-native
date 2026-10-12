@@ -4,8 +4,11 @@ Each release's full notes, with downloads and evidence, are on the
 [releases page](https://github.com/HarperZ9/raw-native/releases). Dates are
 the day the release was published on GitHub, in UTC.
 
-## Unreleased
+## 0.7.0 (2026-10-12)
 
+- **The viewer ships as a release asset.** `raw-native-0.7.0-viewer.zip` holds `web/viewer/` with
+  every file it loads (the WebGPU build, its loader and their hashes) in the repository's layout,
+  so the page runs unchanged from any static host. Its own `SHA256SUMS` lists each file inside it.
 - **Clear coat ceiling passes** (roadmap M3, criterion 6). The anisotropic split-albedo table is
   denser (16 azimuth nodes, 48 roughness rows, 16,384 samples per entry) and is now generated once
   by `tools/pbr_tables/aniso_gen.cpp`, committed with its SHA-256 and embedded at build time, so no
