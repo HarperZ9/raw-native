@@ -6,7 +6,7 @@ reproduced in isolation, coplanar ties in the hall scene, two grazing hits). Thi
 when either control passes on any scene (the check would no longer discriminate) or when the
 forced-off run does not take the fallback. It prints the main verdict per scene and never
 reports the main bound as passed when it is not.
-Usage: hw_rayquery_gate.py MAIN.json FORCED_OFF.json
+Usage: hw_rayquery_gate.py MAIN.json FORCED_OFF.json   (H1.1 or H1.1b output; H1.1b adds the coplanar control)
 """
 import json
 import sys
@@ -23,6 +23,10 @@ def main():
               f't/uv violations {c["t_violations"]}/{c["uv_violations"]}; controls fail: '
               f'offset {s["control_offset_fails"]}, rotate {s["control_rotate_fails"]}')
         ok = ok and s["control_offset_fails"] and s["control_rotate_fails"]
+    if "control_coplanar" in run:   # H1.1b (evidence/hw-h1-1b-bounds.json)
+        cp = run["control_coplanar"].get("exceeds_fraction", False)
+        print(f'coplanar control (H1.1 hall under H1.1b tolerances) exceeds the fraction bound: {cp}')
+        ok = ok and cp
     fb = off["fallback"] and off["pass"] and all(s.get("fallback") == "cpu traversal" for s in off["scenes"])
     print(f'forced off: fallback {"taken" if fb else "NOT taken"}')
     return 0 if ok and fb else 1
