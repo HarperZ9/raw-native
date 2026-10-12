@@ -160,5 +160,22 @@
   "diagnosis": "The pixels that differ lie along the ground's far edge against the background, where the colours are grey. A dump of single steps (the CPU resolve fed the GPU's own history) shows differences of 1e-4 to 9e-3 on those pixels. For a grey colour the YCoCg chroma channels are exactly 0 in float64, but in float32 they hold rounding noise of a few 1e-8. The clip box's half-extent is 1.25 sigma plus 1e-7, so on the GPU that noise alone can push the clip scale past 1. The scale is shared by all three channels, so the luma is clipped too, by an amount the CPU never applies.",
   "change": "The clip box's half-extent floor rises from 1e-7 to 1e-4 (linear colour units, a fortieth of an 8-bit step), on the CPU and in WGSL, so float32 rounding in a channel cannot trigger the clip.",
   "bounds": "Unchanged. The CPU TAA checks (pan RMSE, ghosting, controls) are rerun with the change."
+ },
+ "method_note_12_2026_10_12": {
+  "written": "2026-10-12, after exploration probes (none is a checked run; the probe code is not committed) and before any change to the SSR or GTAO model. Bounds unchanged.",
+  "candidates": "The two SSR candidates named in the M3 progress log (step 36): (1) march in pixel steps (a DDA, one step per pixel of the clipped screen segment) with the march length set by the screen instead of 20 units; (2) a confidence that drops a hit whose true point would leave the screen, probed as a drop by ray direction toward the camera (view z above 0 or 0.3) and by distance from the screen edge (8 pixels).",
+  "ssr_results": {
+   "current": "nave 68.3% correct, false hits 11.8%; gallery 65.1%, 6.0%; test scene 98.3%; near 96.5%; raw-hero 92.4%",
+   "candidate_1_dda_20_units": "nave 68.9%, 12.7%; gallery 66.2%, 6.7%",
+   "candidate_1_dda_screen_length": "nave 90.5% (passes 90%), false hits 15.7% (fails 10%); gallery 66.4%, 6.7%; test scene 99.7%; near 97.6%; raw-hero 94.3%",
+   "candidate_1_two_steps_a_pixel": "nave 91.0%, 17.6%; gallery 66.3%, 7.4%",
+   "candidate_2_on_top_of_1": "toward-camera drop at 0: nave 86.3%, 11.7%; gallery 57.5%; near 68.6% (it was 97.6%). At 0.3: nave 87.6%, 12.1%; near 68.7%. Edge drop 8 px: nave 87.1%, 15.0%. Every variant loses more correct hits than false ones.",
+   "thickness_on_top_of_1": "0.1: nave 88.1%, 12.1%; 0.05: nave 85.0%, 10.1%; gallery 63.6%, 2.5%",
+   "segment_overlap_test": "accepting a hit when the ray's depth interval over the last bisection step meets [D, D + thickness]: no change at any thickness, so the bisection already finds those crossings"
+  },
+  "ssr_diagnosis": "With candidate 1, nave false hits are 4,880 pixels: 4,811 have a true hit that is on screen but hidden behind a nearer surface (3,617 with the ray going away from the camera, 1,194 toward it), and only 46 have their true hit off screen. A thickness test cannot tell a ray that passes just behind a column from one that strikes it. Candidate 2 does not reach that class. Gallery wrong hits are 4,425 pixels, 2,838 of them on downward-facing surfaces landing on a farther surface; the per-pixel march and the overlap test leave them, so the march does not step over them. Their cause is still unknown.",
+  "gtao_diagnosis": "raw-hall gallery: 3,415 of its 3,785 downward-facing pixels and 3,407 of its 39,592 vertical pixels differ from the ray-cast reference by more than 0.15. GTAO is darker on 22,725 pixels (summed 2,960) and lighter on 33,466 (summed 1,164). The large errors spread over every view angle (|cos| bins 0.2 to 1), so grazing view is not the cause.",
+  "decision": "No model change from these candidates. Candidate 1 passes nave hits only by failing nave false hits further, and neither candidate moves the gallery. SSR and GTAO on raw-hall stay recorded open failures with bounds unchanged.",
+  "next": "SSR nave: a test that knows occlusion, such as a back-face depth layer or a per-pixel thickness from the scene's own depth range; step 36's dual-layer probe is the reference point (83.0% with 22.1% false hits). SSR gallery and GTAO gallery: trace single pixels of the downward-facing class against the BVH before naming a candidate."
  }
 }

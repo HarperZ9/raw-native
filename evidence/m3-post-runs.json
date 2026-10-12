@@ -160,6 +160,13 @@
    "date": "2026-10-11",
    "what": "exploration: SSR answers on raw-hall sorted by the source surface and the error",
    "result": "Nave: misses dominate (4,898 floor pixels, mostly beyond the 20-unit march; 1,783 vertical), then 2,651 false hits on vertical surfaces whose true reflection is off screen or hidden. Gallery: roof undersides dominate; 2,363 hits land more than 8 pixels away on a farther surface because the 64-step march steps over the near, thin hit. Candidates, not started: a march in pixel steps (DDA) with the length set by the screen, and a confidence that fades hits whose true point leaves the screen. Each needs a method note first."
+  },
+  {
+   "run": "ssr-explore-2026-10-12",
+   "date": "2026-10-12",
+   "what": "exploration probes of the two SSR candidates of step 36, plus thickness and a segment-overlap test, and a GTAO error breakdown on raw-hall gallery (method note 12)",
+   "result": "negative: no candidate meets both SSR bounds on raw-hall nave, and none moves raw-hall gallery. Best nave hit rate 90.5% with false hits 15.7% (bound 10%). Model unchanged.",
+   "evidence": "evidence/m3-post-bounds.json, method_note_12_2026_10_12"
   }
  ],
  "status": "Open failures, not loosened: GTAO on raw-hall gallery; SSR on raw-hall nave and gallery. Passing since 2026-10-11: TAA RMSE under the pan (0.442 against 0.5) and TAA GPU parity (0 pixels on WARP, SwiftShader and the RTX 4090). Passing: GTAO on the near test scene and raw-hall nave, SSR on both test-scene views, TAA ghosting, GTAO and SSR GPU parity on WARP and SwiftShader on five scenes, every control."
