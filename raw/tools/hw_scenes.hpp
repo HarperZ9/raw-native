@@ -13,8 +13,9 @@ struct HwScene {
     std::vector<rhi::hw::RayIn> rays;
     std::vector<HwRayKind> kinds;   // contiguous ranges of rays by kind
 };
-// terrain, hall, debris; each with camera, random and ambient-occlusion rays.
-std::vector<HwScene> hwScenes(uint64_t seed = 0x5EEDu);
+// terrain, hall, debris; each with camera, random and ambient-occlusion rays. hallB swaps in the
+// H1.1b hall without coincident faces (evidence/hw-h1-1b-bounds.json); the rays are identical.
+std::vector<HwScene> hwScenes(uint64_t seed = 0x5EEDu, bool hallB = false);
 // Triangles as 9 floats each, for the GPU.
 std::vector<float> flatten(const std::vector<Tri>& tris);
 }

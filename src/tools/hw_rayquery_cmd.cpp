@@ -81,7 +81,7 @@ bool gpuByKind(rhi::Device& dev, const HwScene& s, const std::vector<float>& fla
     return true;
 }
 // One scene: the comparison and both controls. Returns the scene's JSON body; ok and fallback report the verdict.
-std::string sceneRun(rhi::Device& dev, const HwScene& s, int warmup, int repeats, bool& ok, bool& fallback){
+std::string sceneRun(rhi::Device& dev, const HwScene& s, int warmup, int repeats, bool cond, bool& ok, bool& fallback){
     Bvh bvh;
     bvh.build(s.tris);
     std::vector<Hit> cpu;
@@ -96,13 +96,13 @@ std::string sceneRun(rhi::Device& dev, const HwScene& s, int warmup, int repeats
         ok = hw::disabled(hw::kRayQuery);
         return "\"fallback\":\"cpu traversal\",\"reason\":\"" + hw::jsonEscape(err) + "\"";
     }
-    const RayCompare main = compareHits(s.tris, s.rays, cpu, cpuHit, gpu);
+    const RayCompare main = compareHits(s.tris, s.rays, cpu, cpuHit, gpu, cond);
     std::vector<hw::HitOut> off, rot;
     hw::TraceOptions o1; o1.offset[0] = o1.offset[1] = o1.offset[2] = 1e-3f;
     const hw::TraceResult t1 = hw::traceRayQuery(dev, flat, s.rays, o1, off);
     const hw::TraceResult t2 = hw::traceRayQuery(dev, flat, rotated(s.rays), {}, rot);
-    const RayCompare c1 = t1.ran ? compareHits(s.tris, s.rays, cpu, cpuHit, off) : RayCompare{};
-    const RayCompare c2 = t2.ran ? compareHits(s.tris, s.rays, cpu, cpuHit, rot) : RayCompare{};
+    const RayCompare c1 = t1.ran ? compareHits(s.tris, s.rays, cpu, cpuHit, off, cond) : RayCompare{};
+    const RayCompare c2 = t2.ran ? compareHits(s.tris, s.rays, cpu, cpuHit, rot, cond) : RayCompare{};
     const bool w = within(main), f1 = t1.ran && controlFails(c1), f2 = t2.ran && controlFails(c2);
     ok = w && f1 && f2;
     return "\"triangles\":" + std::to_string(s.tris.size()) + ",\"bvh_nodes\":" + std::to_string(bvh.nodeCount()) +
@@ -110,42 +110,69 @@ std::string sceneRun(rhi::Device& dev, const HwScene& s, int warmup, int repeats
            ",\"control_rotate\":" + compareJson(c2) + ",\"within_bounds\":" + (w ? "true" : "false") +
            ",\"control_offset_fails\":" + (f1 ? "true" : "false") + ",\"control_rotate_fails\":" + (f2 ? "true" : "false");
 }
+
+// H1.1b's coplanar control: the H1.1 hall under the conditioned tolerances must exceed the
+// explained fraction bound. Returns the JSON member; fails reports whether it did.
+std::string coplanarControl(rhi::Device& dev, bool& fails){
+    const HwScene s = hwScenes(0x5EEDu, false)[1];
+    Bvh bvh;
+    bvh.build(s.tris);
+    std::vector<Hit> cpu;
+    std::vector<bool> cpuHit;
+    cpuReference(s, bvh, cpu, cpuHit);
+    std::vector<hw::HitOut> gpu;
+    const hw::TraceResult t = hw::traceRayQuery(dev, flatten(s.tris), s.rays, {}, gpu);
+    if (!t.ran){ fails = false; return "\"control_coplanar\": {\"ran\": false}"; }
+    const RayCompare c = compareHits(s.tris, s.rays, cpu, cpuHit, gpu, true);
+    fails = (double)c.explained() > 1e-3 * (double)c.rays;
+    return "\"control_coplanar\": {\"scene\": \"hall (H1.1)\", \"compare\": " + compareJson(c) +
+           ", \"exceeds_fraction\": " + (fails ? "true" : "false") + "}";
+}
 }  // namespace
 
-HwRayQueryReport hwRayQuery(rhi::Device& dev, int warmup, int repeats){
+HwRayQueryReport hwRayQuery(rhi::Device& dev, int warmup, int repeats, bool criterionB){
     HwRayQueryReport rep;
-    const std::vector<HwScene> scenes = hwScenes();
+    const std::vector<HwScene> scenes = hwScenes(0x5EEDu, criterionB);
     bool pass = true, fallback = false;
     std::string sj;
     for (size_t si = 0; si < scenes.size(); ++si){
         bool ok = false;
-        const std::string body = sceneRun(dev, scenes[si], warmup, repeats, ok, fallback);
+        const std::string body = sceneRun(dev, scenes[si], warmup, repeats, criterionB, ok, fallback);
         pass = pass && ok;
         sj += (si ? ",\n  " : "") + std::string("{\"scene\":\"") + scenes[si].name + "\"," + body + "}";
     }
     const char* env = std::getenv("RAW_NATIVE_HW_DISABLE");
+    std::string extra;
+    if (criterionB && !fallback){
+        bool cf = false;
+        extra = ",\n " + coplanarControl(dev, cf);
+        pass = pass && cf;
+    }
     rep.pass = pass;
-    rep.json = "{\n \"schema\": \"raw-native.evidence/1\",\n \"bounds\": \"evidence/hw-h1-1-bounds.json\",\n \"backend\": \"" +
+    const std::string bounds = criterionB ? "evidence/hw-h1-1b-bounds.json" : "evidence/hw-h1-1-bounds.json";
+    rep.json = "{\n \"schema\": \"raw-native.evidence/1\",\n \"bounds\": \"" + bounds + "\",\n \"backend\": \"" +
                hw::jsonEscape(dev.backendName()) + "\",\n \"adapter\": \"" + hw::jsonEscape(dev.adapter().description) +
                "\",\n \"driver\": \"" + hw::jsonEscape(dev.adapter().driver) + "\",\n \"disable\": \"" + hw::jsonEscape(env ? env : "") +
                "\",\n \"fallback\": " + (fallback ? "true" : "false") + ",\n \"warmup\": " + std::to_string(warmup) +
-               ",\n \"repeats\": " + std::to_string(repeats) + ",\n \"scenes\": [\n  " + sj + "\n ],\n \"pass\": " + (pass ? "true" : "false") + "\n}\n";
+               ",\n \"repeats\": " + std::to_string(repeats) + ",\n \"scenes\": [\n  " + sj + "\n ]" + extra + ",\n \"pass\": " + (pass ? "true" : "false") + "\n}\n";
     return rep;
 }
 
 int hwRayQueryCommand(int argc, char** argv){
     int warmup = 2, repeats = 5;
+    bool crit = false;
     std::string out;
     for (int i = 1; i < argc; ++i){
         if (std::strcmp(argv[i], "--repeats") == 0 && i + 1 < argc) repeats = std::atoi(argv[++i]);
         else if (std::strcmp(argv[i], "--warmup") == 0 && i + 1 < argc) warmup = std::atoi(argv[++i]);
         else if (std::strcmp(argv[i], "--out") == 0 && i + 1 < argc) out = argv[++i];
-        else { std::printf("usage: raw_native_cli hw-rayquery [--warmup N] [--repeats N] [--out FILE]\n"); return 2; }
+        else if (std::strcmp(argv[i], "--criterion") == 0 && i + 1 < argc) crit = std::strcmp(argv[++i], "b") == 0;
+        else { std::printf("usage: raw_native_cli hw-rayquery [--warmup N] [--repeats N] [--criterion b] [--out FILE]\n"); return 2; }
     }
     std::string why;
     rhi::Device* dev = rhi::device(why);
     if (!dev){ std::printf("{\"error\": \"%s\"}\n", rhi::hw::jsonEscape(why).c_str()); return 4; }
-    const HwRayQueryReport r = hwRayQuery(*dev, warmup, repeats);
+    const HwRayQueryReport r = hwRayQuery(*dev, warmup, repeats, crit);
     std::fputs(r.json.c_str(), stdout);
     if (!out.empty()) std::ofstream(out, std::ios::binary) << r.json;
     return r.pass ? 0 : 1;

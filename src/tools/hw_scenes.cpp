@@ -28,7 +28,20 @@ std::vector<Tri> terrain(){
     for (int j = 0; j < N; ++j) for (int i = 0; i < N; ++i) quad(t, p(i, j), p(i, j + 1), p(i + 1, j + 1), p(i + 1, j));
     return t;
 }
-std::vector<Tri> hall(){
+// hallB (H1.1b) drops every coincident face: no column bottom caps, and the stair is one closed
+// stepped solid without a bottom face.
+void stairB(std::vector<Tri>& t){
+    constexpr float x0 = 6.0f, x1 = 9.5f;
+    for (int s = 0; s < 10; ++s){
+        const float z0 = -5.5f + 0.4f * s, z1 = z0 + 0.4f, y0 = 0.25f * s, y1 = 0.25f * (s + 1);
+        quad(t, {x0, y1, z0}, {x1, y1, z0}, {x1, y1, z1}, {x0, y1, z1});      // tread
+        quad(t, {x0, y0, z0}, {x1, y0, z0}, {x1, y1, z0}, {x0, y1, z0});      // riser
+        quad(t, {x0, 0, z0}, {x0, y1, z0}, {x0, y1, z1}, {x0, 0, z1});        // sides
+        quad(t, {x1, 0, z0}, {x1, 0, z1}, {x1, y1, z1}, {x1, y1, z0});
+    }
+    quad(t, {x0, 0, -1.5f}, {x0, 2.5f, -1.5f}, {x1, 2.5f, -1.5f}, {x1, 0, -1.5f});   // back
+}
+std::vector<Tri> hall(bool hallB){
     std::vector<Tri> t;
     grid(t, {-10, 0, -6}, {20, 0, 0}, {0, 0, 12}, 40, 24);           // floor
     grid(t, {-10, 0, -6}, {20, 0, 0}, {0, 6, 0}, 40, 6);             // walls
@@ -46,9 +59,10 @@ std::vector<Tri> hall(){
                 quad(t, c + d0 + y0, c + d1 + y0, c + d1 + y1, c + d0 + y1);
             }
             t.push_back({c + Vec3{0, 5, 0}, c + d1 + Vec3{0, 5, 0}, c + d0 + Vec3{0, 5, 0}});
-            t.push_back({c, c + d0, c + d1});
+            if (!hallB) t.push_back({c, c + d0, c + d1});
         }
     }
+    if (hallB){ stairB(t); return t; }
     for (int s = 0; s < 10; ++s){                                     // a stair of 10 boxes
         const float x0 = 6.0f, x1 = 9.5f, z0 = -5.5f + 0.4f * s, z1 = z0 + 0.4f, y1 = 0.25f * (s + 1);
         quad(t, {x0, y1, z0}, {x1, y1, z0}, {x1, y1, z1}, {x0, y1, z1});
@@ -99,11 +113,11 @@ void addRays(HwScene& s, Rng& r, Vec3 eye, Vec3 at){
 }
 }  // namespace
 
-std::vector<HwScene> hwScenes(uint64_t seed){
+std::vector<HwScene> hwScenes(uint64_t seed, bool hallB){
     Rng r{seed};
     std::vector<HwScene> out(3);
     out[0].name = "terrain"; out[0].tris = terrain(); addRays(out[0], r, {-9, 5, -9}, {0, 0, 0});
-    out[1].name = "hall"; out[1].tris = hall(); addRays(out[1], r, {-9, 3, -5}, {5, 1.5f, 3});
+    out[1].name = hallB ? "hall_b" : "hall"; out[1].tris = hall(hallB); addRays(out[1], r, {-9, 3, -5}, {5, 1.5f, 3});
     out[2].name = "debris"; out[2].tris = debris(r); addRays(out[2], r, {0, 0.5f, -6}, {0, 0, 0});
     return out;
 }
