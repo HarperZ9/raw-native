@@ -426,8 +426,10 @@ jobs:
       - name: Hybrid ray-traced shadows and reflections in Chrome on SwiftShader match CPU rays (RT stage R2, H1 and H2)
         run: python tests/web/rhi_texture.py --command rt-hybrid-parity --dir build-wasm-gpu --adapter swiftshader --out rt-hybrid-webgpu.json
       - name: The GPU ray marcher in Chrome on SwiftShader, quick (M2 to M5 at 128 x 128); open failures as on WARP
+        # Page budget 4000 s (2026-10-11): the step took 776 s on run 38180641157 and up to 1968 s on
+        # run 38182324719, so 2400 left 18 percent headroom; 4000 leaves 51 percent at 1968 s.
         run: |
-          python tests/web/rhi_texture.py --command sdf-parity --args=--quick --dir build-wasm-gpu --adapter swiftshader --timeout 2400 --out sdf-webgpu.json || true
+          python tests/web/rhi_texture.py --command sdf-parity --args=--quick --dir build-wasm-gpu --adapter swiftshader --timeout 4000 --out sdf-webgpu.json || true
           python tests/gpu/sdf_gate.py sdf-webgpu.json
       - name: The WebGPU build's material model matches its float64 reference in Chrome on SwiftShader (M3 materials)
         run: python tests/web/rhi_texture.py --command pbr-parity --dir build-wasm-gpu --adapter swiftshader --out pbr-webgpu.json
