@@ -13,8 +13,8 @@
 namespace raw::gpu_check {
 
 inline constexpr int kPbrCaseFloats = 44;
-// Floats in the packed table buffer; pbr.wgsl's OFF_HM4 plus the last table (12 x 24 x 198).
-inline constexpr std::size_t kPbrTableFloats = 1565423 + 57024;
+// Floats in the packed table buffer; pbr.wgsl's OFF_HM4 plus the last table (12 x 24 x 198, the hat grid).
+inline constexpr std::size_t kPbrTableFloats = 2008367 + 57024;
 inline constexpr std::uint32_t kPbrCases = 4096;
 inline constexpr std::uint64_t kPbrSeed = 20261010;
 

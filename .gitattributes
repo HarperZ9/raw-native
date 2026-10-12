@@ -22,3 +22,6 @@ src/renderer/aces2_gamut.cpp -text
 src/renderer/aces2_tables.cpp -text
 web/colour/colour.wgsl -text
 docs/motion/hanken-grotesk-500.atlas.json -text
+
+# The committed anisotropic table (cmake/embed.cmake) is hashed by its exact bytes.
+src/renderer/data/aniso_albedo.f32 binary

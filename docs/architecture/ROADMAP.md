@@ -120,7 +120,7 @@ Dated additions (2026-10-10). They add checks and never loosen the five above:
    (Mitchell, McTaggart and Green 2006) as an optional path, baked by the CPU ray tracer, with the
    bake's error against a converged path trace recorded.
 
-Status of the M3 criteria (2026-10-11). A row passes only when every check behind it passes on
+Status of the M3 criteria (2026-10-12). A row passes only when every check behind it passes on
 every backend it names.
 
 | Criterion | Status | Evidence |
@@ -129,8 +129,8 @@ every backend it names.
 | 2. TAA ghosting and RMSE | Passes on the CPU: pan RMSE 0.442 of single-sample (bound 0.5), ghosting 0.0056 (bound 0.03), controls fail. GPU parity passes on WARP, SwiftShader and the RTX 4090 (0 pixels, bound 16) | `evidence/m3-post-runs.json` |
 | 3. Aliasing and the validation layer | Open: not started | |
 | 4. The Studio viewer (A4) | The viewer is built in the engine (`web/viewer/`): it opens a glTF or GLB file, renders it through WebGPU and on the CPU reference, and shows both frames, the error map and the GPU certificate; checked headless in CI on raw-hero and raw-hall (both verified on SwiftShader) with a broken-file control. **Open:** hosting it inside the site's Studio page | `tests/web/viewer.py` |
-| 5. API snapshot | Snapshot 1 taken: 25 renderer and scene headers, dump checked in CI, compatibility suite (`tests/test_api_snapshot.cpp`). **Open:** the plugin C ABI part, since the C ABI is not built (ADR 0007 is proposed) | `api/README.md` |
-| 6. Materials | First stage passes on WARP, SwiftShader and the RTX 4090. Second stage: iridescence against an exact reference and volume path length pass; **open failure**: clearcoat energy over white metal (loss up to 0.23, bound 0.02) | `evidence/m3-materials-*.json`, `evidence/m3-materials2-*.json` |
+| 5. API snapshot | C++ part passes: snapshot 2 (2026-10-12; snapshot 1 was 2026-10-11), 25 renderer and scene headers, dump checked in CI, compatibility suite (`tests/test_api_snapshot.cpp`), migration note `api/snapshot-2/MIGRATION.md`. **Deferred by dated note (2026-10-11 decision, recorded 2026-10-12):** the plugin C ABI part waits for a real plugin consumer; ADR 0007 is not accepted to close the criterion | `api/README.md` |
+| 6. Materials | First stage passes on WARP, SwiftShader and the RTX 4090. Second stage passes on the CPU: iridescence against an exact reference, volume path length, and clearcoat energy over white metal (|albedo - 1| worst 0.0112, bound 0.02; excess worst 5.9e-4, ceiling 1e-3) since the anisotropic table became denser and embedded (2026-10-12). GPU material parity passes on WARP and the RTX 4090 | `evidence/m3-materials-*.json`, `evidence/m3-materials2-*.json` |
 | 7. Lighting | Passes on WARP, SwiftShader and the RTX 4090 | `evidence/m3-lighting-*.json` |
 | 8. Shadows: CPU checks against ray casts | Passes | `evidence/m3-shadows-cpu-run.json` |
 | 8. Shadows: GPU lookups and contact march | Passes on WARP and SwiftShader | `evidence/m3-shadows-gpu-*.json` |

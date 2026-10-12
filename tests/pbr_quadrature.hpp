@@ -83,17 +83,17 @@ inline Rgb smooth(const Material& m, const Tables& t, D3 o, int n = 96) {
 }
 // The full albedo: every class with its rule. alpha of the base lobe is the smaller of
 // the two anisotropic alphas.
-inline Rgb albedo(const Material& m, const Tables& t, D3 o) {
+inline Rgb albedo(const Material& m, const Tables& t, D3 o, int nr = 384, int np = 192) {
     double ax, ay; anisoAlphas(m, ax, ay);
     const double a = std::min(ax, ay), rc = std::clamp(m.clearcoatRoughness, kMinRoughness, 1.0);
     Rgb s = smooth(m, t, o);
-    s = add(s, peaked(m, t, o, a, Map::Reflect, 1.0, [](const Terms& x) { return x.specular; }), 1.0);
-    if (m.clearcoat > 0.0) s = add(s, peaked(m, t, o, rc * rc, Map::Reflect, 1.0, [](const Terms& x) { return x.coat; }), 1.0);
+    s = add(s, peaked(m, t, o, a, Map::Reflect, 1.0, [](const Terms& x) { return x.specular; }, nr, np), 1.0);
+    if (m.clearcoat > 0.0) s = add(s, peaked(m, t, o, rc * rc, Map::Reflect, 1.0, [](const Terms& x) { return x.coat; }, nr, np), 1.0);
     // With volume, f(o, i) carries light from inside (index ior) to the viewer outside; light
     // arriving from o and leaving along i carries ior^2 times that (generalized reciprocity,
     // checked in test_pbr_reciprocity), and that is the energy the furnace must bound.
     if (m.transmission > 0.0 && m.metallic < 1.0)
-        s = add(s, peaked(m, t, o, a, m.volume ? Map::Refract : Map::Mirror, m.ior, [](const Terms& x) { return x.transmission; }),
+        s = add(s, peaked(m, t, o, a, m.volume ? Map::Refract : Map::Mirror, m.ior, [](const Terms& x) { return x.transmission; }, nr, np),
                 m.volume ? m.ior * m.ior : 1.0);
     return s;
 }

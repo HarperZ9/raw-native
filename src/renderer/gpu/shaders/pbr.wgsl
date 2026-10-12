@@ -21,9 +21,14 @@ const N_THETA: u32 = 128u;
 const N_ROUGH: u32 = 128u;
 const N_SH: u32 = 64u;
 const AN_MU: u32 = 32u;
-const AN_PHI: u32 = 8u;
-const AN_ROUGH: u32 = 24u;
+const AN_PHI: u32 = 16u;
+const AN_ROUGH: u32 = 48u;
 const AN_K: u32 = 12u;
+// The anisotropic hat tables keep a coarser grid of their own (method note 4 of 2026-10-12).
+const HAN_MU: u32 = 32u;
+const HAN_PHI: u32 = 8u;
+const HAN_ROUGH: u32 = 24u;
+const HAN_K: u32 = 12u;
 const HARMONICS: u32 = 8u;
 const HARMONICS_SPEC: u32 = 2u;
 // Offsets of each table in the one table buffer (floats); raw/renderer/pbr_parity.hpp packs them.
@@ -33,12 +38,12 @@ const OFF_AAVG: u32 = 32768u;
 const OFF_BAVG: u32 = 32896u;
 const OFF_SH: u32 = 33024u;
 const OFF_A4: u32 = 37120u;
-const OFF_B4: u32 = 110848u;
-const OFF_AAVG2: u32 = 184576u;
-const OFF_BAVG2: u32 = 184864u;
-const OFF_DOM: u32 = 185152u;
+const OFF_B4: u32 = 332032u;
+const OFF_AAVG2: u32 = 626944u;
+const OFF_BAVG2: u32 = 627520u;
+const OFF_DOM: u32 = 628096u;
 // The iridescence sensitivity table after the dominant-direction grid: 4,001 entries of 6 floats.
-const OFF_SENS: u32 = 189248u;
+const OFF_SENS: u32 = 632192u;
 const SENS_N: u32 = 4001u;
 const SENS_STEP: f32 = 10.0;
 const N_DOM: u32 = 64u;
@@ -48,18 +53,18 @@ const N_DOM: u32 = 64u;
 const HATS: u32 = 9u;
 const H_MU: u32 = 32u;
 const H_ROUGH: u32 = 32u;
-const AN_ALL: u32 = 73728u;
+const HAN_ALL: u32 = 73728u;
 const HM4: u32 = 198u;
-const OFF_HA: u32 = 213254u;
-const OFF_HB: u32 = 222470u;
-const OFF_HBAR: u32 = 231686u;
-const OFF_HH: u32 = 232262u;
-const OFF_G: u32 = 237446u;
-const OFF_G1: u32 = 238022u;
-const OFF_COEF: u32 = 238031u;
-const OFF_HA4: u32 = 238319u;
-const OFF_HB4: u32 = 901871u;
-const OFF_HM4: u32 = 1565423u;
+const OFF_HA: u32 = 656198u;
+const OFF_HB: u32 = 665414u;
+const OFF_HBAR: u32 = 674630u;
+const OFF_HH: u32 = 675206u;
+const OFF_G: u32 = 680390u;
+const OFF_G1: u32 = 680966u;
+const OFF_COEF: u32 = 680975u;
+const OFF_HA4: u32 = 681263u;
+const OFF_HB4: u32 = 1344815u;
+const OFF_HM4: u32 = 2008367u;
 // A case: 44 floats. Material fields in pbr.hpp order, then wo and wi; the anisotropy
 // rotation arrives as its cosine (27) and sine (35), computed on the host.
 const CASE: u32 = 44u;
@@ -158,21 +163,21 @@ fn read1(off: u32, n: u32, r: f32) -> f32 {
     locate(r / ROUGH_MAX * f32(n - 1u), n, &y0, &f);
     return T[off + y0] * (1.0 - f) + T[off + y0 + 1u] * f;
 }
-fn read4(off: u32, mu: f32, phi_in: f32, r: f32, k: f32) -> f32 {
+fn read4(off: u32, nmu: u32, nphi: u32, nr: u32, nk: u32, mu: f32, phi_in: f32, r: f32, k: f32) -> f32 {
     var ph: f32 = abs(phi_in);
     ph = ph - floor(ph / PI) * PI;
     if (ph > 0.5 * PI) { ph = PI - ph; }
     var i0: u32 = 0u; var f0: f32 = 0.0; var i1: u32 = 0u; var f1: f32 = 0.0;
     var i2: u32 = 0u; var f2: f32 = 0.0; var i3: u32 = 0u; var f3: f32 = 0.0;
-    locate(sqrt(clamp(mu, 0.0, 1.0)) * f32(AN_MU - 1u), AN_MU, &i0, &f0);
-    locate(ph / (0.5 * PI) * f32(AN_PHI - 1u), AN_PHI, &i1, &f1);
-    locate(r / ROUGH_MAX * f32(AN_ROUGH - 1u), AN_ROUGH, &i2, &f2);
-    locate(k * k * f32(AN_K - 1u), AN_K, &i3, &f3);
+    locate(sqrt(clamp(mu, 0.0, 1.0)) * f32(nmu - 1u), nmu, &i0, &f0);
+    locate(ph / (0.5 * PI) * f32(nphi - 1u), nphi, &i1, &f1);
+    locate(r / ROUGH_MAX * f32(nr - 1u), nr, &i2, &f2);
+    locate(k * k * f32(nk - 1u), nk, &i3, &f3);
     var s: f32 = 0.0;
     for (var c: u32 = 0u; c < 16u; c++) {
         let b0: u32 = c & 1u; let b1: u32 = (c >> 1u) & 1u; let b2: u32 = (c >> 2u) & 1u; let b3: u32 = (c >> 3u) & 1u;
         let w: f32 = select(1.0 - f0, f0, b0 == 1u) * select(1.0 - f1, f1, b1 == 1u) * select(1.0 - f2, f2, b2 == 1u) * select(1.0 - f3, f3, b3 == 1u);
-        s = s + w * T[off + (((i3 + b3) * AN_ROUGH + i2 + b2) * AN_PHI + i1 + b1) * AN_MU + i0 + b0];
+        s = s + w * T[off + (((i3 + b3) * nr + i2 + b2) * nphi + i1 + b1) * nmu + i0 + b0];
     }
     return s;
 }
@@ -299,7 +304,7 @@ fn split_ab(w: vec3f, r: f32, k: f32) -> vec2f {
     let mu: f32 = abs(w.z);
     if (k > 0.0) {
         let ph: f32 = atan2(abs(w.y), abs(w.x));
-        return vec2f(read4(OFF_A4, mu, ph, r, k), read4(OFF_B4, mu, ph, r, k));
+        return vec2f(read4(OFF_A4, AN_MU, AN_PHI, AN_ROUGH, AN_K, mu, ph, r, k), read4(OFF_B4, AN_MU, AN_PHI, AN_ROUGH, AN_K, mu, ph, r, k));
     }
     return vec2f(readu(OFF_A, N_THETA, N_ROUGH, mu, r), readu(OFF_B, N_THETA, N_ROUGH, mu, r));
 }
@@ -329,10 +334,10 @@ fn row_r(off: u32, stride: u32, at: u32, r: f32) -> f32 {
 }
 fn row_rk(at: u32, r: f32, k: f32) -> f32 {
     var ir: u32 = 0u; var fr: f32 = 0.0; var ik: u32 = 0u; var fk: f32 = 0.0;
-    locate(r / ROUGH_MAX * f32(AN_ROUGH - 1u), AN_ROUGH, &ir, &fr);
-    locate(k * k * f32(AN_K - 1u), AN_K, &ik, &fk);
-    let a: u32 = OFF_HM4 + (ik * AN_ROUGH + ir) * HM4 + at;
-    let dk: u32 = AN_ROUGH * HM4;
+    locate(r / ROUGH_MAX * f32(HAN_ROUGH - 1u), HAN_ROUGH, &ir, &fr);
+    locate(k * k * f32(HAN_K - 1u), HAN_K, &ik, &fk);
+    let a: u32 = OFF_HM4 + (ik * HAN_ROUGH + ir) * HM4 + at;
+    let dk: u32 = HAN_ROUGH * HM4;
     return (T[a] * (1.0 - fr) + T[a + HM4] * fr) * (1.0 - fk) + (T[a + dk] * (1.0 - fr) + T[a + dk + HM4] * fr) * fk;
 }
 fn coat_alb(mu: f32, rc: f32) -> f32 {
@@ -364,8 +369,8 @@ fn coat_dir(b: u32, w: vec3f, mu_c: f32, rr: f32, ak: f32, ebar: f32, f0d: vec3f
     for (var j: u32 = 0u; j < HATS; j++) {
         let cj: f32 = row_r(OFF_COEF, HATS, j, rc);
         if (ak > 0.0) {
-            ha = ha + cj * read4(OFF_HA4 + j * AN_ALL, mu, ph, rr, ak);
-            hb = hb + cj * read4(OFF_HB4 + j * AN_ALL, mu, ph, rr, ak);
+            ha = ha + cj * read4(OFF_HA4 + j * HAN_ALL, HAN_MU, HAN_PHI, HAN_ROUGH, HAN_K, mu, ph, rr, ak);
+            hb = hb + cj * read4(OFF_HB4 + j * HAN_ALL, HAN_MU, HAN_PHI, HAN_ROUGH, HAN_K, mu, ph, rr, ak);
         } else {
             ha = ha + cj * hat_iso(OFF_HA, j, mu, rr);
             hb = hb + cj * hat_iso(OFF_HB, j, mu, rr);

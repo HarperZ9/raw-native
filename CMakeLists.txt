@@ -28,6 +28,11 @@ list(APPEND LIB_SRCS src/renderer/gpu/gpu_renderer.cpp src/renderer/gpu/frame_pa
     src/renderer/gpu/rt_pt_gpu.cpp src/renderer/gpu/rt_pt_parity.cpp
     src/renderer/gpu/rt_hybrid.cpp src/renderer/gpu/rt_hybrid_parity.cpp
     src/renderer/gpu/sdf_gpu.cpp src/renderer/gpu/sdf_parity.cpp)
+# The anisotropic split-albedo table, generated once and committed (cmake/embed.cmake).
+include(cmake/embed.cmake)
+raw_native_embed_aniso_table("${CMAKE_CURRENT_SOURCE_DIR}/src/renderer/data/aniso_albedo.f32"
+    "${CMAKE_CURRENT_BINARY_DIR}/generated/aniso_albedo_data.cpp")
+list(APPEND LIB_SRCS "${CMAKE_CURRENT_BINARY_DIR}/generated/aniso_albedo_data.cpp")
 add_library(raw_native STATIC ${LIB_SRCS})
 add_library(raw_native::raw_native ALIAS raw_native)
 target_include_directories(raw_native PUBLIC
@@ -86,6 +91,10 @@ if(RAW_NATIVE_BUILD_TESTS)
         target_compile_definitions(${name} PRIVATE RAW_SOURCE_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
         add_test(NAME ${name} COMMAND ${name})
     endforeach()
+    # The generator of the committed anisotropic table (method note 4 of 2026-10-12).
+    # Run by hand only: pbr_aniso_gen <out.f32>; test_pbr_aniso_table checks its output.
+    add_executable(pbr_aniso_gen tools/pbr_tables/aniso_gen.cpp ${RAW_NATIVE_NULL_BACKEND})
+    target_link_libraries(pbr_aniso_gen PRIVATE raw_native)
     # The glTF fuzzer (ROADMAP M2 criterion 2). ctest runs a short pass; CI runs a
     # million inputs under the sanitizers.
     add_executable(fuzz_gltf tests/fuzz_gltf.cpp ${RAW_NATIVE_NULL_BACKEND})

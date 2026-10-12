@@ -137,10 +137,10 @@ void Tables::buildHats() {
 // mu and the azimuth quadrant: HAbar4, HBbar4, then GA4, GB4 (moments of A4 and B4), then
 // HAA4, HBB4 (against each hat).
 void Tables::buildHatMeans4(const std::vector<double>& x, const std::vector<double>& w) {
-    hm4_.assign(std::size_t(kAnK) * kAnRough * kHm4, 0.0);
-    parallelRows(kAnK * kAnRough, int(std::max(1u, std::thread::hardware_concurrency())), [&](int row) {
-        const int ik = row / kAnRough, ir = row % kAnRough;
-        const double r = kRoughMax * ir / (kAnRough - 1), k = std::sqrt(double(ik) / (kAnK - 1));   // the k^2 axis
+    hm4_.assign(std::size_t(kHatAnK) * kHatAnRough * kHm4, 0.0);   // on the hat grid
+    parallelRows(kHatAnK * kHatAnRough, int(std::max(1u, std::thread::hardware_concurrency())), [&](int row) {
+        const int ik = row / kHatAnRough, ir = row % kHatAnRough;
+        const double r = kRoughMax * ir / (kHatAnRough - 1), k = std::sqrt(double(ik) / (kHatAnK - 1));   // the k^2 axis
         double* out = &hm4_[std::size_t(row) * kHm4];
         for (std::size_t p = 0; p < x.size(); ++p) for (std::size_t q = 0; q < x.size(); ++q) {
             const double ph = 0.5 * kPi * x[p], mu = x[q], ww = 2.0 * w[p] * w[q] * mu;
