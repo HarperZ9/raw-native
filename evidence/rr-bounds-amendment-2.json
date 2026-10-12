@@ -1,0 +1,12 @@
+{
+ "schema": "raw-native.evidence/1",
+ "amends": "evidence/rr-split.json and evidence/rr-bounds-amendment-1.json",
+ "written": "2026-10-12, after tool smoke renders at 160 x 90 and 64 spp on WARP (not dataset frames, not kept), before any dataset frame, model or training job",
+ "changes": {
+  "validation": "hall_b and terrain_100 (a terrain seed outside the training seeds). RT's clip_stress is not rendered: in the path tracer it is an enclosed corridor whose frames are black at 64 spp, which would add no signal. Nothing moves out of test.",
+  "raw_hero_camera": "eye (2.2, 1.7, 3.0), target (0, 0.9, 0), vertical field of view 0.9 rad, closer than the built-in test scene's camera, where the asset filled about 2% of the frame. The scene, its materials and its split are unchanged.",
+  "train_paths": "retro_room paths 1 and 2, dense_block paths 1 and 2, terrain_0, terrain_1, debris_0, debris_1 and builtin path 1 each: nine paths of 32 frames, 288 frames",
+  "validation_and_test_paths": "path 7 for every validation and test scene, 64 frames each"
+ },
+ "unchanged": "everything else in evidence/rr-bounds.json and amendment 1"
+}
