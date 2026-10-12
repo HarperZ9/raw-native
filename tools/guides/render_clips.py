@@ -30,21 +30,41 @@ PLAN = [(f"{g}-{c}", f"guide={g}&clip={c}&frame={'close' if c == 'talk' else 'me
 # the author's voice model, never in this repository) is muxed in from $GUIDES_VOICE/GUIDE/paced.wav.
 # Without GUIDES_VOICE the intros are skipped. Their length comes from the mouth curve.
 VOICE = Path(os.environ["GUIDES_VOICE"]) if os.environ.get("GUIDES_VOICE") else None
-PLAN += [(f"{g}-intro", f"guide={g}&clip=intro&frame=close", 0) for g in ("tallow", "pylon", "rerun")]
+# Tallow's intro stays close; Pylon's and Rerun's play medium and cut to the close (Pylon) or the
+# pixel bust (Rerun) on their close lines (templates/guides/intro.mjs, CLOSE_LINES).
+PLAN += [(f"{g}-intro", f"guide={g}&clip=intro&frame={'close' if g == 'tallow' else 'auto'}", 0) for g in ("tallow", "pylon", "rerun")]
+# An intro starts HEAD_TRIM s into its narration and ends TAIL s after the last word: the
+# narration's own lead-in (0.6 s) and tail (0.8 s) of silence are mostly cut, not the speech.
+HEAD_TRIM, TAIL = 0.45, 0.35
+# A web encode beside each intro master stays under this size (the author's phone upload limit is 30 MB).
+WEB_MB = 26
 PLAN += [("rerun-pan", "guide=rerun&clip=idle&frame=wide&move=pan&mode=sharp", 4.8),
          ("pylon-push", "guide=pylon&clip=idle&frame=close&move=push&ease=inout", 4.8)]
 
 
-def join(pieces: list, out: Path, audio: str | None) -> None:
-    """Join video pieces losslessly, and mux the narration in (AAC) when there is one."""
+def join(pieces: list, out: Path, audio: str | None, start: float = 0.0, seconds: float | None = None) -> None:
+    """Join video pieces losslessly, and mux the narration in (AAC) when there is one, taken
+    from `start` s into the narration for `seconds` (the audio itself is not altered)."""
     sys.path.insert(0, str(ROOT / "scripts"))
     import motion_render as mr
     ff = mr.find_ffmpeg(None)
     lst = out.with_suffix(".pieces.txt")
     lst.write_text("".join(f"file '{p.as_posix()}'\n" for p in pieces), encoding="utf-8")
-    src = ["-f", "concat", "-safe", "0", "-i", str(lst)] + (["-i", audio] if audio else [])
+    src = ["-f", "concat", "-safe", "0", "-i", str(lst)] + (["-ss", f"{start:.3f}", "-t", f"{seconds:.3f}", "-i", audio] if audio else [])
     maps = ["-map", "0:v"] + (["-map", "1:a", "-c:a", "aac", "-b:a", "192k"] if audio else [])
     subprocess.run([ff, "-y", "-loglevel", "error", *src, *maps, "-c:v", "copy", "-movflags", "+faststart", str(out)], check=True)
+
+
+def web(master: Path, out: Path, seconds: float) -> None:
+    """A 1080p web encode under WEB_MB: two-pass libx264 at the bitrate that fits, AAC 160 kb/s."""
+    sys.path.insert(0, str(ROOT / "scripts"))
+    import motion_render as mr
+    ff = mr.find_ffmpeg(None)
+    kbps = int(WEB_MB * 8 * 1024 * 1024 / seconds / 1000) - 160 - 100
+    common = ["-c:v", "libx264", "-preset", "slow", "-b:v", f"{kbps}k", "-maxrate", f"{int(kbps * 1.5)}k", "-bufsize", f"{kbps * 2}k", "-pix_fmt", "yuv420p", "-vf", "scale=1920:1080"]
+    log = str(out.with_suffix(".x264"))
+    subprocess.run([ff, "-y", "-loglevel", "error", "-i", str(master), *common, "-pass", "1", "-passlogfile", log, "-an", "-f", "mp4", "NUL"], check=True)
+    subprocess.run([ff, "-y", "-loglevel", "error", "-i", str(master), *common, "-pass", "2", "-passlogfile", log, "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", str(out)], check=True)
 
 
 def reel(out: Path, made: list, loops: int) -> None:
@@ -93,7 +113,7 @@ def main() -> int:
     plan = [tuple(e.split("=", 1)[0:1] + e.split("=", 1)[1].rsplit("=", 1)) for e in a.extra] if a.extra else PLAN
     plan = [(n, q, float(d)) for n, q, d in plan]
     for name, query, dur in plan:
-        audio = []
+        audio, start = [], 0.0
         if "clip=intro" in query and VOICE is None:
             print(f"{name}: skipped (set GUIDES_VOICE to the private narration folder)")
             continue
@@ -102,6 +122,7 @@ def main() -> int:
             m = json.loads((ROOT / "templates" / "guides" / "intros" / f"{g}.mouth.json").read_text(encoding="utf-8"))
             dur = dur or m["seconds"]
             query += f"&dur={dur}"
+            start, dur = HEAD_TRIM, m["sentences"][-1]["end"] + TAIL
             audio = ["--audio", str(VOICE / g / "paced.wav")]
         c = "action" if ("clip=action" in query or "move=" in query or "clip=intro" in query) else "loop"
         if a.only and name not in a.only:
@@ -111,7 +132,7 @@ def main() -> int:
         # Long clips render in 6 s pieces and are joined: on this machine a single page render
         # past about 8 s lost its frame posts to the local server (ERR_CONNECTION_TIMED_OUT), while
         # every piece of 8 s or less rendered cleanly. Clips are stateless in time, so the pieces join exactly.
-        pieces, t = [], 0.0
+        pieces, t = [], start if "clip=intro" in query else 0.0
         while t < dur - 1e-6:
             t1 = min(dur, t + 6.0)
             piece = out / "pieces" / f"{name}-{len(pieces):02d}.mp4"
@@ -134,7 +155,10 @@ def main() -> int:
                 return 1
             pieces.append(piece)
             t = t1
-        join(pieces, mp4, audio[1] if audio else None)
+        clip_start = start if "clip=intro" in query else 0.0
+        join(pieces, mp4, audio[1] if audio else None, clip_start, dur - clip_start)
+        if audio:
+            web(mp4, mp4.with_suffix(".web.mp4"), dur - clip_start)
         print(f"{name}: {time.time() - t0:.1f} s", flush=True)
         made.append((name, mp4, c))
     if not a.only and not a.extra:

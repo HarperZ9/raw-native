@@ -97,8 +97,10 @@ function pylonBust(mouth = 0, blink = false) {
 
 // Rerun: the glass prism shell with its receipts and the one flare, eyes on stalks, the
 // carapace, mouthparts and both claws, the tally scratched on the big one.
-function rerunBust(mouth = 0, blink = false) {
-  const c = canvas(64, 48);
+function rerunBust(mouth = 0, blink = false, gesture = null) {
+  // Gestures (drawn for the close lines of his intro): "wave", the small claw up; "tally", the
+  // big claw lifted toward the eyes with the scratches showing; "droop", stalks shorter and eyes down.
+  const c = canvas(64, 48), drop = gesture === "droop" ? 3 : 0;
   poly(c, [[10, 34], [14, 8], [30, 1], [50, 6], [54, 30], [36, 38]], "T");                 // shell body
   poly(c, [[14, 8], [30, 1], [50, 6], [34, 13]], "F");                                       // lit top face
   poly(c, [[34, 13], [50, 6], [54, 30], [36, 38]], "B");                                     // shadow face
@@ -109,15 +111,22 @@ function rerunBust(mouth = 0, blink = false) {
   c.set(51, 6, "W"); c.set(50, 6, "W");
   // Carapace and claws.
   ell(c, 28, 40, 14, 7, "C"); ell(c, 26, 38, 8, 3, "c");
-  poly(c, [[6, 40], [1, 33], [6, 30], [10, 36]], "C"); poly(c, [[1, 33], [0, 28], [5, 29]], "c");           // small claw
-  poly(c, [[44, 40], [52, 34], [61, 36], [62, 44], [50, 46]], "C"); poly(c, [[52, 34], [60, 28], [63, 34], [58, 37]], "c"); // big claw
-  for (const x of [53, 55, 57, 59]) line(c, x, 39, x - 1, 42, "W");                          // the tally
-  // Eye stalks and eyes.
+  if (gesture === "wave") { poly(c, [[10, 37], [4, 24], [8, 20], [13, 33]], "C"); poly(c, [[4, 24], [1, 17], [6, 16], [8, 20]], "c"); line(c, 2, 14, 0, 12, "W"); line(c, 7, 13, 8, 11, "W"); }
+  else { poly(c, [[6, 40], [1, 33], [6, 30], [10, 36]], "C"); poly(c, [[1, 33], [0, 28], [5, 29]], "c"); }   // small claw
+  if (gesture === "tally") {
+    poly(c, [[42, 38], [46, 26], [56, 20], [60, 28], [50, 36]], "C"); poly(c, [[46, 26], [50, 16], [57, 15], [56, 20]], "c");
+    for (const x of [49, 51, 53, 55]) line(c, x, 24, x - 1, 28, "W"); line(c, 48, 27, 56, 25, "W");      // four and the fifth across
+  } else {
+    poly(c, [[44, 40], [52, 34], [61, 36], [62, 44], [50, 46]], "C"); poly(c, [[52, 34], [60, 28], [63, 34], [58, 37]], "c"); // big claw
+    for (const x of [53, 55, 57, 59]) line(c, x, 39, x - 1, 42, "W");                        // the tally
+  }
+  // Eye stalks and eyes; looking at the claw for "tally", down for "droop".
+  const lookX = gesture === "tally" ? 1 : 0, lookY = gesture === "droop" ? 1 : gesture === "tally" ? 0 : -1;
   for (const sx of [21, 31]) {
-    line(c, sx, 37, sx + (sx < 26 ? -2 : 2), 26, "C"); line(c, sx + 1, 37, sx + 1 + (sx < 26 ? -2 : 2), 26, "c");
+    line(c, sx, 37, sx + (sx < 26 ? -2 : 2), 26 + drop, "C"); line(c, sx + 1, 37, sx + 1 + (sx < 26 ? -2 : 2), 26 + drop, "c");
     const ex = sx + (sx < 26 ? -2 : 2);
-    ell(c, ex, 23, 3, 3, "K");
-    if (blink) { c.span(23, ex - 2, ex + 2, "C"); c.span(22, ex - 2, ex + 2, "C"); } else c.set(ex + 1, 22, "W");
+    ell(c, ex, 23 + drop, 3, 3, "K");
+    if (blink) { c.span(23 + drop, ex - 2, ex + 2, "C"); c.span(22 + drop, ex - 2, ex + 2, "C"); } else c.set(ex + 1 + lookX, 23 + drop + lookY, "W");
   }
   // Mouthparts: two small plates that part as it talks.
   const gap = [0, 1, 2][mouth];
@@ -127,10 +136,13 @@ function rerunBust(mouth = 0, blink = false) {
   return c.tile();
 }
 
+export const RERUN_GESTURES = ["wave", "tally", "droop"];
 const MAKE = { tallow: tallowBust, pylon: pylonBust, rerun: rerunBust };
-// Every frame of every portrait: NAME-m0, -m1, -m2 (mouth) and NAME-blink.
+// Every frame of every portrait: NAME-m0, -m1, -m2 (mouth) and NAME-blink, and Rerun's gestures.
 export function portraitFrames() {
   const out = {};
   for (const [g, f] of Object.entries(MAKE)) { for (const m of [0, 1, 2]) out[`${g}-m${m}`] = f(m, false); out[`${g}-blink`] = f(0, true); }
+  // Rerun's gesture frames, each with its mouths and blink: NAME-GESTURE-m0..m2, NAME-GESTURE-blink.
+  for (const gst of RERUN_GESTURES) { for (const m of [0, 1, 2]) out[`rerun-${gst}-m${m}`] = rerunBust(m, false, gst); out[`rerun-${gst}-blink`] = rerunBust(0, true, gst); }
   return out;
 }

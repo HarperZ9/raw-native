@@ -12,7 +12,7 @@ import { loadTidepool, tidepool, REF } from "./worlds/tidepool.mjs";
 import { loadHarbour, harbour, HARBOUR_CAMERA, LAMP } from "./worlds/harbour.mjs";
 import { S as isoS, depth as isoDepth, sorted, castShadow } from "./worlds/iso_kit.mjs";
 import { clipBeat, framing, CLIPS } from "./motion.mjs";
-import { introPose } from "./intro.mjs";
+import { introPose, introFrame } from "./intro.mjs";
 import { sprite } from "./worlds/tidepool.mjs";
 const ATLAS = new URL("../../docs/motion/hanken-grotesk-500.atlas.json", import.meta.url).href;
 
@@ -64,7 +64,9 @@ function sheetFrame(g, style, A) {
 // A pixel portrait bust standing on the guide's feet, its frame picked by mouth and lids.
 function portrait(A, key, o, x, y) {
   const v = key === "pylon" ? (o.bark || 0) / 0.85 : o.mouth || 0, m = v > 0.6 ? 2 : v > 0.25 ? 1 : 0;
-  const name = (o.lid ?? 0.5) > 0.85 ? `portrait-${key}-blink` : `portrait-${key}-m${m}`, img = A.pixel.sprites[name].atlas.image;
+  // Rerun's bust takes a gesture frame from his pose (PROGRESS.md, step 19).
+  const gst = key !== "rerun" ? "" : (o.tally || 0) >= 5 ? "-tally" : (o.clawL || 0) > 30 ? "-wave" : (o.stalk ?? 1) < 0.95 ? "-droop" : "";
+  const name = (o.lid ?? 0.5) > 0.85 ? `portrait-${key}${gst}-blink` : `portrait-${key}${gst}-m${m}`, img = A.pixel.sprites[name].atlas.image;
   return [sprite(A.pixel, name, Math.round(x / 4 - img.width / 2), Math.round(y / 4 - img.height))];
 }
 
@@ -124,8 +126,9 @@ export function shot({ guide, style, kind = "scene", beat = null, title, layer =
         if (clip === "intro") b = { ...b, o: introPose(guide, b, t, ctx.assets.mouth), t };
         else if (clip) b = { ...clipBeat(guide, clip, b, t), t };
         const base = world(style, A).camera;
-        b = { ...b, ...framing(guide, style, b, frame, { ...base, ...(b.camera || {}) }) };
-        if (frame && frame !== "wide" && b.hud) b = { ...b, hud: null };
+        const fr = frame === "auto" && clip === "intro" ? introFrame(guide, t, ctx.assets.mouth) : frame;
+        b = { ...b, ...framing(guide, style, b, fr, { ...base, ...(b.camera || {}) }) };
+        if (fr && fr !== "wide" && b.hud) b = { ...b, hud: null };
         // A camera move: move(t, camera, beat) returns the camera (and pixel settings) at time t.
         if (move) b = { ...b, ...move(t, { ...base, ...(b.camera || {}) }, b) };
       }

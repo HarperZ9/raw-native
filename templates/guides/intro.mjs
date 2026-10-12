@@ -84,3 +84,17 @@ function blinks(t, base) {
   for (const b of BLINKS) { const u = (t - b) / 0.16; if (u >= 0 && u <= 1) return base + (1 - base) * (1 - Math.abs(2 * u - 1)); }
   return base;
 }
+
+// Which sentences cut to the close (Pylon's painted close, Rerun's pixel bust); the rest play in
+// the medium frame so the gestures show. A cut lands in the middle of the pause before a line,
+// never inside a word (PROGRESS.md, step 19). Tallow's intro stays close throughout: his
+// gestures already fit his close frame.
+export const CLOSE_LINES = { tallow: null, pylon: [0, 6, 7], rerun: [0, 5, 6] };
+export function introFrame(guide, t, M) {
+  const lines = CLOSE_LINES[guide];
+  if (!lines) return "close";
+  const S = M.sentences;
+  let k = 0;
+  for (let i = 1; i < S.length; i++) if (t >= (S[i - 1].end + S[i].start) / 2) k = i;
+  return lines.includes(k) ? "close" : "medium";
+}
