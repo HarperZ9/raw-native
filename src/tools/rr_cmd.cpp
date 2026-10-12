@@ -17,7 +17,7 @@ namespace {
 struct Args {
     std::string scene, out{"rr-out"};
     std::uint64_t path{0};
-    int frames{0}, first{0}, width{480}, height{270};
+    int frames{0}, first{0}, count{1 << 30}, width{480}, height{270};
     std::uint32_t spp{4096}, chunk{1024};
     bool cpu{false};
 };
@@ -29,6 +29,7 @@ bool parse(int argc, char** argv, Args& a){
         else if (!std::strcmp(k, "--path") && more) a.path = std::strtoull(argv[++i], nullptr, 10);
         else if (!std::strcmp(k, "--frames") && more) a.frames = std::atoi(argv[++i]);
         else if (!std::strcmp(k, "--first") && more) a.first = std::atoi(argv[++i]);
+        else if (!std::strcmp(k, "--count") && more) a.count = std::atoi(argv[++i]);
         else if (!std::strcmp(k, "--width") && more) a.width = std::atoi(argv[++i]);
         else if (!std::strcmp(k, "--height") && more) a.height = std::atoi(argv[++i]);
         else if (!std::strcmp(k, "--spp") && more) a.spp = (std::uint32_t)std::atoi(argv[++i]);
@@ -134,7 +135,7 @@ int rrRenderCommand(int argc, char** argv){
     rhi::Device* dev = a.cpu ? nullptr : rhi::device(why);
     if (!a.cpu && !dev){ std::printf("{\"error\": \"no GPU: %s\"}\n", why.c_str()); return 4; }
     const std::size_t n = (std::size_t)a.width * (std::size_t)a.height;
-    for (int k = a.first; k < a.frames; ++k){
+    for (int k = a.first; k < a.frames && k < a.first + a.count; ++k){
         const rt::PtCamera cam = rr::pathCamera(base, a.path, k, a.frames), prev = rr::pathCamera(base, a.path, k - 1, a.frames);
         rt::PathTraceDesc d;
         d.width = a.width; d.height = a.height; d.camera = cam; d.previous = prev;

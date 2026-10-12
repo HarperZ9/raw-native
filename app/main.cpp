@@ -17,6 +17,7 @@
 #include "raw/tools/sdf_cmd.hpp"
 #include "raw/tools/hw_rayquery_cmd.hpp"
 #include "raw/tools/rr_cmd.hpp"
+#include "raw/tools/rr_taa_cmd.hpp"
 #include "raw/tools/hw_async_cmd.hpp"
 #include "raw/tools/hw_wave16_cmd.hpp"
 #include "raw/tools/hw_mesh_cmd.hpp"
@@ -176,6 +177,7 @@ int main(int argc, char** argv){
     if (argc >= 2 && std::strcmp(argv[1], "sdf-render") == 0) return sdfRenderCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "hw-rayquery") == 0) return hwRayQueryCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "rr-render") == 0) return rrRenderCommand(argc - 1, argv + 1);
+    if (argc >= 2 && std::strcmp(argv[1], "rr-taa") == 0) return rrTaaCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "hw-async") == 0) return hwAsyncCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "hw-wave16") == 0) return hwWave16Command(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "hw-mesh") == 0) return hwMeshCommand(argc - 1, argv + 1);
