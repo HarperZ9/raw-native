@@ -1,13 +1,14 @@
 // The material model's second stage (evidence/m3-materials2-bounds.json): the iridescent Fresnel
 // against an exact polarized reference, clearcoat energy over anisotropic white metal, and volume
 // attenuation along each refracted path, each with its control.
-//   test_pbr_improve [--json] [--strict]
+//   test_pbr_improve [--json] [--strict] [--rule NR NP]   (NR x NP: the clearcoat check's rule at anisotropic points)
 #include "pbr_quadrature.hpp"
 #include "raw/core/parallel.hpp"
 #include "check.hpp"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
+#include <cstdlib>
 #include <cstring>
 #include <string>
 #include <thread>
@@ -73,11 +74,11 @@ Vol volume(const Tables& t) {
     }
     return v;
 }
-struct Coat { double worst{0}, excess{-1}, worstControl{0}; int points{0}; double atMu{0}, atRc{0}, atAn{0}, atR{0}; };
+struct Coat { double worst{0}, excess{-1}, worstControl{0}; int points{0}; double atMu{0}, atRc{0}, atAn{0}, atR{0}; double exMu{0}, exAz{0}, exC{0}, exRc{0}, exAn{0}, exR{0}; };
 // White metal, isotropic or anisotropic, under a clear coat: the albedo should stay 1.
 // stride > 1 keeps every stride-th grid point (both forms of each), so ctest stays short; --json
 // and --strict run the full grid of the bounds file.
-Coat coat(const Tables& t, int stride) {
+Coat coat(const Tables& t, int stride, int nrAn, int npAn) {
     struct P { Material m; double mu, az; Rgb a; };
     std::vector<P> ps;
     int n = 0;
@@ -86,13 +87,16 @@ Coat coat(const Tables& t, int stride) {
             Material m; m.baseColor = {1, 1, 1}; m.roughness = r; m.anisotropy = an; m.clearcoat = c; m.clearcoatRoughness = rc; m.specExact = spec == 1;
             ps.push_back({m, mu, az * kPi / 180.0, {}});
         }
-    raw::parallelRows(int(ps.size()), threads(), [&](int k) { ps[std::size_t(k)].a = albedo(ps[std::size_t(k)].m, t, view(ps[std::size_t(k)].mu, ps[std::size_t(k)].az)); });
+    raw::parallelRows(int(ps.size()), threads(), [&](int k) {
+        P& p = ps[std::size_t(k)];
+        p.a = p.m.anisotropy > 0.0 ? albedo(p.m, t, view(p.mu, p.az), nrAn, npAn) : albedo(p.m, t, view(p.mu, p.az));
+    });
     Coat r;
     for (const P& p : ps) {
         const double dev = std::fabs(p.a.r - 1.0);
         if (p.m.specExact) { r.worstControl = std::max(r.worstControl, dev); continue; }
         ++r.points;
-        r.excess = std::max(r.excess, p.a.r - 1.0);
+        if (p.a.r - 1.0 > r.excess) { r.excess = p.a.r - 1.0; r.exMu = p.mu; r.exAz = p.az * 180.0 / kPi; r.exC = p.m.clearcoat; r.exRc = p.m.clearcoatRoughness; r.exAn = p.m.anisotropy; r.exR = p.m.roughness; }
         if (dev > r.worst) { r.worst = dev; r.atMu = p.mu; r.atRc = p.m.clearcoatRoughness; r.atAn = p.m.anisotropy; r.atR = p.m.roughness; }
     }
     return r;
@@ -101,12 +105,17 @@ Coat coat(const Tables& t, int stride) {
 
 int main(int argc, char** argv) {
     bool json = false, strict = false;
-    for (int i = 1; i < argc; ++i) { json = json || !std::strcmp(argv[i], "--json"); strict = strict || json || !std::strcmp(argv[i], "--strict"); }
+    int nrAn = 768, npAn = 384;   // the anisotropic points' rule (method note 4 of 2026-10-12)
+    for (int i = 1; i < argc; ++i) {
+        json = json || !std::strcmp(argv[i], "--json");
+        strict = strict || json || !std::strcmp(argv[i], "--strict");
+        if (!std::strcmp(argv[i], "--rule") && i + 2 < argc) { nrAn = std::atoi(argv[i + 1]); npAn = std::atoi(argv[i + 2]); i += 2; }
+    }
     const Irid ir = iridescence();
     const Tables t;
     warm();
     const Vol vo = volume(t);
-    const Coat co = coat(t, strict ? 1 : 4);
+    const Coat co = coat(t, strict ? 1 : 4, nrAn, npAn);
     // The clearcoat bound is a recorded open failure (evidence/m3-materials2-runs.json): --json and
     // --strict gate it, ctest prints it. Its control is always gated.
     if (strict) CHECK(co.worst <= 2e-2 && co.excess <= 1e-3);
@@ -118,9 +127,11 @@ int main(int argc, char** argv) {
     CHECK(ir.worstSchlick > 0.04 && ir.worstSpec > 0.04);   // controls
     std::printf("{\n \"iridescence_exact\": {\"worst\": %.4f, \"at_cos\": %.2f, \"at_base_ior\": %.2f, \"control_schlick\": %.4f, \"control_spec\": %.4f},\n"
                 " \"volume_path_length\": {\"points\": %d, \"worst\": %.2e, \"control\": %.4f},\n"
-                " \"clearcoat_energy\": {\"points\": %d, \"worst\": %.4f, \"max_excess\": %.2e, \"at\": {\"mu\": %.2f, \"coat_roughness\": %.2f, \"anisotropy\": %.1f, \"roughness\": %.1f}, \"control\": %.4f},\n"
+                " \"clearcoat_energy\": {\"points\": %d, \"worst\": %.4f, \"max_excess\": %.2e, \"at\": {\"mu\": %.2f, \"coat_roughness\": %.2f, \"anisotropy\": %.1f, \"roughness\": %.1f},\n"
+                "   \"excess_at\": {\"mu\": %.2f, \"azimuth\": %.0f, \"clearcoat\": %.1f, \"coat_roughness\": %.2f, \"anisotropy\": %.1f, \"roughness\": %.1f},\n"
+                "   \"anisotropic_rule\": [%d, %d], \"control\": %.4f},\n"
                 " \"failures\": %d\n}\n",
                 ir.worst, ir.atCos, ir.atBase, ir.worstSchlick, ir.worstSpec, vo.points, vo.worst, vo.worstControl,
-                co.points, co.worst, co.excess, co.atMu, co.atRc, co.atAn, co.atR, co.worstControl, raw_test_failures());
+                co.points, co.worst, co.excess, co.atMu, co.atRc, co.atAn, co.atR, co.exMu, co.exAz, co.exC, co.exRc, co.exAn, co.exR, nrAn, npAn, co.worstControl, raw_test_failures());
     return json ? (raw_test_failures() ? 1 : 0) : raw_test_summary();
 }

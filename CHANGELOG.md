@@ -6,6 +6,20 @@ the day the release was published on GitHub, in UTC.
 
 ## Unreleased
 
+- **Clear coat ceiling passes** (roadmap M3, criterion 6). The anisotropic split-albedo table is
+  denser (16 azimuth nodes, 48 roughness rows, 16,384 samples per entry) and is now generated once
+  by `tools/pbr_tables/aniso_gen.cpp`, committed with its SHA-256 and embedded at build time, so no
+  build or `Tables()` call recomputes it. A white anisotropic metal under a clear coat now stays at
+  most 5.9e-4 over a white furnace (ceiling 1e-3; it was 2.65e-3), and the uncoated anisotropic
+  furnace improved from 2.7e-3 to 9.3e-4. `test_pbr_aniso_table` checks the hash and regenerates
+  64 seeded entries in CI, with two controls. The clear coat check now integrates anisotropic
+  points with a finer rule, because the old one was shown to be 1.8e-3 off on the most
+  anisotropic lobe; the old rule's figure on the new table (1.23e-3) is kept in the evidence.
+  GPU material parity on WARP: 0.0535 of its bound.
+  - API snapshot 2: three grid constants of `raw::pbr::Tables` changed value. See
+    `api/snapshot-2/MIGRATION.md`.
+  - The plugin C ABI part of criterion 5 is deferred by dated note until a real plugin consumer
+    exists.
 - **Verified viewer** (roadmap M3, criterion 4; decision A4). `web/viewer/` opens a glTF or GLB
   file, renders it on the GPU through WebGPU and on the CPU reference, and shows the two frames,
   the error map between them and the GPU certificate with its verdict. The owned assets load with

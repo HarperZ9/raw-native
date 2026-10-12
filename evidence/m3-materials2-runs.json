@@ -97,7 +97,28 @@
    "what": "gpu_pbr_parity and gpu_lighting_parity on the RTX 4090 under the GPU lock (04:56:37Z to 04:56:42Z), pinned 82e8d81",
    "result": "pass: material parity 0.054 of the bound, 0 values outside, control fails; lighting shading 0.36, prefilter 0.0035, clusters 0 misses off the boundary.",
    "evidence": "evidence/m3-materials2-gpu.json"
+  },
+  {
+   "run": "clearcoat-9",
+   "date": "2026-10-12",
+   "what": "method note 4: the dense anisotropic table (32 x 16 x 48 x 12, 16,384 samples) generated once and embedded, hats on the old grid, the 768 x 384 rule at anisotropic points",
+   "result": "pass: |albedo - 1| worst 0.0112 (bound 0.02); excess worst 5.93e-04 (ceiling 1e-3) at view cosine 0.05, azimuth 45 degrees, coat 0.5, coat roughness 0.3, anisotropy 1.0, roughness 0.2. The specExact control fails at 0.1274. With the 384 x 192 rule on the same table the excess reads 1.23e-03, which the exploration traced to that rule's own 1.8e-3 error.",
+   "evidence": "evidence/m3-materials2-cpu-run.json"
+  },
+  {
+   "run": "aniso-table-1",
+   "date": "2026-10-12",
+   "what": "pbr_aniso_gen wrote src/renderer/data/aniso_albedo.f32 (2,359,296 bytes, 11.6 s on 32 threads); test_pbr_aniso_table checks it",
+   "result": "pass: SHA-256 02d0431fab66a1ba0539f50d20d78cd4a68b6d49deb553e462bf0f2dfa961338 matches the committed file; 64 seeded entries regenerated, worst 2.93e-08 (bound 1e-6); controls fail as required (flipped bit changes the hash; 1,024 samples miss by 1.01e-03).",
+   "evidence": "evidence/m3-materials2-cpu-run.json"
+  },
+  {
+   "run": "no-regression-3",
+   "date": "2026-10-12",
+   "what": "ctest (59 of 59), test_pbr_energy --full, test_pbr_reciprocity, test_pbr_spec, test_lighting --full, and the material and lighting GPU parity on D3D12 WARP",
+   "result": "pass. furnace_anisotropic worst 9.31e-4 (bound 2e-2; was 2.69e-3); conservation worst 3.46e-4; reciprocity 3.75e-14. GPU material parity on WARP 0.0535 of the bound (was 0.054), control fails; lighting shading on WARP 0.47. The table buffer grows from 1,622,447 to 2,065,391 floats. Cost: test_pbr_improve takes about 31 s in ctest mode and about 2 minutes with --json.",
+   "evidence": "evidence/m3-materials2-gpu.json"
   }
  ],
- "status": "Passing: iridescence against the exact polarized reference (0.0185) and the volume path length. Clearcoat energy: |albedo - 1| passes at 0.0105 (bound 0.02, was 0.230); open failure on the excess, albedo up to 1.00265 against 1 + 1e-3, inherited from the uncoated anisotropic base (1.00269), not loosened."
+ "status": "Second stage passes on the CPU: iridescence, volume path length and clearcoat energy, including the 1 + 1e-3 ceiling (excess 5.93e-04) since run clearcoat-9 (2026-10-12). GPU material parity passes on WARP."
 }

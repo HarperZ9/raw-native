@@ -1,0 +1,562 @@
+raw/core/api_snapshot.hpp | ::raw | inline constexpr int kApiSnapshot=2
+raw/renderer/accel.hpp | ::raw | struct LinearAccel
+raw/renderer/accel.hpp | ::raw::LinearAccel | bool occluded(const Ray&r,float maxDist)const
+raw/renderer/accel.hpp | ::raw::LinearAccel | std::vector<Tri,ArenaAllocator<Tri>>tris
+raw/renderer/accel.hpp | ::raw::LinearAccel | void build(const Scene&s,Arena*arena=nullptr)
+raw/renderer/bake.hpp | ::raw::bake | AmbientCube bakeAmbientCube(const Tracer&t,D3 p,int paths,std::uint64_t seed)
+raw/renderer/bake.hpp | ::raw::bake | Rgb shadeAmbientCube(const AmbientCube&c,D3 n)
+raw/renderer/bake.hpp | ::raw::bake | Rgb shadeRnm(const Lightmap&lm,int i,int j,D3 nTangent)
+raw/renderer/bake.hpp | ::raw::bake | Rgb shadeRnmAt(const Lightmap&lm,double u,double v,D3 nTangent)
+raw/renderer/bake.hpp | ::raw::bake | Room furnaceBox(double albedo,double emission)
+raw/renderer/bake.hpp | ::raw::bake | Room testRoom()
+raw/renderer/bake.hpp | ::raw::bake | class Tracer
+raw/renderer/bake.hpp | ::raw::bake | inline constexpr D3 kBasis[3]={{-0.408248290463863,0.707106781186548,0.577350269189626},{-0.408248290463863,-0.707106781186548,0.577350269189626},{0.816496580927726,0.0,0.577350269189626}}
+raw/renderer/bake.hpp | ::raw::bake | std::vector<Lightmap>bakeLightmaps(const Tracer&t,double texelsPerMetre,int paths,int threads)
+raw/renderer/bake.hpp | ::raw::bake | struct AmbientCube
+raw/renderer/bake.hpp | ::raw::bake | struct Lightmap
+raw/renderer/bake.hpp | ::raw::bake | struct Quad
+raw/renderer/bake.hpp | ::raw::bake | struct Room
+raw/renderer/bake.hpp | ::raw::bake | using lighting::D3
+raw/renderer/bake.hpp | ::raw::bake | using lighting::Rgb
+raw/renderer/bake.hpp | ::raw::bake | void bakeTexel(const Tracer&t,Lightmap&lm,int i,int j,int paths,std::uint64_t seed)
+raw/renderer/bake.hpp | ::raw::bake | void quadFrame(const Quad&q,D3&t,D3&b,D3&n)
+raw/renderer/bake.hpp | ::raw::bake::AmbientCube | Rgb face[6]
+raw/renderer/bake.hpp | ::raw::bake::Lightmap | D3 texelCentre(const Room&room,int i,int j)const
+raw/renderer/bake.hpp | ::raw::bake::Lightmap | int n1{0}
+raw/renderer/bake.hpp | ::raw::bake::Lightmap | int n2{0}
+raw/renderer/bake.hpp | ::raw::bake::Lightmap | int quad{0}
+raw/renderer/bake.hpp | ::raw::bake::Lightmap | std::vector<Rgb>basis[3]
+raw/renderer/bake.hpp | ::raw::bake::Quad | D3 e1
+raw/renderer/bake.hpp | ::raw::bake::Quad | D3 e2
+raw/renderer/bake.hpp | ::raw::bake::Quad | D3 o
+raw/renderer/bake.hpp | ::raw::bake::Quad | Rgb albedo
+raw/renderer/bake.hpp | ::raw::bake::Quad | Rgb emission
+raw/renderer/bake.hpp | ::raw::bake::Room | std::vector<Quad>quads
+raw/renderer/bake.hpp | ::raw::bake::Room | std::vector<lighting::Light>lights
+raw/renderer/bake.hpp | ::raw::bake::Tracer | Rgb basisIrradiance(D3 p,D3 n,D3 b,int paths,std::uint64_t seed)const
+raw/renderer/bake.hpp | ::raw::bake::Tracer | Rgb directLight(D3 p,D3 n)const
+raw/renderer/bake.hpp | ::raw::bake::Tracer | Rgb irradiance(D3 p,D3 n,int paths,std::uint64_t seed,bool withDirect=true)const
+raw/renderer/bake.hpp | ::raw::bake::Tracer | const Room&room()const
+raw/renderer/bake.hpp | ::raw::bake::Tracer | explicit Tracer(const Room&room)
+raw/renderer/bake.hpp | ::raw::bake::Tracer | int trace(D3 o,D3 d,double&t)const
+raw/renderer/brdf.hpp | ::raw::brdf | class EnergyTable
+raw/renderer/brdf.hpp | ::raw::brdf | double albedoVndf(double mu,double alpha,int n)
+raw/renderer/brdf.hpp | ::raw::brdf | double alphaOf(double roughness)
+raw/renderer/brdf.hpp | ::raw::brdf | double ggxD(double muH,double alpha)
+raw/renderer/brdf.hpp | ::raw::brdf | double multiScatter(const EnergyTable&t,double muO,double muI,double roughness)
+raw/renderer/brdf.hpp | ::raw::brdf | double schlickF(double f0,double voh)
+raw/renderer/brdf.hpp | ::raw::brdf | double smithG1(double mu,double alpha)
+raw/renderer/brdf.hpp | ::raw::brdf | double smithG2(double muO,double muI,double alpha)
+raw/renderer/brdf.hpp | ::raw::brdf | double smithV(double muO,double muI,double alpha)
+raw/renderer/brdf.hpp | ::raw::brdf | inline constexpr double kPi=3.14159265358979323846
+raw/renderer/brdf.hpp | ::raw::brdf | void gaussLegendre01(int n,std::vector<double>&x,std::vector<double>&w)
+raw/renderer/brdf.hpp | ::raw::brdf::EnergyTable | EnergyTable()
+raw/renderer/brdf.hpp | ::raw::brdf::EnergyTable | double E(double mu,double roughness)const
+raw/renderer/brdf.hpp | ::raw::brdf::EnergyTable | double Eavg(double roughness)const
+raw/renderer/brdf.hpp | ::raw::brdf::EnergyTable | static constexpr double kRoughMax=1.05
+raw/renderer/brdf.hpp | ::raw::brdf::EnergyTable | static constexpr double kThetaPad=0.05
+raw/renderer/brdf.hpp | ::raw::brdf::EnergyTable | static constexpr int kRough=128
+raw/renderer/brdf.hpp | ::raw::brdf::EnergyTable | static constexpr int kSamples=1<<12
+raw/renderer/brdf.hpp | ::raw::brdf::EnergyTable | static constexpr int kTheta=128
+raw/renderer/bvh.hpp | ::raw | class Bvh
+raw/renderer/bvh.hpp | ::raw | struct Hit
+raw/renderer/bvh.hpp | ::raw::Bvh | bool closest(const Ray&r,float tMax,Hit&hit)const
+raw/renderer/bvh.hpp | ::raw::Bvh | bool occluded(const Ray&r,float tMax)const
+raw/renderer/bvh.hpp | ::raw::Bvh | const std::vector<Tri>&triangles()const
+raw/renderer/bvh.hpp | ::raw::Bvh | std::size_t nodeCount()const
+raw/renderer/bvh.hpp | ::raw::Bvh | void build(std::vector<Tri>tris)
+raw/renderer/bvh.hpp | ::raw::Hit | float t{0}
+raw/renderer/bvh.hpp | ::raw::Hit | float u{0}
+raw/renderer/bvh.hpp | ::raw::Hit | float v{0}
+raw/renderer/bvh.hpp | ::raw::Hit | int tri{-1}
+raw/renderer/colour.hpp | ::raw::colour | Mat3 conversion(const Primaries&src,const Primaries&dst,bool bradford=true)
+raw/renderer/colour.hpp | ::raw::colour | Mat3 inverse(const Mat3&m)
+raw/renderer/colour.hpp | ::raw::colour | Mat3 multiply(const Mat3&a,const Mat3&b)
+raw/renderer/colour.hpp | ::raw::colour | Mat3 rgbToXyz(const Primaries&p)
+raw/renderer/colour.hpp | ::raw::colour | RGB agx(const RGB&c)
+raw/renderer/colour.hpp | ::raw::colour | RGB apply(const Mat3&m,const RGB&v)
+raw/renderer/colour.hpp | ::raw::colour | RGB pbrNeutral(const RGB&c)
+raw/renderer/colour.hpp | ::raw::colour | bool parsePipeline(std::string_view name,Pipeline&out)
+raw/renderer/colour.hpp | ::raw::colour | class Transform
+raw/renderer/colour.hpp | ::raw::colour | double bt1886Decode(double encoded)
+raw/renderer/colour.hpp | ::raw::colour | double bt1886Encode(double linear)
+raw/renderer/colour.hpp | ::raw::colour | double pqDecode(double encoded)
+raw/renderer/colour.hpp | ::raw::colour | double pqEncode(double linear100)
+raw/renderer/colour.hpp | ::raw::colour | double srgbDecode(double encoded)
+raw/renderer/colour.hpp | ::raw::colour | double srgbEncode(double linear)
+raw/renderer/colour.hpp | ::raw::colour | double srgbEncodeExtended(double linear)
+raw/renderer/colour.hpp | ::raw::colour | enum class Output{Srgb,DisplayP3,Rec2020,Rec2100Pq,SrgbExtended}
+raw/renderer/colour.hpp | ::raw::colour | enum class Tone{Clip,PbrNeutral,AgX,Aces2}
+raw/renderer/colour.hpp | ::raw::colour | extern const Primaries kAP0
+raw/renderer/colour.hpp | ::raw::colour | extern const Primaries kAP1
+raw/renderer/colour.hpp | ::raw::colour | extern const Primaries kP3D65
+raw/renderer/colour.hpp | ::raw::colour | extern const Primaries kRec2020
+raw/renderer/colour.hpp | ::raw::colour | extern const Primaries kRec709
+raw/renderer/colour.hpp | ::raw::colour | std::vector<RGB>grid()
+raw/renderer/colour.hpp | ::raw::colour | std::vector<std::string>pipelineNames()
+raw/renderer/colour.hpp | ::raw::colour | struct Pipeline
+raw/renderer/colour.hpp | ::raw::colour | struct Primaries
+raw/renderer/colour.hpp | ::raw::colour | using Mat3=std::array<double,9>
+raw/renderer/colour.hpp | ::raw::colour | using RGB=std::array<float,3>
+raw/renderer/colour.hpp | ::raw::colour::Pipeline | Output output=Output::Srgb
+raw/renderer/colour.hpp | ::raw::colour::Pipeline | Tone tone=Tone::Clip
+raw/renderer/colour.hpp | ::raw::colour::Pipeline | float peakNits=100.0f
+raw/renderer/colour.hpp | ::raw::colour::Pipeline | std::string name
+raw/renderer/colour.hpp | ::raw::colour::Primaries | double b[2]
+raw/renderer/colour.hpp | ::raw::colour::Primaries | double g[2]
+raw/renderer/colour.hpp | ::raw::colour::Primaries | double r[2]
+raw/renderer/colour.hpp | ::raw::colour::Primaries | double w[2]
+raw/renderer/colour.hpp | ::raw::colour::Transform | RGB apply(const RGB&sceneLinear709)const
+raw/renderer/colour.hpp | ::raw::colour::Transform | const Pipeline&pipeline()const
+raw/renderer/colour.hpp | ::raw::colour::Transform | explicit Transform(const Pipeline&p)
+raw/renderer/colour.hpp | ::raw::colour::Transform | std::string aces2Json()const
+raw/renderer/colour.hpp | ::raw::colour::Transform | ~Transform()
+raw/renderer/colour.hpp | ::raw::colour::aces2 | struct Transform
+raw/renderer/composite.hpp | ::raw | Buffer<Vec3>shade(const GBuffer&g,const Buffer<float>&ao,const Scene&s,Arena*arena=nullptr)
+raw/renderer/composite.hpp | ::raw | Buffer<Vec3>shadeHDR(const GBuffer&g,const Buffer<float>&ao,const Scene&s,Arena*arena=nullptr)
+raw/renderer/composite.hpp | ::raw | Buffer<Vec3>tonemapReinhard(const Buffer<Vec3>&hdr,Arena*arena=nullptr)
+raw/renderer/composite.hpp | ::raw | float maxRadiance(const Buffer<Vec3>&hdr)
+raw/renderer/composite.hpp | ::raw | float tonemapReinhard(float L)
+raw/renderer/gbuffer.hpp | ::raw | struct GBuffer
+raw/renderer/gbuffer.hpp | ::raw::GBuffer | Buffer<Vec2>motion
+raw/renderer/gbuffer.hpp | ::raw::GBuffer | Buffer<Vec3>albedo
+raw/renderer/gbuffer.hpp | ::raw::GBuffer | Buffer<Vec3>normal
+raw/renderer/gbuffer.hpp | ::raw::GBuffer | Buffer<Vec3>position
+raw/renderer/gbuffer.hpp | ::raw::GBuffer | Buffer<float>depth
+raw/renderer/gbuffer.hpp | ::raw::GBuffer | Buffer<uint8_t>mask
+raw/renderer/gbuffer.hpp | ::raw::GBuffer | GBuffer()=default
+raw/renderer/gbuffer.hpp | ::raw::GBuffer | explicit GBuffer(Arena*a)
+raw/renderer/gbuffer.hpp | ::raw::GBuffer | int h{0}
+raw/renderer/gbuffer.hpp | ::raw::GBuffer | int w{0}
+raw/renderer/gbuffer.hpp | ::raw::GBuffer | void resize(int W,int H)
+raw/renderer/gpu.hpp | ::raw | bool gpuCompiled()
+raw/renderer/gpu.hpp | ::raw | bool gpuInit(GpuAdapterInfo&info,std::string&err)
+raw/renderer/gpu.hpp | ::raw | bool renderGpu(const Scene&scene,int w,int h,const Mat4&prevViewProj,const RenderOptions&opts,FrameResult&out,std::string&err,bool frameOnly=false)
+raw/renderer/gpu.hpp | ::raw | const char*gpuBackendName()
+raw/renderer/gpu_reconcile.hpp | ::raw | GpuReconcile reconcileGpuCpu(const FrameResult&gpu,const FrameResult&cpu,bool rt)
+raw/renderer/gpu_reconcile.hpp | ::raw | std::string gpuCertificateJson(const GpuReconcile&r,const GpuAdapterInfo&adapter,const std::string&renderer,const std::string&paramsJson,double gpuMs,double cpuMs)
+raw/renderer/gpu_reconcile.hpp | ::raw | struct GpuChannelCheck
+raw/renderer/gpu_reconcile.hpp | ::raw | struct GpuReconcile
+raw/renderer/gpu_reconcile.hpp | ::raw | using GpuAdapterInfo=rhi::AdapterInfo
+raw/renderer/gpu_reconcile.hpp | ::raw::GpuChannelCheck | bool pass{false}
+raw/renderer/gpu_reconcile.hpp | ::raw::GpuChannelCheck | double bound{0}
+raw/renderer/gpu_reconcile.hpp | ::raw::GpuChannelCheck | double maxError{0}
+raw/renderer/gpu_reconcile.hpp | ::raw::GpuChannelCheck | double rmse{0}
+raw/renderer/gpu_reconcile.hpp | ::raw::GpuChannelCheck | long long values{0}
+raw/renderer/gpu_reconcile.hpp | ::raw::GpuChannelCheck | std::string name
+raw/renderer/gpu_reconcile.hpp | ::raw::GpuReconcile | bool cpuWithin{false}
+raw/renderer/gpu_reconcile.hpp | ::raw::GpuReconcile | bool gpuWithin{false}
+raw/renderer/gpu_reconcile.hpp | ::raw::GpuReconcile | bool maskPass{false}
+raw/renderer/gpu_reconcile.hpp | ::raw::GpuReconcile | bool pass()const
+raw/renderer/gpu_reconcile.hpp | ::raw::GpuReconcile | bool reconcilePass{false}
+raw/renderer/gpu_reconcile.hpp | ::raw::GpuReconcile | bool rt{true}
+raw/renderer/gpu_reconcile.hpp | ::raw::GpuReconcile | bool sizeMatch{false}
+raw/renderer/gpu_reconcile.hpp | ::raw::GpuReconcile | bool verdictPass{false}
+raw/renderer/gpu_reconcile.hpp | ::raw::GpuReconcile | double maskMismatchFraction{0}
+raw/renderer/gpu_reconcile.hpp | ::raw::GpuReconcile | float cpuAoRmse{0}
+raw/renderer/gpu_reconcile.hpp | ::raw::GpuReconcile | float gpuAoRmse{0}
+raw/renderer/gpu_reconcile.hpp | ::raw::GpuReconcile | int height{0}
+raw/renderer/gpu_reconcile.hpp | ::raw::GpuReconcile | int width{0}
+raw/renderer/gpu_reconcile.hpp | ::raw::GpuReconcile | long long coveredBoth{0}
+raw/renderer/gpu_reconcile.hpp | ::raw::GpuReconcile | long long coveredEither{0}
+raw/renderer/gpu_reconcile.hpp | ::raw::GpuReconcile | long long maskMismatch{0}
+raw/renderer/gpu_reconcile.hpp | ::raw::GpuReconcile | std::string cpuFrameSha256
+raw/renderer/gpu_reconcile.hpp | ::raw::GpuReconcile | std::string gpuFrameSha256
+raw/renderer/gpu_reconcile.hpp | ::raw::GpuReconcile | std::string reason
+raw/renderer/gpu_reconcile.hpp | ::raw::GpuReconcile | std::vector<GpuChannelCheck>channels
+raw/renderer/lighting.hpp | ::raw::lighting | Cube cubeFrom(Rgb(*radiance)(D3),int size,int levels)
+raw/renderer/lighting.hpp | ::raw::lighting | D3 toLocal(const Sample&s,D3 w)
+raw/renderer/lighting.hpp | ::raw::lighting | Rgb illuminance(const Light&l,D3 p,D3&toLight)
+raw/renderer/lighting.hpp | ::raw::lighting | Rgb proceduralSky(D3 dir)
+raw/renderer/lighting.hpp | ::raw::lighting | Rgb shIrradiance(const std::vector<Rgb>&sh,D3 n)
+raw/renderer/lighting.hpp | ::raw::lighting | Rgb shadeIbl(const Sample&s,const pbr::Tables&t,const Cube&c,const std::vector<Rgb>&sh)
+raw/renderer/lighting.hpp | ::raw::lighting | Rgb shadeIblReference(const Sample&s,const pbr::Tables&t,const Cube&c,int n)
+raw/renderer/lighting.hpp | ::raw::lighting | Rgb shadePunctual(const Sample&s,const pbr::Tables&t,const std::vector<Light>&lights,const std::vector<int>&list)
+raw/renderer/lighting.hpp | ::raw::lighting | bool lightTouchesBox(const Light&l,D3 lo,D3 hi)
+raw/renderer/lighting.hpp | ::raw::lighting | double ev100(double aperture,double shutter,double iso)
+raw/renderer/lighting.hpp | ::raw::lighting | double exposure(double ev100)
+raw/renderer/lighting.hpp | ::raw::lighting | enum class LightType:std::uint8_t{Directional,Point,Spot}
+raw/renderer/lighting.hpp | ::raw::lighting | inline constexpr int kPrefilterSamples=512
+raw/renderer/lighting.hpp | ::raw::lighting | std::vector<Rgb>shProject(const Cube&c)
+raw/renderer/lighting.hpp | ::raw::lighting | std::vector<std::vector<int>>assignClusters(const ClusterGrid&g,const std::vector<Light>&lights,int*overflow=nullptr)
+raw/renderer/lighting.hpp | ::raw::lighting | struct ClusterGrid
+raw/renderer/lighting.hpp | ::raw::lighting | struct Cube
+raw/renderer/lighting.hpp | ::raw::lighting | struct Light
+raw/renderer/lighting.hpp | ::raw::lighting | struct Sample
+raw/renderer/lighting.hpp | ::raw::lighting | using pbr::D3
+raw/renderer/lighting.hpp | ::raw::lighting | using pbr::Rgb
+raw/renderer/lighting.hpp | ::raw::lighting | void prefilter(Cube&c,int samples)
+raw/renderer/lighting.hpp | ::raw::lighting::ClusterGrid | double aspect{16.0 / 9.0}
+raw/renderer/lighting.hpp | ::raw::lighting::ClusterGrid | double farZ{200.0}
+raw/renderer/lighting.hpp | ::raw::lighting::ClusterGrid | double fovy{1.0}
+raw/renderer/lighting.hpp | ::raw::lighting::ClusterGrid | double nearZ{0.1}
+raw/renderer/lighting.hpp | ::raw::lighting::ClusterGrid | int clusterOf(D3 p)const
+raw/renderer/lighting.hpp | ::raw::lighting::ClusterGrid | int count()const
+raw/renderer/lighting.hpp | ::raw::lighting::ClusterGrid | static constexpr int kMaxPerCluster=256
+raw/renderer/lighting.hpp | ::raw::lighting::ClusterGrid | static constexpr int kX=16
+raw/renderer/lighting.hpp | ::raw::lighting::ClusterGrid | static constexpr int kY=9
+raw/renderer/lighting.hpp | ::raw::lighting::ClusterGrid | static constexpr int kZ=24
+raw/renderer/lighting.hpp | ::raw::lighting::ClusterGrid | void bounds(int cluster,D3&lo,D3&hi)const
+raw/renderer/lighting.hpp | ::raw::lighting::Cube | Rgb sample(int level,D3 dir)const
+raw/renderer/lighting.hpp | ::raw::lighting::Cube | Rgb sampleRough(double roughness,D3 dir)const
+raw/renderer/lighting.hpp | ::raw::lighting::Cube | Rgb texel(int level,int face,int y,int x)const
+raw/renderer/lighting.hpp | ::raw::lighting::Cube | int levels{6}
+raw/renderer/lighting.hpp | ::raw::lighting::Cube | int size{32}
+raw/renderer/lighting.hpp | ::raw::lighting::Cube | std::size_t levelOffset(int level)const
+raw/renderer/lighting.hpp | ::raw::lighting::Cube | std::vector<double>rgb
+raw/renderer/lighting.hpp | ::raw::lighting::Light | D3 direction{0,0,-1}
+raw/renderer/lighting.hpp | ::raw::lighting::Light | D3 position{0,0,0}
+raw/renderer/lighting.hpp | ::raw::lighting::Light | LightType type{LightType::Point}
+raw/renderer/lighting.hpp | ::raw::lighting::Light | Rgb color{1,1,1}
+raw/renderer/lighting.hpp | ::raw::lighting::Light | double innerCone{0}
+raw/renderer/lighting.hpp | ::raw::lighting::Light | double intensity{1}
+raw/renderer/lighting.hpp | ::raw::lighting::Light | double outerCone{0.7853981633974483}
+raw/renderer/lighting.hpp | ::raw::lighting::Light | double range{0}
+raw/renderer/lighting.hpp | ::raw::lighting::Sample | D3 n{0,0,1}
+raw/renderer/lighting.hpp | ::raw::lighting::Sample | D3 p
+raw/renderer/lighting.hpp | ::raw::lighting::Sample | D3 t{1,0,0}
+raw/renderer/lighting.hpp | ::raw::lighting::Sample | D3 v{0,0,1}
+raw/renderer/lighting.hpp | ::raw::lighting::Sample | pbr::Material m
+raw/renderer/lighting_cube.hpp | ::raw::lighting::cube | inline D3 dirOf(int f,double u,double v)
+raw/renderer/lighting_cube.hpp | ::raw::lighting::cube | inline D3 sunDirection()
+raw/renderer/lighting_cube.hpp | ::raw::lighting::cube | inline Rgb prefilterTexel(const Cube&c,D3 n,double a,int samples)
+raw/renderer/lighting_cube.hpp | ::raw::lighting::cube | inline constexpr double kSunRadius=0.0523598775598299
+raw/renderer/lighting_cube.hpp | ::raw::lighting::cube | inline constexpr int kMinLevelSize=8
+raw/renderer/lighting_cube.hpp | ::raw::lighting::cube | inline double radicalInverse(std::uint32_t b)
+raw/renderer/lighting_cube.hpp | ::raw::lighting::cube | inline int faceOf(D3 d,double&u,double&v)
+raw/renderer/lighting_cube.hpp | ::raw::lighting::cube | inline int levelSize(int size,int level)
+raw/renderer/lighting_cube.hpp | ::raw::lighting::cube | inline void basis(D3 n,D3&t,D3&b)
+raw/renderer/lighting_cube.hpp | ::raw::lighting::cube | inline void shBasis(D3 d,double Y[9])
+raw/renderer/lighting_cube.hpp | ::raw::lighting::cube | inline void tap(int n,int&f,int&y,int&x)
+raw/renderer/motion.hpp | ::raw | bool projectToUV(const Mat4&viewProj,Vec3 worldPos,Vec2&outUV)
+raw/renderer/motion.hpp | ::raw | int computeMotion(GBuffer&g,const Mat4&currentViewProj,const Mat4&prevViewProj)
+raw/renderer/motion.hpp | ::raw | int computeMotion(GBuffer&g,const Scene&scene,const Mat4&prevViewProj)
+raw/renderer/outline.hpp | ::raw::outline | enum class Edge{Depth,Normal,Id}
+raw/renderer/outline.hpp | ::raw::outline | std::vector<int8_t>toonBands(const GBuffer&g,Vec3 lightDir,int bands)
+raw/renderer/outline.hpp | ::raw::outline | std::vector<uint8_t>edges(const GBuffer&g,const Buffer<uint16_t>*ids,Edge kind,const Params&p={})
+raw/renderer/outline.hpp | ::raw::outline | std::vector<uint8_t>invertedHull(const Scene&scene,int w,int h,float thickness)
+raw/renderer/outline.hpp | ::raw::outline | struct Params
+raw/renderer/outline.hpp | ::raw::outline::Params | float depthRel=0.05f
+raw/renderer/outline.hpp | ::raw::outline::Params | float normalCos=0.8f
+raw/renderer/pbr.hpp | ::raw::pbr | IblResponse iblResponse(const Material&m,const Tables&t,D3 wo)
+raw/renderer/pbr.hpp | ::raw::pbr | Rgb emission(const Material&m)
+raw/renderer/pbr.hpp | ::raw::pbr | Rgb eval(const Material&m,const Tables&t,D3 wo,D3 wi)
+raw/renderer/pbr.hpp | ::raw::pbr | Rgb iridescentExact(double outsideIor,double filmIor,double thicknessNm,double baseIor,double cosTheta1)
+raw/renderer/pbr.hpp | ::raw::pbr | Rgb iridescentFresnel(double outsideIor,double filmIor,double thicknessNm,Rgb baseF0,double cosTheta1,int harmonics=kIridescenceHarmonics,bool polarized=true)
+raw/renderer/pbr.hpp | ::raw::pbr | Rgb iridescentSpectral(double outsideIor,double filmIor,double thicknessNm,Rgb baseF0,double cosTheta1)
+raw/renderer/pbr.hpp | ::raw::pbr | Terms evalTerms(const Material&m,const Tables&t,D3 wo,D3 wi)
+raw/renderer/pbr.hpp | ::raw::pbr | class Tables
+raw/renderer/pbr.hpp | ::raw::pbr | double alphaOf(double roughness)
+raw/renderer/pbr.hpp | ::raw::pbr | double charlieD(D3 h,double sheenRoughness)
+raw/renderer/pbr.hpp | ::raw::pbr | double charlieV(double muO,double muI,double sheenRoughness)
+raw/renderer/pbr.hpp | ::raw::pbr | double ggxD(D3 h,double ax,double ay)
+raw/renderer/pbr.hpp | ::raw::pbr | double schlick(double f0,double f90,double cosine)
+raw/renderer/pbr.hpp | ::raw::pbr | double smithG2(D3 wo,D3 wi,double ax,double ay)
+raw/renderer/pbr.hpp | ::raw::pbr | double smithV(D3 wo,D3 wi,double ax,double ay)
+raw/renderer/pbr.hpp | ::raw::pbr | double walterBtdf(D3 in,double etaIn,D3 out,double etaOut,double ax,double ay,double f0)
+raw/renderer/pbr.hpp | ::raw::pbr | inline constexpr double kMinRoughness=0.045
+raw/renderer/pbr.hpp | ::raw::pbr | inline constexpr double kMinSheenRoughness=0.07
+raw/renderer/pbr.hpp | ::raw::pbr | inline constexpr double kPi=3.14159265358979323846
+raw/renderer/pbr.hpp | ::raw::pbr | inline constexpr double kSensMax=40000.0
+raw/renderer/pbr.hpp | ::raw::pbr | inline constexpr double kSensStep=10.0
+raw/renderer/pbr.hpp | ::raw::pbr | inline constexpr int kIridescenceHarmonics=8
+raw/renderer/pbr.hpp | ::raw::pbr | inline constexpr int kIridescenceHarmonicsSpec=2
+raw/renderer/pbr.hpp | ::raw::pbr | std::vector<double>iridescenceSensitivityGrid()
+raw/renderer/pbr.hpp | ::raw::pbr | struct D3
+raw/renderer/pbr.hpp | ::raw::pbr | struct IblResponse
+raw/renderer/pbr.hpp | ::raw::pbr | struct Material
+raw/renderer/pbr.hpp | ::raw::pbr | struct Rgb
+raw/renderer/pbr.hpp | ::raw::pbr | struct Terms
+raw/renderer/pbr.hpp | ::raw::pbr | void anisoAlphas(const Material&m,double&ax,double&ay)
+raw/renderer/pbr.hpp | ::raw::pbr::D3 | double x{0}
+raw/renderer/pbr.hpp | ::raw::pbr::D3 | double y{0}
+raw/renderer/pbr.hpp | ::raw::pbr::D3 | double z{1}
+raw/renderer/pbr.hpp | ::raw::pbr::IblResponse | Rgb coat
+raw/renderer/pbr.hpp | ::raw::pbr::IblResponse | Rgb irradiance
+raw/renderer/pbr.hpp | ::raw::pbr::IblResponse | Rgb specular
+raw/renderer/pbr.hpp | ::raw::pbr::IblResponse | Rgb transmission
+raw/renderer/pbr.hpp | ::raw::pbr::IblResponse | double coatRoughness{1}
+raw/renderer/pbr.hpp | ::raw::pbr::IblResponse | double roughness{1}
+raw/renderer/pbr.hpp | ::raw::pbr::Material | D3 coatNormal{0,0,1}
+raw/renderer/pbr.hpp | ::raw::pbr::Material | Rgb attenuationColor{1,1,1}
+raw/renderer/pbr.hpp | ::raw::pbr::Material | Rgb baseColor{1,1,1}
+raw/renderer/pbr.hpp | ::raw::pbr::Material | Rgb emissive{0,0,0}
+raw/renderer/pbr.hpp | ::raw::pbr::Material | Rgb sheenColor{0,0,0}
+raw/renderer/pbr.hpp | ::raw::pbr::Material | Rgb specularColor{1,1,1}
+raw/renderer/pbr.hpp | ::raw::pbr::Material | bool specExact{false}
+raw/renderer/pbr.hpp | ::raw::pbr::Material | bool volume{false}
+raw/renderer/pbr.hpp | ::raw::pbr::Material | double anisotropyRotation{0}
+raw/renderer/pbr.hpp | ::raw::pbr::Material | double anisotropy{0}
+raw/renderer/pbr.hpp | ::raw::pbr::Material | double attenuationDistance{0}
+raw/renderer/pbr.hpp | ::raw::pbr::Material | double clearcoatRoughness{0}
+raw/renderer/pbr.hpp | ::raw::pbr::Material | double clearcoat{0}
+raw/renderer/pbr.hpp | ::raw::pbr::Material | double emissiveStrength{1}
+raw/renderer/pbr.hpp | ::raw::pbr::Material | double ior{1.5}
+raw/renderer/pbr.hpp | ::raw::pbr::Material | double iridescenceIor{1.3}
+raw/renderer/pbr.hpp | ::raw::pbr::Material | double iridescenceThickness{400}
+raw/renderer/pbr.hpp | ::raw::pbr::Material | double iridescence{0}
+raw/renderer/pbr.hpp | ::raw::pbr::Material | double metallic{1}
+raw/renderer/pbr.hpp | ::raw::pbr::Material | double roughness{1}
+raw/renderer/pbr.hpp | ::raw::pbr::Material | double sheenRoughness{0}
+raw/renderer/pbr.hpp | ::raw::pbr::Material | double specular{1}
+raw/renderer/pbr.hpp | ::raw::pbr::Material | double thickness{0}
+raw/renderer/pbr.hpp | ::raw::pbr::Material | double transmission{0}
+raw/renderer/pbr.hpp | ::raw::pbr::Rgb | double b{0}
+raw/renderer/pbr.hpp | ::raw::pbr::Rgb | double g{0}
+raw/renderer/pbr.hpp | ::raw::pbr::Rgb | double max3()const
+raw/renderer/pbr.hpp | ::raw::pbr::Rgb | double r{0}
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | Tables()
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridA()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridA4()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridAavg2()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridB()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridB4()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridBavg2()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridCoef()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridDom()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridG()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridHA()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridHA4()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridHB()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridHB4()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridHH()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridHbar()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridHm4()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&gridSh()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&rowAavg()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&rowBavg()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | const std::vector<double>&rowG1()const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double A(double mu,double r)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double A4(double mu,double phi,double r,double k)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double Aavg(double r)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double Aavg2(double r,double k)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double B(double mu,double r)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double B4(double mu,double phi,double r,double k)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double Bavg(double r)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double Bavg2(double r,double k)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double Dom(double mu,double r)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double E(double mu,double r)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double Eavg(double r)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double G1(int j)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double GA(int j,double r)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double GA4(int j,double r,double k)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double GB(int j,double r)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double GB4(int j,double r,double k)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double HA(int j,double mu,double r)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double HA4(int j,double mu,double phi,double r,double k)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double HAA(int j,int l,double r)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double HAA4(int j,int l,double r,double k)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double HAbar(int j,double r)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double HAbar4(int j,double r,double k)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double HB(int j,double mu,double r)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double HB4(int j,double mu,double phi,double r,double k)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double HBB(int j,int l,double r)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double HBB4(int j,int l,double r,double k)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double HBbar(int j,double r)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double HBbar4(int j,double r,double k)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double Sh(double mu,double r)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | double coef(int j,double rc)const
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static const unsigned char*anisoBytes()
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr double kRoughMax=1.05
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr double kThetaPad=0.05
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kAnK=12
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kAnMu=32
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kAnPhi=16
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kAnRough=48
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kAnSamples=1<<14
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kDomMu=64
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kDomRough=64
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kHatAnK=12
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kHatAnMu=32
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kHatAnPhi=8
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kHatAnRough=24
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kHatAnSamples=1<<10
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kHatMu=32
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kHatRough=32
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kHats=9
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kHm4=kHats*4 + kHats*kHats*2
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kRough=128
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kSamples=1<<12
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kSheenMu=64
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kSheenRough=64
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr int kTheta=128
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr std::size_t kAnAll=std::size_t(kAnMu)*kAnPhi*kAnRough*kAnK
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static constexpr std::size_t kHatAnAll=std::size_t(kHatAnMu)*kHatAnPhi*kHatAnRough*kHatAnK
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static double hat(int j,double mu)
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static double hatNode(int j)
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static std::size_t anisoByteCount()
+raw/renderer/pbr.hpp | ::raw::pbr::Tables | static void anisoEntry(int ik,int ir,int ip,int im,int samples,double&a,double&b)
+raw/renderer/pbr.hpp | ::raw::pbr::Terms | Rgb coat
+raw/renderer/pbr.hpp | ::raw::pbr::Terms | Rgb smooth
+raw/renderer/pbr.hpp | ::raw::pbr::Terms | Rgb specular
+raw/renderer/pbr.hpp | ::raw::pbr::Terms | Rgb total()const
+raw/renderer/pbr.hpp | ::raw::pbr::Terms | Rgb transmission
+raw/renderer/post.hpp | ::raw::post | ViewGBuffer viewGBuffer(const GBuffer&g,const Camera&cam)
+raw/renderer/post.hpp | ::raw::post | bool project(const ViewGBuffer&v,const double p[3],double&sx,double&sy)
+raw/renderer/post.hpp | ::raw::post | std::vector<double>gtao(const ViewGBuffer&v,const GtaoParams&p={})
+raw/renderer/post.hpp | ::raw::post | std::vector<double>rayAo(const Scene&s,const GBuffer&g,double radius,int sqrtRays=32)
+raw/renderer/post.hpp | ::raw::post | std::vector<int>ssr(const ViewGBuffer&v,const SsrParams&p={})
+raw/renderer/post.hpp | ::raw::post | struct GtaoParams
+raw/renderer/post.hpp | ::raw::post | struct SsrParams
+raw/renderer/post.hpp | ::raw::post | struct ViewGBuffer
+raw/renderer/post.hpp | ::raw::post | void rayMirror(const Scene&s,const GBuffer&g,std::vector<Vec3>&at,std::vector<uint8_t>&hit)
+raw/renderer/post.hpp | ::raw::post::GtaoParams | double radius{0.5}
+raw/renderer/post.hpp | ::raw::post::GtaoParams | int slices{16}
+raw/renderer/post.hpp | ::raw::post::GtaoParams | int steps{16}
+raw/renderer/post.hpp | ::raw::post::SsrParams | bool viewNormal{false}
+raw/renderer/post.hpp | ::raw::post::SsrParams | double maxDistance{20.0}
+raw/renderer/post.hpp | ::raw::post::SsrParams | double thickness{0.2}
+raw/renderer/post.hpp | ::raw::post::SsrParams | int refine{8}
+raw/renderer/post.hpp | ::raw::post::SsrParams | int steps{64}
+raw/renderer/post.hpp | ::raw::post::ViewGBuffer | bool valid(int x,int y)const
+raw/renderer/post.hpp | ::raw::post::ViewGBuffer | double aspect{1.0}
+raw/renderer/post.hpp | ::raw::post::ViewGBuffer | double nearZ{0.1}
+raw/renderer/post.hpp | ::raw::post::ViewGBuffer | double tanHalf{0.5}
+raw/renderer/post.hpp | ::raw::post::ViewGBuffer | int h{0}
+raw/renderer/post.hpp | ::raw::post::ViewGBuffer | int w{0}
+raw/renderer/post.hpp | ::raw::post::ViewGBuffer | std::vector<float>depth
+raw/renderer/post.hpp | ::raw::post::ViewGBuffer | std::vector<float>nrm
+raw/renderer/post.hpp | ::raw::post::ViewGBuffer | std::vector<float>pos
+raw/renderer/raster.hpp | ::raw | GBuffer rasterize(const Scene&scene,int w,int h,Arena*arena,Buffer<uint16_t>*ids,const RasterOptions&opt)
+raw/renderer/raster.hpp | ::raw | GBuffer rasterize(const Scene&scene,int w,int h,Arena*arena=nullptr,Buffer<uint16_t>*ids=nullptr)
+raw/renderer/raster.hpp | ::raw | struct RasterOptions
+raw/renderer/raster.hpp | ::raw::RasterOptions | Buffer<uint32_t>*triangleIds{nullptr}
+raw/renderer/raster.hpp | ::raw::RasterOptions | bool perspectiveDepth{false}
+raw/renderer/raster.hpp | ::raw::RasterOptions | float jitterX{0}
+raw/renderer/raster.hpp | ::raw::RasterOptions | float jitterY{0}
+raw/renderer/raster.hpp | ::raw::RasterOptions | int subpixelBits{0}
+raw/renderer/ray_ao.hpp | ::raw | Buffer<float>computeRTAO(const GBuffer&g,const LinearAccel&accel,int samples,float radius,Arena*arena=nullptr,int threads=1)
+raw/renderer/render.hpp | ::raw | FrameResult renderWithParams(const Scene&scene,int w,int h,const Mat4&prevViewProj,Arena*arena=nullptr,const RenderOptions&opts={})
+raw/renderer/render.hpp | ::raw | inline constexpr float kAoRadius=2.0f
+raw/renderer/render.hpp | ::raw | inline constexpr int kRtSamples=64
+raw/renderer/render.hpp | ::raw | inline constexpr int kSsSamples=24
+raw/renderer/render.hpp | ::raw | struct FrameResult
+raw/renderer/render.hpp | ::raw | struct RenderOptions
+raw/renderer/render.hpp | ::raw::FrameResult | Buffer<Vec3>frame
+raw/renderer/render.hpp | ::raw::FrameResult | Buffer<Vec3>hdr
+raw/renderer/render.hpp | ::raw::FrameResult | Buffer<float>aoRT
+raw/renderer/render.hpp | ::raw::FrameResult | Buffer<float>aoSS
+raw/renderer/render.hpp | ::raw::FrameResult | FrameResult()=default
+raw/renderer/render.hpp | ::raw::FrameResult | GBuffer g
+raw/renderer/render.hpp | ::raw::FrameResult | Mat4 viewProj{}
+raw/renderer/render.hpp | ::raw::FrameResult | ReconcileResult rec
+raw/renderer/render.hpp | ::raw::FrameResult | explicit FrameResult(Arena*a)
+raw/renderer/render.hpp | ::raw::FrameResult | int motionTotal{0}
+raw/renderer/render.hpp | ::raw::FrameResult | int motionValid{0}
+raw/renderer/render.hpp | ::raw::RenderOptions | bool rtao{true}
+raw/renderer/render.hpp | ::raw::RenderOptions | float tolerance{0.12f}
+raw/renderer/render.hpp | ::raw::RenderOptions | int threads{1}
+raw/renderer/sampler.hpp | ::raw::sampler | enum class Address:uint8_t{Clamp,Repeat}
+raw/renderer/sampler.hpp | ::raw::sampler | enum class Filter:uint8_t{Nearest,Linear}
+raw/renderer/sampler.hpp | ::raw::sampler | inline double edgeDistance(const Image&im,double u,double v)
+raw/renderer/sampler.hpp | ::raw::sampler | inline int wrap(int i,int n,Address a)
+raw/renderer/sampler.hpp | ::raw::sampler | inline std::array<double,4>sample(const Image&im,double u,double v,Filter f,Address a)
+raw/renderer/sampler.hpp | ::raw::sampler | inline std::array<double,4>texel(const Image&im,int x,int y)
+raw/renderer/sampler.hpp | ::raw::sampler | inline uint8_t unorm8(double c)
+raw/renderer/sampler.hpp | ::raw::sampler | struct Image
+raw/renderer/sampler.hpp | ::raw::sampler::Image | int height{0}
+raw/renderer/sampler.hpp | ::raw::sampler::Image | int width{0}
+raw/renderer/sampler.hpp | ::raw::sampler::Image | std::span<const uint8_t>rgba
+raw/renderer/shadows.hpp | ::raw::shadows | Buffer<float>contactShadows(const Buffer<float>&viewDistance,const Buffer<Vec3>&position,const Camera&cam,D3 lightDir,int steps=16,double length=0.5,double thickness=0.1)
+raw/renderer/shadows.hpp | ::raw::shadows | CascadeSet fitCascades(const Camera&cam,D3 lightDir,double shadowFar=40.0,int size=1024,bool stable=true)
+raw/renderer/shadows.hpp | ::raw::shadows | ShadowMap rasterizeCascade(const Scene&scene,const CascadeSet&cs,int k,int subpixelBits)
+raw/renderer/shadows.hpp | ::raw::shadows | const std::vector<float>&poissonTaps()
+raw/renderer/shadows.hpp | ::raw::shadows | double lookup(const CascadeSet&cs,const std::array<const ShadowMap*,kCascades>&maps,D3 p,D3 n,double viewDepth,Filter f,const LookupParams&lp={})
+raw/renderer/shadows.hpp | ::raw::shadows | enum class Filter:uint8_t{Hard,Pcf,Pcss}
+raw/renderer/shadows.hpp | ::raw::shadows | inline constexpr int kCascades=4
+raw/renderer/shadows.hpp | ::raw::shadows | int cascadeOf(const CascadeSet&cs,double viewDepth)
+raw/renderer/shadows.hpp | ::raw::shadows | struct Cascade
+raw/renderer/shadows.hpp | ::raw::shadows | struct CascadeSet
+raw/renderer/shadows.hpp | ::raw::shadows | struct D3
+raw/renderer/shadows.hpp | ::raw::shadows | struct LookupParams
+raw/renderer/shadows.hpp | ::raw::shadows | struct ShadowMap
+raw/renderer/shadows.hpp | ::raw::shadows | void enclose(CascadeSet&cs,const Scene&scene)
+raw/renderer/shadows.hpp | ::raw::shadows::Cascade | D3 centre
+raw/renderer/shadows.hpp | ::raw::shadows::Cascade | double fitRange{0}
+raw/renderer/shadows.hpp | ::raw::shadows::Cascade | double radius{1}
+raw/renderer/shadows.hpp | ::raw::shadows::Cascade | double split{0}
+raw/renderer/shadows.hpp | ::raw::shadows::Cascade | double zFar{1}
+raw/renderer/shadows.hpp | ::raw::shadows::Cascade | double zNear{0}
+raw/renderer/shadows.hpp | ::raw::shadows::CascadeSet | D3 light
+raw/renderer/shadows.hpp | ::raw::shadows::CascadeSet | D3 right
+raw/renderer/shadows.hpp | ::raw::shadows::CascadeSet | D3 toLight(D3 p)const
+raw/renderer/shadows.hpp | ::raw::shadows::CascadeSet | D3 up
+raw/renderer/shadows.hpp | ::raw::shadows::CascadeSet | int size{1024}
+raw/renderer/shadows.hpp | ::raw::shadows::CascadeSet | std::array<Cascade,kCascades>c
+raw/renderer/shadows.hpp | ::raw::shadows::CascadeSet | std::array<float,16>matrix(int k)const
+raw/renderer/shadows.hpp | ::raw::shadows::D3 | double x{0}
+raw/renderer/shadows.hpp | ::raw::shadows::D3 | double y{0}
+raw/renderer/shadows.hpp | ::raw::shadows::D3 | double z{0}
+raw/renderer/shadows.hpp | ::raw::shadows::LookupParams | double depthBias{1.5}
+raw/renderer/shadows.hpp | ::raw::shadows::LookupParams | double normalOffset{1.0}
+raw/renderer/shadows.hpp | ::raw::shadows::LookupParams | double sunAngle{0.0261799}
+raw/renderer/shadows.hpp | ::raw::shadows::ShadowMap | int size{0}
+raw/renderer/shadows.hpp | ::raw::shadows::ShadowMap | std::vector<float>depth
+raw/renderer/shadows.hpp | ::raw::shadows::ShadowMap | std::vector<uint32_t>tri
+raw/renderer/ssao.hpp | ::raw | Buffer<float>computeSSAO(const GBuffer&g,int samples,float radius,Arena*arena=nullptr,int threads=1)
+raw/renderer/taa.hpp | ::raw::taa | Frame render(const Scene&scene,const Camera&prevCam,Vec3 moved,int w,int h,float jx,float jy,int supersample=1)
+raw/renderer/taa.hpp | ::raw::taa | inline constexpr float kAmbient=0.2f
+raw/renderer/taa.hpp | ::raw::taa | inline constexpr float kBackground=0.05f
+raw/renderer/taa.hpp | ::raw::taa | inline constexpr float kBlend=0.1f
+raw/renderer/taa.hpp | ::raw::taa | inline constexpr float kClipSigma=1.25f
+raw/renderer/taa.hpp | ::raw::taa | std::vector<float>resolve(const Frame&cur,const std::vector<float>&history,const std::vector<float>&prevDepth,const Options&o={})
+raw/renderer/taa.hpp | ::raw::taa | struct Frame
+raw/renderer/taa.hpp | ::raw::taa | struct Options
+raw/renderer/taa.hpp | ::raw::taa | void jitter(int k,float&jx,float&jy)
+raw/renderer/taa.hpp | ::raw::taa::Frame | int h{0}
+raw/renderer/taa.hpp | ::raw::taa::Frame | int w{0}
+raw/renderer/taa.hpp | ::raw::taa::Frame | std::vector<float>coverage
+raw/renderer/taa.hpp | ::raw::taa::Frame | std::vector<float>depth
+raw/renderer/taa.hpp | ::raw::taa::Frame | std::vector<float>prev
+raw/renderer/taa.hpp | ::raw::taa::Frame | std::vector<float>rgb
+raw/renderer/taa.hpp | ::raw::taa::Options | bool clip{true}
+raw/renderer/taa.hpp | ::raw::taa::Options | bool depthTest{true}
+raw/renderer/taa.hpp | ::raw::taa::Options | bool dilate{true}
+raw/renderer/threads.hpp | ::raw::threads | bool render(rhi::Device&dev,const Settings&s,Result&out,std::string&err)
+raw/renderer/threads.hpp | ::raw::threads | inline constexpr int kWorlds=15
+raw/renderer/threads.hpp | ::raw::threads | struct Result
+raw/renderer/threads.hpp | ::raw::threads | struct Settings
+raw/renderer/threads.hpp | ::raw::threads::Result | double msPerFrame{0}
+raw/renderer/threads.hpp | ::raw::threads::Result | int height{0}
+raw/renderer/threads.hpp | ::raw::threads::Result | int width{0}
+raw/renderer/threads.hpp | ::raw::threads::Result | std::vector<uint8_t>rgba
+raw/renderer/threads.hpp | ::raw::threads::Settings | float exposure{1.0f}
+raw/renderer/threads.hpp | ::raw::threads::Settings | float fps{30.0f}
+raw/renderer/threads.hpp | ::raw::threads::Settings | float levels{5.0f}
+raw/renderer/threads.hpp | ::raw::threads::Settings | float persistence{0.82f}
+raw/renderer/threads.hpp | ::raw::threads::Settings | float spacing{0.011f}
+raw/renderer/threads.hpp | ::raw::threads::Settings | int frames{90}
+raw/renderer/threads.hpp | ::raw::threads::Settings | int height{360}
+raw/renderer/threads.hpp | ::raw::threads::Settings | int width{640}
+raw/renderer/threads.hpp | ::raw::threads::Settings | int world{0}
+raw/renderer/threads.hpp | ::raw::threads::Settings | uint32_t particles{1u<<18}
+raw/renderer/threads.hpp | ::raw::threads::Settings | uint32_t substeps{3}
+raw/scene/scene.hpp | ::raw | Scene buildTestScene(int w,int h,Arena*arena=nullptr)
+raw/scene/scene.hpp | ::raw | struct Camera
+raw/scene/scene.hpp | ::raw | struct Light
+raw/scene/scene.hpp | ::raw | struct Material
+raw/scene/scene.hpp | ::raw | struct Mesh
+raw/scene/scene.hpp | ::raw | struct Scene
+raw/scene/scene.hpp | ::raw::Camera | Mat4 proj()const
+raw/scene/scene.hpp | ::raw::Camera | Mat4 view()const
+raw/scene/scene.hpp | ::raw::Camera | Vec3 center{0,0,0}
+raw/scene/scene.hpp | ::raw::Camera | Vec3 eye{0,0,5}
+raw/scene/scene.hpp | ::raw::Camera | Vec3 up{0,1,0}
+raw/scene/scene.hpp | ::raw::Camera | float aspect{1.0f}
+raw/scene/scene.hpp | ::raw::Camera | float farZ{100.0f}
+raw/scene/scene.hpp | ::raw::Camera | float fovy{1.0f}
+raw/scene/scene.hpp | ::raw::Camera | float nearZ{0.1f}
+raw/scene/scene.hpp | ::raw::Light | Vec3 dir{0,-1,0}
+raw/scene/scene.hpp | ::raw::Light | float intensity{1.0f}
+raw/scene/scene.hpp | ::raw::Material | Vec3 albedo{0.8f,0.8f,0.8f}
+raw/scene/scene.hpp | ::raw::Mesh | Material material
+raw/scene/scene.hpp | ::raw::Mesh | Mesh()=default
+raw/scene/scene.hpp | ::raw::Mesh | explicit Mesh(Arena*a)
+raw/scene/scene.hpp | ::raw::Mesh | std::vector<Vec3,ArenaAllocator<Vec3>>normals
+raw/scene/scene.hpp | ::raw::Mesh | std::vector<Vec3,ArenaAllocator<Vec3>>positions
+raw/scene/scene.hpp | ::raw::Mesh | std::vector<int,ArenaAllocator<int>>indices
+raw/scene/scene.hpp | ::raw::Scene | Camera camera
+raw/scene/scene.hpp | ::raw::Scene | Scene()=default
+raw/scene/scene.hpp | ::raw::Scene | explicit Scene(Arena*a)
+raw/scene/scene.hpp | ::raw::Scene | std::vector<Light,ArenaAllocator<Light>>lights
+raw/scene/scene.hpp | ::raw::Scene | std::vector<Mesh,ArenaAllocator<Mesh>>meshes

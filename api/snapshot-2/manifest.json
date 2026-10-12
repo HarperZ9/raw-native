@@ -1,0 +1,33 @@
+{
+ "schema": "raw-native.api-snapshot/1",
+ "snapshot": 2,
+ "headers": [
+  "raw/core/api_snapshot.hpp",
+  "raw/scene/scene.hpp",
+  "raw/renderer/accel.hpp",
+  "raw/renderer/bake.hpp",
+  "raw/renderer/brdf.hpp",
+  "raw/renderer/bvh.hpp",
+  "raw/renderer/colour.hpp",
+  "raw/renderer/composite.hpp",
+  "raw/renderer/gbuffer.hpp",
+  "raw/renderer/gpu.hpp",
+  "raw/renderer/gpu_reconcile.hpp",
+  "raw/renderer/lighting.hpp",
+  "raw/renderer/lighting_cube.hpp",
+  "raw/renderer/motion.hpp",
+  "raw/renderer/outline.hpp",
+  "raw/renderer/pbr.hpp",
+  "raw/renderer/post.hpp",
+  "raw/renderer/raster.hpp",
+  "raw/renderer/ray_ao.hpp",
+  "raw/renderer/render.hpp",
+  "raw/renderer/sampler.hpp",
+  "raw/renderer/shadows.hpp",
+  "raw/renderer/ssao.hpp",
+  "raw/renderer/taa.hpp",
+  "raw/renderer/threads.hpp"
+ ],
+ "entries": 562,
+ "dump_sha256": "183e82fbfe9c55a3413c6fc6d0155a834303252e37d526d3231c1b7b38254d56"
+}
