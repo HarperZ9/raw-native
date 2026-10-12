@@ -16,6 +16,7 @@
 #include "raw/tools/pt_cmd.hpp"
 #include "raw/tools/sdf_cmd.hpp"
 #include "raw/tools/hw_rayquery_cmd.hpp"
+#include "raw/tools/rr_cmd.hpp"
 #include "raw/tools/hw_async_cmd.hpp"
 #include "raw/tools/hw_wave16_cmd.hpp"
 #include "raw/tools/hw_mesh_cmd.hpp"
@@ -114,8 +115,10 @@ static const char* kUsage =
     "       raw_native_cli swr-parity\n"
     "         the software rasterizer's GPU compute form against its CPU reference, every mode\n"
     "         (same output and exit codes)\n"
-    "       raw_native_cli hw-rayquery [--warmup N] [--repeats N] [--out FILE]\n"
+    "       raw_native_cli hw-rayquery [--warmup N] [--repeats N] [--criterion b] [--out FILE]\n"
     "         inline ray query against the CPU BVH on procedural scenes, with controls and timings\n"
+    "       raw_native_cli rr-render --scene NAME --path SEED --frames N [--spp S] [--out DIR]\n"
+    "         ray reconstruction dataset frames from the path tracer along a camera path\n"
     "       raw_native_cli hw-async [--n N] [--warmup N] [--repeats N] [--out FILE]\n"
     "         a compute queue beside the direct queue: results against the serial order, a control, timings\n"
     "       raw_native_cli hw-wave16 [--warmup N] [--repeats N] [--out FILE]\n"
@@ -172,6 +175,7 @@ int main(int argc, char** argv){
     if (argc >= 2 && std::strcmp(argv[1], "rt-pathtrace") == 0) return ptCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "sdf-render") == 0) return sdfRenderCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "hw-rayquery") == 0) return hwRayQueryCommand(argc - 1, argv + 1);
+    if (argc >= 2 && std::strcmp(argv[1], "rr-render") == 0) return rrRenderCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "hw-async") == 0) return hwAsyncCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "hw-wave16") == 0) return hwWave16Command(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "hw-mesh") == 0) return hwMeshCommand(argc - 1, argv + 1);
