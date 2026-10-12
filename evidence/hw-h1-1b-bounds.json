@@ -1,0 +1,23 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "HW H1.1b: inline ray query against the CPU BVH with conditioning-aware tolerances and a hall scene without coincident faces. A new, dated criterion beside H1.1; it does not replace H1.1, whose recorded failures stand (evidence/hw-h1-1-runs.json).",
+ "written": "2026-10-12, before the implementation and the first run of this criterion",
+ "why": "H1.1 missed on two causes that are properties of the check, not of the hardware: (1) the hall scene has coincident faces (column bottom caps, stair bottoms and the shared faces between stair boxes lie in the same planes as the floor or each other), so the closest triangle among coincident ones is arbitrary; (2) the t and uv tolerances have no term for the ray's angle to the surface, and the error of a float32 ray-plane intersection along the ray grows as 1/|cos| of that angle. Both H1.1 runs on WARP and on the RTX 4090 showed only these misses plus WARP's TMin defect.",
+ "unchanged_from_h1_1": "reference (M3 Bvh::closest, read only), GPU path (one BLAS, one instance, cs_6_5 RayQuery FORCE_OPAQUE, TMin 1e-4), terrain and debris scenes, every ray set and its seed, the explanation categories and their order, the 1e-3 explained fraction bound, the offset and rotation controls, the forced-off fallback",
+ "changes": {
+  "hall_b": "the hall scene without coincident faces: no column bottom caps; the stair is one closed stepped solid (treads, risers from the previous step height, stepped side quads, one back face) with no bottom face. Floor, walls, columns and their top caps are as in H1.1. Every other scene and ray is bit-identical to H1.1 (the ray generator draws the same random numbers whatever the triangle count).",
+  "c": "max(|dot(d / |d|, n)|, 1e-3), with n the unit normal of the triangle involved. Below 1e-3 the H1.1 grazing explanation applies to disagreements.",
+  "t_tol": "1e-5 * t + 2^-20 * L / c",
+  "uv_tol": "1e-4 + 2^-18 * L / (h * c)",
+  "L_and_h": "as in H1.1"
+ },
+ "checks": {
+  "main": "on terrain, hall_b and debris: unexplained disagreements 0; agreeing hits within t_tol and uv_tol on every ray; explained disagreements at most 1e-3 of each scene's rays",
+  "control_offset": "instance moved by (1e-3, 1e-3, 1e-3): unexplained disagreements or agreeing-hit violations above 0 on every scene, under the H1.1b tolerances",
+  "control_rotate": "directions rotated 1 degree: unexplained disagreements above 0 on every scene",
+  "control_coplanar": "the H1.1 hall scene (with its coincident faces) under the H1.1b tolerances must still exceed the 1e-3 explained fraction: shows the fraction bound still detects coincident geometry and the new tolerances did not absorb it",
+  "fallback": "RAW_NATIVE_HW_DISABLE=ray_query takes the CPU traversal and reports it"
+ },
+ "adapters": "D3D12 WARP with the debug layer locally and in CI (the WARP TMin defect from H1.1 is expected to remain and is reported, not excused); the RTX 4090 only under D:/gpu.lock.d",
+ "does_not_prove": "That the conditioning term is tight; correctness on scenes with coincident faces; any-hit, alpha testing, real instance transforms, ray tracing pipelines; any speedup."
+}
