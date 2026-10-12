@@ -76,7 +76,10 @@ export function rerun(o = {}) {
     fill: rad(-20, -130, 130, [0, C.bodyLit], [0.55, C.body], [1, C.bodyDark]), stroke: INK, width: 4 });
   add({ d: "M -60 -66 C -30 -56 30 -56 60 -66 M -40 -120 C -20 -128 20 -128 40 -120", pivot: [0, -100, 70], face: 0, flat: 0.6, fill: null, stroke: C.bodyDark, width: 3, clip: "body" });
   // Mouthparts.
-  add({ d: "M -16 -46 L -8 -30 L -2 -46 Z M 16 -46 L 8 -30 L 2 -46 Z", pivot: [0, -40, 80], face: 0, flat: 0.8, fill: C.bodyDark, stroke: INK, width: 2 });
+  // They part as Rerun talks (mouth 0..1): each plate swings out from the centre and a dark gap shows.
+  const mo = o.mouth || 0, sp = 9 * mo;
+  if (mo > 0.05) add({ d: `M ${-3 - sp} -44 L ${3 + sp} -44 L ${2 + sp * 0.6} -30 L ${-2 - sp * 0.6} -30 Z`, pivot: [0, -40, 79], face: 0, flat: 0.8, fill: "#1a0c08" });
+  add({ d: `M ${-16 - sp} -46 L ${-8 - sp} -30 L ${-2 - sp} -46 Z M ${16 + sp} -46 L ${8 + sp} -30 L ${2 + sp} -46 Z`, pivot: [0, -40, 80], face: 0, flat: 0.8, fill: C.bodyDark, stroke: INK, width: 2 });
   // Eye stalks and eyes, which reach for small print.
   for (const sgn of [-1, 1]) {
     const bx = sgn * 26, by = -150, tx = sgn * (40 + 6 * (stalk - 1)), ty = by - 92 * stalk;

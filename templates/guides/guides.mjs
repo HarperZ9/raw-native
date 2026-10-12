@@ -6,7 +6,7 @@ import { tallow, FLAME } from "./tallow.mjs";
 import { pylon, pylonTextures, coneParts } from "./pylon.mjs";
 import { rerun, FLARE } from "./rerun.mjs";
 import { BEATS } from "./beats.mjs";
-import { darkness, glow, toScreen } from "./look.mjs";
+import { darkness, glow, toScreen, THRILLER } from "./look.mjs";
 
 // Contact shadows. Pixel: one hard-edged translucent ellipse, which the palette turns into the
 // ground's own darker colour. Painted and thriller: a soft wide shadow and a dark core where
@@ -29,7 +29,7 @@ export const GUIDES = {
     ],
     light(style, cam, b) {
       const [fx, fy] = toScreen(cam, b.x + FLAME[0] * b.s, b.y + FLAME[1] * b.s), k = cam.zoom * b.s, fl = (b.o && b.o.flame) ?? 1;
-      if (style === "thriller") return [darkness(fx, fy + 260 * k, 1500 * k, 0.93 + 0.05 * (1 - fl)), glow(fx, fy, 700 * k * (0.6 + 0.4 * fl), [1, 0.6, 0.25], 0.55 * fl)];
+      if (style === "thriller") return [darkness(fx, fy + 260 * k, 1500 * k, (0.93 + 0.05 * (1 - fl)) * THRILLER.dark), glow(fx, fy, 700 * k * (0.6 + 0.4 * fl), [1, 0.6, 0.25], 0.55 * fl)];
       // No glow in pixel mode: a smooth falloff posterises into rings on a fixed palette.
       return style === "pixel" ? [] : [glow(fx, fy, 520 * k * (0.6 + 0.4 * fl), [1, 0.62, 0.3], 0.35 * fl)];
     },
@@ -46,7 +46,7 @@ export const GUIDES = {
     ],
     light(style, cam, b) {
       const [cx, cy] = toScreen(cam, b.x, b.y - 560 * b.s), k = cam.zoom * b.s;
-      if (style === "thriller") return [darkness(cx, cy + 380 * k, 1300 * k, 0.9), glow(cx, cy, 300 * k, [1, 0.42, 0.1], 0.4)];
+      if (style === "thriller") return [darkness(cx, cy + 380 * k, 1300 * k, 0.9 * THRILLER.dark), glow(cx, cy, 300 * k, [1, 0.42, 0.1], 0.4)];
       return [];
     },
   },
@@ -62,7 +62,7 @@ export const GUIDES = {
     ],
     light(style, cam, b) {
       const [fx, fy] = toScreen(cam, b.x + FLARE[0] * b.s, b.y + FLARE[1] * b.s), k = cam.zoom * b.s;
-      if (style === "thriller") return [darkness(fx - 120 * k, fy + 200 * k, 1100 * k, 0.92), glow(fx, fy, 260 * k, [0.8, 0.9, 1], 0.35)];
+      if (style === "thriller") return [darkness(fx - 120 * k, fy + 200 * k, 1100 * k, 0.92 * THRILLER.dark), glow(fx, fy, 260 * k, [0.8, 0.9, 1], 0.35)];
       return style === "pixel" ? [] : [glow(fx, fy, 160 * k, [1, 1, 1], 0.25)];
     },
   },

@@ -12,6 +12,8 @@ import { loadTidepool, tidepool, REF } from "./worlds/tidepool.mjs";
 import { loadHarbour, harbour, HARBOUR_CAMERA, LAMP } from "./worlds/harbour.mjs";
 import { S as isoS, depth as isoDepth, sorted, castShadow } from "./worlds/iso_kit.mjs";
 import { clipBeat, framing, CLIPS } from "./motion.mjs";
+import { introPose } from "./intro.mjs";
+import { sprite } from "./worlds/tidepool.mjs";
 const ATLAS = new URL("../../docs/motion/hanken-grotesk-500.atlas.json", import.meta.url).href;
 
 let atlasP = null;
@@ -59,13 +61,20 @@ function sheetFrame(g, style, A) {
   return { background: L.ground, items, hud, post: L.post, ...pixelOf(style, true) };
 }
 
+// A pixel portrait bust standing on the guide's feet, its frame picked by mouth and lids.
+function portrait(A, key, o, x, y) {
+  const v = key === "pylon" ? (o.bark || 0) / 0.85 : o.mouth || 0, m = v > 0.6 ? 2 : v > 0.25 ? 1 : 0;
+  const name = (o.lid ?? 0.5) > 0.85 ? `portrait-${key}-blink` : `portrait-${key}-m${m}`, img = A.pixel.sprites[name].atlas.image;
+  return [sprite(A.pixel, name, Math.round(x / 4 - img.width / 2), Math.round(y / 4 - img.height))];
+}
+
 // The guide inside a template's world, in that template's look, with the scene's props.
 function sceneFrame(g, style, A, beat) {
   const L = LOOKS[style];
   let { x, y } = beat;
   if (beat.cell) [x, y] = isoS(...beat.cell);
   if (beat.offset) { x += beat.offset[0]; y += beat.offset[1]; }
-  const guide = [...g.under(x, y, beat.s, style), ...pose(g.parts(beat.o), { x, y, s: beat.s, yaw: beat.yaw || 0, flip: beat.flip, shear: g.shear || 0, squash: (beat.o && beat.o.squash) || 0 })];
+  const guide = beat.portrait ? portrait(A, g.key, beat.o || {}, x, y) : [...g.under(x, y, beat.s, style), ...pose(g.parts(beat.o), { x, y, s: beat.s, yaw: beat.yaw || 0, flip: beat.flip, shear: g.shear || 0, squash: (beat.o && beat.o.squash) || 0 })];
   const extra = [];
   if (beat.cell) {
     // In the harbour the guide is a thing on the ground: a long shadow away from the lamp, then the figure.
@@ -99,16 +108,21 @@ function layered(f, layer) {
 // shot({ guide, style, kind, beat, layer, clip, frame }) -> a Motion scene module. clip is
 // "idle", "talk" or "action" (motion.mjs) and makes the scene move; frame is "wide",
 // "medium" or "close".
-export function shot({ guide, style, kind = "scene", beat = null, title, layer = null, clip = null, frame = null, move = null, duration = null }) {
-  const g = GUIDES[guide];
+export function shot({ guide, style, kind = "scene", beat = null, title, layer = null, clip = null, frame = null, move = null, duration = null, mouthVariant = null }) {
+  const g = { ...GUIDES[guide], key: guide };
   return {
-    title: title || `${g.title}: ${kind} (${style})`, duration: duration || (clip ? CLIPS[clip] : 1), fps: 30,
-    async load(ctx) { return loadAll(ctx); },
+    title: title || `${g.title}: ${kind} (${style})`, duration: duration || (clip && CLIPS[clip]) || 1, fps: 30,
+    async load(ctx) {
+      const A = await loadAll(ctx);
+      if (clip === "intro") { A.mouth = await fetch(new URL(`./intros/${guide}.mouth.json`, import.meta.url).href).then((r) => r.json()); A.mouth.variant = mouthVariant || "both"; }
+      return A;
+    },
     frame(t, ctx) {
       const A = ctx.assets;
       let b = beat || g.beats[style];
       if (kind !== "sheet") {
-        if (clip) b = { ...clipBeat(guide, clip, b, t), t };
+        if (clip === "intro") b = { ...b, o: introPose(guide, b, t, ctx.assets.mouth), t };
+        else if (clip) b = { ...clipBeat(guide, clip, b, t), t };
         const base = world(style, A).camera;
         b = { ...b, ...framing(guide, style, b, frame, { ...base, ...(b.camera || {}) }) };
         if (frame && frame !== "wide" && b.hud) b = { ...b, hud: null };

@@ -9,6 +9,7 @@
 // art pixel on one frame pixel at every depth.
 import { tileAtlas, authoredMap, parallaxZ } from "../../../web/world/author.mjs";
 import * as A from "./tidepool_tiles.mjs";
+import { portraitFrames } from "./portraits.mjs";
 
 export const PX = 4;                               // design units per frame pixel (1920 / 480)
 export const REF = { x: 960, y: 540 };
@@ -94,6 +95,7 @@ export async function loadTidepool(motion) {
       }).flat()),
       unknocked: one("unknocked", A.shellTiles.unknocked), holds: one("holds", A.shellTiles.holds), hollow: one("hollow", A.shellTiles.hollow),
       starfish: one("starfish", A.starfish), pebbles: one("pebbles", A.pebbles), driftwood: one("driftwood", A.driftwood),
+      ...Object.fromEntries(Object.entries(portraitFrames()).map(([k, img]) => [`portrait-${k}`, one(`portrait-${k}`, img)])),
       card: one("card", A.card), boat: one("boat", A.boat), cone: one("cone", A.cone),
     },
   };

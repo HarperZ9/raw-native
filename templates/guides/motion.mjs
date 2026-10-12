@@ -49,16 +49,14 @@ export function framing(guide, style, beat, name, base) {
   const focus = { tallow: 0.74, pylon: 0.72, rerun: 0.5 }[guide], closeShare = guide === "rerun" ? 1.2 : 1.5;
   if (style === "pixel") {
     // Pixel mode keeps one art pixel per frame pixel, so the zoom must divide 480 and 270: one of
-    // 1, 2, 3, 5, 6, 10. Pick the one nearest the share of the frame the guide should fill
-    // (0.75 medium, 1.3 close; PROGRESS.md, step 15).
-    const art = h / 4, want = (270 * (name === "close" ? 1.3 : 0.75)) / art;
-    // Pylon's face turns to mush past zoom 3 (her eyes and nose fall under two art pixels), so her
-    // pixel close stops at 3; a true pixel close of her needs a hand-drawn portrait sprite.
-    const cap = { tallow: 5, pylon: 3, rerun: 5 }[guide];
-    const zoom = [1, 2, 3, 5, 6, 10].filter((z) => z <= cap).reduce((b, z) => (Math.abs(z - want) < Math.abs(b - want) ? z : b), 1);
-    const grid = 8, up = name === "close" ? focus : 0.45;
-    // The foreground kelp sits at 1.5x parallax and would cross the guide in a close frame: dropped.
-    return { noFront: true, camera: { x: Math.round((x + 20) / grid) * grid, y: Math.round((y - h * up) / grid) * grid, zoom }, pixel: { width: 480 / zoom, height: 270 / zoom, mode: "integer" } };
+    // 1, 2, 3, 5, 6, 10. A medium frame picks the zoom nearest 0.75 of the frame height. A close
+    // frame is a hand-drawn portrait bust (worlds/portraits.mjs) at zoom 5 (96 x 54), its foot on
+    // the guide's feet: the vector rig cannot hold a face at that size (PROGRESS.md, step 15).
+    const grid = 8;
+    if (name === "close") return { noFront: true, portrait: true, camera: { x: Math.round(x / grid) * grid, y: Math.round((y - 26 * 4) / grid) * grid, zoom: 5 }, pixel: { width: 96, height: 54, mode: "integer" } };
+    const want = (270 * 0.75) / (h / 4);
+    const zoom = [1, 2, 3, 5, 6, 10].filter((z) => z <= 5).reduce((b, z) => (Math.abs(z - want) < Math.abs(b - want) ? z : b), 1);
+    return { noFront: true, camera: { x: Math.round((x + 20) / grid) * grid, y: Math.round((y - h * 0.45) / grid) * grid, zoom }, pixel: { width: 480 / zoom, height: 270 / zoom, mode: "integer" } };
   }
   // Guide height as a share of the frame, and the point framed (a share of the way up the body).
   // Medium shows the guide at 0.85 of the frame (knees up for Tallow), close at 1.5 (head and

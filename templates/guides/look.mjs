@@ -6,11 +6,14 @@ import { text } from "../../web/motion/text.mjs";
 import { SHORE_PALETTE } from "./worlds/tidepool_tiles.mjs";
 
 // Looks per style: ground colour, ink for labels, and the template's post stack.
+// The thriller's exposure and darkness (PROGRESS.md, step 17: brightened for reel size).
+export const THRILLER = { ev: 1, dark: 0.75 };
+export const setThriller = (v) => { Object.assign(THRILLER, v); for (const p of LOOKS.thriller.post.passes) if (p.pass === "film") p.ev = THRILLER.ev; };
 export const LOOKS = {
   // The retro-thriller template's own stack: colour negative film (the Motion pass, which
   // decodes the sRGB colours first, raw-native #101), then the soft tube.
   thriller: { ground: [0.012, 0.011, 0.014], ink: "#d9cdb4", dim: "#8a8070",
-    post: { bloom: 0.2, threshold: 1.0, vignette: 0.2, grain: 0, passes: [{ pass: "film", preset: "500t-print" },
+    post: { bloom: 0.2, threshold: 1.0, vignette: 0.2, grain: 0, passes: [{ pass: "film", preset: "500t-print", ev: THRILLER.ev },
       { pass: "crt-classic", cell: 3, scanlines: true, scanStrength: 0.25, mask: "grille", maskStrength: 0.15, bloom: 0.1, curvature: 0.06, aberration: 0.08, vignette: 0.35 }] } },
   // The painted isometric template: the registered paint pass (raw-native #55).
   painted: { ground: [0.02, 0.022, 0.03], ink: "#f1e4c8", dim: "#b29d7e", post: { bloom: 0.06, threshold: 1.0, vignette: 0.3, grain: 0, passes: [{ pass: "paint", preset: "oil-grotesque" }] } },
