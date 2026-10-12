@@ -118,7 +118,14 @@
    "what": "ctest (59 of 59), test_pbr_energy --full, test_pbr_reciprocity, test_pbr_spec, test_lighting --full, and the material and lighting GPU parity on D3D12 WARP",
    "result": "pass. furnace_anisotropic worst 9.31e-4 (bound 2e-2; was 2.69e-3); conservation worst 3.46e-4; reciprocity 3.75e-14. GPU material parity on WARP 0.0535 of the bound (was 0.054), control fails; lighting shading on WARP 0.47. The table buffer grows from 1,622,447 to 2,065,391 floats. Cost: test_pbr_improve takes about 31 s in ctest mode and about 2 minutes with --json.",
    "evidence": "evidence/m3-materials2-gpu.json"
+  },
+  {
+   "run": "rtx-coat",
+   "date": "2026-10-12",
+   "what": "gpu_pbr_parity and gpu_lighting_parity on the RTX 4090 under the GPU lock (07:34:11Z to 07:34:16Z), pinned e70073e",
+   "result": "pass: material parity 0.0539 of the bound, control fails; lighting shading 0.36, prefilter 0.0035.",
+   "evidence": "evidence/m3-materials2-gpu.json"
   }
  ],
- "status": "Second stage passes on the CPU: iridescence, volume path length and clearcoat energy, including the 1 + 1e-3 ceiling (excess 5.93e-04) since run clearcoat-9 (2026-10-12). GPU material parity passes on WARP."
+ "status": "Second stage passes on the CPU: iridescence, volume path length and clearcoat energy, including the 1 + 1e-3 ceiling (excess 5.93e-04) since run clearcoat-9 (2026-10-12). GPU material parity passes on WARP and the RTX 4090."
 }
