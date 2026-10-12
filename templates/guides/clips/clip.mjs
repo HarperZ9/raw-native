@@ -19,4 +19,4 @@ if (q.get("gesture")) setEase(q.get("gesture"));
 if (q.get("ev") || q.get("dark")) setThriller({ ev: +(q.get("ev") || 0), dark: +(q.get("dark") || 1) });
 export default shot({ guide, style: q.get("style") || HOME[guide], clip: q.get("clip") || "idle", frame: q.get("frame") || "medium", layer: "all",
   move: mv ? MOVES[mv]({ duration: +(q.get("dur") || D), mode: q.get("mode") || undefined, ease: q.get("ease") || undefined }) : null,
-  duration: q.get("dur") ? +q.get("dur") : mv ? D : null, mouthVariant: q.get("mouthcurve") });
+  duration: q.get("dur") ? +q.get("dur") : mv ? D : null, mouthVariant: q.get("mouthcurve"), mouthFile: q.get("mouthfile") });

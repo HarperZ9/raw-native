@@ -38,6 +38,8 @@ PLAN += [(f"{g}-intro", f"guide={g}&clip=intro&frame={'close' if g == 'tallow' e
 HEAD_TRIM, TAIL = 0.45, 0.35
 # A web encode beside each intro master stays under this size (the author's phone upload limit is 30 MB).
 WEB_MB = 26
+# The A/B clips: the author's line, then the same line in the character's voice (round 7).
+PLAN += [(f"{g}-ab", f"guide={g}&clip=intro&frame={'close' if g == 'tallow' else 'medium'}&mouthfile=ab", 0) for g in ("tallow", "pylon", "rerun")]
 PLAN += [("rerun-pan", "guide=rerun&clip=idle&frame=wide&move=pan&mode=sharp", 4.8),
          ("pylon-push", "guide=pylon&clip=idle&frame=close&move=push&ease=inout", 4.8)]
 
@@ -119,11 +121,14 @@ def main() -> int:
             continue
         if "clip=intro" in query:
             g = query.split("guide=")[1].split("&")[0]
-            m = json.loads((ROOT / "templates" / "guides" / "intros" / f"{g}.mouth.json").read_text(encoding="utf-8"))
+            mf = query.split("mouthfile=")[1].split("&")[0] if "mouthfile=" in query else ""
+            m = json.loads((ROOT / "templates" / "guides" / "intros" / f"{g}{'.' + mf if mf else ''}.mouth.json").read_text(encoding="utf-8"))
             dur = dur or m["seconds"]
             query += f"&dur={dur}"
             start, dur = HEAD_TRIM, m["sentences"][-1]["end"] + TAIL
-            audio = ["--audio", str(VOICE / g / "paced.wav")]
+            # The narration file: $GUIDES_VOICE_NAME under the guide's folder (paced.wav for the r5
+            # author narration, final/voice.wav for the round 7 character voice); ab.wav for an A/B.
+            audio = ["--audio", str(VOICE / g / ("ab.wav" if mf == "ab" else os.environ.get("GUIDES_VOICE_NAME", "paced.wav")))]
         c = "action" if ("clip=action" in query or "move=" in query or "clip=intro" in query) else "loop"
         if a.only and name not in a.only:
             continue

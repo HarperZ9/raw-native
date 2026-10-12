@@ -12,7 +12,7 @@ import { loadTidepool, tidepool, REF } from "./worlds/tidepool.mjs";
 import { loadHarbour, harbour, HARBOUR_CAMERA, LAMP } from "./worlds/harbour.mjs";
 import { S as isoS, depth as isoDepth, sorted, castShadow } from "./worlds/iso_kit.mjs";
 import { clipBeat, framing, CLIPS } from "./motion.mjs";
-import { introPose, introFrame } from "./intro.mjs";
+import { introPose, introFrame, introLabel } from "./intro.mjs";
 import { sprite } from "./worlds/tidepool.mjs";
 const ATLAS = new URL("../../docs/motion/hanken-grotesk-500.atlas.json", import.meta.url).href;
 
@@ -110,13 +110,13 @@ function layered(f, layer) {
 // shot({ guide, style, kind, beat, layer, clip, frame }) -> a Motion scene module. clip is
 // "idle", "talk" or "action" (motion.mjs) and makes the scene move; frame is "wide",
 // "medium" or "close".
-export function shot({ guide, style, kind = "scene", beat = null, title, layer = null, clip = null, frame = null, move = null, duration = null, mouthVariant = null }) {
+export function shot({ guide, style, kind = "scene", beat = null, title, layer = null, clip = null, frame = null, move = null, duration = null, mouthVariant = null, mouthFile = null }) {
   const g = { ...GUIDES[guide], key: guide };
   return {
     title: title || `${g.title}: ${kind} (${style})`, duration: duration || (clip && CLIPS[clip]) || 1, fps: 30,
     async load(ctx) {
       const A = await loadAll(ctx);
-      if (clip === "intro") { A.mouth = await fetch(new URL(`./intros/${guide}.mouth.json`, import.meta.url).href).then((r) => r.json()); A.mouth.variant = mouthVariant || "both"; }
+      if (clip === "intro") { A.mouth = await fetch(new URL(`./intros/${guide}${mouthFile ? "." + mouthFile : ""}.mouth.json`, import.meta.url).href).then((r) => r.json()); A.mouth.variant = mouthVariant || A.mouth.variant || "both"; }
       return A;
     },
     frame(t, ctx) {
@@ -129,6 +129,10 @@ export function shot({ guide, style, kind = "scene", beat = null, title, layer =
         const fr = frame === "auto" && clip === "intro" ? introFrame(guide, t, ctx.assets.mouth) : frame;
         b = { ...b, ...framing(guide, style, b, fr, { ...base, ...(b.camera || {}) }) };
         if (fr && fr !== "wide" && b.hud) b = { ...b, hud: null };
+        // The A/B clips name the voice that is speaking.
+        const lab = clip === "intro" ? introLabel(t, ctx.assets.mouth) : null;
+        // In pixel mode the frame is a few hundred pixels wide, so the label is drawn larger to survive.
+        if (lab) b = { ...b, hud: (st, A2, L) => [label(A2.atlas, lab, style === "pixel" ? 120 : 44, 70, style === "pixel" ? 150 : 90, style === "pixel" ? "#0b0a12" : L.ink, "left")] };
         // A camera move: move(t, camera, beat) returns the camera (and pixel settings) at time t.
         if (move) b = { ...b, ...move(t, { ...base, ...(b.camera || {}) }, b) };
       }

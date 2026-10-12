@@ -62,7 +62,7 @@ function blend(a, b, u) {
 // The guide's pose options at time t of its intro, given its mouth file M.
 export function introPose(guide, beat, t, M) {
   const idle = clipBeat(guide, "idle", beat, t % 2.4).o, rest = beat.o || {}, poses = POSES[guide], ease = EASES[EASE];
-  const keys = M.sentences.map((s, i) => ({ t: s.start - LEAD, pose: poses[Math.min(i, poses.length - 1)] }));
+  const keys = M.sentences.map((s, i) => ({ t: s.start - LEAD, pose: poses[Math.min(s.pose ?? i, poses.length - 1)] }));
   keys.push({ t: M.sentences[M.sentences.length - 1].end + 0.3, pose: {}, settle: true });
   let cur = {}, from = {};
   for (const k of keys) {
@@ -97,4 +97,10 @@ export function introFrame(guide, t, M) {
   let k = 0;
   for (let i = 1; i < S.length; i++) if (t >= (S[i - 1].end + S[i].start) / 2) k = i;
   return lines.includes(k) ? "close" : "medium";
+}
+
+// A label for the A/B clips: the sentence's label (whose voice it is) while it plays.
+export function introLabel(t, M) {
+  const s = M.sentences.find((x, i) => t >= x.start - 0.4 && t < (M.sentences[i + 1] ? M.sentences[i + 1].start - 0.4 : 1e9));
+  return s && s.label ? s.label : null;
 }
