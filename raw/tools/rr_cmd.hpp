@@ -1,7 +1,7 @@
 #pragma once
 // raw_native_cli rr-render: HW H2 dataset frames from RT's path tracer on an owned scene along a
 // camera path (evidence/rr-bounds.json, evidence/rr-bounds-amendment-1.json).
-//   rr-render --scene NAME --path SEED --frames N [--first K] [--width W] [--height H]
+//   rr-render --scene NAME --path SEED --frames N [--first K] [--count C] [--width W] [--height H]
 //             [--spp S] [--chunk C] [--out DIR] [--cpu]
 // Per frame k, in DIR: fKKK_in.f32 (H x W x 17 float32: 1 spp radiance 3, albedo 3, normal 3,
 // depth 1, motion 2, previous position 2, expected previous depth 1, roughness 1, metallic 1),
