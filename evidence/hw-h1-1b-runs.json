@@ -1,0 +1,23 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/hw-h1-1b-bounds.json (committed 26835c3 before any code or run; unchanged since)",
+ "implementation_note": "For a tie between two triangles the conditioning term c is the larger of the two triangles' terms (the stricter tolerance). The bounds text names 'the triangle involved' and does not say which of two; the stricter reading was chosen before the first run.",
+ "runs": [
+  {
+   "run": 1,
+   "adapter": "D3D12 WARP (Microsoft Basic Render Driver), debug layer on, code fbda078",
+   "result": "fail, only on WARP's TMin defect (evidence/hw-h1-1-runs.json run 1, cause 1): unexplained terrain 2, hall_b 1, debris 16, every one a GPU hit with t below TMin. Ties on hall_b 0 (H1.1 hall: 885). Agreeing-hit violations 0 on every scene (worst 0.44 of the t tolerance, 0.066 of uv). Offset and rotation controls fail on every scene; the coplanar control has 883 ties and 5 edges, above the fraction bound, so it fails as required. hw-h1-1b-d3d12-warp.json"
+  },
+  {
+   "run": "forced off",
+   "adapter": "same",
+   "result": "pass: every scene takes the CPU traversal fallback. hw-h1-1b-d3d12-warp-forced-off.json"
+  },
+  {
+   "run": "RTX 1",
+   "adapter": "RTX 4090, driver 610.88, lock 2026-10-12T19:27:04Z (token engine-hw-1012-5025-1791833224), binaries gpu/bin-1012 at fbda078",
+   "result": "pass. Unexplained 0 on every scene; explained terrain 2, hall_b 1, debris 2 (all edges) of 340,000 each; violations 0, worst t 0.44 and uv 0.065 of tolerance. Offset control: 16,470 to 34,160 unexplained and 131,262 to 240,960 t violations a scene; rotation control fails on every scene; coplanar control 985 ties and 5 edges, fails as required. Forced-off takes the fallback. hw-rtx4090-20261012/hw-h1-1b-d3d12-rtx4090*.json"
+  }
+ ],
+ "verdict": "H1.1b passes on the RTX 4090. H1.1 stays a recorded failure; H1.1b shows its misses came from the scene's coincident faces and from tolerances without an angle term. On WARP, H1.1b fails on WARP's TMin defect alone."
+}
