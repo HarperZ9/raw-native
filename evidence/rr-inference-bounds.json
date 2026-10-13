@@ -1,0 +1,18 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "HW H2 inference: our own GPU kernels for the trained network (Vulkan compute), a cooperative-matrix path for the convolutions and a portable scalar path, against the PyTorch forward pass. Elaborates the inference_parity and budget lines of evidence/rr-bounds.json; changes neither.",
+ "written": "2026-10-13, before the kernels are written or run",
+ "shipped_code": "C++ and GLSL in src/rhi/vulkan/ (vk_rrnet*.cpp, shaders/vk_rr_*.comp), no third-party dependency beyond the Vulkan loader the tool already uses. The weights are a flat file exported from our own training (scripts/rr_export.py); PyTorch is used only to produce the comparison outputs.",
+ "parity": {
+  "what": "both paths run the full recurrent sequence on every test sequence (their own previous outputs feed the next frame); every pixel of every frame of the remodulated output compared with the PyTorch forward pass run the same way in float32",
+  "bound": "max absolute difference in linear radiance at most 1e-2 on every pixel of every test frame, for each path",
+  "reported": "max, 99.99th percentile and mean absolute difference per sequence; the frame and pixel of the max"
+ },
+ "controls_that_must_fail": {
+  "weights_perturbed": "the scalar path with the first convolution's weights scaled by 1.01 must exceed the parity bound",
+  "fp16_activation_round_trip_everywhere": "not a control; reported only if run"
+ },
+ "budget": "as rr-bounds.json: the cooperative-matrix path at 1920 x 1080 output on the RTX 4090, median of 500 frames after 50 warm-up, at most 2.0 ms, timed with GPU timestamps around the whole network including the glue kernels; the timing protocol of PLAN.md (three runs with GPU snapshots) applies; the scalar path is timed and reported, not bounded",
+ "adapters": "parity of the scalar path on SwiftShader locally; both paths on the RTX 4090 only under D:/gpu.lock.d, in holds of minutes between MMBU runs",
+ "does_not_prove": "Image quality (that is rr-bounds.json's comparison); speed on other GPUs; that a fused or fp16-activation design would not be faster."
+}
