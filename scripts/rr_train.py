@@ -11,7 +11,12 @@ optimiser and the step; --resume continues from it. The checkpoint with the lowe
 is kept as best.pt. --shuffle-targets trains the control that must fail: every frame's target is
 another training frame's, by a fixed permutation.
 
+With --lock DIR the script takes the GPU lock itself (atomic mkdir, OWNER JSON with pid, token,
+purpose and since) only after the data is loaded, trains for --session-minutes, checkpoints,
+releases the lock by token, waits 30 s so another job can take the GPU, and repeats until done.
+
 Usage: rr_train.py ROOT OUTDIR [--steps N] [--minutes M] [--resume] [--shuffle-targets] [--cpu]
+                   [--lock DIR --session-minutes M]
 """
 import argparse
 import json
@@ -96,6 +101,65 @@ def validate(net, val, dev):
     return float(np.mean(losses))
 
 
+def train_session(a, net, opt, train, val, perm, dev, out, start, best, log, minutes):
+    ck = out / "last.pt"
+    rng = np.random.default_rng(SEED + start)
+    t_begin = time.time()
+    done = start
+    for it in range(start, a.steps):
+        for g in opt.param_groups:
+            g["lr"] = LR_MIN + 0.5 * (LR - LR_MIN) * (1 + math.cos(math.pi * it / a.steps))
+        x, r = batch(train, rng, dev, perm)
+        _, loss = run_sequence(net, x, r)
+        opt.zero_grad(set_to_none=True)
+        loss.backward()
+        torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
+        opt.step()
+        done = it + 1
+        timeout = (time.time() - t_begin) / 60 > minutes
+        if done % 1000 == 0 or done == a.steps or timeout:
+            vl = validate(net, val, dev)
+            log.append({"step": done, "train_loss": float(loss.detach()), "val_loss": vl, "minutes": (time.time() - t_begin) / 60})
+            print(json.dumps(log[-1]), flush=True)
+            torch.save({"model": net.state_dict(), "opt": opt.state_dict(), "step": done, "best": min(best, vl), "log": log}, ck)
+            if vl < best:
+                best = vl
+                torch.save({"model": net.state_dict(), "step": done, "val_loss": vl}, out / "best.pt")
+        if timeout:
+            break
+    return done, best
+
+
+class GpuLock:
+    def __init__(self, path, purpose):
+        self.path, self.purpose, self.token = Path(path), purpose, None
+
+    def take(self):
+        import os
+        while True:
+            try:
+                self.path.mkdir()
+                break
+            except FileExistsError:
+                time.sleep(10)
+        self.token = f"engine-hw-rr-train-{os.getpid()}-{int(time.time())}"
+        tmp = self.path / "OWNER.tmp"
+        tmp.write_text(json.dumps({"pid": os.getpid(), "purpose": self.purpose, "session": "Engine HW agent (Claude Code)",
+                                   "token": self.token, "since": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}))
+        tmp.replace(self.path / "OWNER")
+        print(json.dumps({"lock": "taken", "token": self.token}), flush=True)
+
+    def release(self):
+        try:
+            if self.token and json.loads((self.path / "OWNER").read_text()).get("token") == self.token:
+                (self.path / "OWNER").unlink()
+                self.path.rmdir()
+                print(json.dumps({"lock": "released", "token": self.token}), flush=True)
+        except FileNotFoundError:
+            print(json.dumps({"lock": "already gone", "token": self.token}), flush=True)
+        self.token = None
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("root")
@@ -106,6 +170,8 @@ def main():
     ap.add_argument("--shuffle-targets", action="store_true")
     ap.add_argument("--cpu", action="store_true")
     ap.add_argument("--val-frames", type=int, default=32)
+    ap.add_argument("--lock", default="")
+    ap.add_argument("--session-minutes", type=float, default=8.0)
     a = ap.parse_args()
     dev = torch.device("cpu" if a.cpu else "cuda")
     out = Path(a.out)
@@ -124,38 +190,31 @@ def main():
             si, st = table[(i, t)]
             q = train[si]["r"][st]
             return q[:, y0:y0 + CROP, x0:x0 + CROP].float()
+    lock = GpuLock(a.lock, f"raw-native HW H2 training{' (shuffled-target control)' if a.shuffle_targets else ''}, a session of at most {a.session_minutes:g} minutes") if a.lock else None
     net = RrNet().to(dev)
     opt = torch.optim.AdamW(net.parameters(), lr=LR, weight_decay=WD)
     start, best, log = 0, math.inf, []
     ck = out / "last.pt"
-    if a.resume and ck.exists():
-        st = torch.load(ck, map_location=dev)
-        net.load_state_dict(st["model"]), opt.load_state_dict(st["opt"])
-        start, best, log = st["step"], st["best"], st["log"]
-    rng = np.random.default_rng(SEED + start)
-    t_begin = time.time()
-    for it in range(start, a.steps):
-        for g in opt.param_groups:
-            g["lr"] = LR_MIN + 0.5 * (LR - LR_MIN) * (1 + math.cos(math.pi * it / a.steps))
-        x, r = batch(train, rng, dev, perm)
-        _, loss = run_sequence(net, x, r)
-        opt.zero_grad(set_to_none=True)
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
-        opt.step()
-        done = it + 1
-        timeout = (time.time() - t_begin) / 60 > a.minutes
-        if done % 1000 == 0 or done == a.steps or timeout:
-            vl = validate(net, val, dev)
-            log.append({"step": done, "train_loss": float(loss), "val_loss": vl, "minutes": (time.time() - t_begin) / 60})
-            print(json.dumps(log[-1]), flush=True)
-            state = {"model": net.state_dict(), "opt": opt.state_dict(), "step": done, "best": min(best, vl), "log": log}
-            torch.save(state, ck)
-            if vl < best:
-                best = vl
-                torch.save({"model": net.state_dict(), "step": done, "val_loss": vl}, out / "best.pt")
-        if timeout:
+    t_all = time.time()
+    while True:
+        if a.resume and ck.exists():
+            st = torch.load(ck, map_location=dev)
+            net.load_state_dict(st["model"]), opt.load_state_dict(st["opt"])
+            start, best, log = st["step"], st["best"], st["log"]
+        if start >= a.steps or (time.time() - t_all) / 60 > a.minutes:
             break
+        if lock:
+            lock.take()
+        try:
+            start, best = train_session(a, net, opt, train, val, perm, dev, out, start, best, log,
+                                        a.session_minutes if lock else a.minutes)
+        finally:
+            if lock:
+                lock.release()
+        a.resume = True
+        if not lock or start >= a.steps:
+            break
+        time.sleep(30)
     meta = {"torch": torch.__version__, "cuda": torch.version.cuda, "device": str(dev),
             "gpu": torch.cuda.get_device_name(0) if dev.type == "cuda" else "", "shuffle_targets": a.shuffle_targets,
             "train_sequences": [s["name"] for s in train], "val_sequences": [s["name"] for s in val],
