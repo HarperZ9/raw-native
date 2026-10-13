@@ -19,6 +19,9 @@ Usage: rr_train.py ROOT OUTDIR [--steps N] [--minutes M] [--resume] [--shuffle-t
                    [--lock DIR --session-minutes M]
 """
 import argparse
+import os
+
+os.environ.setdefault("FOR_DISABLE_CONSOLE_CTRL_HANDLER", "1")   # before numpy and torch load the Intel Fortran runtime
 import json
 import math
 import sys
@@ -31,6 +34,14 @@ import torch.nn.functional as F
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import rr_data  # noqa: E402
+
+# Optional shutdown guard (a long-job survival module outside the repo, named by RR_GUARD_DIR): on a session end or a
+# console close it sets a flag; the loop checkpoints and exits with code 75 ("resume later").
+GUARD = None
+if os.environ.get("RR_GUARD_DIR"):
+    sys.path.insert(0, os.environ["RR_GUARD_DIR"])
+    import shutdown_guard as GUARD  # noqa: E402
+EXIT_RESUME = 75
 from rr_model import RrNet, step, warp  # noqa: E402
 
 B, T, CROP, LR, LR_MIN, WD, SEED, TEMP_W = 4, 6, 128, 1e-3, 1e-5, 1e-4, 1, 0.25
@@ -117,7 +128,8 @@ def train_session(a, net, opt, train, val, perm, dev, out, start, best, log, min
         torch.nn.utils.clip_grad_norm_(net.parameters(), 1.0)
         opt.step()
         done = it + 1
-        timeout = (time.time() - t_begin) / 60 > minutes
+        stop = GUARD is not None and GUARD.requested()
+        timeout = (time.time() - t_begin) / 60 > minutes or stop
         if done % 1000 == 0 or done == a.steps:
             vl = validate(net, val, dev)
             log.append({"step": done, "train_loss": float(loss.detach()), "val_loss": vl, "minutes": (time.time() - t_begin) / 60})
@@ -134,6 +146,10 @@ def train_session(a, net, opt, train, val, perm, dev, out, start, best, log, min
             (out / "progress.json").write_text(json.dumps({"step": done, "steps": a.steps, "best_val": best}))
             last_save = time.time()
         if timeout:
+            if stop:
+                GUARD.done()
+                print(json.dumps({"shutdown_save": done, "reason": GUARD.reason()}), flush=True)
+                sys.exit(EXIT_RESUME)
             break
     return done, best
 
@@ -169,6 +185,8 @@ class GpuLock:
 
 
 def main():
+    if GUARD is not None:
+        print(json.dumps({"guard": GUARD.install()}), flush=True)
     ap = argparse.ArgumentParser()
     ap.add_argument("root")
     ap.add_argument("out")

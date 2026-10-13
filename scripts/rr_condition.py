@@ -5,6 +5,9 @@ float32 against float64 over whole sequences, max absolute difference in linear 
 Usage: rr_condition.py MODEL.pt SEQ_DIR [SEQ_DIR ...] [--frames N]
 """
 import argparse
+import os
+
+os.environ.setdefault("FOR_DISABLE_CONSOLE_CTRL_HANDLER", "1")
 import json
 import sys
 from pathlib import Path

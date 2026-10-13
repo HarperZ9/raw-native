@@ -8,6 +8,9 @@ bias [cout]. A JSON sidecar lists the layers, shapes and the file's SHA-256.
 Usage: rr_export.py MODEL.pt OUT.bin [--ref-seq DIR --ref-out DIR [--frames N]]
 """
 import argparse
+import os
+
+os.environ.setdefault("FOR_DISABLE_CONSOLE_CTRL_HANDLER", "1")
 import hashlib
 import json
 import sys

@@ -16,6 +16,9 @@ ghosting sample. Paired bootstrap: 10,000 resamples of frames pooled over the te
 Usage: rr_eval.py ROOT --model best.pt --shuffled best.pt --cli raw_native_cli.exe --work DIR --out OUT.json
 """
 import argparse
+import os
+
+os.environ.setdefault("FOR_DISABLE_CONSOLE_CTRL_HANDLER", "1")
 import json
 import subprocess
 import sys
@@ -200,7 +203,16 @@ def main():
     torch.set_num_threads(8)
     per_seq, se = {}, {}
     for d in rr_data.sequences(a.root, a.split):
-        per_seq[d.name], se[d.name] = evaluate_sequence(d, a)
+        cache = Path(a.work) / f"{d.name}.metrics.json"   # skip-done on resume
+        if cache.exists():
+            c = json.loads(cache.read_text())
+            per_seq[d.name], se[d.name] = c["metrics"], c["se"]
+        else:
+            per_seq[d.name], se[d.name] = evaluate_sequence(d, a)
+            Path(a.work).mkdir(parents=True, exist_ok=True)
+            tmp = cache.with_suffix(".tmp")
+            tmp.write_text(json.dumps({"metrics": per_seq[d.name], "se": se[d.name]}))
+            tmp.replace(cache)
         print(d.name, json.dumps(summary({d.name: per_seq[d.name]})[d.name]["ours"]), flush=True)
     v = verdict(per_seq)
     doc = {"schema": "raw-native.evidence/1", "bounds": "evidence/rr-bounds.json with amendments 1 and 2",
