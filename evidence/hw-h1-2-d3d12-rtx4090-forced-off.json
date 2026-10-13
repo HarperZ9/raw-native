@@ -1,0 +1,11 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/hw-h1-2-bounds.json",
+ "adapter": "NVIDIA GeForce RTX 4090",
+ "disable": "wave_ops,native_16bit",
+ "warmup": 0,
+ "repeats": 1,
+ "scan": {"elements":16777216,"forced_off":true,"shared_mismatches":0,"wave_mismatches":null,"control_mismatches":null,"error":"wave ops forced off","shared_time":{"n":1,"median_ms":0.28016,"p5_ms":0.28016,"p95_ms":0.28016,"p99_ms":0.28016,"iqr_ms":0},"wave_time":null,"wave_speedup":null,"pass":true},
+ "bilateral": {"pixels":2073600,"forced_off":true,"fp16_over_bound":null,"fp16_worst_over_tol":0,"control_over_bound":null,"control_worst_over_tol":0,"error":"native 16-bit forced off","fp32_time":{"n":1,"median_ms":0.22064,"p5_ms":0.22064,"p95_ms":0.22064,"p99_ms":0.22064,"iqr_ms":0},"fp16_time":null,"fp16_speedup":null,"pass":true},
+ "pass": true
+}

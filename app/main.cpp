@@ -15,6 +15,10 @@
 #include "raw/tools/swr_cmd.hpp"
 #include "raw/tools/pt_cmd.hpp"
 #include "raw/tools/sdf_cmd.hpp"
+#include "raw/tools/hw_rayquery_cmd.hpp"
+#include "raw/tools/hw_async_cmd.hpp"
+#include "raw/tools/hw_wave16_cmd.hpp"
+#include "raw/tools/hw_mesh_cmd.hpp"
 #include "raw/rhi/rhi.hpp"
 #include "raw/renderer/raster.hpp"
 #include "raw/renderer/accel.hpp"
@@ -110,6 +114,14 @@ static const char* kUsage =
     "       raw_native_cli swr-parity\n"
     "         the software rasterizer's GPU compute form against its CPU reference, every mode\n"
     "         (same output and exit codes)\n"
+    "       raw_native_cli hw-rayquery [--warmup N] [--repeats N] [--out FILE]\n"
+    "         inline ray query against the CPU BVH on procedural scenes, with controls and timings\n"
+    "       raw_native_cli hw-async [--n N] [--warmup N] [--repeats N] [--out FILE]\n"
+    "         a compute queue beside the direct queue: results against the serial order, a control, timings\n"
+    "       raw_native_cli hw-wave16 [--warmup N] [--repeats N] [--out FILE]\n"
+    "         a wave-intrinsic prefix sum and an fp16 bilateral filter against their portable forms\n"
+    "       raw_native_cli hw-mesh [--warmup N] [--repeats N] [--out FILE]\n"
+    "         a visibility buffer by mesh and amplification shaders with meshlet culling, against vertex pulling\n"
     "       raw_native_cli pbr-parity\n"
     "         evaluate the glTF material model on the GPU backend and compare with the float64\n"
     "         reference (JSON on stdout; exit 0 pass, 1 fail, 4 no GPU backend or adapter)\n"
@@ -159,6 +171,10 @@ int main(int argc, char** argv){
     if (argc >= 2 && std::strcmp(argv[1], "swr-render") == 0) return swrRenderCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "rt-pathtrace") == 0) return ptCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "sdf-render") == 0) return sdfRenderCommand(argc - 1, argv + 1);
+    if (argc >= 2 && std::strcmp(argv[1], "hw-rayquery") == 0) return hwRayQueryCommand(argc - 1, argv + 1);
+    if (argc >= 2 && std::strcmp(argv[1], "hw-async") == 0) return hwAsyncCommand(argc - 1, argv + 1);
+    if (argc >= 2 && std::strcmp(argv[1], "hw-wave16") == 0) return hwWave16Command(argc - 1, argv + 1);
+    if (argc >= 2 && std::strcmp(argv[1], "hw-mesh") == 0) return hwMeshCommand(argc - 1, argv + 1);
     // The sampled-texture identity check on this build's GPU backend (ROADMAP M2
     // criterion 3): JSON on stdout; exit 0 when it passes, 1 when it fails, 4 without
     // a GPU backend or adapter.

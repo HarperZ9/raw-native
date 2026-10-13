@@ -1,0 +1,36 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "HW H1.0, Vulkan half: the capability probe and GPU timestamps through Vulkan (mission-control 2026-10-10-engine-hw/PLAN.md)",
+ "written": "2026-10-10, before the implementation and the first run",
+ "scope": {
+  "build": "optional, RAW_NATIVE_VULKAN=ON, links the Vulkan loader from the Vulkan SDK; GLSL compute shaders compiled to SPIR-V by the SDK's glslangValidator at build time. The default build is unchanged.",
+  "tool": "raw_native_vk_probe [--checks] [--out FILE] picks one physical device. It refuses any device whose type is not CPU unless RAW_NATIVE_VK_HW=1 is set, so a local run cannot reach the RTX by accident; only the GPU-lock job sets it. Local runs select Chrome's SwiftShader ICD through VK_DRIVER_FILES.",
+  "probe": "API version, driver, and for each H1 feature the extension and feature bits that state it: VK_KHR_ray_tracing_pipeline, VK_KHR_ray_query with VK_KHR_acceleration_structure, VK_EXT_opacity_micromap, VK_EXT_ray_tracing_invocation_reorder or VK_NV_ray_tracing_invocation_reorder, VK_EXT_mesh_shader (mesh and task), subgroup size and arithmetic support in compute, shaderFloat16, shaderInt64, VK_KHR_cooperative_matrix with every reported (M, N, K, types) configuration, descriptor indexing (bindless), VK_EXT_descriptor_buffer, synchronization2, timeline semaphores, a queue family with compute and without graphics (async compute), timestamp period and valid bits. Feature names and RAW_NATIVE_HW_DISABLE are those of raw/rhi/hw.hpp."
+ },
+ "checks": {
+  "probe_function_agreement": {
+   "what": "for each feature the device reports, the feature is enabled at device creation and a compute pipeline that needs it is created: subgroup arithmetic (an inclusive scan of 64 values a group), float16 arithmetic, ray query (pipeline only), cooperative matrix (pipeline only, the first fp16 configuration the device lists). A feature the device does not report is not attempted, because using an unenabled capability is undefined behaviour in Vulkan.",
+   "bound": "every attempted pipeline is created; the subgroup scan (65,536 values) and the float16 results (4,096 values, exact in both widths, plus the 2048 + 1 flag) are bit-equal to the CPU; with the feature forced off, the fallback (group-shared scan, 32-bit math) runs and is bit-equal"
+  },
+  "forced_off": {
+   "what": "as in evidence/hw-h1-0-bounds.json, through scripts/hw_forced_off.py run against raw_native_vk_probe --checks",
+   "bound": "with all: zero features supported, every dispatch takes its fallback and matches; with one name: exactly that feature changes"
+  },
+  "timestamp_linearity": {
+   "what": "as in the D3D12 bounds: median over 21 repetitions, busy kernel at N and 2N, N doubled from 1,024 until the N run takes at least 1 ms (at most 2^24)",
+   "bound": "time(2N) / time(N) within [1.8, 2.2]"
+  },
+  "timestamp_control": {
+   "what": "the fixed-work kernel",
+   "bound": "the ratio falls outside [1.8, 2.2]"
+  },
+  "validation": {
+   "what": "every run with VK_LAYER_KHRONOS_validation enabled when the layer is installed (RAW_NATIVE_VK_VALIDATION=1)",
+   "bound": "zero validation errors; any error fails the run"
+  }
+ },
+ "adapters": "SwiftShader Vulkan (Chrome 154's vk_swiftshader.dll) locally; the RTX 4090 only under D:/gpu.lock.d. CI does not build the Vulkan tool in this slice.",
+ "does_not_prove": "That ray query, cooperative matrix or reordering produce correct results (H1.1, H1.7, H1.5 test that); that SwiftShader's timestamps mean what hardware timestamps mean; anything about speed.",
+ "method_note_1": "Added 2026-10-10 after run 1 and before run 2 (run 1 is kept in hw-h1-0-vk-swiftshader-run1.json and recorded as failed). Run 1 met every functional and timing bound but failed 'validation' on one message: a Vulkan loader message (type GENERAL) that an implicit layer manifest of another application could not be opened. The bound means errors the validation layer reports about this program's API use. From run 2, messages of type VALIDATION at error severity count against the bound, as before; loader messages of type GENERAL are counted and reported separately and do not fail the run. The bound itself, zero validation errors, is unchanged.",
+ "method_note_2": "Added 2026-10-10 after run 2 and before its first use: a control for the validation check, which had none. With RAW_NATIVE_VK_MISUSE=1 the busy kernel's push-constant update writes 4 bytes past the pipeline layout's range (an API misuse the specification forbids). Bound: that run reports at least one validation error. If it reports none, the validation check is non-discriminating on this layer and adapter and is reported so."
+}

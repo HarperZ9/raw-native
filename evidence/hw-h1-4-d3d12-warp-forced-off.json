@@ -1,0 +1,17 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/hw-h1-4-bounds.json",
+ "adapter": "Microsoft Basic Render Driver",
+ "disable": "async_compute",
+ "n": 4096,
+ "schedule": "serial only (async_compute forced off)",
+ "error": "",
+ "serial_mismatches_vs_cpu": 0,
+ "async_mismatches": 0,
+ "control_ran": false,
+ "control_elements_differing": 0,
+ "serial_wall": {"n":2,"median_ms":156.558,"p5_ms":137.887,"p95_ms":175.229,"p99_ms":176.889,"iqr_ms":20.7454},
+ "async_wall": null,
+ "overlap_gain": null,
+ "verdict": {"equal": true, "control_fails": true, "pass": true}
+}

@@ -1,0 +1,19 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "HW H1.2: wave intrinsics and native 16-bit math on D3D12 as speed features, each against its portable form (mission-control 2026-10-10-engine-hw/PLAN.md)",
+ "written": "2026-10-10, before the implementation and the first run",
+ "scan": {
+  "what": "inclusive prefix sum of 2^24 uint32 values (seeded hash, wrapping arithmetic), three levels of 64-wide group scans plus offset passes. Two forms of the group scan: wave intrinsics (WavePrefixSum) and the group-shared Hillis-Steele fallback.",
+  "bound": "both forms bit-equal to the CPU scan on every element",
+  "control": "the wave form with lane 0's input of every group read as 0 (DROP=1): must differ from the CPU"
+ },
+ "bilateral": {
+  "what": "a 9 x 9 bilateral filter on a 1920 x 1080 procedural HDR radiance image (values 0.01 to 1000, our generator): spatial Gaussian sigma 2 pixels, range weight exp(-(dl / (0.25 (l_p + 1e-4)))^2) on luminance. Two forms: fp32 throughout (the reference), and fp16 inputs, weights and products with an fp32 sum (cs_6_2, native 16-bit).",
+  "bound": "per channel and pixel, |fp16 - fp32| <= 2^-8 |fp32| + 1e-6. Reasoning recorded before the run: each fp16 term carries up to about 3 x 2^-11 relative error, the normalized result up to about 2^-9 in the worst case; 2^-8 leaves a factor of two.",
+  "control": "the fp16 form on the same image scaled by 2^-24 (values 6e-10 to 6e-5, the fp16 subnormal range, where the spacing relative to the value exceeds 2^-8): must exceed the bound",
+  "fallback": "RAW_NATIVE_HW_DISABLE=native_16bit runs the fp32 form only and says so; RAW_NATIVE_HW_DISABLE=wave_ops runs the shared scan only and says so"
+ },
+ "timing": "GPU timestamps, 50 warm-up and 500 measured dispatches of each form on the RTX 4090 (5 on WARP, not a claim): median, p5, p95, p99, IQR; the speedup of each hardware form over its fallback is the ratio of medians with a 95% bootstrap interval (10,000 resamples); 'faster' needs an interval above 1; a null result is reported as one.",
+ "adapters": "D3D12 WARP with the debug layer locally and in CI; the RTX 4090 only under D:/gpu.lock.d",
+ "does_not_prove": "Speed of either feature inside a full frame; anything about Vulkan subgroups or shaderFloat16 (the Vulkan path has its own H1.0 functional checks)."
+}

@@ -1,0 +1,131 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/hw-h1-0-bounds.json",
+ "check": "forced_off",
+ "adapter": "SwiftShader Device (Subzero)",
+ "backend": "vulkan 1.3.0",
+ "cases": [
+  {
+   "disable": "all",
+   "supported_after": [],
+   "every_dispatch_used_fallback": true,
+   "functional_pass": true,
+   "pass": true
+  },
+  {
+   "disable": "async_compute",
+   "changed": [],
+   "expected_change": [],
+   "functional_pass": true,
+   "pass": true
+  },
+  {
+   "disable": "bindless",
+   "changed": [
+    "bindless"
+   ],
+   "expected_change": [
+    "bindless"
+   ],
+   "functional_pass": true,
+   "pass": true
+  },
+  {
+   "disable": "cooperative_matrix",
+   "changed": [],
+   "expected_change": [],
+   "functional_pass": true,
+   "pass": true
+  },
+  {
+   "disable": "enhanced_barriers",
+   "changed": [
+    "enhanced_barriers"
+   ],
+   "expected_change": [
+    "enhanced_barriers"
+   ],
+   "functional_pass": true,
+   "pass": true
+  },
+  {
+   "disable": "int64_shader_ops",
+   "changed": [],
+   "expected_change": [],
+   "functional_pass": true,
+   "pass": true
+  },
+  {
+   "disable": "mesh_shader",
+   "changed": [],
+   "expected_change": [],
+   "functional_pass": true,
+   "pass": true
+  },
+  {
+   "disable": "native_16bit",
+   "changed": [],
+   "expected_change": [],
+   "functional_pass": true,
+   "pass": true
+  },
+  {
+   "disable": "opacity_micromap",
+   "changed": [],
+   "expected_change": [],
+   "functional_pass": true,
+   "pass": true
+  },
+  {
+   "disable": "ray_query",
+   "changed": [],
+   "expected_change": [],
+   "functional_pass": true,
+   "pass": true
+  },
+  {
+   "disable": "raytracing_pipeline",
+   "changed": [],
+   "expected_change": [],
+   "functional_pass": true,
+   "pass": true
+  },
+  {
+   "disable": "shader_execution_reordering",
+   "changed": [],
+   "expected_change": [],
+   "functional_pass": true,
+   "pass": true
+  },
+  {
+   "disable": "timestamps",
+   "changed": [
+    "timestamps"
+   ],
+   "expected_change": [
+    "timestamps"
+   ],
+   "functional_pass": true,
+   "pass": true
+  },
+  {
+   "disable": "wave_ops",
+   "changed": [
+    "wave_ops"
+   ],
+   "expected_change": [
+    "wave_ops"
+   ],
+   "functional_pass": true,
+   "pass": true
+  },
+  {
+   "disable": "work_graphs",
+   "changed": [],
+   "expected_change": [],
+   "functional_pass": true,
+   "pass": true
+  }
+ ],
+ "pass": true
+}

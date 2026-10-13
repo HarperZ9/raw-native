@@ -1,0 +1,35 @@
+#version 460
+// HW H1.7 fallback: C = A B with 16 x 16 shared-memory tiles and fp32 multiply-add. A and B
+// arrive as packed fp16 pairs in uints and are unpacked with unpackHalf2x16, so no 16-bit
+// feature is needed. Dispatch (N / 16, M / 16). SKIP_K=1 drops the last K tile (the fallback's control,
+// evidence/hw-h1-7-bounds.json method note 1).
+layout(local_size_x = 16, local_size_y = 16) in;
+layout(push_constant) uniform P { uint M; uint N; uint K; };
+layout(std430, binding = 0) readonly buffer A { uint a[]; };
+layout(std430, binding = 1) readonly buffer B { uint b[]; };
+layout(std430, binding = 2) writeonly buffer C { float c[]; };
+shared float As[16][16];
+shared float Bs[16][16];
+float half_at(uint idx, bool fromA) {
+    const uint w = fromA ? a[idx >> 1u] : b[idx >> 1u];
+    const vec2 v = unpackHalf2x16(w);
+    return (idx & 1u) == 0u ? v.x : v.y;
+}
+void main() {
+    const uint tx = gl_LocalInvocationID.x, ty = gl_LocalInvocationID.y;
+    const uint row = gl_WorkGroupID.y * 16u + ty, col = gl_WorkGroupID.x * 16u + tx;
+    float acc = 0.0;
+#if SKIP_K
+    const uint kEnd = K - 16u;
+#else
+    const uint kEnd = K;
+#endif
+    for (uint k0 = 0u; k0 < kEnd; k0 += 16u) {
+        As[ty][tx] = half_at(row * K + k0 + tx, true);
+        Bs[ty][tx] = half_at((k0 + ty) * N + col, false);
+        barrier();
+        for (uint k = 0u; k < 16u; k++) { acc = fma(As[ty][k], Bs[k][tx], acc); }
+        barrier();
+    }
+    c[row * N + col] = acc;
+}

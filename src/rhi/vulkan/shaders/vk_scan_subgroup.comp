@@ -1,0 +1,25 @@
+#version 460
+// HW H1.0 (Vulkan): inclusive prefix sum over each group of 64 invocations from subgroup
+// arithmetic. Subgroups are taken to be consecutive invocation indices; if not, the CPU
+// comparison fails. Mirrors src/rhi/d3d12/hw_shaders/hw_scan_wave.hlsl.
+#extension GL_KHR_shader_subgroup_basic : require
+#extension GL_KHR_shader_subgroup_arithmetic : require
+layout(local_size_x = 64) in;
+layout(std430, binding = 0) buffer Src { uint src[]; };
+layout(std430, binding = 1) buffer Dst { uint dst[]; };
+layout(std430, binding = 2) buffer Lanes { uint lanes[]; };
+shared uint total[64];
+void main() {
+    const uint gi = gl_LocalInvocationIndex;
+    const uint id = gl_GlobalInvocationID.x;
+    const uint v = src[id];
+    const uint L = gl_SubgroupSize;
+    const uint inclusive = subgroupInclusiveAdd(v);
+    const uint w = gi / L;
+    if (gl_SubgroupInvocationID == L - 1u || gi == 63u) { total[w] = inclusive; }
+    barrier();
+    uint before = 0u;
+    for (uint k = 0u; k < w; k++) { before += total[k]; }
+    dst[id] = before + inclusive;
+    lanes[id] = L;
+}

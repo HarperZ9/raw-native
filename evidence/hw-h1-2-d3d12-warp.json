@@ -1,0 +1,11 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/hw-h1-2-bounds.json",
+ "adapter": "Microsoft Basic Render Driver",
+ "disable": "",
+ "warmup": 1,
+ "repeats": 5,
+ "scan": {"elements":16777216,"forced_off":false,"shared_mismatches":0,"wave_mismatches":0,"control_mismatches":16777152,"error":"","shared_time":{"n":5,"median_ms":81.0927,"p5_ms":70.6365,"p95_ms":86.4006,"p99_ms":86.5576,"iqr_ms":13.4063},"wave_time":{"n":5,"median_ms":62.3569,"p5_ms":59.9726,"p95_ms":75.635,"p99_ms":77.4674,"iqr_ms":6.2207},"wave_speedup":{"median_ratio":1.30046,"ci95":[1.04064,1.42924]},"pass":true},
+ "bilateral": {"pixels":2073600,"forced_off":false,"fp16_over_bound":0,"fp16_worst_over_tol":0.689479,"control_over_bound":6213448,"control_worst_over_tol":255.931,"error":"","fp32_time":{"n":5,"median_ms":166.108,"p5_ms":156.811,"p95_ms":172.716,"p99_ms":173.058,"iqr_ms":6.5487},"fp16_time":{"n":5,"median_ms":479.661,"p5_ms":443.98,"p95_ms":504.981,"p99_ms":509.854,"iqr_ms":28.8452},"fp16_speedup":{"median_ratio":0.346304,"ci95":[0.322295,0.383255]},"pass":true},
+ "pass": true
+}
