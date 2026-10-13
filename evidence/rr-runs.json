@@ -1,0 +1,23 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/rr-bounds.json with amendments 1 to 4; evidence/rr-inference-bounds.json",
+ "date": "2026-10-12 to 2026-10-13",
+ "dataset": "evidence/rr-dataset.json: 608 frames at 480 x 270 from RT's GPU path tracer on the RTX 4090 (train 288, validation 128, test 192), every file hashed. Leakage guard passes; its injected-test-frame control fails as required. Reference noise: the share of pixels whose standard error is under 1% of the mean averages 0.98 (iso_street), 0.11 (raw_hall) and 0.97 (raw_hero); the amendment-1 validity check excluded no test frame.",
+ "training": "CPU only (the RTX was held by MMBU, which has priority), PyTorch 2.11.0+cu128 read-only from D:/venvs/mmbu, BelowNormal priority. v1: saturated by step 1,000 (amendment 4), stopped at 3,944. v2: 6,000 steps, best validation loss 0.0182 (v1 0.0505). Shuffled-target controls: v1 0.0585, v2 0.0431. Logs in rr-h2-20261013/.",
+ "selection": "the committed rule chose v1 (rr-selection-note-2026-10-13.json): v2's float32-to-float64 gap 0.508 > 1e-2, v1's 4.4e-6 because it is saturated. The rule has a defect, recorded before any test metric.",
+ "baseline_defect": "the first test evaluation is invalid for every SVGF comparison (rr-baseline-note-2026-10-13.json; kept as rr-eval-run1-broken-svgf.json)",
+ "verdict_run_v1": {
+  "file": "rr-eval-test-v1-verdict.json",
+  "result": "FAIL. Quality against SVGF: mean FLIP (unchecked) +0.097 [0.080, 0.114] (worse), tone-mapped PSNR -5.38 dB [-5.81, -4.96] (worse); linear PSNR +16.4 dB, an artefact of SVGF's linear output (see note). Temporal instability against SVGF plus TAA +0.093 [0.079, 0.107] (worse). Ghosting +0.099 [0.088, 0.109] (worse). v1's output is within 0.3 dB of the 1 spp input on iso_street and below it elsewhere: it learned nothing. Controls: shuffled targets fail quality as required; zero motion fails ghosting, which is vacuous because v1 fails it anyway."
+ },
+ "secondary_v2_not_selected": {
+  "file": "rr-eval-test-v2-secondary.json",
+  "result": "no verdict (not selected by the committed rule). Against SVGF: FLIP (unchecked) +0.090 [0.077, 0.102] (worse); tone-mapped PSNR -0.18 dB [-0.34, -0.02] (worse); per scene, tone-mapped PSNR 30.1 against SVGF's 29.3 on iso_street, 16.4 against 18.0 on raw_hall, 24.1 against 23.8 on raw_hero. Against SVGF plus TAA: temporal instability +0.0068 [0.0062, 0.0074], ghosting +0.027 [0.024, 0.030] (both worse). Its shuffled-target control is worse still (FLIP +0.18)."
+ },
+ "linear_psnr_note": "SVGF and SVGF plus TAA demodulate by albedo + 1e-3 like v1, so near-black specular pixels produce very large linear values; linear PSNR with a 99.9th-percentile peak then punishes them hard (raw_hero SVGF -6.3 dB). Tone-mapped PSNR and FLIP are the readable comparisons here.",
+ "inference": {
+  "swiftshader_scalar_path": "64 frames of every test sequence. v2: max |GPU - PyTorch float32| 0.31, 69.3, 0.15 (iso_street, raw_hall, raw_hero); 99.99th percentile 0.029, 0.11, 0.0064; mean 6.7e-5, 3.6e-4, 1.6e-5. Bound 1e-2: missed. Perturbed-weights control fails on all three. PyTorch float32 against float64 on the same sequences: 0.32, 68.2, 0.24 (condition-v2main-test.json), so the miss is the model's sensitivity, measured equally in PyTorch. v1: 0 to 6e-28 with a control that does not fail (non-discriminating: v1 copies pixels).",
+  "rtx_cooperative_matrix_path_and_budget": "NOT RUN. The job waited from 23:00:44Z for D:/gpu.lock.d, held by MMBU FT3 throughout, and was stopped at the end of the session. The 2.0 ms budget and the tensor-core parity remain unmeasured."
+ },
+ "does_not_prove": "that a learned reconstruction cannot beat SVGF here; only that these two models, trained for 6,000 CPU steps on 288 frames, did not."
+}
