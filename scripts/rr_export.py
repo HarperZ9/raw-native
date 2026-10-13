@@ -36,8 +36,8 @@ def export(sd, out):
 
 
 @torch.no_grad()
-def reference(sd, seq, out_dir, frames, eps=1e-3):
-    net = RrNet(eps)
+def reference(sd, seq, out_dir, frames, eps=1e-3, version=1):
+    net = RrNet(eps, version)
     net.load_state_dict(sd)
     net.eval()
     out_dir = Path(out_dir)
@@ -61,14 +61,14 @@ def main():
     ap.add_argument("--ref-out", default="")
     ap.add_argument("--frames", type=int, default=0)
     a = ap.parse_args()
-    ck = torch.load(a.model, map_location="cpu")
-    sd, eps = ck["model"], ck.get("eps", 1e-3)
+    ck = torch.load(a.model, map_location="cpu", weights_only=False)
+    sd, eps, version = ck["model"], ck.get("eps", 1e-3), ck.get("version", 1)
     meta = export(sd, a.out)
-    meta["eps"] = eps
+    meta["eps"], meta["version"] = eps, version
     Path(str(a.out) + ".json").write_text(json.dumps(meta, indent=1))
     print(json.dumps({"sha256": meta["sha256"], "eps": eps}))
     if a.ref_seq:
-        print(json.dumps({"reference_frames": reference(sd, a.ref_seq, a.ref_out, a.frames, eps)}))
+        print(json.dumps({"reference_frames": reference(sd, a.ref_seq, a.ref_out, a.frames, eps, version)}))
     return 0
 
 

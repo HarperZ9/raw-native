@@ -30,9 +30,12 @@ def conv(i, o, k=3, s=1):
 
 
 class RrNet(nn.Module):
-    def __init__(self, eps=EPS):
+    def __init__(self, eps=EPS, version=1):
         super().__init__()
         self.eps = eps   # demodulation epsilon: v1 1e-3, v2 0.05 (evidence/rr-bounds-amendment-3.json)
+        # version 2 (amendment 4): depth feature log1p(depth / mean depth), and every head output bounded by
+        # 8 tanh(z / 8) before its softmax or sigmoid, so the kernels cannot saturate.
+        self.version = version
         self.e0 = nn.Sequential(conv(IN_CH, 24, s=2), conv(24, 24))
         self.e1 = nn.Sequential(conv(24, 48, s=2), conv(48, 48))
         self.e2 = nn.Sequential(conv(48, 64, s=2), conv(64, 64))
@@ -70,7 +73,7 @@ def warp(prev, pos):
     return F.grid_sample(prev, torch.stack([gx, gy], -1), mode="bilinear", padding_mode="border", align_corners=False)
 
 
-def features(x, prev_out, prev_depth, eps=EPS):
+def features(x, prev_out, prev_depth, eps=EPS, version=1):
     """x: input channels (B, 17, H, W); prev_out: previous demodulated output (B, 3, H, W) or None;
     prev_depth: previous frame's depth (B, 1, H, W) or None. Returns features, demodulated input,
     the albedo used for remodulation, the warped previous output and the validity mask."""
@@ -91,15 +94,19 @@ def features(x, prev_out, prev_depth, eps=EPS):
         miss_both = ((dep <= 0) & (pd <= 0)).float()
         valid = inside * torch.clamp(same * hit + miss_both, 0, 1)
     md = dep.flatten(1).mean(1).clamp_min(EPS).view(-1, 1, 1, 1)
-    feat = torch.cat([torch.log1p(demod.clamp_min(0)), alb, nrm, dep / md, x[:, 15:17],
+    dfeat = dep / md if version < 2 else torch.log1p(dep / md)
+    feat = torch.cat([torch.log1p(demod.clamp_min(0)), alb, nrm, dfeat, x[:, 15:17],
                       torch.log1p(wprev.clamp_min(0)), valid], 1)
     return feat, demod, alb_m, wprev, valid
 
 
 def step(net, x, prev_out, prev_depth):
     """One frame. Returns (remodulated output, demodulated output for the next frame)."""
-    feat, demod, alb_m, wprev, valid = features(x, prev_out, prev_depth, getattr(net, "eps", EPS))
+    v = getattr(net, "version", 1)
+    feat, demod, alb_m, wprev, valid = features(x, prev_out, prev_depth, getattr(net, "eps", EPS), v)
     k_full, a, wb, k_q = net(feat)
+    if v >= 2:
+        k_full, a, wb, k_q = (8 * torch.tanh(t / 8) for t in (k_full, a, wb, k_q))
     a = torch.sigmoid(a) * valid
     acc = a * wprev + (1 - a) * demod
     f = apply_kernel(acc, k_full)

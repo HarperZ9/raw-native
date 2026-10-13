@@ -19,6 +19,8 @@ layout(std430, binding = 5) buffer B5 { float o5[]; };
 layout(std430, binding = 6) buffer B6 { float o6[]; };
 const float EPS = 1e-3;
 float sigm(float x) { return 1.0 / (1.0 + exp(-x)); }
+// Model version 2 (evidence/rr-bounds-amendment-4.json) bounds every head output by 8 tanh(z / 8); pad1 is the version.
+float hb(float z) { return pad1 >= 2u ? 8.0 * tanh(z / 8.0) : z; }
 
 #if MODE == 0
 shared float part[256];
@@ -72,7 +74,7 @@ void main() {   // b0 X, b1 previous X, b2 state, b3 mean depth; o4 features (16
     const vec3 ld = log(1.0 + max(demod, vec3(0.0))), lw = log(1.0 + max(wprev, vec3(0.0)));
     o4[f] = ld.x; o4[f + 1u] = ld.y; o4[f + 2u] = ld.z;
     for (uint k = 0u; k < 6u; ++k) o4[f + 3u + k] = b0[i + 3u + k];   // albedo, normal
-    o4[f + 9u] = dep / b3[0];
+    o4[f + 9u] = pad1 >= 2u ? log(1.0 + dep / b3[0]) : dep / b3[0];
     o4[f + 10u] = b0[i + 15u]; o4[f + 11u] = b0[i + 16u];
     o4[f + 12u] = lw.x; o4[f + 13u] = lw.y; o4[f + 14u] = lw.z; o4[f + 15u] = valid;
     const uint a = p * 10u;
@@ -84,7 +86,7 @@ void main() {   // b0 X, b1 previous X, b2 state, b3 mean depth; o4 features (16
 void main() {   // b0 head (27), b1 aux; o4 acc (3)
     const uint p = gl_GlobalInvocationID.x;
     if (p >= W * H) return;
-    const float a = sigm(b0[p * 27u + 25u]) * b1[p * 10u + 9u];
+    const float a = sigm(hb(b0[p * 27u + 25u])) * b1[p * 10u + 9u];
     for (uint c = 0u; c < 3u; ++c) o4[p * 3u + c] = a * b1[p * 10u + 6u + c] + (1.0 - a) * b1[p * 10u + c];
 }
 #elif MODE == 3
@@ -93,11 +95,11 @@ void main() {   // b0 image (3, w x h), b1 logits (stride C, first 25); o4 filte
     if (p >= w * h) return;
     const int x = int(p % w), y = int(p / w);
     float m = -1e30;
-    for (uint k = 0u; k < 25u; ++k) m = max(m, b1[p * C + k]);
+    for (uint k = 0u; k < 25u; ++k) m = max(m, hb(b1[p * C + k]));
     float s = 0.0;
     vec3 acc = vec3(0.0);
     for (uint k = 0u; k < 25u; ++k) {
-        const float e = exp(b1[p * C + k] - m);
+        const float e = exp(hb(b1[p * C + k]) - m);
         s += e;
         const int qx = clamp(x + int(k % 5u) - 2, 0, int(w) - 1), qy = clamp(y + int(k / 5u) - 2, 0, int(h) - 1);
         const uint q = (uint(qy) * w + uint(qx)) * 3u;
@@ -133,7 +135,7 @@ void main() {   // b0 f (3, full), b1 fq (3, w x h), b2 q (3, w x h), b3 head (2
     const uint p = gl_GlobalInvocationID.x;
     if (p >= W * H) return;
     const uint x = p % W, y = p / W;
-    const float wb = sigm(b3[p * 27u + 26u]);
+    const float wb = sigm(hb(b3[p * 27u + 26u]));
     const vec3 f = vec3(b0[p * 3u], b0[p * 3u + 1u], b0[p * 3u + 2u]);
     const vec3 o = max(f - wb * up(0u, x, y) + wb * up(1u, x, y), vec3(0.0));
     for (uint c = 0u; c < 3u; ++c) { o6[p * 3u + c] = o[c]; o4[p * 3u + c] = o[c] * o5[p * 10u + 3u + c]; }

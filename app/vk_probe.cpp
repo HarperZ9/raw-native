@@ -23,6 +23,7 @@ int main(int argc, char** argv){
         else if (std::strcmp(argv[i], "--rrnet") == 0 && i + 3 < argc){ rr = true; ra.weights = argv[++i]; ra.seq = argv[++i]; ra.ref = argv[++i]; }
         else if (std::strcmp(argv[i], "--frames") == 0 && i + 1 < argc) ra.frames = std::atoi(argv[++i]);
         else if (std::strcmp(argv[i], "--eps") == 0 && i + 1 < argc) ra.eps = (float)std::atof(argv[++i]);
+        else if (std::strcmp(argv[i], "--model-version") == 0 && i + 1 < argc) ra.version = std::atoi(argv[++i]);
         else if (std::strcmp(argv[i], "--warmup") == 0 && i + 1 < argc) warmup = std::atoi(argv[++i]);
         else if (std::strcmp(argv[i], "--repeats") == 0 && i + 1 < argc){ repeats = std::atoi(argv[++i]); repeatsSet = true; }
         else if (std::strcmp(argv[i], "--sizes") == 0 && i + 1 < argc){

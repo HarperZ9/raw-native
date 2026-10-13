@@ -105,6 +105,7 @@ def train_session(a, net, opt, train, val, perm, dev, out, start, best, log, min
     ck = out / "last.pt"
     rng = np.random.default_rng(SEED + start)
     t_begin = time.time()
+    last_save = t_begin
     done = start
     for it in range(start, a.steps):
         for g in opt.param_groups:
@@ -117,14 +118,21 @@ def train_session(a, net, opt, train, val, perm, dev, out, start, best, log, min
         opt.step()
         done = it + 1
         timeout = (time.time() - t_begin) / 60 > minutes
-        if done % 1000 == 0 or done == a.steps or timeout:
+        if done % 1000 == 0 or done == a.steps:
             vl = validate(net, val, dev)
             log.append({"step": done, "train_loss": float(loss.detach()), "val_loss": vl, "minutes": (time.time() - t_begin) / 60})
             print(json.dumps(log[-1]), flush=True)
-            torch.save({"model": net.state_dict(), "opt": opt.state_dict(), "step": done, "best": min(best, vl), "log": log}, ck)
             if vl < best:
                 best = vl
-                torch.save({"model": net.state_dict(), "step": done, "val_loss": vl, "eps": net.eps}, out / "best.pt")
+                torch.save({"model": net.state_dict(), "step": done, "val_loss": vl, "eps": net.eps, "version": net.version}, out / "best.pt")
+        # A checkpoint at every validation, every 5 minutes and at the time limit, written atomically, so a
+        # shutdown loses at most 5 minutes; --resume continues from it.
+        if done % 1000 == 0 or done == a.steps or timeout or time.time() - last_save > 300:
+            tmp = out / "last.pt.tmp"
+            torch.save({"model": net.state_dict(), "opt": opt.state_dict(), "step": done, "best": best, "log": log, "eps": net.eps, "version": net.version}, tmp)
+            tmp.replace(ck)
+            (out / "progress.json").write_text(json.dumps({"step": done, "steps": a.steps, "best_val": best}))
+            last_save = time.time()
         if timeout:
             break
     return done, best
@@ -171,6 +179,7 @@ def main():
     ap.add_argument("--cpu", action="store_true")
     ap.add_argument("--val-frames", type=int, default=32)
     ap.add_argument("--eps", type=float, default=1e-3)
+    ap.add_argument("--version", type=int, default=1)
     ap.add_argument("--lock", default="")
     ap.add_argument("--session-minutes", type=float, default=8.0)
     a = ap.parse_args()
@@ -192,14 +201,14 @@ def main():
             q = train[si]["r"][st]
             return q[:, y0:y0 + CROP, x0:x0 + CROP].float()
     lock = GpuLock(a.lock, f"raw-native HW H2 training{' (shuffled-target control)' if a.shuffle_targets else ''}, a session of at most {a.session_minutes:g} minutes") if a.lock else None
-    net = RrNet(a.eps).to(dev)
+    net = RrNet(a.eps, a.version).to(dev)
     opt = torch.optim.AdamW(net.parameters(), lr=LR, weight_decay=WD)
     start, best, log = 0, math.inf, []
     ck = out / "last.pt"
     t_all = time.time()
     while True:
         if a.resume and ck.exists():
-            st = torch.load(ck, map_location=dev)
+            st = torch.load(ck, map_location=dev, weights_only=False)
             net.load_state_dict(st["model"]), opt.load_state_dict(st["opt"])
             start, best, log = st["step"], st["best"], st["log"]
         if start >= a.steps or (time.time() - t_all) / 60 > a.minutes:
@@ -220,7 +229,7 @@ def main():
             "gpu": torch.cuda.get_device_name(0) if dev.type == "cuda" else "", "shuffle_targets": a.shuffle_targets,
             "train_sequences": [s["name"] for s in train], "val_sequences": [s["name"] for s in val],
             "hyper": {"B": B, "T": T, "crop": CROP, "lr": LR, "lr_min": LR_MIN, "wd": WD, "seed": SEED, "steps": a.steps,
-                      "temporal_weight": TEMP_W, "eps": a.eps}, "log": log, "best_val_loss": best,
+                      "temporal_weight": TEMP_W, "eps": a.eps, "version": a.version}, "log": log, "best_val_loss": best,
             "parameters": sum(p.numel() for p in net.parameters())}
     (out / "train.json").write_text(json.dumps(meta, indent=1))
     return 0

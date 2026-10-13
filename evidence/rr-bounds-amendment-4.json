@@ -1,0 +1,10 @@
+{
+ "schema": "raw-native.evidence/1",
+ "amends": "evidence/rr-bounds-amendment-3.json (the v2 model)",
+ "written": "2026-10-13 20:45Z, before v2 training and before any test-set metric",
+ "v1_failure": "v1 (and its shuffled control) stopped learning by step 1,000: at step 3,944 its weights differ from step 1,000 only by weight decay (max 4.6e-5), the gradient norm on a training batch is exactly 0, and the 5 x 5 kernel logits reach -9,000 to 8,478, so every softmax is one-hot and passes no gradient. Inputs that are not bounded drove it there: the depth feature depth / mean depth reaches 99 on frames that are mostly sky, and log1p of demodulated radiance reaches about 10. v1 stays a candidate under amendment 3's rule with its step-1,000 checkpoint (validation loss 0.0505); its training was stopped at step 3,944 (control at 4,916) because further steps change nothing but decay.",
+ "v2_change": "in addition to amendment 3's epsilon 0.05: the depth feature is log1p(depth / mean depth), and every head output (both kernels, the temporal weight and the scale weight) passes through 8 tanh(z / 8) before its softmax or sigmoid. Everything else as v1.",
+ "trial": "a 400-step trial of v2 on the training split, validation on 8 frames, recorded here before the full run: validation loss 0.0323, gradient norm 0.0085 on a training batch, raw kernel logits -4.7 to 10.0, largest feature 4.6. The trial's checkpoint is not used; the full v2 run starts from scratch with seed 1.",
+ "selection": "amendment 3's rule unchanged (validation loss, then the float32-to-float64 conditioning check)",
+ "gpu": "the Vulkan glue kernels take the model version: log1p for the depth feature and the tanh bound on head outputs for version 2"
+}

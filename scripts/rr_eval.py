@@ -43,8 +43,8 @@ def rr_flip_srgb(v):
 
 @torch.no_grad()
 def run_net(path, x, zero_motion=False):
-    ck = torch.load(path, map_location="cpu")
-    net = RrNet(ck.get("eps", 1e-3))
+    ck = torch.load(path, map_location="cpu", weights_only=False)
+    net = RrNet(ck.get("eps", 1e-3), ck.get("version", 1))
     net.load_state_dict(ck["model"])
     net.eval()
     xt = torch.from_numpy(x).permute(0, 3, 1, 2).contiguous()

@@ -61,6 +61,7 @@ struct Net {
     Pipeline conv, convPerturb, glue[6];
     bool coop{false};
     float eps{1e-3f};
+    int version{1};
     explicit Net(Context& c) : cx(c) {}
     ~Net(){
         for (Buffer* b : {&wf, &wh, &X[0], &X[1], &state, &md, &feat, &aux, &head, &headq, &acc, &f, &accq, &q, &fq, &out}) cx.destroy(*b);
@@ -116,7 +117,7 @@ std::vector<Context::Step> Net::frame(int xi, bool first, bool perturb){
     auto g = [&](int m, std::vector<Buffer*> b, uint32_t a, uint32_t bb, uint32_t c, uint32_t d, uint32_t C, uint32_t fl, uint32_t groups){
         while (b.size() < 7) b.push_back(&md);
         uint32_t e; std::memcpy(&e, &eps, 4);
-        s.push_back({&glue[m], b, {a, bb, c, d, C, fl, e, 0}, groups, 1});
+        s.push_back({&glue[m], b, {a, bb, c, d, C, fl, e, (uint32_t)version}, groups, 1});
     };
     const uint32_t n = W * H, n2 = w2 * h2;
     g(0, {&x, &md, &md, &md, &md}, W, H, 0, 0, 0, 0, 1);
@@ -164,7 +165,7 @@ bool parity(Context& cx, const std::vector<float>& weights, const RrArgs& a, boo
     if (pw == std::string::npos || ph == std::string::npos){ err = "no frame metadata in " + a.seq; return false; }
     const uint32_t W = (uint32_t)std::atoi(meta.c_str() + pw + 8), H = (uint32_t)std::atoi(meta.c_str() + ph + 9);
     Net net(cx);
-    net.eps = a.eps;
+    net.eps = a.eps; net.version = a.version;
     if (!net.init(weights, W, H, coop, err)) return false;
     std::vector<float> outv((size_t)W * H * 3), ref;
     for (int k = 0; k < a.frames; ++k){
@@ -213,7 +214,7 @@ std::string timing(Context& cx, const std::vector<float>& weights, const RrArgs&
     for (uint32_t y = 0; y < H; ++y) for (uint32_t xx = 0; xx < W; ++xx)
         std::memcpy(&x[((size_t)y * W + xx) * 17], &x0[((size_t)(y % sh) * sw + xx % sw) * 17], 17 * 4);
     Net net(cx);
-    net.eps = a.eps;
+    net.eps = a.eps; net.version = a.version;
     if (!net.init(weights, W, H, coop, err) || !cx.upload(net.X[0], x.data(), x.size() * 4, err) || !cx.upload(net.X[1], x.data(), x.size() * 4, err)) return "";
     std::vector<double> ms;
     for (int i = 0; i < a.warmup + a.repeats; ++i){
