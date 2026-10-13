@@ -48,6 +48,11 @@ public:
     // Record one dispatch between two timestamps, submit, wait. ms receives the GPU time.
     bool dispatch(const Pipeline& p, const std::vector<Buffer*>& bufs, const void* push, uint32_t groups, double* ms, std::string& err,
                   uint32_t groupsY = 1);
+    // Several dispatches in one command buffer, a compute-to-compute barrier after each, one
+    // submission and wait; ms (if not null) receives the GPU time from before the first to after
+    // the last (HW H2 inference). At most 64 steps.
+    struct Step { const Pipeline* p; std::vector<Buffer*> bufs; std::vector<uint32_t> push; uint32_t gx{1}, gy{1}; };
+    bool runBatch(const std::vector<Step>& steps, double* ms, std::string& err);
     double timestampPeriodNs() const { return tsPeriod_; }
     bool timestampsUsable() const { return tsBits_ > 0 && tsPeriod_ > 0; }
 

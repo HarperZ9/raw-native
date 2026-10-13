@@ -1,0 +1,141 @@
+#version 460
+// HW H2 inference (evidence/rr-inference-bounds.json): the network's non-convolution steps, in
+// the order and arithmetic of scripts/rr_model.py. MODE selects one:
+//   0 MEANDEPTH  mean of the depth channel over the frame (one workgroup)
+//   1 FEAT       features, the demodulated input, remodulation albedo, warped history, validity
+//   2 ACC        temporal blend: acc = a * warped + (1 - a) * demodulated, a = sigmoid(head) * valid
+//   3 KAPPLY     a per-pixel softmax 5 x 5 kernel over a 3-channel image, replicate padding
+//   4 POOL       adaptive average pooling of a 3-channel image (PyTorch's bin edges)
+//   5 COMBINE    out = max(f - wb up(fq) + wb up(q), 0), bilinear up; remodulated output and state
+// Buffers are float32, channels last. Unused bindings are bound to any buffer.
+layout(local_size_x = 256) in;
+layout(push_constant) uniform P { uint W, H, w, h, C, first, pad0, pad1; };
+layout(std430, binding = 0) readonly buffer B0 { float b0[]; };
+layout(std430, binding = 1) readonly buffer B1 { float b1[]; };
+layout(std430, binding = 2) readonly buffer B2 { float b2[]; };
+layout(std430, binding = 3) readonly buffer B3 { float b3[]; };
+layout(std430, binding = 4) buffer B4 { float o4[]; };
+layout(std430, binding = 5) buffer B5 { float o5[]; };
+layout(std430, binding = 6) buffer B6 { float o6[]; };
+const float EPS = 1e-3;
+float sigm(float x) { return 1.0 / (1.0 + exp(-x)); }
+
+#if MODE == 0
+shared float part[256];
+void main() {   // b0: X (17 channels); o4[0]: the mean, at least EPS
+    float s = 0.0;
+    for (uint p = gl_LocalInvocationID.x; p < W * H; p += 256u) s += b0[p * 17u + 9u];
+    part[gl_LocalInvocationID.x] = s;
+    barrier();
+    for (uint k = 128u; k > 0u; k >>= 1u) { if (gl_LocalInvocationID.x < k) part[gl_LocalInvocationID.x] += part[gl_LocalInvocationID.x + k]; barrier(); }
+    if (gl_LocalInvocationID.x == 0u) o4[0] = max(part[0] / float(W * H), EPS);
+}
+#elif MODE == 1
+// grid_sample(bilinear, padding border, align_corners False) of a C-channel plane at pixel position (px, py).
+float gs(uint which, float px, float py, uint c, uint ch) {
+    const float gx = px / float(W) * 2.0 - 1.0, gy = py / float(H) * 2.0 - 1.0;
+    float ix = ((gx + 1.0) * float(W) - 1.0) / 2.0, iy = ((gy + 1.0) * float(H) - 1.0) / 2.0;
+    ix = clamp(ix, 0.0, float(W - 1u)); iy = clamp(iy, 0.0, float(H - 1u));
+    const int x0 = int(floor(ix)), y0 = int(floor(iy));
+    const int x1 = min(x0 + 1, int(W) - 1), y1 = min(y0 + 1, int(H) - 1);
+    const float lx = ix - float(x0), ly = iy - float(y0);
+    float v00, v01, v10, v11;
+    if (which == 0u) {   // the previous demodulated output (b2, 3 channels)
+        v00 = b2[(uint(y0) * W + uint(x0)) * ch + c]; v01 = b2[(uint(y0) * W + uint(x1)) * ch + c];
+        v10 = b2[(uint(y1) * W + uint(x0)) * ch + c]; v11 = b2[(uint(y1) * W + uint(x1)) * ch + c];
+    } else {             // the previous frame's depth (b1, channel 9 of 17)
+        v00 = b1[(uint(y0) * W + uint(x0)) * ch + c]; v01 = b1[(uint(y0) * W + uint(x1)) * ch + c];
+        v10 = b1[(uint(y1) * W + uint(x0)) * ch + c]; v11 = b1[(uint(y1) * W + uint(x1)) * ch + c];
+    }
+    return v00 * (1.0 - lx) * (1.0 - ly) + v01 * lx * (1.0 - ly) + v10 * (1.0 - lx) * ly + v11 * lx * ly;
+}
+void main() {   // b0 X, b1 previous X, b2 state, b3 mean depth; o4 features (16), o5 aux (demod 3, albm 3, warped 3, valid 1)
+    const uint p = gl_GlobalInvocationID.x;
+    if (p >= W * H) return;
+    const uint i = p * 17u;
+    const float dep = b0[i + 9u], hit = dep > 0.0 ? 1.0 : 0.0;
+    vec3 alb = vec3(b0[i + 3u], b0[i + 4u], b0[i + 5u]);
+    vec3 albm = alb * hit + (1.0 - hit);
+    vec3 demod = vec3(b0[i], b0[i + 1u], b0[i + 2u]) / (albm + uintBitsToFloat(pad0));   // the demodulation epsilon
+    vec3 wprev = vec3(0.0);
+    float valid = 0.0;
+    if (first == 0u) {
+        const float px = b0[i + 12u], py = b0[i + 13u], ed = b0[i + 14u];
+        wprev = vec3(gs(0u, px, py, 0u, 3u), gs(0u, px, py, 1u, 3u), gs(0u, px, py, 2u, 3u));
+        const float inside = (px >= 0.5 && px <= float(W) - 0.5 && py >= 0.5 && py <= float(H) - 0.5) ? 1.0 : 0.0;
+        const float pd = gs(1u, px, py, 9u, 17u);
+        const float same = abs(ed - pd) <= 0.02 * abs(ed) + 0.02 ? 1.0 : 0.0;
+        const float missBoth = (dep <= 0.0 && pd <= 0.0) ? 1.0 : 0.0;
+        valid = inside * clamp(same * hit + missBoth, 0.0, 1.0);
+    }
+    const uint f = p * 16u;
+    const vec3 ld = log(1.0 + max(demod, vec3(0.0))), lw = log(1.0 + max(wprev, vec3(0.0)));
+    o4[f] = ld.x; o4[f + 1u] = ld.y; o4[f + 2u] = ld.z;
+    for (uint k = 0u; k < 6u; ++k) o4[f + 3u + k] = b0[i + 3u + k];   // albedo, normal
+    o4[f + 9u] = dep / b3[0];
+    o4[f + 10u] = b0[i + 15u]; o4[f + 11u] = b0[i + 16u];
+    o4[f + 12u] = lw.x; o4[f + 13u] = lw.y; o4[f + 14u] = lw.z; o4[f + 15u] = valid;
+    const uint a = p * 10u;
+    o5[a] = demod.x; o5[a + 1u] = demod.y; o5[a + 2u] = demod.z;
+    o5[a + 3u] = albm.x; o5[a + 4u] = albm.y; o5[a + 5u] = albm.z;
+    o5[a + 6u] = wprev.x; o5[a + 7u] = wprev.y; o5[a + 8u] = wprev.z; o5[a + 9u] = valid;
+}
+#elif MODE == 2
+void main() {   // b0 head (27), b1 aux; o4 acc (3)
+    const uint p = gl_GlobalInvocationID.x;
+    if (p >= W * H) return;
+    const float a = sigm(b0[p * 27u + 25u]) * b1[p * 10u + 9u];
+    for (uint c = 0u; c < 3u; ++c) o4[p * 3u + c] = a * b1[p * 10u + 6u + c] + (1.0 - a) * b1[p * 10u + c];
+}
+#elif MODE == 3
+void main() {   // b0 image (3, w x h), b1 logits (stride C, first 25); o4 filtered (3)
+    const uint p = gl_GlobalInvocationID.x;
+    if (p >= w * h) return;
+    const int x = int(p % w), y = int(p / w);
+    float m = -1e30;
+    for (uint k = 0u; k < 25u; ++k) m = max(m, b1[p * C + k]);
+    float s = 0.0;
+    vec3 acc = vec3(0.0);
+    for (uint k = 0u; k < 25u; ++k) {
+        const float e = exp(b1[p * C + k] - m);
+        s += e;
+        const int qx = clamp(x + int(k % 5u) - 2, 0, int(w) - 1), qy = clamp(y + int(k / 5u) - 2, 0, int(h) - 1);
+        const uint q = (uint(qy) * w + uint(qx)) * 3u;
+        acc += e * vec3(b0[q], b0[q + 1u], b0[q + 2u]);
+    }
+    acc /= s;
+    o4[p * 3u] = acc.x; o4[p * 3u + 1u] = acc.y; o4[p * 3u + 2u] = acc.z;
+}
+#elif MODE == 4
+void main() {   // b0 image (3, W x H); o4 pooled (3, w x h)
+    const uint p = gl_GlobalInvocationID.x;
+    if (p >= w * h) return;
+    const uint ox = p % w, oy = p / w;
+    const uint xs = (ox * W) / w, xe = ((ox + 1u) * W + w - 1u) / w, ys = (oy * H) / h, ye = ((oy + 1u) * H + h - 1u) / h;
+    vec3 s = vec3(0.0);
+    for (uint y = ys; y < ye; ++y) for (uint x = xs; x < xe; ++x) { const uint q = (y * W + x) * 3u; s += vec3(b0[q], b0[q + 1u], b0[q + 2u]); }
+    s /= float((xe - xs) * (ye - ys));
+    o4[p * 3u] = s.x; o4[p * 3u + 1u] = s.y; o4[p * 3u + 2u] = s.z;
+}
+#else
+vec3 up(uint which, uint x, uint y) {   // bilinear, align_corners False, from w x h to W x H
+    const float fx = max((float(x) + 0.5) * (float(w) / float(W)) - 0.5, 0.0);
+    const float fy = max((float(y) + 0.5) * (float(h) / float(H)) - 0.5, 0.0);
+    const uint x0 = uint(fx), y0 = uint(fy);
+    const uint x1 = x0 + (x0 < w - 1u ? 1u : 0u), y1 = y0 + (y0 < h - 1u ? 1u : 0u);
+    const float lx = fx - float(x0), ly = fy - float(y0);
+    vec3 v[4];
+    const uint q[4] = uint[4]((y0 * w + x0) * 3u, (y0 * w + x1) * 3u, (y1 * w + x0) * 3u, (y1 * w + x1) * 3u);
+    for (int k = 0; k < 4; ++k) v[k] = which == 0u ? vec3(b1[q[k]], b1[q[k] + 1u], b1[q[k] + 2u]) : vec3(b2[q[k]], b2[q[k] + 1u], b2[q[k] + 2u]);
+    return (1.0 - ly) * ((1.0 - lx) * v[0] + lx * v[1]) + ly * ((1.0 - lx) * v[2] + lx * v[3]);
+}
+void main() {   // b0 f (3, full), b1 fq (3, w x h), b2 q (3, w x h), b3 head (27); o5 aux (albm); o4 remodulated out (3), o6 state (3)
+    const uint p = gl_GlobalInvocationID.x;
+    if (p >= W * H) return;
+    const uint x = p % W, y = p / W;
+    const float wb = sigm(b3[p * 27u + 26u]);
+    const vec3 f = vec3(b0[p * 3u], b0[p * 3u + 1u], b0[p * 3u + 2u]);
+    const vec3 o = max(f - wb * up(0u, x, y) + wb * up(1u, x, y), vec3(0.0));
+    for (uint c = 0u; c < 3u; ++c) { o6[p * 3u + c] = o[c]; o4[p * 3u + c] = o[c] * o5[p * 10u + 3u + c]; }
+}
+#endif

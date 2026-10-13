@@ -11,4 +11,9 @@ struct VkRun { std::string json; int code{0}; };   // code: 0 pass, 1 a bound mi
 VkRun vulkanProbe(bool checks);
 // H1.7 (evidence/hw-h1-7-bounds.json): GEMM on tensor cores and the fallback, at each size (multiples of 32).
 VkRun vulkanGemm(const std::vector<uint32_t>& sizes, int warmup, int repeats);
+// H2 inference (evidence/rr-inference-bounds.json): our network on our kernels, the cooperative
+// matrix path and the scalar path, against PyTorch reference frames; a perturbed-weights control;
+// with repeats > 0, frame times at 1920 x 1080.
+struct RrArgs { std::string weights, seq, ref; int frames{64}, warmup{50}, repeats{0}; float eps{1e-3f}; };
+VkRun vulkanRrNet(const RrArgs& a);
 }

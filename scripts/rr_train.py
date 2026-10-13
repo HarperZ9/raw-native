@@ -124,7 +124,7 @@ def train_session(a, net, opt, train, val, perm, dev, out, start, best, log, min
             torch.save({"model": net.state_dict(), "opt": opt.state_dict(), "step": done, "best": min(best, vl), "log": log}, ck)
             if vl < best:
                 best = vl
-                torch.save({"model": net.state_dict(), "step": done, "val_loss": vl}, out / "best.pt")
+                torch.save({"model": net.state_dict(), "step": done, "val_loss": vl, "eps": net.eps}, out / "best.pt")
         if timeout:
             break
     return done, best
@@ -170,6 +170,7 @@ def main():
     ap.add_argument("--shuffle-targets", action="store_true")
     ap.add_argument("--cpu", action="store_true")
     ap.add_argument("--val-frames", type=int, default=32)
+    ap.add_argument("--eps", type=float, default=1e-3)
     ap.add_argument("--lock", default="")
     ap.add_argument("--session-minutes", type=float, default=8.0)
     a = ap.parse_args()
@@ -191,7 +192,7 @@ def main():
             q = train[si]["r"][st]
             return q[:, y0:y0 + CROP, x0:x0 + CROP].float()
     lock = GpuLock(a.lock, f"raw-native HW H2 training{' (shuffled-target control)' if a.shuffle_targets else ''}, a session of at most {a.session_minutes:g} minutes") if a.lock else None
-    net = RrNet().to(dev)
+    net = RrNet(a.eps).to(dev)
     opt = torch.optim.AdamW(net.parameters(), lr=LR, weight_decay=WD)
     start, best, log = 0, math.inf, []
     ck = out / "last.pt"
@@ -219,7 +220,7 @@ def main():
             "gpu": torch.cuda.get_device_name(0) if dev.type == "cuda" else "", "shuffle_targets": a.shuffle_targets,
             "train_sequences": [s["name"] for s in train], "val_sequences": [s["name"] for s in val],
             "hyper": {"B": B, "T": T, "crop": CROP, "lr": LR, "lr_min": LR_MIN, "wd": WD, "seed": SEED, "steps": a.steps,
-                      "temporal_weight": TEMP_W}, "log": log, "best_val_loss": best,
+                      "temporal_weight": TEMP_W, "eps": a.eps}, "log": log, "best_val_loss": best,
             "parameters": sum(p.numel() for p in net.parameters())}
     (out / "train.json").write_text(json.dumps(meta, indent=1))
     return 0

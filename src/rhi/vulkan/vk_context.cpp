@@ -103,9 +103,9 @@ bool Context::createDevice(std::string& err){
         qp.queryType = VK_QUERY_TYPE_TIMESTAMP; qp.queryCount = 2;
         if ((r = vkCreateQueryPool(dev_, &qp, nullptr, &queries_)) != VK_SUCCESS){ err = vkError("vkCreateQueryPool", r); return false; }
     }
-    VkDescriptorPoolSize ps{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 64};
+    VkDescriptorPoolSize ps{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 512};   // 64 sets: H2's batched network
     VkDescriptorPoolCreateInfo dp{VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO};
-    dp.maxSets = 8; dp.poolSizeCount = 1; dp.pPoolSizes = &ps;
+    dp.maxSets = 64; dp.poolSizeCount = 1; dp.pPoolSizes = &ps;
     if ((r = vkCreateDescriptorPool(dev_, &dp, nullptr, &dpool_)) != VK_SUCCESS){ err = vkError("vkCreateDescriptorPool", r); return false; }
     return true;
 }

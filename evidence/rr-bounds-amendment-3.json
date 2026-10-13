@@ -1,0 +1,10 @@
+{
+ "schema": "raw-native.evidence/1",
+ "amends": "evidence/rr-bounds.json, amendments 1 and 2",
+ "written": "2026-10-13, before any test-set metric of any trained model was computed; the v1 trainings were running",
+ "finding": "A numerical check of the model design, not a quality result: with a 3-step smoke model on frames 0 to 2 of raw_hero, PyTorch's own float32 forward pass differs from its float64 forward pass by 0.0079 at frame 0, 4.35 at frame 1 and 6.38 at frame 2 (max absolute, linear radiance). Our scalar Vulkan path differs from PyTorch float32 by 0.002 at frame 0 and 0.74 at frame 1. Cause, inferred from the intermediates: demodulation divides radiance by albedo + 1e-3, so a hit on a near-black material with specular light gives demodulated values near 2e4; float32 rounding at that scale enters the recurrent history and the 5 x 5 kernels carry it into neighbouring pixels. The inference parity bound (1e-2 absolute against PyTorch float32) then measures rounding order, not our kernels.",
+ "change": "a second model, v2, identical to v1 (architecture, hyperparameters, data, steps, seed) except the demodulation epsilon: 0.05 in place of 1e-3. v2 is trained with its own shuffled-target control.",
+ "selection_rule": "fixed now: between v1 and v2, the model with the lower best validation loss is chosen, unless its float32-to-float64 PyTorch gap on the validation sequences exceeds 1e-2 (max absolute, any frame) and the other model's does not, in which case the other is chosen. Test metrics are computed only for the chosen model and its control; both models' validation numbers and conditioning gaps are reported.",
+ "parity_context": "for the chosen model, the inference parity report adds PyTorch float32 against float64 on the same frames, so a parity miss can be read against PyTorch's own rounding sensitivity. The 1e-2 bound itself is unchanged.",
+ "unchanged": "every success bound, control and test scene"
+}

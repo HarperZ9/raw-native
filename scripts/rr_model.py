@@ -30,8 +30,9 @@ def conv(i, o, k=3, s=1):
 
 
 class RrNet(nn.Module):
-    def __init__(self):
+    def __init__(self, eps=EPS):
         super().__init__()
+        self.eps = eps   # demodulation epsilon: v1 1e-3, v2 0.05 (evidence/rr-bounds-amendment-3.json)
         self.e0 = nn.Sequential(conv(IN_CH, 24, s=2), conv(24, 24))
         self.e1 = nn.Sequential(conv(24, 48, s=2), conv(48, 48))
         self.e2 = nn.Sequential(conv(48, 64, s=2), conv(64, 64))
@@ -69,14 +70,14 @@ def warp(prev, pos):
     return F.grid_sample(prev, torch.stack([gx, gy], -1), mode="bilinear", padding_mode="border", align_corners=False)
 
 
-def features(x, prev_out, prev_depth):
+def features(x, prev_out, prev_depth, eps=EPS):
     """x: input channels (B, 17, H, W); prev_out: previous demodulated output (B, 3, H, W) or None;
     prev_depth: previous frame's depth (B, 1, H, W) or None. Returns features, demodulated input,
     the albedo used for remodulation, the warped previous output and the validity mask."""
     rad, alb, nrm, dep = x[:, 0:3], x[:, 3:6], x[:, 6:9], x[:, 9:10]
     hit = (dep > 0).float()
     alb_m = alb * hit + (1 - hit)
-    demod = rad / (alb_m + EPS)
+    demod = rad / (alb_m + eps)
     pos, exp_d = x[:, 12:14], x[:, 14:15]
     if prev_out is None:
         wprev = torch.zeros_like(demod)
@@ -97,7 +98,7 @@ def features(x, prev_out, prev_depth):
 
 def step(net, x, prev_out, prev_depth):
     """One frame. Returns (remodulated output, demodulated output for the next frame)."""
-    feat, demod, alb_m, wprev, valid = features(x, prev_out, prev_depth)
+    feat, demod, alb_m, wprev, valid = features(x, prev_out, prev_depth, getattr(net, "eps", EPS))
     k_full, a, wb, k_q = net(feat)
     a = torch.sigmoid(a) * valid
     acc = a * wprev + (1 - a) * demod
