@@ -75,7 +75,12 @@ def run_svgf(x):
         hit = (dep > 0)[..., None]
         alb_m = np.where(hit, alb, 1.0)
         demod = x[t, ..., 0:3] / (alb_m + 1e-3)
-        out = f.frame(demod.astype(np.float64), x[t, ..., 10:12], np.where(dep > 0, dep, 1e6), x[t, ..., 6:9])
+        # Misses get a fixed unit normal and a far depth (dated note evidence/rr-baseline-note-2026-10-13.json): with the
+        # path tracer's zero normal there, SVGF's normal weight was 0 for every sky tap, the centre included, and the sky
+        # went black.
+        nrm = x[t, ..., 6:9].astype(np.float64)
+        nrm = np.where(hit, nrm / np.maximum(np.linalg.norm(nrm, axis=-1, keepdims=True), 1e-8), np.array([0.0, 0.0, 1.0]))
+        out = f.frame(demod.astype(np.float64), x[t, ..., 10:12], np.where(dep > 0, dep, 1e6), nrm)
         outs.append((out * alb_m).astype(np.float32))
     return np.stack(outs)
 
@@ -108,8 +113,8 @@ def metrics(out, ref, x, tri, age, var):
         peak = np.percentile(ref[t], 99.9)
         mse_lin = float(np.mean((out[t] - ref[t]) ** 2))
         mse_tm = float(np.mean((tm_o[t] - tm_r[t]) ** 2))
-        row = {"psnr_linear": 10 * np.log10(peak * peak / max(mse_lin, 1e-20)),
-               "psnr_tonemapped": 10 * np.log10(1.0 / max(mse_tm, 1e-20)),
+        row = {"psnr_linear": float(10 * np.log10(float(peak) ** 2 / max(mse_lin, 1e-20))),
+               "psnr_tonemapped": float(10 * np.log10(1.0 / max(mse_tm, 1e-20))),
                "flip_unchecked": float(np.mean(rr_flip.flip_map(tm_r[t], tm_o[t]))),
                "mse_lum_linear": float(np.mean((rr_data.lum(out[t]) - rr_data.lum(ref[t])) ** 2)),
                "target_noise": float(np.mean(var[t]))}
@@ -211,7 +216,7 @@ def main():
             per_seq[d.name], se[d.name] = evaluate_sequence(d, a)
             Path(a.work).mkdir(parents=True, exist_ok=True)
             tmp = cache.with_suffix(".tmp")
-            tmp.write_text(json.dumps({"metrics": per_seq[d.name], "se": se[d.name]}))
+            tmp.write_text(json.dumps({"metrics": per_seq[d.name], "se": [float(v) for v in se[d.name]]}, default=float))
             tmp.replace(cache)
         print(d.name, json.dumps(summary({d.name: per_seq[d.name]})[d.name]["ours"]), flush=True)
     v = verdict(per_seq)
@@ -220,7 +225,7 @@ def main():
            "per_sequence_means": summary(per_seq), "ref_fraction_se_under_1pct_mean": {k: float(np.mean(v_)) for k, v_ in se.items()},
            "verdict": v, "pass": bool(v["quality_pass"] and v["temporal_pass"] and v["ghosting_pass"]
                                       and v["control_shuffled_fails"] and v["control_zero_motion_fails"])}
-    Path(a.out).write_text(json.dumps(doc, indent=1))
+    Path(a.out).write_text(json.dumps(doc, indent=1, default=float))
     print(json.dumps(v, indent=1))
     return 0
 

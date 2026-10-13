@@ -1,0 +1,10 @@
+{
+ "schema": "raw-native.evidence/1",
+ "about": "a defect in the SVGF baseline harness (scripts/rr_eval.py run_svgf), found after the first test evaluation",
+ "evidence_of_defect": "first test evaluation (kept as rr-eval-run1-broken-svgf.json): SVGF scored below the unfiltered 1 spp input on every test scene (iso_street tone-mapped PSNR 6.6 dB against the input's 23.4) and its mean output was 0.13 against the reference's 0.42 on iso_street frames 0 to 3.",
+ "cause": "the path tracer writes a zero normal on a miss; SVGF's normal weight max(dot(n, nq), 0)^128 is then 0 for every sky tap including the centre, the weight sum is 0, and the sky comes out black.",
+ "fix": "misses get the unit normal (0, 0, 1) and the far depth 1e6 they already had, and hit normals are normalised. Nothing in SVGF's parameters changes (alpha 0.2, sigma_z 1, sigma_n 128, sigma_l 4, 5 iterations, all from the paper).",
+ "check_on_validation_only": "after the fix, SVGF on validation frames 0 and 7: terrain_100 tone-mapped PSNR 30.0 and 30.1 dB against the input's 25.6 and 25.5; hall_b 27.4 and 29.8 dB against 15.7 and 15.8; mean output within 4% of the reference.",
+ "what_is_done": "the test evaluation is rerun for both models with the fixed baseline. The first run's numbers are kept and reported as invalid for every comparison against SVGF. No model, bound or rule changes.",
+ "does_not_prove": "that our SVGF matches the paper's quality; it is our own implementation, checked only for sanity here."
+}
