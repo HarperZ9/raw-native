@@ -4,6 +4,33 @@ Each release's full notes, with downloads and evidence, are on the
 [releases page](https://github.com/HarperZ9/raw-native/releases). Dates are
 the day the release was published on GitHub, in UTC.
 
+## Unreleased
+
+- **Inline ray query, criterion H1.1b** (HW). A dated criterion beside H1.1. It uses a hall scene without coincident faces
+  and t and uv tolerances divided by the cosine of the ray to the triangle (floored at 1e-3). On the RTX 4090 it passes:
+  0 unexplained disagreements and the worst agreeing hit at 0.44 of its tolerance. The offset, rotation and new coplanar
+  controls all fail as required. On WARP the only miss left is WARP's TMin defect. H1.1's recorded failures stand.
+  `raw_native_cli hw-rayquery --criterion b`.
+- **Hardware timings under the three-run protocol** (HW H1.2, H1.3, H1.4, H1.7). Three independent runs on the RTX 4090,
+  with GPU snapshots, reported as ranges in `evidence/hw-h1-timing-20261012.json`:
+  - cooperative-matrix GEMM: 6.35x to 7.12x the shared-memory fallback (45.0 to 47.8 TFLOPS);
+  - mesh shaders: faster only on the close views (1.23x to 1.99x);
+  - wave scan: 1.007x to 1.011x;
+  - fp16 bilateral filter: 0.976x;
+  - async compute: 0.987x to 0.991x, no gain.
+- **Ray reconstruction groundwork** (HW H2). Two new commands:
+  - `raw_native_cli rr-render` renders dataset frames from the path tracer along camera paths on owned scenes. It writes
+    1 spp inputs with G-buffer and motion, and references at 4,096 or 8,192 spp.
+  - `raw_native_cli rr-taa` runs M3's TAA resolve over a frame sequence.
+
+  The first trained models do not beat our SVGF baseline. v1 saturated early. v2 trails SVGF by 0.18 dB tone-mapped PSNR
+  and by 0.09 FLIP, and is less stable over time than SVGF plus TAA. Full record in `evidence/rr-runs.json`.
+- **Ray reconstruction inference on our own Vulkan kernels** (`raw_native_vk_probe --rrnet`, optional Vulkan build). The
+  kernels cover a scalar path and an implicit-GEMM cooperative-matrix path, with 20 dispatches per frame in one
+  submission. On SwiftShader the scalar path misses the 1e-2 parity bound. PyTorch's own float32 and float64 passes
+  differ by the same amount, so the miss reflects the model's sensitivity, not the kernels. The tensor-core path and the
+  2 ms budget were not run: the RTX was held by higher-priority work.
+
 ## 0.7.0 (2026-10-12)
 
 - **The viewer ships as a release asset.** `raw-native-0.7.0-viewer.zip` holds `web/viewer/` with
