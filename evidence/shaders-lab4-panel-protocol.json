@@ -1,0 +1,28 @@
+{
+  "what": "Shader lab 4 blind panel: the pvm-20-soft CRT against crt-lottes and against pvm-20, a stronger pigment-lighting case, EHT sag judged from moving clips, and the mix dither against Bayer 4 in motion",
+  "fixed_before_first_run": "2026-10-14, before any panel image was anonymised and before any judge started",
+  "authority": "The author's instruction, verbatim, 2026-10-10: \"I want you to be the blind judge\" (evidence/shaders-model-judges-2026-10-10.json). Same design as that amendment and the 2026-10-11 dither re-judge.",
+  "follows": "evidence/shaders-comparison-protocol.json (CRT crops and competitor renders), evidence/shaders-lab2-panel-protocol.json (pigment and sag questions), evidence/shaders-dither-temporal-protocol.json (the dither clip and the template rule)",
+  "renderer": "tools/shaders/lab4-stimuli.mjs, the CPU references, whose GPU passes match within 1 code (evidence/shaders-*-parity-swiftshader.json). Competitor images are the panel 1 renders, unchanged.",
+  "part_A_stills": {
+    "crt_vs_lottes": "pvm-20-soft against crt-lottes on testcard 256 x 224, gameFrame 256 x 224 and gameFrame 320 x 240, each at 1920 x 1440 and 3840 x 2880: 6 pairs. The same centred 960 x 720 window, 1:1. Question: 'Which looks more like a real CRT?'",
+    "crt_vs_pvm20": "pvm-20-soft against pvm-20 on the same 6 frame and resolution cells: 6 pairs, same question. pvm-20 images are the panel 1 renders (the CRT code is unchanged since).",
+    "pigment": "Pigment-space lighting on the saturated still life (lab source stilllife-sat, 640 x 400: cadmium yellow, vermilion, viridian and ultramarine albedos half in deep shadow under a warm key and a weak cool sky), disco and grotesque, each against albedo times irradiance: 2 pairs. Question: 'Which looks more like a painting?' The presets and the scene were chosen by looking before this protocol, which favours the technique; that is part of the result."
+  },
+  "part_B_clips": {
+    "sag": "Clips of 24 frames at 24 fps, 640 x 480: the dusk street as signal at 320 x 240 with a flash (signal x 3 on frames 6 and 7, x 1.6 on frame 8) and, as a second clip, the street at 0.7 with a white window sweeping top to bottom. Each through the thriller sag pass, against the same pass with S = 0 (so the resampler's spot softening is in both), then the trinitron-tv CRT with persistence carried between frames. 2 pairs. Question: 'Which looks more like a real CRT?'",
+    "dither": "gameFrame(320, 240, t) to PICO-8, 24 frames at 30 fps, nearest x 2: mix-bayer4 against bayer4. 1 pair. Question: 'Which is the better picture, reduced to these 16 colours?' This is the clip named by the dither temporal protocol's rule.",
+    "presentation": "A clip is a folder of numbered PNG frames and its frame rate. Judges are told to read every frame of a clip in order before choosing. A model reads a sequence of frames, not playback; that limit is part of the result."
+  },
+  "design": "Two-alternative forced choice; each pair twice with sides swapped; trial order and first sides from seed 20261014. Part A: 14 pairs, 28 trials per judge. Part B: 3 pairs, 6 trials per judge.",
+  "judges": "Three fresh model agents per part (six in all), each with no conversation context: two on the session model (Claude Opus 5.5), one on Claude Sonnet. Each sees only a folder of anonymised images or clip folders and a trials file. No judge sees the key, the code or any report.",
+  "same_family_limit": "Every judge is a Claude model, the same family as the agent that built the shaders. Shared training can favour the same look, and two judges share one model exactly. The panel is not an independent rating, and there is no human rater in it.",
+  "blinding": "Image and clip ids are random. The key is written to a private file and its sha256 is committed in this repository before any judge starts. Vote files are hashed, and the hashes recorded, before the key is opened.",
+  "metric_and_rule": "Win rate of the raw-native side (pvm-20-soft; the technique on; mix-bayer4) with a 95% Wilson interval per comparison, pooled over the three judges and reported per judge. 'preferred' when the lower bound is above 0.5, 'lost' when the upper bound is below 0.5, else 'not distinguishable'.",
+  "consequences": {
+    "crt": "Recorded only. pvm-20 stays the default preset whatever the result; pvm-20-soft stays an option.",
+    "pigment_and_sag": "Recorded only.",
+    "dither": "Feeds the pixel template's mode rule in evidence/shaders-dither-temporal-protocol.json, unchanged."
+  },
+  "limits": "Model judges, one model family; swapped repeats are near copies, so the intervals are too narrow; three judges per part; frames read in sequence stand in for motion; the pigment and sag stimuli were designed by the builder."
+}
