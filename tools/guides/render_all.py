@@ -3,7 +3,7 @@
 
     python tools/guides/render_all.py --out DIR [--only NAME ...] [--jobs 2]
 
-Each shot is drawn by the Motion renderer through tools/guides/still.py, on Chrome's
+Each shot is drawn by the Motion renderer through scripts/motion_still.py, on Chrome's
 SwiftShader adapter by default (software WebGPU, no GPU lock) or with --adapter gpu under
 the D:/gpu.lock.d protocol, with its style's post stack in the
 display list: the paint pass for the painted harbour, film then the soft tube for the
@@ -43,7 +43,7 @@ def still(scene: str, out: Path) -> None:
     for _ in range(3):
         # A render that hangs (seen once on the GPU adapter) is stopped after 5 minutes and retried.
         try:
-            r = subprocess.run([sys.executable, str(ROOT / "tools" / "guides" / "still.py"), "--scene", scene, "--out", str(out), "--t", "0.2", *ADAPTER],
+            r = subprocess.run([sys.executable, str(ROOT / "scripts" / "motion_still.py"), "--scene", scene, "--out", str(out), "--t", "0.2", *ADAPTER],
                                capture_output=True, text=True, timeout=300)
         except subprocess.TimeoutExpired:
             continue

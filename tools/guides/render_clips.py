@@ -5,7 +5,8 @@
 
 Each guide gets an idle loop, a talk loop and its signature action, in its home world: Tallow
 in the retro thriller office, Pylon on the painted harbour, Rerun on the pixel shore. Frames
-come from scripts/motion_render.py (raw transport, H.264 by NVENC on the GPU, so the encoder keeps up with the page; libx264 at its slow preset fell behind and the page's frame posts timed out). --adapter gpu
+come from scripts/motion_render.py (raw transport; H.264 by NVENC with --adapter gpu, so the encoder keeps up
+with the page, else libx264, which keeps up with the slower CPU adapter). --adapter gpu
 is for use under the D:/gpu.lock.d protocol only. The reel joins every clip in order into
 DIR/guides-reel.mp4 with ffmpeg.
 """
@@ -65,7 +66,7 @@ def web(master: Path, out: Path, seconds: float) -> None:
     kbps = int(WEB_MB * 8 * 1024 * 1024 / seconds / 1000) - 160 - 100
     common = ["-c:v", "libx264", "-preset", "slow", "-b:v", f"{kbps}k", "-maxrate", f"{int(kbps * 1.5)}k", "-bufsize", f"{kbps * 2}k", "-pix_fmt", "yuv420p", "-vf", "scale=1920:1080"]
     log = str(out.with_suffix(".x264"))
-    subprocess.run([ff, "-y", "-loglevel", "error", "-i", str(master), *common, "-pass", "1", "-passlogfile", log, "-an", "-f", "mp4", "NUL"], check=True)
+    subprocess.run([ff, "-y", "-loglevel", "error", "-i", str(master), *common, "-pass", "1", "-passlogfile", log, "-an", "-f", "mp4", os.devnull], check=True)
     subprocess.run([ff, "-y", "-loglevel", "error", "-i", str(master), *common, "-pass", "2", "-passlogfile", log, "-c:a", "aac", "-b:a", "160k", "-movflags", "+faststart", str(out)], check=True)
 
 
@@ -108,7 +109,9 @@ def main() -> int:
     ap.add_argument("--loops", type=int, default=2, help="times each loop clip repeats in the reel")
     ap.add_argument("--only", nargs="*")
     ap.add_argument("--extra", nargs="*", default=[], help="NAME=QUERY=SECONDS clips to render instead of the plan (tests)")
+    ap.add_argument("--codec", default=None, help="ffmpeg encoder for the pieces (default h264_nvenc with --adapter gpu, else libx264)")
     a = ap.parse_args()
+    codec = a.codec or ("h264_nvenc" if a.adapter == "gpu" else "libx264")
     out = Path(a.out).resolve()
     out.mkdir(parents=True, exist_ok=True)
     made = []
@@ -144,7 +147,7 @@ def main() -> int:
             piece.parent.mkdir(exist_ok=True)
             cmd = [sys.executable, str(ROOT / "scripts" / "motion_render.py"), "--root", str(ROOT), "--scene",
                    "../../templates/guides/clips/clip.mjs%3F" + query.replace("&", "%26"), "--out", str(piece), "--from", f"{t:.4f}", "--to", f"{t1:.4f}",
-                   "--fps", str(a.fps), "--transport", "raw", "--codec", "h264_nvenc", "--quality", "18", "--adapter", a.adapter]
+                   "--fps", str(a.fps), "--transport", "raw", "--codec", codec, "--quality", "18", "--adapter", a.adapter]
             for _ in range(3):
                 try:
                     r = subprocess.run(cmd, capture_output=True, text=True, timeout=900)
