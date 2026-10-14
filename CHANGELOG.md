@@ -25,6 +25,11 @@ the day the release was published on GitHub, in UTC.
 
   The first trained models do not beat our SVGF baseline. v1 saturated early. v2 trails SVGF by 0.18 dB tone-mapped PSNR
   and by 0.09 FLIP, and is less stable over time than SVGF plus TAA. Full record in `evidence/rr-runs.json`.
+- **Ray reconstruction v3** (HW H2, amendment 5). v3 demodulates by an estimate of total surface reflectance instead of
+  albedo, and it is chosen by a selection rule whose learning check the saturated v1 fails. On the held-out scenes it beats
+  SVGF by 5.95 dB tone-mapped PSNR [5.51, 6.38] and ghosts less than SVGF plus TAA. It still loses on FLIP (+0.031) and on
+  temporal stability (+0.0056), so the overall verdict is a fail. Our FLIP now matches the reference implementation's
+  test pair (3.5e-7 off the expected mean).
 - **Ray reconstruction inference on our own Vulkan kernels** (`raw_native_vk_probe --rrnet`, optional Vulkan build). The
   kernels cover a scalar path and an implicit-GEMM cooperative-matrix path, with 20 dispatches per frame in one
   submission. On SwiftShader the scalar path misses the 1e-2 parity bound. PyTorch's own float32 and float64 passes
