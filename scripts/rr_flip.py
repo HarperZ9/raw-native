@@ -6,9 +6,9 @@ Written from the paper's algorithm; the constants were read from the published B
 reference implementation (NVlabs/flip, src/pytorch/flip_loss.py) and are cited inline.
 No reference code is copied. numpy only, so it runs in any environment.
 
-Status: UNCHECKED against the reference implementation's own test pair. That check needs the
-reference images on disk (a download the author has not approved). Until it is done, every
-FLIP number this script produces is labelled unchecked (rr-bounds.json, metric "flip").
+Status: CHECKED on 2026-10-14 against the reference implementation's own test pair (NVlabs/flip at
+d3ab02a, images/reference.png and images/test.png): mean 0.1596926 against the expected 0.159693, a
+difference of 3.5e-7 (bound 1e-3). Record: evidence/rr-flip-check.json.
 
 Usage: rr_flip.py --selftest
        rr_flip.py REF.pfm TEST.pfm [--ppd 67.02]   (linear RGB in [0, 1] after tone mapping is the
