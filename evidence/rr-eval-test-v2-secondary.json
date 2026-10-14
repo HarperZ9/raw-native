@@ -1,0 +1,214 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/rr-bounds.json with amendments 1 and 2",
+ "split": "test",
+ "flip": "UNCHECKED against the reference implementation's test pair",
+ "per_sequence_means": {
+  "iso_street_p7": {
+   "input": {
+    "psnr_linear": 19.78805021900553,
+    "psnr_tonemapped": 23.375395740219226,
+    "flip_unchecked": 0.0395918533504311,
+    "temporal_instability": 0.031003369580185604,
+    "ghosting": 0.05936452169858274
+   },
+   "ours": {
+    "psnr_linear": 25.49364785657341,
+    "psnr_tonemapped": 30.109816033899783,
+    "flip_unchecked": 0.0588340514503862,
+    "temporal_instability": 0.009318763035393897,
+    "ghosting": 0.029135350123166093
+   },
+   "ours_zero_motion": {
+    "psnr_linear": 24.4484489657748,
+    "psnr_tonemapped": 29.394818661643136,
+    "flip_unchecked": 0.06701469035819868,
+    "temporal_instability": 0.009556737684068225,
+    "ghosting": 0.03444455614283917
+   },
+   "shuffled": {
+    "psnr_linear": 15.467606740708122,
+    "psnr_tonemapped": 21.95192907858973,
+    "flip_unchecked": 0.17051548853124174,
+    "temporal_instability": 0.009228762756619189,
+    "ghosting": 0.09722059468428294
+   },
+   "svgf": {
+    "psnr_linear": 24.43156589025496,
+    "psnr_tonemapped": 29.2779323908556,
+    "flip_unchecked": 0.0355963603435213,
+    "temporal_instability": 0.009668624058129295,
+    "ghosting": 0.030781627011795838
+   },
+   "svgf_taa": {
+    "psnr_linear": 28.944070108898902,
+    "psnr_tonemapped": 34.35023270192444,
+    "flip_unchecked": 0.031275035267376274,
+    "temporal_instability": 0.0026793792614683747,
+    "ghosting": 0.018421648639357753
+   }
+  },
+  "raw_hall_p7": {
+   "input": {
+    "psnr_linear": 34.83150483328624,
+    "psnr_tonemapped": 10.392679041107007,
+    "flip_unchecked": 0.4199200316336708,
+    "temporal_instability": 0.2429840685356231,
+    "ghosting": 0.2406251983983176
+   },
+   "ours": {
+    "psnr_linear": 23.156047824049047,
+    "psnr_tonemapped": 16.399014008645075,
+    "flip_unchecked": 0.385486386314176,
+    "temporal_instability": 0.023283656716110216,
+    "ghosting": 0.10898653512436246
+   },
+   "ours_zero_motion": {
+    "psnr_linear": 22.965140525525,
+    "psnr_tonemapped": 16.152643794383263,
+    "flip_unchecked": 0.3867973081975171,
+    "temporal_instability": 0.036080844197717926,
+    "ghosting": 0.1137890535451117
+   },
+   "shuffled": {
+    "psnr_linear": 22.963692858083746,
+    "psnr_tonemapped": 16.077378801937513,
+    "flip_unchecked": 0.32462139448084837,
+    "temporal_instability": 0.023032335387099357,
+    "ghosting": 0.10186574986529728
+   },
+   "svgf": {
+    "psnr_linear": 1.7521121646505424,
+    "psnr_tonemapped": 18.047760353388714,
+    "flip_unchecked": 0.1739758961354667,
+    "temporal_instability": 0.021535335374729975,
+    "ghosting": 0.0652361408112541
+   },
+   "svgf_taa": {
+    "psnr_linear": 13.707542282908559,
+    "psnr_tonemapped": 19.224942842323827,
+    "flip_unchecked": 0.17151530649433272,
+    "temporal_instability": 0.011264157111919115,
+    "ghosting": 0.052904462944420555
+   }
+  },
+  "raw_hero_p7": {
+   "input": {
+    "psnr_linear": 35.352247853868676,
+    "psnr_tonemapped": 25.34365257726894,
+    "flip_unchecked": 0.043478709010688885,
+    "temporal_instability": 0.018967072730736126,
+    "ghosting": 0.06063358222563115
+   },
+   "ours": {
+    "psnr_linear": 25.704076756318692,
+    "psnr_tonemapped": 24.073941990593102,
+    "flip_unchecked": 0.06230566665913414,
+    "temporal_instability": 0.0029294120909143535,
+    "ghosting": 0.052267988301104025
+   },
+   "ours_zero_motion": {
+    "psnr_linear": 25.644820677401157,
+    "psnr_tonemapped": 24.0972400273536,
+    "flip_unchecked": 0.061104440037199226,
+    "temporal_instability": 0.0029080084096344693,
+    "ghosting": 0.05253539308314285
+   },
+   "shuffled": {
+    "psnr_linear": 25.833969373764738,
+    "psnr_tonemapped": 16.745599830654086,
+    "flip_unchecked": 0.2820713601667674,
+    "temporal_instability": 0.004016561503891671,
+    "ghosting": 0.15028707966918037
+   },
+   "svgf": {
+    "psnr_linear": -6.341204355035256,
+    "psnr_tonemapped": 23.802072450422806,
+    "flip_unchecked": 0.027773273590742414,
+    "temporal_instability": 0.001988265964586938,
+    "ghosting": 0.0430801633434991
+   },
+   "svgf_taa": {
+    "psnr_linear": -2.807277646749391,
+    "psnr_tonemapped": 24.627095644100663,
+    "flip_unchecked": 0.02749988025033794,
+    "temporal_instability": 0.0012202688810666875,
+    "ghosting": 0.03886785064750011
+   }
+  }
+ },
+ "ref_fraction_se_under_1pct_mean": {
+  "iso_street_p7": 0.98457814915625,
+  "raw_hall_p7": 0.1073464023796875,
+  "raw_hero_p7": 0.965140938515625
+ },
+ "verdict": {
+  "frames_kept": 192,
+  "frames_excluded_by_target_noise": [],
+  "quality_vs_svgf": {
+   "flip_unchecked": [
+    0.08976019145132193,
+    0.0774604679541089,
+    0.1022254063453039,
+    192
+   ],
+   "psnr_linear": [
+    18.17043291235697,
+    16.30575505906292,
+    20.039406830326946,
+    192
+   ],
+   "psnr_tonemapped": [
+    -0.18166438717638655,
+    -0.34207123815802293,
+    -0.022334157537120834,
+    192
+   ]
+  },
+  "quality_pass": false,
+  "temporal_vs_svgf_taa": [
+   0.006789342195988096,
+   0.00618508634383534,
+   0.007375794343302943,
+   189
+  ],
+  "temporal_pass": false,
+  "ghosting_vs_svgf_taa": [
+   0.02673197043911805,
+   0.02373461617081717,
+   0.029766625645890752,
+   189
+  ],
+  "ghosting_pass": false,
+  "control_shuffled_vs_svgf": {
+   "flip_unchecked": [
+    0.17995423770304234,
+    0.17182216025704547,
+    0.18839263101510564,
+    192
+   ],
+   "psnr_linear": [
+    14.807598424228784,
+    12.308392320995365,
+    17.296125911556302,
+    192
+   ],
+   "psnr_tonemapped": [
+    -5.450952494495265,
+    -5.821223520407125,
+    -5.076639128135469,
+    192
+   ]
+  },
+  "control_shuffled_fails": true,
+  "control_zero_motion_ghosting_vs_svgf_taa": [
+   0.030191680179938438,
+   0.027060578156585396,
+   0.03335017762066816,
+   189
+  ],
+  "control_zero_motion_fails": true,
+  "format": "each comparison: [mean of (first - second), bootstrap 2.5%, 97.5%, frames]"
+ },
+ "pass": false
+}

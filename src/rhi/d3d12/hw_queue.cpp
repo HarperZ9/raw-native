@@ -3,7 +3,7 @@
 #include <cstring>
 namespace raw::rhi::d3d12 {
 namespace {
-bool buffer(ID3D12Device* dev, uint64_t size, D3D12_HEAP_TYPE heap, ComPtr<ID3D12Resource>& out, std::string& err){
+bool buffer(ID3D12Device* dev, uint64_t size, D3D12_HEAP_TYPE heap, ComPtr<ID3D12Resource>& out, std::string& err, bool accel = false){
     D3D12_HEAP_PROPERTIES hp{}; hp.Type = heap;
     D3D12_RESOURCE_DESC rd{};
     rd.Dimension = D3D12_RESOURCE_DIMENSION_BUFFER;
@@ -11,7 +11,8 @@ bool buffer(ID3D12Device* dev, uint64_t size, D3D12_HEAP_TYPE heap, ComPtr<ID3D1
     rd.Height = 1; rd.DepthOrArraySize = 1; rd.MipLevels = 1;
     rd.SampleDesc.Count = 1; rd.Layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
     rd.Flags = heap == D3D12_HEAP_TYPE_DEFAULT ? D3D12_RESOURCE_FLAG_ALLOW_UNORDERED_ACCESS : D3D12_RESOURCE_FLAG_NONE;
-    const D3D12_RESOURCE_STATES st = heap == D3D12_HEAP_TYPE_UPLOAD ? D3D12_RESOURCE_STATE_GENERIC_READ
+    const D3D12_RESOURCE_STATES st = accel ? D3D12_RESOURCE_STATE_RAYTRACING_ACCELERATION_STRUCTURE
+                                   : heap == D3D12_HEAP_TYPE_UPLOAD ? D3D12_RESOURCE_STATE_GENERIC_READ
                                    : heap == D3D12_HEAP_TYPE_READBACK ? D3D12_RESOURCE_STATE_COPY_DEST
                                    : D3D12_RESOURCE_STATE_COMMON;
     HRESULT hr = dev->CreateCommittedResource(&hp, D3D12_HEAP_FLAG_NONE, &rd, st, nullptr, IID_PPV_ARGS(&out));
@@ -70,6 +71,7 @@ bool HwQueue::pipeline(const void* dxil, size_t size, uint32_t uavs, uint32_t co
 }
 
 bool HwQueue::uavBuffer(uint64_t size, ComPtr<ID3D12Resource>& out, std::string& err){ return buffer(dev_, size, D3D12_HEAP_TYPE_DEFAULT, out, err); }
+bool HwQueue::accelBuffer(uint64_t size, ComPtr<ID3D12Resource>& out, std::string& err){ return buffer(dev_, size, D3D12_HEAP_TYPE_DEFAULT, out, err, true); }
 bool HwQueue::readbackBuffer(uint64_t size, ComPtr<ID3D12Resource>& out, std::string& err){ return buffer(dev_, size, D3D12_HEAP_TYPE_READBACK, out, err); }
 bool HwQueue::uploadBuffer(const void* data, uint64_t size, ComPtr<ID3D12Resource>& out, std::string& err){
     if (!buffer(dev_, size, D3D12_HEAP_TYPE_UPLOAD, out, err)) return false;
@@ -120,6 +122,26 @@ bool HwQueue::submitAndWait(uint32_t count, std::string& err){
     keep_.clear();
     resolved_.assign(count, 0);
     if (count && queries_) return readBack(stamps_.Get(), resolved_.data(), 8ull * count, err);
+    return true;
+}
+bool HwQueue::submit(ID3D12Fence* waitFence, uint64_t waitValue, uint64_t& signaled, std::string& err){
+    HRESULT hr = list_->Close();
+    if (FAILED(hr)){ err = hrError("hw list Close", hr); return false; }
+    if (waitFence && FAILED(hr = queue_->Wait(waitFence, waitValue))){ err = hrError("hw queue Wait", hr); return false; }
+    ID3D12CommandList* lists[] = {list_.Get()};
+    queue_->ExecuteCommandLists(1, lists);
+    signaled = ++fenceValue_;
+    if (FAILED(hr = queue_->Signal(fence_.Get(), signaled))){ err = hrError("hw Signal", hr); return false; }
+    return true;
+}
+bool HwQueue::waitCpu(uint64_t value, std::string& err){
+    if (fence_->GetCompletedValue() < value){
+        HRESULT hr = fence_->SetEventOnCompletion(value, event_);
+        if (FAILED(hr)){ err = hrError("hw SetEventOnCompletion", hr); return false; }
+        WaitForSingleObject(event_, INFINITE);
+    }
+    HRESULT hr = dev_->GetDeviceRemovedReason();
+    if (FAILED(hr)){ err = hrError("the D3D12 device was removed", hr); return false; }
     return true;
 }
 uint64_t HwQueue::ticks(uint32_t from, uint32_t to) const {

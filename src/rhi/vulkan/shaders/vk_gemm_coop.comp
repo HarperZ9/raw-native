@@ -1,0 +1,45 @@
+#version 460
+// HW H1.7: C = A B on tensor cores (VK_KHR_cooperative_matrix). One subgroup of 32 per
+// workgroup owns a 32 x 32 tile of C as four 16 x 16 fp32 accumulators and walks K in steps
+// of 16, loading fp16 A and B straight from global memory. Controls (evidence/hw-h1-7-bounds.json):
+// SKIP_K=1 drops the last K step; B_COLMAJOR=1 loads B with the wrong layout.
+#extension GL_KHR_cooperative_matrix : require
+#extension GL_KHR_memory_scope_semantics : require
+#extension GL_EXT_shader_explicit_arithmetic_types_float16 : require
+layout(local_size_x = 32) in;
+layout(push_constant) uniform P { uint M; uint N; uint K; };
+layout(std430, binding = 0) readonly buffer A { float16_t a[]; };
+layout(std430, binding = 1) readonly buffer B { float16_t b[]; };
+layout(std430, binding = 2) writeonly buffer C { float c[]; };
+#define ACC coopmat<float, gl_ScopeSubgroup, 16, 16, gl_MatrixUseAccumulator>
+#define MA coopmat<float16_t, gl_ScopeSubgroup, 16, 16, gl_MatrixUseA>
+#define MB coopmat<float16_t, gl_ScopeSubgroup, 16, 16, gl_MatrixUseB>
+#if B_COLMAJOR
+#define BLAYOUT gl_CooperativeMatrixLayoutColumnMajor
+#else
+#define BLAYOUT gl_CooperativeMatrixLayoutRowMajor
+#endif
+void main() {
+    const uint r0 = gl_WorkGroupID.y * 32u, c0 = gl_WorkGroupID.x * 32u;
+    ACC c00 = ACC(0.0), c01 = ACC(0.0), c10 = ACC(0.0), c11 = ACC(0.0);
+#if SKIP_K
+    const uint kEnd = K - 16u;
+#else
+    const uint kEnd = K;
+#endif
+    for (uint k = 0u; k < kEnd; k += 16u) {
+        MA a0, a1; MB b0, b1;
+        coopMatLoad(a0, a, r0 * K + k, K, gl_CooperativeMatrixLayoutRowMajor);
+        coopMatLoad(a1, a, (r0 + 16u) * K + k, K, gl_CooperativeMatrixLayoutRowMajor);
+        coopMatLoad(b0, b, k * N + c0, N, BLAYOUT);
+        coopMatLoad(b1, b, k * N + c0 + 16u, N, BLAYOUT);
+        c00 = coopMatMulAdd(a0, b0, c00);
+        c01 = coopMatMulAdd(a0, b1, c01);
+        c10 = coopMatMulAdd(a1, b0, c10);
+        c11 = coopMatMulAdd(a1, b1, c11);
+    }
+    coopMatStore(c00, c, r0 * N + c0, N, gl_CooperativeMatrixLayoutRowMajor);
+    coopMatStore(c01, c, r0 * N + c0 + 16u, N, gl_CooperativeMatrixLayoutRowMajor);
+    coopMatStore(c10, c, (r0 + 16u) * N + c0, N, gl_CooperativeMatrixLayoutRowMajor);
+    coopMatStore(c11, c, (r0 + 16u) * N + c0 + 16u, N, gl_CooperativeMatrixLayoutRowMajor);
+}

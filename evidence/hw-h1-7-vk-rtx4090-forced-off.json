@@ -1,0 +1,17 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/hw-h1-7-bounds.json",
+ "adapter": "NVIDIA GeForce RTX 4090",
+ "backend": "vulkan 1.4.341",
+ "disable": "cooperative_matrix",
+ "cooperative_matrix": false,
+ "path": "fallback only",
+ "error": "",
+ "warmup": 0,
+ "repeats": 1,
+ "sizes": [
+  {"n":1024,"fallback":{"ran":true,"checked":24576,"over_bound":0,"worst_over_bound":0.00153806,"rms_vs_cpu_fp32":1,"within_bound":true,"timing":{"n":1,"median_ms":0.321184,"p5_ms":0.321184,"p95_ms":0.321184,"p99_ms":0.321184,"iqr_ms":0,"tflops_at_median":6.68615}},"control_fallback_skip_k":{"ran":true,"checked":24576,"over_bound":24117,"worst_over_bound":172.254,"rms_vs_cpu_fp32":213798,"within_bound":false},"control_fallback_fails":true}
+ ],
+ "validation_errors": 0,
+ "pass": true
+}

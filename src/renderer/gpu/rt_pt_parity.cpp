@@ -1,5 +1,6 @@
 // The GPU path tracer's checks: P1 to P4 of evidence/rt-r2-bounds.json.
 #include "raw/renderer/rt_pt_gpu.hpp"
+#include "raw/renderer/rt_pt_checks.hpp"
 #include "json_text.hpp"
 #include "raw/renderer/rt_scenes.hpp"
 #include "raw/renderer/swr_scenes.hpp"
@@ -15,15 +16,22 @@ void record(Ctx& c, const std::string& s, bool pass) {
     c.R.results += (c.R.results.empty() ? "  " : ",\n  ") + s;
     c.all = c.all && pass;
 }
+// P5b on the GPU: the furnace's split, normal and with primary emission put in diffuse.
+void furnaceSplit(Ctx& c, const rt::PathTraceOutput& o, float a, bool control) {
+    const rt::FurnaceSplit f = rt::furnaceSplit(o, 1.0f, a);
+    record(c, rt::furnaceSplitJson(f, a, "gpu", control), f.within() != control);
+}
 // P1: the furnace on the GPU; returns whether it was within the bound.
-bool furnace(Ctx& c, float a, bool dropCos, std::string& line) {
+bool furnace(Ctx& c, float a, bool dropCos, std::string& line, bool splitControl = false) {
     const rt::PtScene s = rt::ptFurnace(1.0f, a);
     rt::PathTraceDesc d;
     d.spp = 64; d.maxBounces = 64; d.russianRoulette = false; d.width = 64; d.height = 48; d.seed = 101;
     d.camera = d.previous = rt::cameraOf(rt::furnaceBox());
     d.controls.dropLambertCosine = dropCos;
+    d.controls.aovEmissionToDiffuse = splitControl;
     const rt::PathTraceOutput o = pathTraceGpu(c.dev, s, d);
     if (!o.error.empty()) { c.R.error = o.error; return false; }
+    if (!dropCos) furnaceSplit(c, o, a, splitControl);
     const double expect = 1.0 / (1.0 - a);
     double sum = 0, var = 0, worst = 0;
     for (std::size_t p = 0; p < o.depth.size(); ++p) {
@@ -200,6 +208,25 @@ void convergence(Ctx& c, const rt::PtScene& ps, const swr::Scene& base) {
     const rt::PathTraceOutput cpu = rt::pathTraceCpu(ps, descFor(base, c.w, c.h, c.spp, 9001));
     const Conv v = compare(g, cpu);
     record(c, convJson(ps.name.c_str(), "gpu against cpu", v), v.ok);
+    // P5a and P5c on the same renders; on retro_room their control drops indirect specular.
+    for (const auto& [o, side] : {std::pair<const rt::PathTraceOutput*, const char*>{&g, "gpu"}, {&cpu, "cpu"}}) {
+        const rt::SplitSum sum = rt::splitSum(*o);
+        record(c, rt::splitSumJson(sum, ps.name.c_str(), side, false), sum.within());
+    }
+    for (bool spec : {false, true}) {
+        const rt::SplitConv sv = rt::splitConv(g, cpu, spec);
+        record(c, rt::splitConvJson(sv, ps.name.c_str(), spec, false), sv.within());
+    }
+    if (ps.name == "retro_room") {
+        rt::PathTraceDesc dx = descFor(base, c.w, c.h, c.spp, 11);
+        dx.controls.aovDropSpecularIndirect = true;
+        const rt::PathTraceOutput gx = pathTraceGpu(c.dev, ps, dx);
+        if (!gx.error.empty()) { c.R.error = gx.error; return; }
+        const rt::SplitSum sum = rt::splitSum(gx);
+        record(c, rt::splitSumJson(sum, ps.name.c_str(), "gpu", true), !sum.within());
+        const rt::SplitConv sv = rt::splitConv(gx, cpu, true);
+        record(c, rt::splitConvJson(sv, ps.name.c_str(), true, true), !sv.within());
+    }
     if (ps.emitters.empty()) return;
     rt::PathTraceDesc dc = descFor(base, c.w, c.h, c.spp, 11);
     dc.controls.misWeightOne = true;
@@ -217,7 +244,10 @@ void determinism(Ctx& c, const rt::PtScene& ps, const swr::Scene& base) {
     if (!a.error.empty() || !b.error.empty() || !e.error.empty()) { c.R.error = a.error + b.error + e.error; return; }
     const auto eq = [](const std::vector<float>& x, const std::vector<float>& y) { return std::memcmp(x.data(), y.data(), x.size() * 4) == 0; };
     const bool same = eq(a.radiance, b.radiance) && eq(a.albedo, b.albedo) && eq(a.variance, b.variance) && eq(a.depth, b.depth) &&
-                      eq(a.normal, b.normal) && eq(a.motion, b.motion) && a.triangle == b.triangle;
+                      eq(a.normal, b.normal) && eq(a.motion, b.motion) && a.triangle == b.triangle &&
+                      eq(a.diffuse, b.diffuse) && eq(a.specular, b.specular) && eq(a.emission, b.emission) &&
+                      eq(a.diffuseAlbedo, b.diffuseAlbedo) && eq(a.specularAlbedo, b.specularAlbedo) &&
+                      eq(a.diffuseVariance, b.diffuseVariance) && eq(a.specularVariance, b.specularVariance);
     long changed = 0;
     for (std::size_t p = 0; p < a.depth.size(); ++p) changed += std::memcmp(&a.radiance[p * 3], &e.radiance[p * 3], 12) != 0;
     const double frac = double(changed) / double(a.depth.size());
@@ -242,6 +272,7 @@ RtPtParity rtPtParity(rhi::Device& dev, bool quick) {
     std::string line;
     for (float a : {0.5f, 0.8f}) { const bool ok = furnace(c, a, false, line); record(c, line, ok); }
     { const bool ok = furnace(c, 0.5f, true, line); record(c, line, !ok); }        // the control must fail
+    { const bool ok = furnace(c, 0.5f, false, line, true); (void)ok; }             // P5b's control (P1 unchanged by it)
     if (!R.error.empty()) return R;
     const swr::Scene room = swr::retroRoom(), street = swr::isoStreet();
     const rt::PtScene pr = rt::ptRetroRoom(), pst = rt::ptIsoStreet();

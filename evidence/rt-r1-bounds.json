@@ -50,5 +50,13 @@
  "method_note_2": {
   "written": "2026-10-11 07:58Z, after runs 7 to 9",
   "change": "The snap correction is an option (Options::snapCorrect, default off); the four committed modes run without it, as in runs 1 to 6. A fifth mode (modern with snapCorrect) is reported in C4 and C5, not gated. See evidence/rt-r2-bounds.json, addendum_4_P4_method_note_2."
+ },
+ "method_note_3": {
+  "written": "2026-10-14 05:15Z, before the change and before any run of it",
+  "finding": "Run 6 (RTX 4090) fails C5 on every scene and C4 on one case; the inferred cause is approximate fp32 division on that driver (D3D12 permits 2.5 ulp), while WARP and SwiftShader divide exactly.",
+  "change": "Every '/' on f32 in the R1 passes swr_setup, swr_resolve and swr_gbuffer becomes div_rn(a, b): IEEE 754 binary32 division rounded to nearest even, computed in u32 integer arithmetic from the operands' bits (long division of the significands, a round bit and a sticky bit, subnormal inputs and results, zeros, infinities and NaN). The CPU reference keeps C++ division, which is that operation. The WGSL-to-HLSL translator gains the scalar bitcasts it needs (bitcast<u32|i32|f32> to asuint, asint, asfloat). sqrt is unchanged.",
+  "checks": "(1) A CPU test of a line-for-line C++ mirror of div_rn against native division: 2^26 random bit patterns, plus every pair from a list of edge values (zeros, subnormals, the smallest and largest normals, infinities, NaN, powers of two, results that round to the subnormal range and to overflow); bound: identical bits on every pair (NaN compared as NaN). Control: the mirror with the sticky bit dropped must differ on at least one pair. (2) C4 and C5 on WARP and SwiftShader must stay as they are (both already pass, so an unchanged result is the regression check). (3) C4 and C5 on the RTX 4090 under D:/gpu.lock.d, against their unchanged bounds; this is the test of the inferred cause.",
+  "prediction": "If approximate division is the cause, C5 on the RTX drops from 335, 518 and 10 differing slots to under 1%, and C4 clip_stress affine passes. If it stays, the cause is elsewhere (for example multiply-add contraction), and the note records that.",
+  "does_not_prove": "Exactness of sqrt or of multiply and add on any driver; performance."
  }
 }

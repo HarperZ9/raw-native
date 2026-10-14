@@ -9,7 +9,8 @@ struct PostParams {
     ssr: vec4f,        // max distance, thickness
     taa: vec4f,        // blend weight, clip sigma
 }
-// A view-space G-buffer pixel: 8 floats. 0..2 position, 3 view depth (negative: empty), 4..6 normal.
+// A view-space G-buffer pixel: 8 floats. 0..2 position, 3 view depth (negative: empty), 4..6 normal,
+// 7 the back depth of SSR's back layer (method note 14 of evidence/m3-post-bounds.json).
 const GB: u32 = 8u;
 const PI: f32 = 3.14159265358979;
 
@@ -131,11 +132,13 @@ struct Probe {
     j: i32,
     behind: bool,
     within: bool,
+    inside: bool,
 }
 fn probe_at(t: f32, a: vec3f, e: vec3f, k0: f32, k1: f32) -> Probe {
     var r: Probe;
     r.behind = false;
     r.within = false;
+    r.inside = false;
     let px: i32 = i32(floor(a.x + (e.x - a.x) * t));
     let py: i32 = i32(floor(a.y + (e.y - a.y) * t));
     if (!on_screen(px, py)) { r.j = -2; return r; }
@@ -145,6 +148,7 @@ fn probe_at(t: f32, a: vec3f, e: vec3f, k0: f32, k1: f32) -> Probe {
     let ray: f32 = 1.0 / (k0 + (k1 - k0) * t);
     r.behind = ray > d;
     r.within = r.behind && ray - d < P.ssr.y;
+    r.inside = ray >= d + P.ssr.y && ray <= G[u32(r.j) * GB + 7u];
     return r;
 }
 
@@ -180,9 +184,12 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     if (tend <= 0.0) { return; }
     e = vec3f(a.x + (e.x - a.x) * tend, a.y + (e.y - a.y) * tend, 1.0);
     k1 = k0 + (k1 - k0) * tend;
+    // ssr_steps 0: one step a pixel of the clipped segment (method note 14).
+    let span: f32 = max(abs(e.x - a.x), abs(e.y - a.y));
+    let n: u32 = select(P.ssr_steps, max(1u, u32(ceil(span))), P.ssr_steps == 0u);
     var prev: f32 = 0.0;
-    for (var s: u32 = 1u; s <= P.ssr_steps; s++) {
-        let t: f32 = f32(s) / f32(P.ssr_steps);
+    for (var s: u32 = 1u; s <= n; s++) {
+        let t: f32 = f32(s) / f32(n);
         let pr: Probe = probe_at(t, a, e, k0, k1);
         if (pr.j == -2) { break; }
         if (pr.behind && pr.j != i32(i)) {
@@ -195,6 +202,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
             }
             let ph: Probe = probe_at(hi, a, e, k0, k1);
             if (ph.within && ph.j >= 0 && ph.j != i32(i)) { O[i] = f32(ph.j); break; }
+            if (pr.inside) { break; }
         }
         prev = t;
     }

@@ -1,0 +1,14 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/hw-h1-3-bounds.json",
+ "adapter": "Microsoft Basic Render Driver",
+ "disable": "",
+ "warmup": 1,
+ "repeats": 5,
+ "scenes": [
+  {"scene":"terrain","views":[{"camera":"wide","covered_pixels":792915,"id_differences":0,"depth_differences":0,"meshlets":1600,"kept":1567,"control_id_differences":792915,"error":"","vertex_time":{"n":5,"median_ms":8.9652,"p5_ms":8.2932,"p95_ms":10.0322,"p99_ms":10.116,"iqr_ms":1.2987},"mesh_time":{"n":5,"median_ms":8.9924,"p5_ms":8.63824,"p95_ms":9.9841,"p99_ms":10.135,"iqr_ms":0.5161},"mesh_speedup":{"median_ratio":0.996975,"ci95":[0.8813,1.12727]},"pass":true},{"camera":"close","covered_pixels":1425792,"id_differences":0,"depth_differences":0,"meshlets":1600,"kept":752,"control_id_differences":1425792,"error":"","vertex_time":{"n":5,"median_ms":5.1826,"p5_ms":4.9991,"p95_ms":5.71238,"p99_ms":5.74072,"iqr_ms":0.51},"mesh_time":{"n":5,"median_ms":4.4205,"p5_ms":4.23154,"p95_ms":5.4615,"p99_ms":5.56958,"iqr_ms":0.6626},"mesh_speedup":{"median_ratio":1.1724,"ci95":[0.926027,1.31857]},"pass":true},{"camera":"grazing","covered_pixels":1250076,"id_differences":0,"depth_differences":0,"meshlets":1600,"kept":1551,"control_id_differences":1250076,"error":"","vertex_time":{"n":5,"median_ms":9.2226,"p5_ms":8.45596,"p95_ms":9.5853,"p99_ms":9.5881,"iqr_ms":0.8111},"mesh_time":{"n":5,"median_ms":10.1528,"p5_ms":8.87572,"p95_ms":11.3696,"p99_ms":11.3866,"iqr_ms":1.3593},"mesh_speedup":{"median_ratio":0.90838,"ci95":[0.769052,1.07073]},"pass":true}]},
+  {"scene":"hall","views":[{"camera":"wide","covered_pixels":1383725,"id_differences":0,"depth_differences":0,"meshlets":352,"kept":337,"control_id_differences":236685,"error":"","vertex_time":{"n":5,"median_ms":2.7444,"p5_ms":2.257,"p95_ms":2.84092,"p99_ms":2.85378,"iqr_ms":0.3956},"mesh_time":{"n":5,"median_ms":2.6698,"p5_ms":2.59076,"p95_ms":3.44494,"p99_ms":3.52195,"iqr_ms":0.4677},"mesh_speedup":{"median_ratio":1.02794,"ci95":[0.727475,1.07188]},"pass":true},{"camera":"close","covered_pixels":533531,"id_differences":0,"depth_differences":0,"meshlets":352,"kept":171,"control_id_differences":0,"error":"","vertex_time":{"n":5,"median_ms":1.5457,"p5_ms":1.26474,"p95_ms":1.6783,"p99_ms":1.68542,"iqr_ms":0.159},"mesh_time":{"n":5,"median_ms":1.5412,"p5_ms":1.09738,"p95_ms":1.60536,"p99_ms":1.61499,"iqr_ms":0.4391},"mesh_speedup":{"median_ratio":1.00292,"ci95":[0.785103,1.50403]},"pass":false},{"camera":"grazing","covered_pixels":990151,"id_differences":0,"depth_differences":0,"meshlets":352,"kept":339,"control_id_differences":106177,"error":"","vertex_time":{"n":5,"median_ms":2.5686,"p5_ms":2.51114,"p95_ms":2.662,"p99_ms":2.67016,"iqr_ms":0.1007},"mesh_time":{"n":5,"median_ms":3.1402,"p5_ms":2.42876,"p95_ms":3.28914,"p99_ms":3.29823,"iqr_ms":0.5831},"mesh_speedup":{"median_ratio":0.817973,"ci95":[0.773438,1.08343]},"pass":true}]}
+ ],
+ "culling_exercised_on_close_cameras": true,
+ "pass": false
+}

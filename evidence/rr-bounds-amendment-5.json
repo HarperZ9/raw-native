@@ -1,0 +1,20 @@
+{
+ "schema": "raw-native.evidence/1",
+ "amends": "evidence/rr-bounds-amendment-3.json (selection rule) and adds model v3",
+ "written": "2026-10-14 00:50Z, before v3 exists and before any new test metric. Declared: the test metrics of v1 (verdict run) and v2 (secondary run) under amendment 3 were seen before this amendment was written; the rule below uses validation data only.",
+ "coordinator_decision": "2026-10-14, under the author's rules (2026-10-11, verbatim: \"You are doing all of the judgement work through trial and error.\"): separate diffuse and specular demodulation first; add the missing check that a non-learning model fails the selection rule; fix the selection rule by a dated amendment before any new test metric.",
+ "selection_rule": {
+  "learning_check": "a candidate qualifies only if its best validation loss is at least 10% below the identity model's loss, where the identity model outputs the 1 spp input unchanged, scored by the same loss (rr_train.py lossfn) on the same validation frames (both validation sequences, frames 0 to 31)",
+  "control_that_must_fail": "v1, the saturated model, must fail the learning check; if it passes, the check does not discriminate and the selection is reported invalid with no verdict",
+  "choice": "the qualifying candidate with the lowest best validation loss; the float32-to-float64 gap is reported, not used (it measures history-validity flips, not demodulation)",
+  "candidates": "v1, v2 and v3, each trained once with the committed hyperparameters, plus their shuffled-target controls",
+  "verdict": "the chosen model's test evaluation is the verdict run of this amendment; if v2 is chosen, its test numbers are recomputed by the same script and reported as this amendment's verdict, with the declaration above"
+ },
+ "v3": {
+  "change_from_v2": "demodulation by an estimate of the surface's total reflectance instead of the diffuse albedo: d = (1 - m) * a + F0, F0 = 0.04 * (1 - m) + a * m, with a the albedo and m the metallic channel; misses use d = 1; demodulated = radiance / (d + 0.01); the output is multiplied by d",
+  "why": "v1 and v2 divide by albedo alone, so a near-black glossy hit lit mostly by specular reflection divides a bright value by a small number. F0 is at least 0.04 on every dielectric, which bounds the division by about 20x on such hits.",
+  "limit": "this is not a true diffuse and specular split: that needs the path tracer to output diffuse and specular radiance separately, which is RT's module (requested in RT's PROGRESS.md, not edited here)",
+  "unchanged": "architecture, log1p depth feature, the 8 tanh(z / 8) bound, hyperparameters, data, seed, 6,000 steps"
+ },
+ "unchanged": "every success bound, control and test scene"
+}

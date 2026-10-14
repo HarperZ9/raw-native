@@ -1,0 +1,17 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/hw-h1-1-bounds.json",
+ "backend": "d3d12",
+ "adapter": "NVIDIA GeForce RTX 4090",
+ "driver": "32.0.16.1088",
+ "disable": "ray_query",
+ "fallback": true,
+ "warmup": 2,
+ "repeats": 5,
+ "scenes": [
+  {"scene":"terrain","fallback":"cpu traversal","reason":"ray query forced off"},
+  {"scene":"hall","fallback":"cpu traversal","reason":"ray query forced off"},
+  {"scene":"debris","fallback":"cpu traversal","reason":"ray query forced off"}
+ ],
+ "pass": true
+}

@@ -1,0 +1,6 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "RT R1 method note 3: div_rn mirror against C++ division",
+ "edge_pairs": 2704, "edge_differing": 0, "random_pairs": 67108864, "random_differing": 0, "control_no_sticky_differing": 51995,
+ "pass": true
+}

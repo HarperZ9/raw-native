@@ -1,5 +1,5 @@
 #pragma once
-// raw-native's path tracer, interface version 1 (RT stage R2, evidence/rt-r2-bounds.json).
+// raw-native's path tracer, interface version 2 (RT stage R2, evidence/rt-r2-bounds.json).
 //
 // Stable contract for its consumers: the hardware session (reference and training data for
 // learned ray reconstruction) and the shader lab (stylisation from its buffers). Any change
@@ -24,6 +24,18 @@
 //   variance  the sample variance of radiance luminance (0.2126 R + 0.7152 G + 0.0722 B) / spp
 //   triangle  the pixel-centre ray's first-hit triangle index in Geometry order, -1 on a miss
 //             (added to v1 before its first merge; ids for outlines and checks)
+//
+// Split radiance, added in v2 (addendum 5 of the bounds file; every v1 output is unchanged):
+//   emission  RGB, light gathered on the primary ray's own segment: the first hit's emission or
+//             the sky on a primary miss
+//   diffuse   RGB, the rest of the radiance through the first hit's Lambert term: next-event
+//             estimation there by fd cos, and every later contribution by the weight fd cos / pdf
+//   specular  RGB, the same through the GGX term ((f - fd) cos); emission + diffuse + specular
+//             equals radiance up to float rounding
+//   diffuseAlbedo   RGB, the mean over primary samples of (1 - metallic) base, 0 on a miss
+//   specularAlbedo  RGB, the mean over primary samples of F0 + (1 - F0)(1 - cos_o)^5 where the
+//             specular lobe exists, else 0: a demodulation estimate, not a directional albedo
+//   diffuseVariance, specularVariance  as variance, of each component's luminance
 #include "raw/renderer/rt_bvh.hpp"
 #include "raw/renderer/swr.hpp"
 #include <cstdint>
@@ -31,7 +43,7 @@
 #include <vector>
 namespace raw::rt {
 
-inline constexpr int kPathTraceVersion = 1;
+inline constexpr int kPathTraceVersion = 2;
 
 struct PtMaterial {
     float baseFactor{1.0f};   // base colour = texel / 255 * baseFactor
@@ -60,6 +72,8 @@ struct PtCamera { Vec3 eye{0, 0, 5}, target{0, 0, 0}, up{0, 1, 0}; float fovy{1.
 struct PtControls {
     bool dropLambertCosine{false};   // P1 control
     bool misWeightOne{false};        // P2 control: both strategies weighted 1 (double counting)
+    bool aovDropSpecularIndirect{false};   // P5a and P5c control: specular loses its paths after the first hit
+    bool aovEmissionToDiffuse{false};      // P5b control: primary emission and sky go to diffuse
 };
 
 struct PathTraceDesc {
@@ -82,6 +96,9 @@ struct PathTraceOutput {
     std::vector<float> depth, variance;            // 1 a pixel
     std::vector<int> triangle;                     // 1 a pixel
     std::vector<float> motion;                     // 2 a pixel
+    // v2: split radiance (3 a pixel) and its variances (1 a pixel).
+    std::vector<float> diffuse, specular, emission, diffuseAlbedo, specularAlbedo;
+    std::vector<float> diffuseVariance, specularVariance;
     std::string error;
 };
 

@@ -1,0 +1,33 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "RT stage R2, the GPU path tracer: P1 to P4 (evidence/rt-r2-bounds.json)",
+ "interface_version": 2,
+ "backend": "d3d12",
+ "adapter": "Microsoft Basic Render Driver",
+ "error": "",
+ "pass": false,
+ "results": [
+  {"check": "P5b", "albedo": 0.5, "side": "gpu", "control": false, "specular_nonzero": 0, "emission_wrong": 0, "mean_diffuse": 0.999855, "expected": 1.000000, "z": 0.341, "worst_pixel_z": 4.627, "within": true},
+  {"check": "P1", "albedo": 0.5, "control_drop_cosine": false, "mean": 1.999855, "expected": 2.000000, "z": 0.342, "worst_pixel_z": 4.627, "within": true},
+  {"check": "P5b", "albedo": 0.8, "side": "gpu", "control": false, "specular_nonzero": 0, "emission_wrong": 0, "mean_diffuse": 3.998995, "expected": 4.000000, "z": 1.008, "worst_pixel_z": 4.455, "within": true},
+  {"check": "P1", "albedo": 0.8, "control_drop_cosine": false, "mean": 4.998995, "expected": 5.000000, "z": 1.008, "worst_pixel_z": 4.455, "within": true},
+  {"check": "P1", "albedo": 0.5, "control_drop_cosine": true, "mean": 45.323963, "expected": 2.000000, "z": 8.495, "worst_pixel_z": 10.102, "within": false},
+  {"check": "P5b", "albedo": 0.5, "side": "gpu", "control": true, "specular_nonzero": 0, "emission_wrong": 9216, "mean_diffuse": 1.999855, "expected": 1.000000, "z": 2358.258, "worst_pixel_z": 68.073, "within": false},
+  {"check": "P2", "scene": "retro_room", "case": "gpu against cpu", "mean_abs_z": 0.8188, "fraction_z_over_4": 0.00008, "image_mean_z": 0.871, "reported_mean_abs_z_noisy_pixels": 0.8188, "zero_variance_pixels": 0, "nonfinite_gpu": 0, "nonfinite_cpu": 0, "within": true},
+  {"check": "P5a", "scene": "retro_room", "side": "gpu", "control": false, "values": 36864, "over": 0, "nonfinite": 0, "worst_ratio_to_bound": 0.006071, "within": true},
+  {"check": "P5a", "scene": "retro_room", "side": "cpu", "control": false, "values": 36864, "over": 0, "nonfinite": 0, "worst_ratio_to_bound": 0.006017, "within": true},
+  {"check": "P5c", "scene": "retro_room", "component": "diffuse", "control": false, "mean_abs_z": 0.8163, "fraction_z_over_4": 0.00008, "image_mean_z": 0.401, "nonfinite": 0, "within": true},
+  {"check": "P5c", "scene": "retro_room", "component": "specular", "control": false, "mean_abs_z": 0.8154, "fraction_z_over_4": 0.00000, "image_mean_z": 0.302, "nonfinite": 0, "within": true},
+  {"check": "P5a", "scene": "retro_room", "side": "gpu", "control": true, "values": 36864, "over": 36538, "nonfinite": 0, "worst_ratio_to_bound": 2303, "within": false},
+  {"check": "P5c", "scene": "retro_room", "component": "specular", "control": true, "mean_abs_z": 7.9383, "fraction_z_over_4": 0.87565, "image_mean_z": 231.003, "nonfinite": 0, "within": false},
+  {"check": "P2", "scene": "retro_room", "case": "control: MIS weight 1", "mean_abs_z": 1.8244, "fraction_z_over_4": 0.03068, "image_mean_z": 179.467, "reported_mean_abs_z_noisy_pixels": 1.8244, "zero_variance_pixels": 0, "nonfinite_gpu": 0, "nonfinite_cpu": 0, "within": false},
+  {"check": "P2", "scene": "iso_street", "case": "gpu against cpu", "mean_abs_z": 0.3798, "fraction_z_over_4": 0.00000, "image_mean_z": 0.492, "reported_mean_abs_z_noisy_pixels": 0.8236, "zero_variance_pixels": 6622, "nonfinite_gpu": 0, "nonfinite_cpu": 0, "within": true},
+  {"check": "P5a", "scene": "iso_street", "side": "gpu", "control": false, "values": 36864, "over": 0, "nonfinite": 0, "worst_ratio_to_bound": 0.006151, "within": true},
+  {"check": "P5a", "scene": "iso_street", "side": "cpu", "control": false, "values": 36864, "over": 0, "nonfinite": 0, "worst_ratio_to_bound": 0.006575, "within": true},
+  {"check": "P5c", "scene": "iso_street", "component": "diffuse", "control": false, "mean_abs_z": 0.3795, "fraction_z_over_4": 0.00000, "image_mean_z": 0.613, "nonfinite": 0, "within": true},
+  {"check": "P5c", "scene": "iso_street", "component": "specular", "control": false, "mean_abs_z": 0.3762, "fraction_z_over_4": 0.00000, "image_mean_z": 0.141, "nonfinite": 0, "within": true},
+  {"check": "P3", "same_seed_identical": true, "seed_plus_1_pixels_changed": 1.0000, "pass": true},
+  {"check": "P4", "scene": "retro_room", "covered": 65536, "triangle_differences": 0, "edge_exempt": 9, "depth_over_1e-4": 0, "worst_depth_rel": 1.453e-05, "normal_over_1e-5": 0, "worst_normal_1_minus_dot": 5.960e-08, "albedo_differences": 0, "texel_boundary_exempt": 5, "diagnosis_albedo_failures_matching_float64": {"path_tracer": 0, "r1": 0}, "diagnosis_depth_failures_matching_float64": {"path_tracer": 0, "r1": 0}, "pass": true},
+  {"check": "P4", "scene": "iso_street", "covered": 37222, "triangle_differences": 0, "edge_exempt": 8, "depth_over_1e-4": 0, "worst_depth_rel": 4.750e-06, "normal_over_1e-5": 0, "worst_normal_1_minus_dot": 1.192e-07, "albedo_differences": 1, "texel_boundary_exempt": 13, "diagnosis_albedo_failures_matching_float64": {"path_tracer": 0, "r1": 1}, "diagnosis_depth_failures_matching_float64": {"path_tracer": 0, "r1": 0}, "pass": false}
+ ]
+}

@@ -6,7 +6,9 @@ P4 runs R1 with its snap correction (evidence/rt-r2-bounds.json, addenda 3 and 4
 remaining albedo pixel on iso_street is a recorded open failure (evidence/rt-r2-runs.json, run 17:
 float64 agrees with R1 there, not the path tracer); the gate prints it and allows at most that one
 pixel. Everything else is gated: P1 within and its control outside, P2 within and its control
-outside, P3, and P4's triangles, normals, depth, and albedo on retro_room.
+outside, P3, and P4's triangles, normals, depth, and albedo on retro_room. From interface v2,
+P5 (addendum 5, split radiance) must be present: P5a, P5b and P5c within, and their controls
+outside.
 
     python tests/gpu/pt_gate.py result.json
 """
@@ -20,6 +22,7 @@ def main(path):
         print("error:", d["error"])
         return 1
     bad = []
+    seen = set()
     for r in d["results"]:
         c = r["check"]
         if c == "P1":
@@ -33,6 +36,10 @@ def main(path):
         elif c == "P3":
             if not r["pass"]:
                 bad.append(r)
+        elif c in ("P5a", "P5b", "P5c"):
+            seen.add((c, r["control"]))
+            if r["within"] == r["control"]:
+                bad.append(r)
         elif c == "P4":
             allowed = 1 if r["scene"] == "iso_street" else 0
             if (r["triangle_differences"] != 0 or r["normal_over_1e-5"] != 0 or r["depth_over_1e-4"] != 0
@@ -40,6 +47,10 @@ def main(path):
                 bad.append(r)
             print(f"P4 {r['scene']}: albedo {r['albedo_differences']} pixels (open failure allows {allowed}), depth {r['depth_over_1e-4']} pixels;"
                   f" float64 sides with the path tracer on {r['diagnosis_albedo_failures_matching_float64']['path_tracer']} albedo pixels")
+    if d.get("interface_version", 1) >= 2:
+        for want in [(c, ctl) for c in ("P5a", "P5b", "P5c") for ctl in (False, True)]:
+            if want not in seen:
+                bad.append({"missing": want[0], "control": want[1]})
     for r in bad:
         print("FAILED:", json.dumps(r))
     print("pt gate:", "pass" if not bad else f"{len(bad)} failing entries")

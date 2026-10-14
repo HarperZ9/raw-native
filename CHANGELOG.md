@@ -6,6 +6,79 @@ the day the release was published on GitHub, in UTC.
 
 ## Unreleased
 
+- **Mandelbulb march passes M2** (RT R3). The ray marcher's surface refinement keeps its bracket in double-float
+  (TwoSum, additions only), while the march, the estimator and every position stay float32. The bulb now passes M2's
+  unchanged bounds on WARP (t within 99.873%, normals 99.535%) and SwiftShader, and the gate covers it. Method note 7
+  in `evidence/rt-r3-bounds.json`.
+- **Occlusion-aware screen-space reflections** (M3). SSR marches one step a pixel to the screen edge and uses a back
+  layer (a second, peeled raster pass), so a ray that enters a solid through a face the camera cannot see ends as a
+  miss instead of reflecting the wrong surface. SSR on raw-hall nave passes its unchanged bounds (90.53% correct,
+  9.55% false hits; was 68.3% and 11.8%), with every other scene at or above its old rate and GPU parity on WARP and
+  SwiftShader. API snapshot 3: two `SsrParams` defaults changed (`api/snapshot-3/MIGRATION.md`). Method note 14 in
+  `evidence/m3-post-bounds.json`.
+- **Near-plane clipping in the CPU rasterizer** (M3). A triangle with a vertex behind the camera used to be dropped,
+  so close views lost geometry: the `close-512` identity view had no ground, and the raw-hall gallery view showed the
+  gallery slab's underside through its missing top. Such triangles are now clipped at the near plane; every other
+  triangle is drawn exactly as before. GTAO and SSR on raw-hall gallery now pass their unchanged bounds (GTAO mean
+  0.0201 and p95 0.1334; SSR 92.0% correct, 5.5% false hits). The identity golden changes only in `close-512`; GCC and
+  MSVC agree on the new bytes. Method note 13 in `evidence/m3-post-bounds.json`.
+- **Path tracer split radiance, interface v2** (RT). `PathTraceOutput` gains `diffuse`, `specular` and `emission`
+  radiance, `diffuseAlbedo` and `specularAlbedo`, and the variance of each component's luminance, on the CPU reference
+  and the compute path tracer. Their sum equals `radiance`. The split happens at the first hit, by the BSDF's Lambert
+  and GGX terms, with no new random numbers, so every v1 output keeps its bytes (checked against the v1 binary on the
+  CPU and on WARP). `rt-pathtrace` writes the new buffers as .pfm. Checks P5a to P5e (`evidence/rt-r2-bounds.json`,
+  addendum 5) pass on the CPU, WARP and SwiftShader, and every control fails. The specular albedo is a Schlick estimate
+  for demodulation, not the lobe's directional albedo. In browsers the larger per-pixel buffers lower the largest frame
+  WebGPU's default 128 MiB binding allows to about 1280 x 720.
+- **Inline ray query, criterion H1.1b** (HW). A dated criterion beside H1.1. It uses a hall scene without coincident faces
+  and t and uv tolerances divided by the cosine of the ray to the triangle (floored at 1e-3). On the RTX 4090 it passes:
+  0 unexplained disagreements and the worst agreeing hit at 0.44 of its tolerance. The offset, rotation and new coplanar
+  controls all fail as required. On WARP the only miss left is WARP's TMin defect. H1.1's recorded failures stand.
+  `raw_native_cli hw-rayquery --criterion b`.
+- **Hardware timings under the three-run protocol** (HW H1.2, H1.3, H1.4, H1.7). Three independent runs on the RTX 4090,
+  with GPU snapshots, reported as ranges in `evidence/hw-h1-timing-20261012.json`:
+  - cooperative-matrix GEMM: 6.35x to 7.12x the shared-memory fallback (45.0 to 47.8 TFLOPS);
+  - mesh shaders: faster only on the close views (1.23x to 1.99x);
+  - wave scan: 1.007x to 1.011x;
+  - fp16 bilateral filter: 0.976x;
+  - async compute: 0.987x to 0.991x, no gain.
+- **Ray reconstruction groundwork** (HW H2). Two new commands:
+  - `raw_native_cli rr-render` renders dataset frames from the path tracer along camera paths on owned scenes. It writes
+    1 spp inputs with G-buffer and motion, and references at 4,096 or 8,192 spp.
+  - `raw_native_cli rr-taa` runs M3's TAA resolve over a frame sequence.
+
+  The first trained models do not beat our SVGF baseline. v1 saturated early. v2 trails SVGF by 0.18 dB tone-mapped PSNR
+  and by 0.09 FLIP, and is less stable over time than SVGF plus TAA. Full record in `evidence/rr-runs.json`.
+- **Ray reconstruction v3** (HW H2, amendment 5). v3 demodulates by an estimate of total surface reflectance instead of
+  albedo, and it is chosen by a selection rule whose learning check the saturated v1 fails. On the held-out scenes it beats
+  SVGF by 5.95 dB tone-mapped PSNR [5.51, 6.38] and ghosts less than SVGF plus TAA. It still loses on FLIP (+0.031) and on
+  temporal stability (+0.0056), so the overall verdict is a fail. Our FLIP now matches the reference implementation's
+  test pair (3.5e-7 off the expected mean).
+- **Ray reconstruction inference on our own Vulkan kernels** (`raw_native_vk_probe --rrnet`, optional Vulkan build). The
+  kernels cover a scalar path and an implicit-GEMM cooperative-matrix path, with 20 dispatches per frame in one
+  submission. On SwiftShader the scalar path misses the 1e-2 parity bound. PyTorch's own float32 and float64 passes
+  differ by the same amount, so the miss reflects the model's sensitivity, not the kernels. The tensor-core path and the
+  2 ms budget were not run: the RTX was held by higher-priority work.
+
+## 0.7.0 (2026-10-12)
+
+- **The viewer ships as a release asset.** `raw-native-0.7.0-viewer.zip` holds `web/viewer/` with
+  every file it loads (the WebGPU build, its loader and their hashes) in the repository's layout,
+  so the page runs unchanged from any static host. Its own `SHA256SUMS` lists each file inside it.
+- **Clear coat ceiling passes** (roadmap M3, criterion 6). The anisotropic split-albedo table is
+  denser (16 azimuth nodes, 48 roughness rows, 16,384 samples per entry) and is now generated once
+  by `tools/pbr_tables/aniso_gen.cpp`, committed with its SHA-256 and embedded at build time, so no
+  build or `Tables()` call recomputes it. A white anisotropic metal under a clear coat now stays at
+  most 5.9e-4 over a white furnace (ceiling 1e-3; it was 2.65e-3), and the uncoated anisotropic
+  furnace improved from 2.7e-3 to 9.3e-4. `test_pbr_aniso_table` checks the hash and regenerates
+  64 seeded entries in CI, with two controls. The clear coat check now integrates anisotropic
+  points with a finer rule, because the old one was shown to be 1.8e-3 off on the most
+  anisotropic lobe; the old rule's figure on the new table (1.23e-3) is kept in the evidence.
+  GPU material parity on WARP: 0.0535 of its bound.
+  - API snapshot 2: three grid constants of `raw::pbr::Tables` changed value. See
+    `api/snapshot-2/MIGRATION.md`.
+  - The plugin C ABI part of criterion 5 is deferred by dated note until a real plugin consumer
+    exists.
 - **Verified viewer** (roadmap M3, criterion 4; decision A4). `web/viewer/` opens a glTF or GLB
   file, renders it on the GPU through WebGPU and on the CPU reference, and shows the two frames,
   the error map between them and the GPU certificate with its verdict. The owned assets load with
@@ -77,7 +150,41 @@ the day the release was published on GitHub, in UTC.
     it must.
   - `RAW_NATIVE_HW_DISABLE` forces any feature off, and the fallbacks run and match.
   - Shader execution reordering and cooperative matrices have no query in the Windows SDK
-    10.0.26100 headers. They come through Vulkan in a later slice.
+    10.0.26100 headers, so they go through Vulkan.
+- **Mesh and amplification shaders** (HW H1.3). `raw_native_cli hw-mesh` draws a visibility buffer
+  with meshlet frustum and normal-cone culling. It matches vertex pulling bit for bit in triangle index
+  and depth on six views. **Open miss:** the flipped-cone control changes nothing in one view (hall,
+  close), where every visible meshlet has no cone. On the RTX 4090 the mesh path is faster in all three
+  runs where culling drops about half the meshlets (1.3 to 2.5x). On the other views even the sign
+  changes between runs, so no claim is made there.
+- **Wave intrinsics and native fp16** (HW H1.2). `raw_native_cli hw-wave16` runs a full prefix sum of
+  16.7 million values with wave intrinsics and with group-shared memory, plus a 9 x 9 HDR bilateral
+  filter in fp16 and in fp32. The scans are bit-equal to the CPU, and fp16 stays within 2^-8 of fp32.
+  A dropped lane and a subnormal-range input both fail, as they must. On the RTX 4090, over two quiet
+  runs, the wave scan is about 1% faster than the group-shared one, and the fp16 filter is about 2% slower
+  than fp32. A first window of RTX timings was disturbed and is withdrawn (evidence/hw-h1-2-runs.json).
+- **Async compute** (HW H1.4). `raw_native_cli hw-async` runs a producer on a compute queue beside the
+  direct queue, joined by a fence. The results are bit-equal to the serial order and the CPU. A
+  consumer that waits on the wrong fence value reads the zero sentinel, so the check can fail. On the
+  RTX 4090 async is about 1% slower than serial for two identical kernels: no overlap gain.
+- **Cooperative matrix GEMM** (HW H1.7, Vulkan). `raw_native_vk_probe --gemm` multiplies fp16 matrices
+  on tensor cores through `VK_KHR_cooperative_matrix` and with a shared-memory fallback. Every checked
+  element must sit within K 2^-23 times the sum of |a||b| of a float64 reference. Wrong-layout and
+  skipped-K controls must fail. On SwiftShader the fallback passes at 1024 and 2048, and its control
+  fails. On the RTX 4090 the tensor-core path is within the bound at every size and reaches 45 to 47
+  TFLOPS, 6.4 to 7.1x our fallback, in two separate windows.
+- **Inline ray query against the CPU BVH** (HW H1.1). `raw_native_cli hw-rayquery` builds DXR
+  acceleration structures on the hw compute queue and traces 1,020,000 rays over three procedural
+  scenes, compared hit by hit with M3's BVH. Offset and rotation controls fail on every scene, as
+  they must. **Open failure on WARP:** 20 hits below TMin (a WARP defect, reproduced on a single
+  triangle), coplanar ties in the hall scene above the explained-fraction bound, and two grazing hits
+  outside tolerance. **On the RTX 4090:** no unexplained disagreement on any scene, so the TMin hits were
+  WARP's. The coplanar-tie and grazing-tolerance misses remain open. No speed claim yet (no compute baseline).
+- **Vulkan hardware probe** (HW H1.0, optional `RAW_NATIVE_VULKAN=ON`). `raw_native_vk_probe` reports
+  the same features through Vulkan, adding cooperative matrix configurations and invocation reordering.
+  It refuses any non-CPU device unless `RAW_NATIVE_VK_HW=1` is set. On SwiftShader with the validation
+  layer, the subgroup scan is bit-equal to the CPU and timestamps scale 2.01 with doubled work. A
+  deliberate push-constant misuse is caught, so a clean validation run means something.
 
 - **Owned M3 assets** (the author's decision, 2026-10-10: "No test models, only full owned
   assets."). All three are generated by code in this repository, byte-identical on every compiler.

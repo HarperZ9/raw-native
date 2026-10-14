@@ -7,7 +7,8 @@ name alone, then checks:
     fallback (or created no pipeline) and matched the CPU;
   - one name: exactly that feature's "supported" changes against the unset run, and the
     functional checks still pass.
-Usage: hw_forced_off.py PATH/TO/gpu_hw_probe[.exe] OUT.json
+Usage: hw_forced_off.py PATH/TO/gpu_hw_probe[.exe] OUT.json [ARGS...]
+  ARGS are passed to the executable (raw_native_vk_probe needs --checks).
 Exit 0 when every case meets the bound, 1 otherwise.
 """
 import json
@@ -16,12 +17,12 @@ import subprocess
 import sys
 
 
-def run(exe, disable):
+def run(exe, disable, args=()):
     env = dict(os.environ)
     env.pop("RAW_NATIVE_HW_DISABLE", None)
     if disable is not None:
         env["RAW_NATIVE_HW_DISABLE"] = disable
-    out = subprocess.run([exe], env=env, capture_output=True, text=True, check=False).stdout
+    out = subprocess.run([exe, *args], env=env, capture_output=True, text=True, check=False).stdout
     return json.loads(out)
 
 
@@ -34,18 +35,18 @@ def functional_ok(rep):
 
 
 def main():
-    exe, out = os.path.abspath(sys.argv[1]), sys.argv[2]
-    base = run(exe, None)
+    exe, out, args = os.path.abspath(sys.argv[1]), sys.argv[2], sys.argv[3:]
+    base = run(exe, None, args)
     base_sup = supported(base)
     cases = []
-    allrep = run(exe, "all")
+    allrep = run(exe, "all", args)
     all_sup = supported(allrep)
     fallbacks = all(c["ran_fallback"] or not c["dispatched"] for c in allrep["functional"])
     cases.append({"disable": "all", "supported_after": sorted(k for k, v in all_sup.items() if v),
                   "every_dispatch_used_fallback": fallbacks, "functional_pass": functional_ok(allrep),
                   "pass": not any(all_sup.values()) and fallbacks and functional_ok(allrep)})
     for name in sorted(base_sup):
-        rep = run(exe, name)
+        rep = run(exe, name, args)
         sup = supported(rep)
         changed = sorted(k for k in base_sup if base_sup[k] != sup.get(k))
         want = [name] if base_sup[name] else []

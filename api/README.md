@@ -25,14 +25,28 @@ declaration is not caught here.
 
 ## Snapshot 1
 
-`raw/core/api_snapshot.hpp` declares `kApiSnapshot = 1`. The snapshot covers 25 headers (552 declarations): the
+Snapshot 1 (`kApiSnapshot = 1`, 2026-10-11) covers 25 headers (552 declarations): the
 scene description (`raw/scene/scene.hpp`) and the renderer layer (materials, lighting, shadows,
 GTAO and SSR, TAA, baked lighting, the BVH, rasterization, colour, composite and the GPU
 renderer). It leaves out the GPU check fixtures (`*_parity.hpp`, `*_identity.hpp`,
 `lighting_scenes.hpp`, `gallery.hpp`), which exist to test the engine, not to build on it.
 
-The plugin C ABI of ADR 0004 and ADR 0007 is not built yet, so snapshot 1 has no C ABI part.
-That part of criterion 5 stays open until the plugin model is decided.
+The plugin C ABI of ADR 0004 and ADR 0007 is not built yet, so neither snapshot has a C ABI part.
+Dated note, 2026-10-12: by the coordinator's decision of 2026-10-11, that part of criterion 5 is
+deferred until a real plugin consumer exists. ADR 0007 is not accepted just to close the criterion.
+
+## Snapshot 2
+
+`kApiSnapshot = 2` since 2026-10-12. It covers the same 25 headers (562 declarations). Three
+grid constants of the anisotropic table changed value when that table became denser and embedded;
+[`snapshot-2/MIGRATION.md`](snapshot-2/MIGRATION.md) lists them and the declarations added.
+
+## Snapshot 3
+
+`kApiSnapshot = 3` since 2026-10-14. It covers the same 25 headers (567 declarations). Two defaults
+of `raw::post::SsrParams` changed when SSR moved to a per-pixel march with a back layer (method note
+14 of `evidence/m3-post-bounds.json`); [`snapshot-3/MIGRATION.md`](snapshot-3/MIGRATION.md) lists
+them and the declarations added.
 
 ## Checks
 

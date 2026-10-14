@@ -1,0 +1,214 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/rr-bounds.json with amendments 1 and 2",
+ "split": "test",
+ "flip": "UNCHECKED against the reference implementation's test pair",
+ "per_sequence_means": {
+  "iso_street_p7": {
+   "input": {
+    "psnr_linear": 19.78805021900553,
+    "psnr_tonemapped": 23.375395740219226,
+    "flip_unchecked": 0.0395918533504311,
+    "temporal_instability": 0.031003369580185604,
+    "ghosting": 0.05936452169858274
+   },
+   "ours": {
+    "psnr_linear": 19.72345678380485,
+    "psnr_tonemapped": 23.10578429407027,
+    "flip_unchecked": 0.042631254429727365,
+    "temporal_instability": 0.031461852380917185,
+    "ghosting": 0.061627245375088284
+   },
+   "ours_zero_motion": {
+    "psnr_linear": 19.72345678380485,
+    "psnr_tonemapped": 23.10578429407027,
+    "flip_unchecked": 0.042631254429727365,
+    "temporal_instability": 0.031461852380917185,
+    "ghosting": 0.061627245375088284
+   },
+   "shuffled": {
+    "psnr_linear": -21.671068690507173,
+    "psnr_tonemapped": 22.62911926564621,
+    "flip_unchecked": 0.04797748018109295,
+    "temporal_instability": 0.03271248552297789,
+    "ghosting": 0.06639226762548325
+   },
+   "svgf": {
+    "psnr_linear": 7.583479784304108,
+    "psnr_tonemapped": 6.624585289324296,
+    "flip_unchecked": 0.6380564907168468,
+    "temporal_instability": 0.010237240779494483,
+    "ghosting": 0.11887820076847834
+   },
+   "svgf_taa": {
+    "psnr_linear": 7.659257282890859,
+    "psnr_tonemapped": 6.676172503721822,
+    "flip_unchecked": 0.6340623968706305,
+    "temporal_instability": 0.0041803464456091795,
+    "ghosting": 0.10170802255235022
+   }
+  },
+  "raw_hall_p7": {
+   "input": {
+    "psnr_linear": 34.83150483328624,
+    "psnr_tonemapped": 10.392679041107007,
+    "flip_unchecked": 0.4199200316336708,
+    "temporal_instability": 0.2429840685356231,
+    "ghosting": 0.2406251983983176
+   },
+   "ours": {
+    "psnr_linear": 23.408993215197228,
+    "psnr_tonemapped": 9.799716570638848,
+    "flip_unchecked": 0.4355177818556915,
+    "temporal_instability": 0.2430354950446931,
+    "ghosting": 0.25932172886909
+   },
+   "ours_zero_motion": {
+    "psnr_linear": 23.408993215197228,
+    "psnr_tonemapped": 9.799716570638848,
+    "flip_unchecked": 0.4355177818556915,
+    "temporal_instability": 0.2430354950446931,
+    "ghosting": 0.25932172886909
+   },
+   "shuffled": {
+    "psnr_linear": -22.731655204473967,
+    "psnr_tonemapped": 9.751440173163502,
+    "flip_unchecked": 0.43903981951965576,
+    "temporal_instability": 0.2440299547853924,
+    "ghosting": 0.2618061587924049
+   },
+   "svgf": {
+    "psnr_linear": 1.426127163002329,
+    "psnr_tonemapped": 14.158229007944518,
+    "flip_unchecked": 0.2309596431567407,
+    "temporal_instability": 0.02156740107706615,
+    "ghosting": 0.07296522204128522
+   },
+   "svgf_taa": {
+    "psnr_linear": 13.305988308993351,
+    "psnr_tonemapped": 14.595445789984034,
+    "flip_unchecked": 0.22799293707578644,
+    "temporal_instability": 0.011499807962940799,
+    "ghosting": 0.06012469429581884
+   }
+  },
+  "raw_hero_p7": {
+   "input": {
+    "psnr_linear": 35.352247853868676,
+    "psnr_tonemapped": 25.34365257726894,
+    "flip_unchecked": 0.043478709010688885,
+    "temporal_instability": 0.018967072730736126,
+    "ghosting": 0.06063358222563115
+   },
+   "ours": {
+    "psnr_linear": 25.800703823577997,
+    "psnr_tonemapped": 22.077982692949035,
+    "flip_unchecked": 0.04962960218432906,
+    "temporal_instability": 0.01922183699669346,
+    "ghosting": 0.0848069614065545
+   },
+   "ours_zero_motion": {
+    "psnr_linear": 25.800703823577997,
+    "psnr_tonemapped": 22.077982692949035,
+    "flip_unchecked": 0.04962960218432906,
+    "temporal_instability": 0.01922183699669346,
+    "ghosting": 0.0848069614065545
+   },
+   "shuffled": {
+    "psnr_linear": -10.189502104085971,
+    "psnr_tonemapped": 21.934709464329508,
+    "flip_unchecked": 0.05086018211244488,
+    "temporal_instability": 0.019609037491064223,
+    "ghosting": 0.08706634677946568
+   },
+   "svgf": {
+    "psnr_linear": -6.341314229093216,
+    "psnr_tonemapped": 7.645139057110532,
+    "flip_unchecked": 0.4934709311218013,
+    "temporal_instability": 0.0023551968717208456,
+    "ghosting": 0.08768856974821242
+   },
+   "svgf_taa": {
+    "psnr_linear": -2.8075221896733655,
+    "psnr_tonemapped": 7.689679065261143,
+    "flip_unchecked": 0.49289432565200525,
+    "temporal_instability": 0.001791075594531047,
+    "ghosting": 0.07992715802457598
+   }
+  }
+ },
+ "ref_fraction_se_under_1pct_mean": {
+  "iso_street_p7": 0.98457814915625,
+  "raw_hall_p7": 0.1073464023796875,
+  "raw_hero_p7": 0.965140938515625
+ },
+ "verdict": {
+  "frames_kept": 192,
+  "frames_excluded_by_target_noise": [],
+  "quality_vs_svgf": {
+   "flip_unchecked": [
+    -0.2782361421752136,
+    -0.32803501173930194,
+    -0.22839106608353402,
+    192
+   ],
+   "psnr_linear": [
+    22.088287034788948,
+    20.862840182554194,
+    23.326698096380067,
+    192
+   ],
+   "psnr_tonemapped": [
+    8.851843401092935,
+    7.506760315834402,
+    10.195651644935747,
+    192
+   ]
+  },
+  "quality_pass": true,
+  "temporal_vs_svgf_taa": [
+   0.09208265147307425,
+   0.07815156291322425,
+   0.1062256502235036,
+   189
+  ],
+  "temporal_pass": false,
+  "ghosting_vs_svgf_taa": [
+   0.054665353592662586,
+   0.034673179415296074,
+   0.07348445600352038,
+   189
+  ],
+  "ghosting_pass": false,
+  "control_shuffled_vs_svgf": {
+   "flip_unchecked": [
+    -0.2748698610607317,
+    -0.3245919312075023,
+    -0.22501595095317717,
+    192
+   ],
+   "psnr_linear": [
+    -19.086839572426776,
+    -20.670487838529098,
+    -17.461675340487385,
+    192
+   ],
+   "psnr_tonemapped": [
+    8.62910518291996,
+    7.3004042632004,
+    9.95164272061749,
+    192
+   ]
+  },
+  "control_shuffled_fails": true,
+  "control_zero_motion_ghosting_vs_svgf_taa": [
+   0.054665353592662586,
+   0.034673179415296074,
+   0.07348445600352038,
+   189
+  ],
+  "control_zero_motion_fails": true,
+  "format": "each comparison: [mean of (first - second), bootstrap 2.5%, 97.5%, frames]"
+ },
+ "pass": false
+}

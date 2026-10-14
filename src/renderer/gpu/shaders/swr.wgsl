@@ -12,6 +12,7 @@ struct SwrParams {
     scale: f32, guard: f32, tris: u32, maxQ: f32,
     m0: vec4f, m1: vec4f, m2: vec4f, m3: vec4f,
     light: vec4f,                       // w: 1.0 when the snap correction is on
+    div: vec4u,                         // x 25, y 24: div_rn's loop counts (R1 method note 3)
 }
 const SI_N: u32 = 12u;
 const SF_N: u32 = 16u;
@@ -97,6 +98,61 @@ fn plane_dist(x: f32, y: f32, z: f32, w: f32, plane: u32, g: f32) -> f32 {
     return g * w + y;
 }
 
+// IEEE 754 binary32 division rounded to nearest even, in u32 arithmetic (R1 method note 3,
+// evidence/rt-r1-bounds.json): D3D12 lets a driver divide approximately (2.5 ulp), and the CPU
+// reference divides exactly. Mirrored line for line by tests/test_swr_div.cpp. One exit and no
+// branches: the special cases are chosen by select at the end. A form with early returns made
+// SwiftShader's pipeline compile time grow faster than the number of call sites (two calls 3.4 s,
+// four did not finish in 240 s).
+fn div_rn(a: f32, b: f32) -> f32 {
+    let ua: u32 = bitcast<u32>(a);
+    let ub: u32 = bitcast<u32>(b);
+    let sgn: u32 = (ua ^ ub) & 0x80000000u;
+    let ea: u32 = (ua >> 23u) & 255u;
+    let eb: u32 = (ub >> 23u) & 255u;
+    let fa: u32 = ua & 0x7fffffu;
+    let fb: u32 = ub & 0x7fffffu;
+    let is_nan: bool = (ea == 255u && fa != 0u) || (eb == 255u && fb != 0u) || (ea == 255u && eb == 255u) || (ea == 0u && fa == 0u && eb == 0u && fb == 0u);
+    let is_inf: bool = !is_nan && (ea == 255u || (eb == 0u && fb == 0u));
+    let is_zero: bool = !is_nan && !is_inf && ((ea == 0u && fa == 0u) || eb == 255u);
+    var ma: u32 = select(fa | 0x800000u, fa, ea == 0u);
+    var mb: u32 = select(fb | 0x800000u, fb, eb == 0u);
+    var xa: i32 = select(i32(ea), 1, ea == 0u);
+    var xb: i32 = select(i32(eb), 1, eb == 0u);
+    for (var g: u32 = 0u; g < P.div.y; g++) {
+        let na: bool = ma != 0u && ma < 0x800000u;
+        ma = select(ma, ma << 1u, na);
+        xa = select(xa, xa - 1, na);
+        let nb: bool = mb != 0u && mb < 0x800000u;
+        mb = select(mb, mb << 1u, nb);
+        xb = select(xb, xb - 1, nb);
+    }
+    let lt: bool = ma < mb;
+    ma = select(ma, ma << 1u, lt);
+    let e: i32 = select(xa - xb + 127, xa - xb + 126, lt);
+    var q: u32 = 0u;
+    var r: u32 = ma;
+    for (var k: u32 = 0u; k < P.div.x; k++) {
+        let ge: bool = r >= mb;
+        q = (q << 1u) | select(0u, 1u, ge);
+        r = select(r, r - mb, ge) << 1u;
+    }
+    let sh: u32 = u32(clamp(1 - e, 0, 26));
+    let sticky: bool = r != 0u || (q & ((1u << sh) - 1u)) != 0u;
+    q = q >> sh;
+    let biased: u32 = select(u32(max(e, 1)), 0u, e <= 0);
+    let rnd: bool = (q & 1u) != 0u;
+    q = q >> 1u;
+    q = q + select(0u, 1u, rnd && (sticky || (q & 1u) != 0u));
+    var bits: u32 = select(((biased - 1u) << 23u) + q, q, biased == 0u);
+    bits = select(bits, 0x7f800000u, e >= 255);
+    bits = sgn | bits;
+    bits = select(bits, sgn | 0x7f800000u, is_inf);
+    bits = select(bits, sgn, is_zero);
+    bits = select(bits, ua | 0x7fc00000u, is_nan);
+    return bitcast<f32>(bits);
+}
+
 //@pass swr_setup
 // One invocation per source triangle: transform, clip (near, far, guard band), snap to the
 // fixed-point grid and fan into up to 7 slots, as raw::swr::setup does; unused slots are
@@ -146,13 +202,13 @@ fn write_slot(slot: u32, src: u32, ax: i32, ay: i32, bx0: i32, by0: i32, cx0: i3
             if (!ok) { break; }
             let ex: f32 = f32(qx[k]) * 0.00390625 - ua.x;
             let ey: f32 = f32(qy[k]) * 0.00390625 - ua.y;
-            let l1: f32 = (ex * dy2 - ey * dx2) / det;
-            let l2: f32 = (dx1 * ey - dy1 * ex) / det;
+            let l1: f32 = div_rn(ex * dy2 - ey * dx2, det);
+            let l2: f32 = div_rn(dx1 * ey - dy1 * ex, det);
             let l0: f32 = (1.0 - l1) - l2;
             iw[k] = (l0 * wa0 + l1 * wb1) + l2 * wc1;
             z[k] = (l0 * za0 + l1 * zb1) + l2 * zc1;
-            s[k] = ((l0 * (sa0 * wa0) + l1 * (sb1 * wb1)) + l2 * (sc1 * wc1)) / iw[k];
-            t[k] = ((l0 * (ta0 * wa0) + l1 * (tb1 * wb1)) + l2 * (tc1 * wc1)) / iw[k];
+            s[k] = div_rn((l0 * (sa0 * wa0) + l1 * (sb1 * wb1)) + l2 * (sc1 * wc1), iw[k]);
+            t[k] = div_rn((l0 * (ta0 * wa0) + l1 * (tb1 * wb1)) + l2 * (tc1 * wc1), iw[k]);
             ok = iw[k] > 0.0;
         }
         if (ok) {
@@ -199,7 +255,7 @@ fn write_slot(slot: u32, src: u32, ax: i32, ay: i32, bx0: i32, by0: i32, cx0: i3
     SI[i + 10u] = min(i32(P.h) - 1, (max(ay, max(by, cy)) - 128) >> 8u);
     SF[f] = za; SF[f + 1u] = zb; SF[f + 2u] = zc;
     SF[f + 3u] = wa; SF[f + 4u] = wb; SF[f + 5u] = wc;
-    SF[f + 6u] = 1.0 / to_f(area);
+    SF[f + 6u] = div_rn(1.0, to_f(area));
     SF[f + 7u] = sa; SF[f + 8u] = ta; SF[f + 9u] = sb; SF[f + 10u] = tb; SF[f + 11u] = sc; SF[f + 12u] = tc;
 }
 
@@ -245,7 +301,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
                 m = m + 1u;
             }
             if ((da >= 0.0) != (db >= 0.0)) {
-                let q: f32 = da / (da - db);
+                let q: f32 = div_rn(da, da - db);
                 ox[m] = cx[i] + (cx[j] - cx[i]) * q;
                 oy[m] = cy[i] + (cy[j] - cy[i]) * q;
                 oz[m] = cz[i] + (cz[j] - cz[i]) * q;
@@ -267,7 +323,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     var uy: array<f32, 9>;
     let grid: i32 = i32(1u << P.snapShift);
     for (var s: u32 = 0u; s < n; s++) {
-        let iw: f32 = 1.0 / cw[s];
+        let iw: f32 = div_rn(1.0, cw[s]);
         let nx: f32 = cx[s] * iw;
         let ny: f32 = cy[s] * iw;
         cz[s] = cz[s] * iw;
@@ -462,17 +518,17 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     var l2: f32 = 0.0;
     if (P.affine == 1u) {
         let sum: f32 = w0 + w1 + w2;
-        l0 = w0 / sum;
-        l1 = w1 / sum;
-        l2 = w2 / sum;
+        l0 = div_rn(w0, sum);
+        l1 = div_rn(w1, sum);
+        l2 = div_rn(w2, sum);
     } else {
         let q0: f32 = w0 * SF[f + 3u];
         let q1: f32 = w1 * SF[f + 4u];
         let q2: f32 = w2 * SF[f + 5u];
         let den: f32 = q0 + q1 + q2;
-        l0 = q0 / den;
-        l1 = q1 / den;
-        l2 = q2 / den;
+        l0 = div_rn(q0, den);
+        l1 = div_rn(q1, den);
+        l2 = div_rn(q2, den);
     }
     let b1: f32 = l0 * SF[f + 7u] + l1 * SF[f + 9u] + l2 * SF[f + 11u];
     let b2: f32 = l0 * SF[f + 8u] + l1 * SF[f + 10u] + l2 * SF[f + 12u];
@@ -483,7 +539,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     let nx: f32 = attr(src, 2u, b0, b1, b2);
     let ny: f32 = attr(src, 3u, b0, b1, b2);
     let nz: f32 = attr(src, 4u, b0, b1, b2);
-    let nl: f32 = 1.0 / sqrt(nx * nx + ny * ny + nz * nz);
+    let nl: f32 = div_rn(1.0, sqrt(nx * nx + ny * ny + nz * nz));
     let shade: f32 = 0.35 + 0.65 * max(0.0, (nx * P.light.x + ny * P.light.y + nz * P.light.z) * nl);
     let tex: u32 = u32(A[src * 16u + 15u]);
     let tw: u32 = T[tex * 3u + 1u];
@@ -533,9 +589,9 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     let q1: f32 = e.y * SF[f + 6u] * SF[f + 4u];
     let q2: f32 = e.z * SF[f + 6u] * SF[f + 5u];
     let den: f32 = q0 + q1 + q2;
-    let l0: f32 = q0 / den;
-    let l1: f32 = q1 / den;
-    let l2: f32 = q2 / den;
+    let l0: f32 = div_rn(q0, den);
+    let l1: f32 = div_rn(q1, den);
+    let l2: f32 = div_rn(q2, den);
     let b1: f32 = l0 * SF[f + 7u] + l1 * SF[f + 9u] + l2 * SF[f + 11u];
     let b2: f32 = l0 * SF[f + 8u] + l1 * SF[f + 10u] + l2 * SF[f + 12u];
     let b0: f32 = (1.0 - b1) - b2;

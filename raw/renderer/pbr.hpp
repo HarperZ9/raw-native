@@ -98,15 +98,18 @@ public:
     double coef(int j, double rc) const;
     // The same tables for an anisotropic lobe, on the A4 grid (view mu, azimuth, roughness,
     // anisotropy); the means are over the whole hemisphere.
-    double HA4(int j, double mu, double phi, double r, double k) const { return read4(ha4_, mu, phi, r, k, std::size_t(j) * an_a_.size()); }
-    double HB4(int j, double mu, double phi, double r, double k) const { return read4(hb4_, mu, phi, r, k, std::size_t(j) * an_a_.size()); }
+    // They sit on their own grid (kHatAn*), coarser than A4's since method note 4 of 2026-10-12.
+    static constexpr int kHatAnMu = 32, kHatAnPhi = 8, kHatAnRough = 24, kHatAnK = 12, kHatAnSamples = 1 << 10;
+    static constexpr std::size_t kHatAnAll = std::size_t(kHatAnMu) * kHatAnPhi * kHatAnRough * kHatAnK;
+    double HA4(int j, double mu, double phi, double r, double k) const { return read4(ha4_, mu, phi, r, k, kHatGrid, std::size_t(j) * kHatAnAll); }
+    double HB4(int j, double mu, double phi, double r, double k) const { return read4(hb4_, mu, phi, r, k, kHatGrid, std::size_t(j) * kHatAnAll); }
     double HAbar4(int j, double r, double k) const { return readRk(hm4_, r, k, std::size_t(j) * 2, kHm4); }
     double HBbar4(int j, double r, double k) const { return readRk(hm4_, r, k, std::size_t(j) * 2 + 1, kHm4); }
     double GA4(int j, double r, double k) const { return readRk(hm4_, r, k, std::size_t(kHats * 2 + j * 2), kHm4); }
     double GB4(int j, double r, double k) const { return readRk(hm4_, r, k, std::size_t(kHats * 2 + j * 2 + 1), kHm4); }
     double HAA4(int j, int l, double r, double k) const { return readRk(hm4_, r, k, std::size_t(kHats * 4 + (j * kHats + l) * 2), kHm4); }
     double HBB4(int j, int l, double r, double k) const { return readRk(hm4_, r, k, std::size_t(kHats * 4 + (j * kHats + l) * 2 + 1), kHm4); }
-    static constexpr int kHm4 = kHats * 4 + kHats * kHats * 2;   // values per (k, r) row of hm4_
+    static constexpr int kHm4 = kHats * 4 + kHats * kHats * 2;   // values per (k, r) row of hm4_, on the hat grid
     // Elevation from the normal (radians) of the centroid of the white single-scattering
     // lobe f cos for a view at mu, in the plane of the normal and the view: the direction
     // image lighting reads the prefiltered environment along (VNDF sampled, from the BRDF
@@ -116,9 +119,19 @@ public:
     // Anisotropic split albedo (KHR_materials_anisotropy): view cosine, view azimuth from
     // the anisotropy direction (radians, folded to [0, pi/2]), perceptual roughness r and
     // anisotropy k, read quadrilinearly; the means are over the whole hemisphere.
-    static constexpr int kAnMu = 32, kAnPhi = 8, kAnRough = 24, kAnK = 12, kAnSamples = 1 << 10;
-    double A4(double mu, double phi, double r, double k) const { return read4(an_a_, mu, phi, r, k); }
-    double B4(double mu, double phi, double r, double k) const { return read4(an_b_, mu, phi, r, k); }
+    // Generated once (tools/pbr_tables/aniso_gen.cpp) and embedded from
+    // src/renderer/data/aniso_albedo.f32 (method note 4 of 2026-10-12 in
+    // evidence/m3-materials2-bounds.json); the library does not compute it.
+    static constexpr int kAnMu = 32, kAnPhi = 16, kAnRough = 48, kAnK = 12, kAnSamples = 1 << 14;
+    static constexpr std::size_t kAnAll = std::size_t(kAnMu) * kAnPhi * kAnRough * kAnK;
+    double A4(double mu, double phi, double r, double k) const { return read4(an_a_, mu, phi, r, k, kAnGrid); }
+    double B4(double mu, double phi, double r, double k) const { return read4(an_b_, mu, phi, r, k, kAnGrid); }
+    // One entry of A4 and B4 by `samples` VNDF samples, indexed [k][r][phi][mu] as the table
+    // (the generator and test_pbr_aniso_table call it).
+    static void anisoEntry(int ik, int ir, int ip, int im, int samples, double& a, double& b);
+    // The embedded table: kAnAll floats of A4, then kAnAll of B4 (little-endian float32).
+    static const unsigned char* anisoBytes();
+    static std::size_t anisoByteCount();
     double Aavg2(double r, double k) const { return read2rk(an_aavg_, r, k); }
     double Bavg2(double r, double k) const { return read2rk(an_bavg_, r, k); }
     // The raw grids, for upload to a GPU (row-major: rough rows of theta columns).
@@ -139,15 +152,18 @@ public:
     const std::vector<double>& gridG() const { return g_; }        // [r][j][2]: GA, GB
     const std::vector<double>& rowG1() const { return g1_; }
     const std::vector<double>& gridCoef() const { return coef_; }  // [rc][j]
-    const std::vector<double>& gridHA4() const { return ha4_; }    // [j][k][r][phi][mu]
+    const std::vector<double>& gridHA4() const { return ha4_; }    // [j][k][r][phi][mu], hat grid
     const std::vector<double>& gridHB4() const { return hb4_; }
-    const std::vector<double>& gridHm4() const { return hm4_; }    // [k][r][kHm4]
+    const std::vector<double>& gridHm4() const { return hm4_; }    // [k][r][kHm4], hat grid
 private:
-    double read4(const std::vector<double>& g, double mu, double phi, double r, double k, std::size_t offset = 0) const;
-    double readRk(const std::vector<double>& g, double r, double k, std::size_t at, int stride) const;
+    struct Grid4 { int mu, phi, rough, k; };
+    static constexpr Grid4 kAnGrid{kAnMu, kAnPhi, kAnRough, kAnK}, kHatGrid{kHatAnMu, kHatAnPhi, kHatAnRough, kHatAnK};
+    double read4(const std::vector<double>& g, double mu, double phi, double r, double k, Grid4 d, std::size_t offset = 0) const;
+    double readRk(const std::vector<double>& g, double r, double k, std::size_t at, int stride) const;   // the hat grid
     void buildHatMeans4(const std::vector<double>& x, const std::vector<double>& w);
     double read2rk(const std::vector<double>& g, double r, double k) const;
     void buildAnisotropic();
+    void buildAnisotropicHats();
     std::vector<double> a_, b_, sh_, aavg_, bavg_;
     std::vector<double> an_a_, an_b_, an_aavg_, an_bavg_;   // [k][r][phi][mu] and [k][r]
     std::vector<double> dom_;

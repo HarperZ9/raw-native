@@ -1,0 +1,8 @@
+{
+ "schema": "raw-native.evidence/1",
+ "about": "the amendment-3 selection, as run on 2026-10-13 22:3xZ, before any test metric of any model was computed",
+ "result": "validation loss v1 0.0505, v2 0.0182; float32-to-float64 gap on the validation sequences v1 4.4e-6, v2 0.508. The committed rule chose v1, because v2's gap exceeds 1e-2 and v1's does not.",
+ "defect": "the rule rewards v1's stability, and v1 is stable because it is saturated: its one-hot kernels pass neither gradient nor rounding (amendment 4). The rule was written before that failure was known, and amendment 4 left it unchanged. The gap check measures how many pixels change history validity under rounding (a discontinuous test), not the demodulation problem it was written for.",
+ "what_is_done": "the committed choice stands: v1 and its control are evaluated on test as the verdict run. v2 and its control are also evaluated on test, labelled 'not selected by the committed rule', as a secondary result that carries no verdict. Both are reported in full. No rule is changed after the fact.",
+ "for_next_time": "a selection rule needs a control that a non-learning model fails (for example, validation loss no worse than the input's own loss)"
+}

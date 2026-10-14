@@ -1,0 +1,17 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "evidence/rr-bounds.json metrics.flip: our FLIP (scripts/rr_flip.py) must agree with the BSD-3 reference implementation within 1e-3 mean FLIP on the reference implementation's own test pair",
+ "decision": "coordinator, 2026-10-14, under the author's rules (2026-10-12, verbatim: \"yes, you may install dependencies that will help. Ideally, we ship without any dependencies, and build our own infrastructure in R&D\"): download the FLIP reference test pair for measurement only; nothing from it is shipped or committed",
+ "source": "https://github.com/NVlabs/flip, branch main at d3ab02a4425eb167d8a4021b382a2bafc6e6c838 (shallow clone 2026-10-14; the repository has no tags or releases)",
+ "licence": "BSD 3-Clause, Copyright (c) 2020-2025 NVIDIA CORPORATION & AFFILIATES (LICENSE sha256 03567f7153b8f1c1cde4167a1f7c725138f114614818465eef01e1c6313028fb)",
+ "files": {
+  "images/reference.png": "2ef97595be5d17ea33bddb272afcf67b76842d91c625611c249e455072d4d653",
+  "images/test.png": "554504b6c0183d66fb931a5f61b204ed805dfa81d3d5f28921cfcf38514243a3",
+  "src/tests/test.py": "47d9c2163c6ca76943062641170a2d1b87f54afaad52d0b5d35653f69f73ac15"
+ },
+ "expected": "LDR-FLIP mean 0.159693 at the default 67 pixels per degree (src/tests/test.py, expected_ldr_mean; the PyTorch test checks 0.1597 to four places)",
+ "ours": "0.1596926452 (1920 x 1080, sRGB PNGs decoded by Pillow 12.3.0 in the R&D environment, divided by 255, float64)",
+ "difference": "-3.5e-7",
+ "verdict": "pass (bound 1e-3). FLIP numbers from scripts/rr_flip.py are checked from this commit on; earlier evidence files still say 'flip_unchecked' in their keys, and those values were produced by the same, now checked, code.",
+ "does_not_prove": "agreement on HDR-FLIP (not implemented) or at other pixels-per-degree values; agreement of per-pixel maps (only the mean is in the criterion)"
+}

@@ -8,6 +8,7 @@
 namespace raw::gpu_check {
 namespace {
 using namespace rtdev;
+constexpr std::size_t kStride = 36;   // floats a pixel in ACC and O (pt.wgsl, interface v2)
 struct Packed { std::vector<std::int32_t> ni; std::vector<float> nb, tris, attrs, mats; std::vector<std::uint32_t> tex; std::uint32_t emitterOffset{0}; };
 Packed pack(const rt::PtScene& s) {
     Packed p;
@@ -45,7 +46,8 @@ std::vector<std::uint32_t> params(const rt::PtScene& s, const rt::PathTraceDesc&
                                   bool first, std::uint32_t emitterOffset) {
     std::vector<std::uint32_t> w(56, 0u);
     std::uint32_t flags = (d.jitter ? 1u : 0u) | (d.russianRoulette ? 2u : 0u) | (d.controls.dropLambertCosine ? 4u : 0u) |
-                          (d.controls.misWeightOne ? 8u : 0u) | (first ? 16u : 0u);
+                          (d.controls.misWeightOne ? 8u : 0u) | (first ? 16u : 0u) |
+                          (d.controls.aovDropSpecularIndirect ? 32u : 0u) | (d.controls.aovEmissionToDiffuse ? 64u : 0u);
     const std::uint32_t head[11] = {std::uint32_t(d.width), std::uint32_t(d.height), begin, count, d.maxBounces, flags,
                                     std::uint32_t(d.seed), std::uint32_t(d.seed >> 32), std::uint32_t(s.tree.root),
                                     std::uint32_t(s.emitters.size()), emitterOffset};
@@ -74,7 +76,7 @@ rt::PathTraceOutput pathTraceGpu(rhi::Device& device, const rt::PtScene& s, cons
     const BufferHandle NI = D.upload(p.ni.data(), p.ni.size() * 4, "pt ni"), NB = D.upload(p.nb.data(), p.nb.size() * 4, "pt nb");
     const BufferHandle T = D.upload(p.tris.data(), p.tris.size() * 4, "pt tris"), A = D.upload(p.attrs.data(), p.attrs.size() * 4, "pt attrs");
     const BufferHandle TX = D.upload(p.tex.data(), p.tex.size() * 4, "pt tex"), M = D.upload(p.mats.data(), p.mats.size() * 4, "pt mats");
-    const BufferHandle ACC = D.make(npx * 64, kRW, "pt acc"), OUT = D.make(npx * 64, kRW, "pt out"), RB = D.make(npx * 64, kRB, "pt rb");
+    const BufferHandle ACC = D.make(npx * kStride * 4, kRW, "pt acc"), OUT = D.make(npx * kStride * 4, kRW, "pt out"), RB = D.make(npx * kStride * 4, kRB, "pt rb");
     const std::uint32_t gx = std::uint32_t((d.width + 7) / 8), gy = std::uint32_t((d.height + 7) / 8);
     std::uint32_t b = 0;
     // One submission a slice, so no single submission runs long enough for the OS GPU watchdog
@@ -92,16 +94,23 @@ rt::PathTraceOutput pathTraceGpu(rhi::Device& device, const rt::PtScene& s, cons
     const std::vector<std::uint32_t> w = params(s, d, d.sppBegin, d.spp, false, p.emitterOffset);
     D.run("pt_finish", {D.uniform(w.data(), w.size()), ACC, OUT}, gx, gy);
     D.to({OUT}, Access::CopySrc);
-    D.cl->copyBuffer(OUT, 0, RB, 0, npx * 64);
+    D.cl->copyBuffer(OUT, 0, RB, 0, npx * kStride * 4);
     if (!device.submitAndWait(O.error)) return O;
     std::vector<float> o;
-    if (!D.read(RB, std::size_t(npx) * 16, o)) return O;
+    if (!D.read(RB, std::size_t(npx) * kStride, o)) return O;
     O.radiance.resize(npx * 3); O.albedo.resize(npx * 3); O.normal.resize(npx * 3);
     O.depth.resize(npx); O.variance.resize(npx); O.motion.resize(npx * 2); O.triangle.resize(npx);
+    for (auto* v : {&O.diffuse, &O.specular, &O.emission, &O.diffuseAlbedo, &O.specularAlbedo}) v->resize(npx * 3);
+    O.diffuseVariance.resize(npx); O.specularVariance.resize(npx);
     for (std::size_t q = 0; q < npx; ++q) {
-        const float* x = &o[q * 16];
-        for (int k = 0; k < 3; ++k) { O.radiance[q * 3 + k] = x[k]; O.albedo[q * 3 + k] = x[3 + k]; O.normal[q * 3 + k] = x[6 + k]; }
+        const float* x = &o[q * kStride];
+        for (int k = 0; k < 3; ++k) {
+            O.radiance[q * 3 + k] = x[k]; O.albedo[q * 3 + k] = x[3 + k]; O.normal[q * 3 + k] = x[6 + k];
+            O.diffuse[q * 3 + k] = x[16 + k]; O.specular[q * 3 + k] = x[19 + k]; O.emission[q * 3 + k] = x[22 + k];
+            O.diffuseAlbedo[q * 3 + k] = x[25 + k]; O.specularAlbedo[q * 3 + k] = x[28 + k];
+        }
         O.depth[q] = x[9]; O.motion[q * 2] = x[10]; O.motion[q * 2 + 1] = x[11]; O.variance[q] = x[12]; O.triangle[q] = int(x[13]);
+        O.diffuseVariance[q] = x[31]; O.specularVariance[q] = x[32];
     }
     return O;
 }

@@ -1,0 +1,18 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "RT stage R2, the path tracer's CPU checks (P0, P1 on the reference, P3 threads, P5a and P5b)",
+ "pass": true,
+ "results": [
+  {"check": "P0", "cases": 400, "reference": "ndf-mixture", "worst_ratio_to_bound": 0.7569, "outside": 0, "control_ndf_pdf_worst_ratio": 60.0079, "control_outside": 309, "reported_cosine_reference_worst": 1.8512, "reported_cosine_outside": 1},
+  {"check": "P1 cpu", "albedo": 0.5, "control_drop_cosine": false, "mean": 1.999287, "expected": 2.000000, "z": 1.192, "worst_pixel_z": 3.640, "within": true},
+  {"check": "P1 cpu", "albedo": 0.8, "control_drop_cosine": false, "mean": 4.998286, "expected": 5.000000, "z": 1.216, "worst_pixel_z": 3.232, "within": true},
+  {"check": "P1 cpu", "albedo": 0.5, "control_drop_cosine": true, "mean": 54.041008, "expected": 2.000000, "z": 4.467, "worst_pixel_z": 8.862, "within": false},
+  {"check": "P3 cpu threads", "identical": true},
+  {"check": "P5a", "scene": "retro_room", "side": "cpu", "control": false, "values": 9216, "over": 0, "nonfinite": 0, "worst_ratio_to_bound": 0.001141, "within": true},
+  {"check": "P5a", "scene": "iso_street", "side": "cpu", "control": false, "values": 9216, "over": 0, "nonfinite": 0, "worst_ratio_to_bound": 0.0008027, "within": true},
+  {"check": "P5a", "scene": "retro_room", "side": "cpu", "control": true, "values": 9216, "over": 9070, "nonfinite": 0, "worst_ratio_to_bound": 4018, "within": false},
+  {"check": "P5b", "albedo": 0.5, "side": "cpu", "control": false, "specular_nonzero": 0, "emission_wrong": 0, "mean_diffuse": 0.999287, "expected": 1.000000, "z": 1.192, "worst_pixel_z": 3.640, "within": true},
+  {"check": "P5b", "albedo": 0.8, "side": "cpu", "control": false, "specular_nonzero": 0, "emission_wrong": 0, "mean_diffuse": 3.998286, "expected": 4.000000, "z": 1.216, "worst_pixel_z": 3.232, "within": true},
+  {"check": "P5b", "albedo": 0.5, "side": "cpu", "control": true, "specular_nonzero": 0, "emission_wrong": 4608, "mean_diffuse": 1.999287, "expected": 1.000000, "z": 1670.892, "worst_pixel_z": 75.033, "within": false}
+ ]
+}
