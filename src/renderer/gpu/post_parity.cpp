@@ -31,6 +31,7 @@ std::vector<float> pack(const post::ViewGBuffer& v) {
     for (std::size_t i = 0; i < std::size_t(v.w) * v.h; ++i) {
         for (int k = 0; k < 3; ++k) { g[i * 8 + std::size_t(k)] = v.pos[i * 3 + std::size_t(k)]; g[i * 8 + 4 + std::size_t(k)] = v.nrm[i * 3 + std::size_t(k)]; }
         g[i * 8 + 3] = v.depth[i];
+        g[i * 8 + 7] = v.back.empty() ? v.depth[i] : v.back[i];   // SSR's back depth (method note 14)
     }
     return g;
 }
@@ -93,7 +94,10 @@ Scene movedLast(const Scene& s) {
 }
 post::ViewGBuffer viewOf(const Scene& s, int size) {
     RasterOptions ro; ro.perspectiveDepth = true;
-    return post::viewGBuffer(rasterize(s, size, size, nullptr, nullptr, ro), s.camera);
+    const GBuffer g = rasterize(s, size, size, nullptr, nullptr, ro);
+    post::ViewGBuffer v = post::viewGBuffer(g, s.camera);
+    post::addBackLayer(v, s, g);   // SSR's back layer (method note 14)
+    return v;
 }
 }  // namespace
 

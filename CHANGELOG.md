@@ -6,6 +6,12 @@ the day the release was published on GitHub, in UTC.
 
 ## Unreleased
 
+- **Occlusion-aware screen-space reflections** (M3). SSR marches one step a pixel to the screen edge and uses a back
+  layer (a second, peeled raster pass), so a ray that enters a solid through a face the camera cannot see ends as a
+  miss instead of reflecting the wrong surface. SSR on raw-hall nave passes its unchanged bounds (90.53% correct,
+  9.55% false hits; was 68.3% and 11.8%), with every other scene at or above its old rate and GPU parity on WARP and
+  SwiftShader. API snapshot 3: two `SsrParams` defaults changed (`api/snapshot-3/MIGRATION.md`). Method note 14 in
+  `evidence/m3-post-bounds.json`.
 - **Near-plane clipping in the CPU rasterizer** (M3). A triangle with a vertex behind the camera used to be dropped,
   so close views lost geometry: the `close-512` identity view had no ground, and the raw-hall gallery view showed the
   gallery slab's underside through its missing top. Such triangles are now clipped at the near plane; every other

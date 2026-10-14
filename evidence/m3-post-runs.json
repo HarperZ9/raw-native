@@ -174,7 +174,21 @@
    "what": "method note 13: near-plane clipping in the CPU rasterizer; test_post --json on every scene (MSVC Release)",
    "result": "GTAO raw-hall gallery passes: mean 0.0201, p95 0.1334 (bounds 0.05 and 0.15; were 0.0734 and 0.6332); its control fails at mean 0.0823. SSR raw-hall gallery passes: 92.0% correct (bound 90%, was 65.1%), false hits 5.5% (bound 10%), resolvable 16,073. The test scene, its near camera, raw-hero and raw-hall nave are unchanged to the pixel; SSR on raw-hall nave stays open (68.3%, false 11.8%). Full CPU ctest 59 of 59. Identity golden: only close-512 moves (the ground plane, previously missing behind the camera, now drawn; 36,920 more covered pixels); GCC 13.3 and MSVC agree byte for byte on the new manifest. WARP: post parity passes; raster identity keeps its recorded nave failure only.",
    "evidence": "evidence/m3-post-cpu-clip.json; evidence/identity-golden.json"
+  },
+  {
+   "run": "cpu-ssr-occl-2026-10-14",
+   "date": "2026-10-14",
+   "what": "method note 14: per-pixel SSR march with the raster back layer and the hidden-entry rule, on top of note 13; test_post --json (every scene gated), MSVC Release",
+   "result": "Every scene within both SSR bounds and both GTAO bounds; failures 0. SSR raw-hall nave 90.53% correct (bound 90%, was 68.3%), false hits 9.55% (bound 10%, was 11.8%); raw-hall gallery 93.36%, 5.22%; built-in test scene 99.63%, 0.19%; near camera 97.55%, 0.58%; raw-hero 94.39%, 1.05%. The view-normal control stays at 0% correct on every scene; the unlimited-thickness control gives nave 65.3% and gallery 31.7% false hits (it fails false_hits there as before; on the test-scene views it stays under 1%, as before). The raster back layer gives the same nave and gallery verdicts as the BVH probe (nave 90.53% both, false 9.55% against 9.51%). Identity golden unchanged. Full CPU ctest 59 of 59.",
+   "evidence": "evidence/m3-post-cpu-ssr-occl.json"
+  },
+  {
+   "run": "gpu-ssr-occl-2026-10-14",
+   "date": "2026-10-14",
+   "what": "GPU parity of the method-note-14 WGSL SSR pass and GTAO and TAA on five scenes",
+   "result": "Passes on D3D12 WARP and WebGPU SwiftShader: SSR differs on 0, 13, 0, 3 and 2 pixels (WARP) and 0, 13, 0, 3 and 3 (SwiftShader) of about 65,536 per scene (bound 0.1%); every control fails; tests/gpu/post_gate.py passes on both. No RTX run (the GPU is held by another job).",
+   "evidence": "evidence/m3-post-ssr-occl-d3d12-warp.json; evidence/m3-post-ssr-occl-webgpu-swiftshader.json"
   }
  ],
- "status": "Open failures, not loosened: SSR on raw-hall nave. Passing from 2026-10-14 (method note 13, near-plane clipping): GTAO and SSR on raw-hall gallery. Passing since 2026-10-11: TAA RMSE under the pan (0.442 against 0.5) and TAA GPU parity (0 pixels on WARP, SwiftShader and the RTX 4090). Passing: GTAO on the near test scene and raw-hall nave, SSR on both test-scene views, TAA ghosting, GTAO and SSR GPU parity on WARP and SwiftShader on five scenes, every control."
+ "status": "No open GTAO or SSR failure. Passing from 2026-10-14: SSR on raw-hall nave (method note 14, occlusion-aware march), GTAO and SSR on raw-hall gallery (method note 13, near-plane clipping). Passing since 2026-10-11: TAA RMSE under the pan (0.442 against 0.5) and TAA GPU parity (0 pixels on WARP, SwiftShader and the RTX 4090). Passing: GTAO and SSR on every scene, TAA ghosting, GTAO and SSR GPU parity on WARP and SwiftShader on five scenes, every control. The nave SSR margins are thin (0.53 points over the hit bound, 0.45 under the false-hit bound)."
 }

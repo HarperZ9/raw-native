@@ -1,4 +1,4 @@
-// The compatibility suite of API snapshot 2 (ADR 0015, roadmap M3 criterion 5): code written
+// The compatibility suite of API snapshot 3 (ADR 0015, roadmap M3 criterion 5): code written
 // against the snapshot's headers, the way a user writes it, and the contracts it relies on.
 // It checks that the snapshot still compiles and behaves as documented, not that the renderer's
 // numbers stay fixed: a model may improve without breaking the snapshot.
@@ -94,6 +94,12 @@ void screenSpace() {
         if (v.depth[i] < 0.0f) inRange = inRange && ao[i] == 1.0 && hit[i] == -1;   // documented: 1 and -1 where nothing was drawn
     }
     expect(inRange);
+    // Snapshot 3: the back layer and the hidden-entry rule (api/snapshot-3/MIGRATION.md).
+    post::ViewGBuffer vb = v;
+    post::addBackLayer(vb, s, g);
+    expect(vb.back.size() == vb.depth.size());
+    post::SsrParams old; old.maxDistance = 20.0; old.steps = 64; old.hiddenEntry = false;
+    expect(post::ssr(vb, old).size() == 64u * 64u && post::ssr(vb).size() == 64u * 64u);
     float jx, jy;
     taa::jitter(3, jx, jy);
     expect(jx >= -0.5f && jx < 0.5f && jy >= -0.5f && jy < 0.5f);

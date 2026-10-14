@@ -27,7 +27,7 @@ int clipNear(const ClipVert in[3], float wNear, ClipVert out[4]) {
 }
 struct Target { GBuffer& g; int w, h; Buffer<uint16_t>* ids; const RasterOptions& opt; };
 // Rasterize one triangle whose three vertices all have w > 0.
-void drawTri(Target& T, const ClipVert v[3], const Material& mat, size_t mi, uint32_t triIndex) {
+void drawTri(Target& T, const ClipVert v[3], const Material& mat, size_t mi, uint32_t triIndex, bool facesAway) {
     const int w = T.w, h = T.h;
     const RasterOptions& opt = T.opt;
     GBuffer& g = T.g;
@@ -65,6 +65,7 @@ void drawTri(Target& T, const ClipVert v[3], const Material& mat, size_t mi, uin
         float iw = w0 * invw[0] + w1 * invw[1] + w2 * invw[2];
         float depth = opt.perspectiveDepth ? 1.0f / iw : (w0 * sp[0].z + w1 * sp[1].z + w2 * sp[2].z); // screen-linear interpolation of view distance (correct for non-overlapping test scene; true depth-buffer would interpolate 1/w-deferred)
         if (depth >= g.depth.at(x, y)) continue;
+        if (opt.peelAfter && depth <= opt.peelAfter->at(x, y) + 1e-3f) continue;
         auto pc = [&](Vec3 a, Vec3 b, Vec3 c) {
             Vec3 r{(w0 * a.x * invw[0] + w1 * b.x * invw[1] + w2 * c.x * invw[2]) / iw,
                    (w0 * a.y * invw[0] + w1 * b.y * invw[1] + w2 * c.y * invw[2]) / iw,
@@ -76,6 +77,7 @@ void drawTri(Target& T, const ClipVert v[3], const Material& mat, size_t mi, uin
         g.mask.at(x, y) = 1;
         if (T.ids) T.ids->at(x, y) = uint16_t(mi + 1);
         if (opt.triangleIds) opt.triangleIds->at(x, y) = triIndex + 1;
+        if (opt.backFacing) opt.backFacing->at(x, y) = facesAway ? 1 : 0;
     }
 }
 }  // namespace
@@ -91,6 +93,7 @@ GBuffer rasterize(const Scene& scene, int w, int h, Arena* arena, Buffer<uint16_
     GBuffer g(arena); g.resize(w,h);
     if (ids) ids->resize(w,h);
     if (opt.triangleIds) opt.triangleIds->resize(w,h);
+    if (opt.backFacing) { opt.backFacing->resize(w,h); for (auto& b : opt.backFacing->px) b = 0; }
     uint32_t triIndex = 0;
     for (auto& d : g.depth.px) d = std::numeric_limits<float>::infinity();
     Mat4 view = scene.camera.view();
@@ -108,12 +111,14 @@ GBuffer rasterize(const Scene& scene, int w, int h, Arena* arena, Buffer<uint16_
                 v[k] = {mul(vp, Vec4{p.x,p.y,p.z,1}), p, m.normals[idx[k]]};
                 behind = behind || v[k].cs.w <= 1e-6f;
             }
-            if (!behind) { drawTri(T, v, m.material, mi, triIndex); continue; }
+            const Vec3 eye = scene.camera.eye;
+            const bool away = dot(cross(v[1].wp - v[0].wp, v[2].wp - v[0].wp), v[0].wp - eye) > 0.0f;
+            if (!behind) { drawTri(T, v, m.material, mi, triIndex, away); continue; }
             ClipVert c[4];
             const int n = clipNear(v, scene.camera.nearZ, c);
             for (int k = 1; k + 1 < n; ++k) {
                 const ClipVert t[3] = {c[0], c[k], c[k + 1]};
-                drawTri(T, t, m.material, mi, triIndex);
+                drawTri(T, t, m.material, mi, triIndex, away);
             }
         }
     }

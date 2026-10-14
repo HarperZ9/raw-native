@@ -4,5 +4,5 @@
 // change that removes or alters a declaration the snapshot lists. Such a break moves to the
 // next number here, with a migration note in api/snapshot-N/MIGRATION.md.
 namespace raw {
-inline constexpr int kApiSnapshot = 2;
+inline constexpr int kApiSnapshot = 3;
 }

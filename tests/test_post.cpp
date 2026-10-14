@@ -17,8 +17,9 @@ using namespace raw;
 
 namespace {
 // Named by run cpu-owned-2 (evidence/m3-post-runs.json); raw-hall gallery passes and is gated from
-// method note 13 (near-plane clipping in the rasterizer). raw-hall nave stays open for SSR.
-const std::string kOpen[] = {"raw-hall nave"};
+// method note 13 (near-plane clipping in the rasterizer); raw-hall nave passes and is gated from
+// method note 14 (occlusion-aware SSR). No scene is open; the list stays for any future one.
+const std::vector<std::string> kOpen{};
 GBuffer gbufferOf(const Scene& s) {
     RasterOptions ro; ro.perspectiveDepth = true;
     return rasterize(s, 256, 256, nullptr, nullptr, ro);
@@ -135,7 +136,8 @@ int main(int argc, char** argv) {
     int aoScenes = 0, ssrScenes = 0;
     for (const auto& s : scenes) {
         const GBuffer g = gbufferOf(s.second);
-        const post::ViewGBuffer v = post::viewGBuffer(g, s.second.camera);
+        post::ViewGBuffer v = post::viewGBuffer(g, s.second.camera);
+        post::addBackLayer(v, s.second, g);   // method note 14
         const Ao a = aoCheck(s.second, g, v);
         const Ssr r = ssrCheck(s.second, g, v);
         // Method note 2: a scene that misses a coverage bound is reported, not gated, for that metric.
@@ -143,7 +145,7 @@ int main(int argc, char** argv) {
         aoScenes += aoGated; ssrScenes += ssrGated;
         // Scenes whose accuracy bounds are recorded open failures (evidence/m3-post-runs.json): --json
         // and --strict gate them, ctest prints them. The controls are always gated.
-        const bool open = !strict && std::find(std::begin(kOpen), std::end(kOpen), s.first) != std::end(kOpen);
+        const bool open = !strict && std::find(kOpen.begin(), kOpen.end(), s.first) != kOpen.end();
         const bool aoOk = a.mean <= 0.05 && a.p95 <= 0.15;
         const bool ssrOk = double(r.correct) >= 0.9 * double(r.resolvable) && double(r.falseHits) <= 0.1 * double(r.other);
         if (aoGated) {
