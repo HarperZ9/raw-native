@@ -34,7 +34,8 @@ class RrNet(nn.Module):
         super().__init__()
         self.eps = eps   # demodulation epsilon: v1 1e-3, v2 0.05 (evidence/rr-bounds-amendment-3.json)
         # version 2 (amendment 4): depth feature log1p(depth / mean depth), and every head output bounded by
-        # 8 tanh(z / 8) before its softmax or sigmoid, so the kernels cannot saturate.
+        # 8 tanh(z / 8) before its softmax or sigmoid, so the kernels cannot saturate. version 3 (amendment 5): as
+        # version 2, demodulated by (1 - m) a + F0 (F0 = 0.04 (1 - m) + a m), epsilon 0.01.
         self.version = version
         self.e0 = nn.Sequential(conv(IN_CH, 24, s=2), conv(24, 24))
         self.e1 = nn.Sequential(conv(24, 48, s=2), conv(48, 48))
@@ -79,7 +80,12 @@ def features(x, prev_out, prev_depth, eps=EPS, version=1):
     the albedo used for remodulation, the warped previous output and the validity mask."""
     rad, alb, nrm, dep = x[:, 0:3], x[:, 3:6], x[:, 6:9], x[:, 9:10]
     hit = (dep > 0).float()
-    alb_m = alb * hit + (1 - hit)
+    if version >= 3:   # amendment 5: demodulate by an estimate of total reflectance, d = (1 - m) a + F0
+        m = x[:, 16:17]
+        refl = (1 - m) * alb + 0.04 * (1 - m) + alb * m
+        alb_m = refl * hit + (1 - hit)
+    else:
+        alb_m = alb * hit + (1 - hit)
     demod = rad / (alb_m + eps)
     pos, exp_d = x[:, 12:14], x[:, 14:15]
     if prev_out is None:
