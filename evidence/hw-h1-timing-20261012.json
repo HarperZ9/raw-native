@@ -1,0 +1,23 @@
+{
+ "schema": "raw-native.evidence/1",
+ "protocol": "PLAN.md dated note 2026-10-10 (timing protocol): three independent runs, separate processes started 60 s apart, nvidia-smi utilization, clocks and compute-process snapshots before and after each run; the statement is the range of the per-run medians-ratio across runs. Clocks unlocked; no driver setting touched. Dispatches under about 1 ms are flagged clock-sensitive.",
+ "window": "RTX 4090, driver 610.88, one lock window 2026-10-12T19:27:04Z to 19:34:19Z (token engine-hw-1012-5025-1791833224), binaries gpu/bin-1012 at fbda078. Snapshots: no other compute process on the GPU in any snapshot (desktop graphics processes only). Raw files in hw-rtx4090-20261012/.",
+ "supersedes": "the first window's timings (withdrawn 2026-10-10) and the two quiet reruns of 2026-10-10, which had two runs, not three",
+ "results": {
+  "h1_2_wave_scan_vs_groupshared": {"runs": [1.007, 1.009, 1.011], "statement": "1.007x to 1.011x: under 1.1% faster in every run; clock-sensitive (0.28 ms dispatch)"},
+  "h1_2_fp16_vs_fp32_bilateral": {"runs": [0.976, 0.976, 0.976], "statement": "0.976x in every run: fp16 is 2.4% slower on this kernel; clock-sensitive (0.22 ms dispatch). The 7.17x of the first window is withdrawn."},
+  "h1_3_mesh_vs_vertex_pulling": {
+   "terrain_close": [1.988, 1.797, 1.231], "hall_close": [1.333, 1.474, 1.25],
+   "terrain_wide": [0.881, 0.68, 0.627], "hall_grazing": [0.88, 0.88, 0.852],
+   "terrain_grazing": [0.964, 0.701, 1.031], "hall_wide": [0.865, 1.16, 0.923],
+   "statement": "faster in every run only on the close views (terrain 1.23x to 1.99x, hall 1.25x to 1.47x); slower in every run on terrain wide (0.63x to 0.88x) and hall grazing (0.85x to 0.88x); unstable in sign on terrain grazing and hall wide. Identity (triangle id and depth) holds in every run; the hall close flipped-cone control is the recorded miss (0 pixels change)."
+  },
+  "h1_4_async_overlap": {"runs": [0.987, 0.991, 0.988], "statement": "0.987x to 0.991x: about 1% slower, no overlap gain"},
+  "h1_7_cooperative_matrix_vs_shared_memory_fallback": {
+   "n1024": [7.112, 7.088, 7.122], "n2048": [6.813, 6.964, 6.814], "n4096": [6.35, 6.358, 6.397],
+   "tflops_tensor": {"n1024": [47.3, 47.4, 47.5], "n2048": [46.8, 47.8, 46.8], "n4096": [45.0, 45.0, 45.2]},
+   "statement": "6.35x to 7.12x the fallback across sizes and runs; 45.0 to 47.8 TFLOPS fp16 in, fp32 accumulate. The n1024 dispatch (0.045 ms) is clock-sensitive."
+  }
+ },
+ "does_not_prove": "Speed on other GPUs, drivers or clocks; speed in a full frame; that the fallbacks are the best possible non-hardware forms (they are ours and simple)."
+}

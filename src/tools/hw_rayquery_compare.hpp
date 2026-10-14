@@ -15,5 +15,6 @@ struct RayCompare {
     void add(const RayCompare& o);
 };
 RayCompare compareHits(const std::vector<Tri>& tris, const std::vector<rhi::hw::RayIn>& rays,
-                       const std::vector<Hit>& cpu, const std::vector<bool>& cpuHit, const std::vector<rhi::hw::HitOut>& gpu);
+                       const std::vector<Hit>& cpu, const std::vector<bool>& cpuHit, const std::vector<rhi::hw::HitOut>& gpu,
+                       bool conditioned = false);   // conditioned: the H1.1b tolerances
 }

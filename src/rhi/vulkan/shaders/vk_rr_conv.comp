@@ -1,0 +1,121 @@
+#version 460
+// HW H2 inference (evidence/rr-inference-bounds.json): one convolution layer of our ray
+// reconstruction network, with the input as the concatenation of src0 (optionally upsampled to
+// the convolution's input size, nearest or bilinear as PyTorch's F.interpolate with
+// align_corners=False) and src1, zero padding, stride 1 or 2, kernel 1 or 3, bias, optional ReLU.
+// Activations are float32, channels last. COOP=0: the portable scalar path, one thread per output
+// pixel. COOP=1: an implicit GEMM on tensor cores (VK_KHR_cooperative_matrix): a subgroup owns 16
+// output pixels and every output channel, gathers a 16 x 16 fp16 tile of the im2col matrix in
+// shared memory per K step, and multiplies it by fp16 weights laid out [Kpad][CoutPad].
+#if COOP
+#extension GL_EXT_shader_explicit_arithmetic_types_float16 : require
+#extension GL_KHR_cooperative_matrix : require
+#extension GL_KHR_memory_scope_semantics : require
+layout(local_size_x = 32) in;
+#else
+layout(local_size_x = 64) in;
+#endif
+layout(push_constant) uniform P {
+    uint inW, inH, outW, outH, s0W, s0H, C0, mode0, C1, Cout, K, stride, relu, wOff, bOff, CoutPad;
+};
+layout(std430, binding = 0) readonly buffer S0 { float s0[]; };
+layout(std430, binding = 1) readonly buffer S1 { float s1[]; };
+layout(std430, binding = 2) readonly buffer W { float w[]; };
+#if COOP
+layout(std430, binding = 3) readonly buffer WH { float16_t wh[]; };
+#else
+layout(std430, binding = 3) readonly buffer WH { uint whUnused[]; };
+#endif
+layout(std430, binding = 4) writeonly buffer D { float dst[]; };
+#if PERTURB
+const float kScale = 1.01;   // the control that must fail parity (scalar path, first layer only)
+#else
+const float kScale = 1.0;
+#endif
+
+float s0at(int x, int y, uint c) {
+    if (mode0 == 0u) return s0[(uint(y) * s0W + uint(x)) * C0 + c];
+    if (mode0 == 1u) {
+        const uint sx = min(uint(floor(float(x) * (float(s0W) / float(inW)))), s0W - 1u);
+        const uint sy = min(uint(floor(float(y) * (float(s0H) / float(inH)))), s0H - 1u);
+        return s0[(sy * s0W + sx) * C0 + c];
+    }
+    const float fx = max((float(x) + 0.5) * (float(s0W) / float(inW)) - 0.5, 0.0);
+    const float fy = max((float(y) + 0.5) * (float(s0H) / float(inH)) - 0.5, 0.0);
+    const uint x0 = uint(fx), y0 = uint(fy);
+    const uint x1 = x0 + (x0 < s0W - 1u ? 1u : 0u), y1 = y0 + (y0 < s0H - 1u ? 1u : 0u);
+    const float lx = fx - float(x0), ly = fy - float(y0);
+    const float a = s0[(y0 * s0W + x0) * C0 + c], b = s0[(y0 * s0W + x1) * C0 + c];
+    const float d = s0[(y1 * s0W + x0) * C0 + c], e = s0[(y1 * s0W + x1) * C0 + c];
+    return (1.0 - ly) * ((1.0 - lx) * a + lx * b) + ly * ((1.0 - lx) * d + lx * e);
+}
+float fetch(int x, int y, uint c) {
+    if (x < 0 || y < 0 || x >= int(inW) || y >= int(inH)) return 0.0;
+    return c < C0 ? s0at(x, y, c) : s1[(uint(y) * inW + uint(x)) * C1 + (c - C0)];
+}
+
+#if COOP
+#define ACC coopmat<float, gl_ScopeSubgroup, 16, 16, gl_MatrixUseAccumulator>
+#define MA coopmat<float16_t, gl_ScopeSubgroup, 16, 16, gl_MatrixUseA>
+#define MB coopmat<float16_t, gl_ScopeSubgroup, 16, 16, gl_MatrixUseB>
+shared float16_t As[256];
+shared float Cs[16 * 64];
+void main() {
+    const uint lid = gl_LocalInvocationID.x, p0 = gl_WorkGroupID.x * 16u, npix = outW * outH;
+    const uint cin = C0 + C1, kk2 = K * K, kreal = cin * kk2, kpad = (kreal + 15u) / 16u * 16u, nt = CoutPad / 16u;
+    const int pad = int(K / 2u);
+    ACC a0 = ACC(0.0), a1 = ACC(0.0), a2 = ACC(0.0), a3 = ACC(0.0);
+    for (uint kb = 0u; kb < kpad; kb += 16u) {
+        for (uint e = lid; e < 256u; e += 32u) {
+            const uint r = e / 16u, kidx = kb + (e % 16u), p = p0 + r;
+            float v = 0.0;
+            if (p < npix && kidx < kreal) {
+                const uint c = kidx / kk2, rem = kidx % kk2;
+                const int ix = int((p % outW) * stride + rem % K) - pad, iy = int((p / outW) * stride + rem / K) - pad;
+                v = fetch(ix, iy, c);
+            }
+            As[e] = float16_t(v);
+        }
+        barrier();
+        MA a;
+        coopMatLoad(a, As, 0, 16, gl_CooperativeMatrixLayoutRowMajor);
+        MB b;
+        coopMatLoad(b, wh, wOff + kb * CoutPad, CoutPad, gl_CooperativeMatrixLayoutRowMajor); a0 = coopMatMulAdd(a, b, a0);
+        if (nt > 1u) { coopMatLoad(b, wh, wOff + kb * CoutPad + 16u, CoutPad, gl_CooperativeMatrixLayoutRowMajor); a1 = coopMatMulAdd(a, b, a1); }
+        if (nt > 2u) { coopMatLoad(b, wh, wOff + kb * CoutPad + 32u, CoutPad, gl_CooperativeMatrixLayoutRowMajor); a2 = coopMatMulAdd(a, b, a2); }
+        if (nt > 3u) { coopMatLoad(b, wh, wOff + kb * CoutPad + 48u, CoutPad, gl_CooperativeMatrixLayoutRowMajor); a3 = coopMatMulAdd(a, b, a3); }
+        barrier();
+    }
+    coopMatStore(a0, Cs, 0, 64, gl_CooperativeMatrixLayoutRowMajor);
+    if (nt > 1u) coopMatStore(a1, Cs, 16, 64, gl_CooperativeMatrixLayoutRowMajor);
+    if (nt > 2u) coopMatStore(a2, Cs, 32, 64, gl_CooperativeMatrixLayoutRowMajor);
+    if (nt > 3u) coopMatStore(a3, Cs, 48, 64, gl_CooperativeMatrixLayoutRowMajor);
+    barrier();
+    for (uint e = lid; e < 16u * Cout; e += 32u) {
+        const uint r = e / Cout, co = e % Cout, p = p0 + r;
+        if (p >= npix) continue;
+        float v = Cs[r * 64u + co] + w[bOff + co];
+        if (relu != 0u) v = max(v, 0.0);
+        dst[p * Cout + co] = v;
+    }
+}
+#else
+void main() {
+    const uint p = gl_GlobalInvocationID.x;
+    if (p >= outW * outH) return;
+    const int ox = int(p % outW), oy = int(p / outW), pad = int(K / 2u);
+    const uint cin = C0 + C1;
+    float acc[64];
+    for (uint co = 0u; co < Cout; ++co) acc[co] = w[bOff + co];
+    for (uint ky = 0u; ky < K; ++ky)
+        for (uint kx = 0u; kx < K; ++kx) {
+            const int ix = ox * int(stride) + int(kx) - pad, iy = oy * int(stride) + int(ky) - pad;
+            if (ix < 0 || iy < 0 || ix >= int(inW) || iy >= int(inH)) continue;
+            for (uint c = 0u; c < cin; ++c) {
+                const float v = fetch(ix, iy, c);
+                for (uint co = 0u; co < Cout; ++co) acc[co] += kScale * w[wOff + ((co * cin + c) * K + ky) * K + kx] * v;
+            }
+        }
+    for (uint co = 0u; co < Cout; ++co) dst[p * Cout + co] = relu != 0u ? max(acc[co], 0.0) : acc[co];
+}
+#endif

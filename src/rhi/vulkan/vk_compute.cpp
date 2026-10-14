@@ -160,4 +160,57 @@ bool Context::dispatch(const Pipeline& p, const std::vector<Buffer*>& bufs, cons
     return true;
 }
 
+bool Context::runBatch(const std::vector<Step>& steps, double* ms, std::string& err){
+    if (steps.empty() || steps.size() > 64){ err = "runBatch: 1 to 64 steps"; return false; }
+    vkResetDescriptorPool(dev_, dpool_, 0);
+    std::vector<VkDescriptorSet> sets(steps.size());
+    for (size_t k = 0; k < steps.size(); ++k){
+        const Pipeline& p = *steps[k].p;
+        VkDescriptorSetAllocateInfo ai{VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO};
+        ai.descriptorPool = dpool_; ai.descriptorSetCount = 1; ai.pSetLayouts = &p.dsl;
+        VkResult r = vkAllocateDescriptorSets(dev_, &ai, &sets[k]);
+        if (r != VK_SUCCESS){ err = vkError("vkAllocateDescriptorSets", r); return false; }
+        std::vector<VkDescriptorBufferInfo> infos(p.buffers);
+        std::vector<VkWriteDescriptorSet> writes(p.buffers);
+        for (uint32_t i = 0; i < p.buffers; ++i){
+            infos[i] = {steps[k].bufs[i]->buf, 0, VK_WHOLE_SIZE};
+            writes[i] = {VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, nullptr, sets[k], i, 0, 1, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, nullptr, &infos[i], nullptr};
+        }
+        vkUpdateDescriptorSets(dev_, p.buffers, writes.data(), 0, nullptr);
+    }
+    VkCommandBufferBeginInfo bi{VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO};
+    bi.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    vkResetCommandBuffer(cmd_, 0);
+    vkBeginCommandBuffer(cmd_, &bi);
+    const bool timed = ms && queries_;
+    if (timed){ vkCmdResetQueryPool(cmd_, queries_, 0, 2); vkCmdWriteTimestamp(cmd_, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, queries_, 0); }
+    const VkMemoryBarrier cc{VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT};
+    for (size_t k = 0; k < steps.size(); ++k){
+        const Pipeline& p = *steps[k].p;
+        vkCmdBindPipeline(cmd_, VK_PIPELINE_BIND_POINT_COMPUTE, p.pipe);
+        vkCmdBindDescriptorSets(cmd_, VK_PIPELINE_BIND_POINT_COMPUTE, p.layout, 0, 1, &sets[k], 0, nullptr);
+        if (p.pushBytes) vkCmdPushConstants(cmd_, p.layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, p.pushBytes, steps[k].push.data());
+        vkCmdDispatch(cmd_, steps[k].gx, steps[k].gy, 1);
+        vkCmdPipelineBarrier(cmd_, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &cc, 0, nullptr, 0, nullptr);
+    }
+    if (timed) vkCmdWriteTimestamp(cmd_, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, queries_, 1);
+    VkMemoryBarrier mb{VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT};
+    vkCmdPipelineBarrier(cmd_, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &mb, 0, nullptr, 0, nullptr);
+    VkResult r = vkEndCommandBuffer(cmd_);
+    if (r != VK_SUCCESS){ err = vkError("vkEndCommandBuffer", r); return false; }
+    VkSubmitInfo s{VK_STRUCTURE_TYPE_SUBMIT_INFO};
+    s.commandBufferCount = 1; s.pCommandBuffers = &cmd_;
+    vkResetFences(dev_, 1, &fence_);
+    if ((r = vkQueueSubmit(queue_, 1, &s, fence_)) != VK_SUCCESS){ err = vkError("vkQueueSubmit", r); return false; }
+    if ((r = vkWaitForFences(dev_, 1, &fence_, VK_TRUE, UINT64_MAX)) != VK_SUCCESS){ err = vkError("vkWaitForFences", r); return false; }
+    if (timed){
+        uint64_t t[2]{};
+        if ((r = vkGetQueryPoolResults(dev_, queries_, 0, 2, sizeof t, t, 8, VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT)) != VK_SUCCESS){
+            err = vkError("vkGetQueryPoolResults", r); return false; }
+        const uint64_t mask = tsBits_ >= 64 ? ~0ull : ((1ull << tsBits_) - 1);
+        *ms = (double)((t[1] - t[0]) & mask) * tsPeriod_ * 1e-6;
+    }
+    return true;
+}
+
 }  // namespace raw::rhi::vk
