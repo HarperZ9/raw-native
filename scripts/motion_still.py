@@ -2,11 +2,13 @@
 """Render one frame of a Motion scene to a lossless RGBA PNG.
 
     python scripts/motion_still.py --scene ../../templates/retro-thriller/scene.mjs --out still.png \
-        [--t 0] [--width 1920 --height 1080] [--fps 30] [--adapter swiftshader|gpu] [--warm 2]
+        [--t 0] [--width 1920 --height 1080] [--fps 30] [--adapter swiftshader|gpu] [--warm 0]
 
 The frame at time T (rounded to the frame grid at FPS) is drawn by the same capture page and
 renderer as a film (scripts/motion_render.py, raw transport), and ffmpeg writes it as a PNG
-instead of a video. --warm draws that many frames before T first, so history layers settle.
+instead of a video. --warm N draws N frames before T first, so history layers settle; it is off
+by default because Chrome on SwiftShader under Linux loses the device when warm frames draw
+to the page's canvas (CI, 14 October 2026).
 --scene is relative to web/motion/capture.html. The default adapter is SwiftShader, Chrome's
 CPU WebGPU, so a still needs no GPU.
 """
@@ -39,7 +41,7 @@ def main(argv=None) -> int:
     ap.add_argument("--width", type=int, default=1920)
     ap.add_argument("--height", type=int, default=1080)
     ap.add_argument("--adapter", choices=["gpu", "swiftshader"], default="swiftshader")
-    ap.add_argument("--warm", type=int, default=2)
+    ap.add_argument("--warm", type=int, default=0, help="frames drawn before T, for history layers (Threads, temporal passes)")
     a = ap.parse_args(argv)
     if a.t < 0:
         ap.error("--t must be 0 or later")
