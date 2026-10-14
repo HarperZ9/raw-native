@@ -41,6 +41,13 @@ deferred until a real plugin consumer exists. ADR 0007 is not accepted just to c
 grid constants of the anisotropic table changed value when that table became denser and embedded;
 [`snapshot-2/MIGRATION.md`](snapshot-2/MIGRATION.md) lists them and the declarations added.
 
+## Snapshot 3
+
+`kApiSnapshot = 3` since 2026-10-14. It covers the same 25 headers (567 declarations). Two defaults
+of `raw::post::SsrParams` changed when SSR moved to a per-pixel march with a back layer (method note
+14 of `evidence/m3-post-bounds.json`); [`snapshot-3/MIGRATION.md`](snapshot-3/MIGRATION.md) lists
+them and the declarations added.
+
 ## Checks
 
 - `python scripts/api_dump.py --check` runs in CI. It fails when a declaration of the newest

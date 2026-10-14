@@ -15,6 +15,9 @@ struct ViewGBuffer {
     double nearZ{0.1};
     std::vector<float> pos, nrm;          // view-space position and unit normal, 3 floats a pixel
     std::vector<float> depth;             // view depth, negative where nothing was drawn
+    // View depth of the exit (back face) of the solid seen at each pixel, or the pixel's own depth
+    // when the next surface faces the camera or nothing lies behind; empty until addBackLayer.
+    std::vector<float> back;
     bool valid(int x, int y) const { return x >= 0 && y >= 0 && x < w && y < h && depth[std::size_t(y) * w + x] >= 0.0f; }
 };
 // The view-space form of a G-buffer drawn with RasterOptions::perspectiveDepth.
@@ -28,11 +31,18 @@ std::vector<double> gtao(const ViewGBuffer& v, const GtaoParams& p = {});
 // Ray-cast cosine-weighted visibility within `radius`, sqrtRays^2 stratified rays a pixel.
 std::vector<double> rayAo(const Scene& s, const GBuffer& g, double radius, int sqrtRays = 32);
 
+// Method note 14 (evidence/m3-post-bounds.json): steps 0 marches one step a pixel of the screen
+// segment, the march length set by the screen; hiddenEntry ends the march as a miss inside a
+// solid entered through a face the camera cannot see (needs the back layer).
 struct SsrParams {
-    double maxDistance{20.0}, thickness{0.2};
-    int steps{64}, refine{8};
+    double maxDistance{1e4}, thickness{0.2};
+    int steps{0}, refine{8};
     bool viewNormal{false};   // control only: reflect about the view vector instead of the normal
+    bool hiddenEntry{true};
 };
+// The back layer of a G-buffer drawn with RasterOptions::perspectiveDepth: a second, peeled
+// raster pass of the same scene (method note 14).
+void addBackLayer(ViewGBuffer& v, const Scene& s, const GBuffer& front);
 // SSR per pixel: the hit pixel's index (y * w + x), or -1 for a miss or an empty pixel.
 std::vector<int> ssr(const ViewGBuffer& v, const SsrParams& p = {});
 // The mirror ray's first hit in world space per pixel; hit[i] false for a miss.
