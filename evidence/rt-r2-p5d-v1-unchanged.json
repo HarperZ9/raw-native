@@ -1,0 +1,207 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "RT P5d (evidence/rt-r2-bounds.json addendum 5): the v1 outputs of the v2 path tracer against the merged v1 binary",
+ "v1_binary": "raw_native_cli built from main 0c2fbbb (MSVC, Release, D3D12 on)",
+ "v2_binary": "raw_native_cli built from branch feat/rt-pt-aov",
+ "command": "rt-pathtrace --scene S --width 160 --height 120 --spp 16 --seed 3 [--cpu]; WARP via RAW_NATIVE_D3D12_WARP=1",
+ "gated": "cpu rows; warp rows reported",
+ "all_identical": true,
+ "files": [
+  {
+   "side": "cpu",
+   "scene": "retro_room",
+   "file": "radiance.pfm",
+   "identical": true,
+   "sha256": "0bf86a75ced0b20500b6685d80ee8b057ee3a84ff1cadd878cfba558563888d1"
+  },
+  {
+   "side": "cpu",
+   "scene": "retro_room",
+   "file": "albedo.pfm",
+   "identical": true,
+   "sha256": "f18e08d92d492f867129860d1c1a05c167ba03c4471758cff35750d74787698b"
+  },
+  {
+   "side": "cpu",
+   "scene": "retro_room",
+   "file": "normal.pfm",
+   "identical": true,
+   "sha256": "c638ab72b3c9719c24da02e5fc6512e8d98ce72e705327b06b48adf59bd8bf4d"
+  },
+  {
+   "side": "cpu",
+   "scene": "retro_room",
+   "file": "depth.pfm",
+   "identical": true,
+   "sha256": "421c97ea7ddb25fa57d4faa1c79fedc362293ff1603e8849632c5bcc04593a38"
+  },
+  {
+   "side": "cpu",
+   "scene": "retro_room",
+   "file": "motion.pfm",
+   "identical": true,
+   "sha256": "368cfe8daafa9c96130f2e4c1e896560e6ef251dcff6675a695e30bf679ca5d2"
+  },
+  {
+   "side": "cpu",
+   "scene": "retro_room",
+   "file": "variance.pfm",
+   "identical": true,
+   "sha256": "1270e858fd881d0d312165c1f305323ae0ad37fa5d7bc39dfb1af19a67dca442"
+  },
+  {
+   "side": "cpu",
+   "scene": "retro_room",
+   "file": "triangle.u32",
+   "identical": true,
+   "sha256": "998986bede2a618d4e5f74423bc1cbc6d923fc0e5d58f3d554283583a5d21f07"
+  },
+  {
+   "side": "cpu",
+   "scene": "iso_street",
+   "file": "radiance.pfm",
+   "identical": true,
+   "sha256": "837d16d591ce1c2fdf6bfc5a302ad134ac633030151bc65aeff3cc8a0d771bf9"
+  },
+  {
+   "side": "cpu",
+   "scene": "iso_street",
+   "file": "albedo.pfm",
+   "identical": true,
+   "sha256": "50b1f0f02d9d932241287f078589aa3c3188d931e35da6dbcf7dc1dbd8f1ebb6"
+  },
+  {
+   "side": "cpu",
+   "scene": "iso_street",
+   "file": "normal.pfm",
+   "identical": true,
+   "sha256": "ff141cb2f0acc72ff32596acc8e0d3c51c78a1cda4e7f863ee920b57e9dae5f1"
+  },
+  {
+   "side": "cpu",
+   "scene": "iso_street",
+   "file": "depth.pfm",
+   "identical": true,
+   "sha256": "53f4080f6d04c847a3b405f7629a2691fb05722ce63792a1fd1898de14a113dd"
+  },
+  {
+   "side": "cpu",
+   "scene": "iso_street",
+   "file": "motion.pfm",
+   "identical": true,
+   "sha256": "681d6c1d93575f6ebc3c4743c859eb96aedccfa07c89898bcf56ac2731343e4c"
+  },
+  {
+   "side": "cpu",
+   "scene": "iso_street",
+   "file": "variance.pfm",
+   "identical": true,
+   "sha256": "04bb69df26ea57d92d96a090a2b61b0358fc15c1235209d253cf01856fb188c4"
+  },
+  {
+   "side": "cpu",
+   "scene": "iso_street",
+   "file": "triangle.u32",
+   "identical": true,
+   "sha256": "e4d45a8a18d318b77a77279967db3ffa951077e7379628c81e90519d6a92193d"
+  },
+  {
+   "side": "warp",
+   "scene": "retro_room",
+   "file": "radiance.pfm",
+   "identical": true,
+   "sha256": "0e54370487b22f0e22b0a8c33009b34ad87d39bbe9e1d7e7791481940d10dd04"
+  },
+  {
+   "side": "warp",
+   "scene": "retro_room",
+   "file": "albedo.pfm",
+   "identical": true,
+   "sha256": "f18e08d92d492f867129860d1c1a05c167ba03c4471758cff35750d74787698b"
+  },
+  {
+   "side": "warp",
+   "scene": "retro_room",
+   "file": "normal.pfm",
+   "identical": true,
+   "sha256": "c638ab72b3c9719c24da02e5fc6512e8d98ce72e705327b06b48adf59bd8bf4d"
+  },
+  {
+   "side": "warp",
+   "scene": "retro_room",
+   "file": "depth.pfm",
+   "identical": true,
+   "sha256": "421c97ea7ddb25fa57d4faa1c79fedc362293ff1603e8849632c5bcc04593a38"
+  },
+  {
+   "side": "warp",
+   "scene": "retro_room",
+   "file": "motion.pfm",
+   "identical": true,
+   "sha256": "368cfe8daafa9c96130f2e4c1e896560e6ef251dcff6675a695e30bf679ca5d2"
+  },
+  {
+   "side": "warp",
+   "scene": "retro_room",
+   "file": "variance.pfm",
+   "identical": true,
+   "sha256": "3b15825a9e0ee8ccc3d06bc205ddf211997b8f870261d75506df1f0acd24823c"
+  },
+  {
+   "side": "warp",
+   "scene": "retro_room",
+   "file": "triangle.u32",
+   "identical": true,
+   "sha256": "998986bede2a618d4e5f74423bc1cbc6d923fc0e5d58f3d554283583a5d21f07"
+  },
+  {
+   "side": "warp",
+   "scene": "iso_street",
+   "file": "radiance.pfm",
+   "identical": true,
+   "sha256": "40e68fae9a4fa3f9364dfd6ba03394ac4b4e316ff1971559a0302fafccca5b2d"
+  },
+  {
+   "side": "warp",
+   "scene": "iso_street",
+   "file": "albedo.pfm",
+   "identical": true,
+   "sha256": "50b1f0f02d9d932241287f078589aa3c3188d931e35da6dbcf7dc1dbd8f1ebb6"
+  },
+  {
+   "side": "warp",
+   "scene": "iso_street",
+   "file": "normal.pfm",
+   "identical": true,
+   "sha256": "ff141cb2f0acc72ff32596acc8e0d3c51c78a1cda4e7f863ee920b57e9dae5f1"
+  },
+  {
+   "side": "warp",
+   "scene": "iso_street",
+   "file": "depth.pfm",
+   "identical": true,
+   "sha256": "53f4080f6d04c847a3b405f7629a2691fb05722ce63792a1fd1898de14a113dd"
+  },
+  {
+   "side": "warp",
+   "scene": "iso_street",
+   "file": "motion.pfm",
+   "identical": true,
+   "sha256": "681d6c1d93575f6ebc3c4743c859eb96aedccfa07c89898bcf56ac2731343e4c"
+  },
+  {
+   "side": "warp",
+   "scene": "iso_street",
+   "file": "variance.pfm",
+   "identical": true,
+   "sha256": "df64474fd0b99333d8a202e800dfac1f64b24b58b693eaff66c11ae03673c586"
+  },
+  {
+   "side": "warp",
+   "scene": "iso_street",
+   "file": "triangle.u32",
+   "identical": true,
+   "sha256": "e4d45a8a18d318b77a77279967db3ffa951077e7379628c81e90519d6a92193d"
+  }
+ ]
+}

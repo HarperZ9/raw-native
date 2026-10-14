@@ -97,5 +97,42 @@
   "finding": "Method note 1 met its P4 prediction on every backend (albedo 133 and 137 to 0 and 1; depth 7 to 0), but it broke R1's C5 on SwiftShader (223 of 635 slots differ, bound 1%) and made the RTX's open C5 failure worse. C5's bit-level slot bound cannot hold for a float32 correction that the backends' compilers may contract.",
   "change": "The snap correction becomes swr::Options::snapCorrect, default off, so R1's committed modes and C1 to C5 return to the setup they were bounded on. P4 runs R1 with snapCorrect on, as its method note 1 intended. C4 and C5 add a fifth mode, modern with snapCorrect, reported beside the gated four and not gated, because runs 7 to 9 already measured it before any bound for it was written: WARP passes C5 there, SwiftShader and the RTX fail it.",
   "bounds": "No bound changes. P4's one remaining iso_street pixel keeps P4 open."
+ },
+ "addendum_5_P5_split_radiance": {
+  "written": "2026-10-14 04:08Z, before any split-radiance code or run (request from the HW session, RT PROGRESS 2026-10-14)",
+  "interface": "kPathTraceVersion 1 to 2, additive only: every v1 field keeps its meaning, layout and bytes; new PathTraceOutput fields diffuse, specular, emission (RGB), diffuseAlbedo, specularAlbedo (RGB), diffuseVariance, specularVariance (1 a pixel). No change to PathTraceDesc except two control switches, false by default.",
+  "definitions": {
+   "emission": "radiance gathered on the primary ray's own segment: the first hit's emission (MIS weight 1, as in v1) or the sky on a primary miss",
+   "diffuse_and_specular": "every other contribution, split at the first hit by the BSDF's two terms. Next-event estimation at the first hit: the Lambert term fd cos goes to diffuse, the remainder (f cos - fd cos) to specular. Paths continued from the first hit carry weights fd cos / pdf (diffuse) and (f cos - fd cos) / pdf (specular), pdf the unchanged one-sample mixture pdf, applied to everything gathered after the first hit. No new random numbers, so radiance and every v1 AOV are unchanged.",
+   "diffuse_albedo": "the mean over primary samples of (1 - metallic) base, 0 on a miss",
+   "specular_albedo": "the mean over primary samples of F0 + (1 - F0)(1 - cos_o)^5 when the specular lobe probability is above 0, else 0; 0 on a miss. A demodulation estimate, not the lobe's directional albedo.",
+   "variances": "sample variance of the luminance of each component, divided by spp, as v1's variance"
+  },
+  "checks": {
+   "P5a_sum": {
+    "what": "diffuse + specular + emission against radiance, every pixel and channel, CPU and GPU, retro_room and iso_street",
+    "bound": "|d + s + e - r| <= 1e-4 (1 + |r|) on every value",
+    "control": "controls.aovDropSpecularIndirect (indirect specular omitted) must exceed the bound on retro_room"
+   },
+   "P5b_furnace": {
+    "what": "the furnace (pure Lambert, E = 1, a = 0.5 and 0.8), CPU and GPU",
+    "bound": "specular exactly 0 and emission exactly E on every pixel; diffuse mean luminance within 4 standard errors of E a / (1 - a) (standard error from diffuseVariance) and every pixel within 6 of its own",
+    "control": "controls.aovEmissionToDiffuse (primary emission put in diffuse) must fail"
+   },
+   "P5c_gpu_cpu": {
+    "what": "GPU against CPU at P2's sizes and seeds, on diffuse and specular luminance separately, with each component's own variance",
+    "bound": "P2's bound: mean |z| <= 0.9, fraction z > 4 <= 0.002, image z <= 3",
+    "control": "GPU with aovDropSpecularIndirect against the normal CPU must fail on specular for retro_room"
+   },
+   "P5d_v1_unchanged": {
+    "what": "the CPU reference's v1 outputs at v2 against the merged v1 binary, same scene, seed, spp and size",
+    "bound": "byte-identical radiance, albedo, normal, depth, motion, variance and triangle; on the GPU (WARP) the same comparison is reported, not gated, because shader compilers may contract differently"
+   },
+   "P5e_determinism": {
+    "what": "P3 extended: the same seed twice on the GPU",
+    "bound": "the new AOVs byte-identical too"
+   }
+  },
+  "does_not_prove": "That the split matches any other renderer's diffuse and specular convention; that the specular albedo estimate is good for demodulation (the HW session measures that); quality of a denoiser trained on it."
  }
 }

@@ -82,7 +82,11 @@ int ptCommand(int argc, char** argv) {
     for (std::size_t p = 0; p < img.size(); ++p) { motion3[p * 3] = o.motion[p * 2]; motion3[p * 3 + 1] = o.motion[p * 2 + 1]; }
     bool ok = writeImages(a.out + "/radiance", W, H, img) && writePfm(a.out + "/albedo.pfm", W, H, 3, o.albedo) &&
               writePfm(a.out + "/normal.pfm", W, H, 3, o.normal) && writePfm(a.out + "/depth.pfm", W, H, 1, o.depth) &&
-              writePfm(a.out + "/motion.pfm", W, H, 3, motion3) && writePfm(a.out + "/variance.pfm", W, H, 1, o.variance);
+              writePfm(a.out + "/motion.pfm", W, H, 3, motion3) && writePfm(a.out + "/variance.pfm", W, H, 1, o.variance) &&
+              writePfm(a.out + "/diffuse.pfm", W, H, 3, o.diffuse) && writePfm(a.out + "/specular.pfm", W, H, 3, o.specular) &&
+              writePfm(a.out + "/emission.pfm", W, H, 3, o.emission) && writePfm(a.out + "/diffuse_albedo.pfm", W, H, 3, o.diffuseAlbedo) &&
+              writePfm(a.out + "/specular_albedo.pfm", W, H, 3, o.specularAlbedo) &&
+              writePfm(a.out + "/diffuse_variance.pfm", W, H, 1, o.diffuseVariance) && writePfm(a.out + "/specular_variance.pfm", W, H, 1, o.specularVariance);
     std::ofstream(a.out + "/triangle.u32", std::ios::binary).write(reinterpret_cast<const char*>(o.triangle.data()), std::streamsize(o.triangle.size() * 4));
     char j[700];
     std::snprintf(j, sizeof j, "{\n \"interface_version\": %d,\n \"scene\": \"%s\",\n \"width\": %d,\n \"height\": %d,\n \"spp\": %u,\n \"seed\": %llu,\n"

@@ -1,8 +1,9 @@
 // The path tracer's CPU checks (evidence/rt-r2-bounds.json): P0 BSDF consistency (addendum 1)
 // with its control, the furnace on the CPU reference (P1's bound, applied to the reference),
-// and thread-count determinism.
+// and thread-count determinism; P5a and P5b (addendum 5, split radiance) on the reference.
 //   test_rt_pt [out.json]
 #include "raw/renderer/rt_pathtrace.hpp"
+#include "raw/renderer/rt_pt_checks.hpp"
 #include "raw/renderer/rt_scenes.hpp"
 #include "raw/renderer/swr_scenes.hpp"
 #include "raw/core/parallel.hpp"
@@ -140,10 +141,39 @@ void determinism() {
     d.camera = d.previous = cameraOf(swr::retroRoom());
     const PathTraceOutput a = pathTraceCpu(s, d, 1), b = pathTraceCpu(s, d, hw());
     const bool same = std::memcmp(a.radiance.data(), b.radiance.data(), a.radiance.size() * 4) == 0 &&
-                      std::memcmp(a.variance.data(), b.variance.data(), a.variance.size() * 4) == 0;
+                      std::memcmp(a.variance.data(), b.variance.data(), a.variance.size() * 4) == 0 &&
+                      std::memcmp(a.diffuse.data(), b.diffuse.data(), a.diffuse.size() * 4) == 0 &&
+                      std::memcmp(a.specular.data(), b.specular.data(), a.specular.size() * 4) == 0 &&
+                      std::memcmp(a.specularVariance.data(), b.specularVariance.data(), a.specularVariance.size() * 4) == 0;
     std::printf("P3 cpu: 1 thread against %d threads: %s\n", hw(), same ? "byte-identical" : "DIFFER");
     CHECK(same);
     add(std::string("{\"check\": \"P3 cpu threads\", \"identical\": ") + (same ? "true" : "false") + "}");
+}
+// P5a on the reference: the split adds up to radiance; the control drops indirect specular.
+void splitSumCpu(const PtScene& s, const swr::Scene& base, bool control) {
+    PathTraceDesc d;
+    d.spp = 8; d.width = 64; d.height = 48; d.seed = 21;
+    d.camera = d.previous = cameraOf(base);
+    d.controls.aovDropSpecularIndirect = control;
+    const SplitSum r = splitSum(pathTraceCpu(s, d));
+    std::printf("P5a cpu %s%s: %ld of %ld values over, worst %.3g of the bound -> %s\n", s.name.c_str(), control ? " (control: no indirect specular)" : "",
+                r.over, r.values, r.worstRatio, r.within() ? "within" : "outside");
+    CHECK(control ? !r.within() : r.within());
+    add(splitSumJson(r, s.name.c_str(), "cpu", control));
+}
+// P5b on the reference: the furnace's split; the control puts primary emission in diffuse.
+void furnaceSplitCpu(float a, bool control) {
+    const PtScene s = ptFurnace(1.0f, a);
+    PathTraceDesc d;
+    d.spp = 64; d.maxBounces = 64; d.russianRoulette = false; d.width = 48; d.height = 32;
+    d.camera = d.previous = cameraOf(furnaceBox());
+    d.controls.aovEmissionToDiffuse = control;
+    const FurnaceSplit f = furnaceSplit(pathTraceCpu(s, d), 1.0f, a);
+    std::printf("P5b cpu furnace a=%.1f%s: specular nonzero %ld, emission wrong %ld, diffuse %.5f expect %.5f, %.2f standard errors, worst pixel %.2f -> %s\n",
+                a, control ? " (control: emission in diffuse)" : "", f.specularNonzero, f.emissionWrong, f.meanDiffuse, f.expected, f.z, f.worstPixelZ,
+                f.within() ? "within" : "outside");
+    CHECK(control ? !f.within() : f.within());
+    add(furnaceSplitJson(f, a, "cpu", control));
 }
 }  // namespace
 
@@ -153,8 +183,14 @@ int main(int argc, char** argv) {
     furnace(0.8f, false);
     furnace(0.5f, true);
     determinism();
+    splitSumCpu(ptRetroRoom(), swr::retroRoom(), false);
+    splitSumCpu(ptIsoStreet(), swr::isoStreet(), false);
+    splitSumCpu(ptRetroRoom(), swr::retroRoom(), true);
+    furnaceSplitCpu(0.5f, false);
+    furnaceSplitCpu(0.8f, false);
+    furnaceSplitCpu(0.5f, true);
     if (argc > 1)
-        std::ofstream(argv[1]) << "{\n \"schema\": \"raw-native.evidence/1\",\n \"criterion\": \"RT stage R2, the path tracer's CPU checks (P0, P1 on the reference, P3 threads)\",\n"
+        std::ofstream(argv[1]) << "{\n \"schema\": \"raw-native.evidence/1\",\n \"criterion\": \"RT stage R2, the path tracer's CPU checks (P0, P1 on the reference, P3 threads, P5a and P5b)\",\n"
                                << " \"pass\": " << (raw_test_failures() == 0 ? "true" : "false") << ",\n \"results\": [\n" << js << "\n ]\n}\n";
     return raw_test_summary();
 }

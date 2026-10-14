@@ -86,6 +86,20 @@ inline Eval evalBsdf(const Bsdf& m, Vec3 wo, Vec3 wi, bool dropCosine = false, b
     }
     return {f * cosI, pdf};
 }
+// The Lambert term of evalBsdf alone, fd cos, by the same operations (interface v2's diffuse).
+inline Vec3 lambertCos(const Bsdf& m, Vec3 wo, Vec3 wi, bool dropCosine = false) {
+    if (wo.z <= 0.0f || wi.z <= 0.0f) return {0, 0, 0};
+    const float cosI = dropCosine ? 1.0f : wi.z, kd = (1.0f - m.metallic) / kPi;
+    const Vec3 f{m.base.x * kd, m.base.y * kd, m.base.z * kd};
+    return f * cosI;
+}
+// Interface v2's specular albedo estimate: F0 + (1 - F0)(1 - cos_o)^5 where the lobe exists.
+inline Vec3 specAlbedo(const Bsdf& m, float cosO) {
+    if (lobeProb(m) <= 0.0f) return {0, 0, 0};
+    const float x1 = std::clamp(1.0f - cosO, 0.0f, 1.0f), fw = x1 * x1 * x1 * x1 * x1;
+    const Vec3 F0 = f0(m);
+    return {F0.x + (1.0f - F0.x) * fw, F0.y + (1.0f - F0.y) * fw, F0.z + (1.0f - F0.z) * fw};
+}
 // Sample wi from the one-sample mixture; false when the sample leaves the hemisphere.
 inline bool sampleBsdf(const Bsdf& m, Vec3 wo, float pick, float u1, float u2, Vec3& wi) {
     if (pick < lobeProb(m)) {
