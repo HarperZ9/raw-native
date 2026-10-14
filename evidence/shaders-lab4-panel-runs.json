@@ -1,0 +1,7 @@
+{
+  "protocol": "evidence/shaders-lab4-panel-protocol.json",
+  "key_sha256_before_judging": "b65f7b3187800a98c5d8f542a7b48a3e733382f077b56ce7ad8f3beaf189be91",
+  "trials_sha256": { "A": "7d1e1ad6911b368863c0b8d9462bd274aa566c998a454336e7f07c00dcf8b437", "B": "c853dcc823cdf536a567763060f646a9a84942f53de5f783042d1133c60a69c4" },
+  "assets": "27 anonymised assets (21 stills, 6 clips of 24 frames); 14 part A pairs, 28 trials; 3 part B pairs, 6 trials; seed 20261014",
+  "committed": "2026-10-14, before any judge started"
+}
