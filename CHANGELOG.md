@@ -6,6 +6,10 @@ the day the release was published on GitHub, in UTC.
 
 ## Unreleased
 
+- **Mandelbulb march passes M2** (RT R3). The ray marcher's surface refinement keeps its bracket in double-float
+  (TwoSum, additions only), while the march, the estimator and every position stay float32. The bulb now passes M2's
+  unchanged bounds on WARP (t within 99.873%, normals 99.535%) and SwiftShader, and the gate covers it. Method note 7
+  in `evidence/rt-r3-bounds.json`.
 - **Occlusion-aware screen-space reflections** (M3). SSR marches one step a pixel to the screen edge and uses a back
   layer (a second, peeled raster pass), so a ray that enters a solid through a face the camera cannot see ends as a
   miss instead of reflecting the wrong surface. SSR on raw-hall nave passes its unchanged bounds (90.53% correct,
