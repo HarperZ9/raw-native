@@ -1,0 +1,29 @@
+{
+ "schema": "raw-native.evidence/1",
+ "amends": "evidence/rr-bounds.json and amendments 1 to 5: adds model v4, its dataset and a conditioning check; the success criteria, metrics, baselines, hyperparameters and controls are unchanged",
+ "written": "2026-10-14 19:30Z, before any v4 training step and before any v4 or new test metric. Declared: the test metrics of v1, v2 and v3 and v3's float32-to-float64 gaps on the test sequences (H:/rr-infer/condition-v3main-test.json) were seen before this amendment. The exploration below used validation sequences only.",
+ "coordinator_direction": "2026-10-14: build v4 with true diffuse and specular demodulation from the path tracer's split outputs (raw-native #115, interface v2), regenerate the dataset with the new outputs on the CPU or WARP, commit an amendment with bounds before training, train on the CPU, evaluate against SVGF and SVGF plus TAA on the held-out test scenes with the same metrics, and address the float32-to-float64 sensitivity that breaks inference parity.",
+ "dataset": {
+  "root": "H:/rr-dataset-v4",
+  "how": "scripts/rr_v4data.py: every frame's 1 spp input rendered again by the CPU reference path tracer (rr-render --input-only --cpu) with the same scene, path, seed and cameras as H:/rr-dataset (checked per frame); fKKK_split.f32 adds diffuse, specular and emission radiance and the diffuse and specular albedos; the references (fKKK_ref.f32) are the old files, hard-linked unchanged. Every frame's split adds up to its input radiance within 1e-4 (1 + |r|) (worst 0.0039 of that bound). The leakage guard passes on the new root (0 matches) and its injected-test-frame control fails.",
+  "consequence": "the input radiance is the CPU's render of the same samples, not the RTX's; SVGF and SVGF plus TAA are rerun on these inputs, so every comparison uses the same inputs"
+ },
+ "v4": {
+  "inputs": "the 17 input channels plus the 15 split channels",
+  "demodulation": "diffuse / (diffuse albedo + 0.01) and specular / (specular albedo + 0.01), each its own signal; the specular albedo is the path tracer's Schlick estimate; misses carry only emission (the sky), which is added back unfiltered",
+  "network": "v3's U-Net and sizes with 25 input features (log1p of both demodulated signals, both albedos, normal, log1p depth over mean depth, roughness, metallic, log1p of both warped histories, validity) and two heads: a 5 x 5 kernel, a temporal blend and a scale blend for each signal at full resolution, and a 5 x 5 kernel for each at quarter resolution; head outputs bounded by 8 tanh(z / 8) as in v2 and v3; 144,790 parameters",
+  "output": "filtered diffuse times diffuse albedo plus filtered specular times specular albedo plus emission",
+  "history_validity": "continuous instead of a threshold: same = clamp(2 - |expected depth - warped previous depth| / tol, 0, 1) with tol = 0.02 |expected depth| + 0.02, and a miss continues a miss with weight clamp(1 - warped previous depth / 0.02, 0, 1); the inside-frame test reads input data only and stays a threshold",
+  "training": "unchanged hyperparameters (rr_train.py: AdamW, 1e-3 cosine to 1e-5, weight decay 1e-4, batch 4 x 6 frames, 128 x 128 crops, 6,000 steps, seed 1), on the CPU at BelowNormal, 6 threads a job, v4 and its shuffled-target control in parallel, with the long-job survival pattern (checkpoint every 5 minutes, resume, watchdog, logon task)"
+ },
+ "exploration_before_this_amendment": "v3's trained weights on validation sequences, 16 frames each, float32 against float64: with v3's threshold validity the max gap is 0.145 (hall_b_p7) and 0.583 (terrain_100_p7); with the continuous validity above and nothing else changed, 7.1e-4 and 3.6e-3. Frame 0 (no history) differs by about 2e-6 in both. Inferred: the threshold tests on the warped previous depth flip under rounding and the recurrence carries the flip.",
+ "selection_rule": "amendment 5's learning check, unchanged: v4 qualifies only if its best validation loss is at least 10% below the identity model's on the v4 dataset's validation frames 0 to 31; v1 (saturated; its recorded best validation loss) must fail it, or the selection is invalid with no verdict. v4 is the only candidate; if it does not qualify, there is no verdict.",
+ "verdict": "rr-bounds.json's success criteria (quality: FLIP lower and PSNR higher than SVGF with paired bootstrap 95% intervals excluding zero; temporal instability and ghosting no worse than SVGF plus TAA by the interval rule) on the three test sequences, by rr_eval.py, with the shuffled-target control (must fail quality) and the zero-motion control (must fail ghosting). FLIP is now checked: our implementation agrees with the BSD-3 reference test pair within 3.5e-7 (evidence/rr-flip-check.json); its numbers are reported as checked.",
+ "conditioning_check": {
+  "what": "rr_condition.py on v4's best.pt: the PyTorch forward pass in float32 against float64 over every frame of both validation sequences and the three test sequences",
+  "bound": "max absolute difference in linear radiance at most 1e-2 on every pixel of every frame (the inference parity bound of evidence/rr-inference-bounds.json)",
+  "control": "the same weights with the threshold validity (--hard-validity) must exceed 1e-2 on at least one validation sequence"
+ },
+ "not_covered": "GPU inference parity and the 2.0 ms budget at 1080p need v4 in the Vulkan kernels (src/rhi/vulkan/vk_rrnet*); this amendment does not port them, so both stay open on the RTX. A PyTorch-side gap under 1e-2 is a precondition for GPU parity at 1e-2, not proof of it.",
+ "does_not_prove": "That a model that passes on these three test scenes generalises to other scenes; anything about vendor denoisers, which are not compared."
+}

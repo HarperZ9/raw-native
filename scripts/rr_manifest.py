@@ -14,7 +14,7 @@ import json
 import sys
 from pathlib import Path
 
-KINDS = ("_in.f32", "_ref.f32", "_tri.i32", ".json")
+KINDS = ("_in.f32", "_ref.f32", "_tri.i32", "_split.f32", ".json")
 
 
 def sha(p):

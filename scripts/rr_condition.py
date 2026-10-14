@@ -20,11 +20,12 @@ from rr_model import RrNet, step  # noqa: E402
 
 
 @torch.no_grad()
-def gap(ck, seq, frames):
+def gap(ck, seq, frames, hard=False):
     nets = {}
     for dt in (torch.float32, torch.float64):
         net = RrNet(ck.get("eps", 1e-3), ck.get("version", 1))
         net.load_state_dict(ck["model"])
+        net.hard_validity = hard   # version 4 only: the control of amendment 6
         nets[dt] = net.to(dt).eval()
     state = {dt: (None, None) for dt in nets}
     worst = []
@@ -47,11 +48,12 @@ def main():
     ap.add_argument("model")
     ap.add_argument("seqs", nargs="+")
     ap.add_argument("--frames", type=int, default=0)
+    ap.add_argument("--hard-validity", action="store_true")
     a = ap.parse_args()
     torch.set_num_threads(4)
     ck = torch.load(a.model, map_location="cpu", weights_only=False)
-    res = {Path(s).name: gap(ck, s, a.frames) for s in a.seqs}
-    print(json.dumps({"model": a.model, "eps": ck.get("eps", 1e-3), "max_gap": max(max(v) for v in res.values()),
+    res = {Path(s).name: gap(ck, s, a.frames, a.hard_validity) for s in a.seqs}
+    print(json.dumps({"model": a.model, "eps": ck.get("eps", 1e-3), "hard_validity": a.hard_validity, "max_gap": max(max(v) for v in res.values()),
                       "per_sequence_max": {k: max(v) for k, v in res.items()}, "per_frame": res}))
     return 0
 
