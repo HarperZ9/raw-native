@@ -5,8 +5,10 @@
 // edges: hard-edged scene-linear plate (bars, a disc, small dots) for edge-sensitive passes.
 // box: a black field with a white box in the upper middle, as R'G'B' signal (for the CRT sag).
 // game: fixtures/game.mjs, R'G'B' signal.
+// stilllife-sat: saturated albedos half in deep shadow, with lighting outputs (lab 4 pigment case).
 import { streetScene } from "../fixtures/street.mjs";
 import { gameFrame } from "../fixtures/game.mjs";
+import { stillLifeLit } from "../fixtures/stilllife-lit.mjs";
 
 export function edgesPlate(w, h) {
   const d = new Float32Array(w * h * 4);
@@ -41,6 +43,7 @@ export function labSource(name, w, h, t = 0) {
   else if (name === "edges") f = edgesPlate(w, h);
   else if (name === "box") f = boxSignal(w, h);
   else if (name === "game") f = gameFrame(w, h, t);
+  else if (name === "stilllife-sat") f = stillLifeLit(w, h);
   else if (name === "street-signal") f = toSignal(streetScene(w, h, t));
   else throw new Error("unknown source " + name);
   cache.set(key, f);

@@ -1,0 +1,29 @@
+{
+  "protocol": "evidence/shaders-lab4-panel-protocol.json",
+  "key_sha256_before_judging": "b65f7b3187800a98c5d8f542a7b48a3e733382f077b56ce7ad8f3beaf189be91",
+  "trials_sha256": {
+    "A": "7d1e1ad6911b368863c0b8d9462bd274aa566c998a454336e7f07c00dcf8b437",
+    "B": "c853dcc823cdf536a567763060f646a9a84942f53de5f783042d1133c60a69c4"
+  },
+  "assets": "27 anonymised assets (21 stills, 6 clips of 24 frames); 14 part A pairs, 28 trials; 3 part B pairs, 6 trials; seed 20261014",
+  "committed": "2026-10-14, before any judge started",
+  "run1_votes_sha256": {
+    "A-judge1.json": "d11eb610181faf082898dcf7c155988074f2aaca6f5c2a7208e1f262fb254d44",
+    "A-judge2.json": "2e535e9923c618a49bdae845dea7f223bf44a23c9463307a4cdac19c22f30e31",
+    "A-judge3.json": "0fe06ee4c51c1e24c537aea0ff85516e0eb52cc2d9ff65830008a3d92bc00eae",
+    "B-judge1.json": "a71a6f729a42b72737c0eb9a154813a2d93f18d443bed9d7ccd765f3b734cf06",
+    "B-judge2.json": "0081b6b35336624b75d1ba885b33d6574cb412479c1d4b8c62f0f4746135bc8b",
+    "B-judge3.json": "fab91ad8897defee56b3445472e7d93808c77bbabaac8f42a2ea53ed1cd9b369"
+  },
+  "part_B_run1_failed": "All three part B judges reported that most frame reads returned 'media removed: request limit' (288 frame reads per judge), so none saw every frame of every clip, and one judge answered each pair once and mirrored the swapped repeat. That is not the protocol's procedure. The run is kept, hashed above, and not scored. Fixed before any key was opened.",
+  "part_B_rerun_amendment": {
+    "fixed": "2026-10-14, after the failed run and before the key was opened",
+    "change": "One fresh agent per trial: for each of the three judge slots (two Claude Opus 5.5, one Claude Sonnet), six agents, one per part B trial, each reading the 48 frames of that one trial (part A judges read 56 images without hitting the limit). 18 agents in all. Trials, clips, questions, key, metric and rule unchanged. A judge slot's swapped repeats are now answered by two different agents, so they are less like copies than before.",
+    "not_changed": "Part A ran as specified and is scored as is."
+  },
+  "part_B_rerun_amendment_2": {
+    "fixed": "2026-10-14, after six of the 18 rerun agents and before the key was opened",
+    "finding": "Two of six agents reported 30 of 48 frames (frames 1 to 18 of one clip came back 'media removed: request limit'); four reported 48 of 48.",
+    "rule": "A part B vote counts only when its agent reports all 48 frames loaded. A vote with fewer is hashed, kept and not scored, and the trial goes to a fresh agent of the same model, up to three attempts per trial and slot. A trial with no full view after three attempts is reported as missing."
+  }
+}

@@ -1,0 +1,597 @@
+{
+ "protocol": "evidence/shaders-lab4-panel-protocol.json",
+ "runs": "evidence/shaders-lab4-panel-runs.json",
+ "unblinded": "2026-10-14. The key's sha256 at unblinding matched the committed b65f7b31...be91. Vote files hashed first: sha256 of the hash list 3959be1a8ddfe3118cd738d974dae4fc0fa030dc48605143c46e7aa4c5cc12a2.",
+ "results": [
+  {
+   "comparison": "pvm-20-soft vs crt-lottes",
+   "wins": "24/36",
+   "rate": 0.67,
+   "wilson95": [
+    0.503,
+    0.798
+   ],
+   "rule": "preferred",
+   "per_judge": "6/12, 6/12, 12/12 (the Sonnet judge chose pvm-20-soft every time; the two Opus judges split evenly)",
+   "note": "The lower bound clears 0.5 by 0.003, and the result depends on one judge. Before this change pvm-20 scored 22/36 against the same lottes images (not distinguishable). Read it as a small, fragile gain."
+  },
+  {
+   "comparison": "pvm-20-soft vs pvm-20",
+   "wins": "10/36",
+   "rate": 0.28,
+   "wilson95": [
+    0.16,
+    0.44
+   ],
+   "rule": "lost",
+   "per_judge": "6/12, 4/12, 0/12",
+   "note": "Judges who chose pvm-20 cited its clear scanlines and bloom; those who chose the soft preset cited pvm-20's dark gaps as artificial. pvm-20 stays the default, as the protocol fixed."
+  },
+  {
+   "comparison": "pigment lighting grotesque vs multiply, saturated still life",
+   "wins": "6/6",
+   "rate": 1.0,
+   "wilson95": [
+    0.61,
+    1.0
+   ],
+   "rule": "preferred",
+   "note": "Reasons: hue-shifted cool shadows and warm ground. The scene and preset were chosen by the builder by looking."
+  },
+  {
+   "comparison": "pigment lighting disco vs multiply, saturated still life",
+   "wins": "2/6",
+   "rate": 0.33,
+   "wilson95": [
+    0.1,
+    0.7
+   ],
+   "rule": "not distinguishable",
+   "note": "Two judges preferred the multiply's warmer shadow on the yellow ball."
+  },
+  {
+   "comparison": "EHT sag, flash clip, thriller vs S = 0",
+   "wins": "4/6",
+   "rate": 0.67,
+   "wilson95": [
+    0.3,
+    0.9
+   ],
+   "rule": "not distinguishable",
+   "note": "Judges saw all 48 frames. Reasons for the sag side were softer spot and glow; the sag's defocus is part of the effect, so this does not isolate the raster bloom."
+  },
+  {
+   "comparison": "EHT sag, sweeping window clip",
+   "wins": "missing",
+   "rule": "missing",
+   "note": "In every attempt (Opus three times over two slots, Sonnet once) frames 1 to 18 of the first clip came back as a request limit, so no full-view vote exists. Kept and hashed, not scored. The other clips of the same size loaded fully; the cause is unknown."
+  },
+  {
+   "comparison": "mix-bayer4 vs bayer4, game clip, PICO-8",
+   "wins": "5/6",
+   "rate": 0.83,
+   "wilson95": [
+    0.44,
+    0.97
+   ],
+   "rule": "not distinguishable",
+   "note": "Five of six reasons: mix keeps the green hills and hues; bayer4 turns them grey-blue. One preferred bayer4 as cleaner and finer."
+  }
+ ],
+ "pixel_template_mode": {
+  "rule": "evidence/shaders-dither-temporal-protocol.json default_rule",
+  "step1": "panel not distinguishable (5/6, lower bound 0.44)",
+  "step2": "mix-bayer4 flicker lower on both named sequences with PICO-8: pan 0.230 vs 0.245, game 0.115 vs 0.121 (evidence/shaders-dither-temporal-runs.json)",
+  "decision": "templates/pixel-2.5d uses mix-bayer4",
+  "caveat": "Under a flickering light mix-bayer4 flickers about 2.8 times as much as bayer4; the rule did not weigh that because the template's light is steady. A template with flickering light should use bayer4.",
+  "cost": "SwiftShader, 480 x 270, 30 frames: mix-bayer4 773 ms per frame median against 62.5 ms for bayer4 (12 times slower; 16 plan steps over the palette per pixel). Not measured on the RTX 4090 (GPU reserved for training)."
+ },
+ "checks_on_the_judges": "Part A: each judge chose the same image on all 14 swapped repeats and side A on exactly 14 of 28, so repeats may be copies. Part B: one agent per trial, so repeats come from different agents.",
+ "does_not_prove": "Human preference; independence (all judges are Claude models and two share one model); anything beyond these frames and clips; the intervals treat repeats as independent.",
+ "votes": {
+  "A-judge1": [
+   {
+    "i": 0,
+    "choice": "B",
+    "reason": "Vignette, glow and overscan edges read as a real tube."
+   },
+   {
+    "i": 1,
+    "choice": "A",
+    "reason": "Soft shadow-mask triads and blur feel like phosphor."
+   },
+   {
+    "i": 2,
+    "choice": "A",
+    "reason": "Visible scanlines with bloom on bright areas."
+   },
+   {
+    "i": 3,
+    "choice": "A",
+    "reason": "Soft dot-mask texture looks more like phosphor glass."
+   },
+   {
+    "i": 4,
+    "choice": "B",
+    "reason": "Soft shadow-mask triads and blur feel like phosphor."
+   },
+   {
+    "i": 5,
+    "choice": "B",
+    "reason": "Softer scanlines; A's dark gaps look artificial."
+   },
+   {
+    "i": 6,
+    "choice": "B",
+    "reason": "Scanlines plus grille texture read more CRT-like."
+   },
+   {
+    "i": 7,
+    "choice": "A",
+    "reason": "Clear scanlines with bright-pixel bloom."
+   },
+   {
+    "i": 8,
+    "choice": "A",
+    "reason": "Phosphor glow and softer blending than hard dark scanlines."
+   },
+   {
+    "i": 9,
+    "choice": "B",
+    "reason": "Color bleed and dot mask look like a composite CRT."
+   },
+   {
+    "i": 10,
+    "choice": "A",
+    "reason": "Scanlines plus grille texture read more CRT-like."
+   },
+   {
+    "i": 11,
+    "choice": "A",
+    "reason": "Vignette, glow and overscan edges read as a real tube."
+   },
+   {
+    "i": 12,
+    "choice": "B",
+    "reason": "Warmer shadow color on ball feels more painterly."
+   },
+   {
+    "i": 13,
+    "choice": "B",
+    "reason": "Cool shadows and warm ground show painterly color choices."
+   },
+   {
+    "i": 14,
+    "choice": "B",
+    "reason": "Visible scanlines with bloom on bright areas."
+   },
+   {
+    "i": 15,
+    "choice": "B",
+    "reason": "Balanced scanlines; A's heavy gaps look artificial."
+   },
+   {
+    "i": 16,
+    "choice": "A",
+    "reason": "Scanline structure reads more CRT than plain fine mask."
+   },
+   {
+    "i": 17,
+    "choice": "A",
+    "reason": "Softer scanlines; B's dark gaps look artificial."
+   },
+   {
+    "i": 18,
+    "choice": "B",
+    "reason": "Clear scanlines with bright-pixel bloom."
+   },
+   {
+    "i": 19,
+    "choice": "A",
+    "reason": "Cool shadows and warm ground show painterly color choices."
+   },
+   {
+    "i": 20,
+    "choice": "B",
+    "reason": "Scanline structure reads more CRT than plain fine mask."
+   },
+   {
+    "i": 21,
+    "choice": "B",
+    "reason": "Phosphor glow and softer blending than hard dark scanlines."
+   },
+   {
+    "i": 22,
+    "choice": "A",
+    "reason": "Warmer shadow color on ball feels more painterly."
+   },
+   {
+    "i": 23,
+    "choice": "A",
+    "reason": "Clear scanlines with bright-pixel bloom."
+   },
+   {
+    "i": 24,
+    "choice": "B",
+    "reason": "Clear scanlines with bright-pixel bloom."
+   },
+   {
+    "i": 25,
+    "choice": "A",
+    "reason": "Balanced scanlines; B's heavy gaps look artificial."
+   },
+   {
+    "i": 26,
+    "choice": "A",
+    "reason": "Color bleed and dot mask look like a composite CRT."
+   },
+   {
+    "i": 27,
+    "choice": "B",
+    "reason": "Soft dot-mask texture looks more like phosphor glass."
+   }
+  ],
+  "A-judge2": [
+   {
+    "i": 0,
+    "choice": "B",
+    "reason": "Vignette, glow and visible aperture grille read like a photographed tube."
+   },
+   {
+    "i": 1,
+    "choice": "A",
+    "reason": "Dot-mask texture with soft bloom looks more like a consumer CRT."
+   },
+   {
+    "i": 2,
+    "choice": "A",
+    "reason": "Distinct scanlines with beam-width variation look like a real tube."
+   },
+   {
+    "i": 3,
+    "choice": "A",
+    "reason": "Soft shadow-mask dots and bloom feel more tube-like than flat stripes."
+   },
+   {
+    "i": 4,
+    "choice": "B",
+    "reason": "Shadow-mask dot texture with bloom reads more like a real CRT."
+   },
+   {
+    "i": 5,
+    "choice": "B",
+    "reason": "Scanlines present without crushing detail; A's harsh lines erase shapes."
+   },
+   {
+    "i": 6,
+    "choice": "B",
+    "reason": "Visible scanlines plus RGB phosphor stripes resemble a real tube."
+   },
+   {
+    "i": 7,
+    "choice": "A",
+    "reason": "Clear scanline gaps and beam shaping, classic low-res CRT look."
+   },
+   {
+    "i": 8,
+    "choice": "B",
+    "reason": "Scanline gaps and beam shaping give a stronger CRT signature."
+   },
+   {
+    "i": 9,
+    "choice": "B",
+    "reason": "Bloom, convergence fringing and dot mask look like a real tube."
+   },
+   {
+    "i": 10,
+    "choice": "A",
+    "reason": "Scanlines plus RGB phosphor stripes resemble a real tube."
+   },
+   {
+    "i": 11,
+    "choice": "A",
+    "reason": "Vignette, glow and aperture grille read like a photographed tube."
+   },
+   {
+    "i": 12,
+    "choice": "A",
+    "reason": "Cooler tinted shadow on sphere feels more painterly than plain shading."
+   },
+   {
+    "i": 13,
+    "choice": "B",
+    "reason": "Hue-shifted shadows and warm ground look hand-painted."
+   },
+   {
+    "i": 14,
+    "choice": "B",
+    "reason": "Distinct scanlines with beam-width variation look like a real tube."
+   },
+   {
+    "i": 15,
+    "choice": "B",
+    "reason": "Scanlines present without crushing detail; A's harsh lines erase shapes."
+   },
+   {
+    "i": 16,
+    "choice": "A",
+    "reason": "Scanlines plus RGB phosphor stripes resemble a real tube."
+   },
+   {
+    "i": 17,
+    "choice": "A",
+    "reason": "Scanlines present without crushing detail; B's harsh lines erase shapes."
+   },
+   {
+    "i": 18,
+    "choice": "B",
+    "reason": "Clear scanline gaps and beam shaping, classic low-res CRT look."
+   },
+   {
+    "i": 19,
+    "choice": "A",
+    "reason": "Hue-shifted shadows and warm ground look hand-painted."
+   },
+   {
+    "i": 20,
+    "choice": "B",
+    "reason": "Scanlines plus RGB phosphor stripes resemble a real tube."
+   },
+   {
+    "i": 21,
+    "choice": "A",
+    "reason": "Scanline gaps and beam shaping give a stronger CRT signature."
+   },
+   {
+    "i": 22,
+    "choice": "B",
+    "reason": "Cooler tinted shadow on sphere feels more painterly than plain shading."
+   },
+   {
+    "i": 23,
+    "choice": "A",
+    "reason": "Clear scanline gaps and beam shaping, classic low-res CRT look."
+   },
+   {
+    "i": 24,
+    "choice": "B",
+    "reason": "Clear scanline gaps and beam shaping, classic low-res CRT look."
+   },
+   {
+    "i": 25,
+    "choice": "A",
+    "reason": "Scanlines present without crushing detail; B's harsh lines erase shapes."
+   },
+   {
+    "i": 26,
+    "choice": "A",
+    "reason": "Bloom, convergence fringing and dot mask look like a real tube."
+   },
+   {
+    "i": 27,
+    "choice": "B",
+    "reason": "Soft shadow-mask dots and bloom feel more tube-like than flat stripes."
+   }
+  ],
+  "A-judge3": [
+   {
+    "i": 0,
+    "choice": "B",
+    "reason": "Judged more CRT-like: more visible scanlines and phosphor mask"
+   },
+   {
+    "i": 1,
+    "choice": "B",
+    "reason": "Judged more CRT-like: more visible scanlines and phosphor mask"
+   },
+   {
+    "i": 2,
+    "choice": "A",
+    "reason": "Judged more CRT-like: more visible scanlines and phosphor mask"
+   },
+   {
+    "i": 3,
+    "choice": "B",
+    "reason": "Judged more CRT-like: more visible scanlines and phosphor mask"
+   },
+   {
+    "i": 4,
+    "choice": "A",
+    "reason": "Judged more CRT-like: more visible scanlines and phosphor mask"
+   },
+   {
+    "i": 5,
+    "choice": "A",
+    "reason": "Judged more CRT-like: more visible scanlines and phosphor mask"
+   },
+   {
+    "i": 6,
+    "choice": "B",
+    "reason": "Judged more CRT-like: more visible scanlines and phosphor mask"
+   },
+   {
+    "i": 7,
+    "choice": "A",
+    "reason": "Judged more CRT-like: more visible scanlines and phosphor mask"
+   },
+   {
+    "i": 8,
+    "choice": "B",
+    "reason": "Judged more CRT-like: more visible scanlines and phosphor mask"
+   },
+   {
+    "i": 9,
+    "choice": "A",
+    "reason": "Judged more CRT-like: more visible scanlines and phosphor mask"
+   },
+   {
+    "i": 10,
+    "choice": "A",
+    "reason": "Judged more CRT-like: more visible scanlines and phosphor mask"
+   },
+   {
+    "i": 11,
+    "choice": "A",
+    "reason": "Judged more CRT-like: more visible scanlines and phosphor mask"
+   },
+   {
+    "i": 12,
+    "choice": "B",
+    "reason": "Softer, flatter shading looks more painterly"
+   },
+   {
+    "i": 13,
+    "choice": "B",
+    "reason": "Softer, flatter shading looks more painterly"
+   },
+   {
+    "i": 14,
+    "choice": "B",
+    "reason": "Judged more CRT-like: more visible scanlines and phosphor mask"
+   },
+   {
+    "i": 15,
+    "choice": "A",
+    "reason": "Judged more CRT-like: more visible scanlines and phosphor mask"
+   },
+   {
+    "i": 16,
+    "choice": "A",
+    "reason": "Judged more CRT-like: more visible scanlines and phosphor mask"
+   },
+   {
+    "i": 17,
+    "choice": "B",
+    "reason": "Judged more CRT-like: more visible scanlines and phosphor mask"
+   },
+   {
+    "i": 18,
+    "choice": "B",
+    "reason": "Judged more CRT-like: more visible scanlines and phosphor mask"
+   },
+   {
+    "i": 19,
+    "choice": "A",
+    "reason": "Softer, flatter shading looks more painterly"
+   },
+   {
+    "i": 20,
+    "choice": "B",
+    "reason": "Judged more CRT-like: more visible scanlines and phosphor mask"
+   },
+   {
+    "i": 21,
+    "choice": "A",
+    "reason": "Judged more CRT-like: more visible scanlines and phosphor mask"
+   },
+   {
+    "i": 22,
+    "choice": "A",
+    "reason": "Softer, flatter shading looks more painterly"
+   },
+   {
+    "i": 23,
+    "choice": "A",
+    "reason": "Judged more CRT-like: more visible scanlines and phosphor mask"
+   },
+   {
+    "i": 24,
+    "choice": "B",
+    "reason": "Judged more CRT-like: more visible scanlines and phosphor mask"
+   },
+   {
+    "i": 25,
+    "choice": "B",
+    "reason": "Judged more CRT-like: more visible scanlines and phosphor mask"
+   },
+   {
+    "i": 26,
+    "choice": "B",
+    "reason": "Judged more CRT-like: more visible scanlines and phosphor mask"
+   },
+   {
+    "i": 27,
+    "choice": "A",
+    "reason": "Judged more CRT-like: more visible scanlines and phosphor mask"
+   }
+  ],
+  "B-judge1": [
+   {
+    "i": 0,
+    "choice": "A",
+    "reason": "A keeps green hills and scene hues; B shifts hills to gray-blue and bands the sky.",
+    "frames_seen": 48
+   },
+   {
+    "i": 3,
+    "choice": "B",
+    "reason": "Softer beam spot, stronger bloom and phosphor glow; A looks sharper, more digital.",
+    "frames_seen": 48
+   },
+   {
+    "i": 4,
+    "choice": "B",
+    "reason": "Crisper scanlines and visible barrel curvature; A looks like a soft blur filter.",
+    "frames_seen": 48
+   },
+   {
+    "i": 5,
+    "choice": "B",
+    "reason": "B keeps distinct hues (green hills, warm sky); A flattens hills into dull blue-grey.",
+    "frames_seen": 48
+   }
+  ],
+  "B-judge2": [
+   {
+    "i": 0,
+    "choice": "A",
+    "reason": "A keeps green hills and smoother sky; B loses hue, hills turn gray-blue.",
+    "frames_seen": 48
+   },
+   {
+    "i": 3,
+    "choice": "B",
+    "reason": "Softer beam spread and lamp halation read as phosphor glow; A looks sharper, more digital.",
+    "frames_seen": 48
+   },
+   {
+    "i": 4,
+    "choice": "A",
+    "reason": "Softer phosphor glow and beam blur read more like a real tube.",
+    "frames_seen": 48
+   },
+   {
+    "i": 5,
+    "choice": "A",
+    "reason": "Cleaner, finer dither; crisp text and sprite. B is noisier with colour fringing despite greener hills.",
+    "frames_seen": 48
+   }
+  ],
+  "B-judge3": [
+   {
+    "i": 0,
+    "choice": "A",
+    "reason": "A keeps green hills and red shirt; B washes scene into muddy blue-grey with lost colour separation.",
+    "frames_seen": 48
+   },
+   {
+    "i": 3,
+    "choice": "A",
+    "reason": "Scanline phase alternates between frames like interlaced CRT scan; B looks static and flatter.",
+    "frames_seen": 48
+   },
+   {
+    "i": 4,
+    "choice": "A",
+    "reason": "Softer bloom, more pronounced scanlines and phosphor glow; B looks crisper and more digital.",
+    "frames_seen": 48
+   },
+   {
+    "i": 5,
+    "choice": "B",
+    "reason": "B keeps green hills, red figure and distinct hues; A is muddy blue-grey with colours lost.",
+    "frames_seen": 48
+   }
+  ]
+ }
+}
