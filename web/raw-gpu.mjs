@@ -16,7 +16,7 @@
 import { FrameGraph, Access } from "./frame-graph.mjs";
 
 export { FrameGraph, Access };
-export const VERSION = "0.7.0";
+export const VERSION = "0.8.0";
 
 const isBuffer = (r) => typeof GPUBuffer !== "undefined" ? r instanceof GPUBuffer : typeof r.mapAsync === "function";
 
