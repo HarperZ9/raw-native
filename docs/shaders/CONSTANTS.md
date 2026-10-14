@@ -29,6 +29,8 @@ Each physical number the CRT and film shaders use, where it comes from, and how 
 | Damper wires | 2 wires at 1/3 and 2/3 height above 15 inches, 1 below | Wikipedia "Trinitron" | moderate |
 | Slot mask pitch | 0.75 mm | recalled (0.6 to 0.8 mm) | low |
 | Delta mask pitch | 0.28 mm | common 14-inch monitor figure | moderate |
+| pvm-20-soft locked mask | 3 output pixels per triad, mix 0.5 | chosen by looking at 4 variants (mix 0.35 to 0.6) against the panel crops, 2026-10-14 | choice |
+| pvm-20-soft spot and bandwidth | sigma 0.25 to 0.42 line spacings, RGB 3.5 MHz | same comparison; consumer spot range 0.17 to 0.29 is the research figure, so this is wider than a sharp tube | choice |
 | Faceplate | 9 to 13 mm, n = 1.52, transmission 0.46 to 0.85 | recalled | low (thickness, tint), moderate (index) |
 | Halo ring radius | 2 t tan(asin(1/n)) | derived from total internal reflection | high (geometry) |
 | Phosphor-layer albedo | 0.5 | assumed | low |

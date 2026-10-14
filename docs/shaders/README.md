@@ -37,7 +37,9 @@ In a Motion display list the film is the post pass `film`. It reads scene-linear
 
 ## The tube (`web/shaders/crt/`)
 
-Presets: `pvm-20` (aperture grille, RGB), `trinitron-tv` (grille, composite, comb filter), `slot-tv` (slot mask, composite, notch filter), `vga-14` (delta mask), `bw-tv` (P4 white), `radar-p7` (P7 blue flash and yellow-green afterglow), `scope-p31`. Any field can be overridden.
+Presets: `pvm-20` (aperture grille, RGB), `trinitron-tv` (grille, composite, comb filter), `slot-tv` (slot mask, composite, notch filter), `vga-14` (delta mask), `bw-tv` (P4 white), `radar-p7` (P7 blue flash and yellow-green afterglow), `scope-p31`, and `pvm-20-soft`. Any field can be overridden.
+
+`pvm-20-soft` locks the mask to the output pixel grid (`mask.lock: "pixel"`, one triad per `mask.pitchPx` pixels, default 3). Each pixel takes the exact area integral of the stripes, so an integer pitch shows the mask at full contrast with no moire. The mask is mixed in at half strength, the spot is wider and the video bandwidth is 3.5 MHz, so the picture is softer. This is a display choice and not tube geometry: a real 0.3 mm grille is finer than one pixel of a 1080p view of a 20-inch face. The default `pvm-20` keeps the mask on the face at its true pitch. The preset was made for a blind comparison against crt-lottes, after judges who preferred lottes cited its visible mask and soft beam. No competitor source was read.
 
 | Pass | What it simulates |
 |---|---|
