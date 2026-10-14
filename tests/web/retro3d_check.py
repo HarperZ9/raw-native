@@ -21,6 +21,10 @@ import sys
 import threading
 from pathlib import Path
 
+# With the CPU WebGPU adapter, keep the rest of Chrome off the GPU too: by default its compositor and
+# 2D canvas still draw on the machine's GPU through ANGLE (checked 2026-10-14: an RTX 4090 via D3D11).
+CPU_FRAME = ["--disable-gpu-compositing", "--disable-accelerated-2d-canvas", "--disable-gpu-rasterization"]
+
 ROOT = Path(__file__).resolve().parents[2]
 TYPES = {".mjs": "text/javascript", ".html": "text/html", ".json": "application/json", ".wgsl": "text/plain"}
 
@@ -43,7 +47,7 @@ def main() -> int:
     threading.Thread(target=srv.serve_forever, daemon=True).start()
     args = ["--enable-unsafe-webgpu", "--enable-gpu", "--ignore-gpu-blocklist"]
     if a.adapter == "swiftshader":
-        args += ["--enable-unsafe-swiftshader", "--use-webgpu-adapter=swiftshader"]
+        args += ["--enable-unsafe-swiftshader", "--use-webgpu-adapter=swiftshader", *CPU_FRAME]
     try:
         with sync_playwright() as p:
             b = p.chromium.launch(channel="chrome", headless=True, args=args)
