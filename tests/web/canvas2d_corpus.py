@@ -106,6 +106,7 @@ def main() -> int:
                              "and it says nothing about the layers and post passes the fallback leaves out.")
     print(json.dumps({k: v for k, v in res.items() if k != "cases"}, indent=1))
     if a.out:
+        Path(a.out).parent.mkdir(parents=True, exist_ok=True)
         Path(a.out).write_text(json.dumps(res, indent=1) + "\n", encoding="utf-8", newline="\n")
     return 1 if res["problems"] else 0
 

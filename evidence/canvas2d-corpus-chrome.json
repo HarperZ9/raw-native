@@ -37,7 +37,9 @@
    "stats": {
     "items": 1,
     "culled": 0,
-    "skipped": {}
+    "skipped": {
+     "bloom": 1
+    }
    }
   },
   "fill-evenodd": {
@@ -75,7 +77,9 @@
    "stats": {
     "items": 1,
     "culled": 0,
-    "skipped": {}
+    "skipped": {
+     "bloom": 1
+    }
    }
   },
   "fill-convex": {
@@ -113,7 +117,9 @@
    "stats": {
     "items": 1,
     "culled": 0,
-    "skipped": {}
+    "skipped": {
+     "bloom": 1
+    }
    }
   },
   "stroke-round": {
@@ -151,7 +157,9 @@
    "stats": {
     "items": 1,
     "culled": 0,
-    "skipped": {}
+    "skipped": {
+     "bloom": 1
+    }
    }
   },
   "stroke-miter": {
@@ -189,7 +197,9 @@
    "stats": {
     "items": 1,
     "culled": 0,
-    "skipped": {}
+    "skipped": {
+     "bloom": 1
+    }
    }
   },
   "stroke-miter-limit": {
@@ -227,7 +237,9 @@
    "stats": {
     "items": 1,
     "culled": 0,
-    "skipped": {}
+    "skipped": {
+     "bloom": 1
+    }
    }
   },
   "stroke-bevel": {
@@ -265,7 +277,9 @@
    "stats": {
     "items": 1,
     "culled": 0,
-    "skipped": {}
+    "skipped": {
+     "bloom": 1
+    }
    }
   },
   "stroke-closed": {
@@ -303,7 +317,9 @@
    "stats": {
     "items": 1,
     "culled": 0,
-    "skipped": {}
+    "skipped": {
+     "bloom": 1
+    }
    }
   },
   "stroke-curve": {
@@ -341,7 +357,9 @@
    "stats": {
     "items": 1,
     "culled": 0,
-    "skipped": {}
+    "skipped": {
+     "bloom": 1
+    }
    }
   },
   "stroke-hairline": {
@@ -379,7 +397,9 @@
    "stats": {
     "items": 1,
     "culled": 0,
-    "skipped": {}
+    "skipped": {
+     "bloom": 1
+    }
    }
   },
   "dash-butt": {
@@ -417,7 +437,9 @@
    "stats": {
     "items": 1,
     "culled": 0,
-    "skipped": {}
+    "skipped": {
+     "bloom": 1
+    }
    }
   },
   "dash-dots": {
@@ -455,7 +477,9 @@
    "stats": {
     "items": 1,
     "culled": 0,
-    "skipped": {}
+    "skipped": {
+     "bloom": 1
+    }
    }
   },
   "gradient-linear": {
@@ -493,7 +517,9 @@
    "stats": {
     "items": 1,
     "culled": 0,
-    "skipped": {}
+    "skipped": {
+     "bloom": 1
+    }
    }
   },
   "gradient-radial": {
@@ -531,7 +557,9 @@
    "stats": {
     "items": 1,
     "culled": 0,
-    "skipped": {}
+    "skipped": {
+     "bloom": 1
+    }
    }
   },
   "gradient-stroke": {
@@ -569,7 +597,9 @@
    "stats": {
     "items": 1,
     "culled": 0,
-    "skipped": {}
+    "skipped": {
+     "bloom": 1
+    }
    }
   },
   "clip-circle": {
@@ -607,7 +637,9 @@
    "stats": {
     "items": 1,
     "culled": 0,
-    "skipped": {}
+    "skipped": {
+     "bloom": 1
+    }
    }
   },
   "clip-evenodd": {
@@ -645,7 +677,9 @@
    "stats": {
     "items": 1,
     "culled": 0,
-    "skipped": {}
+    "skipped": {
+     "bloom": 1
+    }
    }
   },
   "clip-stroke": {
@@ -683,7 +717,9 @@
    "stats": {
     "items": 1,
     "culled": 0,
-    "skipped": {}
+    "skipped": {
+     "bloom": 1
+    }
    }
   },
   "image-fill": {
@@ -721,7 +757,9 @@
    "stats": {
     "items": 1,
     "culled": 0,
-    "skipped": {}
+    "skipped": {
+     "bloom": 1
+    }
    }
   },
   "image-stroke": {
@@ -759,7 +797,9 @@
    "stats": {
     "items": 1,
     "culled": 0,
-    "skipped": {}
+    "skipped": {
+     "bloom": 1
+    }
    }
   }
  },
@@ -786,6 +826,6 @@
   "stroke-curve": "the reference covers about 2 px past the butt cap at the curve's end, where the canvas correctly draws nothing (pixel (240, 127) lies wholly past the cap; issue #123)"
  },
  "problems": [],
- "commit": "fdee28315d05c8d2beb05c2ff3d92f0eed9fccce",
+ "commit": "a8b180972703ec7ebf7d52119ff7678052d66749",
  "does_not_prove": "Twenty single items on a 256 x 256 canvas in one browser. It does not show that whole scenes match, and it says nothing about the layers and post passes the fallback leaves out."
 }

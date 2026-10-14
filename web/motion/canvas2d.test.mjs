@@ -69,7 +69,7 @@ test("gradients are placed in pixels; layers it cannot draw are counted, not dra
   assert.equal(fill.state.fillStyle.kind, "createLinearGradient");
   assert.deepEqual(fill.state.fillStyle.a, [0, 0, 50, 0]);
   assert.equal(fill.state.fillStyle.stops.length, 2);
-  assert.deepEqual(stats.skipped, { particles: 1, threads: 2, post: 1 });
+  assert.deepEqual(stats.skipped, { particles: 1, threads: 2, post: 1, bloom: 1 });
 });
 
 test("a null background clears; a colour fills; the vignette darkens only at the edges", () => {
@@ -90,4 +90,25 @@ test("a null background clears; a colour fills; the vignette darkens only at the
 test("near-duplicate points are dropped so a butt cap keeps the stroke's direction", () => {
   const p = toPath([{ pts: Float32Array.from([0, 0, 10, 0, 10.001, 0]), closed: false }], 1, 0, 0, () => new RecPath());
   assert.equal(p.ops.length, 2);
+});
+
+test("dashes scale with the camera like the GPU's, also on hairlines; a one-point stroke is a dot", () => {
+  const { g, log } = recorder(1920, 1080);
+  drawFrame(g, { camera: { x: 960, y: 540, zoom: 2 }, items: [
+    { shape: rect(0, 0, 10, 10), stroke: "#ffffff", width: 1, hairline: true, dash: [4, 2] },
+    { shape: [{ pts: Float32Array.from([5, 5, 5, 5]), closed: false }], stroke: "#ffffff", width: 4 },
+  ] }, { vignette: false, makePath: () => new RecPath() });
+  const [h, dot] = draws(log);
+  assert.equal(h.state.lineWidth, 1);                      // hairline width in pixels
+  assert.deepEqual(h.state.lineDash, [8, 4]);              // dash in scene units, times zoom 2
+  assert.equal(dot.a[0].ops.length, 2);                    // moveTo and a zero-length lineTo
+});
+
+test("a throw inside an item leaves the caller's context balanced", () => {
+  const { g, log } = recorder();
+  let depth = 0; const save = g.save, restore = g.restore;
+  g.save = () => { depth++; save(); }; g.restore = () => { depth--; restore(); };
+  assert.throws(() => drawFrame(g, { items: [{ shape: rect(0, 0, 10, 10), fill: { image: "missing", rect: [0, 0, 1, 1] } }] }, { vignette: false, makePath: () => new RecPath() }), /no image named missing/);
+  assert.equal(depth, 0);
+  assert.ok(log.length >= 0);
 });
