@@ -30,6 +30,10 @@ import time
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
 
+# With the CPU WebGPU adapter, keep the rest of Chrome off the GPU too: by default its compositor and
+# 2D canvas still draw on the machine's GPU through ANGLE (checked 2026-10-14: an RTX 4090 via D3D11).
+CPU_FRAME = ["--disable-gpu-compositing", "--disable-accelerated-2d-canvas", "--disable-gpu-rasterization"]
+
 TYPES = {".mjs": "text/javascript", ".js": "text/javascript", ".wgsl": "text/plain", ".json": "application/json",
          ".html": "text/html", ".wav": "audio/wav", ".css": "text/css", ".woff2": "font/woff2"}
 
@@ -241,7 +245,7 @@ def main(argv=None) -> int:
         with sync_playwright() as p:
             b = p.chromium.launch(channel=a.channel or None, headless=True,
                                   args=["--enable-unsafe-webgpu", "--enable-gpu", "--ignore-gpu-blocklist"]
-                                  + (["--enable-unsafe-swiftshader", "--use-webgpu-adapter=swiftshader"] if a.adapter == "swiftshader" else []))
+                                  + (["--enable-unsafe-swiftshader", "--use-webgpu-adapter=swiftshader", *CPU_FRAME] if a.adapter == "swiftshader" else []))
             page = b.new_page()
             page.on("console", lambda m: m.type in ("error", "warning") and print("  page:", m.text, flush=True))
             page.goto(url)
