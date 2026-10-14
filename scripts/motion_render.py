@@ -127,6 +127,9 @@ def handler(root: Path, sink: Sink):
 
 def encoder(ffmpeg: str, w: int, h: int, fps: int, codec: str, quality: int, out: Path) -> list[str]:
     cmd = [ffmpeg, "-y", "-loglevel", "error", "-f", "rawvideo", "-pix_fmt", "rgba", "-s", f"{w}x{h}", "-r", str(fps), "-i", "-"]
+    if codec == "png":
+        # A lossless still: each frame overwrites one RGBA PNG, so a one-frame range leaves that frame.
+        return cmd + ["-c:v", "png", "-pix_fmt", "rgba", "-update", "1", "-f", "image2", str(out)]
     if codec.endswith("_nvenc"):
         cmd += ["-c:v", codec, "-preset", "p6", "-tune", "hq", "-rc", "vbr", "-cq", str(quality), "-b:v", "0", "-pix_fmt", "yuv420p"]
         if codec.startswith("hevc"):
@@ -189,7 +192,7 @@ def main(argv=None) -> int:
                     help="webcodecs: the browser's hardware encoder; raw: RGBA frames to ffmpeg (slower)")
     ap.add_argument("--wc-codec", default="avc1.640034", help="WebCodecs codec string (avc1 uses a fixed quantizer)")
     ap.add_argument("--qp", type=int, default=16, help="WebCodecs H.264 quantizer")
-    ap.add_argument("--codec", default="hevc_nvenc", help="ffmpeg encoder for --transport raw")
+    ap.add_argument("--codec", default="hevc_nvenc", help="ffmpeg encoder for --transport raw; png writes one lossless still (see scripts/motion_still.py)")
     ap.add_argument("--quality", type=int, default=19, help="cq for NVENC, crf for x264/x265 (--transport raw)")
     ap.add_argument("--ffmpeg")
     ap.add_argument("--channel", default="chrome")

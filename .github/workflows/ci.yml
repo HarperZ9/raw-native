@@ -86,10 +86,10 @@ jobs:
           test "$rc" = 4
           grep -q '"verdict":"unverifiable"' gpu-none/gpu_certificate.json
           grep -q '"backend":"none"' gpu-none/gpu_certificate.json
-      - name: Every web test file (frame graph golden, Motion, world, sound, shaders)
+      - name: Every node test file (frame graph golden, Motion, world, sound, shaders, templates, tools)
         shell: bash
-        # Every *.test.mjs under web/, so a new test file needs no edit here.
-        run: node --test $(find web -name '*.test.mjs' | sort)
+        # Every *.test.mjs under web/, templates/ and tools/, so a new test file needs no edit here.
+        run: node --test $(find web templates tools -name '*.test.mjs' | sort)
       - name: Without a GPU backend, threads exits 4
         shell: bash
         run: |
@@ -689,6 +689,10 @@ jobs:
         run: python -m pip install playwright==1.58.0 imageio-ffmpeg==0.6.0
       - name: The style template scaffolds render, the same twice (ADR 0016)
         run: python tests/web/templates_check.py --adapter swiftshader --seconds 1
+      - name: One frame of a template renders to a lossless still at its size, not blank (scripts/motion_still.py)
+        run: |
+          python scripts/motion_still.py --scene ../../templates/retro-thriller/scene.mjs --out media-out/still/retro-thriller.png --t 0.5 --width 480 --height 270
+          node -e "import('./tools/shaders/png.mjs').then(({readPng})=>{const r=readPng('media-out/still/retro-thriller.png');if(r.width!==480||r.height!==270)throw new Error('size '+r.width+'x'+r.height);const s=new Set();for(let i=0;i<r.data.length;i+=4)s.add(r.data[i]<<16|r.data[i+1]<<8|r.data[i+2]);if(s.size<16)throw new Error('only '+s.size+' colours');console.log('still 480x270,',s.size,'colours')})"
       - uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with: { name: media-smoke-templates, path: media-out, retention-days: 7, if-no-files-found: ignore }
