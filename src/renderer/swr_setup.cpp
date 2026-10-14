@@ -178,7 +178,7 @@ Setup setupScreen(const std::vector<Vec2>& c, int w, int h, const Options& o) {
 
 std::vector<std::uint32_t> params(const Options& o, int w, int h, std::uint32_t slots, int tile, const Mat4& M,
                                   std::uint32_t triangles, Vec3 light) {
-    std::vector<std::uint32_t> p(36, 0u);
+    std::vector<std::uint32_t> p(40, 0u);
     const auto f = [](float v) { std::uint32_t u; std::memcpy(&u, &v, 4); return u; };
     const std::uint32_t tilesX = std::uint32_t((w + tile - 1) / tile), tilesY = std::uint32_t((h + tile - 1) / tile);
     p[0] = std::uint32_t(w); p[1] = std::uint32_t(h); p[2] = slots; p[3] = std::uint32_t(tile);
@@ -190,6 +190,7 @@ std::vector<std::uint32_t> params(const Options& o, int w, int h, std::uint32_t 
     const float len = std::sqrt(light.x * light.x + light.y * light.y + light.z * light.z);
     p[32] = f(light.x / len); p[33] = f(light.y / len); p[34] = f(light.z / len);
     p[35] = f(o.snapCorrect ? 1.0f : 0.0f);
+    p[36] = 25u; p[37] = 24u;   // div_rn's loop counts (evidence/rt-r1-bounds.json method note 3)
     return p;
 }
 
