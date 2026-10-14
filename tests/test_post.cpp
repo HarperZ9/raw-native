@@ -16,7 +16,9 @@
 using namespace raw;
 
 namespace {
-const std::string kOpen[] = {"raw-hall nave", "raw-hall gallery"};   // named by run cpu-owned-2 (evidence/m3-post-runs.json)
+// Named by run cpu-owned-2 (evidence/m3-post-runs.json); raw-hall gallery passes and is gated from
+// method note 13 (near-plane clipping in the rasterizer). raw-hall nave stays open for SSR.
+const std::string kOpen[] = {"raw-hall nave"};
 GBuffer gbufferOf(const Scene& s) {
     RasterOptions ro; ro.perspectiveDepth = true;
     return rasterize(s, 256, 256, nullptr, nullptr, ro);

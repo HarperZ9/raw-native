@@ -6,6 +6,12 @@ the day the release was published on GitHub, in UTC.
 
 ## Unreleased
 
+- **Near-plane clipping in the CPU rasterizer** (M3). A triangle with a vertex behind the camera used to be dropped,
+  so close views lost geometry: the `close-512` identity view had no ground, and the raw-hall gallery view showed the
+  gallery slab's underside through its missing top. Such triangles are now clipped at the near plane; every other
+  triangle is drawn exactly as before. GTAO and SSR on raw-hall gallery now pass their unchanged bounds (GTAO mean
+  0.0201 and p95 0.1334; SSR 92.0% correct, 5.5% false hits). The identity golden changes only in `close-512`; GCC and
+  MSVC agree on the new bytes. Method note 13 in `evidence/m3-post-bounds.json`.
 - **Path tracer split radiance, interface v2** (RT). `PathTraceOutput` gains `diffuse`, `specular` and `emission`
   radiance, `diffuseAlbedo` and `specularAlbedo`, and the variance of each component's luminance, on the CPU reference
   and the compute path tracer. Their sum equals `radiance`. The split happens at the first hit, by the BSDF's Lambert

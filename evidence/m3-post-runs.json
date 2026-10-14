@@ -167,7 +167,14 @@
    "what": "exploration probes of the two SSR candidates of step 36, plus thickness and a segment-overlap test, and a GTAO error breakdown on raw-hall gallery (method note 12)",
    "result": "negative: no candidate meets both SSR bounds on raw-hall nave, and none moves raw-hall gallery. Best nave hit rate 90.5% with false hits 15.7% (bound 10%). Model unchanged.",
    "evidence": "evidence/m3-post-bounds.json, method_note_12_2026_10_12"
+  },
+  {
+   "run": "cpu-clip-2026-10-14",
+   "date": "2026-10-14",
+   "what": "method note 13: near-plane clipping in the CPU rasterizer; test_post --json on every scene (MSVC Release)",
+   "result": "GTAO raw-hall gallery passes: mean 0.0201, p95 0.1334 (bounds 0.05 and 0.15; were 0.0734 and 0.6332); its control fails at mean 0.0823. SSR raw-hall gallery passes: 92.0% correct (bound 90%, was 65.1%), false hits 5.5% (bound 10%), resolvable 16,073. The test scene, its near camera, raw-hero and raw-hall nave are unchanged to the pixel; SSR on raw-hall nave stays open (68.3%, false 11.8%). Full CPU ctest 59 of 59. Identity golden: only close-512 moves (the ground plane, previously missing behind the camera, now drawn; 36,920 more covered pixels); GCC 13.3 and MSVC agree byte for byte on the new manifest. WARP: post parity passes; raster identity keeps its recorded nave failure only.",
+   "evidence": "evidence/m3-post-cpu-clip.json; evidence/identity-golden.json"
   }
  ],
- "status": "Open failures, not loosened: GTAO on raw-hall gallery; SSR on raw-hall nave and gallery. Passing since 2026-10-11: TAA RMSE under the pan (0.442 against 0.5) and TAA GPU parity (0 pixels on WARP, SwiftShader and the RTX 4090). Passing: GTAO on the near test scene and raw-hall nave, SSR on both test-scene views, TAA ghosting, GTAO and SSR GPU parity on WARP and SwiftShader on five scenes, every control."
+ "status": "Open failures, not loosened: SSR on raw-hall nave. Passing from 2026-10-14 (method note 13, near-plane clipping): GTAO and SSR on raw-hall gallery. Passing since 2026-10-11: TAA RMSE under the pan (0.442 against 0.5) and TAA GPU parity (0 pixels on WARP, SwiftShader and the RTX 4090). Passing: GTAO on the near test scene and raw-hall nave, SSR on both test-scene views, TAA ghosting, GTAO and SSR GPU parity on WARP and SwiftShader on five scenes, every control."
 }
