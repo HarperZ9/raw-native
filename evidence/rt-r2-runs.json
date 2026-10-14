@@ -193,6 +193,38 @@
    "checks": "P1 to P4, H1, H2",
    "result": "P4 0 and 1 pixel as on WARP and SwiftShader; the tightened pt_gate passes; H1 and H2 pass.",
    "evidence": "evidence/rt-r2-pt-note2-d3d12-rtx4090.json"
+  },
+  {
+   "run": 23,
+   "when": "2026-10-14 04:19Z",
+   "backend": "CPU reference (MSVC Release), branch feat/rt-pt-aov",
+   "checks": "P0, P1, P3 threads, P5a, P5b (addendum 5)",
+   "result": "P5a within on retro_room and iso_street (worst 0.00114 of the bound), its control (no indirect specular) outside on 9,070 of 9,216 values; P5b furnace within at a = 0.5 and 0.8 (1.19 and 1.22 standard errors, specular exactly 0, emission exactly 1), its control (emission in diffuse) outside at 1,671 standard errors. P0, P1 and P3 unchanged.",
+   "evidence": "evidence/rt-r2-p5-cpu.json"
+  },
+  {
+   "run": 24,
+   "when": "2026-10-14 04:21Z",
+   "backend": "D3D12 WARP, branch feat/rt-pt-aov",
+   "checks": "P1 to P5",
+   "result": "P5a within on GPU and CPU outputs (worst 0.0066 of the bound); P5b within (z 0.34 and 1.01); P5c diffuse and specular within on both scenes (retro_room mean |z| 0.816 and 0.815, iso_street 0.380 and 0.376); every P5 control outside; P3 identical with the v2 AOVs; P1, P2 and P4 as before (P4 iso_street's one recorded pixel). pt_gate passes.",
+   "evidence": "evidence/rt-r2-p5-d3d12-warp.json"
+  },
+  {
+   "run": 25,
+   "when": "2026-10-14 04:30Z",
+   "backend": "WebGPU SwiftShader (Chrome, emsdk 6.0.11), --quick, branch feat/rt-pt-aov",
+   "checks": "P1 to P5",
+   "result": "Same verdicts as run 24: every P5 check within and every P5 control outside; pt_gate passes; P4 iso_street's one recorded pixel as before.",
+   "evidence": "evidence/rt-r2-p5-webgpu-swiftshader.json"
+  },
+  {
+   "run": 26,
+   "when": "2026-10-14 04:20Z",
+   "backend": "CPU reference and D3D12 WARP, v2 against the v1 binary from main 0c2fbbb",
+   "checks": "P5d",
+   "result": "Radiance, albedo, normal, depth, motion, variance and triangle byte-identical on retro_room and iso_street at 160 x 120, 16 spp, seed 3: 28 of 28 files on the CPU (gated) and on WARP (reported).",
+   "evidence": "evidence/rt-r2-p5d-v1-unchanged.json"
   }
  ]
 }

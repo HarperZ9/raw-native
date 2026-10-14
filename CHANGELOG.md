@@ -6,6 +6,14 @@ the day the release was published on GitHub, in UTC.
 
 ## Unreleased
 
+- **Path tracer split radiance, interface v2** (RT). `PathTraceOutput` gains `diffuse`, `specular` and `emission`
+  radiance, `diffuseAlbedo` and `specularAlbedo`, and the variance of each component's luminance, on the CPU reference
+  and the compute path tracer. Their sum equals `radiance`. The split happens at the first hit, by the BSDF's Lambert
+  and GGX terms, with no new random numbers, so every v1 output keeps its bytes (checked against the v1 binary on the
+  CPU and on WARP). `rt-pathtrace` writes the new buffers as .pfm. Checks P5a to P5e (`evidence/rt-r2-bounds.json`,
+  addendum 5) pass on the CPU, WARP and SwiftShader, and every control fails. The specular albedo is a Schlick estimate
+  for demodulation, not the lobe's directional albedo. In browsers the larger per-pixel buffers lower the largest frame
+  WebGPU's default 128 MiB binding allows to about 1280 x 720.
 - **Inline ray query, criterion H1.1b** (HW). A dated criterion beside H1.1. It uses a hall scene without coincident faces
   and t and uv tolerances divided by the cosine of the ray to the triangle (floored at 1e-3). On the RTX 4090 it passes:
   0 unexplained disagreements and the worst agreeing hit at 0.44 of its tolerance. The offset, rotation and new coplanar

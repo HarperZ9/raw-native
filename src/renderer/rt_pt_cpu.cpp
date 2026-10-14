@@ -55,13 +55,19 @@ struct Ctx {
         const float e = 2e-4f * (1.0f + std::max(std::fabs(x.p.x), std::max(std::fabs(x.p.y), std::fabs(x.p.z))));
         return x.p + x.ng * (dot(x.ng, dir) > 0.0f ? e : -e);
     }
-    // Next-event estimation at x: the sun and one emitter sample, MIS-weighted.
-    Vec3 nee(const Surf& x, const pt::Frame& fr, const Bsdf& bs, Vec3 woL, std::uint32_t px, std::uint32_t smp, std::uint32_t base) const {
+    // Next-event estimation at x: the sun and one emitter sample, MIS-weighted. Returns the sum;
+    // diff gets the Lambert term's share (interface v2), the rest is (f - fd) cos.
+    Vec3 nee(const Surf& x, const pt::Frame& fr, const Bsdf& bs, Vec3 woL, std::uint32_t px, std::uint32_t smp, std::uint32_t base, Vec3& diff) const {
         Vec3 L{0, 0, 0};
+        diff = {0, 0, 0};
+        const bool dc = d.controls.dropLambertCosine;
         if (maxc(s.sunIrradiance) > 0.0f) {
-            const Vec3 l = normalize(s.sunDir);
-            const pt::Eval e = pt::evalBsdf(bs, woL, pt::toLocal(fr, l), d.controls.dropLambertCosine);
-            if (maxc(e.fcos) > 0.0f && visible(offset(x, l), l, 1e30f)) L = L + mul(e.fcos, s.sunIrradiance);
+            const Vec3 l = normalize(s.sunDir), lL = pt::toLocal(fr, l);
+            const pt::Eval e = pt::evalBsdf(bs, woL, lL, dc);
+            if (maxc(e.fcos) > 0.0f && visible(offset(x, l), l, 1e30f)) {
+                L = L + mul(e.fcos, s.sunIrradiance);
+                diff = diff + mul(pt::lambertCos(bs, woL, lL, dc), s.sunIrradiance);
+            }
         }
         if (s.emitters.empty()) return L;
         const pt::R2 a = pt::rand2(d.seed, px, smp, base + 2), b = pt::rand2(d.seed, px, smp, base + 3);
@@ -73,17 +79,102 @@ struct Ctx {
         const Vec3 q = t.a * (1.0f - su) + t.b * (su * (1.0f - b.a)) + t.c * (su * b.a);
         const Vec3 to = q - x.p;
         const float dist = length(to);
-        const Vec3 l = to * (1.0f / dist);
+        const Vec3 l = to * (1.0f / dist), lL = pt::toLocal(fr, l);
         const float cosL = std::fabs(dot(normalize(cross(t.b - t.a, t.c - t.a)), l));
         if (cosL <= 0.0f) return L;
         const float pl = dist * dist / (cosL * s.emitterArea);
-        const pt::Eval e = pt::evalBsdf(bs, woL, pt::toLocal(fr, l), d.controls.dropLambertCosine);
+        const pt::Eval e = pt::evalBsdf(bs, woL, lL, dc);
         if (maxc(e.fcos) <= 0.0f || !visible(offset(x, l), l, dist * (1.0f - 1e-3f))) return L;
         const float w = d.controls.misWeightOne ? 1.0f : pl * pl / (pl * pl + e.pdf * e.pdf);
         const Vec3 Le = s.materials[s.geo.triTexture[s.emitters[k]]].emission;
+        diff = diff + mul(pt::lambertCos(bs, woL, lL, dc), Le) * (w / pl);
         return L + mul(e.fcos, Le) * (w / pl);
     }
 };
+// One sample's radiance, its v2 split, and the first hit's albedos and normal (0 on a miss).
+struct Sample { Vec3 L{0, 0, 0}, D{0, 0, 0}, S{0, 0, 0}, E{0, 0, 0}, alb{0, 0, 0}, nrm{0, 0, 0}, dAlb{0, 0, 0}, sAlb{0, 0, 0}; };
+// The v1 path, unchanged in its float operations on L. After the first hit every contribution
+// is also added to R by tw, the throughput relative to the first BSDF sample; R is split at the
+// end by the first sample's Lambert weight wd and the rest ws (addendum 5).
+Sample tracePath(const Ctx& C, const PtScene& s, const PathTraceDesc& d, Ray ray, std::uint32_t px, std::uint32_t smp) {
+    Sample o;
+    Vec3 T{1, 1, 1}, tw{1, 1, 1}, R{0, 0, 0}, wd{0, 0, 0}, ws{0, 0, 0};
+    float prevPdf = 0.0f;
+    const bool dc = d.controls.dropLambertCosine;
+    for (std::uint32_t b = 0; b <= d.maxBounces; ++b) {
+        Surf x0;
+        if (!C.hit(ray, 1e30f, x0)) {
+            o.L = o.L + mul(T, s.sky);
+            if (b == 0) o.E = s.sky; else R = R + mul(tw, s.sky);
+            break;
+        }
+        const Bsdf bs{x0.base, x0.m->roughness, x0.m->metallic, x0.m->specular};
+        if (b == 0) {
+            o.alb = x0.base; o.nrm = x0.n;
+            o.dAlb = x0.base * (1.0f - x0.m->metallic);
+            o.sAlb = pt::specAlbedo(bs, std::clamp(-dot(x0.n, ray.d), 0.0f, 1.0f));
+        }
+        const Vec3 Le = x0.m->emission;
+        if (maxc(Le) > 0.0f) {
+            float w = 1.0f;
+            if (b > 0 && !d.controls.misWeightOne) {
+                const float cosL = std::fabs(dot(x0.ng, ray.d)), pl = x0.t * x0.t / (cosL * s.emitterArea);
+                w = prevPdf * prevPdf / (prevPdf * prevPdf + pl * pl);
+            }
+            o.L = o.L + mul(T, Le) * w;
+            if (b == 0) o.E = Le; else R = R + mul(tw, Le) * w;
+        }
+        if (b == d.maxBounces) break;
+        const pt::Frame fr = pt::basis(x0.n);
+        const Vec3 woL = pt::toLocal(fr, ray.d * -1.0f);
+        if (woL.z <= 0.0f) break;
+        const std::uint32_t base = 2 + b * 4;
+        Vec3 nd;
+        const Vec3 Ln = C.nee(x0, fr, bs, woL, px, smp, base, nd);
+        o.L = o.L + mul(T, Ln);
+        if (b == 0) { o.D = nd; o.S = Ln - nd; } else R = R + mul(tw, Ln);
+        const pt::R2 u = pt::rand2(d.seed, px, smp, base), r = pt::rand2(d.seed, px, smp, base + 1);
+        Vec3 wiL;
+        if (!pt::sampleBsdf(bs, woL, r.a, u.a, u.b, wiL)) break;
+        const pt::Eval e = pt::evalBsdf(bs, woL, wiL, dc);
+        if (e.pdf <= 0.0f) break;
+        const Vec3 step = e.fcos * (1.0f / e.pdf);
+        T = mul(T, step);
+        if (b == 0) { wd = pt::lambertCos(bs, woL, wiL, dc) * (1.0f / e.pdf); ws = step - wd; }
+        else tw = mul(tw, step);
+        prevPdf = e.pdf;
+        if (d.russianRoulette && b >= 3) {
+            const float q = std::min(0.95f, maxc(T));
+            if (r.b >= q) break;
+            T = T * (1.0f / q);
+            tw = tw * (1.0f / q);
+        }
+        const Vec3 wi = pt::toWorld(fr, wiL);
+        ray = {Ctx::offset(x0, wi), wi};
+    }
+    o.D = o.D + mul(wd, R);
+    if (!d.controls.aovDropSpecularIndirect) o.S = o.S + mul(ws, R);
+    if (d.controls.aovEmissionToDiffuse) { o.D = o.D + o.E; o.E = {0, 0, 0}; }
+    return o;
+}
+void put3(std::vector<float>& v, std::size_t p, Vec3 a) { v[p * 3] = a.x; v[p * 3 + 1] = a.y; v[p * 3 + 2] = a.z; }
+struct Moments {
+    double s1{0}, s2{0};
+    void add(double l) { s1 += l; s2 += l * l; }
+    float var(std::uint32_t n) const { return n > 1 ? float((s2 - s1 * s1 / n) / (n - 1) / n) : 0.0f; }
+};
+// The pixel-centre ray's depth, triangle and motion.
+void centre(const Ctx& C, const Cam& cam, const Cam& prev, int x, int y, int W, int H, std::size_t p, PathTraceOutput& O) {
+    Surf c;
+    if (!C.hit({cam.eye, dirOf(cam, float(x) + 0.5f, float(y) + 0.5f, W, H)}, 1e30f, c)) return;
+    O.depth[p] = dot(c.p - cam.eye, cam.f);
+    O.triangle[p] = c.tri;
+    const Vec3 v = c.p - prev.eye;
+    const float z = dot(v, prev.f);
+    const float nx = dot(v, prev.s) / (z * prev.th * prev.aspect), ny = dot(v, prev.u) / (z * prev.th);
+    O.motion[p * 2] = (nx * 0.5f + 0.5f) * float(W) - (float(x) + 0.5f);
+    O.motion[p * 2 + 1] = (1.0f - (ny * 0.5f + 0.5f)) * float(H) - (float(y) + 0.5f);
+}
 }  // namespace
 
 PathTraceOutput pathTraceCpu(const PtScene& s, const PathTraceDesc& d, int threads) {
@@ -93,76 +184,31 @@ PathTraceOutput pathTraceCpu(const PtScene& s, const PathTraceDesc& d, int threa
     const std::size_t n = std::size_t(W) * std::size_t(H);
     O.radiance.assign(n * 3, 0.0f); O.albedo.assign(n * 3, 0.0f); O.normal.assign(n * 3, 0.0f);
     O.depth.assign(n, 0.0f); O.variance.assign(n, 0.0f); O.motion.assign(n * 2, 0.0f); O.triangle.assign(n, -1);
+    for (auto* v : {&O.diffuse, &O.specular, &O.emission, &O.diffuseAlbedo, &O.specularAlbedo}) v->assign(n * 3, 0.0f);
+    O.diffuseVariance.assign(n, 0.0f); O.specularVariance.assign(n, 0.0f);
     Ctx C{s, d, trianglesOf(s.geo)};
     const Cam cam = camOf(d.camera, W, H), prev = camOf(d.previous, W, H);
     if (threads <= 0) threads = int(std::max(1u, std::thread::hardware_concurrency()));
     parallelRows(H, threads, [&](int y) {
         for (int x = 0; x < W; ++x) {
             const std::uint32_t px = std::uint32_t(y * W + x);
-            Vec3 sum{0, 0, 0}, alb{0, 0, 0}, nrm{0, 0, 0};
-            double s1 = 0.0, s2 = 0.0;
+            Vec3 sum{0, 0, 0}, alb{0, 0, 0}, nrm{0, 0, 0}, sd{0, 0, 0}, ss{0, 0, 0}, se{0, 0, 0}, sda{0, 0, 0}, ssa{0, 0, 0};
+            Moments mL, mD, mS;
             for (std::uint32_t k = 0; k < d.spp; ++k) {
                 const std::uint32_t smp = d.sppBegin + k;
                 const pt::R2 j = d.jitter ? pt::rand2(d.seed, px, smp, 0) : pt::R2{0.5f, 0.5f};
-                Ray ray{cam.eye, dirOf(cam, float(x) + j.a, float(y) + j.b, W, H)};
-                Vec3 T{1, 1, 1}, L{0, 0, 0};
-                float prevPdf = 0.0f;
-                for (std::uint32_t b = 0; b <= d.maxBounces; ++b) {
-                    Surf x0;
-                    if (!C.hit(ray, 1e30f, x0)) { L = L + mul(T, s.sky); break; }
-                    if (b == 0) { alb = alb + x0.base; nrm = nrm + x0.n; }
-                    const Vec3 Le = x0.m->emission;
-                    if (maxc(Le) > 0.0f) {
-                        float w = 1.0f;
-                        if (b > 0 && !d.controls.misWeightOne) {
-                            const float cosL = std::fabs(dot(x0.ng, ray.d)), pl = x0.t * x0.t / (cosL * s.emitterArea);
-                            w = prevPdf * prevPdf / (prevPdf * prevPdf + pl * pl);
-                        }
-                        L = L + mul(T, Le) * w;
-                    }
-                    if (b == d.maxBounces) break;
-                    const pt::Frame fr = pt::basis(x0.n);
-                    const Vec3 woL = pt::toLocal(fr, ray.d * -1.0f);
-                    if (woL.z <= 0.0f) break;
-                    const Bsdf bs{x0.base, x0.m->roughness, x0.m->metallic, x0.m->specular};
-                    const std::uint32_t base = 2 + b * 4;
-                    L = L + mul(T, C.nee(x0, fr, bs, woL, px, smp, base));
-                    const pt::R2 u = pt::rand2(d.seed, px, smp, base), r = pt::rand2(d.seed, px, smp, base + 1);
-                    Vec3 wiL;
-                    if (!pt::sampleBsdf(bs, woL, r.a, u.a, u.b, wiL)) break;
-                    const pt::Eval e = pt::evalBsdf(bs, woL, wiL, d.controls.dropLambertCosine);
-                    if (e.pdf <= 0.0f) break;
-                    T = mul(T, e.fcos * (1.0f / e.pdf));
-                    prevPdf = e.pdf;
-                    if (d.russianRoulette && b >= 3) {
-                        const float q = std::min(0.95f, maxc(T));
-                        if (r.b >= q) break;
-                        T = T * (1.0f / q);
-                    }
-                    const Vec3 wi = pt::toWorld(fr, wiL);
-                    ray = {Ctx::offset(x0, wi), wi};
-                }
-                sum = sum + L;
-                const double l = pt::luminance(L);
-                s1 += l; s2 += l * l;
+                const Sample o = tracePath(C, s, d, {cam.eye, dirOf(cam, float(x) + j.a, float(y) + j.b, W, H)}, px, smp);
+                sum = sum + o.L; alb = alb + o.alb; nrm = nrm + o.nrm;
+                sd = sd + o.D; ss = ss + o.S; se = se + o.E; sda = sda + o.dAlb; ssa = ssa + o.sAlb;
+                mL.add(pt::luminance(o.L)); mD.add(pt::luminance(o.D)); mS.add(pt::luminance(o.S));
             }
             const float inv = d.spp ? 1.0f / float(d.spp) : 0.0f;
             const std::size_t p = std::size_t(px);
-            const Vec3 m = sum * inv, a = alb * inv, nn = nrm * inv;
-            O.radiance[p * 3] = m.x; O.radiance[p * 3 + 1] = m.y; O.radiance[p * 3 + 2] = m.z;
-            O.albedo[p * 3] = a.x; O.albedo[p * 3 + 1] = a.y; O.albedo[p * 3 + 2] = a.z;
-            O.normal[p * 3] = nn.x; O.normal[p * 3 + 1] = nn.y; O.normal[p * 3 + 2] = nn.z;
-            if (d.spp > 1) O.variance[p] = float((s2 - s1 * s1 / d.spp) / (d.spp - 1) / d.spp);
-            Surf c;
-            if (C.hit({cam.eye, dirOf(cam, float(x) + 0.5f, float(y) + 0.5f, W, H)}, 1e30f, c)) {
-                O.depth[p] = dot(c.p - cam.eye, cam.f);
-                O.triangle[p] = c.tri;
-                const Vec3 v = c.p - prev.eye;
-                const float z = dot(v, prev.f);
-                const float nx = dot(v, prev.s) / (z * prev.th * prev.aspect), ny = dot(v, prev.u) / (z * prev.th);
-                O.motion[p * 2] = (nx * 0.5f + 0.5f) * float(W) - (float(x) + 0.5f);
-                O.motion[p * 2 + 1] = (1.0f - (ny * 0.5f + 0.5f)) * float(H) - (float(y) + 0.5f);
-            }
+            put3(O.radiance, p, sum * inv); put3(O.albedo, p, alb * inv); put3(O.normal, p, nrm * inv);
+            put3(O.diffuse, p, sd * inv); put3(O.specular, p, ss * inv); put3(O.emission, p, se * inv);
+            put3(O.diffuseAlbedo, p, sda * inv); put3(O.specularAlbedo, p, ssa * inv);
+            O.variance[p] = mL.var(d.spp); O.diffuseVariance[p] = mD.var(d.spp); O.specularVariance[p] = mS.var(d.spp);
+            centre(C, cam, prev, x, y, W, H, p, O);
         }
     });
     return O;

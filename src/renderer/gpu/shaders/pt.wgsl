@@ -1,10 +1,13 @@
 // raw-native's path tracer on the GPU (RT stage R2): the compute form of
-// src/renderer/rt_pt_cpu.cpp and rt_pt_math.hpp, interface v1 (raw/renderer/rt_pathtrace.hpp).
+// src/renderer/rt_pt_cpu.cpp and rt_pt_math.hpp, interface v2 (raw/renderer/rt_pathtrace.hpp).
 // pt_trace accumulates a slice of samples per pixel into ACC; pt_finish writes the outputs.
 //
-// ACC, 16 floats a pixel: radiance sum (3), luminance Welford n, mean, M2 (3), albedo sum (3),
-// normal sum (3), depth, motion (2), triangle. O, 16 floats a pixel: radiance (3), albedo (3),
-// normal (3), depth, motion (2), variance, triangle (-1 a miss), pad (2).
+// ACC, 36 floats a pixel: radiance sum (3), luminance Welford n, mean, M2 (3), albedo sum (3),
+// normal sum (3), depth, motion (2), triangle; then (v2) diffuse, specular, emission, diffuse
+// albedo and specular albedo sums (15), Welford mean and M2 of diffuse and of specular
+// luminance (4), pad. O, 36 floats a pixel: radiance (3), albedo (3), normal (3), depth,
+// motion (2), variance, triangle (-1 a miss), pad (2); then (v2) diffuse, specular, emission,
+// diffuse albedo, specular albedo (15), diffuse variance, specular variance, pad (3).
 
 struct PtParams {
     w: u32, h: u32, sppBegin: u32, sppCount: u32,
@@ -22,6 +25,9 @@ const F_RR: u32 = 2u;
 const F_DROPCOS: u32 = 4u;
 const F_MISONE: u32 = 8u;
 const F_FIRST: u32 = 16u;
+const F_AOV_DROPSPEC: u32 = 32u;
+const F_AOV_EMDIFF: u32 = 64u;
+const ACC_N: u32 = 36u;
 
 fn pcg2d(v0: vec2u) -> vec2u {
     var v: vec2u = v0 * 1664525u + 1013904223u;
@@ -73,6 +79,21 @@ fn eval_bsdf(base: vec3f, rough: f32, metal: f32, spec: f32, wo: vec3f, wi: vec3
         pdf = pdf + ps * g1 * dd / (4.0 * wo.z);
     }
     return vec4f(f * cosI, pdf);
+}
+// The Lambert term of eval_bsdf alone, fd cos, by the same operations (interface v2's diffuse).
+fn lambert_cos(base: vec3f, metal: f32, wo: vec3f, wi: vec3f, dropCos: bool) -> vec3f {
+    if (wo.z <= 0.0 || wi.z <= 0.0) { return vec3f(0.0); }
+    let cosI: f32 = select(wi.z, 1.0, dropCos);
+    let f: vec3f = base * ((1.0 - metal) / PI);
+    return f * cosI;
+}
+// Interface v2's specular albedo estimate: F0 + (1 - F0)(1 - cos_o)^5 where the lobe exists.
+fn spec_albedo(base: vec3f, metal: f32, spec: f32, cosO: f32) -> vec3f {
+    if (lobe_prob(metal, spec) <= 0.0) { return vec3f(0.0); }
+    let x1: f32 = clamp(1.0 - cosO, 0.0, 1.0);
+    let fw: f32 = x1 * x1 * x1 * x1 * x1;
+    let f0: vec3f = mix(vec3f(0.04 * spec), base, vec3f(metal));
+    return f0 + (vec3f(1.0) - f0) * fw;
 }
 fn sample_vndf(wo: vec3f, a: f32, u1: f32, u2: f32) -> vec3f {
     let vh: vec3f = normalize(vec3f(a * wo.x, a * wo.y, wo.z));
@@ -212,9 +233,9 @@ fn cam_dir(px: f32, py: f32, eye: vec4f, fwd: vec4f, side: vec4f, up: vec4f) -> 
 fn main(@builtin(global_invocation_id) gid: vec3u) {
     if (gid.x >= P.w || gid.y >= P.h) { return; }
     let px: u32 = gid.y * P.w + gid.x;
-    let o: u32 = px * 16u;
+    let o: u32 = px * ACC_N;
     if ((P.flags & F_FIRST) != 0u) {
-        for (var z: u32 = 0u; z < 16u; z++) { ACC[o + z] = 0.0; }
+        for (var z: u32 = 0u; z < ACC_N; z++) { ACC[o + z] = 0.0; }
         ACC[o + 15u] = -1.0;
         let cd: vec3f = cam_dir(f32(gid.x) + 0.5, f32(gid.y) + 0.5, P.eye, P.fwd, P.side, P.up);
         let ch: vec4f = trace(P.eye.xyz, cd, BIG, false);
@@ -241,10 +262,20 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
         var tp: vec3f = vec3f(1.0);
         var l: vec3f = vec3f(0.0);
         var prevPdf: f32 = 0.0;
+        // v2 split (addendum 5): ld, lsp, le0 at the first hit; rr gathers later contributions by
+        // tw, the throughput relative to the first BSDF sample, split at the end by wd and ws.
+        var ld: vec3f = vec3f(0.0);
+        var lsp: vec3f = vec3f(0.0);
+        var le0: vec3f = vec3f(0.0);
+        var rr: vec3f = vec3f(0.0);
+        var tw: vec3f = vec3f(1.0);
+        var wd: vec3f = vec3f(0.0);
+        var ws: vec3f = vec3f(0.0);
         for (var b: u32 = 0u; b <= P.maxBounces; b++) {
             let h: vec4f = trace(ro, rd, BIG, false);
             if (h.w < 0.0) {
                 l = l + tp * P.sky.xyz;
+                if (b == 0u) { le0 = P.sky.xyz; } else { rr = rr + tw * P.sky.xyz; }
                 break;
             }
             let t: u32 = u32(h.w);
@@ -260,6 +291,10 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
             if (b == 0u) {
                 ACC[o + 6u] = ACC[o + 6u] + base.x; ACC[o + 7u] = ACC[o + 7u] + base.y; ACC[o + 8u] = ACC[o + 8u] + base.z;
                 ACC[o + 9u] = ACC[o + 9u] + n.x; ACC[o + 10u] = ACC[o + 10u] + n.y; ACC[o + 11u] = ACC[o + 11u] + n.z;
+                let da: vec3f = base * (1.0 - M[mb + 2u]);
+                let sa: vec3f = spec_albedo(base, M[mb + 2u], M[mb + 3u], clamp(-dot(n, rd), 0.0, 1.0));
+                ACC[o + 25u] = ACC[o + 25u] + da.x; ACC[o + 26u] = ACC[o + 26u] + da.y; ACC[o + 27u] = ACC[o + 27u] + da.z;
+                ACC[o + 28u] = ACC[o + 28u] + sa.x; ACC[o + 29u] = ACC[o + 29u] + sa.y; ACC[o + 30u] = ACC[o + 30u] + sa.z;
             }
             let le: vec3f = vec3f(M[mb + 4u], M[mb + 5u], M[mb + 6u]);
             if (max(le.x, max(le.y, le.z)) > 0.0) {
@@ -269,6 +304,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
                     w = prevPdf * prevPdf / (prevPdf * prevPdf + pl * pl);
                 }
                 l = l + tp * le * w;
+                if (b == 0u) { le0 = le; } else { rr = rr + tw * le * w; }
             }
             if (b == P.maxBounces) { break; }
             let tb: vec3f = basis_t(n);
@@ -284,7 +320,14 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
                 let ls: vec3f = P.sun.xyz;
                 let es: vec4f = eval_bsdf(base, rough, metal, spec, wo, vec3f(dot(ls, tb), dot(ls, bb), dot(ls, n)), dropCos);
                 if (max(es.x, max(es.y, es.z)) > 0.0) {
-                    if (trace(offset_p(p, ng, ls), ls, BIG, true).w < 0.0) { l = l + tp * es.xyz * P.sunIrr.xyz; }
+                    if (trace(offset_p(p, ng, ls), ls, BIG, true).w < 0.0) {
+                        l = l + tp * es.xyz * P.sunIrr.xyz;
+                        if (b == 0u) {
+                            let dsun: vec3f = lambert_cos(base, metal, wo, vec3f(dot(ls, tb), dot(ls, bb), dot(ls, n)), dropCos) * P.sunIrr.xyz;
+                            ld = ld + dsun;
+                            lsp = lsp + (es.xyz * P.sunIrr.xyz - dsun);
+                        } else { rr = rr + tw * es.xyz * P.sunIrr.xyz; }
+                    }
                 }
             }
             if (P.emitters > 0u) {
@@ -312,7 +355,13 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
                         var wm: f32 = 1.0;
                         if (!misOne) { wm = pl * pl / (pl * pl + ee.w * ee.w); }
                         let em: u32 = u32(A[et * 16u + 15u]) * 8u;
-                        l = l + tp * ee.xyz * vec3f(M[em + 4u], M[em + 5u], M[em + 6u]) * (wm / pl);
+                        let lem: vec3f = vec3f(M[em + 4u], M[em + 5u], M[em + 6u]);
+                        l = l + tp * ee.xyz * lem * (wm / pl);
+                        if (b == 0u) {
+                            let dem: vec3f = lambert_cos(base, metal, wo, vec3f(dot(wl, tb), dot(wl, bb), dot(wl, n)), dropCos) * lem * (wm / pl);
+                            ld = ld + dem;
+                            lsp = lsp + (ee.xyz * lem * (wm / pl) - dem);
+                        } else { rr = rr + tw * ee.xyz * lem * (wm / pl); }
                     }
                 }
             }
@@ -324,11 +373,16 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
             let e: vec4f = eval_bsdf(base, rough, metal, spec, wo, s.xyz, dropCos);
             if (e.w <= 0.0) { break; }
             tp = tp * e.xyz * (1.0 / e.w);
+            if (b == 0u) {
+                wd = lambert_cos(base, metal, wo, s.xyz, dropCos) * (1.0 / e.w);
+                ws = e.xyz * (1.0 / e.w) - wd;
+            } else { tw = tw * e.xyz * (1.0 / e.w); }
             prevPdf = e.w;
             if ((P.flags & F_RR) != 0u && b >= 3u) {
                 let qq: f32 = min(0.95, max(tp.x, max(tp.y, tp.z)));
                 if (r.y >= qq) { break; }
                 tp = tp * (1.0 / qq);
+                tw = tw * (1.0 / qq);
             }
             let wi: vec3f = tb * s.x + bb * s.y + n * s.z;
             ro = offset_p(p, ng, wi);
@@ -341,6 +395,22 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
         ACC[o + 3u] = cnt;
         ACC[o + 4u] = ACC[o + 4u] + dl / cnt;
         ACC[o + 5u] = ACC[o + 5u] + dl * (y - ACC[o + 4u]);
+        ld = ld + wd * rr;
+        if ((P.flags & F_AOV_DROPSPEC) == 0u) { lsp = lsp + ws * rr; }
+        if ((P.flags & F_AOV_EMDIFF) != 0u) { ld = ld + le0; le0 = vec3f(0.0); }
+        for (var c: u32 = 0u; c < 3u; c++) {
+            ACC[o + 16u + c] = ACC[o + 16u + c] + ld[c];
+            ACC[o + 19u + c] = ACC[o + 19u + c] + lsp[c];
+            ACC[o + 22u + c] = ACC[o + 22u + c] + le0[c];
+        }
+        let yd: f32 = lum(ld);
+        let dd: f32 = yd - ACC[o + 31u];
+        ACC[o + 31u] = ACC[o + 31u] + dd / cnt;
+        ACC[o + 32u] = ACC[o + 32u] + dd * (yd - ACC[o + 31u]);
+        let ys: f32 = lum(lsp);
+        let ds: f32 = ys - ACC[o + 33u];
+        ACC[o + 33u] = ACC[o + 33u] + ds / cnt;
+        ACC[o + 34u] = ACC[o + 34u] + ds * (ys - ACC[o + 33u]);
     }
 }
 
@@ -353,7 +423,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 @compute @workgroup_size(8, 8)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
     if (gid.x >= P.w || gid.y >= P.h) { return; }
-    let o: u32 = (gid.y * P.w + gid.x) * 16u;
+    let o: u32 = (gid.y * P.w + gid.x) * ACC_N;
     let n: f32 = ACC[o + 3u];
     let inv: f32 = select(0.0, 1.0 / n, n > 0.0);
     for (var k: u32 = 0u; k < 3u; k++) {
@@ -368,6 +438,12 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     O[o + 13u] = ACC[o + 15u];
     O[o + 14u] = 0.0;
     O[o + 15u] = 0.0;
+    for (var q: u32 = 16u; q < 31u; q++) { O[o + q] = ACC[o + q] * inv; }
+    O[o + 31u] = select(0.0, ACC[o + 32u] / (n - 1.0) / n, n > 1.0);
+    O[o + 32u] = select(0.0, ACC[o + 34u] / (n - 1.0) / n, n > 1.0);
+    O[o + 33u] = 0.0;
+    O[o + 34u] = 0.0;
+    O[o + 35u] = 0.0;
 }
 
 //@pass pt_hybrid
