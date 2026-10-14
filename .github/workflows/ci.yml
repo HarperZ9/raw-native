@@ -591,6 +591,10 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+      - name: The budget gate passes the RTX 4090 record and refuses an over-budget run (M1 criterion 7, control)
+        run: |
+          python tools/media/budget.py tests/media/budget-rtx4090
+          if python tools/media/budget.py tests/media/budget-over; then echo "the gate accepted an over-budget run"; exit 1; fi
       - name: Configure and build (the same commands as the media spec's setup)
         run: |
           cmake -S . -B build -DCMAKE_BUILD_TYPE=Release

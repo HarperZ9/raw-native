@@ -1,0 +1,11 @@
+{
+ "scene": "ao-check",
+ "adapter_kind": "gpu",
+ "frame_ms_p95": 900.0,
+ "wall_seconds": 10.0,
+ "gpu_ms": {
+  "draw": 40.0,
+  "finish": 0.01
+ },
+ "source": "control: a run over its frame and draw budgets; the gate must refuse it"
+}

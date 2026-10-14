@@ -1,0 +1,21 @@
+{
+ "scene": "what-it-draws",
+ "size": "1920x1080",
+ "method": "1. Read the board power with `nvidia-smi --query-gpu=power.draw` every 100 ms for 10 s\n   with the GPU idle. The median is the idle power.\n2. Render the scene on the GPU and keep sampling, at the same rate, until the render ends.\n3. Energy is the trapezoid sum of power over the render's wall time. Energy above idle\n   subtracts idle power times the same time. Each is divided by the frame count.\nThe telemetry is the board's reported power, not a meter on the rail, and a render\nincludes the browser, readback and encoding, not the draw alone. Where nvidia-smi or\npower telemetry is missing, the result says \"unavailable\" and gives no number.",
+ "adapter": {
+  "vendor": "nvidia",
+  "architecture": "lovelace",
+  "device": "",
+  "description": ""
+ },
+ "frames": 1413,
+ "wall_seconds_sampled": 37.49,
+ "samples": 126,
+ "idle_watts": 20.25,
+ "joules": 1551.4,
+ "joules_per_frame": 1.098,
+ "joules_above_idle_per_frame": 0.5608,
+ "frames_per_joule": 0.9108,
+ "commit": "9dcd099ec847d81da5a605efaef12313c7da995e",
+ "does_not_prove": "Board-reported power over the whole render (browser, readback, encode), not the draw alone, and not a meter reading."
+}

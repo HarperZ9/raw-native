@@ -209,6 +209,21 @@
     "smoke": {
       "seconds": 4,
       "wall_seconds": 120
+    },
+    "frame_note": "Added 2026-10-14 (M1 criterion 7): before this, the file held no frame or pass budget, so a local GPU run could not fail the gate (a stats file with a 900 ms p95 frame and a 40 ms draw pass read 'within budget'). The frame budget is one frame at 60 Hz. The pass budgets are the ones the gate's own docstring proposed. The RTX 4090 run of 2026-10-10 (1920 x 1080) is within them: p95 frame 8.4 ms (ao-check) and 15.5 ms (what-it-draws), draw 0.51 and 0.24 ms, bloom and finish under 0.01 ms. Budgets for the SwiftShader adapter are not set.",
+    "frame_ms_p95": {
+      "gpu": {
+        "ao-check": 16.7,
+        "what-it-draws": 16.7
+      }
+    },
+    "pass_ms": {
+      "gpu": {
+        "particles": 2.0,
+        "draw": 4.0,
+        "bloom": 2.0,
+        "finish": 2.0
+      }
     }
   }
 }

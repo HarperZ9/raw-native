@@ -1,0 +1,14 @@
+{
+ "scene": "ao-check",
+ "adapter_kind": "gpu",
+ "frame_ms_p95": 8.4,
+ "wall_seconds": 54.9,
+ "gpu_ms": {
+  "particles": 0.013840082045291765,
+  "draw": 0.5058321593511078,
+  "bloom": 0.007423742688586375,
+  "finish": 0.008643733072860382,
+  "total": 0.5357397171578463
+ },
+ "source": "the RTX 4090 render of 2026-10-10 at 1920 x 1080 (raw-native 9dcd099), fields the budget gate reads"
+}
