@@ -84,5 +84,13 @@
   "prediction": "Bulb normals and t within their bounds on WARP and the RTX. If not, M2 stays open and the cause is recorded.",
   "bounds": "Unchanged.",
   "written_correction": "2026-10-11 08:17Z: the 'written' time above ran ahead of the clock; the note was committed at about 08:03Z, before the change (bf7d31c, about 08:04Z) and its run."
+ },
+ "method_note_7": {
+  "written": "2026-10-14 05:46Z, after exploration probes (not checked runs; probe code not committed) and before any shader change. Bounds unchanged.",
+  "context": "M2 on the bulb is a recorded open failure, inferred to be the float32 march (method note 6; RT PROGRESS step 15). The coordinator scheduled a double-float march as a later free experiment (2026-10-11).",
+  "probes": "On the CPU float32 replica of the GPU march (correctly rounded float32, trig-free estimator), scored with M2's criteria against the float64 reference: as is, t within 99.475% and normals 98.198% (bounds 99.5% and 99%). Float64 t, positions and refinement with the float32 estimator: 99.958% and 99.851%. Float64 t and refinement with positions in float32 from the rounded t: 99.904% and 99.670%. Float64 march with a float32 refinement: 99.490% and 98.266% (still failing). Float32 march with a float64 refinement (positions in float32 from the rounded t): 99.873% and 99.539%. The refinement's precision is the limit; the march and the positions need nothing more.",
+  "change": "sdf_refine keeps t2, the bracket ends a and b and the midpoint as double-float pairs (hi, lo) built with TwoSum (Knuth), which uses additions only, so no multiply-add contraction can affect it; halving and the doubling step are exact. Every distance query uses the position o + d * hi in float32, as before. The march loop, the estimator, the normal and every other pass are unchanged. The D3D12 build compiles with -Gis (strict IEEE), so the error terms are not optimised away.",
+  "checks": "M2 on all four scenes on WARP and SwiftShader against its unchanged bounds, M1 and M3 to M7 unchanged; the existing control (smooth-union k halved breaks the garden's t bound) must still fail. RTX 4090 under D:/gpu.lock.d when it is free. If the bulb passes on a backend, tests/gpu/sdf_gate.py gates it there; if not, it stays a recorded open failure.",
+  "does_not_prove": "That double-float arithmetic survives every driver's optimiser; the effect on scenes other than the four."
  }
 }
