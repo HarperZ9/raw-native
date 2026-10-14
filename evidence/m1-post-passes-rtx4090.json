@@ -1,0 +1,99 @@
+{
+ "adapter": "",
+ "frames": [
+  "ramp",
+  "edges",
+  "noise",
+  "bars"
+ ],
+ "size": [
+  960,
+  600
+ ],
+ "passes": {
+  "exposure": {
+   "stage": "scene",
+   "history": false,
+   "runs": [
+    {
+     "spec": {
+      "ev": -1
+     },
+     "maxCode": 0,
+     "over": 0,
+     "worst": null
+    },
+    {
+     "spec": {
+      "ev": 0.5
+     },
+     "maxCode": 1,
+     "over": 0,
+     "worst": {
+      "frame": "ramp",
+      "pixel": [
+       114,
+       0
+      ],
+      "channel": 0,
+      "gpu": 0.67236328125,
+      "cpu": 0.6725800633430481
+     }
+    },
+    {
+     "spec": {
+      "ev": 2
+     },
+     "maxCode": 0,
+     "over": 0,
+     "worst": null
+    }
+   ]
+  },
+  "test-effect-half": {
+   "stage": "display",
+   "history": false,
+   "runs": [
+    {
+     "spec": {},
+     "maxCode": 0,
+     "over": 0,
+     "worst": null
+    }
+   ]
+  },
+  "test-effect-lowres": {
+   "stage": "display",
+   "history": false,
+   "runs": [
+    {
+     "spec": {},
+     "maxCode": 1,
+     "over": 0,
+     "worst": {
+      "frame": "ramp",
+      "pixel": [
+       78,
+       0
+      ],
+      "channel": 0,
+      "gpu": 0.327392578125,
+      "cpu": 0.3275146484375
+     }
+    }
+   ]
+  }
+ },
+ "motion": {
+  "maxAB": 1,
+  "brighter": true,
+  "sumA": 10592686,
+  "sumC": 16796437,
+  "clip": 118,
+  "aces": 89
+ },
+ "adapter_kind": "gpu",
+ "problems": [],
+ "commit": "9dcd099ec847d81da5a605efaef12313c7da995e",
+ "bound": "every channel of every pixel of every frame within one 8-bit code of the pass's CPU reference"
+}
