@@ -117,6 +117,14 @@
    "when": "2026-10-11 08:08Z",
    "backend": "CPU, float32 replica of the GPU bulb march (scratch harness bulbf.cpp, kept in the engine-rt mission-control folder, gpu/offline)",
    "result": "With correctly rounded float32 arithmetic the replica gives exactly WARP's run 11 counts (t within 52,673, normals 51,997). The trigonometric estimator in correctly rounded float32 gives 99.475% and 98.18%, so WARP's transcendental functions caused run 9's 93.3% and 57.3%. A float64 estimator inside the float32 march gives 99.49% and 98.25%. The remaining gap is the float32 march (t accumulation, stop test, refinement), not the estimator. M2 on the bulb stays an open failure; a fix would need the march's t and position in higher precision."
+  },
+  {
+   "run": 14,
+   "when": "2026-10-14 05:50Z (WARP) and 11:16Z (SwiftShader)",
+   "backend": "D3D12 WARP (256 px) and WebGPU SwiftShader (--quick, 128 px), branch feat/rt-r3-df-refine",
+   "checks": "M2 to M7 (method note 7)",
+   "result": "M2 on the bulb passes on both: WARP t within 52,884 of 52,951 hits (99.873%, bound 99.5%), normals 52,705 (99.535%, bound 99%); SwiftShader 13,224 of 13,240 (99.879%), normals 13,177 (99.524%). Garden, menger_tower and arcade unchanged and within; the smooth-k control still fails; M4 and the rest pass. The WARP numbers match the CPU float32 replica with a float64 refinement (99.873%, 52,707 normals) to 2 pixels. tests/gpu/sdf_gate.py now gates the bulb; it fails the earlier evidence (rt-r3-note56-d3d12-warp.json, rt-r3-sdf-gpu-d3d12-warp.json) as a control. No RTX run (the GPU is held by MMBU).",
+   "evidence": "evidence/rt-r3-note7-d3d12-warp.json; evidence/rt-r3-note7-webgpu-swiftshader.json"
   }
  ]
 }

@@ -185,30 +185,43 @@ fn sdf_normal(x: vec3f, t: f32) -> vec3f {
     let d: f32 = sdf_eval(vec3f(x.x + e, x.y + e, x.z + e)).x;
     return normalize(vec3f(a - b - c + d, -a - b + c + d, -a + b - c + d));
 }
-// Method notes 1 and 2 of evidence/rt-r3-bounds.json: bracket the surface by sign, bisect.
+// Double-float pairs (hi, lo) for the refinement (method note 7 of evidence/rt-r3-bounds.json):
+// TwoSum (Knuth) uses additions only, so no multiply-add contraction can change it.
+fn two_sum(a: f32, b: f32) -> vec2f {
+    let s: f32 = a + b;
+    let bb: f32 = s - a;
+    return vec2f(s, (a - (s - bb)) + (b - bb));
+}
+fn df_add(a: vec2f, b: vec2f) -> vec2f {
+    let s: vec2f = two_sum(a.x, b.x);
+    return two_sum(s.x, s.y + (a.y + b.y));
+}
+// Method notes 1, 2 and 7: bracket the surface by sign, bisect; t2, the bracket and the midpoint
+// in double-float, every query at the float32 position o + d * hi.
 fn sdf_refine(o: vec3f, d: vec3f, t: f32, e: f32) -> f32 {
-    var t2: f32 = t;
+    var t2: vec2f = vec2f(t, 0.0);
     var step: f32 = e;
     var inside: bool = false;
     for (var k: u32 = 0u; k < 64u; k++) {
         if (inside) { break; }
-        t2 = t2 + step;
-        inside = sdf_eval(o + d * t2).x < 0.0;
+        t2 = df_add(t2, vec2f(step, 0.0));
+        inside = sdf_eval(o + d * t2.x).x < 0.0;
     }
     for (var k2: u32 = 0u; k2 < 16u; k2++) {
         if (inside) { break; }
-        t2 = t2 + step;
+        t2 = df_add(t2, vec2f(step, 0.0));
         step = step * 2.0;
-        inside = sdf_eval(o + d * t2).x < 0.0;
+        inside = sdf_eval(o + d * t2.x).x < 0.0;
     }
     if (!inside) { return t; }
-    var a: f32 = t;
-    var b: f32 = t2;
+    var a: vec2f = vec2f(t, 0.0);
+    var b: vec2f = t2;
     for (var i: u32 = 0u; i < 24u; i++) {
-        let m: f32 = 0.5 * (a + b);
-        if (sdf_eval(o + d * m).x > 0.0) { a = m; } else { b = m; }
+        let m: vec2f = df_add(a, b) * 0.5;
+        if (sdf_eval(o + d * m.x).x > 0.0) { a = m; } else { b = m; }
     }
-    return 0.5 * (a + b);
+    let r: vec2f = df_add(a, b) * 0.5;
+    return r.x;
 }
 // x: t (-1 a miss), y: material, z: closest d / (1 + t), w: steps.
 fn sdf_march(o: vec3f, d: vec3f, tMax: f32) -> vec4f {

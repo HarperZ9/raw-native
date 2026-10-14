@@ -2,9 +2,9 @@
 """Gate the ray marcher's GPU checks (evidence/rt-r3-bounds.json, M2 to M7) from the JSON of
 `raw_native_cli sdf-parity`.
 
-One part is a recorded open failure (evidence/rt-r3-runs.json): M2 on the Mandelbulb, which
-method note 6 narrowed but did not close. This gate prints it and gates everything else, controls
-included. M4's 256-interval march is gated since method note 5 (composite Simpson).
+Everything is gated, controls included. M2 on the Mandelbulb, a recorded open failure until method
+note 7 (double-float refinement, evidence/rt-r3-bounds.json), is gated since that note; its counts
+are printed. M4's 256-interval march is gated since method note 5 (composite Simpson).
 
     python tests/gpu/sdf_gate.py result.json
 """
@@ -22,8 +22,7 @@ def main(path):
         c, case = r["check"], r.get("case", "")
         control = case.startswith("control")
         if c == "M2" and r.get("scene") == "bulb" and not control:
-            print(f"M2 bulb: open failure, t within on {r['t_within']} of {r['both_hit']} hits, normals {r['normal_within']}")
-            continue
+            print(f"M2 bulb: {'within' if r['within'] else 'OUTSIDE'}, t within on {r['t_within']} of {r['both_hit']} hits, normals {r['normal_within']}")
         if c == "M4":
             ok = (r["homogeneous_worst_rel"] <= 1e-5 and r["height_closed_worst_rel"] <= 1e-4 and r["height_march_256_worst_rel"] <= 1e-3
                   and r["control_march_4_worst_rel"] > 1e-3)
