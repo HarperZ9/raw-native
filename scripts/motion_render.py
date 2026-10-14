@@ -34,6 +34,26 @@ from urllib.parse import parse_qs, urlparse
 # 2D canvas still draw on the machine's GPU through ANGLE (checked 2026-10-14: an RTX 4090 via D3D11).
 CPU_FRAME = ["--disable-gpu-compositing", "--disable-accelerated-2d-canvas", "--disable-gpu-rasterization"]
 
+def gpu_lock_problem() -> str:
+    """On a machine that shares its GPU through a lock directory (RAW_NATIVE_GPU_LOCK, default
+    D:/gpu.lock.d when it exists), a GPU render runs only under the lock: RAW_NATIVE_GPU_TOKEN must
+    equal the token in the lock's OWNER file. Returns the reason to refuse, or "" to go ahead.
+    Machines without the lock directory (CI, other computers) are not affected."""
+    import os
+    lock = Path(os.environ.get("RAW_NATIVE_GPU_LOCK", "D:/gpu.lock.d"))
+    if not lock.exists():
+        return "" if os.environ.get("RAW_NATIVE_GPU_LOCK") is None else f"--adapter gpu: {lock} does not exist; take the lock first"
+    try:
+        owner = json.loads((lock / "OWNER").read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        return f"--adapter gpu: {lock} is held but its OWNER is unreadable ({e})"
+    mine = os.environ.get("RAW_NATIVE_GPU_TOKEN", "")
+    if not mine or mine != owner.get("token"):
+        return (f"--adapter gpu: the GPU is held by {owner.get('purpose') or owner.get('session') or 'another job'} "
+                f"(token {owner.get('token')}); set RAW_NATIVE_GPU_TOKEN to your own lock's token, or use --adapter swiftshader")
+    return ""
+
+
 TYPES = {".mjs": "text/javascript", ".js": "text/javascript", ".wgsl": "text/plain", ".json": "application/json",
          ".html": "text/html", ".wav": "audio/wav", ".css": "text/css", ".woff2": "font/woff2"}
 
@@ -207,6 +227,10 @@ def main(argv=None) -> int:
     a = ap.parse_args(argv)
     if a.codec == "png" and (a.transport != "raw" or a.audio or a.score):
         ap.error("--codec png needs --transport raw and no --audio or --score")
+    if a.adapter == "gpu" and not a.serve:
+        held = gpu_lock_problem()
+        if held:
+            ap.error(held)
 
     root = Path(a.root).resolve()
     if a.serve:
