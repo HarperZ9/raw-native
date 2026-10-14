@@ -1,0 +1,12 @@
+2026-10-13T23:00:44Z start pid 44448; waiting for the lock
+2026-10-14T00:37:49Z stopped by the session at its end (lock held by MMBU throughout); task removed
+2026-10-14T00:43:02Z start pid 50972; waiting for 'FT3 CHAIN DONE' in C:/dev/mission-control/2026-10-02-mmbu/train/ft3/ft3_chain.log, then for a free lock
+2026-10-14T02:54:06Z start pid 20064; waiting for 'FT3 CHAIN DONE' in C:/dev/mission-control/2026-10-02-mmbu/train/ft3/ft3_chain.log, then for a free lock
+2026-10-14T07:12:28Z lock taken engine-hw-rrnet-20064-1791961948
+2026-10-14T07:12:28Z model {'name': 'v3main', 'eps': '0.01', 'version': '3'}
+2026-10-14T07:13:47Z parity-v2-raw_hero-validation.json exit 1
+2026-10-14T07:14:23Z r1-timing.json exit 1
+2026-10-14T07:16:00Z r2-timing.json exit 1
+2026-10-14T07:18:01Z r3-timing.json exit 1
+2026-10-14T07:18:01Z lock released
+2026-10-14T07:18:01Z done; task removed
