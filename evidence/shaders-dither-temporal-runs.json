@@ -1,0 +1,519 @@
+{
+ "protocol": "evidence/shaders-dither-temporal-protocol.json",
+ "frames": 60,
+ "results": [
+  {
+   "sequence": "pan",
+   "palette": "pico8",
+   "mode": "none",
+   "flicker": 0.2595312058674573,
+   "toggles": 0.027110699152542373,
+   "source_changes": 0.17788812382297553,
+   "error": 3.8747160161647902
+  },
+  {
+   "sequence": "pan",
+   "palette": "pico8",
+   "mode": "bayer4",
+   "flicker": 0.24542202522289405,
+   "toggles": 0.04292578860640301,
+   "source_changes": 0.17788812382297553,
+   "error": 2.834387342313733
+  },
+  {
+   "sequence": "pan",
+   "palette": "pico8",
+   "mode": "bayer8",
+   "flicker": 0.2440396148945754,
+   "toggles": 0.042768950094161956,
+   "source_changes": 0.17788812382297553,
+   "error": 2.8402420122177454
+  },
+  {
+   "sequence": "pan",
+   "palette": "pico8",
+   "mode": "blue",
+   "flicker": 0.2546682817545736,
+   "toggles": 0.04275453154425612,
+   "source_changes": 0.17788812382297553,
+   "error": 2.8644940939121923
+  },
+  {
+   "sequence": "pan",
+   "palette": "pico8",
+   "mode": "mix-bayer4",
+   "flicker": 0.23041691736638842,
+   "toggles": 0.02959363229755179,
+   "source_changes": 0.17788812382297553,
+   "error": 0.9990308934580072
+  },
+  {
+   "sequence": "pan",
+   "palette": "pico8",
+   "mode": "mix-bayer8",
+   "flicker": 0.23041691736638842,
+   "toggles": 0.02959363229755179,
+   "source_changes": 0.17788812382297553,
+   "error": 0.9990308934580072
+  },
+  {
+   "sequence": "pan",
+   "palette": "pico8",
+   "mode": "mix-blue",
+   "flicker": 0.2335079096245965,
+   "toggles": 0.029414724576271187,
+   "source_changes": 0.17788812382297553,
+   "error": 1.2116880272534212
+  },
+  {
+   "sequence": "pan",
+   "palette": "ega",
+   "mode": "none",
+   "flicker": 0.27624547547884176,
+   "toggles": 0.01493555790960452,
+   "source_changes": 0.17788812382297553,
+   "error": 6.8554169005430925
+  },
+  {
+   "sequence": "pan",
+   "palette": "ega",
+   "mode": "bayer4",
+   "flicker": 0.3548518718024267,
+   "toggles": 0.0316843220338983,
+   "source_changes": 0.17788812382297553,
+   "error": 4.743557994104502
+  },
+  {
+   "sequence": "pan",
+   "palette": "ega",
+   "mode": "bayer8",
+   "flicker": 0.35391832809013724,
+   "toggles": 0.031724929378531073,
+   "source_changes": 0.17788812382297553,
+   "error": 4.719167859396039
+  },
+  {
+   "sequence": "pan",
+   "palette": "ega",
+   "mode": "blue",
+   "flicker": 0.3765837254722691,
+   "toggles": 0.03164400894538606,
+   "source_changes": 0.17788812382297553,
+   "error": 4.764219903768689
+  },
+  {
+   "sequence": "pan",
+   "palette": "ega",
+   "mode": "mix-bayer4",
+   "flicker": 0.3389774875004171,
+   "toggles": 0.026207921374764596,
+   "source_changes": 0.17788812382297553,
+   "error": 0.6881562351630427
+  },
+  {
+   "sequence": "pan",
+   "palette": "ega",
+   "mode": "mix-bayer8",
+   "flicker": 0.3389774875004171,
+   "toggles": 0.026207921374764596,
+   "source_changes": 0.17788812382297553,
+   "error": 0.6881562351630427
+  },
+  {
+   "sequence": "pan",
+   "palette": "ega",
+   "mode": "mix-blue",
+   "flicker": 0.34423967527142185,
+   "toggles": 0.026575153013182674,
+   "source_changes": 0.17788812382297553,
+   "error": 1.2833510011955787
+  },
+  {
+   "sequence": "game",
+   "palette": "pico8",
+   "mode": "none",
+   "flicker": 0.1510755829326585,
+   "toggles": 0.000413135593220339,
+   "source_changes": 0.030306762005649718,
+   "error": 6.483236990276969
+  },
+  {
+   "sequence": "game",
+   "palette": "pico8",
+   "mode": "bayer4",
+   "flicker": 0.12118823491413148,
+   "toggles": 0.007941604872881355,
+   "source_changes": 0.030306762005649718,
+   "error": 4.860561523854229
+  },
+  {
+   "sequence": "game",
+   "palette": "pico8",
+   "mode": "bayer8",
+   "flicker": 0.12115833375651194,
+   "toggles": 0.0074715307203389834,
+   "source_changes": 0.030306762005649718,
+   "error": 4.776078960826881
+  },
+  {
+   "sequence": "game",
+   "palette": "pico8",
+   "mode": "blue",
+   "flicker": 0.12093744195149986,
+   "toggles": 0.007709216101694915,
+   "source_changes": 0.030306762005649718,
+   "error": 4.792726041296806
+  },
+  {
+   "sequence": "game",
+   "palette": "pico8",
+   "mode": "mix-bayer4",
+   "flicker": 0.11495411073226705,
+   "toggles": 0.013677392302259887,
+   "source_changes": 0.030306762005649718,
+   "error": 1.5587712102836402
+  },
+  {
+   "sequence": "game",
+   "palette": "pico8",
+   "mode": "mix-bayer8",
+   "flicker": 0.11495411073226705,
+   "toggles": 0.013677392302259887,
+   "source_changes": 0.030306762005649718,
+   "error": 1.5587712102836402
+  },
+  {
+   "sequence": "game",
+   "palette": "pico8",
+   "mode": "mix-blue",
+   "flicker": 0.14985876469882184,
+   "toggles": 0.013669668079096045,
+   "source_changes": 0.030306762005649718,
+   "error": 2.191623938826479
+  },
+  {
+   "sequence": "game",
+   "palette": "ega",
+   "mode": "none",
+   "flicker": 0.1881600602645993,
+   "toggles": 0.0032207803672316382,
+   "source_changes": 0.030306762005649718,
+   "error": 12.190652230233914
+  },
+  {
+   "sequence": "game",
+   "palette": "ega",
+   "mode": "bayer4",
+   "flicker": 0.14780333439887214,
+   "toggles": 0.009369262005649718,
+   "source_changes": 0.030306762005649718,
+   "error": 9.136494145880453
+  },
+  {
+   "sequence": "game",
+   "palette": "ega",
+   "mode": "bayer8",
+   "flicker": 0.14752262167708033,
+   "toggles": 0.009709569209039547,
+   "source_changes": 0.030306762005649718,
+   "error": 9.134939950986169
+  },
+  {
+   "sequence": "game",
+   "palette": "ega",
+   "mode": "blue",
+   "flicker": 0.14154837537294118,
+   "toggles": 0.009864495056497176,
+   "source_changes": 0.030306762005649718,
+   "error": 9.168816557175582
+  },
+  {
+   "sequence": "game",
+   "palette": "ega",
+   "mode": "mix-bayer4",
+   "flicker": 0.13605286528643198,
+   "toggles": 0.009390448446327684,
+   "source_changes": 0.030306762005649718,
+   "error": 2.186327812894597
+  },
+  {
+   "sequence": "game",
+   "palette": "ega",
+   "mode": "mix-bayer8",
+   "flicker": 0.13605286528643198,
+   "toggles": 0.009390448446327684,
+   "source_changes": 0.030306762005649718,
+   "error": 2.186327812894597
+  },
+  {
+   "sequence": "game",
+   "palette": "ega",
+   "mode": "mix-blue",
+   "flicker": 0.12950910345868025,
+   "toggles": 0.009373455155367232,
+   "source_changes": 0.030306762005649718,
+   "error": 3.152664963156322
+  },
+  {
+   "sequence": "lamp",
+   "palette": "pico8",
+   "mode": "none",
+   "flicker": 0.2083604675682249,
+   "toggles": 0.00944041313559322,
+   "source_changes": 0.39086520127118646,
+   "error": 6.479583653696897
+  },
+  {
+   "sequence": "lamp",
+   "palette": "pico8",
+   "mode": "bayer4",
+   "flicker": 0.20445444937945362,
+   "toggles": 0.014681408898305085,
+   "source_changes": 0.39086520127118646,
+   "error": 2.7263784530781985
+  },
+  {
+   "sequence": "lamp",
+   "palette": "pico8",
+   "mode": "bayer8",
+   "flicker": 0.20322653963894605,
+   "toggles": 0.014555349576271186,
+   "source_changes": 0.39086520127118646,
+   "error": 2.7904529520166044
+  },
+  {
+   "sequence": "lamp",
+   "palette": "pico8",
+   "mode": "blue",
+   "flicker": 0.21220557947110372,
+   "toggles": 0.014662870762711864,
+   "source_changes": 0.39086520127118646,
+   "error": 2.8648011326031884
+  },
+  {
+   "sequence": "lamp",
+   "palette": "pico8",
+   "mode": "mix-bayer4",
+   "flicker": 0.5683012183343517,
+   "toggles": 0.054113347457627116,
+   "source_changes": 0.39086520127118646,
+   "error": 1.0387751870792898
+  },
+  {
+   "sequence": "lamp",
+   "palette": "pico8",
+   "mode": "mix-bayer8",
+   "flicker": 0.5683012183343517,
+   "toggles": 0.054113347457627116,
+   "source_changes": 0.39086520127118646,
+   "error": 1.0387751870792898
+  },
+  {
+   "sequence": "lamp",
+   "palette": "pico8",
+   "mode": "mix-blue",
+   "flicker": 0.572480004894082,
+   "toggles": 0.054430879237288135,
+   "source_changes": 0.39086520127118646,
+   "error": 1.4846635616552641
+  },
+  {
+   "sequence": "lamp",
+   "palette": "ega",
+   "mode": "none",
+   "flicker": 0.25887952621105487,
+   "toggles": 0.008866525423728814,
+   "source_changes": 0.39086520127118646,
+   "error": 7.495728316175265
+  },
+  {
+   "sequence": "lamp",
+   "palette": "ega",
+   "mode": "bayer4",
+   "flicker": 0.2840718848985891,
+   "toggles": 0.015592955508474577,
+   "source_changes": 0.39086520127118646,
+   "error": 4.665532588177859
+  },
+  {
+   "sequence": "lamp",
+   "palette": "ega",
+   "mode": "bayer8",
+   "flicker": 0.2840980358187425,
+   "toggles": 0.015415783898305085,
+   "source_changes": 0.39086520127118646,
+   "error": 4.6611726540876015
+  },
+  {
+   "sequence": "lamp",
+   "palette": "ega",
+   "mode": "blue",
+   "flicker": 0.2926995391396583,
+   "toggles": 0.01557176906779661,
+   "source_changes": 0.39086520127118646,
+   "error": 4.728391664043838
+  },
+  {
+   "sequence": "lamp",
+   "palette": "ega",
+   "mode": "mix-bayer4",
+   "flicker": 0.8079927545924349,
+   "toggles": 0.07300158898305084,
+   "source_changes": 0.39086520127118646,
+   "error": 1.4227194850734999
+  },
+  {
+   "sequence": "lamp",
+   "palette": "ega",
+   "mode": "mix-bayer8",
+   "flicker": 0.8079927545924349,
+   "toggles": 0.07300158898305084,
+   "source_changes": 0.39086520127118646,
+   "error": 1.4227194850734999
+  },
+  {
+   "sequence": "lamp",
+   "palette": "ega",
+   "mode": "mix-blue",
+   "flicker": 0.8188997893951782,
+   "toggles": 0.07352621822033899,
+   "source_changes": 0.39086520127118646,
+   "error": 2.1628468381653687
+  },
+  {
+   "sequence": "fade",
+   "palette": "pico8",
+   "mode": "none",
+   "flicker": 0.15482636128501862,
+   "toggles": 0.004266125235404896,
+   "source_changes": 0.36093014359698683,
+   "error": 8.618435682502637
+  },
+  {
+   "sequence": "fade",
+   "palette": "pico8",
+   "mode": "bayer4",
+   "flicker": 0.14257128255281523,
+   "toggles": 0.007612111581920904,
+   "source_changes": 0.36093014359698683,
+   "error": 5.863817296939664
+  },
+  {
+   "sequence": "fade",
+   "palette": "pico8",
+   "mode": "bayer8",
+   "flicker": 0.1449449477454451,
+   "toggles": 0.007716278248587571,
+   "source_changes": 0.36093014359698683,
+   "error": 5.873571274863671
+  },
+  {
+   "sequence": "fade",
+   "palette": "pico8",
+   "mode": "blue",
+   "flicker": 0.14805658136114005,
+   "toggles": 0.007547669491525424,
+   "source_changes": 0.36093014359698683,
+   "error": 5.904202902440447
+  },
+  {
+   "sequence": "fade",
+   "palette": "pico8",
+   "mode": "mix-bayer4",
+   "flicker": 0.20628838258413285,
+   "toggles": 0.014395009416195858,
+   "source_changes": 0.36093014359698683,
+   "error": 2.1171311201637937
+  },
+  {
+   "sequence": "fade",
+   "palette": "pico8",
+   "mode": "mix-bayer8",
+   "flicker": 0.20628838258413285,
+   "toggles": 0.014395009416195858,
+   "source_changes": 0.36093014359698683,
+   "error": 2.1171311201637937
+  },
+  {
+   "sequence": "fade",
+   "palette": "pico8",
+   "mode": "mix-blue",
+   "flicker": 0.22755823832964367,
+   "toggles": 0.014435911016949153,
+   "source_changes": 0.36093014359698683,
+   "error": 2.7033484696287404
+  },
+  {
+   "sequence": "fade",
+   "palette": "ega",
+   "mode": "none",
+   "flicker": 0.2134635746036304,
+   "toggles": 0.004778425141242938,
+   "source_changes": 0.36093014359698683,
+   "error": 10.784593116295518
+  },
+  {
+   "sequence": "fade",
+   "palette": "ega",
+   "mode": "bayer4",
+   "flicker": 0.21477747170206213,
+   "toggles": 0.007612994350282486,
+   "source_changes": 0.36093014359698683,
+   "error": 9.807641248931093
+  },
+  {
+   "sequence": "fade",
+   "palette": "ega",
+   "mode": "bayer8",
+   "flicker": 0.22109957072380895,
+   "toggles": 0.007883709981167608,
+   "source_changes": 0.36093014359698683,
+   "error": 9.79643787374276
+  },
+  {
+   "sequence": "fade",
+   "palette": "ega",
+   "mode": "blue",
+   "flicker": 0.2268758887784709,
+   "toggles": 0.007931379472693033,
+   "source_changes": 0.36093014359698683,
+   "error": 9.826432683783858
+  },
+  {
+   "sequence": "fade",
+   "palette": "ega",
+   "mode": "mix-bayer4",
+   "flicker": 0.2172670179849469,
+   "toggles": 0.012199858757062147,
+   "source_changes": 0.36093014359698683,
+   "error": 1.6995229591982115
+  },
+  {
+   "sequence": "fade",
+   "palette": "ega",
+   "mode": "mix-bayer8",
+   "flicker": 0.2172670179849469,
+   "toggles": 0.012199858757062147,
+   "source_changes": 0.36093014359698683,
+   "error": 1.6995229591982115
+  },
+  {
+   "sequence": "fade",
+   "palette": "ega",
+   "mode": "mix-blue",
+   "flicker": 0.24371755969884987,
+   "toggles": 0.012265183615819209,
+   "source_changes": 0.36093014359698683,
+   "error": 2.7028188645123747
+  }
+ ],
+ "run": "2026-10-14, CPU, tools/shaders/dither_temporal.mjs, the protocol committed first (5665ad0)",
+ "findings": [
+  "Pan and game (moving content, steady light): the mix modes flicker least. PICO-8 pan: mix-bayer4 0.230, bayer4 0.245, blue 0.255, none 0.260. PICO-8 game: mix-bayer4 0.115, bayer4 0.121.",
+  "Lamp (static camera, light flickering about 8%): the mix modes flicker most, about 2.8 times bayer4 on PICO-8 (0.568 against 0.204) and EGA (0.808 against 0.284), and toggle 3.7 to 4.7 times as many pixels. A small change in colour reorders the 16-entry plan, so many pixels change entry at once. This is the weakness the mix-runs file predicted.",
+  "Fade (slow exposure ramp): mix-bayer4 flickers more than bayer4 on PICO-8 (0.206 against 0.143) and about the same on EGA (0.217 against 0.215).",
+  "mix-bayer8 gives the same indices as mix-bayer4 on every frame (0 of 76,800 differ, checked). Cause: the plan has 16 entries and the pick is floor(16 t); the 8 x 8 Bayer matrix is 4 times the 4 x 4 matrix plus a 2 x 2 term below 4, so floor(16 t) recovers the 4 x 4 index exactly. The mode is redundant as built.",
+  "Still accuracy (error) agrees with the mix-runs file: the mix modes are 2.5 to 7 times closer to the source."
+ ],
+ "does_not_prove": "Flicker as people see it (the 4 x 4 box stands in for the eye); palettes beyond PICO-8 and EGA; GPU behaviour beyond the exact index parity already in evidence."
+}
