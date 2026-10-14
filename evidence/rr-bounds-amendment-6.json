@@ -1,7 +1,7 @@
 {
  "schema": "raw-native.evidence/1",
  "amends": "evidence/rr-bounds.json and amendments 1 to 5: adds model v4, its dataset and a conditioning check; the success criteria, metrics, baselines, hyperparameters and controls are unchanged",
- "written": "2026-10-14 19:30Z, before any v4 training step and before any v4 or new test metric. Declared: the test metrics of v1, v2 and v3 and v3's float32-to-float64 gaps on the test sequences (H:/rr-infer/condition-v3main-test.json) were seen before this amendment. The exploration below used validation sequences only.",
+ "written": "2026-10-14 19:17Z (first committed as 19:30Z, a time written ahead of the clock; corrected before training), before any v4 training step and before any v4 or new test metric. Declared: the test metrics of v1, v2 and v3 and v3's float32-to-float64 gaps on the test sequences (H:/rr-infer/condition-v3main-test.json) were seen before this amendment. The exploration below used validation sequences only.",
  "coordinator_direction": "2026-10-14: build v4 with true diffuse and specular demodulation from the path tracer's split outputs (raw-native #115, interface v2), regenerate the dataset with the new outputs on the CPU or WARP, commit an amendment with bounds before training, train on the CPU, evaluate against SVGF and SVGF plus TAA on the held-out test scenes with the same metrics, and address the float32-to-float64 sensitivity that breaks inference parity.",
  "dataset": {
   "root": "H:/rr-dataset-v4",
