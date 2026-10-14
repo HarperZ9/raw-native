@@ -41,6 +41,8 @@ def main(argv=None) -> int:
     ap.add_argument("--adapter", choices=["gpu", "swiftshader"], default="swiftshader")
     ap.add_argument("--warm", type=int, default=2)
     a = ap.parse_args(argv)
+    if a.t < 0:
+        ap.error("--t must be 0 or later")
     return mr.main(still_args(a.scene, Path(a.out).resolve(), a.t, a.fps, a.width, a.height, a.adapter, a.warm))
 
 

@@ -52,4 +52,6 @@ test("readPng refuses what it cannot read", () => {
   assert.throws(() => readPng(Buffer.from("not a png at all")), /not a PNG/);
   const bad = encodeFiltered(2, 2, 3, pattern(12, 0)); bad[8 + 8 + 8] = 16;   // IHDR bit depth 16
   assert.throws(() => readPng(bad), /only 8-bit/);
+  const cut = encodeFiltered(2, 2, 3, pattern(12, 0)).subarray(0, 48);   // IDAT cut short
+  assert.throws(() => readPng(cut), /past the end/);
 });
