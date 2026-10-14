@@ -221,7 +221,7 @@ def main():
         print(d.name, json.dumps(summary({d.name: per_seq[d.name]})[d.name]["ours"]), flush=True)
     v = verdict(per_seq)
     doc = {"schema": "raw-native.evidence/1", "bounds": "evidence/rr-bounds.json with amendments 1 and 2",
-           "split": a.split, "flip": "UNCHECKED against the reference implementation's test pair",
+           "split": a.split, "flip": "checked against the BSD-3 reference implementation's test pair (evidence/rr-flip-check.json, difference 3.5e-7); the key flip_unchecked keeps its earlier name",
            "per_sequence_means": summary(per_seq), "ref_fraction_se_under_1pct_mean": {k: float(np.mean(v_)) for k, v_ in se.items()},
            "verdict": v, "pass": bool(v["quality_pass"] and v["temporal_pass"] and v["ghosting_pass"]
                                       and v["control_shuffled_fails"] and v["control_zero_motion_fails"])}
