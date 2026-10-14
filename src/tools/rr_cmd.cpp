@@ -19,7 +19,7 @@ struct Args {
     std::uint64_t path{0};
     int frames{0}, first{0}, count{1 << 30}, width{480}, height{270};
     std::uint32_t spp{4096}, chunk{1024};
-    bool cpu{false};
+    bool cpu{false}, inputOnly{false};
 };
 bool parse(int argc, char** argv, Args& a){
     for (int i = 1; i < argc; ++i){
@@ -36,6 +36,7 @@ bool parse(int argc, char** argv, Args& a){
         else if (!std::strcmp(k, "--chunk") && more) a.chunk = (std::uint32_t)std::atoi(argv[++i]);
         else if (!std::strcmp(k, "--out") && more) a.out = argv[++i];
         else if (!std::strcmp(k, "--cpu")) a.cpu = true;
+        else if (!std::strcmp(k, "--input-only")) a.inputOnly = true;
         else return false;
     }
     return !a.scene.empty() && a.frames > 0 && a.first >= 0 && a.first < a.frames && a.width >= 8 && a.height >= 8 &&
@@ -122,7 +123,8 @@ int rrRenderCommand(int argc, char** argv){
     Args a;
     if (!parse(argc, argv, a)){
         std::printf("usage: raw_native_cli rr-render --scene NAME --path SEED --frames N [--first K] [--width W] [--height H]\n"
-                    "         [--spp S] [--chunk C] [--out DIR] [--cpu]   (S a multiple of C)\n");
+                    "         [--spp S] [--chunk C] [--out DIR] [--cpu] [--input-only]   (S a multiple of C)\n"
+                    "  --input-only: the 1 spp input only, no reference\n");
         return 2;
     }
     rt::PtScene s;
@@ -147,7 +149,7 @@ int rrRenderCommand(int argc, char** argv){
         if (!in.error.empty()){ std::printf("rr-render: %s\n", in.error.c_str()); return 2; }
         t0 = std::chrono::steady_clock::now();
         Reference R;
-        if (!reference(dev, s, d, a.spp, a.chunk, n, R)) return 2;
+        if (!a.inputOnly && !reference(dev, s, d, a.spp, a.chunk, n, R)) return 2;
         const double msRef = std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count();
         const std::vector<float>& ref = R.ref;
         const double meanVar = R.meanVar;
@@ -157,14 +159,23 @@ int rrRenderCommand(int argc, char** argv){
         std::snprintf(stem, sizeof stem, "/f%03d", k);
         const std::string P = a.out + stem;
         bool ok = writeRaw(P + "_in.f32", x.data(), x.size() * 4) && writeRaw(P + "_tri.i32", in.triangle.data(), n * 4) &&
-                  writeRaw(P + "_ref.f32", ref.data(), ref.size() * 4);
+                  (a.inputOnly || writeRaw(P + "_ref.f32", ref.data(), ref.size() * 4));
+        // Split radiance of the 1 spp input (path tracer interface v2), 15 floats a pixel: diffuse (3), specular (3),
+        // emission (3), diffuse albedo (3), specular albedo (3) (evidence/rr-bounds-amendment-6.json).
+        std::vector<float> sp(n * 15);
+        for (std::size_t q = 0; q < n; ++q)
+            for (int c = 0; c < 3; ++c){
+                sp[q * 15 + c] = in.diffuse[q * 3 + c]; sp[q * 15 + 3 + c] = in.specular[q * 3 + c]; sp[q * 15 + 6 + c] = in.emission[q * 3 + c];
+                sp[q * 15 + 9 + c] = in.diffuseAlbedo[q * 3 + c]; sp[q * 15 + 12 + c] = in.specularAlbedo[q * 3 + c];
+            }
+        ok = ok && writeRaw(P + "_split.f32", sp.data(), sp.size() * 4);
         const std::string j = "{\"scene\":\"" + a.scene + "\",\"lighting\":\"" + lighting + "\",\"path\":" + std::to_string(a.path) +
             ",\"frame\":" + std::to_string(k) + ",\"frames\":" + std::to_string(a.frames) + ",\"width\":" + std::to_string(a.width) +
             ",\"height\":" + std::to_string(a.height) + ",\"seed\":" + std::to_string(d.seed) + ",\"input_spp\":1,\"ref_spp\":" +
             std::to_string(a.spp) + ",\"ref_chunk\":" + std::to_string(a.chunk) + ",\"camera\":" + camJson(cam) + ",\"previous\":" +
             camJson(prev) + ",\"interface_version\":" + std::to_string(rt::kPathTraceVersion) + ",\"backend\":\"" +
             (dev ? dev->backendName() : std::string("cpu")) + "\",\"adapter\":\"" + (dev ? dev->adapter().description : std::string("")) +
-            "\",\"ms_input\":" + num(msIn) + ",\"ms_ref\":" + num(msRef) + ",\"ref_mean_var_of_mean\":" + num(meanVar) +
+            "\",\"input_only\":" + std::string(a.inputOnly ? "true" : "false") + ",\"ms_input\":" + num(msIn) + ",\"ms_ref\":" + num(msRef) + ",\"ref_mean_var_of_mean\":" + num(meanVar) +
             ",\"ref_fraction_se_under_1pct\":" + num((double)under1 / (double)n) + "}\n";
         ok = ok && writeRaw(P + ".json", j.data(), j.size());
         if (!ok){ std::printf("rr-render: cannot write %s\n", P.c_str()); return 2; }
