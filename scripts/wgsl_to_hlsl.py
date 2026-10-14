@@ -428,6 +428,17 @@ def selftest():
         if want not in out:
             print(f"selftest: RHI v3 raster translation lacks {want!r}:\n" + out, file=sys.stderr)
             return 1
+    # R1 method note 3: scalar bitcasts map to asuint, asint and asfloat; a vector bitcast is refused.
+    out = translate(head, "//@pass t\n" + bind + body % "let u: u32 = bitcast<u32>(bitcast<f32>(P.w));")["t.hlsl"]
+    if "const uint u = asuint(asfloat(P.w));" not in out:
+        print("selftest: scalar bitcast translated wrong:\n" + out, file=sys.stderr)
+        return 1
+    try:
+        translate(head, "//@pass t\n" + bind + body % "let v: vec2u = bitcast<vec2u>(vec2f(1.0, 2.0));")
+        print("selftest: accepted a vector bitcast", file=sys.stderr)
+        return 1
+    except TranslateError:
+        pass
     print("wgsl_to_hlsl: selftest passed")
     return 0
 

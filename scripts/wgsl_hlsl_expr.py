@@ -132,6 +132,12 @@ def statement(code, ptr_params):
         const = "const " if m.group(1) == "let" else ""
         return f"{const}{t} {m.group(2)}{suffix} ="
     code = re.sub(r"\b(let|var)\s+(\w+)\s*:\s*(" + TYPE_RE + r")\s*=", decl, code)
+    # Scalar bitcasts between 32-bit types (R1 method note 3): the same bits, so HLSL's asuint,
+    # asint and asfloat are faithful. Any other bitcast is refused.
+    for w, h in (("u32", "asuint"), ("i32", "asint"), ("f32", "asfloat")):
+        code = re.sub(r"\bbitcast<\s*" + w + r"\s*>\(", h + "(", code)
+    if "bitcast" in code:
+        raise TranslateError(f"only scalar bitcast<u32|i32|f32> is translated: {code.strip()!r}")
     bad = sorted(set(re.findall(r"\b(\w+)\s*\(", code)) & REFUSED)
     if bad:
         raise TranslateError(f"WGSL builtins with no faithful HLSL form: {bad} in {code.strip()!r}")
