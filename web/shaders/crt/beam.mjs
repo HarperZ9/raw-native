@@ -65,7 +65,7 @@ export function beamPass(plan, sig, hist, field) {
     const [sx, sy, hx, hy] = footprint(plan, px, py), i = (py * out.w + px) * 4, h = (py * out.w + px) * 8;
     const alpha = faceAlpha(plan, sx, sy, hx, hy);
     em[i + 3] = alpha;
-    const cover = maskCover(plan, sx, sy, hx, hy);
+    const cover = maskCover(plan, sx, sy, hx, hy, px, py);
     const t0 = Math.min(1, Math.max(0, (sy + plan.rasterH / 2) / plan.rasterH)) * T;
     const lit = alpha > 0 && Math.abs(sx) < plan.rasterW / 2 + 3 * hx && Math.abs(sy) < plan.rasterH / 2 + 3 * hy;
     const mono = plan.screen.mono && lit ? deposit(plan, sig, 0, sx, sy, hx, hy, field) : 0;

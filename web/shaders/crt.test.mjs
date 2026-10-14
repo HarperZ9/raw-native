@@ -140,3 +140,23 @@ test("persistence keeps every joule: a long-glow phosphor gives back all it took
   assert.ok(sum3(first, pix * 4) < 0.7 * deposited, "a P7 screen holds most of a frame's light for later frames");
   near(total, deposited, deposited * 0.005, "energy out vs energy in");
 });
+
+test("pixel-locked mask: one stripe per pixel at pitchPx 3, mean 1, slot rows, mix scales the contrast", () => {
+  for (const type of ["grille", "slot"]) {
+    const plan = resolve("pvm-20-soft", { mask: { type, mix: 1 } }, { w: 64, h: 48 }, { w: 96, h: 72 });
+    const acc = [0, 0, 0]; let n = 0;
+    for (let py = 0; py < 72; py++) for (let px = 0; px < 96; px++) { maskCover(plan, 0, 0, 0.1, 0.1, px, py).forEach((v, c) => (acc[c] += v)); n++; }
+    acc.forEach((a, c) => near(a / n, 1, type === "slot" ? 0.05 : 1e-9, `${type} mean channel ${c}`));
+  }
+  // Grille at pitch 3, fill 0.85: pixel c holds 0.85 of stripe c and nothing of the others.
+  const g = resolve("pvm-20-soft", { mask: { mix: 1 } }, { w: 64, h: 48 }, { w: 96, h: 72 }), mean = maskMean(g.p.mask);
+  for (let px = 30; px < 36; px++) {
+    const v = maskCover(g, 0, 0, 0.1, 0.1, px, 10);
+    for (let c = 0; c < 3; c++) near(v[c], c === px % 3 ? 0.85 / mean : 0, 1e-9, `pixel ${px} colour ${c}`);
+  }
+  const h = resolve("pvm-20-soft", {}, { w: 64, h: 48 }, { w: 96, h: 72 }), v = maskCover(h, 0, 0, 0.1, 0.1, 30, 10);
+  near(v[0], 1 - 0.5 + (0.5 * 0.85) / mean, 1e-9, "half mix on the stripe"); near(v[1], 0.5, 1e-9, "half mix off the stripe");
+  // Face lock is unchanged by the new fields.
+  const f = resolve("pvm-20", {}, { w: 64, h: 48 }, { w: 96, h: 72 });
+  assert.deepEqual(maskCover(f, 1.3, 2.1, 0.2, 0.2, 5, 5), maskCover(f, 1.3, 2.1, 0.2, 0.2));
+});
