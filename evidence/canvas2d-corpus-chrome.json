@@ -1,0 +1,831 @@
+{
+ "renderer": "canvas2d",
+ "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/155.0.0.0 Safari/537.36",
+ "cases": {
+  "fill-nonzero": {
+   "interior": {
+    "max": 0,
+    "n": 11978
+   },
+   "edge": {
+    "max": 0.16259193420410156,
+    "n": 2982,
+    "mean": 0.013327825417221191
+   },
+   "outside": {
+    "max": 0,
+    "n": 49310
+   },
+   "worst": {
+    "class": "edge",
+    "x": 58,
+    "y": 229,
+    "d": 0.16259193420410156,
+    "got": [
+     0.57,
+     0.558,
+     0.533,
+     0.624
+    ],
+    "ref": [
+     0.419,
+     0.412,
+     0.394,
+     0.461
+    ]
+   },
+   "stats": {
+    "items": 1,
+    "culled": 0,
+    "skipped": {
+     "bloom": 1
+    }
+   }
+  },
+  "fill-evenodd": {
+   "interior": {
+    "max": 0,
+    "n": 7994
+   },
+   "edge": {
+    "max": 0.16259193420410156,
+    "n": 2606,
+    "mean": 0.019681303172228617
+   },
+   "outside": {
+    "max": 0,
+    "n": 53294
+   },
+   "worst": {
+    "class": "edge",
+    "x": 58,
+    "y": 229,
+    "d": 0.16259193420410156,
+    "got": [
+     0.57,
+     0.558,
+     0.533,
+     0.624
+    ],
+    "ref": [
+     0.419,
+     0.412,
+     0.394,
+     0.461
+    ]
+   },
+   "stats": {
+    "items": 1,
+    "culled": 0,
+    "skipped": {
+     "bloom": 1
+    }
+   }
+  },
+  "fill-convex": {
+   "interior": {
+    "max": 0,
+    "n": 26676
+   },
+   "edge": {
+    "max": 0.043949127197265625,
+    "n": 1573,
+    "mean": 0.0066650251988783354
+   },
+   "outside": {
+    "max": 0,
+    "n": 36316
+   },
+   "worst": {
+    "class": "edge",
+    "x": 119,
+    "y": 26,
+    "d": 0.043949127197265625,
+    "got": [
+     0.279,
+     0.526,
+     0.476,
+     0.749
+    ],
+    "ref": [
+     0.295,
+     0.557,
+     0.501,
+     0.793
+    ]
+   },
+   "stats": {
+    "items": 1,
+    "culled": 0,
+    "skipped": {
+     "bloom": 1
+    }
+   }
+  },
+  "stroke-round": {
+   "interior": {
+    "max": 0,
+    "n": 5450
+   },
+   "edge": {
+    "max": 0.233884796500206,
+    "n": 3873,
+    "mean": 0.018501657149048698
+   },
+   "outside": {
+    "max": 0,
+    "n": 54664
+   },
+   "worst": {
+    "class": "edge",
+    "x": 77,
+    "y": 51,
+    "d": 0.233884796500206,
+    "got": [
+     0.114,
+     0.114,
+     0.106,
+     0.125
+    ],
+    "ref": [
+     0.327,
+     0.321,
+     0.307,
+     0.359
+    ]
+   },
+   "stats": {
+    "items": 1,
+    "culled": 0,
+    "skipped": {
+     "bloom": 1
+    }
+   }
+  },
+  "stroke-miter": {
+   "interior": {
+    "max": 0,
+    "n": 5728
+   },
+   "edge": {
+    "max": 0.125,
+    "n": 3744,
+    "mean": 0.01846050365597137
+   },
+   "outside": {
+    "max": 0,
+    "n": 54463
+   },
+   "worst": {
+    "class": "edge",
+    "x": 234,
+    "y": 198,
+    "d": 0.125,
+    "got": [
+     0.91,
+     0.894,
+     0.855,
+     1
+    ],
+    "ref": [
+     0.796,
+     0.782,
+     0.748,
+     0.875
+    ]
+   },
+   "stats": {
+    "items": 1,
+    "culled": 0,
+    "skipped": {
+     "bloom": 1
+    }
+   }
+  },
+  "stroke-miter-limit": {
+   "interior": {
+    "max": 0,
+    "n": 5058
+   },
+   "edge": {
+    "max": 0.18946078419685364,
+    "n": 3081,
+    "mean": 0.020014634097756136
+   },
+   "outside": {
+    "max": 0,
+    "n": 55990
+   },
+   "worst": {
+    "class": "edge",
+    "x": 137,
+    "y": 60,
+    "d": 0.18946078419685364,
+    "got": [
+     0.451,
+     0.443,
+     0.428,
+     0.498
+    ],
+    "ref": [
+     0.625,
+     0.615,
+     0.588,
+     0.688
+    ]
+   },
+   "stats": {
+    "items": 1,
+    "culled": 0,
+    "skipped": {
+     "bloom": 1
+    }
+   }
+  },
+  "stroke-bevel": {
+   "interior": {
+    "max": 0,
+    "n": 5619
+   },
+   "edge": {
+    "max": 0.15868568420410156,
+    "n": 3634,
+    "mean": 0.018157897321286934
+   },
+   "outside": {
+    "max": 0,
+    "n": 54766
+   },
+   "worst": {
+    "class": "edge",
+    "x": 15,
+    "y": 204,
+    "d": 0.15868568420410156,
+    "got": [
+     0.57,
+     0.558,
+     0.533,
+     0.624
+    ],
+    "ref": [
+     0.423,
+     0.416,
+     0.397,
+     0.465
+    ]
+   },
+   "stats": {
+    "items": 1,
+    "culled": 0,
+    "skipped": {
+     "bloom": 1
+    }
+   }
+  },
+  "stroke-closed": {
+   "interior": {
+    "max": 0,
+    "n": 4714
+   },
+   "edge": {
+    "max": 0.058838851749897,
+    "n": 3562,
+    "mean": 0.006207741557211019
+   },
+   "outside": {
+    "max": 0,
+    "n": 55354
+   },
+   "worst": {
+    "class": "edge",
+    "x": 17,
+    "y": 92,
+    "d": 0.058838851749897,
+    "got": [
+     0.059,
+     0.055,
+     0.055,
+     0.063
+    ],
+    "ref": [
+     0.004,
+     0.003,
+     0.003,
+     0.004
+    ]
+   },
+   "stats": {
+    "items": 1,
+    "culled": 0,
+    "skipped": {
+     "bloom": 1
+    }
+   }
+  },
+  "stroke-curve": {
+   "interior": {
+    "max": 0,
+    "n": 284
+   },
+   "edge": {
+    "max": 1,
+    "n": 8710,
+    "mean": 0.00805785136829835
+   },
+   "outside": {
+    "max": 0,
+    "n": 55308
+   },
+   "worst": {
+    "class": "edge",
+    "x": 240,
+    "y": 127,
+    "d": 1,
+    "got": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "ref": [
+     0.91,
+     0.894,
+     0.855,
+     1
+    ]
+   },
+   "stats": {
+    "items": 1,
+    "culled": 0,
+    "skipped": {
+     "bloom": 1
+    }
+   }
+  },
+  "stroke-hairline": {
+   "interior": {
+    "max": 0,
+    "n": 0
+   },
+   "edge": {
+    "max": 0.18846507370471954,
+    "n": 1362,
+    "mean": 0.017929591968786875
+   },
+   "outside": {
+    "max": 0,
+    "n": 62609
+   },
+   "worst": {
+    "class": "edge",
+    "x": 231,
+    "y": 200,
+    "d": 0.18846507370471954,
+    "got": [
+     0.224,
+     0.22,
+     0.212,
+     0.247
+    ],
+    "ref": [
+     0.053,
+     0.052,
+     0.05,
+     0.059
+    ]
+   },
+   "stats": {
+    "items": 1,
+    "culled": 0,
+    "skipped": {
+     "bloom": 1
+    }
+   }
+  },
+  "dash-butt": {
+   "interior": {
+    "max": 0,
+    "n": 1011
+   },
+   "edge": {
+    "max": 0.23046875,
+    "n": 3360,
+    "mean": 0.017593806024108614
+   },
+   "outside": {
+    "max": 0,
+    "n": 59678
+   },
+   "worst": {
+    "class": "edge",
+    "x": 128,
+    "y": 35,
+    "d": 0.23046875,
+    "got": [
+     0.91,
+     0.894,
+     0.855,
+     1
+    ],
+    "ref": [
+     0.7,
+     0.688,
+     0.658,
+     0.77
+    ]
+   },
+   "stats": {
+    "items": 1,
+    "culled": 0,
+    "skipped": {
+     "bloom": 1
+    }
+   }
+  },
+  "dash-dots": {
+   "interior": {
+    "max": 0,
+    "n": 855
+   },
+   "edge": {
+    "max": 0.26367953419685364,
+    "n": 2163,
+    "mean": 0.03657993190662209
+   },
+   "outside": {
+    "max": 0,
+    "n": 61013
+   },
+   "worst": {
+    "class": "edge",
+    "x": 122,
+    "y": 193,
+    "d": 0.26367953419685364,
+    "got": [
+     0.451,
+     0.443,
+     0.428,
+     0.498
+    ],
+    "ref": [
+     0.693,
+     0.681,
+     0.651,
+     0.762
+    ]
+   },
+   "stats": {
+    "items": 1,
+    "culled": 0,
+    "skipped": {
+     "bloom": 1
+    }
+   }
+  },
+  "gradient-linear": {
+   "interior": {
+    "max": 0.00405353307723999,
+    "n": 35088
+   },
+   "edge": {
+    "max": 0.00405353307723999,
+    "n": 1520,
+    "mean": 0.001953415435395743
+   },
+   "outside": {
+    "max": 0,
+    "n": 27376
+   },
+   "worst": {
+    "class": "interior",
+    "x": 112,
+    "y": 48,
+    "d": 0.00405353307723999,
+    "got": [
+     0.329,
+     0.62,
+     0.576,
+     1
+    ],
+    "ref": [
+     0.333,
+     0.622,
+     0.581,
+     1
+    ]
+   },
+   "stats": {
+    "items": 1,
+    "culled": 0,
+    "skipped": {
+     "bloom": 1
+    }
+   }
+  },
+  "gradient-radial": {
+   "interior": {
+    "max": 0.005335450172424316,
+    "n": 26676
+   },
+   "edge": {
+    "max": 0.01016153022646904,
+    "n": 1573,
+    "mean": 0.002573598029648646
+   },
+   "outside": {
+    "max": 0,
+    "n": 36316
+   },
+   "worst": {
+    "class": "interior",
+    "x": 148,
+    "y": 120,
+    "d": 0.005335450172424316,
+    "got": [
+     0.643,
+     0.681,
+     0.646,
+     0.8
+    ],
+    "ref": [
+     0.644,
+     0.686,
+     0.65,
+     0.802
+    ]
+   },
+   "stats": {
+    "items": 1,
+    "culled": 0,
+    "skipped": {
+     "bloom": 1
+    }
+   }
+  },
+  "gradient-stroke": {
+   "interior": {
+    "max": 0.004017829895019531,
+    "n": 518
+   },
+   "edge": {
+    "max": 0.20899203419685364,
+    "n": 6962,
+    "mean": 0.009152911626459606
+   },
+   "outside": {
+    "max": 0,
+    "n": 56816
+   },
+   "worst": {
+    "class": "edge",
+    "x": 166,
+    "y": 197,
+    "d": 0.20899203419685364,
+    "got": [
+     0.275,
+     0.338,
+     0.279,
+     0.498
+    ],
+    "ref": [
+     0.388,
+     0.479,
+     0.396,
+     0.707
+    ]
+   },
+   "stats": {
+    "items": 1,
+    "culled": 0,
+    "skipped": {
+     "bloom": 1
+    }
+   }
+  },
+  "clip-circle": {
+   "interior": {
+    "max": 0,
+    "n": 27768
+   },
+   "edge": {
+    "max": 0.051822930574417114,
+    "n": 1500,
+    "mean": 0.0072510599999999
+   },
+   "outside": {
+    "max": 0,
+    "n": 33440
+   },
+   "worst": {
+    "class": "edge",
+    "x": 58,
+    "y": 61,
+    "d": 0.051822930574417114,
+    "got": [
+     0.244,
+     0.239,
+     0.228,
+     0.267
+    ],
+    "ref": [
+     0.195,
+     0.192,
+     0.184,
+     0.215
+    ]
+   },
+   "stats": {
+    "items": 1,
+    "culled": 0,
+    "skipped": {
+     "bloom": 1
+    }
+   }
+  },
+  "clip-evenodd": {
+   "interior": {
+    "max": 0.00390625,
+    "n": 7994
+   },
+   "edge": {
+    "max": 0.16259193420410156,
+    "n": 2606,
+    "mean": 0.020859570694902907
+   },
+   "outside": {
+    "max": 0,
+    "n": 51262
+   },
+   "worst": {
+    "class": "edge",
+    "x": 58,
+    "y": 229,
+    "d": 0.16259193420410156,
+    "got": [
+     0.35,
+     0.262,
+     0.223,
+     0.624
+    ],
+    "ref": [
+     0.257,
+     0.196,
+     0.166,
+     0.461
+    ]
+   },
+   "stats": {
+    "items": 1,
+    "culled": 0,
+    "skipped": {
+     "bloom": 1
+    }
+   }
+  },
+  "clip-stroke": {
+   "interior": {
+    "max": 0,
+    "n": 3090
+   },
+   "edge": {
+    "max": 0.15772056579589844,
+    "n": 3149,
+    "mean": 0.01912272341783632
+   },
+   "outside": {
+    "max": 0,
+    "n": 54346
+   },
+   "worst": {
+    "class": "edge",
+    "x": 88,
+    "y": 90,
+    "d": 0.15772056579589844,
+    "got": [
+     0.57,
+     0.558,
+     0.533,
+     0.624
+    ],
+    "ref": [
+     0.711,
+     0.699,
+     0.668,
+     0.781
+    ]
+   },
+   "stats": {
+    "items": 1,
+    "culled": 0,
+    "skipped": {
+     "bloom": 1
+    }
+   }
+  },
+  "image-fill": {
+   "interior": {
+    "max": 0.00371474027633667,
+    "n": 26676
+   },
+   "edge": {
+    "max": 0.043949127197265625,
+    "n": 1573,
+    "mean": 0.007993816662738448
+   },
+   "outside": {
+    "max": 0,
+    "n": 36316
+   },
+   "worst": {
+    "class": "interior",
+    "x": 133,
+    "y": 37,
+    "d": 0.00371474027633667,
+    "got": [
+     0.694,
+     0.702,
+     0.706,
+     1
+    ],
+    "ref": [
+     0.698,
+     0.702,
+     0.706,
+     1
+    ]
+   },
+   "stats": {
+    "items": 1,
+    "culled": 0,
+    "skipped": {
+     "bloom": 1
+    }
+   }
+  },
+  "image-stroke": {
+   "interior": {
+    "max": 0.00371474027633667,
+    "n": 7492
+   },
+   "edge": {
+    "max": 0.21727940440177917,
+    "n": 3645,
+    "mean": 0.026624825437373094
+   },
+   "outside": {
+    "max": 0,
+    "n": 52934
+   },
+   "worst": {
+    "class": "edge",
+    "x": 128,
+    "y": 202,
+    "d": 0.21727940440177917,
+    "got": [
+     0.199,
+     0.204,
+     0.22,
+     0.376
+    ],
+    "ref": [
+     0.312,
+     0.324,
+     0.347,
+     0.594
+    ]
+   },
+   "stats": {
+    "items": 1,
+    "culled": 0,
+    "skipped": {
+     "bloom": 1
+    }
+   }
+  }
+ },
+ "bounds": {
+  "interior": {
+   "max": 0.02,
+   "why": "8-bit canvas: rounding and gradient or image interpolation in 8 bits"
+  },
+  "outside": {
+   "max": 0.004,
+   "why": "one 8-bit code at most, at least 1.5 px from every edge"
+  },
+  "edge": {
+   "mean": 0.05,
+   "max": 0.5,
+   "why": "the browser's own antialiasing against box-filtered coverage"
+  },
+  "sharp": {
+   "max": 0.7,
+   "why": "miter tips and star points narrower than a pixel"
+  }
+ },
+ "known": {
+  "stroke-curve": "the reference covers about 2 px past the butt cap at the curve's end, where the canvas correctly draws nothing (pixel (240, 127) lies wholly past the cap; issue #123)"
+ },
+ "problems": [],
+ "commit": "a7e498bbb9bf7fb82a55b45c771d50ce3b07fac7",
+ "does_not_prove": "Twenty single items on a 256 x 256 canvas in one browser. It does not show that whole scenes match, and it says nothing about the layers and post passes the fallback leaves out."
+}

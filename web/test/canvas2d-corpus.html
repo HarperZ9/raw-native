@@ -1,0 +1,58 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Canvas 2D corpus check</title>
+<!-- The vector corpus of evidence/m1-vector-corpus.json drawn by the Canvas 2D fallback
+     (web/motion/canvas2d.mjs) and compared with the CPU reference (web/motion/vector_ref.mjs),
+     which tests/web/canvas2d_corpus.py writes under /_data/. Needs no WebGPU. -->
+<canvas id="sheet" width="1280" height="512" style="background:#060608"></canvas>
+<script type="module">
+import { drawFrame } from '../motion/canvas2d.mjs';
+import { items, checker16 } from '../../tests/web/vector_corpus.mjs';
+
+function draw(ctx, img, W, H, dx, dy, scale) {
+  const id = new ImageData(W, H), bg = [6, 6, 8];
+  for (let i = 0; i < W * H; i++) for (let k = 0; k < 3; k++) id.data[4 * i + k] = Math.round(255 * Math.min(1, img[4 * i + k] + (1 - img[4 * i + 3]) * bg[k] / 255));
+  for (let i = 0; i < W * H; i++) id.data[4 * i + 3] = 255;
+  const t = new OffscreenCanvas(W, H); t.getContext('2d').putImageData(id, 0, 0);
+  ctx.drawImage(t, dx, dy, W * scale, H * scale);
+}
+
+async function run() {
+  const corpus = await (await fetch('../../evidence/m1-vector-corpus.json')).json();
+  const [W, H] = corpus.canvas.size;
+  const ck = checker16(), ckc = new OffscreenCanvas(16, 16);
+  ckc.getContext('2d').putImageData(new ImageData(new Uint8ClampedArray(ck.data), 16, 16), 0, 0);
+  const images = { checker16: ckc };
+  const sheet = document.getElementById('sheet').getContext('2d');
+  const res = { renderer: 'canvas2d', userAgent: navigator.userAgent, cases: {} };
+  let n = 0;
+  for (const { id, item } of items(corpus)) {
+    const cv = new OffscreenCanvas(W, H), g = cv.getContext('2d', { colorSpace: 'srgb' });
+    const stats = drawFrame(g, { background: null, camera: { x: W / 2, y: H / 2 }, items: [item] }, { width: W, height: H, design: [W, H], images, vignette: false, makePath: () => new Path2D() });
+    const px = g.getImageData(0, 0, W, H).data, out = new Float32Array(W * H * 4);
+    for (let i = 0; i < W * H; i++) { const a = px[4 * i + 3] / 255; for (let k = 0; k < 3; k++) out[4 * i + k] = (px[4 * i + k] / 255) * a; out[4 * i + 3] = a; }
+    const ref = new Float32Array(await (await fetch(`/_data/${id}.rgba.f32`)).arrayBuffer());
+    const cls = new Uint8Array(await (await fetch(`/_data/${id}.cls.u8`)).arrayBuffer());
+    const s = { interior: { max: 0, n: 0 }, edge: { max: 0, sum: 0, n: 0 }, outside: { max: 0, n: 0 }, worst: null, stats };
+    for (let i = 0; i < W * H; i++) {
+      let d = 0;
+      for (let k = 0; k < 4; k++) d = Math.max(d, Math.abs(out[4 * i + k] - ref[4 * i + k]));
+      const key = cls[i] === 2 ? 'interior' : cls[i] === 1 ? 'edge' : 'outside';
+      if (key === 'edge' && !(out[4 * i + 3] > 0 || ref[4 * i + 3] > 0)) continue;
+      const b = s[key];
+      b.n++;
+      if (d > b.max) { b.max = d; if (key !== 'outside') s.worst = { class: key, x: i % W, y: Math.floor(i / W), d, got: Array.from(out.slice(4 * i, 4 * i + 4)).map((v) => +v.toFixed(3)), ref: Array.from(ref.slice(4 * i, 4 * i + 4)).map((v) => +v.toFixed(3)) }; }
+      if (key === 'edge') b.sum += d;
+    }
+    s.edge.mean = s.edge.n ? s.edge.sum / s.edge.n : 0; delete s.edge.sum;
+    res.cases[id] = s;
+    const col = n % 5, row = Math.floor(n / 5);
+    draw(sheet, out, W, H, col * 256, row * 128, 0.5);
+    draw(sheet, ref, W, H, col * 256 + 128, row * 128, 0.5);
+    n++;
+  }
+  res.sheet = document.getElementById('sheet').toDataURL('image/png');
+  return res;
+}
+run().then((r) => { window.__result = r; }, (e) => { window.__result = { error: String(e && e.stack || e) }; });
+</script>

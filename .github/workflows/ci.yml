@@ -632,6 +632,8 @@ jobs:
         run: node tools/media/tex_coverage.mjs --scenes docs/motion --atlas docs/motion/hanken-grotesk-500.atlas.json --scenes docs/media/scenes --atlas docs/motion/hanken-grotesk-500.atlas.json
       - name: The vector corpus on the GPU matches the CPU reference within its bounds (M1 criterion 4)
         run: python tests/web/vector_corpus.py --adapter swiftshader
+      - name: The Canvas 2D fallback draws the vector corpus within its bounds of the CPU reference (no WebGPU)
+        run: python tests/web/canvas2d_corpus.py --out media-out/canvas2d-corpus.json
       - name: Tile loaders survive 50,000 fuzzed inputs (the full million is in evidence/), and the tile pass matches its CPU twin (M2 criterion 10)
         run: |
           node tools/fuzz/tiles_fuzz.mjs --n 50000 > /dev/null
