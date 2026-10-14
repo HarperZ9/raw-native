@@ -1,0 +1,25 @@
+{
+  "what": "Temporal stability of the palette and dither modes over moving sequences, and the rule that picks the pixel-2.5d template's dither mode",
+  "fixed_before_first_run": "2026-10-14, before the metric code ran on any sequence",
+  "why": "The mix dither (evidence/shaders-dither-mix-runs.json) won on still low-pass accuracy and lost on still preference; its temporal stability was not measured. A 16-entry plan can flip on slow changes. The pixel template (templates/pixel-2.5d) pans and dithers to PICO-8 every frame, so motion is its real use.",
+  "tool": "tools/shaders/dither_temporal.mjs (CPU, ditherRef, the f64 reference whose palette indices the GPU matches exactly)",
+  "modes": ["none", "bayer4", "bayer8", "blue", "mix-bayer4", "mix-bayer8", "mix-blue"],
+  "palettes": ["pico8", "ega"],
+  "sequences": {
+    "pan": "the street fixture by day at 640 x 400 (sRGB-encoded through the display shoulder), a 320 x 180 window sliding right 1.33 px per frame with bilinear resampling (the template's camera speed of 40 px/s at 30 fps), 60 frames",
+    "game": "fixtures/game.mjs gameFrame(320, 240, t), t = 0 .. 59 / 30 (parallax ridges, scrolling floor, bobbing sprite, blinking pickup), 60 frames",
+    "lamp": "the street fixture at dusk, 320 x 200, static camera, t = 0 .. 59 / 30 (the lamp flickers about 8%), 60 frames",
+    "fade": "fixtures/scene.mjs sceneCard(320, 180) in linear light scaled by 0.7 + 0.3 f / 59 over 60 frames (a slow exposure ramp), sRGB-encoded"
+  },
+  "metrics": {
+    "flicker": "Perceived flicker. Per frame, e_t = OKLab(box4(D_t)) - OKLab(box4(S_t)) per pixel, where box4 is the 4 x 4 box in linear light used by the quality measure, D the dithered frame and S the source. flicker = 100 x mean over pixels and consecutive frame pairs of |e_t - e_(t-1)|. A dither error that stays put on the content does not count; error that changes from frame to frame does.",
+    "toggles": "Fraction of pixels whose palette index changes between consecutive frames, mean over pairs; reported beside the source's fraction of pixels whose 8-bit value changes.",
+    "error": "Still accuracy for context: 100 x mean |e_t| (the existing low-pass error, averaged over the sequence)."
+  },
+  "default_rule": {
+    "candidates": "bayer4 (the template's current mode, bit-equal to retro-dither.js) and mix-bayer4",
+    "rule": "1) The lab 4 blind panel shows both on the game sequence with PICO-8 as a moving clip. If one side is 'preferred' there, it becomes the template's mode. 2) Otherwise the mode with lower flicker on both the pan and the game sequences with PICO-8 becomes the template's mode. 3) Otherwise the template keeps bayer4.",
+    "scope": "This decides the pixel template's mode only. The library keeps no default mode (evidence/shaders-dither-mix-runs.json)."
+  },
+  "does_not_prove": "Flicker as people see it on a real display at real distance (the 4 x 4 box is a stand-in for the eye's blur); behaviour on palettes other than PICO-8 and EGA; GPU timing."
+}
