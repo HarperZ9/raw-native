@@ -18,7 +18,7 @@ export function writePng(path, { width, height, data }) {
   writeFileSync(path, Buffer.concat([Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]), chunk("IHDR", ihdr), chunk("IDAT", deflateSync(raw, { level: 9 })), chunk("IEND", Buffer.alloc(0))]));
 }
 // Read an 8-bit RGB or RGBA PNG that is not interlaced (ours, and ffmpeg's) into RGBA8.
-// An RGB file reads with alpha 255. Anything else throws rather than guessing.
+// An RGB file reads with alpha 255. Other formats, and truncated chunks, throw. CRCs are not checked.
 export function readPng(pathOrBytes) {
   const b = typeof pathOrBytes === "string" ? readFileSync(pathOrBytes) : Buffer.from(pathOrBytes);
   const name = typeof pathOrBytes === "string" ? pathOrBytes : "png";
@@ -26,10 +26,14 @@ export function readPng(pathOrBytes) {
   let p = 8, W = 0, H = 0, ch = 0;
   const idat = [];
   while (p + 8 <= b.length) {
-    const n = b.readUInt32BE(p), type = b.toString("ascii", p + 4, p + 8), d = b.subarray(p + 8, p + 8 + n);
+    const n = b.readUInt32BE(p), type = b.toString("ascii", p + 4, p + 8);
+    if (p + 12 + n > b.length) throw new Error(`${name}: chunk ${type} runs past the end of the file`);
+    const d = b.subarray(p + 8, p + 8 + n);
     if (type === "IHDR") {
+      if (n < 13) throw new Error(`${name}: IHDR is short`);
       W = d.readUInt32BE(0); H = d.readUInt32BE(4);
-      if (d[8] !== 8 || d[12] !== 0 || (d[9] !== 6 && d[9] !== 2)) throw new Error(`${name}: only 8-bit RGB(A), not interlaced`);
+      if (d[8] !== 8 || d[10] !== 0 || d[11] !== 0 || d[12] !== 0 || (d[9] !== 6 && d[9] !== 2)) throw new Error(`${name}: only 8-bit RGB(A), not interlaced`);
+      if (!W || !H || W * H > 1 << 28) throw new Error(`${name}: size ${W} x ${H} is out of range`);
       ch = d[9] === 6 ? 4 : 3;
     } else if (type === "IDAT") idat.push(d);
     else if (type === "IEND") break;

@@ -201,6 +201,8 @@ def main(argv=None) -> int:
     ap.add_argument("--timeout", type=float, default=7200)
     ap.add_argument("--hash-frames", action="store_true", help="read back and hash every frame (written to OUT.frames.sha256)")
     a = ap.parse_args(argv)
+    if a.codec == "png" and (a.transport != "raw" or a.audio or a.score):
+        ap.error("--codec png needs --transport raw and no --audio or --score")
 
     root = Path(a.root).resolve()
     if a.serve:
