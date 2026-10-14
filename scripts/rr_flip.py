@@ -160,7 +160,7 @@ def selftest():
           f"swap difference {sym:.3g} (reported); black vs white {bw:.4f}; csf radius {csf_radius(PPD_DEFAULT)} "
           f"(reference 10 at the default ppd)")
     ok &= csf_radius(PPD_DEFAULT) == 10
-    print("selftest", "pass" if ok else "FAIL", "(UNCHECKED against the reference test pair)")
+    print("selftest", "pass" if ok else "FAIL", "(reference test pair: evidence/rr-flip-check.json)")
     return 0 if ok else 1
 
 
