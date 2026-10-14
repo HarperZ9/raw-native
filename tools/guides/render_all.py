@@ -43,7 +43,7 @@ def still(scene: str, out: Path) -> None:
     for _ in range(3):
         # A render that hangs (seen once on the GPU adapter) is stopped after 5 minutes and retried.
         try:
-            r = subprocess.run([sys.executable, str(ROOT / "scripts" / "motion_still.py"), "--scene", scene, "--out", str(out), "--t", "0.2", *ADAPTER],
+            r = subprocess.run([sys.executable, str(ROOT / "scripts" / "motion_still.py"), "--scene", scene, "--out", str(out), "--t", "0.2", "--warm", "2", *ADAPTER],
                                capture_output=True, text=True, timeout=300)
         except subprocess.TimeoutExpired:
             continue
