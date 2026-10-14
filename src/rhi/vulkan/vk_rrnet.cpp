@@ -249,14 +249,25 @@ std::string timing(Context& cx, const std::vector<float>& weights, const RrArgs&
     net.eps = a.eps; net.version = a.version;
     if (!net.init(weights, W, H, coop, err) || !cx.upload(net.X[0], x.data(), x.size() * 4, err) || !cx.upload(net.X[1], x.data(), x.size() * 4, err)) return "";
     std::vector<double> ms;
+    std::vector<std::vector<double>> per;   // per step, every timed frame (a breakdown for the 2 ms budget)
     for (int i = 0; i < a.warmup + a.repeats; ++i){
         double t = 0;
-        if (!cx.runBatch(net.frame(i & 1, i == 0, false), &t, err)) return "";
-        if (i >= a.warmup) ms.push_back(t);
+        std::vector<double> st;
+        if (!cx.runBatch(net.frame(i & 1, i == 0, false), &t, err, &st)) return "";
+        if (i >= a.warmup){
+            ms.push_back(t);
+            if (per.size() < st.size()) per.resize(st.size());
+            for (size_t k = 0; k < st.size(); ++k) per[k].push_back(st[k]);
+        }
     }
+    std::string steps = "[";
+    for (size_t k = 0; k < per.size(); ++k) steps += (k ? "," : "") + num(pct(per[k], 0.5));
+    steps += "]";
     return "{\"width\":1920,\"height\":1080,\"n\":" + std::to_string(ms.size()) + ",\"median_ms\":" + num(pct(ms, 0.5)) + ",\"p5_ms\":" +
            num(pct(ms, 0.05)) + ",\"p95_ms\":" + num(pct(ms, 0.95)) + ",\"p99_ms\":" + num(pct(ms, 0.99)) + ",\"iqr_ms\":" +
-           num(pct(ms, 0.75) - pct(ms, 0.25)) + ",\"within_2ms\":" + (pct(ms, 0.5) <= 2.0 ? "true" : "false") + "}";
+           num(pct(ms, 0.75) - pct(ms, 0.25)) + ",\"step_median_ms\":" + steps +
+           ",\"step_note\":\"steps in Net::frame order (mean depth, features, 12 convolutions, then the glue passes; v4 runs them once a signal); a timestamp after every step\"" +
+           ",\"within_2ms\":" + (pct(ms, 0.5) <= 2.0 ? "true" : "false") + "}";
 }
 }  // namespace
 

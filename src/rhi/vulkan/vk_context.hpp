@@ -50,9 +50,10 @@ public:
                   uint32_t groupsY = 1);
     // Several dispatches in one command buffer, a compute-to-compute barrier after each, one
     // submission and wait; ms (if not null) receives the GPU time from before the first to after
-    // the last (HW H2 inference). At most 64 steps.
+    // the last (HW H2 inference). At most 64 steps. stepMs (if not null, with ms) receives each step's time from a
+    // timestamp after every step's barrier, for a per-kernel breakdown.
     struct Step { const Pipeline* p; std::vector<Buffer*> bufs; std::vector<uint32_t> push; uint32_t gx{1}, gy{1}; };
-    bool runBatch(const std::vector<Step>& steps, double* ms, std::string& err);
+    bool runBatch(const std::vector<Step>& steps, double* ms, std::string& err, std::vector<double>* stepMs = nullptr);
     double timestampPeriodNs() const { return tsPeriod_; }
     bool timestampsUsable() const { return tsBits_ > 0 && tsPeriod_ > 0; }
 
