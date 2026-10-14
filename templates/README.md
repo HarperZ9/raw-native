@@ -1,6 +1,6 @@
 # Style templates
 
-These are the three starter templates the author chose on 9 October 2026 (ADR 0016). They are M2's style acceptance corpus. Each one shows what the engine does for a kind of game, and each will become a playable starting point. For now they are **scaffolds**: they run, but their art is placeholder art made in code. The art direction is still to come.
+These are the three starter templates the author chose on 9 October 2026 (ADR 0016). They are M2's style acceptance corpus. Each one shows what the engine does for a kind of game, and each will become a playable starting point. For now they are **scaffolds**: they run, but their art is placeholder art made in code. The art direction is still to come. The first hand-made places for two of these styles live with the explainer guides: a painted isometric harbour (`guides/worlds/harbour.mjs`) and a pixel 2.5D tidepool with six parallax depths and its own fixed palette (`guides/worlds/tidepool.mjs`).
 
 | Template | In the author's words | Uses today | Waits on |
 |---|---|---|---|

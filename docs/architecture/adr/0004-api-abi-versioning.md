@@ -34,6 +34,10 @@ blobs, and every backend's types.
 layered paths and carry a comment naming their removal: the minor release after
 the one that introduced the layers. CI forbids engine code from using them.
 
+Dated note, 2026-10-14: the removal was due in 0.7.0 and was missed; 0.7.0 shipped
+the forwarders. They are removed in 0.8.0, and `scripts/check_layers.py` now
+refuses any header placed directly under `raw/`.
+
 **The C ABI, when it lands:** each table starts with its own size and version,
 the engine fills only the entries the plugin's version knows, and new entries
 only append. An `api.json` dump of the tables is committed, and CI checks a

@@ -768,7 +768,6 @@ raw/<layer>/  public headers, one directory per layer:
               graph    the frame graph: passes, culling, barriers
               renderer the CPU reference and the GPU renderer
               tools    the CLI's parameters, runs, receipts and verifier
-raw/*.hpp     forwarders from the 0.5 include paths, removed in 0.7.0
 src/<layer>/  implementation; src/rhi/ holds one directory per backend, and
               src/renderer/gpu/shaders/ the WGSL and the HLSL generated from it
 app/          command-line driver
