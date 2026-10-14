@@ -173,8 +173,8 @@ graph features ([ADR 0003](adr/0003-frame-graph.md)).
 - The public C++ API is `raw/<layer>/*.hpp`. Anything under `src/` is private.
 - Before 1.0, a minor release may break the C++ API. A moved header keeps a
   forwarder at its old path for one minor release: the 0.5 paths
-  (`raw/render.hpp` and the rest) forward to their layered paths in 0.6 and are
-  removed in 0.7.
+  (`raw/render.hpp` and the rest) forwarded to their layered paths in 0.6 and
+  0.7 and were removed in 0.8.0, one release later than planned.
 - The C++ ABI carries no promise: the library ships as source and as a static
   library built with one toolchain. Binary plugins will use a C ABI with
   versioned function tables, and a plugin built for an older minor keeps

@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.24)
-project(raw_native VERSION 0.7.0
+project(raw_native VERSION 0.8.0
     DESCRIPTION "CPU renderer that checks fast ambient occlusion against a ray-traced reference"
     HOMEPAGE_URL "https://github.com/HarperZ9/raw-native"
     LANGUAGES CXX)

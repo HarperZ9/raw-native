@@ -4,8 +4,29 @@ Each release's full notes, with downloads and evidence, are on the
 [releases page](https://github.com/HarperZ9/raw-native/releases). Dates are
 the day the release was published on GitHub, in UTC.
 
-## Unreleased
+## 0.8.0 (2026-10-14)
 
+Upgrading from 0.7.0: see "Migration from 0.7.0" at the end of this section. Two changes can
+break code written against 0.7.0: API snapshot 3 (two `SsrParams` defaults) and the removal of the
+0.5 include paths.
+
+- **The 0.5 include paths are removed.** The 28 forwarders `raw/<name>.hpp` (`raw/render.hpp`,
+  `raw/vec.hpp` and the rest) are gone; include `raw/<layer>/<name>.hpp`. ADR 0004 scheduled the
+  removal for 0.7.0, and 0.7.0 shipped them by mistake, so they lived one release longer than
+  promised. `scripts/check_layers.py` now refuses a header placed directly under `raw/`, with a
+  selftest case that the old checker accepts.
+- **Correctly rounded division in the rasterizer** (RT R1, method note 3 in
+  `evidence/rt-r1-bounds.json`). `div_rn` computes binary32 division rounded to nearest even in
+  u32 arithmetic and replaces every f32 `/` in `swr_setup`, `swr_resolve` and `swr_gbuffer`,
+  because D3D12 permits approximate division. `tests/test_swr_div.cpp` checks the C++ mirror
+  against native division on 67,108,864 random pairs and 2,704 edge pairs with 0 differing; the
+  control (sticky bit dropped) differs on 51,995. WARP and SwiftShader output is unchanged. The
+  RTX 4090 run that tests the inferred cause has not run yet, so R1 on the RTX stays an open
+  failure. `SwrParams` gains `div`. The WGSL-to-HLSL translator maps scalar `bitcast` to
+  `asuint`, `asint` and `asfloat`.
+- **Ray reconstruction v3 measured on the RTX 4090** (HW H2, evidence only). Parity on raw_hero
+  misses its 1e-2 bound (cooperative matrix 0.842, scalar 0.404), and the 1080p cooperative-matrix
+  median is 9.07 ms against a 2.0 ms budget. Both are recorded failures.
 - **Mandelbulb march passes M2** (RT R3). The ray marcher's surface refinement keeps its bracket in double-float
   (TwoSum, additions only), while the march, the estimator and every position stay float32. The bulb now passes M2's
   unchanged bounds on WARP (t within 99.873%, normals 99.535%) and SwiftShader, and the gate covers it. Method note 7
@@ -59,6 +80,16 @@ the day the release was published on GitHub, in UTC.
   submission. On SwiftShader the scalar path misses the 1e-2 parity bound. PyTorch's own float32 and float64 passes
   differ by the same amount, so the miss reflects the model's sensitivity, not the kernels. The tensor-core path and the
   2 ms budget were not run: the RTX was held by higher-priority work.
+
+- **Migration from 0.7.0.**
+  - Replace each `#include "raw/<name>.hpp"` with its layered path. The mapping is the one the
+    forwarders held, for example `raw/render.hpp` to `raw/renderer/render.hpp` and `raw/vec.hpp`
+    to `raw/math/vec.hpp`; `git show v0.7.0:raw/<name>.hpp` prints each one.
+  - API snapshot 3: two `SsrParams` defaults changed. `api/snapshot-3/MIGRATION.md` lists them
+    and how to keep the old behaviour.
+  - Additions only, nothing to change: `PathTraceOutput` split radiance (interface v2),
+    `SwrParams::div`, `raw_native_cli rr-render`, `rr-taa` and `hw-rayquery --criterion b`.
+  - Certificates and receipts keep their schemas; the `renderer` string reads `raw-native 0.8.0`.
 
 ## 0.7.0 (2026-10-12)
 

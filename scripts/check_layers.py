@@ -8,7 +8,8 @@ or src/ (app/ is the tools layer). A file may include:
   - a graphics or OS API header only where API_HEADERS allows it;
   - a vendored header only where VENDORED allows it.
 Public headers (raw/) include public headers only. Code includes the layered
-path raw/<layer>/<name>.hpp, never the deprecated forwarders raw/<name>.hpp.
+path raw/<layer>/<name>.hpp. The 0.5 paths raw/<name>.hpp were removed in 0.8.0,
+and a header placed directly under raw/ is refused.
 tests/ may include any public header and is not checked further.
 
 Usage: check_layers.py [--selftest] [--report]
@@ -71,8 +72,6 @@ def check_file(rel, text, exists):
     if rel.startswith("tests/"):
         return out
     if layer is None:
-        if rel.startswith("raw/") and rel.count("/") == 1:
-            return out          # a deprecated forwarder: one include, checked by its target's rules
         return [f"{rel}: not in a layer directory (raw/<layer>/, src/<layer>/ or app/)"]
     if layer not in LAYERS:
         return [f"{rel}: layer '{layer}' is not declared in scripts/check_layers.py"]
@@ -89,7 +88,7 @@ def check_file(rel, text, exists):
                 out.append(f"{rel}: layer {layer} may not include {inc} (layer {m.group(1)})")
             continue
         if re.fullmatch(r"raw/\w+\.hpp", inc):
-            out.append(f"{rel}: includes the deprecated path {inc}; use raw/<layer>/{inc[4:]}")
+            out.append(f"{rel}: includes the removed 0.5 path {inc}; use raw/<layer>/{inc[4:]}")
             continue
         name = inc.split("/")[-1]
         if inc in VENDORED:
@@ -144,7 +143,8 @@ def selftest():
         "skipping a layer rule": ("src/rhi/d3d12/x.cpp", '#include "raw/scene/scene.hpp"\n'),
         "API header outside its backend": ("src/renderer/x.cpp", "#include <d3d12.h>\n"),
         "webgpu outside its backend": ("src/graph/x.cpp", "#include <webgpu/webgpu.h>\n"),
-        "deprecated forwarder": ("src/scene/x.cpp", '#include "raw/vec.hpp"\n'),
+        "removed 0.5 path": ("src/scene/x.cpp", '#include "raw/vec.hpp"\n'),
+        "a header directly under raw/": ("raw/vec.hpp", '#include "raw/math/vec.hpp"\n'),
         "private header of another layer": ("src/core/x.cpp", '#include "../renderer/r.hpp"\n'),
         "public header including a private one": ("raw/core/x.hpp", '#include "p.hpp"\n'),
         "vendored header outside its layer": ("src/core/x.cpp", '#include "superstack.hpp"\n'),
