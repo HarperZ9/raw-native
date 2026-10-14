@@ -223,7 +223,7 @@
    "when": "2026-10-14 04:20Z",
    "backend": "CPU reference and D3D12 WARP, v2 against the v1 binary from main 0c2fbbb",
    "checks": "P5d",
-   "result": "Radiance, albedo, normal, depth, motion, variance and triangle byte-identical on retro_room and iso_street at 160 x 120, 16 spp, seed 3: 28 of 28 files on the CPU (gated) and on WARP (reported).",
+   "result": "Radiance, albedo, normal, depth, motion, variance and triangle byte-identical on retro_room and iso_street at 160 x 120, 16 spp, seed 3: 14 of 14 files on the CPU (gated) and 14 of 14 on WARP (reported).",
    "evidence": "evidence/rt-r2-p5d-v1-unchanged.json"
   }
  ]
