@@ -11,7 +11,7 @@ const FIELDS = [
   ["outW"], ["outH"], ["viewW"], ["viewH"], ["cx"], ["cy"], ["rx"], ["ry"], ["dist"],
   ["faceW"], ["faceH"], ["rasterW"], ["rasterH"], ["lineMm"], ["corner"],
   ["contrast"], ["brightness"], ["gamma"], ["spotLo"], ["spotHi"], ["spotExp"],
-  ["maskType"], ["pitch"], ["fill"], ["slotH"], ["slotGap"], ["dampers", 2], ["nDampers"], ["damperW"], ["maskMix"], ["maskMean"],
+  ["maskType"], ["pitch"], ["fill"], ["slotH"], ["slotGap"], ["dampers", 2], ["nDampers"], ["damperW"], ["maskMix"], ["maskMean"], ["maskLock"], ["pitchPx"],
   ["conv", 5], ["mono"], ["interlace"], ["decay", 15], ["fieldT"],
   ["haloQ"], ["haloR"], ["haloDirect"], ["gw"], ["gh"],
   ["M", 9], ["luma", 3], ["ambient"], ["transmission"], ["reflection"], ["glassN"], ["bezel", 3], ["exposure"],
@@ -42,6 +42,7 @@ export function packParams(plan, taps, frameNo, exposure = 1) {
   set("pitch", m.pitch); set("fill", m.fill); set("slotH", m.slotHeight); set("slotGap", m.slotGap);
   arr("dampers", m.dampers.slice(0, 2)); set("nDampers", Math.min(2, m.dampers.length)); set("damperW", m.damperWidth);
   set("maskMix", m.mix); set("maskMean", maskMean(m));
+  set("maskLock", m.lock === "pixel" && m.type !== "delta" ? 1 : 0); set("pitchPx", m.pitchPx ?? 3);
   const cv = p.convergence; arr("conv", [cv.r[0], cv.r[1], cv.b[0], cv.b[1], cv.radial]);
   set("mono", plan.screen.mono ? 1 : 0); set("interlace", p.interlace ? 1 : 0);
   arr("decay", plan.decay.flat()); set("fieldT", plan.field);

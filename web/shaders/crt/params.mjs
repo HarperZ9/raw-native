@@ -19,7 +19,8 @@ const base = {
   view: { distance: null, zoom: 1, centre: [0, 0], border: 0.08 },
   curvature: { rx: 1500, ry: 1e9 },
   spot: { lo: 0.16, hi: 0.34, exponent: 0.5 },     // sigma in line spacings at zero and full current
-  mask: { type: "grille", pitch: 0.30, fill: 0.85, slotHeight: 0.6, slotGap: 0.12, dampers: [1 / 3, 2 / 3], damperWidth: 0.05, mix: 1 },
+  mask: { type: "grille", pitch: 0.30, fill: 0.85, slotHeight: 0.6, slotGap: 0.12, dampers: [1 / 3, 2 / 3], damperWidth: 0.05, mix: 1,
+    lock: "face", pitchPx: 3 },   // lock "pixel": the triad spans pitchPx output pixels (geometry.mjs pixelStripeMask)
   convergence: { r: [0, 0], b: [0, 0], radial: 0 },
   phosphor: { screen: "p22", primaries: "smpteC", white: "D65", output: "rec709" },
   glass: { thickness: 12, n: 1.52, transmission: 0.56, albedo: 0.5, cell: 1.0 },
@@ -30,6 +31,10 @@ const base = {
 export const PRESETS = {
   "pvm-20": { tube: { diagonalIn: 20 }, mask: { type: "grille", pitch: 0.30 }, spot: { lo: 0.12, hi: 0.27 },
     curvature: { rx: 1600, ry: 1e9 }, glass: { thickness: 11, transmission: 0.7 } },
+  // pvm-20 with the mask locked to the output pixel grid at half strength, a wider beam spot and a
+  // lower video bandwidth: a softer picture with the mask visible at any output size. Lab 4.
+  "pvm-20-soft": { tube: { diagonalIn: 20 }, mask: { type: "grille", pitch: 0.30, lock: "pixel", pitchPx: 3, mix: 0.5 },
+    spot: { lo: 0.25, hi: 0.42 }, signal: { rgbMHz: 3.5 }, curvature: { rx: 1600, ry: 1e9 }, glass: { thickness: 11, transmission: 0.7 } },
   "trinitron-tv": { tube: { diagonalIn: 27, overscan: 0.06 }, signal: { mode: "composite", decoder: "comb" },
     mask: { type: "grille", pitch: 0.70 }, spot: { lo: 0.18, hi: 0.38 }, curvature: { rx: 1700, ry: 1e9 }, glass: { thickness: 13, transmission: 0.56 } },
   "slot-tv": { tube: { diagonalIn: 20, overscan: 0.07, corner: 22 }, signal: { mode: "composite", decoder: "notch" },

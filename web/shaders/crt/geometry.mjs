@@ -103,12 +103,40 @@ function deltaMask(m, sx, sy, hx, hy) {
   return out.map((v) => v + (mean - v) * b);
 }
 
+// The stripe or slot mask locked to the output pixel grid (mask.lock "pixel"): one triad spans
+// pitchPx output pixels, and each pixel takes the exact box integral of the stripes over its own
+// area (x in [px, px + 1]), so an integer pitch shows the mask at full contrast with no moire.
+// This is a display choice, not tube geometry: a real 0.25 to 0.3 mm grille is finer than one
+// pixel of a 1080p view of a 20-inch face and cannot be shown that way at its true size. Slots
+// keep the tube's slot-to-pitch proportions in pixel units; dampers stay on the face.
+export function pixelStripeMask(m, px, py, sy, hy, c, plan) {
+  const P = m.pitchPx, w = (m.fill * P) / 3, s = (c * P) / 3 + ((1 - m.fill) * P) / 6;
+  const k0 = Math.floor((px - s - w) / P), k1 = Math.floor((px + 1 - s) / P);
+  let cov = 0;
+  for (let k = k0; k <= k1; k++) {
+    const x0 = Math.max(px, k * P + s), x1 = Math.min(px + 1, k * P + s + w);
+    if (x1 <= x0) continue;
+    let yw = 1;
+    if (m.type === "slot") { const u = P / m.pitch, Py = (m.slotHeight + m.slotGap) * u; yw = pulseBox(py, py + 1, Py, m.slotHeight * u, (k & 1) * Py * 0.5); }
+    cov += (x1 - x0) * yw;
+  }
+  if (m.type === "grille") {
+    for (const d of m.dampers) {
+      const dc = (d - 0.5) * plan.faceH, lo = Math.max(sy - hy, dc - m.damperWidth / 2), hi = Math.min(sy + hy, dc + m.damperWidth / 2);
+      if (hi > lo) cov *= 1 - (hi - lo) / (2 * hy);
+    }
+  }
+  return cov;
+}
+
 // Normalised mask transmission per colour: 1 on average, about 1 / mean on a stripe.
-export function maskCover(plan, sx, sy, hx, hy) {
+// px, py (the output pixel) are needed only by the pixel-locked mask.
+export function maskCover(plan, sx, sy, hx, hy, px = 0, py = 0) {
   const m = plan.p.mask;
   if (m.type === "none" || plan.screen.mono) return [1, 1, 1];
-  const mean = maskMean(m), mix = m.mix;
-  const cov = m.type === "delta" ? deltaMask(m, sx, sy, hx, hy) : [0, 1, 2].map((c) => stripeMask(m, sx, sy, hx, hy, c, plan));
+  const mean = maskMean(m), mix = m.mix, locked = m.lock === "pixel" && m.type !== "delta";
+  const cov = m.type === "delta" ? deltaMask(m, sx, sy, hx, hy)
+    : [0, 1, 2].map((c) => (locked ? pixelStripeMask(m, px, py, sy, hy, c, plan) : stripeMask(m, sx, sy, hx, hy, c, plan)));
   return cov.map((v) => 1 - mix + (mix * v) / mean);
 }
 

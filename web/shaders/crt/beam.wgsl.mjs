@@ -52,6 +52,27 @@ fn stripe_mask(sx: f32, sy: f32, hx: f32, hy: f32, c: u32) -> f32 {
   }
   return cov;
 }
+fn pixel_stripe_mask(px: f32, py: f32, sy: f32, hy: f32, c: u32) -> f32 {
+  let Pp = P[P_pitchPx]; let fill = P[P_fill]; let w = fill * Pp / 3.0;
+  let s = f32(c) * Pp / 3.0 + (1.0 - fill) * Pp / 6.0;
+  let k0 = i32(floor((px - s - w) / Pp)); let k1 = i32(floor((px + 1.0 - s) / Pp));
+  var cov = 0.0;
+  for (var k = k0; k <= k1; k++) {
+    let x0 = max(px, f32(k) * Pp + s); let x1 = min(px + 1.0, f32(k) * Pp + s + w);
+    if (x1 <= x0) { continue; }
+    var yw = 1.0;
+    if (pi(P_maskType) == 2) { let u = Pp / P[P_pitch]; let Py = (P[P_slotH] + P[P_slotGap]) * u; yw = pulse_box(py, py + 1.0, Py, P[P_slotH] * u, f32(k & 1) * Py * 0.5); }
+    cov += (x1 - x0) * yw;
+  }
+  if (pi(P_maskType) == 1) {
+    for (var i = 0; i < pi(P_nDampers); i++) {
+      let dc = (P[P_dampers + u32(i)] - 0.5) * P[P_faceH];
+      let lo = max(sy - hy, dc - P[P_damperW] / 2.0); let hi = min(sy + hy, dc + P[P_damperW] / 2.0);
+      if (hi > lo) { cov *= 1.0 - (hi - lo) / (2.0 * hy); }
+    }
+  }
+  return cov;
+}
 fn delta_mask(sx: f32, sy: f32, hx: f32, hy: f32) -> vec3f {
   let d = P[P_pitch] / sqrt(3.0); let r = P[P_fill] * d / 2.0; let rowH = d * sqrt(3.0) / 2.0; var o = vec3f(0.0); let aa = min(0.75 * (hx + hy), r);
   for (var j = 0; j < 4; j++) { for (var i = 0; i < 4; i++) {
@@ -69,11 +90,12 @@ fn delta_mask(sx: f32, sy: f32, hx: f32, hy: f32) -> vec3f {
   let t = clamp((hx / P[P_pitch] - 0.7) / 0.3, 0.0, 1.0); let bl = t * t * (3.0 - 2.0 * t);
   return o + (P[P_maskMean] - o) * bl;
 }
-fn mask_cover(sx: f32, sy: f32, hx: f32, hy: f32) -> vec3f {
+fn mask_cover(sx: f32, sy: f32, hx: f32, hy: f32, px: f32, py: f32) -> vec3f {
   let t = pi(P_maskType);
   if (t == 0) { return vec3f(1.0); }
   var cov: vec3f;
   if (t == 3) { cov = delta_mask(sx, sy, hx, hy); }
+  else if (pi(P_maskLock) == 1) { cov = vec3f(pixel_stripe_mask(px, py, sy, hy, 0u), pixel_stripe_mask(px, py, sy, hy, 1u), pixel_stripe_mask(px, py, sy, hy, 2u)); }
   else { cov = vec3f(stripe_mask(sx, sy, hx, hy, 0u), stripe_mask(sx, sy, hx, hy, 1u), stripe_mask(sx, sy, hx, hy, 2u)); }
   let mix_ = P[P_maskMix];
   return 1.0 - mix_ + mix_ * cov / P[P_maskMean];
@@ -122,7 +144,7 @@ fn deposit(c: u32, rx: f32, ry: f32, hx: f32, hy: f32) -> f32 {
   if (id.x >= W || id.y >= H) { return; }
   let fp = footprint(f32(id.x), f32(id.y)); let sx = fp.x; let sy = fp.y; let hx = fp.z; let hy = fp.w;
   let pix = id.y * W + id.x; let alpha = face_alpha(sx, sy, hx, hy);
-  let cover = mask_cover(sx, sy, hx, hy); let T = P[P_fieldT];
+  let cover = mask_cover(sx, sy, hx, hy, f32(id.x), f32(id.y)); let T = P[P_fieldT];
   let t0 = clamp((sy + P[P_rasterH] / 2.0) / P[P_rasterH], 0.0, 1.0) * T;
   let lit = alpha > 0.0 && abs(sx) < P[P_rasterW] / 2.0 + 3.0 * hx && abs(sy) < P[P_rasterH] / 2.0 + 3.0 * hy;
   let mono = pi(P_mono) == 1;
