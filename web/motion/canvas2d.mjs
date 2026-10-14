@@ -104,36 +104,70 @@ function style(g, paint, k, ox, oy, images) {
 
 // Draw one item; returns false when it is culled (nothing to draw or behind the camera).
 const FILTER = (g) => "filter" in g;
+function paintItem(g, item, P, path, rule, images, stats, W, design) {
+  const { k, ox, oy, blur, hw } = P;
+  if (blur > 0.3) { if (FILTER(g)) g.filter = `blur(${(blur / 2).toFixed(2)}px)`; else if (stats) stats.skipped.blur = (stats.skipped.blur || 0) + 1; }
+  if (visible(item.fill)) {
+    g.fillStyle = style(g, item.fill, k, ox, oy, images);
+    g.fill(path, rule);
+  }
+  if (visible(item.stroke) && hw > 0) {
+    g.strokeStyle = style(g, item.stroke, k, ox, oy, images);
+    g.lineWidth = 2 * hw;
+    g.lineJoin = item.join || "round";
+    g.lineCap = item.cap || "round";
+    g.miterLimit = item.miterLimit ?? 4;
+    // Dashes are in scene units on the GPU too (path.mjs dash, then the pixel mapping k),
+    // also for a hairline, whose width alone is in pixels.
+    g.setLineDash(item.dash ? item.dash.map((d) => d * k) : []);
+    g.lineDashOffset = (item.dashOffset || 0) * k;
+    g.stroke(path);
+  }
+}
+
+// A scratch canvas the size of the frame, for clipped items. Canvas clip() is not antialiased
+// in every browser (Chrome on Linux draws it hard), so a clip is applied by drawing the item
+// on the scratch and keeping it where the clip shape, filled with antialiasing, covers it.
+let scratch = null;
+function layer(W, H) {
+  if (typeof OffscreenCanvas === "undefined" && typeof document === "undefined") return null;
+  if (!scratch || scratch.width !== W || scratch.height !== H)
+    scratch = typeof OffscreenCanvas !== "undefined" ? new OffscreenCanvas(W, H) : Object.assign(document.createElement("canvas"), { width: W, height: H });
+  return scratch.getContext("2d");
+}
+
 function drawItem(g, item, cam, W, H, design, images, makePath, stats) {
   const op = item.opacity ?? 1;
   const hasFill = visible(item.fill) && op > 0, hasStroke = visible(item.stroke) && op > 0;
   if (!hasFill && !hasStroke) return false;
   const P = project(item, cam, W, H, design);
   if (!P) return false;
-  const { k, ox, oy, blur, hw } = P;
-  const path = toPath(item.shape, k, ox, oy, makePath);
+  const path = toPath(item.shape, P.k, P.ox, P.oy, makePath);
   const rule = item.rule === "evenodd" ? "evenodd" : "nonzero";
+  const clipRule = item.clipRule === "evenodd" ? "evenodd" : "nonzero";
+  const clipPath = item.clip ? toPath(item.clip.map((c) => ({ pts: c.pts, closed: true })), P.k, P.ox, P.oy, makePath) : null;
+  const s2 = clipPath ? layer(W, H) : null;
   g.save();
   try {
     g.globalAlpha = op;
     g.globalCompositeOperation = item.blend === "add" ? "lighter" : "source-over";
-    if (blur > 0.3) { if (FILTER(g)) g.filter = `blur(${(blur / 2).toFixed(2)}px)`; else if (stats) stats.skipped.blur = (stats.skipped.blur || 0) + 1; }
-    if (item.clip) g.clip(toPath(item.clip.map((c) => ({ pts: c.pts, closed: true })), k, ox, oy, makePath), item.clipRule === "evenodd" ? "evenodd" : "nonzero");
-    if (hasFill) {
-      g.fillStyle = style(g, item.fill, k, ox, oy, images);
-      g.fill(path, rule);
-    }
-    if (hasStroke && hw > 0) {
-      g.strokeStyle = style(g, item.stroke, k, ox, oy, images);
-      g.lineWidth = 2 * hw;
-      g.lineJoin = item.join || "round";
-      g.lineCap = item.cap || "round";
-      g.miterLimit = item.miterLimit ?? 4;
-      // Dashes are in scene units on the GPU too (path.mjs dash, then the pixel mapping k),
-      // also for a hairline, whose width alone is in pixels.
-      g.setLineDash(item.dash ? item.dash.map((d) => d * k) : []);
-      g.lineDashOffset = (item.dashOffset || 0) * k;
-      g.stroke(path);
+    if (clipPath && s2) {
+      s2.save();
+      try {
+        s2.setTransform(1, 0, 0, 1, 0, 0);
+        s2.globalAlpha = 1; s2.globalCompositeOperation = "source-over"; if (FILTER(s2)) s2.filter = "none";
+        s2.clearRect(0, 0, W, H);
+        paintItem(s2, item, P, path, rule, images, stats, W, design);
+        if (FILTER(s2)) s2.filter = "none";
+        s2.setLineDash([]);
+        s2.globalCompositeOperation = "destination-in";
+        s2.fillStyle = "#000";
+        s2.fill(clipPath, clipRule);
+      } finally { s2.restore(); }
+      g.drawImage(s2.canvas, 0, 0);
+    } else {
+      if (clipPath) g.clip(clipPath, clipRule);                     // no scratch canvas here (Node)
+      paintItem(g, item, P, path, rule, images, stats, W, design);
     }
   } finally { g.restore(); }
   return true;

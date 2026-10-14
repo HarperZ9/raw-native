@@ -608,9 +608,9 @@
     "n": 27768
    },
    "edge": {
-    "max": 0.19727328419685364,
+    "max": 0.051822930574417114,
     "n": 1500,
-    "mean": 0.022433282271027564
+    "mean": 0.0072510599999999
    },
    "outside": {
     "max": 0,
@@ -618,20 +618,20 @@
    },
    "worst": {
     "class": "edge",
-    "x": 74,
-    "y": 207,
-    "d": 0.19727328419685364,
+    "x": 58,
+    "y": 61,
+    "d": 0.051822930574417114,
     "got": [
-     0.451,
-     0.443,
-     0.428,
-     0.498
+     0.244,
+     0.239,
+     0.228,
+     0.267
     ],
     "ref": [
-     0.633,
-     0.622,
-     0.594,
-     0.695
+     0.195,
+     0.192,
+     0.184,
+     0.215
     ]
    },
    "stats": {
@@ -663,7 +663,7 @@
     "d": 0.16259193420410156,
     "got": [
      0.35,
-     0.267,
+     0.262,
      0.223,
      0.624
     ],
@@ -826,6 +826,6 @@
   "stroke-curve": "the reference covers about 2 px past the butt cap at the curve's end, where the canvas correctly draws nothing (pixel (240, 127) lies wholly past the cap; issue #123)"
  },
  "problems": [],
- "commit": "a8b180972703ec7ebf7d52119ff7678052d66749",
+ "commit": "a7e498bbb9bf7fb82a55b45c771d50ce3b07fac7",
  "does_not_prove": "Twenty single items on a 256 x 256 canvas in one browser. It does not show that whole scenes match, and it says nothing about the layers and post passes the fallback leaves out."
 }
