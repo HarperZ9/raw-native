@@ -1,6 +1,6 @@
 // Template (b), ADR 0016: "pixel art, 2.5D, somewhat semi 3D". Scaffold: placeholder art
 // from code. A ground layer and a prop layer at different depths, so the camera's
-// parallax gives the semi-3D feel, quantised to the PICO-8 palette with ordered dither.
+// parallax gives the semi-3D feel, quantised to the PICO-8 palette with the mix ordered dither (lab 4: it flickers least while panning under steady light).
 import { makeTileset, makeLevel, tileMap, shade } from "../common/procedural.mjs";
 
 const T = 16, W = 96, H = 54;
@@ -33,7 +33,7 @@ export default {
         { kind: "tilemap", map: A.ground, tileset: "pixel-ground", x: 0, y: 0, scale: 2, z: 0 },
         { kind: "tilemap", map: A.props, tileset: "pixel-props", x: 0, y: -6, scale: 2, z: -120 },   // nearer: moves faster
       ],
-      post: { bloom: 0, vignette: 0.15, grain: 0, passes: [{ pass: "dither", palette: "pico8", mode: "bayer4" }] },
+      post: { bloom: 0, vignette: 0.15, grain: 0, passes: [{ pass: "dither", palette: "pico8", mode: "mix-bayer4" }] },
     };
   },
 };
