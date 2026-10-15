@@ -6,6 +6,10 @@ the day the release was published on GitHub, in UTC.
 
 ## Unreleased
 
+- **Denoiser inference: mean depth in two passes** (HW H2). The single-workgroup reduction took 2.34 ms at 1080p on the
+  RTX 4090; two passes take 0.10 ms, and the v4 frame falls from 14.08 to 11.8 ms (prediction committed before: at most
+  0.4 ms and 12.2 ms). Timing-only variants of the feature pass show its aux writes cost about 1.0 ms of 2.49. The 2.0 ms
+  budget still fails. Parity on the scalar path is unchanged (2.9e-3).
 - **`mix-bayer8` is not a duplicate of `mix-bayer4`.** Shader lab 4 reported it identical by
   construction. That holds at strength 1 only; below it the modes differ, so `mix-bayer8` keeps its
   behaviour and is not made an alias. `docs/shaders/README.md` said "the same indices" without the
