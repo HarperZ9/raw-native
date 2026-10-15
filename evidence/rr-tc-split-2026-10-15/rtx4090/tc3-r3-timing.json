@@ -1,0 +1,11 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/rr-inference-bounds.json",
+ "device": "NVIDIA GeForce RTX 4090",
+ "sequence": "raw_hero_p7",
+ "frames": 2,
+ "coop":{"ran":true,"split":true,"parity":{"max_abs":0.0234413,"p99_99_abs_upper":0.001,"mean_abs":8.93534e-06,"values":777600,"max_at_frame":1,"max_at_pixel":64083,"within_1e-2":false},"timing_1080p":{"width":1920,"height":1080,"feat_variant":0,"n":500,"median_ms":14.7416,"p5_ms":14.3097,"p95_ms":14.7859,"p99_ms":14.9713,"iqr_ms":0.04052,"step_median_ms":[0.09536,0.002048,2.51085,1.25005,1.01069,0.319808,0.511296,0.2048,0.260416,0.14848,0.51264,0.455968,1.0121,1.85256,0.114496,0.354512,1.21056,0.026656,0.075776,0.02896,0.296048,0.321536,1.21682,0.026736,0.0768,0.028976,0.38768],"step_note":"steps in Net::frame order (mean depth, features, 12 convolutions, then the glue passes; v4 runs them once a signal); a timestamp after every step","within_2ms":false}},"control_coop_unsplit":{"parity":{"max_abs":0.0453377,"p99_99_abs_upper":0.00135899,"mean_abs":1.18866e-05,"values":777600,"max_at_frame":1,"max_at_pixel":64082,"within_1e-2":false},"fails":true},"scalar":{"ran":true,"parity":{"max_abs":0.000408471,"p99_99_abs_upper":0.001,"mean_abs":1.00223e-07,"values":777600,"max_at_frame":1,"max_at_pixel":51087,"within_1e-2":true},"timing_1080p":{"width":1920,"height":1080,"feat_variant":0,"n":500,"median_ms":66.3113,"p5_ms":66.1288,"p95_ms":66.538,"p99_ms":66.8587,"iqr_ms":0.109224,"step_median_ms":[0.0952,0.002048,2.51085,7.11395,5.92949,3.16146,6.55674,2.4053,2.91395,1.56365,6.50622,2.10917,5.96582,14.594,0.833072,0.354992,1.20982,0.026656,0.07568,0.02896,0.296096,0.321536,1.21242,0.026656,0.0768,0.028928,0.387616],"step_note":"steps in Net::frame order (mean depth, features, 12 convolutions, then the glue passes; v4 runs them once a signal); a timestamp after every step","within_2ms":false}},
+ "control_perturbed":{"parity":{"max_abs":0.924664,"p99_99_abs_upper":0.0239437,"mean_abs":0.000103092,"values":777600,"max_at_frame":1,"max_at_pixel":64083,"within_1e-2":false},"fails":true},
+ "validation_errors": 0,
+ "pass": false
+}

@@ -13,5 +13,20 @@
   "rtx_parity": "max at most 5e-3; if it lands between 5e-3 and 1e-2 the bound holds but the model of the hardware is incomplete, and that is recorded; above 1e-2 is a failure, and the next step is fp32 for the head layer only or the scalar path",
   "rtx_speed": "the convolutions cost at most 0.3 ms more than round 2's 5.69 ms (two more accumulators, one more scale-add per tile)"
  },
- "does_not_prove": "that the tensor cores flush subnormals (the emulation agrees with it; the hardware's rounding is not documented to us); anything about other models or scenes"
+ "does_not_prove": "that the tensor cores flush subnormals (the emulation agrees with it; the hardware's rounding is not documented to us); anything about other models or scenes",
+ "results": {
+  "recorded": "2026-10-15 22:43Z",
+  "emulation": "met: SS with --ftz on raw_hero 9.2e-5",
+  "swiftshader": "scalar raw_hero 3.17037e-4 unchanged",
+  "rtx_parity": "FAIL. Lock 22:32Z to 22:42Z: round 3 max 0.118 at frame 54, pixel 64,578 (the same firefly), mean 3.16e-6; unsplit control 0.130 (fails); scalar 2.93e-3; perturbed fails; 0 validation errors. Prediction (at most 5e-3) failed. Operand precision, with and without the flush, is not what limits the worst pixels on this hardware: round 2 and round 3 halve the mean error but leave the fireflies near 0.12.",
+  "rtx_speed": "FAIL against the prediction: convolutions 7.63 to 7.65 ms (round 2 5.69; predicted at most +0.3 ms, measured +1.95); frame 14.69 to 14.74 ms",
+  "next": "round 4 (below), a diagnosis: the accumulation inside the tensor-core multiply-add chain"
+ },
+ "round4": {
+  "written": "2026-10-15 22:43Z, before the change or any run",
+  "hypothesis": "the tensor cores accumulate the multiply-add chain with alignment and truncation (Fasi, Higham, Mikaitis and Pranesh, 2021, measured this on earlier NVIDIA generations), so a long chain loses low bits regardless of operand precision",
+  "change": "round 3, except every K step multiplies into a fresh zero accumulator and adds that tile to the running fp32 accumulators with a cooperative-matrix addition outside the multiply-add",
+  "prediction": "if the chain's accumulation is the cause: RTX max at most 5e-3 on raw_hero. If max stays above 1e-2, the hypothesis is refuted, the tensor-core path is left as it is on main, and the cause stays open",
+  "bounds": "unchanged; same controls (unsplit must fail, perturbed must fail, scalar regression on SwiftShader)"
+ }
 }
