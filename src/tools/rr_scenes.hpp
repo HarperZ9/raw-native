@@ -15,6 +15,8 @@ std::vector<std::string> knownScenes();
 
 // Frame k of an n-frame path around the base camera; k may be -1 (the frame before the first,
 // for motion). Smooth, seeded by pathSeed; a few pixels of motion a frame at 480 x 270.
+// The camera moved back out of a closed object on hall_b (unchanged elsewhere).
+rt::PtCamera clearCamera(const std::string& name, const rt::PtScene& s, rt::PtCamera c);
 rt::PtCamera pathCamera(const rt::PtCamera& base, std::uint64_t pathSeed, int k, int n);
 
 // Per-pixel material roughness and metallic from the pixel-centre triangle (-1: 0 and 0).

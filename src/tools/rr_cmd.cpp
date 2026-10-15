@@ -17,7 +17,7 @@ namespace {
 struct Args {
     std::string scene, out{"rr-out"};
     std::uint64_t path{0};
-    int frames{0}, first{0}, count{1 << 30}, width{480}, height{270};
+    int frames{0}, first{0}, count{1 << 30}, width{480}, height{270}, threads{0};
     std::uint32_t spp{4096}, chunk{1024};
     bool cpu{false}, inputOnly{false};
 };
@@ -37,6 +37,7 @@ bool parse(int argc, char** argv, Args& a){
         else if (!std::strcmp(k, "--out") && more) a.out = argv[++i];
         else if (!std::strcmp(k, "--cpu")) a.cpu = true;
         else if (!std::strcmp(k, "--input-only")) a.inputOnly = true;
+        else if (!std::strcmp(k, "--threads") && more) a.threads = std::atoi(argv[++i]);
         else return false;
     }
     return !a.scene.empty() && a.frames > 0 && a.first >= 0 && a.first < a.frames && a.width >= 8 && a.height >= 8 &&
@@ -63,8 +64,9 @@ bool writeRaw(const std::string& p, const void* d, std::size_t bytes){
     f.write(static_cast<const char*>(d), (std::streamsize)bytes);
     return bool(f);
 }
+int gThreads = 0;   // --threads: CPU worker threads (0: all)
 rt::PathTraceOutput trace(rhi::Device* dev, const rt::PtScene& s, const rt::PathTraceDesc& d){
-    return dev ? gpu_check::pathTraceGpu(*dev, s, d) : rt::pathTraceCpu(s, d);
+    return dev ? gpu_check::pathTraceGpu(*dev, s, d) : rt::pathTraceCpu(s, d, gThreads);
 }
 struct Reference { std::vector<float> ref; double meanVar{0}; std::size_t under1{0}; };
 // The reference in chunks of C samples from sample 1, combined by sums over luminance.
@@ -127,6 +129,7 @@ int rrRenderCommand(int argc, char** argv){
                     "  --input-only: the 1 spp input only, no reference\n");
         return 2;
     }
+    gThreads = a.threads;
     rt::PtScene s;
     rt::PtCamera base;
     std::string lighting;
@@ -138,7 +141,8 @@ int rrRenderCommand(int argc, char** argv){
     if (!a.cpu && !dev){ std::printf("{\"error\": \"no GPU: %s\"}\n", why.c_str()); return 4; }
     const std::size_t n = (std::size_t)a.width * (std::size_t)a.height;
     for (int k = a.first; k < a.frames && k < a.first + a.count; ++k){
-        const rt::PtCamera cam = rr::pathCamera(base, a.path, k, a.frames), prev = rr::pathCamera(base, a.path, k - 1, a.frames);
+        const rt::PtCamera cam = rr::clearCamera(a.scene, s, rr::pathCamera(base, a.path, k, a.frames)),
+                           prev = rr::clearCamera(a.scene, s, rr::pathCamera(base, a.path, k - 1, a.frames));
         rt::PathTraceDesc d;
         d.width = a.width; d.height = a.height; d.camera = cam; d.previous = prev;
         d.seed = rr::mix(fnv(a.scene) ^ (a.path * 1000003ull) ^ (std::uint64_t)(k + 1));
