@@ -1,0 +1,24 @@
+{
+ "sequence": "raw_hall_p7",
+ "model": "H:/rr-train/v4main/best.pt",
+ "methods": {
+  "ours": {
+   "luminance_ratio": 0.8813323825597763,
+   "mse_low_band": 0.005353443786589196,
+   "mse_high_band": 0.0014709622155351099,
+   "gradient_energy_ratio": 1.5840955087979638
+  },
+  "input": {
+   "luminance_ratio": 1.0009234054014087,
+   "mse_low_band": 0.03549711307277903,
+   "mse_high_band": 0.05561296094674617,
+   "gradient_energy_ratio": 18.381361821037473
+  },
+  "svgf": {
+   "luminance_ratio": 1.6493421327322721,
+   "mse_low_band": 0.011633920879830839,
+   "mse_high_band": 0.00582666730042547,
+   "gradient_energy_ratio": 2.5454428189705007
+  }
+ }
+}

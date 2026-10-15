@@ -1,0 +1,23 @@
+{
+ "schema": "raw-native.evidence/1",
+ "amends": "evidence/rr-bounds-amendment-6.json: adds model v5; the success criteria, metrics, baselines and controls are unchanged",
+ "written": "2026-10-15 03:05Z, before any v5 training step and before any v5 metric. Declared: v4's test results, and a diagnosis on the test scene raw_hall directed by the coordinator (2026-10-15), were seen before this amendment; the same diagnosis was repeated on the validation scene hall_b, and every rule below uses validation data only.",
+ "diagnosis": {
+  "raw_hall_test": "v4 mean FLIP 0.299 against SVGF 0.174, worse in every pixel class (disoccluded 0.319 against 0.197, edges 0.291 against 0.181, other 0.320 against 0.146; fireflies 3% of the excess). v4's tone-mapped error is lower than SVGF's in both a low band and a high band, and its detail is closer to the reference (gradient energy 1.58 against 2.55 times the reference's), but it is darker (an oracle gain moves FLIP only to 0.252). The frames show a clumped, grainy residual noise on the columns and floor that the 5 x 5 and quarter-resolution kernels do not average away, where SVGF's a-trous filter (footprint about 65 pixels) is smooth.",
+  "hall_b_validation": "the same pattern: v4 0.103 against SVGF 0.073, the deficit spread over every class (disoccluded 0.116 against 0.081, other 0.123 against 0.080). terrain_100: v4 0.0461 against SVGF 0.0594 (v4 better).",
+  "inference": "the spatial footprint (about 20 pixels at the quarter scale) is too small for low-history, very noisy regions; the cause is not disocclusion handling, specular or thin geometry as such."
+ },
+ "v5": {
+  "change": "v4 plus a third scale: a 5 x 5 kernel a signal at 1/8 resolution, predicted by a 1 x 1 head (head_e) on the U-Net's coarsest features, and a blend a signal; nested into the quarter stage as q2 = q - wb2 up(down(q)) + wb2 up(e), then combined with the full stage as in v4. Footprint about 40 pixels. 148,170 parameters (v4 144,790).",
+  "initialisation": "v4's best weights; head_e starts at zero with its blend bias at -8, so v5 starts within 1.8e-3 of v4 (checked on 4 validation frames)",
+  "training": "fine-tuned from v4main/best.pt (v5main) and from v4shuffled/best.pt (v5shuffled, the shuffled-target control), 2,000 steps, peak learning rate 2e-4 with cosine decay to 1e-5, every other hyperparameter as committed, CPU at BelowNormal, survival pattern. A fine-tune instead of 6,000 steps from scratch is a declared cost choice."
+ },
+ "gate_before_any_test_metric": "v5 is evaluated on test only if (1) it passes amendment 5's learning check (best validation loss at least 10% below the identity model's) and (2) on validation its mean FLIP is below v4's on hall_b (0.103) and not above v4's on terrain_100 by more than 0.005 (0.0461 + 0.005), computed by scripts/rr_diag.py. If either fails, there is no v5 verdict and the result is recorded as negative.",
+ "predictions": {
+  "hall_b": "mean FLIP at most 0.090 (v4 0.103, SVGF 0.073)",
+  "raw_hall_test": "if evaluated: FLIP below v4's 0.299",
+  "speckle": "hall_b gradient energy ratio below v4's 4.15"
+ },
+ "verdict": "if the gate passes: rr-bounds.json's success criteria on the three test sequences by rr_eval.py, with the shuffled-target and zero-motion controls; plus amendment 6's conditioning check on v5.",
+ "does_not_prove": "That a larger footprint is the best fix; that v5 beats SVGF anywhere it is not measured."
+}

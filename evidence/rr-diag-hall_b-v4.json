@@ -1,0 +1,39 @@
+{
+ "model": "H:/rr-train/v4main/best.pt",
+ "sequence": "hall_b_p7",
+ "frames": 64,
+ "mean_flip_ours": 0.10328052668327342,
+ "mean_flip_svgf": 0.07257794806710018,
+ "classes": {
+  "miss": {
+   "pixel_share": 0.1246727912808642,
+   "flip_ours": 0.005896661555827009,
+   "flip_svgf": 0.011109881846247024,
+   "share_of_excess": -0.02116912502021336
+  },
+  "disoccluded": {
+   "pixel_share": 0.7162295042438271,
+   "flip_ours": 0.11641022008509655,
+   "flip_svgf": 0.08105980705398665,
+   "share_of_excess": 0.8246541476730893
+  },
+  "firefly": {
+   "pixel_share": 0.00010139371141975309,
+   "flip_ours": 0.15299829298451947,
+   "flip_svgf": 0.12664037042464682,
+   "share_of_excess": 8.704570476214379e-05
+  },
+  "edge": {
+   "pixel_share": 0.033237244405864196,
+   "flip_ours": 0.11206554803287096,
+   "flip_svgf": 0.09363063853591275,
+   "share_of_excess": 0.01995681210397163
+  },
+  "other": {
+   "pixel_share": 0.1257590663580247,
+   "flip_ours": 0.12268440423428487,
+   "flip_svgf": 0.07960108167138803,
+   "share_of_excess": 0.17647111953838993
+  }
+ }
+}

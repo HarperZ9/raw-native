@@ -120,7 +120,7 @@ def train_session(a, net, opt, train, val, perm, dev, out, start, best, log, min
     done = start
     for it in range(start, a.steps):
         for g in opt.param_groups:
-            g["lr"] = LR_MIN + 0.5 * (LR - LR_MIN) * (1 + math.cos(math.pi * it / a.steps))
+            g["lr"] = LR_MIN + 0.5 * (a.lr - LR_MIN) * (1 + math.cos(math.pi * it / a.steps))
         x, r = batch(train, rng, dev, perm)
         _, loss = run_sequence(net, x, r)
         opt.zero_grad(set_to_none=True)
@@ -200,6 +200,8 @@ def main():
     ap.add_argument("--version", type=int, default=1)
     ap.add_argument("--lock", default="")
     ap.add_argument("--session-minutes", type=float, default=8.0)
+    ap.add_argument("--init", default="", help="start from this checkpoint's model weights (strict=False; amendment 7)")
+    ap.add_argument("--lr", type=float, default=LR, help="peak learning rate of the cosine schedule (amendment 7)")
     a = ap.parse_args()
     dev = torch.device("cpu" if a.cpu else "cuda")
     out = Path(a.out)
@@ -220,7 +222,10 @@ def main():
             return q[:, y0:y0 + CROP, x0:x0 + CROP].float()
     lock = GpuLock(a.lock, f"raw-native HW H2 training{' (shuffled-target control)' if a.shuffle_targets else ''}, a session of at most {a.session_minutes:g} minutes") if a.lock else None
     net = RrNet(a.eps, a.version).to(dev)
-    opt = torch.optim.AdamW(net.parameters(), lr=LR, weight_decay=WD)
+    if a.init and not (a.resume and (Path(a.out) / "last.pt").exists()):
+        missing = net.load_state_dict(torch.load(a.init, map_location=dev, weights_only=False)["model"], strict=False)
+        print(json.dumps({"init": a.init, "missing": missing.missing_keys, "unexpected": missing.unexpected_keys}), flush=True)
+    opt = torch.optim.AdamW(net.parameters(), lr=a.lr, weight_decay=WD)
     start, best, log = 0, math.inf, []
     ck = out / "last.pt"
     t_all = time.time()
@@ -247,7 +252,7 @@ def main():
             "gpu": torch.cuda.get_device_name(0) if dev.type == "cuda" else "", "shuffle_targets": a.shuffle_targets,
             "train_sequences": [s["name"] for s in train], "val_sequences": [s["name"] for s in val],
             "hyper": {"B": B, "T": T, "crop": CROP, "lr": LR, "lr_min": LR_MIN, "wd": WD, "seed": SEED, "steps": a.steps,
-                      "temporal_weight": TEMP_W, "eps": a.eps, "version": a.version}, "log": log, "best_val_loss": best,
+                      "temporal_weight": TEMP_W, "eps": a.eps, "version": a.version, "peak_lr": a.lr, "init": a.init}, "log": log, "best_val_loss": best,
             "parameters": sum(p.numel() for p in net.parameters())}
     (out / "train.json").write_text(json.dumps(meta, indent=1))
     return 0
