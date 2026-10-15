@@ -1,0 +1,58 @@
+{
+ "train/builtin_p1": {
+  "frames": 32,
+  "split_sum_worst_ratio_to_bound": 0.0022829060908406973
+ },
+ "train/debris_0_p1": {
+  "frames": 32,
+  "split_sum_worst_ratio_to_bound": 0.0027643179055303335
+ },
+ "train/debris_1_p1": {
+  "frames": 32,
+  "split_sum_worst_ratio_to_bound": 0.002749082865193486
+ },
+ "train/dense_block_p1": {
+  "frames": 32,
+  "split_sum_worst_ratio_to_bound": 0.003784582717344165
+ },
+ "train/dense_block_p2": {
+  "frames": 32,
+  "split_sum_worst_ratio_to_bound": 0.0032808701507747173
+ },
+ "train/retro_room_p1": {
+  "frames": 32,
+  "split_sum_worst_ratio_to_bound": 0.003352897707372904
+ },
+ "train/retro_room_p2": {
+  "frames": 32,
+  "split_sum_worst_ratio_to_bound": 0.0036877873353660107
+ },
+ "train/terrain_0_p1": {
+  "frames": 32,
+  "split_sum_worst_ratio_to_bound": 0.002321322448551655
+ },
+ "train/terrain_1_p1": {
+  "frames": 32,
+  "split_sum_worst_ratio_to_bound": 0.0021969997324049473
+ },
+ "val/hall_b_p7": {
+  "frames": 64,
+  "split_sum_worst_ratio_to_bound": 0.003312351880595088
+ },
+ "val/terrain_100_p7": {
+  "frames": 64,
+  "split_sum_worst_ratio_to_bound": 0.002024924149736762
+ },
+ "test/iso_street_p7": {
+  "frames": 64,
+  "split_sum_worst_ratio_to_bound": 0.001991365337744355
+ },
+ "test/raw_hall_p7": {
+  "frames": 64,
+  "split_sum_worst_ratio_to_bound": 0.0039144959300756454
+ },
+ "test/raw_hero_p7": {
+  "frames": 64,
+  "split_sum_worst_ratio_to_bound": 0.0028205665294080973
+ }
+}
