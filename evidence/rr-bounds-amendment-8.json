@@ -1,0 +1,9 @@
+{
+ "schema": "raw-native.evidence/1",
+ "amends": "evidence/rr-bounds-amendment-7.json: one change, the initialisation of v5's coarse-scale blend",
+ "written": "2026-10-15 04:37Z, after amendment 7's result (above) and before any v5b training step or metric; the same declarations as amendment 7",
+ "v5b": "v5 exactly as amendment 7 (architecture, fine-tune from v4's and v4shuffled's best weights, 2,000 steps, peak learning rate 2e-4), except head_e's blend bias starts at 0 (blend 0.5 at the start) instead of -8; the coarse kernels still start at zero (a uniform 5 x 5 box at 1/8 resolution). v5b therefore does not start as v4.",
+ "gate": "amendment 7's gate unchanged: learning check, then validation FLIP below 0.103 on hall_b and at most 0.0511 on terrain_100, before any test metric",
+ "predictions": "as amendment 7: hall_b FLIP at most 0.090; and the learned coarse blend averages above 0.1 on hall_b (if it does not, the scale is again unused and the run says nothing about the footprint)",
+ "does_not_prove": "as amendment 7"
+}

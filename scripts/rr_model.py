@@ -59,12 +59,14 @@ class RrNet(nn.Module):
         self.d0 = conv(24, 24)
         self.head = nn.Conv2d(24 + cin, heads * (K * K + 2), 1)
         self.head_q = nn.Conv2d(48, heads * K * K, 1)
-        if version >= 5:   # the 1/8 scale: a kernel and a blend for each signal (amendment 7)
+        if version >= 5:   # the 1/8 scale (v5; v6 = v5b, amendment 8, differs only in the blend's start): a kernel and a blend for each signal (amendment 7)
             self.head_e = nn.Conv2d(64, 2 * K * K + 2, 1)
             nn.init.zeros_(self.head_e.weight)
             nn.init.zeros_(self.head_e.bias)
-            with torch.no_grad():
-                self.head_e.bias[2 * K * K:] = -8.0   # 8 tanh(-1) = -6.1, so the blend starts at sigmoid(-6.1) = 0.002
+            if version == 5:   # amendment 7: the blend starts at sigmoid(8 tanh(-1)) = 0.002 (it then barely learned)
+                with torch.no_grad():
+                    self.head_e.bias[2 * K * K:] = -8.0
+            # version 6 (v5b, amendment 8): the blend bias starts at 0, a blend of 0.5
 
     def forward(self, feat):
         h, w = feat.shape[-2:]

@@ -19,5 +19,12 @@
   "speckle": "hall_b gradient energy ratio below v4's 4.15"
  },
  "verdict": "if the gate passes: rr-bounds.json's success criteria on the three test sequences by rr_eval.py, with the shuffled-target and zero-motion controls; plus amendment 6's conditioning check on v5.",
- "does_not_prove": "That a larger footprint is the best fix; that v5 beats SVGF anywhere it is not measured."
+ "does_not_prove": "That a larger footprint is the best fix; that v5 beats SVGF anywhere it is not measured.",
+ "result": {
+  "recorded": "2026-10-15 04:37Z",
+  "gate": "FAIL: learning check passed (v5 0.01786; identity threshold 0.0453; v1 control fails), but validation FLIP on hall_b is 0.1047 against v4's 0.103 (terrain_100 0.0459 against 0.0461). No test metric was computed; no v5 verdict.",
+  "prediction": "refuted as run: hall_b FLIP was predicted at most 0.090",
+  "why_the_run_did_not_test_the_hypothesis": "after 2,000 steps the new scale's blend is still 0.0012 (diffuse) and 0.0018 (specular), its bias -8.06 and -8.02: the initialisation that made v5 start as v4 put the blend's sigmoid deep in saturation (input about -6.1, slope about 0.002), so it hardly learned. The footprint hypothesis is untested, not refuted. My design error.",
+  "evidence": "evidence/rr-h2-v5/"
+ }
 }
