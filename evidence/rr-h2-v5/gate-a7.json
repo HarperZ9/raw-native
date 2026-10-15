@@ -1,0 +1,13 @@
+{
+ "rule": "evidence/rr-bounds-amendment-7.json",
+ "learning_check": true,
+ "flip": {
+  "hall_b_p7": 0.10466484562024253,
+  "terrain_100_p7": 0.0458872633336476
+ },
+ "v4_flip": {
+  "hall_b_p7": 0.103,
+  "terrain_100_p7": 0.0461
+ },
+ "pass": false
+}

@@ -1,0 +1,39 @@
+{
+ "model": "H:/rr-train/v4main/best.pt",
+ "sequence": "terrain_100_p7",
+ "frames": 64,
+ "mean_flip_ours": 0.04606243649283879,
+ "mean_flip_svgf": 0.05938348200593411,
+ "classes": {
+  "miss": {
+   "pixel_share": 0.5345203993055555,
+   "flip_ours": 0.002484619247809048,
+   "flip_svgf": 0.006161035976916543,
+   "share_of_excess": 0.14751993273533526
+  },
+  "disoccluded": {
+   "pixel_share": 0.4163400607638889,
+   "flip_ours": 0.09780581646472958,
+   "flip_svgf": 0.12229509446867691,
+   "share_of_excess": 0.7653954400354005
+  },
+  "firefly": {
+   "pixel_share": 5.184220679012346e-06,
+   "flip_ours": 0.10692498548088321,
+   "flip_svgf": 0.15205516953594903,
+   "share_of_excess": 1.7563548836756462e-05
+  },
+  "edge": {
+   "pixel_share": 0.0428515625,
+   "flip_ours": 0.08289466097512373,
+   "flip_svgf": 0.10582047805066273,
+   "share_of_excess": 0.07374849686612557
+  },
+  "other": {
+   "pixel_share": 0.006282793209876543,
+   "flip_ours": 0.07340002552570882,
+   "flip_svgf": 0.10163861762573421,
+   "share_of_excess": 0.013318566814301625
+  }
+ }
+}
