@@ -7,6 +7,10 @@
 // pixel. COOP=1: an implicit GEMM on tensor cores (VK_KHR_cooperative_matrix): a subgroup owns 16
 // output pixels and every output channel, gathers a 16 x 16 fp16 tile of the im2col matrix in
 // shared memory per K step, and multiplies it by fp16 weights laid out [Kpad][CoutPad].
+// SPLIT=1 (evidence/rr-tc-split-note-2026-10-15.json): every activation and weight is held as an fp16
+// high half and an fp16 low half (the residual; the host writes the weight residuals right after
+// each layer's high table), and a tile is hi x hi + hi x lo + lo x hi, summed in fp32 on the
+// tensor cores. That takes each product from fp16's relative precision to about 2^-21.
 #if COOP
 #extension GL_EXT_shader_explicit_arithmetic_types_float16 : require
 #extension GL_KHR_cooperative_matrix : require
@@ -59,6 +63,9 @@ float fetch(int x, int y, uint c) {
 #define MA coopmat<float16_t, gl_ScopeSubgroup, 16, 16, gl_MatrixUseA>
 #define MB coopmat<float16_t, gl_ScopeSubgroup, 16, 16, gl_MatrixUseB>
 shared float16_t As[256];
+#if SPLIT
+shared float16_t Al[256];
+#endif
 shared float Cs[16 * 64];
 void main() {
     const uint lid = gl_LocalInvocationID.x, p0 = gl_WorkGroupID.x * 16u, npix = outW * outH;
@@ -74,16 +81,29 @@ void main() {
                 const int ix = int((p % outW) * stride + rem % K) - pad, iy = int((p / outW) * stride + rem / K) - pad;
                 v = fetch(ix, iy, c);
             }
-            As[e] = float16_t(v);
+            const float16_t hi = float16_t(v);
+            As[e] = hi;
+#if SPLIT
+            Al[e] = float16_t(v - float(hi));
+#endif
         }
         barrier();
         MA a;
         coopMatLoad(a, As, 0, 16, gl_CooperativeMatrixLayoutRowMajor);
+#if SPLIT
+        MA al;
+        coopMatLoad(al, Al, 0, 16, gl_CooperativeMatrixLayoutRowMajor);
+        const uint lo = kpad * CoutPad;   // the weight residual table follows the high table
+        MB bl;
+#define TILE(acc, col) coopMatLoad(b, wh, wOff + kb * CoutPad + col, CoutPad, gl_CooperativeMatrixLayoutRowMajor); coopMatLoad(bl, wh, wOff + lo + kb * CoutPad + col, CoutPad, gl_CooperativeMatrixLayoutRowMajor); acc = coopMatMulAdd(al, b, acc); acc = coopMatMulAdd(a, bl, acc); acc = coopMatMulAdd(a, b, acc);
+#else
+#define TILE(acc, col) coopMatLoad(b, wh, wOff + kb * CoutPad + col, CoutPad, gl_CooperativeMatrixLayoutRowMajor); acc = coopMatMulAdd(a, b, acc);
+#endif
         MB b;
-        coopMatLoad(b, wh, wOff + kb * CoutPad, CoutPad, gl_CooperativeMatrixLayoutRowMajor); a0 = coopMatMulAdd(a, b, a0);
-        if (nt > 1u) { coopMatLoad(b, wh, wOff + kb * CoutPad + 16u, CoutPad, gl_CooperativeMatrixLayoutRowMajor); a1 = coopMatMulAdd(a, b, a1); }
-        if (nt > 2u) { coopMatLoad(b, wh, wOff + kb * CoutPad + 32u, CoutPad, gl_CooperativeMatrixLayoutRowMajor); a2 = coopMatMulAdd(a, b, a2); }
-        if (nt > 3u) { coopMatLoad(b, wh, wOff + kb * CoutPad + 48u, CoutPad, gl_CooperativeMatrixLayoutRowMajor); a3 = coopMatMulAdd(a, b, a3); }
+        TILE(a0, 0u)
+        if (nt > 1u) { TILE(a1, 16u) }
+        if (nt > 2u) { TILE(a2, 32u) }
+        if (nt > 3u) { TILE(a3, 48u) }
         barrier();
     }
     coopMatStore(a0, Cs, 0, 64, gl_CooperativeMatrixLayoutRowMajor);
