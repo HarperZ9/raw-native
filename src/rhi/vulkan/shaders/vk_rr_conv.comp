@@ -9,8 +9,9 @@
 // shared memory per K step, and multiplies it by fp16 weights laid out [Kpad][CoutPad].
 // SPLIT=1 (evidence/rr-tc-split-note-2026-10-15.json): every activation and weight is held as an fp16
 // high half and an fp16 low half (the residual; the host writes the weight residuals right after
-// each layer's high table), and a tile is hi x hi + hi x lo + lo x hi, summed in fp32 on the
-// tensor cores. That takes each product from fp16's relative precision to about 2^-21.
+// each layer's high table). Residuals are held scaled by 2^11 (kLoScale) so they stay fp16 normals
+// (the RTX 4090 flushed unscaled ones: evidence/rr-tc-split2-note-2026-10-15.json); hi x hi goes to
+// one accumulator, hi x lo + lo x hi to a second, and the output is main + second / 2^11 in fp32.
 #if COOP
 #extension GL_EXT_shader_explicit_arithmetic_types_float16 : require
 #extension GL_KHR_cooperative_matrix : require
@@ -67,11 +68,18 @@ shared float16_t As[256];
 shared float16_t Al[256];
 #endif
 shared float Cs[16 * 64];
+#if SPLIT
+shared float Cc[16 * 64];   // the correction accumulators, scaled by kLoScale
+const float kLoScale = 2048.0;
+#endif
 void main() {
     const uint lid = gl_LocalInvocationID.x, p0 = gl_WorkGroupID.x * 16u, npix = outW * outH;
     const uint cin = C0 + C1, kk2 = K * K, kreal = cin * kk2, kpad = (kreal + 15u) / 16u * 16u, nt = CoutPad / 16u;
     const int pad = int(K / 2u);
     ACC a0 = ACC(0.0), a1 = ACC(0.0), a2 = ACC(0.0), a3 = ACC(0.0);
+#if SPLIT
+    ACC c0 = ACC(0.0), c1 = ACC(0.0), c2 = ACC(0.0), c3 = ACC(0.0);
+#endif
     for (uint kb = 0u; kb < kpad; kb += 16u) {
         for (uint e = lid; e < 256u; e += 32u) {
             const uint r = e / 16u, kidx = kb + (e % 16u), p = p0 + r;
@@ -84,7 +92,7 @@ void main() {
             const float16_t hi = float16_t(v);
             As[e] = hi;
 #if SPLIT
-            Al[e] = float16_t(v - float(hi));
+            Al[e] = float16_t((v - float(hi)) * kLoScale);
 #endif
         }
         barrier();
@@ -95,26 +103,36 @@ void main() {
         coopMatLoad(al, Al, 0, 16, gl_CooperativeMatrixLayoutRowMajor);
         const uint lo = kpad * CoutPad;   // the weight residual table follows the high table
         MB bl;
-#define TILE(acc, col) coopMatLoad(b, wh, wOff + kb * CoutPad + col, CoutPad, gl_CooperativeMatrixLayoutRowMajor); coopMatLoad(bl, wh, wOff + lo + kb * CoutPad + col, CoutPad, gl_CooperativeMatrixLayoutRowMajor); acc = coopMatMulAdd(al, b, acc); acc = coopMatMulAdd(a, bl, acc); acc = coopMatMulAdd(a, b, acc);
+#define TILE(acc, cor, col) coopMatLoad(b, wh, wOff + kb * CoutPad + col, CoutPad, gl_CooperativeMatrixLayoutRowMajor); coopMatLoad(bl, wh, wOff + lo + kb * CoutPad + col, CoutPad, gl_CooperativeMatrixLayoutRowMajor); cor = coopMatMulAdd(al, b, cor); cor = coopMatMulAdd(a, bl, cor); acc = coopMatMulAdd(a, b, acc);
 #else
-#define TILE(acc, col) coopMatLoad(b, wh, wOff + kb * CoutPad + col, CoutPad, gl_CooperativeMatrixLayoutRowMajor); acc = coopMatMulAdd(a, b, acc);
+#define TILE(acc, cor, col) coopMatLoad(b, wh, wOff + kb * CoutPad + col, CoutPad, gl_CooperativeMatrixLayoutRowMajor); acc = coopMatMulAdd(a, b, acc);
 #endif
         MB b;
-        TILE(a0, 0u)
-        if (nt > 1u) { TILE(a1, 16u) }
-        if (nt > 2u) { TILE(a2, 32u) }
-        if (nt > 3u) { TILE(a3, 48u) }
+        TILE(a0, c0, 0u)
+        if (nt > 1u) { TILE(a1, c1, 16u) }
+        if (nt > 2u) { TILE(a2, c2, 32u) }
+        if (nt > 3u) { TILE(a3, c3, 48u) }
         barrier();
     }
     coopMatStore(a0, Cs, 0, 64, gl_CooperativeMatrixLayoutRowMajor);
     if (nt > 1u) coopMatStore(a1, Cs, 16, 64, gl_CooperativeMatrixLayoutRowMajor);
     if (nt > 2u) coopMatStore(a2, Cs, 32, 64, gl_CooperativeMatrixLayoutRowMajor);
     if (nt > 3u) coopMatStore(a3, Cs, 48, 64, gl_CooperativeMatrixLayoutRowMajor);
+#if SPLIT
+    coopMatStore(c0, Cc, 0, 64, gl_CooperativeMatrixLayoutRowMajor);
+    if (nt > 1u) coopMatStore(c1, Cc, 16, 64, gl_CooperativeMatrixLayoutRowMajor);
+    if (nt > 2u) coopMatStore(c2, Cc, 32, 64, gl_CooperativeMatrixLayoutRowMajor);
+    if (nt > 3u) coopMatStore(c3, Cc, 48, 64, gl_CooperativeMatrixLayoutRowMajor);
+#endif
     barrier();
     for (uint e = lid; e < 16u * Cout; e += 32u) {
         const uint r = e / Cout, co = e % Cout, p = p0 + r;
         if (p >= npix) continue;
+#if SPLIT
+        float v = (Cs[r * 64u + co] + Cc[r * 64u + co] * (1.0 / kLoScale)) + w[bOff + co];
+#else
         float v = Cs[r * 64u + co] + w[bOff + co];
+#endif
         if (relu != 0u) v = max(v, 0.0);
         dst[p * Cout + co] = v;
     }

@@ -97,7 +97,7 @@ bool Net::init(const std::vector<float>& weights, uint32_t width, uint32_t heigh
             const float v = weights[l.wOff + ((size_t)co * l.cin + c) * l.k * l.k + t];
             const size_t at = l.hOff + (size_t)(c * l.k * l.k + t) * l.coutPad + co;
             half[at] = toHalf(v);
-            half[at + (size_t)l.kpad * l.coutPad] = toHalf(v - fromHalf(half[at]));
+            half[at + (size_t)l.kpad * l.coutPad] = toHalf((v - fromHalf(half[at])) * 2048.0f);   // scaled residual (kLoScale)
         }
     const uint64_t n = (uint64_t)W * H, n1 = (uint64_t)w1 * h1, n2 = (uint64_t)w2 * h2, n3 = (uint64_t)w3 * h3;
     const uint64_t actN[10] = {n1 * 24, n1 * 24, n2 * 48, n2 * 48, n3 * 64, n3 * 64, n2 * 48, n2 * 48, n1 * 24, n1 * 24};
