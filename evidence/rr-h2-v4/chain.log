@@ -1,0 +1,16 @@
+2026-10-14T19:19:12Z H2 v4 driver start pid 40436 guard {"console_handler": true, "hidden_window": true}
+2026-10-14T19:19:12Z train v4main@0,v4shuffled@0
+2026-10-14T20:20:22Z train exits {'v4main': 0, 'v4shuffled': 0}
+2026-10-14T20:20:22Z train v4main@652,v4shuffled@736
+2026-10-14T21:22:28Z train exits {'v4main': 0, 'v4shuffled': 0}
+2026-10-14T21:22:28Z train v4main@1872,v4shuffled@2001
+2026-10-14T22:24:33Z train exits {'v4main': 0, 'v4shuffled': 0}
+2026-10-14T22:24:33Z train v4main@3273,v4shuffled@3366
+2026-10-14T23:26:05Z train exits {'v4main': 0, 'v4shuffled': 0}
+2026-10-14T23:26:06Z train v4main@5166,v4shuffled@5132
+2026-10-14T23:53:17Z train exits {'v4main': 0, 'v4shuffled': 0}
+2026-10-14T23:53:47Z conditioning condition-v4main-val.json
+2026-10-14T23:54:48Z conditioning condition-v4main-test.json
+2026-10-14T23:56:48Z conditioning condition-v4main-val-hard-control.json
+2026-10-14T23:58:18Z evaluating v4main with control v4shuffled (amendment 6 verdict run)
+2026-10-15T00:20:18Z H2V4 CHAIN DONE

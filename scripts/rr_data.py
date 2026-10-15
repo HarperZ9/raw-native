@@ -5,7 +5,9 @@ Layout: ROOT/{train,val,test}/{scene}_p{path}/fKKK_in.f32 (H x W x 17), fKKK_ref
 fKKK_tri.i32 (H x W) and fKKK.json. Channels of _in: radiance 0:3 (1 spp), albedo 3:6, normal
 6:9, depth 9, motion 10:12 (previous - current, pixels), previous position 12:14, expected
 previous depth 14, roughness 15, metallic 16. _ref: radiance 0:3, variance of the mean of
-luminance 3, albedo 4:7.
+luminance 3, albedo 4:7. fKKK_split.f32 (H x W x 15, rr-render with path tracer interface v2), when present,
+is appended to _in as channels 17 to 31: diffuse 17:20, specular 20:23, emission 23:26, diffuse albedo 26:29,
+specular albedo 29:32 (evidence/rr-bounds-amendment-6.json).
 """
 import json
 from pathlib import Path
@@ -31,6 +33,9 @@ def load_frame(d, k):
     meta = json.loads((d / f"f{k:03d}.json").read_text())
     h, w = meta["height"], meta["width"]
     x = np.fromfile(d / f"f{k:03d}_in.f32", np.float32).reshape(h, w, 17)
+    sp = d / f"f{k:03d}_split.f32"
+    if sp.exists():
+        x = np.concatenate([x, np.fromfile(sp, np.float32).reshape(h, w, 15)], -1)
     r = np.fromfile(d / f"f{k:03d}_ref.f32", np.float32).reshape(h, w, 7)
     t = np.fromfile(d / f"f{k:03d}_tri.i32", np.int32).reshape(h, w)
     return meta, x, r, t

@@ -8,6 +8,12 @@
 //   4 POOL       adaptive average pooling of a 3-channel image (PyTorch's bin edges)
 //   5 COMBINE    out = max(f - wb up(fq) + wb up(q), 0), bilinear up; remodulated output and state
 // Buffers are float32, channels last. Unused bindings are bound to any buffer.
+// Version 4 (evidence/rr-bounds-amendment-6.json, pad1 >= 4): X has 32 channels (the input and the split
+// radiance); FEAT writes 25 features and an aux of 22 floats (demodulated diffuse 0:3 and specular 3:6, their
+// albedos 6:9 and 9:12, warped histories 12:15 and 15:18, validity 18, emission 19:22) and reads a 6-channel
+// state; the history validity is continuous; ACC and COMBINE run once a signal (first = 0 diffuse, 1 specular)
+// on a 54-channel head (kernels 0:25 and 25:50, blends 50 and 51, scale blends 52 and 53); KAPPLY reads its
+// logits from offset `first`; COMBINE for the specular signal adds to the diffuse result and the emission.
 layout(local_size_x = 256) in;
 layout(push_constant) uniform P { uint W, H, w, h, C, first, pad0, pad1; };
 layout(std430, binding = 0) readonly buffer B0 { float b0[]; };
@@ -26,7 +32,8 @@ float hb(float z) { return pad1 >= 2u ? 8.0 * tanh(z / 8.0) : z; }
 shared float part[256];
 void main() {   // b0: X (17 channels); o4[0]: the mean, at least EPS
     float s = 0.0;
-    for (uint p = gl_LocalInvocationID.x; p < W * H; p += 256u) s += b0[p * 17u + 9u];
+    const uint xs = C == 0u ? 17u : C;
+    for (uint p = gl_LocalInvocationID.x; p < W * H; p += 256u) s += b0[p * xs + 9u];
     part[gl_LocalInvocationID.x] = s;
     barrier();
     for (uint k = 128u; k > 0u; k >>= 1u) { if (gl_LocalInvocationID.x < k) part[gl_LocalInvocationID.x] += part[gl_LocalInvocationID.x + k]; barrier(); }
@@ -51,9 +58,48 @@ float gs(uint which, float px, float py, uint c, uint ch) {
     }
     return v00 * (1.0 - lx) * (1.0 - ly) + v01 * lx * (1.0 - ly) + v10 * (1.0 - lx) * ly + v11 * lx * ly;
 }
+void featV4(uint p) {   // version 4: b0 X (32), b1 previous X (32), b2 state (6), b3 mean depth; o4 features (25), o5 aux (22)
+    const uint i = p * 32u;
+    const float dep = b0[i + 9u];
+    const vec3 dif = vec3(b0[i + 17u], b0[i + 18u], b0[i + 19u]), spe = vec3(b0[i + 20u], b0[i + 21u], b0[i + 22u]);
+    const vec3 emi = vec3(b0[i + 23u], b0[i + 24u], b0[i + 25u]);
+    const vec3 ad = vec3(b0[i + 26u], b0[i + 27u], b0[i + 28u]), as_ = vec3(b0[i + 29u], b0[i + 30u], b0[i + 31u]);
+    const float e = uintBitsToFloat(pad0);
+    const vec3 dd = dif / (ad + e), ds = spe / (as_ + e);
+    vec3 wd = vec3(0.0), ws = vec3(0.0);
+    float valid = 0.0;
+    if (first == 0u) {
+        const float px = b0[i + 12u], py = b0[i + 13u], ed = b0[i + 14u];
+        wd = vec3(gs(0u, px, py, 0u, 6u), gs(0u, px, py, 1u, 6u), gs(0u, px, py, 2u, 6u));
+        ws = vec3(gs(0u, px, py, 3u, 6u), gs(0u, px, py, 4u, 6u), gs(0u, px, py, 5u, 6u));
+        const float inside = (px >= 0.5 && px <= float(W) - 0.5 && py >= 0.5 && py <= float(H) - 0.5) ? 1.0 : 0.0;
+        const float pd = gs(1u, px, py, 9u, 32u);
+        const float tol = 0.02 * abs(ed) + 0.02;
+        const float same = clamp(2.0 - abs(ed - pd) / tol, 0.0, 1.0);
+        const float hit = dep > 0.0 ? 1.0 : 0.0;
+        const float missBoth = (dep <= 0.0 ? 1.0 : 0.0) * clamp(1.0 - pd / 0.02, 0.0, 1.0);
+        valid = inside * clamp(same * hit + missBoth, 0.0, 1.0);
+    }
+    const uint f = p * 25u;
+    const vec3 l0 = log(1.0 + max(dd, vec3(0.0))), l1 = log(1.0 + max(ds, vec3(0.0)));
+    const vec3 l2 = log(1.0 + max(wd, vec3(0.0))), l3 = log(1.0 + max(ws, vec3(0.0)));
+    for (uint c = 0u; c < 3u; ++c) {
+        o4[f + c] = l0[c]; o4[f + 3u + c] = l1[c]; o4[f + 6u + c] = ad[c]; o4[f + 9u + c] = as_[c]; o4[f + 12u + c] = b0[i + 6u + c];
+        o4[f + 18u + c] = l2[c]; o4[f + 21u + c] = l3[c];
+    }
+    o4[f + 15u] = log(1.0 + dep / b3[0]);
+    o4[f + 16u] = b0[i + 15u]; o4[f + 17u] = b0[i + 16u]; o4[f + 24u] = valid;
+    const uint a = p * 22u;
+    for (uint c = 0u; c < 3u; ++c) {
+        o5[a + c] = dd[c]; o5[a + 3u + c] = ds[c]; o5[a + 6u + c] = ad[c]; o5[a + 9u + c] = as_[c];
+        o5[a + 12u + c] = wd[c]; o5[a + 15u + c] = ws[c]; o5[a + 19u + c] = emi[c];
+    }
+    o5[a + 18u] = valid;
+}
 void main() {   // b0 X, b1 previous X, b2 state, b3 mean depth; o4 features (16), o5 aux (demod 3, albm 3, warped 3, valid 1)
     const uint p = gl_GlobalInvocationID.x;
     if (p >= W * H) return;
+    if (pad1 >= 4u) { featV4(p); return; }
     const uint i = p * 17u;
     const float dep = b0[i + 9u], hit = dep > 0.0 ? 1.0 : 0.0;
     vec3 alb = vec3(b0[i + 3u], b0[i + 4u], b0[i + 5u]);
@@ -85,9 +131,14 @@ void main() {   // b0 X, b1 previous X, b2 state, b3 mean depth; o4 features (16
     o5[a + 6u] = wprev.x; o5[a + 7u] = wprev.y; o5[a + 8u] = wprev.z; o5[a + 9u] = valid;
 }
 #elif MODE == 2
-void main() {   // b0 head (27), b1 aux; o4 acc (3)
+void main() {   // b0 head (27; v4 54), b1 aux (10; v4 22); o4 acc (3); v4: signal `first`
     const uint p = gl_GlobalInvocationID.x;
     if (p >= W * H) return;
+    if (pad1 >= 4u) {
+        const float a4 = sigm(hb(b0[p * 54u + 50u + first])) * b1[p * 22u + 18u];
+        for (uint c = 0u; c < 3u; ++c) o4[p * 3u + c] = a4 * b1[p * 22u + 12u + 3u * first + c] + (1.0 - a4) * b1[p * 22u + 3u * first + c];
+        return;
+    }
     const float a = sigm(hb(b0[p * 27u + 25u])) * b1[p * 10u + 9u];
     for (uint c = 0u; c < 3u; ++c) o4[p * 3u + c] = a * b1[p * 10u + 6u + c] + (1.0 - a) * b1[p * 10u + c];
 }
@@ -97,11 +148,11 @@ void main() {   // b0 image (3, w x h), b1 logits (stride C, first 25); o4 filte
     if (p >= w * h) return;
     const int x = int(p % w), y = int(p / w);
     float m = -1e30;
-    for (uint k = 0u; k < 25u; ++k) m = max(m, hb(b1[p * C + k]));
+    for (uint k = 0u; k < 25u; ++k) m = max(m, hb(b1[p * C + first + k]));
     float s = 0.0;
     vec3 acc = vec3(0.0);
     for (uint k = 0u; k < 25u; ++k) {
-        const float e = exp(hb(b1[p * C + k]) - m);
+        const float e = exp(hb(b1[p * C + first + k]) - m);
         s += e;
         const int qx = clamp(x + int(k % 5u) - 2, 0, int(w) - 1), qy = clamp(y + int(k / 5u) - 2, 0, int(h) - 1);
         const uint q = (uint(qy) * w + uint(qx)) * 3u;
@@ -137,6 +188,17 @@ void main() {   // b0 f (3, full), b1 fq (3, w x h), b2 q (3, w x h), b3 head (2
     const uint p = gl_GlobalInvocationID.x;
     if (p >= W * H) return;
     const uint x = p % W, y = p / W;
+    if (pad1 >= 4u) {   // signal `first`: state channels 3 first.., remodulated by its albedo; the specular pass adds emission
+        const float wb4 = sigm(hb(b3[p * 54u + 52u + first]));
+        const vec3 f4 = vec3(b0[p * 3u], b0[p * 3u + 1u], b0[p * 3u + 2u]);
+        const vec3 o4v = max(f4 - wb4 * up(0u, x, y) + wb4 * up(1u, x, y), vec3(0.0));
+        for (uint c = 0u; c < 3u; ++c) {
+            o6[p * 6u + 3u * first + c] = o4v[c];
+            const float r = o4v[c] * o5[p * 22u + 6u + 3u * first + c];
+            o4[p * 3u + c] = first == 0u ? r : o4[p * 3u + c] + r + o5[p * 22u + 19u + c];
+        }
+        return;
+    }
     const float wb = sigm(hb(b3[p * 27u + 26u]));
     const vec3 f = vec3(b0[p * 3u], b0[p * 3u + 1u], b0[p * 3u + 2u]);
     const vec3 o = max(f - wb * up(0u, x, y) + wb * up(1u, x, y), vec3(0.0));

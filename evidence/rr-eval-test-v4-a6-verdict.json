@@ -1,0 +1,214 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/rr-bounds.json with amendments 1 and 2",
+ "split": "test",
+ "flip": "checked against the BSD-3 reference implementation's test pair (evidence/rr-flip-check.json, difference 3.5e-7); the key flip_unchecked keeps its earlier name",
+ "per_sequence_means": {
+  "iso_street_p7": {
+   "input": {
+    "psnr_linear": 19.788044671146075,
+    "psnr_tonemapped": 23.375305133573747,
+    "flip_unchecked": 0.039592030288620156,
+    "temporal_instability": 0.03100416466357216,
+    "ghosting": 0.059365217115670915
+   },
+   "ours": {
+    "psnr_linear": 26.41357567740346,
+    "psnr_tonemapped": 32.08452673330556,
+    "flip_unchecked": 0.03136177098106293,
+    "temporal_instability": 0.008292014488861674,
+    "ghosting": 0.0252829544645335
+   },
+   "ours_zero_motion": {
+    "psnr_linear": 24.835688954830196,
+    "psnr_tonemapped": 30.732282691610884,
+    "flip_unchecked": 0.04448342628710758,
+    "temporal_instability": 0.008535134864764081,
+    "ghosting": 0.031984656916132996
+   },
+   "shuffled": {
+    "psnr_linear": 16.571878274608412,
+    "psnr_tonemapped": 23.3688763171303,
+    "flip_unchecked": 0.13039874105311858,
+    "temporal_instability": 0.008177533686634094,
+    "ghosting": 0.08297128620601836
+   },
+   "svgf": {
+    "psnr_linear": 24.42001444198027,
+    "psnr_tonemapped": 29.279503504464564,
+    "flip_unchecked": 0.03557890585820345,
+    "temporal_instability": 0.009667075845220733,
+    "ghosting": 0.030776176586865434
+   },
+   "svgf_taa": {
+    "psnr_linear": 28.942582079260042,
+    "psnr_tonemapped": 34.354798496783744,
+    "flip_unchecked": 0.03125731648469631,
+    "temporal_instability": 0.002679282333701849,
+    "ghosting": 0.018415831798125826
+   }
+  },
+  "raw_hall_p7": {
+   "input": {
+    "psnr_linear": 34.82888369133276,
+    "psnr_tonemapped": 10.392676524967406,
+    "flip_unchecked": 0.41992453123080387,
+    "temporal_instability": 0.24298172692457834,
+    "ghosting": 0.24062657356262207
+   },
+   "ours": {
+    "psnr_linear": 36.89819410334755,
+    "psnr_tonemapped": 21.58189010163685,
+    "flip_unchecked": 0.29892296081134406,
+    "temporal_instability": 0.01989627035246009,
+    "ghosting": 0.06966244683615745
+   },
+   "ours_zero_motion": {
+    "psnr_linear": 36.867191236271736,
+    "psnr_tonemapped": 21.188973621562432,
+    "flip_unchecked": 0.2990299050296203,
+    "temporal_instability": 0.028382996718088787,
+    "ghosting": 0.07291611869420324
+   },
+   "shuffled": {
+    "psnr_linear": 36.831520285845826,
+    "psnr_tonemapped": 21.13458415321351,
+    "flip_unchecked": 0.26451128094150994,
+    "temporal_instability": 0.013794554397463799,
+    "ghosting": 0.06752238937077068
+   },
+   "svgf": {
+    "psnr_linear": 1.745830798616597,
+    "psnr_tonemapped": 18.048396865747417,
+    "flip_unchecked": 0.17402234467686983,
+    "temporal_instability": 0.02153609829053046,
+    "ghosting": 0.06523909892827745
+   },
+   "svgf_taa": {
+    "psnr_linear": 13.70590390895202,
+    "psnr_tonemapped": 19.22451146438526,
+    "flip_unchecked": 0.17158050900075528,
+    "temporal_instability": 0.01126687777125173,
+    "ghosting": 0.0529113822867946
+   }
+  },
+  "raw_hero_p7": {
+   "input": {
+    "psnr_linear": 35.34091605985863,
+    "psnr_tonemapped": 25.34362670901144,
+    "flip_unchecked": 0.043478908794216384,
+    "temporal_instability": 0.01896672961967332,
+    "ghosting": 0.06063409037296734
+   },
+   "ours": {
+    "psnr_linear": 37.54906369509442,
+    "psnr_tonemapped": 34.42476313998215,
+    "flip_unchecked": 0.02966781608306107,
+    "temporal_instability": 0.0016613276601429024,
+    "ghosting": 0.017442993069481518
+   },
+   "ours_zero_motion": {
+    "psnr_linear": 37.3196057216148,
+    "psnr_tonemapped": 33.81765779820661,
+    "flip_unchecked": 0.03144489019826879,
+    "temporal_instability": 0.0016951228192608272,
+    "ghosting": 0.019283224547666216
+   },
+   "shuffled": {
+    "psnr_linear": 34.08813851546867,
+    "psnr_tonemapped": 17.638838129776246,
+    "flip_unchecked": 0.22863448706532652,
+    "temporal_instability": 0.003925451946016106,
+    "ghosting": 0.11070361514649694
+   },
+   "svgf": {
+    "psnr_linear": -6.341143844887942,
+    "psnr_tonemapped": 23.80220955450243,
+    "flip_unchecked": 0.027767460262471233,
+    "temporal_instability": 0.0019908983755620225,
+    "ghosting": 0.04307957850987949
+   },
+   "svgf_taa": {
+    "psnr_linear": -2.8072204459036056,
+    "psnr_tonemapped": 24.626730747431985,
+    "flip_unchecked": 0.027499664328268072,
+    "temporal_instability": 0.0012200779747217894,
+    "ghosting": 0.038869704629871105
+   }
+  }
+ },
+ "ref_fraction_se_under_1pct_mean": {
+  "iso_street_p7": 0.98457814915625,
+  "raw_hall_p7": 0.1073464023796875,
+  "raw_hero_p7": 0.965140938515625
+ },
+ "verdict": {
+  "frames_kept": 192,
+  "frames_excluded_by_target_noise": [],
+  "quality_vs_svgf": {
+   "flip_unchecked": [
+    0.040861279025974535,
+    0.03211608540646513,
+    0.049779277743620245,
+    192
+   ],
+   "psnr_linear": [
+    27.012044026712164,
+    24.42708286603324,
+    29.599027881380174,
+    192
+   ],
+   "psnr_tonemapped": [
+    5.653690016736717,
+    5.1172559143358045,
+    6.205499930499249,
+    192
+   ]
+  },
+  "quality_pass": false,
+  "temporal_vs_svgf_taa": [
+   0.004894458140596432,
+   0.004401325541098784,
+   0.00536597101174901,
+   189
+  ],
+  "temporal_pass": false,
+  "ghosting_vs_svgf_taa": [
+   0.0007304918851269774,
+   -0.001989259245890444,
+   0.003426124821891318,
+   189
+  ],
+  "ghosting_pass": false,
+  "control_shuffled_vs_svgf": {
+   "flip_unchecked": [
+    0.12872526608747017,
+    0.12074346197408566,
+    0.13688470811666364,
+    192
+   ],
+   "psnr_linear": [
+    22.555611893404663,
+    19.45408720894101,
+    25.61206792047222,
+    192
+   ],
+   "psnr_tonemapped": [
+    -2.9959371081981168,
+    -3.651522753542117,
+    -2.324033862820006,
+    192
+   ]
+  },
+  "control_shuffled_fails": true,
+  "control_zero_motion_ghosting_vs_svgf_taa": [
+   0.004662360481070305,
+   0.0018519389056280335,
+   0.007459488876592663,
+   189
+  ],
+  "control_zero_motion_fails": true,
+  "format": "each comparison: [mean of (first - second), bootstrap 2.5%, 97.5%, frames]"
+ },
+ "pass": false
+}

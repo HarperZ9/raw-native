@@ -160,7 +160,7 @@ bool Context::dispatch(const Pipeline& p, const std::vector<Buffer*>& bufs, cons
     return true;
 }
 
-bool Context::runBatch(const std::vector<Step>& steps, double* ms, std::string& err){
+bool Context::runBatch(const std::vector<Step>& steps, double* ms, std::string& err, std::vector<double>* stepMs){
     if (steps.empty() || steps.size() > 64){ err = "runBatch: 1 to 64 steps"; return false; }
     vkResetDescriptorPool(dev_, dpool_, 0);
     std::vector<VkDescriptorSet> sets(steps.size());
@@ -183,7 +183,9 @@ bool Context::runBatch(const std::vector<Step>& steps, double* ms, std::string& 
     vkResetCommandBuffer(cmd_, 0);
     vkBeginCommandBuffer(cmd_, &bi);
     const bool timed = ms && queries_;
-    if (timed){ vkCmdResetQueryPool(cmd_, queries_, 0, 2); vkCmdWriteTimestamp(cmd_, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, queries_, 0); }
+    const bool perStep = timed && stepMs;
+    const uint32_t nq = perStep ? (uint32_t)steps.size() + 1u : 2u;
+    if (timed){ vkCmdResetQueryPool(cmd_, queries_, 0, nq); vkCmdWriteTimestamp(cmd_, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, queries_, 0); }
     const VkMemoryBarrier cc{VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT};
     for (size_t k = 0; k < steps.size(); ++k){
         const Pipeline& p = *steps[k].p;
@@ -192,8 +194,9 @@ bool Context::runBatch(const std::vector<Step>& steps, double* ms, std::string& 
         if (p.pushBytes) vkCmdPushConstants(cmd_, p.layout, VK_SHADER_STAGE_COMPUTE_BIT, 0, p.pushBytes, steps[k].push.data());
         vkCmdDispatch(cmd_, steps[k].gx, steps[k].gy, 1);
         vkCmdPipelineBarrier(cmd_, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1, &cc, 0, nullptr, 0, nullptr);
+        if (perStep) vkCmdWriteTimestamp(cmd_, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, queries_, (uint32_t)k + 1u);
     }
-    if (timed) vkCmdWriteTimestamp(cmd_, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, queries_, 1);
+    if (timed && !perStep) vkCmdWriteTimestamp(cmd_, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, queries_, 1);
     VkMemoryBarrier mb{VK_STRUCTURE_TYPE_MEMORY_BARRIER, nullptr, VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT | VK_ACCESS_TRANSFER_READ_BIT};
     vkCmdPipelineBarrier(cmd_, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT, 0, 1, &mb, 0, nullptr, 0, nullptr);
     VkResult r = vkEndCommandBuffer(cmd_);
@@ -204,11 +207,16 @@ bool Context::runBatch(const std::vector<Step>& steps, double* ms, std::string& 
     if ((r = vkQueueSubmit(queue_, 1, &s, fence_)) != VK_SUCCESS){ err = vkError("vkQueueSubmit", r); return false; }
     if ((r = vkWaitForFences(dev_, 1, &fence_, VK_TRUE, UINT64_MAX)) != VK_SUCCESS){ err = vkError("vkWaitForFences", r); return false; }
     if (timed){
-        uint64_t t[2]{};
-        if ((r = vkGetQueryPoolResults(dev_, queries_, 0, 2, sizeof t, t, 8, VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT)) != VK_SUCCESS){
+        std::vector<uint64_t> t(nq, 0);
+        if ((r = vkGetQueryPoolResults(dev_, queries_, 0, nq, t.size() * 8, t.data(), 8, VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT)) != VK_SUCCESS){
             err = vkError("vkGetQueryPoolResults", r); return false; }
         const uint64_t mask = tsBits_ >= 64 ? ~0ull : ((1ull << tsBits_) - 1);
-        *ms = (double)((t[1] - t[0]) & mask) * tsPeriod_ * 1e-6;
+        const auto span = [&](uint32_t a, uint32_t b){ return (double)((t[b] - t[a]) & mask) * tsPeriod_ * 1e-6; };
+        *ms = span(0, nq - 1);
+        if (perStep){
+            stepMs->resize(steps.size());
+            for (size_t k = 0; k < steps.size(); ++k) (*stepMs)[k] = span((uint32_t)k, (uint32_t)k + 1u);
+        }
     }
     return true;
 }

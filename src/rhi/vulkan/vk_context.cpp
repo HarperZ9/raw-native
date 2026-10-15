@@ -100,7 +100,7 @@ bool Context::createDevice(std::string& err){
     if ((r = vkCreateFence(dev_, &fi, nullptr, &fence_)) != VK_SUCCESS){ err = vkError("vkCreateFence", r); return false; }
     if (tsBits_){
         VkQueryPoolCreateInfo qp{VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO};
-        qp.queryType = VK_QUERY_TYPE_TIMESTAMP; qp.queryCount = 2;
+        qp.queryType = VK_QUERY_TYPE_TIMESTAMP; qp.queryCount = 66;   // 2 for dispatch; 1 + 64 steps + 1 for runBatch
         if ((r = vkCreateQueryPool(dev_, &qp, nullptr, &queries_)) != VK_SUCCESS){ err = vkError("vkCreateQueryPool", r); return false; }
     }
     VkDescriptorPoolSize ps{VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 512};   // 64 sets: H2's batched network
