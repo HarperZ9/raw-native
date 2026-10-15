@@ -323,7 +323,7 @@ if(RAW_NATIVE_VULKAN AND NOT EMSCRIPTEN)
         "vk_rayquery_probe|vk_rayquery_probe|" "vk_coopmat_probe|vk_coopmat_probe|"
         "vk_gemm_coop|vk_gemm_coop|" "vk_gemm_coop_skipk|vk_gemm_coop|-DSKIP_K=1" "vk_gemm_coop_bcol|vk_gemm_coop|-DB_COLMAJOR=1"
         "vk_gemm_tiled|vk_gemm_tiled|" "vk_gemm_tiled_skipk|vk_gemm_tiled|-DSKIP_K=1"
-        "vk_rr_conv|vk_rr_conv|-DCOOP=0" "vk_rr_conv_perturb|vk_rr_conv|-DPERTURB=1" "vk_rr_conv_coop|vk_rr_conv|-DCOOP=1"
+        "vk_rr_conv|vk_rr_conv|-DCOOP=0" "vk_rr_conv_perturb|vk_rr_conv|-DPERTURB=1" "vk_rr_conv_coop|vk_rr_conv|-DCOOP=1" "vk_rr_conv_coop_split|vk_rr_conv|-DCOOP=1,-DSPLIT=1"
         "vk_rr_glue0|vk_rr_glue|-DMODE=0" "vk_rr_glue1|vk_rr_glue|-DMODE=1" "vk_rr_glue2|vk_rr_glue|-DMODE=2"
         "vk_rr_glue3|vk_rr_glue|-DMODE=3" "vk_rr_glue4|vk_rr_glue|-DMODE=4" "vk_rr_glue5|vk_rr_glue|-DMODE=5")
     set(vk_headers "")
@@ -337,6 +337,7 @@ if(RAW_NATIVE_VULKAN AND NOT EMSCRIPTEN)
         set(defs "")
         if(nf GREATER 2)
             list(GET f 2 defs)
+            string(REPLACE "," ";" defs "${defs}")   # several defines, comma separated
         endif()
         set(h "${vkgen}/spv_${name}.h")
         add_custom_command(OUTPUT "${h}"

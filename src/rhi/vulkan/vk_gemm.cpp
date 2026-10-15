@@ -3,6 +3,7 @@
 #include "vk_context.hpp"
 #include "raw/rhi/hw_vk.hpp"
 #include "raw_vk_spirv.hpp"
+#include "vk_half_conv.hpp"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -14,30 +15,6 @@ using vk::Context;
 using vk::Pipeline;
 
 uint64_t mix(uint64_t& s){ uint64_t z = (s += 0x9E3779B97F4A7C15ull); z = (z ^ (z >> 30)) * 0xBF58476D1CE4E5B9ull; z = (z ^ (z >> 27)) * 0x94D049BB133111EBull; return z ^ (z >> 31); }
-// fp32 to fp16, round to nearest even (inputs here are in [-1, 1], so no overflow handling is needed beyond the general path).
-uint16_t toHalf(float f){
-    uint32_t x; std::memcpy(&x, &f, 4);
-    const uint32_t sign = (x >> 16) & 0x8000u;
-    int32_t e = (int32_t)((x >> 23) & 0xFF) - 127 + 15;
-    uint32_t m = x & 0x7FFFFFu;
-    if (e <= 0){
-        if (e < -10) return (uint16_t)sign;
-        m |= 0x800000u;
-        const uint32_t shift = (uint32_t)(14 - e), r = m >> shift, rem = m & ((1u << shift) - 1), half = 1u << (shift - 1);
-        return (uint16_t)(sign | (r + (rem > half || (rem == half && (r & 1u)))));
-    }
-    if (e >= 31) return (uint16_t)(sign | 0x7C00u);
-    uint32_t h = sign | ((uint32_t)e << 10) | (m >> 13);
-    const uint32_t rem = m & 0x1FFFu;
-    if (rem > 0x1000u || (rem == 0x1000u && (h & 1u))) ++h;
-    return (uint16_t)h;
-}
-float fromHalf(uint16_t h){
-    const uint32_t sign = (uint32_t)(h & 0x8000u) << 16, e = (h >> 10) & 0x1Fu, m = h & 0x3FFu;
-    if (e == 0) return (sign ? -1.0f : 1.0f) * std::ldexp((float)m, -24);
-    uint32_t x = sign | ((e + 112u) << 23) | (m << 13);
-    float f; std::memcpy(&f, &x, 4); return f;
-}
 const VkSpirvBlob* spirv(const char* name){
     for (const VkSpirvBlob& b : kVkSpirv) if (std::strcmp(b.name, name) == 0) return &b;
     return nullptr;

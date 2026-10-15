@@ -4,6 +4,7 @@
 #include "vk_context.hpp"
 #include "raw/rhi/hw_vk.hpp"
 #include "raw_vk_spirv.hpp"
+#include "vk_half_conv.hpp"
 #include <algorithm>
 #include <cmath>
 #include <cstdio>
@@ -26,23 +27,6 @@ constexpr uint32_t kShapeV4[12][3] = {{24, 25, 3}, {24, 24, 3}, {48, 24, 3}, {48
 const VkSpirvBlob* spirv(const char* name){
     for (const VkSpirvBlob& b : kVkSpirv) if (std::strcmp(b.name, name) == 0) return &b;
     return nullptr;
-}
-uint16_t toHalf(float f){
-    uint32_t x; std::memcpy(&x, &f, 4);
-    const uint32_t sign = (x >> 16) & 0x8000u;
-    int32_t e = (int32_t)((x >> 23) & 0xFF) - 127 + 15;
-    uint32_t m = x & 0x7FFFFFu;
-    if (e <= 0){
-        if (e < -10) return (uint16_t)sign;
-        m |= 0x800000u;
-        const uint32_t shift = (uint32_t)(14 - e), r = m >> shift, rem = m & ((1u << shift) - 1), half = 1u << (shift - 1);
-        return (uint16_t)(sign | (r + (rem > half || (rem == half && (r & 1u)))));
-    }
-    if (e >= 31) return (uint16_t)(sign | 0x7C00u);
-    uint32_t h = sign | ((uint32_t)e << 10) | (m >> 13);
-    const uint32_t rem = m & 0x1FFFu;
-    if (rem > 0x1000u || (rem == 0x1000u && (h & 1u))) ++h;
-    return (uint16_t)h;
 }
 std::string num(double v){ char b[48]; std::snprintf(b, sizeof b, "%.6g", v); return b; }
 bool readFile(const std::string& p, std::vector<float>& v){
@@ -81,6 +65,7 @@ struct Net {
     uint32_t featVariant{0};   // timing-only profile variant of the feature step (0 in every parity run)
     Pipeline conv, convPerturb, glue[6];
     bool coop{false};
+    bool split{true};   // cooperative-matrix path: fp16 hi + lo operands (evidence/rr-tc-split-note-2026-10-15.json)
     float eps{1e-3f};
     int version{1};
     explicit Net(Context& c) : cx(c) {}
@@ -101,14 +86,19 @@ bool Net::init(const std::vector<float>& weights, uint32_t width, uint32_t heigh
     for (const auto& s : (version >= 4 ? kShapeV4 : kShape)){
         Layer l{s[0], s[1], s[2], off, off + (size_t)s[0] * s[1] * s[2] * s[2], hoff, 0, 0};
         l.kpad = (l.cin * l.k * l.k + 15u) / 16u * 16u; l.coutPad = (l.cout + 15u) / 16u * 16u;
-        off = l.bOff + l.cout; hoff += (size_t)l.kpad * l.coutPad;
+        off = l.bOff + l.cout; hoff += 2 * (size_t)l.kpad * l.coutPad;   // high table, then the residual table
         L.push_back(l);
     }
     if (off != weights.size()){ err = "weight file has " + std::to_string(weights.size()) + " floats, the network needs " + std::to_string(off); return false; }
     std::vector<uint16_t> half(hoff, 0);
     for (const Layer& l : L)
         for (uint32_t co = 0; co < l.cout; ++co) for (uint32_t c = 0; c < l.cin; ++c) for (uint32_t t = 0; t < l.k * l.k; ++t)
-            half[l.hOff + (size_t)(c * l.k * l.k + t) * l.coutPad + co] = toHalf(weights[l.wOff + ((size_t)co * l.cin + c) * l.k * l.k + t]);
+        {
+            const float v = weights[l.wOff + ((size_t)co * l.cin + c) * l.k * l.k + t];
+            const size_t at = l.hOff + (size_t)(c * l.k * l.k + t) * l.coutPad + co;
+            half[at] = toHalf(v);
+            half[at + (size_t)l.kpad * l.coutPad] = toHalf((v - fromHalf(half[at])) * 2048.0f);   // scaled residual (kLoScale)
+        }
     const uint64_t n = (uint64_t)W * H, n1 = (uint64_t)w1 * h1, n2 = (uint64_t)w2 * h2, n3 = (uint64_t)w3 * h3;
     const uint64_t actN[10] = {n1 * 24, n1 * 24, n2 * 48, n2 * 48, n3 * 64, n3 * 64, n2 * 48, n2 * 48, n1 * 24, n1 * 24};
     bool ok = cx.deviceBuffer(weights.size() * 4, wf, err) && cx.upload(wf, weights.data(), weights.size() * 4, err) &&
@@ -121,7 +111,7 @@ bool Net::init(const std::vector<float>& weights, uint32_t width, uint32_t heigh
               cx.deviceBuffer(n2 * 12, fq, err) && cx.deviceBuffer(n * 12, out, err);
     for (int i = 0; ok && i < 10; ++i) ok = cx.deviceBuffer(actN[i] * 4, act[i], err);
     if (!ok) return false;
-    const VkSpirvBlob* cs = spirv(coop ? "vk_rr_conv_coop" : "vk_rr_conv");
+    const VkSpirvBlob* cs = spirv(coop ? (split ? "vk_rr_conv_coop_split" : "vk_rr_conv_coop") : "vk_rr_conv");
     const VkSpirvBlob* cp = spirv("vk_rr_conv_perturb");
     if (!cs || !cp || !cx.pipeline(cs->words, cs->bytes, 5, 64, conv, err) || !cx.pipeline(cp->words, cp->bytes, 5, 64, convPerturb, err)) return false;
     for (int m = 0; m < 6; ++m){
@@ -191,7 +181,7 @@ std::vector<Context::Step> Net::frame(int xi, bool first, bool perturb){
 
 struct Stats { double maxAbs{0}, sumAbs{0}; uint64_t n{0}; int frame{-1}; uint64_t pixel{0}; std::vector<float> top; };
 // One path (coop or scalar, optionally the perturbed control) over a sequence, against the reference.
-bool parity(Context& cx, const std::vector<float>& weights, const RrArgs& a, bool coop, bool perturb, Stats& st, std::string& err){
+bool parity(Context& cx, const std::vector<float>& weights, const RrArgs& a, bool coop, bool perturb, Stats& st, std::string& err, bool split = true){
     std::vector<float> x;
     char stem[32];
     std::snprintf(stem, sizeof stem, "/f%03d", 0);
@@ -201,7 +191,7 @@ bool parity(Context& cx, const std::vector<float>& weights, const RrArgs& a, boo
     if (pw == std::string::npos || ph == std::string::npos){ err = "no frame metadata in " + a.seq; return false; }
     const uint32_t W = (uint32_t)std::atoi(meta.c_str() + pw + 8), H = (uint32_t)std::atoi(meta.c_str() + ph + 9);
     Net net(cx);
-    net.eps = a.eps; net.version = a.version;
+    net.eps = a.eps; net.version = a.version; net.split = split;
     if (!net.init(weights, W, H, coop, err)) return false;
     std::vector<float> outv((size_t)W * H * 3), ref;
     for (int k = 0; k < a.frames; ++k){
@@ -241,7 +231,7 @@ double pct(std::vector<double> v, double p){
     return i + 1 < v.size() ? v[i] + (k - (double)i) * (v[i + 1] - v[i]) : v[i];
 }
 // Frame time at 1920 x 1080: the first input frame tiled 4 x 4, one submission a frame.
-std::string timing(Context& cx, const std::vector<float>& weights, const RrArgs& a, bool coop, std::string& err){
+std::string timing(Context& cx, const std::vector<float>& weights, const RrArgs& a, bool coop, bool split, std::string& err){
     std::vector<float> x0;
     if (!readInput(a.seq + "/f000", a.version, x0)){ err = "no input frame for timing"; return ""; }
     const uint32_t sw = 480, sh = 270, W = 1920, H = 1080, xc = xChannels(a.version);
@@ -250,7 +240,7 @@ std::string timing(Context& cx, const std::vector<float>& weights, const RrArgs&
     for (uint32_t y = 0; y < H; ++y) for (uint32_t xx = 0; xx < W; ++xx)
         std::memcpy(&x[((size_t)y * W + xx) * xc], &x0[((size_t)(y % sh) * sw + xx % sw) * xc], xc * 4);
     Net net(cx);
-    net.eps = a.eps; net.version = a.version;
+    net.eps = a.eps; net.version = a.version; net.split = split;
     if (const char* v = std::getenv("RAW_NATIVE_RR_FEAT_VARIANT")) net.featVariant = (uint32_t)std::atoi(v);   // timing only
     if (!net.init(weights, W, H, coop, err) || !cx.upload(net.X[0], x.data(), x.size() * 4, err) || !cx.upload(net.X[1], x.data(), x.size() * 4, err)) return "";
     std::vector<double> ms;
@@ -284,21 +274,30 @@ VkRun vulkanRrNet(const RrArgs& a){
     if (!readFile(a.weights, weights)){ run.json = "{\"error\": \"cannot read the weight file\"}\n"; run.code = 2; return run; }
     if (!cx.init(err)){ run.json = "{\"error\": \"" + jsonEscape(err) + "\"}\n"; run.code = 4; return run; }
     const bool coopOk = cx.probe().on(kCoopMatrix);
+    const char* sp = std::getenv("RAW_NATIVE_RR_TC_SPLIT");   // 0: the unsplit fp16 path, as before the split note
+    const bool split = !(sp && std::strcmp(sp, "0") == 0);
     std::string body;
     bool pass = true;
     for (int path = 0; path < 2; ++path){
         const bool coop = path == 0;
         if (coop && !coopOk){ body += "\"coop\":{\"ran\":false,\"reason\":\"cooperative matrix not offered or disabled\"},"; continue; }
         Stats st;
-        if (!parity(cx, weights, a, coop, false, st, err)){ run.json = "{\"error\": \"" + jsonEscape(err) + "\"}\n"; run.code = 2; return run; }
+        if (!parity(cx, weights, a, coop, false, st, err, split)){ run.json = "{\"error\": \"" + jsonEscape(err) + "\"}\n"; run.code = 2; return run; }
         pass = pass && st.maxAbs <= 1e-2;
-        body += std::string("\"") + (coop ? "coop" : "scalar") + "\":{\"ran\":true,\"parity\":" + statsJson(st);
+        body += std::string("\"") + (coop ? "coop" : "scalar") + "\":{\"ran\":true," + (coop ? std::string("\"split\":") + (split ? "true," : "false,") : "") +
+                "\"parity\":" + statsJson(st);
         if (a.repeats > 0){
-            const std::string t = timing(cx, weights, a, coop, err);
+            const std::string t = timing(cx, weights, a, coop, split, err);
             if (t.empty()){ run.json = "{\"error\": \"" + jsonEscape(err) + "\"}\n"; run.code = 2; return run; }
             body += ",\"timing_1080p\":" + t;
         }
         body += "},";
+        if (coop && split){   // the control that must fail: the same path with fp16 operands, unsplit
+            Stats un;
+            if (!parity(cx, weights, a, true, false, un, err, false)){ run.json = "{\"error\": \"" + jsonEscape(err) + "\"}\n"; run.code = 2; return run; }
+            pass = pass && un.maxAbs > 1e-2;
+            body += "\"control_coop_unsplit\":{\"parity\":" + statsJson(un) + ",\"fails\":" + (un.maxAbs > 1e-2 ? "true" : "false") + "},";
+        }
     }
     Stats ctl;
     if (!parity(cx, weights, a, false, true, ctl, err)){ run.json = "{\"error\": \"" + jsonEscape(err) + "\"}\n"; run.code = 2; return run; }

@@ -2,7 +2,9 @@
 """HW H2 tensor-core parity diagnosis (evidence/rr-tc-note-2026-10-15.json): v4's forward pass with the cooperative-
 matrix path's fp16 roundings emulated in PyTorch on the CPU, against the fp32 reference.
 
-Modes: F fp32; W the convolution weights rounded to fp16; A every convolution's input rounded to fp16; WA both. The
+Modes: F fp32; W the convolution weights rounded to fp16; A every convolution's input rounded to fp16; WA both; S the
+split arithmetic of evidence/rr-tc-split-note-2026-10-15.json (each operand as fp16 hi plus fp16 lo, three products
+hi x hi + hi x lo + lo x hi summed in fp32, the bias added once). The
 bias stays fp32 and accumulation stays fp32, as on the tensor cores. --layer K rounds only layer K (per-layer ablation; K in
 the order of rr_export.LAYERS); --fp32-layers keeps the listed layers in fp32 (a mixed-precision path).
 
@@ -29,6 +31,36 @@ def half(t):
     return t.half().float()
 
 
+OVER = [0]   # convolution inputs above fp16's largest finite value (65,504)
+
+
+FTZ = [False]   # --ftz: the low halves flush fp16 subnormals to zero (a hypothesis about the tensor cores)
+
+
+def split(t, scale=1.0):
+    hi = half(t)
+    lo = half((t - hi) * scale)
+    if FTZ[0]:
+        lo = torch.where(lo.abs() < 2.0 ** -14, torch.zeros_like(lo), lo)
+    return hi, lo
+
+
+def split_forward(conv, scale=1.0):
+    """scale 1: mode S. scale 2^11: mode SS, residuals held scaled into fp16's normal range and their two products
+    summed in their own accumulator, multiplied by 1 / scale at the end."""
+    whi, wlo = split(conv.weight.data, scale)
+
+    def fwd(x):
+        xhi, xlo = split(x, scale)
+        f = lambda a, w, b: torch.nn.functional.conv2d(a, w, b, conv.stride, conv.padding)  # noqa: E731
+        return f(xhi, whi, conv.bias) + (f(xhi, wlo, None) + f(xlo, whi, None)) * (1.0 / scale)
+    return fwd
+
+
+def count_over(m, inp):
+    OVER[0] += int((inp[0].abs() > 65504).sum())
+
+
 def build(ck, mode, layer, keep=()):
     net = RrNet(ck.get("eps", 1e-3), ck.get("version", 1))
     net.load_state_dict(ck["model"])
@@ -37,6 +69,10 @@ def build(ck, mode, layer, keep=()):
     for i, name in enumerate(LAYERS):
         conv = convs[name]
         if i in keep:   # --fp32-layers: these layers stay fp32 (a mixed-precision path)
+            continue
+        if mode in ("S", "SS") and (layer is None or layer == i):
+            conv.register_forward_pre_hook(count_over)
+            conv.forward = split_forward(conv, 2048.0 if mode == "SS" else 1.0)
             continue
         if "W" in mode and (layer is None or layer == i):
             conv.weight.data = half(conv.weight.data)
@@ -60,13 +96,15 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("model")
     ap.add_argument("seq")
-    ap.add_argument("--mode", required=True, choices=["W", "A", "WA"])
+    ap.add_argument("--mode", required=True, choices=["W", "A", "WA", "S", "SS"])
     ap.add_argument("--frames", type=int, default=64)
     ap.add_argument("--layer", type=int, default=None)
     ap.add_argument("--worst", type=int, default=100)
     ap.add_argument("--fp32-layers", default="", help="comma-separated layer indices kept in fp32")
+    ap.add_argument("--ftz", action="store_true", help="mode S: flush fp16 subnormal low halves to zero")
     ap.add_argument("--out", required=True)
     a = ap.parse_args()
+    FTZ[0] = a.ftz
     torch.set_num_threads(int(os.environ.get("OMP_NUM_THREADS", "6")))
     ck = torch.load(a.model, map_location="cpu", weights_only=False)
     n = min(a.frames, rr_data.frame_count(a.seq))
@@ -80,6 +118,7 @@ def main():
     res = {"model": a.model, "sequence": Path(a.seq).name, "mode": a.mode, "layer": a.layer, "fp32_layers": list(keep), "frames": n,
            "max_abs": float(d.max()), "mean_abs": float(d.mean()), "p99_99": float(np.quantile(d, 0.9999)),
            "frames_over_1e-2": int((d.reshape(n, -1).max(1) > 1e-2).sum()), "pixels_over_1e-2": int((d > 1e-2).sum()),
+           "inputs_over_65504": OVER[0] if a.mode in ("S", "SS") else None, "ftz": a.ftz,
            "worst": worst}
     Path(a.out).write_text(json.dumps(res, indent=1) + "\n")
     print(json.dumps({k: res[k] for k in res if k != "worst"} | {"worst_top3": worst[:3]}))

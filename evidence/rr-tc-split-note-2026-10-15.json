@@ -1,0 +1,29 @@
+{
+ "schema": "raw-native.evidence/1",
+ "about": "HW H2 tensor-core parity fix, round 2 (follows evidence/rr-tc-note-2026-10-15.json): keep the tensor cores and meet the 1e-2 parity bound by splitting each fp16 operand into a high and a low half (an error-compensated fp16 product). Elaborates evidence/rr-inference-bounds.json; changes no bound.",
+ "written": "2026-10-15 20:10Z, before the emulation, the shader change or any run",
+ "cause_on_record": "rr-tc-note-2026-10-15.json: fp16 weights alone give 0.137 and fp16 activations alone 0.104 on v4 raw_hero; both together 0.1085, the RTX's own worst pixel (frame 48, pixel 64,580). The failing pixels are single-sample specular fireflies (demodulated about 21,700) that the kernel weighs down to about 110, so the absolute bound asks for about 1e-4 relative precision and fp16 holds about 5e-4. Both operands must be fixed.",
+ "change": "vk_rr_conv.comp with COOP=1 and SPLIT=1: every im2col activation v is stored as hi = fp16(v) and lo = fp16(v - hi); every weight likewise (the host writes a second half table of residuals after the first). The tile product is hi_a x hi_b + hi_a x lo_b + lo_a x hi_b, three tensor-core multiplies accumulated in fp32 (the lo x lo term is dropped). Relative error of each product falls from about 2^-11 to about 2^-21. The bias stays fp32. The unsplit path stays available as RAW_NATIVE_RR_TC_SPLIT=0, the control.",
+ "bounds": {
+  "parity": "unchanged: max |GPU - PyTorch float32| at most 1e-2 on every test pixel; the cooperative-matrix path now held to it on the RTX 4090",
+  "controls_that_must_fail": "the unsplit cooperative-matrix arithmetic (emulation mode WA and RAW_NATIVE_RR_TC_SPLIT=0 on the RTX) must exceed 1e-2 in the same runs; the scalar perturbed-weights control must still fail",
+  "scalar_regression": "the scalar path is untouched; SwiftShader scalar parity on raw_hero must equal the previous value (3.17037e-4) to the printed digits, and the perturbed control must fail"
+ },
+ "predictions": {
+  "emulation": "PyTorch on the CPU, v4 best.pt, 64 frames of each test sequence, mode S (the split arithmetic): max at most 3e-3 on raw_hero, and within 1e-2 on iso_street and raw_hall; WA in the same run above 1e-2 on raw_hero",
+  "rtx_parity": "split cooperative-matrix path on raw_hero, 64 frames, validation layer on: max at most 5e-3, 0 validation errors",
+  "rtx_speed": "the twelve convolutions take 4.77 ms of the 11.8 ms frame (rr-h2-v4/rtx4090-speed/v4-r1-timing.json). The gather and the shared-memory traffic dominate, so three multiplies and a second shared tile cost less than 3x: the convolutions rise to between 5.5 and 9.5 ms, the frame to at most 16.5 ms. The 2.0 ms budget stays failed; this change buys parity, not speed."
+ },
+ "overflow": "fp16 holds at most 65,504. The emulation counts convolution inputs above it (they would round to infinity in either form); a nonzero count is reported, not hidden.",
+ "does_not_prove": "That PyTorch's fp32 accumulation order equals the tensor cores'; that other scenes stay under 65,504; anything about quality or the 2 ms budget.",
+ "results": {
+  "recorded": "2026-10-15 21:50Z",
+  "clock_note": "the 'written' field above says 20:10Z; the note was committed at 20:07Z (b22a950), before any run",
+  "emulation": "met: split max 1.8e-4 raw_hero, 4.2e-5 raw_hall, 4.1e-6 iso_street; 0 inputs above 65,504; the unsplit control 0.093 (fails). The earlier WA run gave 0.1085 with 6 PyTorch threads; this one used 3, and PyTorch's CPU accumulation order follows the thread count.",
+  "swiftshader": "scalar regression met: raw_hero 3.17037e-4 unchanged, perturbed control fails, 0 validation errors. The split shader cannot run there (no cooperative matrix).",
+  "rtx_parity": "FAIL. RTX 4090, raw_hero, 64 frames, validation on (21:38Z to 21:40Z): split max 0.154 at frame 54, pixel 64,578 (a firefly), mean 3.2e-6; the unsplit control 0.130 (fails as required), mean 6.4e-6; scalar 2.93e-3; perturbed control fails; 0 validation errors. The prediction (at most 5e-3) failed; the emulation did not model the hardware for the residual products.",
+  "rtx_speed": "met as predicted, and moot: convolutions 4.83 to 5.69 ms, frame 11.88 to 12.76 ms (three runs each, interleaved, spread under 0.02 ms)",
+  "diagnosis": "hypothesis written before its test (HW PROGRESS step 32): most weight residuals (about 1e-5) are fp16 subnormals and the tensor-core path flushes them. Emulation mode S with --ftz on raw_hero: max 0.113 at frame 30, (259, 133), a firefly pixel; mean 5.9e-6. Prediction (at least 0.05 at a firefly) met: the hypothesis is supported, not proven; accumulation truncation in the tensor cores is not modelled and may add to it.",
+  "next": "evidence/rr-tc-split2-note-2026-10-15.json"
+ }
+}
