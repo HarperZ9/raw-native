@@ -12,7 +12,7 @@
   "initialisation": "v4's best weights; head_e starts at zero with its blend bias at -8, so v5 starts within 1.8e-3 of v4 (checked on 4 validation frames)",
   "training": "fine-tuned from v4main/best.pt (v5main) and from v4shuffled/best.pt (v5shuffled, the shuffled-target control), 2,000 steps, peak learning rate 2e-4 with cosine decay to 1e-5, every other hyperparameter as committed, CPU at BelowNormal, survival pattern. A fine-tune instead of 6,000 steps from scratch is a declared cost choice."
  },
- "gate_before_any_test_metric": "v5 is evaluated on test only if (1) it passes amendment 5's learning check (best validation loss at least 10% below the identity model's) and (2) on validation its mean FLIP is below v4's on hall_b (0.103) and not above v4's on terrain_100 by more than 0.005 (0.0461 + 0.005), computed by scripts/rr_diag.py. If either fails, there is no v5 verdict and the result is recorded as negative.",
+ "gate_before_any_test_metric": "v5 is evaluated on test only if (1) it passes amendment 5's learning check (best validation loss at least 10% below the identity model's) and (2) on validation its mean FLIP is below v4's on hall_b (0.103) and not above v4's on terrain_100 by more than 0.005 (0.0461 + 0.005), computed by scripts/rr_diag_flipclass.py. If either fails, there is no v5 verdict and the result is recorded as negative.",
  "predictions": {
   "hall_b": "mean FLIP at most 0.090 (v4 0.103, SVGF 0.073)",
   "raw_hall_test": "if evaluated: FLIP below v4's 0.299",
@@ -25,6 +25,7 @@
   "gate": "FAIL: learning check passed (v5 0.01786; identity threshold 0.0453; v1 control fails), but validation FLIP on hall_b is 0.1047 against v4's 0.103 (terrain_100 0.0459 against 0.0461). No test metric was computed; no v5 verdict.",
   "prediction": "refuted as run: hall_b FLIP was predicted at most 0.090",
   "why_the_run_did_not_test_the_hypothesis": "after 2,000 steps the new scale's blend is still 0.0012 (diffuse) and 0.0018 (specular), its bias -8.06 and -8.02: the initialisation that made v5 start as v4 put the blend's sigmoid deep in saturation (input about -6.1, slope about 0.002), so it hardly learned. The footprint hypothesis is untested, not refuted. My design error.",
-  "evidence": "evidence/rr-h2-v5/"
+  "evidence": "evidence/rr-h2-v5/",
+  "tools": "the gate used scripts/rr_diag_flipclass.py as it stood on this branch, now scripts/rr_diag_flipclass.py (main's rr_diag.py, PR #135, is a different tool); the driver as run is evidence/rr-h2-v5/v5_driver.reconstructed.py (rebuilt from v5b_driver.py by renames after another session overwrote the original at 04:41Z; the chain had finished at 04:37Z)"
  }
 }

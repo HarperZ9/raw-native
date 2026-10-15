@@ -1,0 +1,9 @@
+2026-10-15T04:37:39Z H2 v5b driver start pid 29248 guard {"console_handler": true, "hidden_window": true}
+2026-10-15T04:37:39Z train v5bmain@0,v5bshuffled@0
+2026-10-15T05:38:40Z train exits {'v5bmain': 0, 'v5bshuffled': 0}
+2026-10-15T05:38:40Z train v5bmain@1686,v5bshuffled@1818
+2026-10-15T05:49:40Z train exits {'v5bmain': 0, 'v5bshuffled': 0}
+2026-10-15T05:50:10Z FLIP gate hall_b_p7
+2026-10-15T05:54:40Z FLIP gate terrain_100_p7
+2026-10-15T05:59:40Z gate: learning True, flip {'hall_b_p7': 0.10454742714245074, 'terrain_100_p7': 0.04545268927420066}, pass False
+2026-10-15T05:59:40Z H2V5B CHAIN DONE

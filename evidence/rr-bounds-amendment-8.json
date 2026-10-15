@@ -5,5 +5,13 @@
  "v5b": "v5 exactly as amendment 7 (architecture, fine-tune from v4's and v4shuffled's best weights, 2,000 steps, peak learning rate 2e-4), except head_e's blend bias starts at 0 (blend 0.5 at the start) instead of -8; the coarse kernels still start at zero (a uniform 5 x 5 box at 1/8 resolution). v5b therefore does not start as v4.",
  "gate": "amendment 7's gate unchanged: learning check, then validation FLIP below 0.103 on hall_b and at most 0.0511 on terrain_100, before any test metric",
  "predictions": "as amendment 7: hall_b FLIP at most 0.090; and the learned coarse blend averages above 0.1 on hall_b (if it does not, the scale is again unused and the run says nothing about the footprint)",
- "does_not_prove": "as amendment 7"
+ "does_not_prove": "as amendment 7",
+ "result": {
+  "recorded": "2026-10-15 06:00Z",
+  "gate": "FAIL: learning check passed (v5b 0.01782), validation FLIP hall_b 0.1045 against v4's 0.103, terrain_100 0.0455 against 0.0461. No test metric was computed; no v5b verdict.",
+  "blend": "the coarse blend started at 0.5 and training pushed it to a mean of 0.030 (diffuse) and 0.033 (specular) on a hall_b frame, max 0.18; the bias moved only to -0.03, so the head's weights turned it down. The prediction (mean above 0.1) fails.",
+  "reading": "with the coarse scale available and trainable, the network used little of it and validation FLIP did not improve: evidence against the footprint hypothesis under this loss. It agrees with the other diagnosis on record (evidence/rr-diag-raw-hall-2026-10-15.json, PR #135): on frame 0, with no history, v4 beats SVGF on raw_hall, and disabling history improves v4 (raw_hall 0.299 to 0.240, hall_b 0.103 to 0.095). The recurrence is the stronger lead.",
+  "tools": "the FLIP gate used scripts/rr_diag.py as it stood on this branch; it is renamed scripts/rr_diag_flipclass.py in this commit because main's scripts/rr_diag.py (PR #135) is a different tool",
+  "evidence": "evidence/rr-h2-v5b/ (gate, selection, FLIP by class, training logs, chain log, the driver)"
+ }
 }

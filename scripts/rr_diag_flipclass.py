@@ -12,7 +12,7 @@ is split over pixel classes, each pixel in exactly one class by this priority:
   other
 Reported per class: pixel share, mean FLIP of each method, and the class's share of the total excess.
 
-Usage: rr_diag.py MODEL.pt SEQ_DIR [--svgf-cache DIR] --out OUT.json [--maps DIR]
+Usage: rr_diag_flipclass.py MODEL.pt SEQ_DIR [--svgf-cache DIR] --out OUT.json [--maps DIR]
 """
 import argparse
 import os
