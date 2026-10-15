@@ -27,3 +27,19 @@ test("a flat field under mix-bayer4 uses each plan entry once per 4 x 4 tile", (
   const tile = []; for (let y = 0; y < 4; y++) for (let x = 0; x < 4; x++) tile.push(idx[y * w + x]);
   assert.deepEqual(tile.sort((a, c) => a - c), plan.slice().sort((a, c) => a - c));
 });
+// Shader lab 4 (2026-10-14) reported mix-bayer8 as identical to mix-bayer4 by construction. That
+// holds at strength 1 only: the plan index is floor(16 t), and an 8 x 8 Bayer value v8 = 4 v4 + k
+// gives floor(16 (v8 + 0.5) / 64) = v4. Below strength 1 the threshold is folded toward 0.5 before
+// the floor, the extra Bayer 8 levels survive, and the two modes differ. So mix-bayer8 stays a mode
+// of its own, not an alias.
+test("mix-bayer8 equals mix-bayer4 at strength 1 and differs below it", () => {
+  let seed = 12345; const r = () => (seed = (seed * 1103515245 + 12345) >>> 0) / 4294967296;
+  const w = 64, h = 48, diff = (a, b) => a.reduce((n, v, i) => n + (v !== b[i]), 0);
+  for (const palette of ["pico8", "ega", "gameboy", "cga"]) {
+    const b = new Uint8Array(w * h * 4);
+    for (let i = 0; i < b.length; i++) b[i] = (i & 3) === 3 ? 255 : Math.floor(r() * 256);
+    const run = (mode, strength) => ditherRef(b, w, h, { palette, mode, strength });
+    assert.equal(diff(run("mix-bayer8", 1), run("mix-bayer4", 1)), 0, `${palette}: strength 1, identical`);
+    assert.ok(diff(run("mix-bayer8", 0.9), run("mix-bayer4", 0.9)) > 0, `${palette}: strength 0.9, the modes differ`);
+  }
+});

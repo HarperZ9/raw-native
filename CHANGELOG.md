@@ -4,6 +4,13 @@ Each release's full notes, with downloads and evidence, are on the
 [releases page](https://github.com/HarperZ9/raw-native/releases). Dates are
 the day the release was published on GitHub, in UTC.
 
+## Unreleased
+
+- **`mix-bayer8` is not a duplicate of `mix-bayer4`.** Shader lab 4 reported it identical by
+  construction. That holds at strength 1 only; below it the modes differ, so `mix-bayer8` keeps its
+  behaviour and is not made an alias. `docs/shaders/README.md` said "the same indices" without the
+  condition and is corrected; `web/shaders/dither-mix.test.mjs` checks both cases on four palettes.
+
 ## 0.8.0 (2026-10-14)
 
 Upgrading from 0.7.0: see "Migration from 0.7.0" at the end of this section. Two changes can
