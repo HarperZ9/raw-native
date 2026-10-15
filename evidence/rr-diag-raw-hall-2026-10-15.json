@@ -1,7 +1,7 @@
 {
  "schema": "raw-native.evidence/1",
  "about": "HW H2 v4 on raw_hall: what it gets wrong against SVGF, diagnosed before any retraining (coordinator direction 2026-10-15). Exploration on test data of a finished verdict run; no metric of record changes and no model is selected from it.",
- "written": "2026-10-15 03:20Z",
+ "written": "2026-10-15 02:47Z (first committed as 03:20Z, ahead of the clock; corrected)",
  "tool": "scripts/rr_diag.py (per-pixel FLIP by class) and probes that disable history (all, diffuse only, specular only); files in evidence/rr-h2-v4/diag/",
  "findings": {
   "where": "raw_hall mean FLIP: v4 0.299, SVGF 0.174, SVGF plus TAA 0.172. Glossy and metallic pixels (2.5% of pixels) are not the problem: v4 beats SVGF there (glossy 0.092 against 0.947). The class split by history age and geometric edge does not discriminate on this scene: 64% and 56% of pixels fall in them, because the hall's small triangles change id between frames.",
