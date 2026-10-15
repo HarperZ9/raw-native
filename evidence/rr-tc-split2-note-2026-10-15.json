@@ -1,0 +1,17 @@
+{
+ "schema": "raw-native.evidence/1",
+ "about": "HW H2 tensor-core parity fix, round 3: the split of round 2 with its residuals scaled into fp16's normal range and their products in a separate accumulator (after Ootomo and Yokota, 2022). Follows evidence/rr-tc-split-note-2026-10-15.json; changes no bound.",
+ "written": "2026-10-15 21:51Z, after round 2's RTX failure and the flush-to-zero emulation, before the scaled emulation, the shader change or any run",
+ "change": "activation residual lo_a = fp16((v - hi) * 2^11), weight residual likewise; main accumulator += hi_a x hi_w; correction accumulator += hi_a x lo_w + lo_a x hi_w; output = main + correction x 2^-11, then the bias. Scaling keeps the residuals normal (|lo| at most |v|, so no new overflow); the separate accumulator keeps the small correction terms from being truncated against the large main sum.",
+ "bounds": {
+  "parity": "unchanged: at most 1e-2 on every raw_hero pixel on the RTX 4090, validation on",
+  "controls_that_must_fail": "the unsplit path (control_coop_unsplit) in the same run; the scalar perturbed control",
+  "scalar_regression": "SwiftShader scalar raw_hero 3.17037e-4 unchanged"
+ },
+ "predictions": {
+  "emulation": "mode SS with --ftz on raw_hero: max at most 1e-3 (if the flush is the whole cause, scaling removes it)",
+  "rtx_parity": "max at most 5e-3; if it lands between 5e-3 and 1e-2 the bound holds but the model of the hardware is incomplete, and that is recorded; above 1e-2 is a failure, and the next step is fp32 for the head layer only or the scalar path",
+  "rtx_speed": "the convolutions cost at most 0.3 ms more than round 2's 5.69 ms (two more accumulators, one more scale-add per tile)"
+ },
+ "does_not_prove": "that the tensor cores flush subnormals (the emulation agrees with it; the hardware's rounding is not documented to us); anything about other models or scenes"
+}
