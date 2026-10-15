@@ -23,6 +23,11 @@ the day the release was published on GitHub, in UTC.
   mask can lock to the output pixel grid (`mask.lock: "pixel"`, `mask.pitchPx`), on the CPU
   reference and in WGSL. Every CRT parity case is within one code on SwiftShader. Merged just
   before the 0.8.0 tag was cut and not in 0.8.0.
+- **Dither temporal stability, measured** (shader lab 4, #126). `tools/shaders/dither_temporal.mjs`
+  measures flicker for every dither mode on four sequences and two palettes, under a protocol
+  committed before it ran (`evidence/shaders-dither-temporal-runs.json`).
+- **Lab 4 blind panel results** (#128). The pixel template now uses `mix-bayer4`, which flickers less
+  on moving content under steady light; under a flickering light the mix modes flicker more.
 - **PNG reader and one-frame Motion stills** (#121): `tools/shaders/png.mjs` gains `readPng`, and
   `scripts/motion_still.py` renders one lossless frame on SwiftShader.
 - **Canvas 2D drawer for Motion** (#125): `web/motion/canvas2d.mjs` draws a Motion display list
