@@ -6,6 +6,12 @@ the day the release was published on GitHub, in UTC.
 
 ## Unreleased
 
+- **Denoiser inference: tensor-core path held to the parity bound** (HW H2). The cooperative-matrix convolutions rounded
+  both weights and activations to fp16, which missed the 1e-2 parity bound on specular fireflies (0.107 on the RTX 4090).
+  Each operand is now an fp16 high half plus an fp16 residual, multiplied as three tensor-core products with fp32
+  accumulation. In a PyTorch emulation of that arithmetic, v4's worst pixel is 1.8e-4 (raw_hero), against 0.093 for the
+  unsplit path, which every run now checks as a control that must fail. `RAW_NATIVE_RR_TC_SPLIT=0` selects the old path.
+  Prediction and bounds: `evidence/rr-tc-split-note-2026-10-15.json`.
 - **Denoiser inference: mean depth in two passes** (HW H2). The single-workgroup reduction took 2.34 ms at 1080p on the
   RTX 4090; two passes take 0.10 ms, and the v4 frame falls from 14.08 to 11.8 ms (prediction committed before: at most
   0.4 ms and 12.2 ms). Timing-only variants of the feature pass show its aux writes cost about 1.0 ms of 2.49. The 2.0 ms
