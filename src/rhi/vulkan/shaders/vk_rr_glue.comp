@@ -29,15 +29,25 @@ float sigm(float x) { return 1.0 / (1.0 + exp(-x)); }
 float hb(float z) { return pad1 >= 2u ? 8.0 * tanh(z / 8.0) : z; }
 
 #if MODE == 0
+// The mean depth in two passes (evidence/rr-speed-note-2026-10-15.json): first = 0, w workgroups each sum a fixed
+// strided share of the depth channel into o5[group]; first = 1, one workgroup sums the w partials (b1) in a fixed
+// order into o4[0], the mean, at least EPS. The single-workgroup form took 2.34 ms at 1080p on the RTX 4090.
 shared float part[256];
-void main() {   // b0: X (17 channels); o4[0]: the mean, at least EPS
+void main() {   // b0: X (C channels, 17 when 0); b1: partials; o4[0]: the mean; o5: partials
+    const uint xs = C == 0u ? 17u : C, lid = gl_LocalInvocationID.x;
     float s = 0.0;
-    const uint xs = C == 0u ? 17u : C;
-    for (uint p = gl_LocalInvocationID.x; p < W * H; p += 256u) s += b0[p * xs + 9u];
-    part[gl_LocalInvocationID.x] = s;
+    if (first == 0u) {
+        for (uint p = gl_WorkGroupID.x * 256u + lid; p < W * H; p += w * 256u) s += b0[p * xs + 9u];
+    } else {
+        for (uint g = lid; g < w; g += 256u) s += b1[g];
+    }
+    part[lid] = s;
     barrier();
-    for (uint k = 128u; k > 0u; k >>= 1u) { if (gl_LocalInvocationID.x < k) part[gl_LocalInvocationID.x] += part[gl_LocalInvocationID.x + k]; barrier(); }
-    if (gl_LocalInvocationID.x == 0u) o4[0] = max(part[0] / float(W * H), EPS);
+    for (uint k = 128u; k > 0u; k >>= 1u) { if (lid < k) part[lid] += part[lid + k]; barrier(); }
+    if (lid == 0u) {
+        if (first == 0u) o5[gl_WorkGroupID.x] = part[0];
+        else o4[0] = max(part[0] / float(W * H), EPS);
+    }
 }
 #elif MODE == 1
 // grid_sample(bilinear, padding border, align_corners False) of a C-channel plane at pixel position (px, py).
@@ -68,7 +78,9 @@ void featV4(uint p) {   // version 4: b0 X (32), b1 previous X (32), b2 state (6
     const vec3 dd = dif / (ad + e), ds = spe / (as_ + e);
     vec3 wd = vec3(0.0), ws = vec3(0.0);
     float valid = 0.0;
-    if (first == 0u) {
+    // C: a timing-only profile variant (evidence/rr-speed-note-2026-10-15.json): bit 1 skips the history warps, bit 2
+    // the aux writes. Parity runs always pass 0.
+    if (first == 0u && (C & 1u) == 0u) {
         const float px = b0[i + 12u], py = b0[i + 13u], ed = b0[i + 14u];
         wd = vec3(gs(0u, px, py, 0u, 6u), gs(0u, px, py, 1u, 6u), gs(0u, px, py, 2u, 6u));
         ws = vec3(gs(0u, px, py, 3u, 6u), gs(0u, px, py, 4u, 6u), gs(0u, px, py, 5u, 6u));
@@ -89,6 +101,7 @@ void featV4(uint p) {   // version 4: b0 X (32), b1 previous X (32), b2 state (6
     }
     o4[f + 15u] = log(1.0 + dep / b3[0]);
     o4[f + 16u] = b0[i + 15u]; o4[f + 17u] = b0[i + 16u]; o4[f + 24u] = valid;
+    if ((C & 2u) != 0u) return;
     const uint a = p * 22u;
     for (uint c = 0u; c < 3u; ++c) {
         o5[a + c] = dd[c]; o5[a + 3u + c] = ds[c]; o5[a + 6u + c] = ad[c]; o5[a + 9u + c] = as_[c];

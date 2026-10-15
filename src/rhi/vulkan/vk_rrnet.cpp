@@ -54,6 +54,7 @@ bool readFile(const std::string& p, std::vector<float>& v){
     return bool(f);
 }
 uint32_t down2(uint32_t n){ return (n - 1u) / 2u + 1u; }
+constexpr uint32_t kMeanGroups = 1024;   // pass 1 of the mean depth
 // Input channels a pixel: 17, or 32 with the split radiance (version 4).
 uint32_t xChannels(int version){ return version >= 4 ? 32u : 17u; }
 // One frame's input: fKKK_in.f32, with fKKK_split.f32 interleaved after it for version 4.
@@ -76,14 +77,15 @@ struct Net {
     Context& cx;
     uint32_t W, H, w1, h1, w2, h2, w3, h3;
     std::vector<Layer> L;
-    Buffer wf, wh, X[2], state, md, feat, aux, act[10], head, headq, acc, f, accq, q, fq, out;
+    Buffer wf, wh, X[2], state, md, feat, aux, act[10], head, headq, acc, f, accq, q, fq, out, part;
+    uint32_t featVariant{0};   // timing-only profile variant of the feature step (0 in every parity run)
     Pipeline conv, convPerturb, glue[6];
     bool coop{false};
     float eps{1e-3f};
     int version{1};
     explicit Net(Context& c) : cx(c) {}
     ~Net(){
-        for (Buffer* b : {&wf, &wh, &X[0], &X[1], &state, &md, &feat, &aux, &head, &headq, &acc, &f, &accq, &q, &fq, &out}) cx.destroy(*b);
+        for (Buffer* b : {&wf, &wh, &X[0], &X[1], &state, &md, &feat, &aux, &head, &headq, &acc, &f, &accq, &q, &fq, &out, &part}) cx.destroy(*b);
         for (Buffer& b : act) cx.destroy(b);
         cx.destroy(conv); cx.destroy(convPerturb);
         for (Pipeline& p : glue) cx.destroy(p);
@@ -113,7 +115,7 @@ bool Net::init(const std::vector<float>& weights, uint32_t width, uint32_t heigh
               cx.deviceBuffer(half.size() * 2 + 64, wh, err) && cx.upload(wh, half.data(), half.size() * 2, err) &&
               cx.deviceBuffer(n * xChannels(version) * 4, X[0], err) && cx.deviceBuffer(n * xChannels(version) * 4, X[1], err) &&
               cx.deviceBuffer(n * (version >= 4 ? 24 : 12), state, err) &&
-              cx.deviceBuffer(16, md, err) && cx.deviceBuffer(n * (version >= 4 ? 100 : 64), feat, err) && cx.deviceBuffer(n * (version >= 4 ? 88 : 40), aux, err) &&
+              cx.deviceBuffer(16, md, err) && cx.deviceBuffer(kMeanGroups * 4, part, err) && cx.deviceBuffer(n * (version >= 4 ? 100 : 64), feat, err) && cx.deviceBuffer(n * (version >= 4 ? 88 : 40), aux, err) &&
               cx.deviceBuffer(n * (version >= 4 ? 54 : 27) * 4, head, err) && cx.deviceBuffer(n2 * (version >= 4 ? 50 : 25) * 4, headq, err) && cx.deviceBuffer(n * 12, acc, err) &&
               cx.deviceBuffer(n * 12, f, err) && cx.deviceBuffer(n2 * 12, accq, err) && cx.deviceBuffer(n2 * 12, q, err) &&
               cx.deviceBuffer(n2 * 12, fq, err) && cx.deviceBuffer(n * 12, out, err);
@@ -140,8 +142,10 @@ std::vector<Context::Step> Net::frame(int xi, bool first, bool perturb){
         s.push_back({&glue[m], b, {a, bb, c, d, C, fl, e, (uint32_t)version}, groups, 1});
     };
     const uint32_t n = W * H, n2 = w2 * h2;
-    g(0, {&x, &md, &md, &md, &md}, W, H, 0, 0, xChannels(version), 0, 1);
-    g(1, {&x, &xp, &state, &md, &feat, &aux}, W, H, 0, 0, 0, first ? 1u : 0u, (n + 255) / 256);
+    // The mean depth in two passes (evidence/rr-speed-note-2026-10-15.json).
+    g(0, {&x, &md, &md, &md, &md, &part}, W, H, kMeanGroups, 0, xChannels(version), 0, kMeanGroups);
+    g(0, {&x, &part, &md, &md, &md, &md}, W, H, kMeanGroups, 0, xChannels(version), 1, 1);
+    g(1, {&x, &xp, &state, &md, &feat, &aux}, W, H, 0, 0, featVariant, first ? 1u : 0u, (n + 255) / 256);
     // conv(layer, src0, s0 size, C0, mode, src1, C1, in size, out size, stride, relu, dst)
     auto conv1 = [&](int li, Buffer* s0, uint32_t s0W, uint32_t s0H, uint32_t C0, uint32_t mode, Buffer* s1, uint32_t C1,
                      uint32_t inW, uint32_t inH, uint32_t outW, uint32_t outH, uint32_t stride, uint32_t relu, Buffer* d){
@@ -247,6 +251,7 @@ std::string timing(Context& cx, const std::vector<float>& weights, const RrArgs&
         std::memcpy(&x[((size_t)y * W + xx) * xc], &x0[((size_t)(y % sh) * sw + xx % sw) * xc], xc * 4);
     Net net(cx);
     net.eps = a.eps; net.version = a.version;
+    if (const char* v = std::getenv("RAW_NATIVE_RR_FEAT_VARIANT")) net.featVariant = (uint32_t)std::atoi(v);   // timing only
     if (!net.init(weights, W, H, coop, err) || !cx.upload(net.X[0], x.data(), x.size() * 4, err) || !cx.upload(net.X[1], x.data(), x.size() * 4, err)) return "";
     std::vector<double> ms;
     std::vector<std::vector<double>> per;   // per step, every timed frame (a breakdown for the 2 ms budget)
@@ -263,7 +268,7 @@ std::string timing(Context& cx, const std::vector<float>& weights, const RrArgs&
     std::string steps = "[";
     for (size_t k = 0; k < per.size(); ++k) steps += (k ? "," : "") + num(pct(per[k], 0.5));
     steps += "]";
-    return "{\"width\":1920,\"height\":1080,\"n\":" + std::to_string(ms.size()) + ",\"median_ms\":" + num(pct(ms, 0.5)) + ",\"p5_ms\":" +
+    return "{\"width\":1920,\"height\":1080,\"feat_variant\":" + std::to_string(net.featVariant) + ",\"n\":" + std::to_string(ms.size()) + ",\"median_ms\":" + num(pct(ms, 0.5)) + ",\"p5_ms\":" +
            num(pct(ms, 0.05)) + ",\"p95_ms\":" + num(pct(ms, 0.95)) + ",\"p99_ms\":" + num(pct(ms, 0.99)) + ",\"iqr_ms\":" +
            num(pct(ms, 0.75) - pct(ms, 0.25)) + ",\"step_median_ms\":" + steps +
            ",\"step_note\":\"steps in Net::frame order (mean depth, features, 12 convolutions, then the glue passes; v4 runs them once a signal); a timestamp after every step\"" +
