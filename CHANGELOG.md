@@ -28,6 +28,9 @@ the day the release was published on GitHub, in UTC.
   committed before it ran (`evidence/shaders-dither-temporal-runs.json`).
 - **Lab 4 blind panel results** (#128). The pixel template now uses `mix-bayer4`, which flickers less
   on moving content under steady light; under a flickering light the mix modes flicker more.
+- **M1 closes** with the Studio layer evidence: `evidence/m1-studio-layer-swiftshader.json`, from the
+  Finish layer check run against the live site (four looks within one code of the CPU references;
+  each shifted-reference control fails). Every M1 row in `docs/architecture/ROADMAP.md` now passes.
 - **PNG reader and one-frame Motion stills** (#121): `tools/shaders/png.mjs` gains `readPng`, and
   `scripts/motion_still.py` renders one lossless frame on SwiftShader.
 - **Canvas 2D drawer for Motion** (#125): `web/motion/canvas2d.mjs` draws a Motion display list
