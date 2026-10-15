@@ -1,0 +1,11 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/rr-inference-bounds.json",
+ "device": "NVIDIA GeForce RTX 4090",
+ "sequence": "raw_hero_p7",
+ "frames": 2,
+ "coop":{"ran":true,"split":true,"parity":{"max_abs":0.0211525,"p99_99_abs_upper":0.00103736,"mean_abs":8.94291e-06,"values":777600,"max_at_frame":1,"max_at_pixel":64082,"within_1e-2":false},"timing_1080p":{"width":1920,"height":1080,"feat_variant":0,"n":500,"median_ms":11.8402,"p5_ms":11.4146,"p95_ms":12.079,"p99_ms":12.1546,"iqr_ms":0.450192,"step_median_ms":[0.093728,0.002048,1.60461,0.93952,0.69792,0.283648,0.518144,0.157248,0.1888,0.103504,0.510976,0.283648,0.700496,1.21565,0.089088,0.371488,1.21459,0.026528,0.075808,0.02912,0.275808,0.342784,1.21214,0.026368,0.076288,0.029136,0.362176],"step_note":"steps in Net::frame order (mean depth, features, 12 convolutions, then the glue passes; v4 runs them once a signal); a timestamp after every step","within_2ms":false}},"control_coop_unsplit":{"parity":{"max_abs":0.0453377,"p99_99_abs_upper":0.00135899,"mean_abs":1.18866e-05,"values":777600,"max_at_frame":1,"max_at_pixel":64082,"within_1e-2":false},"fails":true},"scalar":{"ran":true,"parity":{"max_abs":0.000408471,"p99_99_abs_upper":0.001,"mean_abs":1.00223e-07,"values":777600,"max_at_frame":1,"max_at_pixel":51087,"within_1e-2":true},"timing_1080p":{"width":1920,"height":1080,"feat_variant":0,"n":500,"median_ms":65.4486,"p5_ms":65.051,"p95_ms":65.9076,"p99_ms":66.0649,"iqr_ms":0.340456,"step_median_ms":[0.093632,0.002048,1.60461,6.65475,5.95507,3.19405,6.51456,2.40253,2.9143,1.57082,6.40254,2.0872,6.17853,14.5633,0.831488,0.371664,1.21515,0.02656,0.07592,0.029152,0.27592,0.342528,1.2121,0.026432,0.07616,0.02912,0.36208],"step_note":"steps in Net::frame order (mean depth, features, 12 convolutions, then the glue passes; v4 runs them once a signal); a timestamp after every step","within_2ms":false}},
+ "control_perturbed":{"parity":{"max_abs":0.924664,"p99_99_abs_upper":0.0239437,"mean_abs":0.000103092,"values":777600,"max_at_frame":1,"max_at_pixel":64083,"within_1e-2":false},"fails":true},
+ "validation_errors": 0,
+ "pass": false
+}
