@@ -15,5 +15,12 @@
   "mean_depth_step": "at most 0.4 ms for both passes together on the RTX 4090 (one read of one channel of a 128-byte pixel: about 265 MB at about 1 TB/s, about 0.3 ms), so the frame falls by at least 1.9 ms, to at most 12.2 ms",
   "feature_variants": "if memory traffic dominates, C (no aux writes, 88 of 188 bytes a pixel written) saves about 0.5 to 1.0 ms and B less than 0.5 ms; if B saves more than C, the warps' scattered reads dominate. Recorded either way; a slimming change follows from the measurement, not before it."
  },
- "does_not_prove": "Anything about the 2.0 ms budget beyond these two steps; the rest of the frame (the twelve convolutions and the per-signal passes, about 9 ms) is untouched in this round."
+ "does_not_prove": "Anything about the 2.0 ms budget beyond these two steps; the rest of the frame (the twelve convolutions and the per-signal passes, about 9 ms) is untouched in this round.",
+ "software_checks": {
+  "when": "2026-10-15 02:20Z to 02:31Z, SwiftShader (Subzero), scalar path",
+  "parity_v4": "64 frames each: raw_hero 3.17037e-4 (before 3.16978e-4), iso_street 2.34735e-3 (unchanged), raw_hall 7.0008e-3 (before 6.99997e-3); every perturbed control fails; 0 validation errors",
+  "parity_v3_regression": "raw_hero on the earlier inputs: 0.112599 before and after (mean 7.22009e-6 against 7.21968e-6)",
+  "determinism": "two runs of 4 frames: every dumped aux and head buffer byte-identical",
+  "rtx": "queued: gpu/rtx_speed_job.py (engine open-failures), behind MMBU FT5 on D:/gpu.lock.d"
+ }
 }
