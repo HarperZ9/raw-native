@@ -10,6 +10,33 @@ the day the release was published on GitHub, in UTC.
   RTX 4090; two passes take 0.10 ms, and the v4 frame falls from 14.08 to 11.8 ms (prediction committed before: at most
   0.4 ms and 12.2 ms). Timing-only variants of the feature pass show its aux writes cost about 1.0 ms of 2.49. The 2.0 ms
   budget still fails. Parity on the scalar path is unchanged (2.9e-3).
+- **Frame and pass budgets** (roadmap M1, criterion 7). `docs/media/media.json` held only the smoke
+  wall-clock budget, so `tools/media/budget.py` could not fail a local GPU run: a stats file with a
+  900 ms p95 frame and a 40 ms draw pass read "within budget". The file now sets one frame at 60 Hz
+  (16.7 ms p95) for both media scenes and per-pass budgets (draw 4 ms; particles, bloom and finish
+  2 ms) on GPU adapters. The RTX 4090 record of 2026-10-10 is within them; a CI step checks that
+  record and an over-budget control, which must fail.
+- **M1 evidence from the RTX 4090** committed: `evidence/m1-post-passes-rtx4090.json` (every post
+  pass within one code of its CPU reference) and the board-reported energy of both media scenes
+  (`evidence/m1-energy-*-rtx4090.json`, 1.098 J a frame for what-it-draws; not a meter reading).
+- **CRT: pixel-locked mask and the `pvm-20-soft` preset** (shader lab 4, #122). The stripe or slot
+  mask can lock to the output pixel grid (`mask.lock: "pixel"`, `mask.pitchPx`), on the CPU
+  reference and in WGSL. Every CRT parity case is within one code on SwiftShader. Merged just
+  before the 0.8.0 tag was cut and not in 0.8.0.
+- **Dither temporal stability, measured** (shader lab 4, #126). `tools/shaders/dither_temporal.mjs`
+  measures flicker for every dither mode on four sequences and two palettes, under a protocol
+  committed before it ran (`evidence/shaders-dither-temporal-runs.json`).
+- **Lab 4 blind panel results** (#128). The pixel template now uses `mix-bayer4`, which flickers less
+  on moving content under steady light; under a flickering light the mix modes flicker more.
+- **M1 closes** with the Studio layer evidence: `evidence/m1-studio-layer-swiftshader.json`, from the
+  Finish layer check run against the live site (four looks within one code of the CPU references;
+  each shifted-reference control fails). Every M1 row in `docs/architecture/ROADMAP.md` now passes.
+- **PNG reader and one-frame Motion stills** (#121): `tools/shaders/png.mjs` gains `readPng`, and
+  `scripts/motion_still.py` renders one lossless frame on SwiftShader.
+- **Canvas 2D drawer for Motion** (#125): `web/motion/canvas2d.mjs` draws a Motion display list
+  without WebGPU, approximating blur and depth of field.
+- **Explainer guides** (#100): the three guides, their rig, worlds and render tools under
+  `templates/guides/` and `tools/guides/`.
 - **`mix-bayer8` is not a duplicate of `mix-bayer4`.** Shader lab 4 reported it identical by
   construction. That holds at strength 1 only; below it the modes differ, so `mix-bayer8` keeps its
   behaviour and is not made an alias. `docs/shaders/README.md` said "the same indices" without the

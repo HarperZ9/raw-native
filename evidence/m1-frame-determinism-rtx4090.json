@@ -1,0 +1,23 @@
+{
+ "scene": "ao-check",
+ "commit": "9dcd099ec847d81da5a605efaef12313c7da995e",
+ "adapter": {
+  "vendor": "nvidia",
+  "architecture": "lovelace",
+  "device": "",
+  "description": ""
+ },
+ "adapter_kind": "gpu",
+ "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/154.0.0.0 Safari/537.36",
+ "size": "1920x1080",
+ "frames": 1456,
+ "frames_second_run": 1456,
+ "identical": true,
+ "differing_frames": [],
+ "differing_count": 0,
+ "chain_sha256": [
+  "250d11813ffa283600dd8d80b683182b13cf080f886ccd9e04214cf463a00a9d",
+  "250d11813ffa283600dd8d80b683182b13cf080f886ccd9e04214cf463a00a9d"
+ ],
+ "does_not_prove": "Identity across two runs on this adapter and browser. Not across GPUs, drivers or browsers."
+}

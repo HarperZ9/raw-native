@@ -1,0 +1,26 @@
+{
+ "adapter": {
+  "vendor": "nvidia",
+  "architecture": "lovelace",
+  "device": "",
+  "description": ""
+ },
+ "host": {
+  "maxDiff": 1
+ },
+ "shared": {
+  "maxDiff": 1
+ },
+ "requestDevice": 1,
+ "sameDevice": true,
+ "timings": {
+  "composite": 0.006796076865874925,
+  "total": 0.006796076865874925
+ },
+ "fallback": {
+  "drawn": true,
+  "maxDiff": 2
+ },
+ "adapter_kind": "gpu",
+ "problems": []
+}

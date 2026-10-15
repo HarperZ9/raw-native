@@ -71,6 +71,21 @@ Exit criteria:
 
 Likely failure points: browser encoders that refuse 4K; hardware encoders that are not bit-exact (frame hashes come from raw readback, not from the encoded file); CI runners without timestamps.
 
+Status of the M1 criteria (2026-10-14). **M1 is closed: every row passes.** A row passes only when every check behind it passes on every backend it names. The RTX 4090 runs are of 2026-10-10 at commit 9dcd099.
+
+| Criterion | Status | Evidence |
+|---|---|---|
+| 1. Studio host | Passes. Host and shared consumer within 1/255 of the CPU composite on SwiftShader (CI) and the RTX 4090 (half-float accumulation rounded once, amended 2026-10-10); one `requestDevice` for two consumers; the no-WebGPU fallback draws | `tests/web/host_textures.py`, `evidence/m1-host-textures-rtx4090.json` |
+| 2. Colour | Passes on SwiftShader and the RTX 4090; the C++ reference within its bound of OCIO 2.6.0; no new dependency in the default build | `evidence/m1-colour-bounds.json`, `m1-colour-ocio.json`, `m1-colour-gpu-swiftshader.json`, `m1-colour-gpu-rtx4090.json` |
+| 3. HDR signal (amended 2026-10-10) | Passes in software on SwiftShader and the RTX 4090; the wrong-exponent control fails. It checks the signal, not the light a panel emits | `evidence/m1-hdr-signal-bounds.json`, `m1-hdr-signal-swiftshader.json`, `m1-hdr-signal-rtx.json` |
+| 4. Vector | Passes the committed corpus on SwiftShader and the RTX 4090 | `evidence/m1-vector-corpus.json`, `m1-vector-swiftshader.json`, `m1-vector-rtx4090.json` |
+| 5. Text and maths | Passes: 0 unsupported commands, 0 missing glyphs; a `\sum` control is reported and exits 1 | `evidence/m1-tex-coverage.json` |
+| 6. Media output | Passes: each scene's manifest records the machine's encoder probe; two runs of ao-check at 1920 x 1080 on the RTX 4090 give identical hashes for all 1,456 frames (and on SwiftShader in CI); the offline audio mix matches the `superstack.sound/1` vectors; the smoke job stays inside its wall-clock budget | `evidence/m1-frame-determinism-swiftshader.json`, `m1-frame-determinism-rtx4090.json`, `tools/media/audio_mix.py` with `tools/media/test_media.py`, CI `media-determinism` and `media-smoke` |
+| 7. Budgets | Passes (2026-10-14). Per-pass GPU ms are in the media stats where the adapter has timestamps. Frame and pass budgets were added to `docs/media/media.json` on 2026-10-14; before that the gate had no frame or pass budget to fail. The RTX 4090 record is within them and an over-budget control fails, in CI. Joules per frame for both scenes are board-reported, not metered | `tools/media/budget.py`, `tests/media/`, `evidence/m1-energy-ao-check-rtx4090.json`, `m1-energy-what-it-draws-rtx4090.json` |
+| 8. Records | Passes: ADR 0013 records this roadmap; `GAP-ANALYSIS.md` cites it | `docs/architecture/adr/0013-media-grade-roadmap.md` |
+| 9. Display chain | Passes. Engine side: every pass within one code of its CPU reference on SwiftShader and the RTX 4090. Studio layer (live 2026-10-15): the Finish layer on harperz9.github.io/studio.html runs the CRT (classic and PVM-20), the film print with grain and halation, the classic tube's chromatic aberration and the PICO-8 dither from raw-native 0.8.0. On the committed frame set, the layer's own frame function draws into a texture of the canvas format; read back, every channel is within one code of the CPU references for all four looks, and a shifted-reference control fails for each. Checked against the live site on SwiftShader at desktop and phone widths | `evidence/m1-post-passes-swiftshader.json`, `m1-post-passes-rtx4090.json`, `m1-studio-layer-swiftshader.json` |
+| 10. Palette and dither | Passes: the ordered modes bit-equal to `retro-dither.js`; the blue-noise generator vendored with its hash | `evidence/m1-post-passes-swiftshader.json`, `m1-post-passes-rtx4090.json` |
+
 ## M2: Assets and materials
 
 Scope: gaps 5, 6, 7 (base model, IBL, punctual lights) and the texture half of gap 8.

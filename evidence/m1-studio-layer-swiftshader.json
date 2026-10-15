@@ -1,0 +1,315 @@
+{
+ "site": "https://harperz9.github.io",
+ "browser": "chromium",
+ "views": {
+  "desktop": {
+   "gpu": true,
+   "rects": {
+    "canvas": [
+     528.53125,
+     78.59375,
+     618.9375,
+     618.9375
+    ],
+    "overlay": [
+     528.53125,
+     78.59375,
+     618.9375,
+     618.9375
+    ],
+    "hidden": false
+   },
+   "adapter": "swiftshader",
+   "noWebGPU": {
+    "state": "unavailable",
+    "lit": 0.5067765247506922
+   },
+   "checks": {
+    "classic": {
+     "finish": "classic",
+     "control": false,
+     "upload": "direct",
+     "passes": [
+      "crt-classic"
+     ],
+     "size": [
+      960,
+      600
+     ],
+     "frames": [
+      {
+       "name": "ramp",
+       "maxCode": 1,
+       "over": 0
+      },
+      {
+       "name": "edges",
+       "maxCode": 1,
+       "over": 0
+      },
+      {
+       "name": "noise",
+       "maxCode": 1,
+       "over": 0
+      },
+      {
+       "name": "bars",
+       "maxCode": 1,
+       "over": 0
+      }
+     ],
+     "maxCode": 1,
+     "over": 0,
+     "worst": {
+      "frame": "ramp",
+      "pixel": [
+       623,
+       13
+      ],
+      "channel": 2,
+      "gpu": 162,
+      "cpu": 161
+     },
+     "adapter": "swiftshader",
+     "pass": true,
+     "attempt": 1
+    },
+    "classic-control": {
+     "pass": false,
+     "over": 1517078,
+     "maxCode": 22,
+     "attempt": 1
+    },
+    "tube": {
+     "finish": "tube",
+     "control": false,
+     "upload": "direct",
+     "passes": [
+      "crt"
+     ],
+     "size": [
+      960,
+      600
+     ],
+     "frames": [
+      {
+       "name": "ramp",
+       "maxCode": 1,
+       "over": 0
+      },
+      {
+       "name": "edges",
+       "maxCode": 1,
+       "over": 0
+      },
+      {
+       "name": "noise",
+       "maxCode": 1,
+       "over": 0
+      },
+      {
+       "name": "bars",
+       "maxCode": 1,
+       "over": 0
+      }
+     ],
+     "maxCode": 1,
+     "over": 0,
+     "worst": {
+      "frame": "ramp",
+      "pixel": [
+       210,
+       0
+      ],
+      "channel": 2,
+      "gpu": 194,
+      "cpu": 193
+     },
+     "adapter": "swiftshader",
+     "pass": true,
+     "attempt": 1
+    },
+    "tube-control": {
+     "pass": false,
+     "over": 1526688,
+     "maxCode": 22,
+     "attempt": 1
+    },
+    "film": {
+     "finish": "film",
+     "control": false,
+     "upload": "direct",
+     "passes": [
+      "srgb-decode",
+      "film"
+     ],
+     "size": [
+      960,
+      600
+     ],
+     "frames": [
+      {
+       "name": "ramp",
+       "maxCode": 1,
+       "over": 0
+      },
+      {
+       "name": "edges",
+       "maxCode": 1,
+       "over": 0
+      },
+      {
+       "name": "noise",
+       "maxCode": 1,
+       "over": 0
+      },
+      {
+       "name": "bars",
+       "maxCode": 1,
+       "over": 0
+      }
+     ],
+     "maxCode": 1,
+     "over": 0,
+     "worst": {
+      "frame": "ramp",
+      "pixel": [
+       950,
+       8
+      ],
+      "channel": 0,
+      "gpu": 190,
+      "cpu": 191
+     },
+     "adapter": "swiftshader",
+     "pass": true,
+     "attempt": 1
+    },
+    "film-control": {
+     "pass": false,
+     "over": 1511494,
+     "maxCode": 21,
+     "attempt": 1
+    },
+    "dither": {
+     "finish": "dither",
+     "control": false,
+     "upload": "direct",
+     "passes": [
+      "dither"
+     ],
+     "size": [
+      960,
+      600
+     ],
+     "frames": [
+      {
+       "name": "ramp",
+       "maxCode": 0,
+       "over": 0
+      },
+      {
+       "name": "edges",
+       "maxCode": 0,
+       "over": 0
+      },
+      {
+       "name": "noise",
+       "maxCode": 0,
+       "over": 0
+      },
+      {
+       "name": "bars",
+       "maxCode": 0,
+       "over": 0
+      }
+     ],
+     "maxCode": 0,
+     "over": 0,
+     "worst": null,
+     "adapter": "swiftshader",
+     "pass": true,
+     "attempt": 1
+    },
+    "dither-control": {
+     "pass": false,
+     "over": 725750,
+     "maxCode": 255,
+     "attempt": 1
+    },
+    "classic-bytes": {
+     "finish": "classic",
+     "control": false,
+     "upload": "bytes",
+     "passes": [
+      "crt-classic"
+     ],
+     "size": [
+      960,
+      600
+     ],
+     "frames": [
+      {
+       "name": "ramp",
+       "maxCode": 1,
+       "over": 0
+      },
+      {
+       "name": "edges",
+       "maxCode": 1,
+       "over": 0
+      },
+      {
+       "name": "noise",
+       "maxCode": 1,
+       "over": 0
+      },
+      {
+       "name": "bars",
+       "maxCode": 1,
+       "over": 0
+      }
+     ],
+     "maxCode": 1,
+     "over": 0,
+     "worst": {
+      "frame": "ramp",
+      "pixel": [
+       623,
+       13
+      ],
+      "channel": 2,
+      "gpu": 162,
+      "cpu": 161
+     },
+     "adapter": "swiftshader",
+     "pass": true,
+     "attempt": 1
+    }
+   }
+  },
+  "phone": {
+   "gpu": true,
+   "rects": {
+    "canvas": [
+     29,
+     10,
+     332,
+     332
+    ],
+    "overlay": [
+     29,
+     10,
+     332,
+     332
+    ],
+    "hidden": false
+   },
+   "adapter": "swiftshader",
+   "noWebGPU": {
+    "state": "unavailable",
+    "lit": 0.5374782261576426
+   }
+  }
+ }
+}
