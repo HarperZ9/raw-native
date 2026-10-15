@@ -1,0 +1,28 @@
+{
+ "rule": "evidence/rr-bounds-amendment-5.json",
+ "identity_val_loss": 0.050314249470829964,
+ "threshold": 0.04528282452374697,
+ "candidates": {
+  "main": {
+   "control": "shuffled",
+   "val_loss": 0.050475601106882095,
+   "step": 1000,
+   "eps": 0.001,
+   "version": 1,
+   "qualifies": false
+  },
+  "v5bmain": {
+   "control": "v5bshuffled",
+   "val_loss": 0.01781979203224182,
+   "step": 1000,
+   "eps": 0.01,
+   "version": 6,
+   "qualifies": true
+  }
+ },
+ "control_must_fail": "main",
+ "control_fails": true,
+ "valid": true,
+ "chosen": "v5bmain",
+ "control": "v5bshuffled"
+}

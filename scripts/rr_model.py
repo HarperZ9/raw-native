@@ -20,6 +20,11 @@ Version 4 (evidence/rr-bounds-amendment-6.json) takes the path tracer's split ra
 input channels 17 to 31): diffuse and specular are demodulated by their own albedos, filtered by their
 own kernels and blends, remodulated and added to the primary emission; the history validity is a
 continuous function of the warped depth, so float rounding cannot flip it.
+
+Version 5 (evidence/rr-bounds-amendment-7.json) adds a third, coarser scale to v4: a 5 x 5 kernel a signal at 1/8
+resolution, predicted from the U-Net's coarsest features, nested into the quarter-resolution stage the way the
+quarter stage nests into the full one. Its head starts at zero with its blend near 0, so a v5 started from v4's
+weights computes v4.
 """
 import torch
 import torch.nn as nn
@@ -54,6 +59,14 @@ class RrNet(nn.Module):
         self.d0 = conv(24, 24)
         self.head = nn.Conv2d(24 + cin, heads * (K * K + 2), 1)
         self.head_q = nn.Conv2d(48, heads * K * K, 1)
+        if version >= 5:   # the 1/8 scale (v5; v6 = v5b, amendment 8, differs only in the blend's start): a kernel and a blend for each signal (amendment 7)
+            self.head_e = nn.Conv2d(64, 2 * K * K + 2, 1)
+            nn.init.zeros_(self.head_e.weight)
+            nn.init.zeros_(self.head_e.bias)
+            if version == 5:   # amendment 7: the blend starts at sigmoid(8 tanh(-1)) = 0.002 (it then barely learned)
+                with torch.no_grad():
+                    self.head_e.bias[2 * K * K:] = -8.0
+            # version 6 (v5b, amendment 8): the blend bias starts at 0, a blend of 0.5
 
     def forward(self, feat):
         h, w = feat.shape[-2:]
@@ -63,6 +76,8 @@ class RrNet(nn.Module):
         u1 = self.d1(self.m1(torch.cat([F.interpolate(x2, size=x1.shape[-2:], mode="nearest"), x1], 1)))
         u0 = self.d0(self.m0(torch.cat([F.interpolate(u1, size=x0.shape[-2:], mode="nearest"), x0], 1)))
         full = self.head(torch.cat([F.interpolate(u0, size=(h, w), mode="bilinear", align_corners=False), feat], 1))
+        if self.version >= 5:
+            return full, self.head_q(u1), self.head_e(x2)
         if self.version >= 4:
             return full, self.head_q(u1)
         return full[:, :K * K], full[:, K * K:K * K + 1], full[:, K * K + 1:], self.head_q(u1)
@@ -170,10 +185,28 @@ def filter_signal(acc, k_full, k_q, wb):
     return (f - wb * up(F.adaptive_avg_pool2d(f, (hq, wq))) + wb * up(q)).clamp_min(0)
 
 
+def filter_signal_v5(acc, k_full, k_q, wb, k_e, wb2):
+    """v4's two scales with a third at the 1/8 kernels' size, nested: q2 = q - wb2 up(down(q)) + wb2 up(e)."""
+    h, w = acc.shape[-2:]
+    hq, wq = k_q.shape[-2:]
+    he, we = k_e.shape[-2:]
+    acc_q = F.adaptive_avg_pool2d(acc, (hq, wq))
+    q = apply_kernel(acc_q, k_q)
+    e = apply_kernel(F.adaptive_avg_pool2d(acc, (he, we)), k_e)
+    wb2 = torch.sigmoid(F.interpolate(wb2, size=(hq, wq), mode="bilinear", align_corners=False))
+    upq = lambda t: F.interpolate(t, size=(hq, wq), mode="bilinear", align_corners=False)
+    q = q - wb2 * upq(F.adaptive_avg_pool2d(q, (he, we))) + wb2 * upq(e)
+    f = apply_kernel(acc, k_full)
+    wb = torch.sigmoid(wb)
+    up = lambda t: F.interpolate(t, size=(h, w), mode="bilinear", align_corners=False)
+    return (f - wb * up(F.adaptive_avg_pool2d(f, (hq, wq))) + wb * up(q)).clamp_min(0)
+
+
 def step_v4(net, x, prev_out, prev_depth):
     feat, demod, albs, emi, wprev, valid = features_v4(x, prev_out, prev_depth, net.eps, getattr(net, "hard_validity", False))
-    full, k_q = net(feat)
-    full, k_q = 8 * torch.tanh(full / 8), 8 * torch.tanh(k_q / 8)
+    heads = net(feat)
+    full, k_q = 8 * torch.tanh(heads[0] / 8), 8 * torch.tanh(heads[1] / 8)
+    k_e = 8 * torch.tanh(heads[2] / 8) if net.version >= 5 else None
     kk = K * K
     outs = []
     for i in range(2):   # 0 diffuse, 1 specular
@@ -181,7 +214,11 @@ def step_v4(net, x, prev_out, prev_depth):
         a = torch.sigmoid(full[:, 2 * kk + i:2 * kk + i + 1]) * valid
         wb = full[:, 2 * kk + 2 + i:2 * kk + 3 + i]
         acc = a * wprev[:, 3 * i:3 * i + 3] + (1 - a) * demod[:, 3 * i:3 * i + 3]
-        outs.append(filter_signal(acc, k_full, k_q[:, i * kk:(i + 1) * kk], wb))
+        if k_e is not None:
+            outs.append(filter_signal_v5(acc, k_full, k_q[:, i * kk:(i + 1) * kk], wb, k_e[:, i * kk:(i + 1) * kk],
+                                         k_e[:, 2 * kk + i:2 * kk + i + 1]))
+        else:
+            outs.append(filter_signal(acc, k_full, k_q[:, i * kk:(i + 1) * kk], wb))
     out = torch.cat(outs, 1)
     return outs[0] * albs[:, 0:3] + outs[1] * albs[:, 3:6] + emi, out
 

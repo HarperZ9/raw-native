@@ -1,0 +1,53 @@
+{
+ "torch": "2.11.0+cu128",
+ "cuda": "12.8",
+ "device": "cpu",
+ "gpu": "",
+ "shuffle_targets": true,
+ "train_sequences": [
+  "builtin_p1",
+  "debris_0_p1",
+  "debris_1_p1",
+  "dense_block_p1",
+  "dense_block_p2",
+  "retro_room_p1",
+  "retro_room_p2",
+  "terrain_0_p1",
+  "terrain_1_p1"
+ ],
+ "val_sequences": [
+  "hall_b_p7",
+  "terrain_100_p7"
+ ],
+ "hyper": {
+  "B": 4,
+  "T": 6,
+  "crop": 128,
+  "lr": 0.001,
+  "lr_min": 1e-05,
+  "wd": 0.0001,
+  "seed": 1,
+  "steps": 2000,
+  "temporal_weight": 0.25,
+  "eps": 0.01,
+  "version": 6,
+  "peak_lr": 0.0002,
+  "init": "H:/rr-train/v4shuffled/best.pt"
+ },
+ "log": [
+  {
+   "step": 1000,
+   "train_loss": 0.1957087218761444,
+   "val_loss": 0.0375742232427001,
+   "minutes": 32.042451779047646
+  },
+  {
+   "step": 2000,
+   "train_loss": 0.2252773493528366,
+   "val_loss": 0.03974955715239048,
+   "minutes": 5.960850814978282
+  }
+ ],
+ "best_val_loss": 0.0375742232427001,
+ "parameters": 148170
+}
