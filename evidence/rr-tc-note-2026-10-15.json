@@ -1,0 +1,24 @@
+{
+ "schema": "raw-native.evidence/1",
+ "about": "HW H2 tensor-core parity diagnosis (coordinator direction 2026-10-15): why the cooperative-matrix path misses 1e-2 (RTX 4090, v4, raw_hero: max 0.107, mean 6.4e-6, 99.99th percentile 1.8e-3, worst at frame 48, pixel 64,580) while the scalar path passes (2.9e-3).",
+ "written": "2026-10-15 02:33Z, before the emulation is run",
+ "what_the_path_does": "vk_rr_conv.comp with COOP=1 rounds every im2col activation to fp16 (As[e] = float16_t(v)) and every weight to fp16 (the [Kpad][CoutPad] half table), multiplies on tensor cores with fp32 accumulation, and adds the fp32 bias. The scalar path is fp32 throughout.",
+ "test": "PyTorch on the CPU, v4's weights, raw_hero, 64 frames, the recurrent sequence run the same way as the reference, in four arithmetic modes for all twelve convolutions: F (fp32, the reference), W (weights rounded to fp16, inputs fp32), A (every convolution's input rounded to fp16, weights fp32), WA (both: the cooperative-matrix arithmetic). Output: max and mean |mode - F| and the location of the max; then for the mode that reproduces the miss, per-layer ablation (only one layer rounded) and the per-pixel character of the worst pixels (depth, validity, demodulated magnitudes, specular share).",
+ "predictions": {
+  "hypothesis_weights": "if fp16 weights cause it: W reproduces a max near 0.1 and A stays near the scalar path's level (about 3e-3)",
+  "hypothesis_activations": "if fp16 activations cause it: A reproduces it and W stays small",
+  "agreement_with_the_gpu": "WA should give a max of the same order as 0.107 with its worst pixels on a few frames; the RTX's worst location (frame 48, pixel 64,580) among WA's worst 100 pixels counts as agreement; otherwise the emulation does not explain the GPU and the hypothesis stays open"
+ },
+ "bounds": "no inference bound changes; this note decides which fix to try, and a fix gets its own note before its run",
+ "does_not_prove": "That PyTorch's emulation reproduces the tensor cores' accumulation order; fp32 accumulation order differences alone are at the scalar path's level.",
+ "results": {
+  "when": "2026-10-15 02:40Z to 03:30Z, PyTorch on the CPU, raw_hero, v4 best.pt (evidence/rr-tc-2026-10-15/)",
+  "agreement_with_the_gpu": "WA (the tensor-core arithmetic) gives max 0.1085 at frame 48, pixel 64,580, the RTX's own worst location, against the RTX's 0.1067: the emulation explains the hardware.",
+  "hypothesis": "REFUTED as stated. fp16 weights alone (W) give 0.137 and fp16 inputs alone (A) give 0.104, on the same pixels; neither alone is the cause.",
+  "which_pixels": "single-sample specular fireflies: at frame 48 (260, 134) one sample's specular radiance is 1,087 (a sun glint on a glossy dielectric, roughness 0.05) beside neighbours near 0.1; demodulated by its specular albedo (0.04 + 0.01) it is about 21,700, and the 5 x 5 kernel weighs it down to about 105 (reference 110). Frames 30, 54 and 55 show the same pattern at x 257 to 260, y 133 to 134.",
+  "why": "the bound is absolute (1e-2) and the value is about 110, which asks for about 1e-4 relative precision; fp16 holds about 1e-3, and any fp16 rounding feeding that kernel moves the result by about 0.1.",
+  "per_layer": "rounding one layer at a time (frames 0 to 48): the full-resolution head (layer 10, the kernel logits and blends) 0.123 with 39 pixels over 1e-2; layer 1 0.041; layer 9 0.030; layers 8, 3, 0 just over 1e-2; the rest at or under 0.009.",
+  "mixed_precision": "WA with layer 10 in fp32: 0.051 (25 pixels over); with 10, 1, 9 in fp32: 0.034 (12); with 10, 1, 9, 8, 0, 3 in fp32: 0.034 (4). No small mixed-precision change meets 1e-2; fp32 throughout (the scalar path, 2.9e-3 on the RTX) does.",
+  "decision": "No change to the tensor-core path in this round. Options for the next: run the network in fp32 (meets parity, costs speed), or a model change that keeps the kernels away from firefly-scale values (for example filtering a range-compressed signal and expanding it after), which also bears on quality. The bound is not loosened."
+ }
+}
