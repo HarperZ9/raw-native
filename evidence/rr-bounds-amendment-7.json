@@ -1,0 +1,32 @@
+{
+ "schema": "raw-native.evidence/1",
+ "amends": "evidence/rr-bounds.json and amendments 1 to 6: adds a validation scene, fixes a validation camera fault, adds model v5 and a recomputed selection; the verdict criteria, metrics, baselines, hyperparameters and test split are unchanged",
+ "written": "2026-10-15 04:40Z, before any frame of the new scene is rendered for the dataset and before any v5 training step. Declared: v4's test verdict (amendment 6) and the raw_hall diagnosis (evidence/rr-diag-raw-hall-2026-10-15.json, which used test data of that finished run) were seen before this amendment; nothing below is chosen from new test data, and test is read once, at the end.",
+ "coordinator_direction": "2026-10-15: build a raw_hall-like validation sequence (dense, indirectly lit interior) from our own assets, CPU-rendered, with the leakage check; amendment with the written prediction and bounds before any training step; train v5 with the brightness-matching term plus its shuffled-target control on the CPU (BelowNormal, checkpoints, watchdog, logon task); select on validation only; evaluate on test once; fix the hall_b camera fault.",
+ "validation_scene": {
+  "name": "cloister (src/tools/rr_scenes.cpp), new, assigned whole to validation",
+  "build": "a closed interior 24 x 9 x 12, every surface tessellated at about 0.25 units (walls, floor, ceiling, 16 columns of 24 x 36 segments, nine ceiling ribs), four high windows in one long wall, eight small hanging lamps (emissive cubes, radiance (70, 66, 58)); materials by the seeded M3 family draw of the HW scenes. Written for this purpose; it shares no geometry or generator with raw-hall (owned_hall.cpp).",
+  "why": "raw_hall's input energy is mostly emission from its lanterns and their bounces (an observation of the scene's inputs, not of any metric); the cloister is lamp-lit and indirect for the same reason, with its own lamps, colour and layout",
+  "sequence": "path 7, 32 frames (the selection reads frames 0 to 31), 480 x 270, inputs by rr-render --input-only --cpu, references by rr-render --cpu at 4,096 spp in chunks of 1,024 (12 threads, BelowNormal)",
+  "leakage": "rr_manifest.py guard on the dataset with the new sequence must pass, and its injected-test-frame control must fail"
+ },
+ "hall_b_fix": {
+  "fault": "frames 56 to 61 of hall_b_p7: the camera path passes inside closed geometry; the references are black (mean about 2e-6)",
+  "rule": "on hall_b only: a camera whose 32 x 18, 4 spp path-traced probe receives no light at all steps back along its view direction 0.1 at a time (at most 60 steps) until it does (rr::clearCamera)",
+  "check": "on all 64 frames the rule changes the camera of exactly frames 56 to 61 (and frame 62's previous camera); every other camera is byte-identical in the frame JSON",
+  "rerender": "frames 56 to 61 of H:/rr-dataset-v4/val/hall_b_p7: inputs and references at hall_b's 8,192 spp; frame 62: input only; the old hard links are removed first so H:/rr-dataset is untouched"
+ },
+ "v5": {
+  "model": "v4 unchanged (architecture, split demodulation, continuous validity, epsilon 0.01), version 5",
+  "change": "one loss term: 0.1 x |mean luminance of the output - mean luminance of the reference| / (mean luminance of the reference + 0.01) over each training crop and frame (rr_train.py --energy-weight 0.1); nothing else changes",
+  "training": "v5main and v5shuffled (shuffled-target control), 6,000 steps each, the committed hyperparameters, on the CPU at BelowNormal with 6 threads each, the survival pattern"
+ },
+ "selection": "amendment 5's rule, every loss recomputed on the new validation split (hall_b with the fix, terrain_100, cloister; frames 0 to 31) with amendment 5's loss (no energy term), by rr_select.py --recompute: candidates v4main and v5main; v1 must fail the learning check; the qualifying candidate with the lowest recomputed loss is chosen and is the only model evaluated on test",
+ "prediction": {
+  "validation": "v5 on cloister: tone-mapped luminance bias within 0.02 of SVGF's, and linear energy (output over reference) at or above 0.95 on every frame",
+  "test_raw_hall": "if v5 is chosen: raw_hall tone-mapped bias within 0.02 of SVGF's, energy at or above 0.95 on every frame, mean FLIP at or below 0.24 (v4's no-history level); it may still not beat SVGF's 0.174",
+  "verdict": "rr-bounds.json's success criteria are unchanged; the prediction is a stated expectation, not a bound"
+ },
+ "bounds": "unchanged from rr-bounds.json and amendment 6 (quality, temporal, ghosting, the conditioning check at 1e-2 with its control, the shuffled and zero-motion controls)",
+ "does_not_prove": "That the energy term is the right remedy if it helps; that the cloister represents raw_hall beyond the lighting character; anything on scenes not run."
+}

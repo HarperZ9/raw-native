@@ -45,6 +45,9 @@ EXIT_RESUME = 75
 from rr_model import RrNet, step, warp  # noqa: E402
 
 B, T, CROP, LR, LR_MIN, WD, SEED, TEMP_W = 4, 6, 128, 1e-3, 1e-5, 1e-4, 1, 0.25
+# Amendment 7 (v5): weight of the energy term, |mean luminance of the output - of the reference| / (mean of the
+# reference + 0.01) over each crop; 0 (versions 1 to 4) leaves the loss as it was.
+ENERGY_W = 0.0
 
 
 def load_split(root, split, max_frames=None):
@@ -58,8 +61,17 @@ def load_split(root, split, max_frames=None):
     return seqs
 
 
-def lossfn(out, ref, prev_out, prev_ref, pos, valid):
+def energy_term(out, ref):
+    lum = lambda c: 0.2126 * c[:, 0] + 0.7152 * c[:, 1] + 0.0722 * c[:, 2]
+    mo, mr = lum(out).flatten(1).mean(1), lum(ref).flatten(1).mean(1)
+    return ((mo - mr).abs() / (mr + 0.01)).mean()
+
+
+def lossfn(out, ref, prev_out, prev_ref, pos, valid, energy_w=None):
     l = F.l1_loss(torch.log1p(out), torch.log1p(ref))
+    w = ENERGY_W if energy_w is None else energy_w
+    if w > 0:
+        l = l + w * energy_term(out, ref)
     if prev_out is None:
         return l
     do = torch.log1p(out) - torch.log1p(warp(prev_out, pos).clamp_min(0))
@@ -200,7 +212,10 @@ def main():
     ap.add_argument("--version", type=int, default=1)
     ap.add_argument("--lock", default="")
     ap.add_argument("--session-minutes", type=float, default=8.0)
+    ap.add_argument("--energy-weight", type=float, default=0.0)
     a = ap.parse_args()
+    global ENERGY_W
+    ENERGY_W = a.energy_weight
     dev = torch.device("cpu" if a.cpu else "cuda")
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -247,7 +262,7 @@ def main():
             "gpu": torch.cuda.get_device_name(0) if dev.type == "cuda" else "", "shuffle_targets": a.shuffle_targets,
             "train_sequences": [s["name"] for s in train], "val_sequences": [s["name"] for s in val],
             "hyper": {"B": B, "T": T, "crop": CROP, "lr": LR, "lr_min": LR_MIN, "wd": WD, "seed": SEED, "steps": a.steps,
-                      "temporal_weight": TEMP_W, "eps": a.eps, "version": a.version}, "log": log, "best_val_loss": best,
+                      "temporal_weight": TEMP_W, "energy_weight": ENERGY_W, "eps": a.eps, "version": a.version}, "log": log, "best_val_loss": best,
             "parameters": sum(p.numel() for p in net.parameters())}
     (out / "train.json").write_text(json.dumps(meta, indent=1))
     return 0
