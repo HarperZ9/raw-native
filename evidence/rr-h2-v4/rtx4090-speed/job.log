@@ -1,0 +1,11 @@
+2026-10-15T02:32:23Z start pid 55028; waiting for a free lock (MMBU has priority)
+2026-10-15T05:34:31Z lock taken engine-open-failures-55028-1792042471
+2026-10-15T05:38:23Z v4parity exit 1 (0 pass, 1 a failed verdict; see the JSON)
+2026-10-15T05:39:13Z v4timing1 exit 1 (0 pass, 1 a failed verdict; see the JSON)
+2026-10-15T05:41:30Z v4timing2 exit 1 (0 pass, 1 a failed verdict; see the JSON)
+2026-10-15T05:43:48Z v4timing3 exit 1 (0 pass, 1 a failed verdict; see the JSON)
+2026-10-15T05:45:39Z v4feat1 exit 1 (0 pass, 1 a failed verdict; see the JSON)
+2026-10-15T05:46:25Z v4feat2 exit 1 (0 pass, 1 a failed verdict; see the JSON)
+2026-10-15T05:47:32Z v4feat3 exit 1 (0 pass, 1 a failed verdict; see the JSON)
+2026-10-15T05:47:32Z lock released
+2026-10-15T05:47:32Z done; task removed

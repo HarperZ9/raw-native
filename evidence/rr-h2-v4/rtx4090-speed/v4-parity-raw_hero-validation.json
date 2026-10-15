@@ -1,0 +1,11 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/rr-inference-bounds.json",
+ "device": "NVIDIA GeForce RTX 4090",
+ "sequence": "raw_hero_p7",
+ "frames": 64,
+ "coop":{"ran":true,"parity":{"max_abs":0.129669,"p99_99_abs_upper":0.00180173,"mean_abs":6.41959e-06,"values":24883200,"max_at_frame":48,"max_at_pixel":64580,"within_1e-2":false}},"scalar":{"ran":true,"parity":{"max_abs":0.00292778,"p99_99_abs_upper":0.001,"mean_abs":1.95004e-07,"values":24883200,"max_at_frame":8,"max_at_pixel":64086,"within_1e-2":true}},
+ "control_perturbed":{"parity":{"max_abs":4.32419,"p99_99_abs_upper":0.0369906,"mean_abs":0.000118474,"values":24883200,"max_at_frame":54,"max_at_pixel":64578,"within_1e-2":false},"fails":true},
+ "validation_errors": 0,
+ "pass": false
+}
