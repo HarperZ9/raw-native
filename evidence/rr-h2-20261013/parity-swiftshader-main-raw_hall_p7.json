@@ -1,0 +1,11 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/rr-inference-bounds.json",
+ "device": "SwiftShader Device (Subzero)",
+ "sequence": "raw_hall_p7",
+ "frames": 64,
+ "coop":{"ran":false,"reason":"cooperative matrix not offered or disabled"},"scalar":{"ran":true,"parity":{"max_abs":6.05845e-28,"p99_99_abs_upper":0.001,"mean_abs":4.42568e-35,"values":24883200,"max_at_frame":0,"max_at_pixel":1,"within_1e-2":true}},
+ "control_perturbed":{"parity":{"max_abs":2.8463e-23,"p99_99_abs_upper":0.001,"mean_abs":2.09679e-30,"values":24883200,"max_at_frame":0,"max_at_pixel":1,"within_1e-2":true},"fails":false},
+ "validation_errors": 0,
+ "pass": false
+}
