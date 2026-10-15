@@ -1,0 +1,13 @@
+{
+ "rule": "evidence/rr-bounds-amendment-3.json selection_rule",
+ "val_loss": {
+  "main": 0.050475601106882095,
+  "v2main": 0.01815870776772499
+ },
+ "float32_float64_gap": {
+  "main": 4.415373808797085e-06,
+  "v2main": 0.5082126305070936
+ },
+ "chosen": "main",
+ "control": "shuffled"
+}

@@ -1,0 +1,75 @@
+{
+ "torch": "2.11.0+cu128",
+ "cuda": "12.8",
+ "device": "cpu",
+ "gpu": "",
+ "shuffle_targets": false,
+ "train_sequences": [
+  "builtin_p1",
+  "debris_0_p1",
+  "debris_1_p1",
+  "dense_block_p1",
+  "dense_block_p2",
+  "retro_room_p1",
+  "retro_room_p2",
+  "terrain_0_p1",
+  "terrain_1_p1"
+ ],
+ "val_sequences": [
+  "hall_b_p7",
+  "terrain_100_p7"
+ ],
+ "hyper": {
+  "B": 4,
+  "T": 6,
+  "crop": 128,
+  "lr": 0.001,
+  "lr_min": 1e-05,
+  "wd": 0.0001,
+  "seed": 1,
+  "steps": 6000,
+  "temporal_weight": 0.25,
+  "eps": 0.05,
+  "version": 2
+ },
+ "log": [
+  {
+   "step": 1000,
+   "train_loss": 0.02575867809355259,
+   "val_loss": 0.02200961485505104,
+   "minutes": 15.442134181658426
+  },
+  {
+   "step": 2000,
+   "train_loss": 0.03821774572134018,
+   "val_loss": 0.019342870451509953,
+   "minutes": 15.536325641473134
+  },
+  {
+   "step": 3000,
+   "train_loss": 0.04006968066096306,
+   "val_loss": 0.018448169343173504,
+   "minutes": 31.909744226932524
+  },
+  {
+   "step": 4000,
+   "train_loss": 0.021710120141506195,
+   "val_loss": 0.01832415070384741,
+   "minutes": 48.83285663127899
+  },
+  {
+   "step": 5000,
+   "train_loss": 0.03274812549352646,
+   "val_loss": 0.018170793540775776,
+   "minutes": 4.204941948254903
+  },
+  {
+   "step": 6000,
+   "train_loss": 0.03456215187907219,
+   "val_loss": 0.01815870776772499,
+   "minutes": 20.552544713020325
+  }
+ ],
+ "best_val_loss": 0.01815870776772499,
+ "parameters": 140028
+}
