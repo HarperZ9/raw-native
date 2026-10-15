@@ -9,9 +9,9 @@
 //   5 COMBINE    out = max(f - wb up(fq) + wb up(q), 0), bilinear up; remodulated output and state
 // Buffers are float32, channels last. Unused bindings are bound to any buffer.
 // Version 4 (evidence/rr-bounds-amendment-6.json, pad1 >= 4): X has 32 channels (the input and the split
-// radiance); FEAT writes 25 features and an aux of 22 floats (demodulated diffuse 0:3 and specular 3:6, their
-// albedos 6:9 and 9:12, warped histories 12:15 and 15:18, validity 18, emission 19:22) and reads a 6-channel
-// state; the history validity is continuous; ACC and COMBINE run once a signal (first = 0 diffuse, 1 specular)
+// radiance); FEAT writes 25 features and an aux of 7 floats (warped histories 0:3 and 3:6, validity 6; slimmed
+// from 22 by evidence/rr-aux-slim-note-2026-10-15.json) and reads a 6-channel state; ACC recomputes the
+// demodulated radiance from X and COMBINE reads the albedos and emission from X; the history validity is continuous; ACC and COMBINE run once a signal (first = 0 diffuse, 1 specular)
 // on a 54-channel head (kernels 0:25 and 25:50, blends 50 and 51, scale blends 52 and 53); KAPPLY reads its
 // logits from offset `first`; COMBINE for the specular signal adds to the diffuse result and the emission.
 layout(local_size_x = 256) in;
@@ -68,11 +68,10 @@ float gs(uint which, float px, float py, uint c, uint ch) {
     }
     return v00 * (1.0 - lx) * (1.0 - ly) + v01 * lx * (1.0 - ly) + v10 * (1.0 - lx) * ly + v11 * lx * ly;
 }
-void featV4(uint p) {   // version 4: b0 X (32), b1 previous X (32), b2 state (6), b3 mean depth; o4 features (25), o5 aux (22)
+void featV4(uint p) {   // version 4: b0 X (32), b1 previous X (32), b2 state (6), b3 mean depth; o4 features (25), o5 aux (7)
     const uint i = p * 32u;
     const float dep = b0[i + 9u];
     const vec3 dif = vec3(b0[i + 17u], b0[i + 18u], b0[i + 19u]), spe = vec3(b0[i + 20u], b0[i + 21u], b0[i + 22u]);
-    const vec3 emi = vec3(b0[i + 23u], b0[i + 24u], b0[i + 25u]);
     const vec3 ad = vec3(b0[i + 26u], b0[i + 27u], b0[i + 28u]), as_ = vec3(b0[i + 29u], b0[i + 30u], b0[i + 31u]);
     const float e = uintBitsToFloat(pad0);
     const vec3 dd = dif / (ad + e), ds = spe / (as_ + e);
@@ -102,12 +101,9 @@ void featV4(uint p) {   // version 4: b0 X (32), b1 previous X (32), b2 state (6
     o4[f + 15u] = log(1.0 + dep / b3[0]);
     o4[f + 16u] = b0[i + 15u]; o4[f + 17u] = b0[i + 16u]; o4[f + 24u] = valid;
     if ((C & 2u) != 0u) return;
-    const uint a = p * 22u;
-    for (uint c = 0u; c < 3u; ++c) {
-        o5[a + c] = dd[c]; o5[a + 3u + c] = ds[c]; o5[a + 6u + c] = ad[c]; o5[a + 9u + c] = as_[c];
-        o5[a + 12u + c] = wd[c]; o5[a + 15u + c] = ws[c]; o5[a + 19u + c] = emi[c];
-    }
-    o5[a + 18u] = valid;
+    const uint a = p * 7u;   // the slim aux (evidence/rr-aux-slim-note-2026-10-15.json): only what needs the warps
+    for (uint c = 0u; c < 3u; ++c) { o5[a + c] = wd[c]; o5[a + 3u + c] = ws[c]; }
+    o5[a + 6u] = valid;
 }
 void main() {   // b0 X, b1 previous X, b2 state, b3 mean depth; o4 features (16), o5 aux (demod 3, albm 3, warped 3, valid 1)
     const uint p = gl_GlobalInvocationID.x;
@@ -144,12 +140,16 @@ void main() {   // b0 X, b1 previous X, b2 state, b3 mean depth; o4 features (16
     o5[a + 6u] = wprev.x; o5[a + 7u] = wprev.y; o5[a + 8u] = wprev.z; o5[a + 9u] = valid;
 }
 #elif MODE == 2
-void main() {   // b0 head (27; v4 54), b1 aux (10; v4 22); o4 acc (3); v4: signal `first`
+void main() {   // b0 head (27; v4 54), b1 aux (10; v4 7), v4: b2 X (32); o4 acc (3); v4: signal `first`
     const uint p = gl_GlobalInvocationID.x;
     if (p >= W * H) return;
-    if (pad1 >= 4u) {
-        const float a4 = sigm(hb(b0[p * 54u + 50u + first])) * b1[p * 22u + 18u];
-        for (uint c = 0u; c < 3u; ++c) o4[p * 3u + c] = a4 * b1[p * 22u + 12u + 3u * first + c] + (1.0 - a4) * b1[p * 22u + 3u * first + c];
+    if (pad1 >= 4u) {   // the demodulated radiance is recomputed from X with the feature step's arithmetic
+        const uint i = p * 32u, s = 3u * first;
+        const vec3 rad = vec3(b2[i + 17u + s], b2[i + 18u + s], b2[i + 19u + s]);
+        const vec3 alb = vec3(b2[i + 26u + s], b2[i + 27u + s], b2[i + 28u + s]);
+        const vec3 dm = rad / (alb + uintBitsToFloat(pad0));
+        const float a4 = sigm(hb(b0[p * 54u + 50u + first])) * b1[p * 7u + 6u];
+        for (uint c = 0u; c < 3u; ++c) o4[p * 3u + c] = a4 * b1[p * 7u + s + c] + (1.0 - a4) * dm[c];
         return;
     }
     const float a = sigm(hb(b0[p * 27u + 25u])) * b1[p * 10u + 9u];
@@ -197,7 +197,7 @@ vec3 up(uint which, uint x, uint y) {   // bilinear, align_corners False, from w
     for (int k = 0; k < 4; ++k) v[k] = which == 0u ? vec3(b1[q[k]], b1[q[k] + 1u], b1[q[k] + 2u]) : vec3(b2[q[k]], b2[q[k] + 1u], b2[q[k] + 2u]);
     return (1.0 - ly) * ((1.0 - lx) * v[0] + lx * v[1]) + ly * ((1.0 - lx) * v[2] + lx * v[3]);
 }
-void main() {   // b0 f (3, full), b1 fq (3, w x h), b2 q (3, w x h), b3 head (27); o5 aux (albm); o4 remodulated out (3), o6 state (3)
+void main() {   // b0 f (3, full), b1 fq (3, w x h), b2 q (3, w x h), b3 head (27; v4 54); o5 aux (albm; v4 X); o4 remodulated out (3), o6 state (3)
     const uint p = gl_GlobalInvocationID.x;
     if (p >= W * H) return;
     const uint x = p % W, y = p / W;
@@ -207,8 +207,8 @@ void main() {   // b0 f (3, full), b1 fq (3, w x h), b2 q (3, w x h), b3 head (2
         const vec3 o4v = max(f4 - wb4 * up(0u, x, y) + wb4 * up(1u, x, y), vec3(0.0));
         for (uint c = 0u; c < 3u; ++c) {
             o6[p * 6u + 3u * first + c] = o4v[c];
-            const float r = o4v[c] * o5[p * 22u + 6u + 3u * first + c];
-            o4[p * 3u + c] = first == 0u ? r : o4[p * 3u + c] + r + o5[p * 22u + 19u + c];
+            const float r = o4v[c] * o5[p * 32u + 26u + 3u * first + c];   // v4: o5 is X (albedos 26:32, emission 23:26)
+            o4[p * 3u + c] = first == 0u ? r : o4[p * 3u + c] + r + o5[p * 32u + 23u + c];
         }
         return;
     }

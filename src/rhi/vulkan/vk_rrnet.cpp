@@ -115,7 +115,7 @@ bool Net::init(const std::vector<float>& weights, uint32_t width, uint32_t heigh
               cx.deviceBuffer(half.size() * 2 + 64, wh, err) && cx.upload(wh, half.data(), half.size() * 2, err) &&
               cx.deviceBuffer(n * xChannels(version) * 4, X[0], err) && cx.deviceBuffer(n * xChannels(version) * 4, X[1], err) &&
               cx.deviceBuffer(n * (version >= 4 ? 24 : 12), state, err) &&
-              cx.deviceBuffer(16, md, err) && cx.deviceBuffer(kMeanGroups * 4, part, err) && cx.deviceBuffer(n * (version >= 4 ? 100 : 64), feat, err) && cx.deviceBuffer(n * (version >= 4 ? 88 : 40), aux, err) &&
+              cx.deviceBuffer(16, md, err) && cx.deviceBuffer(kMeanGroups * 4, part, err) && cx.deviceBuffer(n * (version >= 4 ? 100 : 64), feat, err) && cx.deviceBuffer(n * (version >= 4 ? 28 : 40), aux, err) &&
               cx.deviceBuffer(n * (version >= 4 ? 54 : 27) * 4, head, err) && cx.deviceBuffer(n2 * (version >= 4 ? 50 : 25) * 4, headq, err) && cx.deviceBuffer(n * 12, acc, err) &&
               cx.deviceBuffer(n * 12, f, err) && cx.deviceBuffer(n2 * 12, accq, err) && cx.deviceBuffer(n2 * 12, q, err) &&
               cx.deviceBuffer(n2 * 12, fq, err) && cx.deviceBuffer(n * 12, out, err);
@@ -171,12 +171,12 @@ std::vector<Context::Step> Net::frame(int xi, bool first, bool perturb){
     conv1(11, &act[7], w2, h2, 48, 0, nullptr, 0, w2, h2, w2, h2, 1, 0, &headq);
     if (version >= 4){   // each signal: blend, full and quarter kernels, pool, combine (amendment 6)
         for (uint32_t i = 0; i < 2; ++i){
-            g(2, {&head, &aux, &md, &md, &acc}, W, H, 0, 0, 0, i, (n + 255) / 256);
+            g(2, {&head, &aux, &x, &md, &acc}, W, H, 0, 0, 0, i, (n + 255) / 256);   // v4 slim aux: demodulates from X
             g(3, {&acc, &head, &md, &md, &f}, 0, 0, W, H, 54, 25 * i, (n + 255) / 256);
             g(4, {&acc, &md, &md, &md, &accq}, W, H, w2, h2, 0, 0, (n2 + 255) / 256);
             g(3, {&accq, &headq, &md, &md, &q}, 0, 0, w2, h2, 50, 25 * i, (n2 + 255) / 256);
             g(4, {&f, &md, &md, &md, &fq}, W, H, w2, h2, 0, 0, (n2 + 255) / 256);
-            g(5, {&f, &fq, &q, &head, &out, &aux, &state}, W, H, w2, h2, 0, i, (n + 255) / 256);
+            g(5, {&f, &fq, &q, &head, &out, &x, &state}, W, H, w2, h2, 0, i, (n + 255) / 256);   // albedos, emission from X
         }
         return s;
     }
@@ -211,7 +211,7 @@ bool parity(Context& cx, const std::vector<float>& weights, const RrArgs& a, boo
         if (!cx.upload(net.X[xi], x.data(), x.size() * 4, err) || !cx.runBatch(net.frame(xi, k == 0, perturb), nullptr, err) ||
             !cx.download(net.out, outv.data(), outv.size() * 4, err)) return false;
         if (const char* dump = std::getenv("RAW_NATIVE_RR_DUMP")){   // diagnosis: aux and head of every frame
-            std::vector<float> aux((size_t)W * H * (a.version >= 4 ? 22 : 10)), head((size_t)W * H * (a.version >= 4 ? 54 : 27));
+            std::vector<float> aux((size_t)W * H * (a.version >= 4 ? 7 : 10)), head((size_t)W * H * (a.version >= 4 ? 54 : 27));
             cx.download(net.aux, aux.data(), aux.size() * 4, err); cx.download(net.head, head.data(), head.size() * 4, err);
             std::ofstream(std::string(dump) + stem + "_aux.f32", std::ios::binary).write(reinterpret_cast<const char*>(aux.data()), (std::streamsize)(aux.size() * 4));
             std::ofstream(std::string(dump) + stem + "_head.f32", std::ios::binary).write(reinterpret_cast<const char*>(head.data()), (std::streamsize)(head.size() * 4));
