@@ -102,8 +102,9 @@ void main() {
         MA al;
         coopMatLoad(al, Al, 0, 16, gl_CooperativeMatrixLayoutRowMajor);
         const uint lo = kpad * CoutPad;   // the weight residual table follows the high table
+        const ACC zero = ACC(0.0);   // round 4: each K step multiplies into zero; its tile is added in fp32 outside the multiply-add
         MB bl;
-#define TILE(acc, cor, col) coopMatLoad(b, wh, wOff + kb * CoutPad + col, CoutPad, gl_CooperativeMatrixLayoutRowMajor); coopMatLoad(bl, wh, wOff + lo + kb * CoutPad + col, CoutPad, gl_CooperativeMatrixLayoutRowMajor); cor = coopMatMulAdd(al, b, cor); cor = coopMatMulAdd(a, bl, cor); acc = coopMatMulAdd(a, b, acc);
+#define TILE(acc, cor, col) coopMatLoad(b, wh, wOff + kb * CoutPad + col, CoutPad, gl_CooperativeMatrixLayoutRowMajor); coopMatLoad(bl, wh, wOff + lo + kb * CoutPad + col, CoutPad, gl_CooperativeMatrixLayoutRowMajor); { ACC tc = coopMatMulAdd(al, b, zero); tc = coopMatMulAdd(a, bl, tc); cor = cor + tc; ACC tm = coopMatMulAdd(a, b, zero); acc = acc + tm; }
 #else
 #define TILE(acc, cor, col) coopMatLoad(b, wh, wOff + kb * CoutPad + col, CoutPad, gl_CooperativeMatrixLayoutRowMajor); acc = coopMatMulAdd(a, b, acc);
 #endif
