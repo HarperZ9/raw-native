@@ -31,5 +31,18 @@
   },
   "inference_v3_swiftshader": "scalar path, 64 frames each: max 0.44, 5.19, 0.11 (iso_street, raw_hall, raw_hero); 99.99th percentile 0.028, 0.016, 0.0062; mean 2.8e-5, 1.8e-5, 7.2e-6; bound 1e-2 missed; perturbed control fails on all three. PyTorch float32 against float64: 0.44, 5.34, 0.24 (condition-v3main-test.json). Reflectance demodulation cut raw_hall's float32 sensitivity from 68 (v2) to 5.3.",
   "rtx": "queued (gpu/rtx_rrnet_job.py, model v3) to run after MMBU FT3 finishes, as the coordinator decided"
+ },
+ "v4_amendment_6": {
+  "date": "2026-10-14 19:19Z to 2026-10-15 00:20Z",
+  "dataset": "H:/rr-dataset-v4 (evidence/rr-dataset-v4.json): the 608 inputs re-rendered on the CPU with split radiance, references unchanged",
+  "training": "v4main and v4shuffled, 6,000 steps each on the CPU (BelowNormal, 6 threads each, a saturated machine shared with other jobs). v4main best validation 0.01778 at step 4,000; v4shuffled best 0.0392. Logs: evidence/rr-h2-v4/train-*.json.",
+  "selection": "valid: identity 0.0503, threshold 0.0453; v1 (control) 0.0505 fails as required; v4 qualifies and is chosen (evidence/rr-h2-v4/selection-a6.json). For context, v3's best validation loss was 0.0149 on the earlier inputs: v4 is not better on this loss.",
+  "conditioning": "PASS. float32 against float64, max over every frame: validation 1.55e-3, test 7.0e-3 (raw_hall), 5.5e-3 (iso_street), 1.3e-3 (raw_hero); bound 1e-2. The control (the same weights with v3's threshold validity) gives 0.31 on validation and fails as required. v3 on test, for comparison: 5.34 on raw_hall.",
+  "gpu_parity_swiftshader": "PASS on all three test sequences, 64 frames, scalar path against PyTorch float32: raw_hero 3.2e-4, iso_street 2.3e-3, raw_hall 7.0e-3 (bound 1e-2); the perturbed-weights control fails on each (4.33, 0.024, 0.455); 0 validation errors. v3 on SwiftShader: iso_street 0.44, raw_hall 5.19, raw_hero 0.11.",
+  "gpu_parity_rtx_and_budget": "NOT RUN: the RTX 4090 is held by MMBU; queued (engine open-failures gpu/rtx_eof_job.py) with the per-step timing breakdown.",
+  "verdict": "FAIL overall (evidence/rr-eval-test-v4-a6-verdict.json). Against SVGF, paired bootstrap over 192 frames: tone-mapped PSNR +5.65 dB [5.12, 6.21] (better), FLIP +0.041 [0.032, 0.050] (worse), so quality fails on FLIP. Against SVGF plus TAA: temporal instability +0.0049 [0.0044, 0.0054] (worse), ghosting +0.0007 [-0.0020, 0.0034] (fails the interval rule). Controls behave: shuffled-target fails quality, zero motion fails ghosting. Most of the FLIP and ghosting deficit is raw_hall (v4 FLIP 0.299 against SVGF 0.174).",
+  "against_v3": "v3 (amendment 5, earlier inputs): tone-mapped PSNR +5.95 dB, FLIP +0.031, temporal +0.0056, ghosting -0.0040 (passed). v4 is slightly worse on FLIP and ghosting, slightly better on temporal instability, and far better conditioned.",
+  "baseline_note": "SVGF's linear PSNR is dominated by rare huge values (raw_hero -6.3 dB, raw_hall 1.7 dB, identical to the amendment-5 run), inferred (not checked) to come from its albedo demodulation with epsilon 1e-3 on near-black hits. The committed baseline is unchanged; the linear-PSNR gap of +27 dB flatters ours and the tone-mapped figures are the meaningful ones.",
+  "flip": "checked (evidence/rr-flip-check.json)"
  }
 }

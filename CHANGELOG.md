@@ -6,6 +6,13 @@ the day the release was published on GitHub, in UTC.
 
 ## 0.8.0 (2026-10-14)
 
+- **Ray reconstruction v4 and the conditioning fix** (HW H2, amendment 6). v4 demodulates the path tracer's diffuse
+  and specular radiance by their own albedos, filters them separately and adds the primary emission back. Its history
+  validity is continuous: v3's threshold tests flipped under float rounding, the recurrence carried the flips, and
+  float32 against float64 differed by up to 5.3. v4's gap is at most 7.0e-3 (bound 1e-2), and our Vulkan kernels
+  match PyTorch within 7.0e-3 on all three test sequences on SwiftShader. Verdict: FAIL. Tone-mapped PSNR is 5.65 dB
+  better than SVGF, but FLIP is worse, and temporal instability and ghosting are worse than SVGF plus TAA, mostly on
+  raw_hall. `rr-render --input-only`; a per-kernel timing breakdown for the 2 ms budget. The RTX checks are queued.
 Upgrading from 0.7.0: see "Migration from 0.7.0" at the end of this section. Two changes can
 break code written against 0.7.0: API snapshot 3 (two `SsrParams` defaults) and the removal of the
 0.5 include paths.
