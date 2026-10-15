@@ -225,6 +225,14 @@
    "checks": "P5d",
    "result": "Radiance, albedo, normal, depth, motion, variance and triangle byte-identical on retro_room and iso_street at 160 x 120, 16 spp, seed 3: 14 of 14 files on the CPU (gated) and 14 of 14 on WARP (reported).",
    "evidence": "evidence/rt-r2-p5d-v1-unchanged.json"
+  },
+  {
+   "run": 27,
+   "when": "2026-10-15 00:41Z to 00:49Z, D:/gpu.lock.d taken by token engine-open-failures-36852-1792024871 and released",
+   "backend": "D3D12 on the RTX 4090, gpu_rt_pt_parity built at 97eff44",
+   "checks": "P1 to P5",
+   "result": "P5a, P5b and P5c within on the RTX and every P5 control outside; P3 identical with the v2 outputs; P4 iso_street keeps its one recorded albedo pixel; tests/gpu/pt_gate.py passes.",
+   "evidence": "evidence/rt-r2-p5-d3d12-rtx4090.json"
   }
  ]
 }

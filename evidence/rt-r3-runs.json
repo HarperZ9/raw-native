@@ -125,6 +125,14 @@
    "checks": "M2 to M7 (method note 7)",
    "result": "M2 on the bulb passes on both: WARP t within 52,884 of 52,951 hits (99.873%, bound 99.5%), normals 52,705 (99.535%, bound 99%); SwiftShader 13,224 of 13,240 (99.879%), normals 13,177 (99.524%). Garden, menger_tower and arcade unchanged and within; the smooth-k control still fails; M4 and the rest pass. The WARP numbers match the CPU float32 replica with a float64 refinement (99.873%, 52,707 normals) to 2 pixels. tests/gpu/sdf_gate.py now gates the bulb; it fails the earlier evidence (rt-r3-note56-d3d12-warp.json, rt-r3-sdf-gpu-d3d12-warp.json) as a control. No RTX run (the GPU is held by MMBU).",
    "evidence": "evidence/rt-r3-note7-d3d12-warp.json; evidence/rt-r3-note7-webgpu-swiftshader.json"
+  },
+  {
+   "run": 15,
+   "when": "2026-10-15 00:41Z to 00:49Z, D:/gpu.lock.d taken by token engine-open-failures-36852-1792024871 and released",
+   "backend": "D3D12 on the RTX 4090, raw_native_cli built at ced7f44 (PR #118, merged as d99b639)",
+   "checks": "M2 to M7, method note 7",
+   "result": "PASS. Bulb t within 52,888 of 52,951 hits (99.881%, bound 99.5%), normals 52,702 (99.530%, bound 99%); garden, menger_tower and arcade within; the smooth-k control fails. The bulb now passes on WARP, SwiftShader and the RTX 4090.",
+   "evidence": "evidence/rt-r3-note7-d3d12-rtx4090.json"
   }
  ]
 }

@@ -112,6 +112,14 @@
    "checks": "method note 3: div_rn; C4 and C5",
    "result": "The C++ mirror of div_rn equals C++ division on 67,108,864 random and 2,704 edge operand pairs (0 differing); the no-sticky control differs on 51,995. WARP: gpu_swr_parity JSON byte-identical to the run before the change, swr-render 0 differing pixels on 6 frames, hybrid parity passes. SwiftShader: swr parity identical to a control build without div_rn, hybrid parity passes. Finding on the way: the first form of div_rn (early returns, constant loop counts) made SwiftShader's setup pipeline compile time grow faster than the number of call sites (1 call 0.17 s, 2 calls 3.4 s, 4 calls over 240 s); a single-exit form with select and loop counts from the uniform compiles in 0.4 s with all 8 calls. The RTX 4090 run, the actual test of the inferred cause of run 6, is queued behind D:/gpu.lock.d.",
    "evidence": "evidence/rt-r1-note3-div-mirror.json; evidence/rt-r1-note3-d3d12-warp.json; evidence/rt-r1-note3-webgpu-swiftshader.json"
+  },
+  {
+   "run": 14,
+   "when": "2026-10-15 00:41Z to 00:49Z, D:/gpu.lock.d taken by token engine-open-failures-36852-1792024871 and released",
+   "backend": "D3D12 on the RTX 4090, gpu_swr_parity built at 97eff44 (PR #120, merged as 2942857)",
+   "checks": "C4 and C5, method note 3 (div_rn)",
+   "result": "PASS. Every one of 45 cases has 0 differing setup slots, 0 depth values over 1e-6 and 0 UV values outside the bound: retro_room 0 of 635 valid slots differ in every mode (run 6: 335), iso_street 0 of 1,436 (run 6: 518), clip_stress 0 of 23 (run 6: 10), and clip_stress affine passes C4 (run 6: 1.14x the UV bound). Controls fail as required (14,831; 1; 2). The prediction of method note 3 holds: approximate fp32 division was the cause of run 6's failure.",
+   "evidence": "evidence/rt-r1-note3-d3d12-rtx4090.json"
   }
  ]
 }
