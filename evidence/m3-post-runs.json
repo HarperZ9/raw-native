@@ -188,6 +188,13 @@
    "what": "GPU parity of the method-note-14 WGSL SSR pass and GTAO and TAA on five scenes",
    "result": "Passes on D3D12 WARP and WebGPU SwiftShader: SSR differs on 0, 13, 0, 3 and 2 pixels (WARP) and 0, 13, 0, 3 and 3 (SwiftShader) of about 65,536 per scene (bound 0.1%); every control fails; tests/gpu/post_gate.py passes on both. No RTX run (the GPU is held by another job).",
    "evidence": "evidence/m3-post-ssr-occl-d3d12-warp.json; evidence/m3-post-ssr-occl-webgpu-swiftshader.json"
+  },
+  {
+   "run": "rtx-notes13-14-2026-10-15",
+   "date": "2026-10-15",
+   "what": "GPU parity of GTAO, SSR (method note 14) and TAA on the RTX 4090, five scenes, raw_native_cli at #117's head a0fceee; 2026-10-15 00:41Z to 00:49Z, D:/gpu.lock.d taken by token engine-open-failures-36852-1792024871 and released",
+   "result": "PASS: SSR differs on 1, 10, 0, 3 and 4 pixels of about 65,536 (bound 0.1%); GTAO and TAA within; every control fails.",
+   "evidence": "evidence/m3-post-notes13-14-d3d12-rtx4090.json"
   }
  ],
  "status": "No open GTAO or SSR failure. Passing from 2026-10-14: SSR on raw-hall nave (method note 14, occlusion-aware march), GTAO and SSR on raw-hall gallery (method note 13, near-plane clipping). Passing since 2026-10-11: TAA RMSE under the pan (0.442 against 0.5) and TAA GPU parity (0 pixels on WARP, SwiftShader and the RTX 4090). Passing: GTAO and SSR on every scene, TAA ghosting, GTAO and SSR GPU parity on WARP and SwiftShader on five scenes, every control. The nave SSR margins are thin (0.53 points over the hit bound, 0.45 under the false-hit bound)."

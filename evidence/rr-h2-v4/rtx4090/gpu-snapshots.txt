@@ -1,0 +1,48 @@
+== r1-before 2026-10-15T00:41:11Z
+utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+6 %, 210 MHz, 16.19 W, 36, 1602 MiB
+== r1-after 2026-10-15T00:41:15Z
+utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+0 %, 2610 MHz, 61.21 W, 39, 1602 MiB
+== bulb-before 2026-10-15T00:41:15Z
+utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+0 %, 2610 MHz, 61.21 W, 39, 1602 MiB
+== bulb-after 2026-10-15T00:41:34Z
+utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+1 %, 2760 MHz, 39.56 W, 39, 1602 MiB
+== post-before 2026-10-15T00:41:34Z
+utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+0 %, 2760 MHz, 60.91 W, 39, 1602 MiB
+== post-after 2026-10-15T00:41:36Z
+utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+2 %, 2610 MHz, 60.49 W, 39, 1602 MiB
+== pt-before 2026-10-15T00:41:36Z
+utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+0 %, 2610 MHz, 58.76 W, 39, 1602 MiB
+== pt-after 2026-10-15T00:41:39Z
+utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+1 %, 2760 MHz, 75.02 W, 40, 1612 MiB
+== v4parity-before 2026-10-15T00:41:39Z
+utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+1 %, 2760 MHz, 75.02 W, 40, 1612 MiB
+== v4parity-after 2026-10-15T00:44:16Z
+utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+5 %, 270 MHz, 17.89 W, 36, 1606 MiB
+== v4timing1-before 2026-10-15T00:44:16Z
+utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+4 %, 270 MHz, 17.89 W, 36, 1606 MiB
+== v4timing1-after 2026-10-15T00:45:30Z
+utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+95 %, 210 MHz, 18.07 W, 40, 1615 MiB
+== v4timing2-before 2026-10-15T00:46:30Z
+utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+4 %, 210 MHz, 16.43 W, 36, 1628 MiB
+== v4timing2-after 2026-10-15T00:47:27Z
+utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+42 %, 345 MHz, 35.02 W, 44, 1628 MiB
+== v4timing3-before 2026-10-15T00:48:27Z
+utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+4 %, 210 MHz, 16.40 W, 37, 1628 MiB
+== v4timing3-after 2026-10-15T00:49:18Z
+utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+0 %, 705 MHz, 58.08 W, 45, 1611 MiB
