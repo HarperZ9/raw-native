@@ -1,0 +1,22 @@
+{
+ "schema": "raw-native.evidence/1",
+ "about": "HW H2 v4 on raw_hall: what it gets wrong against SVGF, diagnosed before any retraining (coordinator direction 2026-10-15). Exploration on test data of a finished verdict run; no metric of record changes and no model is selected from it.",
+ "written": "2026-10-15 03:20Z",
+ "tool": "scripts/rr_diag.py (per-pixel FLIP by class) and probes that disable history (all, diffuse only, specular only); files in evidence/rr-h2-v4/diag/",
+ "findings": {
+  "where": "raw_hall mean FLIP: v4 0.299, SVGF 0.174, SVGF plus TAA 0.172. Glossy and metallic pixels (2.5% of pixels) are not the problem: v4 beats SVGF there (glossy 0.092 against 0.947). The class split by history age and geometric edge does not discriminate on this scene: 64% and 56% of pixels fall in them, because the hall's small triangles change id between frames.",
+  "when": "frame 0, where neither method has history: v4 0.254, SVGF 0.272 (v4 better). Over the sequence SVGF falls to about 0.16 while v4 rises to about 0.31.",
+  "bias": "v4 is dark: tone-mapped luminance bias -0.062 (SVGF -0.021), -0.086 in the brightest tercile; linear energy (output over reference) 0.82 to 0.97 across frames.",
+  "history_test": "v4 with history disabled: FLIP 0.240, bias -0.032, energy 0.94 to 0.99. With diffuse history disabled only: 0.260, -0.042, 0.92 to 0.98. With specular history disabled only: 0.319, -0.070 (worse). The darkening is in the diffuse recurrence.",
+  "validation_check": "the same probe on the validation sequences does not reproduce it: hall_b with history FLIP 0.103, bias -0.002 (without 0.095, -0.006); terrain_100 with history 0.046 (without 0.058), so history helps there. The effect is specific to raw_hall's geometry; both halls have the same lighting.",
+  "dataset_artifact": "hall_b (validation) frames 56 to 61: the camera path passes inside geometry (depth 0.1 to 0.3), the reference is black (mean about 2e-6), and v4 carries some history glow into frame 56. Not a model explosion; worth fixing in the camera path before the next validation run."
+ },
+ "inferred_mechanism": "not tested: v4's outputs are dark-biased (the training loss is L1 on log1p, which pulls an estimate toward the median, below the mean on heavy-tailed 1 spp noise; raw_hall is lit mostly indirectly), and the recurrence feeds each dark output back as diffuse history, so the bias persists where the network trusts history.",
+ "decision": "no v5 trained. The diagnosis is clear on raw_hall but does not reproduce on the validation split, so any change aimed at it could only be chosen by looking at test data, which the bounds forbid.",
+ "proposal": {
+  "first": "add a validation sequence with raw_hall's character (an owned, densely tessellated interior lit mostly indirectly; not raw_hall itself) so the darkening is measurable without the test split; its 4,096 spp references need the RTX (about 3.6 s a frame) or about 2.5 hours a 64-frame sequence on the CPU",
+  "then_smallest_change": "an energy term in the loss: |mean(output) - mean(reference)| / mean(reference) over each training crop, weight 0.1, nothing else changed (a v5 by amendment, with its shuffled-target control)",
+  "prediction_for_that_change": "on the new validation sequence and on raw_hall: tone-mapped bias within 0.02 of SVGF's and linear energy at or above 0.95 on every frame; raw_hall FLIP at or below 0.24 (the no-history level). It may not beat SVGF's 0.174: frame 0 already sits at 0.254, so the spatial filter alone is not enough on this scene."
+ },
+ "does_not_prove": "That the loss is the cause (inferred); that the proposed change helps; anything about scenes other than these four."
+}

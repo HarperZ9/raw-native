@@ -1,0 +1,11 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/rr-inference-bounds.json",
+ "device": "NVIDIA GeForce RTX 4090",
+ "sequence": "raw_hero_p7",
+ "frames": 2,
+ "coop":{"ran":true,"parity":{"max_abs":0.0477676,"p99_99_abs_upper":0.00135899,"mean_abs":1.18913e-05,"values":777600,"max_at_frame":1,"max_at_pixel":64082,"within_1e-2":false},"timing_1080p":{"width":1920,"height":1080,"n":500,"median_ms":14.0954,"p5_ms":13.6552,"p95_ms":14.1379,"p99_ms":14.3064,"iqr_ms":0.221104,"step_median_ms":[2.34406,2.50573,0.824608,0.603632,0.21824,0.392672,0.110624,0.133888,0.080672,0.40288,0.254976,0.601536,1.06307,0.073792,0.355648,1.20589,0.026624,0.075968,0.02912,0.295936,0.321552,1.21566,0.026624,0.076576,0.029152,0.387616],"step_note":"steps in Net::frame order (mean depth, features, 12 convolutions, then the glue passes; v4 runs them once a signal); a timestamp after every step","within_2ms":false}},"scalar":{"ran":true,"parity":{"max_abs":0.000408351,"p99_99_abs_upper":0.001,"mean_abs":1.00281e-07,"values":777600,"max_at_frame":1,"max_at_pixel":51087,"within_1e-2":true},"timing_1080p":{"width":1920,"height":1080,"n":500,"median_ms":68.4169,"p5_ms":68.237,"p95_ms":68.7279,"p99_ms":68.8273,"iqr_ms":0.248296,"step_median_ms":[2.3471,2.50624,6.65093,5.99187,3.17374,6.47491,2.39917,2.91635,1.57901,6.47325,2.07466,5.9588,14.5345,0.83456,0.355328,1.20558,0.026624,0.076272,0.029088,0.295872,0.321536,1.21618,0.026624,0.07664,0.029184,0.387696],"step_note":"steps in Net::frame order (mean depth, features, 12 convolutions, then the glue passes; v4 runs them once a signal); a timestamp after every step","within_2ms":false}},
+ "control_perturbed":{"parity":{"max_abs":0.924675,"p99_99_abs_upper":0.0239437,"mean_abs":0.000103092,"values":777600,"max_at_frame":1,"max_at_pixel":64083,"within_1e-2":false},"fails":true},
+ "validation_errors": 0,
+ "pass": false
+}

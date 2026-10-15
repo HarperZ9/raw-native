@@ -47,6 +47,7 @@ Thumbs.db
 # Example certificates, evidence and presets shipped with the repo
 !docs/examples/*.json
 !evidence/*.json
+!evidence/**/*.json
 !CMakePresets.json
 build-wasm-sums.json
 /dist/
