@@ -1,0 +1,14 @@
+{
+ "schema": "raw-native.evidence/1",
+ "about": "HW H2 tensor-core parity diagnosis (coordinator direction 2026-10-15): why the cooperative-matrix path misses 1e-2 (RTX 4090, v4, raw_hero: max 0.107, mean 6.4e-6, 99.99th percentile 1.8e-3, worst at frame 48, pixel 64,580) while the scalar path passes (2.9e-3).",
+ "written": "2026-10-15 02:33Z, before the emulation is run",
+ "what_the_path_does": "vk_rr_conv.comp with COOP=1 rounds every im2col activation to fp16 (As[e] = float16_t(v)) and every weight to fp16 (the [Kpad][CoutPad] half table), multiplies on tensor cores with fp32 accumulation, and adds the fp32 bias. The scalar path is fp32 throughout.",
+ "test": "PyTorch on the CPU, v4's weights, raw_hero, 64 frames, the recurrent sequence run the same way as the reference, in four arithmetic modes for all twelve convolutions: F (fp32, the reference), W (weights rounded to fp16, inputs fp32), A (every convolution's input rounded to fp16, weights fp32), WA (both: the cooperative-matrix arithmetic). Output: max and mean |mode - F| and the location of the max; then for the mode that reproduces the miss, per-layer ablation (only one layer rounded) and the per-pixel character of the worst pixels (depth, validity, demodulated magnitudes, specular share).",
+ "predictions": {
+  "hypothesis_weights": "if fp16 weights cause it: W reproduces a max near 0.1 and A stays near the scalar path's level (about 3e-3)",
+  "hypothesis_activations": "if fp16 activations cause it: A reproduces it and W stays small",
+  "agreement_with_the_gpu": "WA should give a max of the same order as 0.107 with its worst pixels on a few frames; the RTX's worst location (frame 48, pixel 64,580) among WA's worst 100 pixels counts as agreement; otherwise the emulation does not explain the GPU and the hypothesis stays open"
+ },
+ "bounds": "no inference bound changes; this note decides which fix to try, and a fix gets its own note before its run",
+ "does_not_prove": "That PyTorch's emulation reproduces the tensor cores' accumulation order; fp32 accumulation order differences alone are at the scalar path's level."
+}
