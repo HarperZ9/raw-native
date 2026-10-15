@@ -1,0 +1,19 @@
+{
+ "schema": "raw-native.evidence/1",
+ "about": "HW H2 inference speed, round 1 (coordinator direction 2026-10-15): the mean-depth reduction and the feature pass of our Vulkan kernels. Elaborates evidence/rr-inference-bounds.json; changes no bound.",
+ "written": "2026-10-15 02:18Z, before any change or run",
+ "baseline": "RTX 4090, v4, cooperative-matrix path, 1080p, run 1 medians (evidence/rr-h2-v4/rtx4090/v4-r1-timing.json): frame 14.08 ms; mean-depth step 2.34 ms (one workgroup of 256 threads looping over 2,073,600 pixels); feature step 2.51 ms.",
+ "changes": {
+  "mean_depth": "a two-pass reduction: pass 1, 1,024 workgroups each sum a fixed strided share of the depth channel into a partial; pass 2, one workgroup sums the 1,024 partials in a fixed order. Deterministic for a given size; the sum order differs from the single-workgroup form, so the mean may differ in the last bits.",
+  "feature_profile": "timing-only variants of the feature step, selected by a push constant that parity runs never set: A as shipped; B without the history warps (no bilinear reads of the state and the previous depth); C without the aux writes; D without both. They attribute the step's time; they are not shipped behaviour."
+ },
+ "bounds": {
+  "parity": "unchanged: max |GPU - PyTorch float32| at most 1e-2 on every test pixel, scalar path, SwiftShader and RTX; the perturbed control must still fail",
+  "determinism": "the same input twice gives byte-identical output (checked on SwiftShader)"
+ },
+ "predictions": {
+  "mean_depth_step": "at most 0.4 ms for both passes together on the RTX 4090 (one read of one channel of a 128-byte pixel: about 265 MB at about 1 TB/s, about 0.3 ms), so the frame falls by at least 1.9 ms, to at most 12.2 ms",
+  "feature_variants": "if memory traffic dominates, C (no aux writes, 88 of 188 bytes a pixel written) saves about 0.5 to 1.0 ms and B less than 0.5 ms; if B saves more than C, the warps' scattered reads dominate. Recorded either way; a slimming change follows from the measurement, not before it."
+ },
+ "does_not_prove": "Anything about the 2.0 ms budget beyond these two steps; the rest of the frame (the twelve convolutions and the per-signal passes, about 9 ms) is untouched in this round."
+}
