@@ -1,0 +1,31 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Spectral sodium shading: GPU against the CPU reference</title>
+<link rel="icon" href="data:,">
+<!-- Run by tests/web/shaders_parity.py --shader sodium. Each case of evidence/shaders-sodium-parity-bounds.json
+     renders a Sodium Quay G-buffer (rounded to f32 for both sides), shades it with sodium/shade.mjs (float64)
+     and sodium/gpu.mjs, and compares the 8-bit encodes. -->
+<script type="module">
+import { createHost } from "../raw-gpu.mjs";
+import { renderSodiumGbuffer } from "../shaders/fixtures/sodium-quay-render.mjs";
+import { resolveSodium, runSodium } from "../shaders/sodium/shade.mjs";
+import { createGpuSodium } from "../shaders/sodium/gpu.mjs";
+import { codeStats, labEncode8 } from "../shaders/lab/gpu-kit.mjs";
+const q = new URLSearchParams(location.search);
+try {
+  const host = await createHost({ timing: false });
+  const gpuErrors = []; host.device.onuncapturederror = (e) => gpuErrors.push(e.error.message);
+  const bounds = await (await fetch("../../evidence/shaders-sodium-parity-bounds.json")).json(), { width: W, height: H, gain } = bounds.output;
+  const cases = [];
+  for (const c of bounds.cases) {
+    if (q.get("case") && q.get("case") !== c.id) continue;
+    const g = renderSodiumGbuffer(c.time, W, H); g.data = Float64Array.from(Float32Array.from(g.data));
+    const plan = resolveSodium(c.plan), want = labEncode8(runSodium(plan, g, c.time), gain);
+    const s = await createGpuSodium(host, plan, g, { gain }); s.frame(g, c.time); const got = await s.read(); s.destroy();
+    const st = codeStats(want, got);
+    cases.push({ id: c.id, max: st.max, p999: st.p999, mean: st.mean, over2_fraction: st.over2 / st.n });
+  }
+  await host.done();
+  window.__result = { bounds: bounds.bounds, cases, adapter: host.info, gpuErrors };
+} catch (e) { window.__result = { error: String(e && e.stack || e) }; }
+</script>

@@ -1,0 +1,46 @@
+{
+  "bounds": {
+    "max_abs_code": 2,
+    "p999_abs_code": 1,
+    "mean_abs_code": 0.03
+  },
+  "cases": [
+    {
+      "id": "night-sodium",
+      "max": 82,
+      "p999": 64,
+      "mean": 6.000530478395062,
+      "over2_fraction": 0.5553144290123457
+    },
+    {
+      "id": "van-close",
+      "max": 158,
+      "p999": 69,
+      "mean": 5.851546424897119,
+      "over2_fraction": 0.5403485082304527
+    },
+    {
+      "id": "pure-sodium-no-mist",
+      "max": 143,
+      "p999": 68,
+      "mean": 6.956516846707819,
+      "over2_fraction": 0.62622170781893
+    },
+    {
+      "id": "rain-heavy",
+      "max": 151,
+      "p999": 67,
+      "mean": 5.922807355967078,
+      "over2_fraction": 0.5510866769547325
+    }
+  ],
+  "adapter": {
+    "vendor": "google",
+    "architecture": "swiftshader",
+    "device": "",
+    "description": ""
+  },
+  "gpuErrors": [],
+  "adapter_kind": "swiftshader",
+  "control": "false-success control, 2026-10-16: the WGSL reads the window light's response row wherever a light is sodium; every case must FAIL; reverted after the run"
+}

@@ -22,20 +22,20 @@ export function lightsAt(t) {
   return L;
 }
 
-function march(o, d, tMax, vs) {
+export function march(o, d, tMax, vs) {
   let t = 0.02;
   for (let i = 0; i < 110 && t < tMax; i++) { const h = objects(o[0] + d[0] * t, o[1] + d[1] * t, o[2] + d[2] * t, vs); if (h < 0.002 * (1 + t)) return { t, id: Q.hitId }; t += h * 0.95; }
   return null;
 }
-function objNormal(p, vs) { const e = 0.003, f = (x, y, z) => objects(x, y, z, vs); return nrm([f(p[0] + e, p[1], p[2]) - f(p[0] - e, p[1], p[2]), f(p[0], p[1] + e, p[2]) - f(p[0], p[1] - e, p[2]), f(p[0], p[1], p[2] + e) - f(p[0], p[1], p[2] - e)]); }
-function shadow(p, L, vs) {
+export function objNormal(p, vs) { const e = 0.003, f = (x, y, z) => objects(x, y, z, vs); return nrm([f(p[0] + e, p[1], p[2]) - f(p[0] - e, p[1], p[2]), f(p[0], p[1] + e, p[2]) - f(p[0], p[1] - e, p[2]), f(p[0], p[1], p[2] + e) - f(p[0], p[1], p[2] - e)]); }
+export function shadow(p, L, vs) {
   const v = sub(L, p), dist = Math.hypot(v[0], v[1], v[2]), d = [v[0] / dist, v[1] / dist, v[2] / dist];
   let res = 1, t = 0.05;
   for (let i = 0; i < 64 && t < dist - 0.75; i++) { const h = objects(p[0] + d[0] * t, p[1] + d[1] * t, p[2] + d[2] * t, vs); if (h < 0.001) return 0; res = Math.min(res, (8 * h) / t); t += Math.min(0.6, Math.max(h, 0.015)); }
   return Math.max(0, Math.min(1, res));
 }
 // Nearest analytic surface: street, pavement, quay wall, water, facades.
-function analytic(o, d) {
+export function analytic(o, d) {
   let best = { t: Infinity };
   const plane = (axis, val) => (Math.abs(d[axis]) < 1e-9 ? -1 : (val - o[axis]) / d[axis]);
   const tk = plane(1, STREET.kerb); if (tk > 0) { const x = o[0] + d[0] * tk, z = o[2] + d[2] * tk; if (Math.abs(x) > STREET.half && Math.abs(x) < STREET.facade && z > STREET.quayZ && tk < best.t) best = { t: tk, kind: "ground" }; }
