@@ -11,6 +11,7 @@
 //
 //   lit  = albedo * (d (1 - h + h (0.5 + 0.5 n.y)) + sum_i vis_i mask_i term_i)
 //   tone = clamp(lit, 0, 1) (1 - tf) + tf,   tf = fogMax (1 - exp(-(depth / fogDist)^2))
+//   with a per-pixel haze h in [0, 1] (light scattered along the view ray) the tone is 1 - (1 - tone)(1 - h)
 // Sky pixels (kind 0) and emissive pixels (kind 1) are already tones and skip lights and fog.
 //
 // Quantiser. Levels are evenly spaced in a lightness-like space and sit at linear light
@@ -38,16 +39,21 @@ export const levelLinear = (plan, k) => Math.pow(k / (plan.levels - 1), plan.gam
 
 // The tone of one pixel before the pattern. px: a G-buffer pixel (see fixtures/dream.mjs).
 export function toneOf(plan, lights, px) {
-  if (px.kind !== 2) return px.albedo;
-  let E = plan.dark * (1 - plan.hemi + plan.hemi * (0.5 + 0.5 * px.nrm[1]));
-  for (let i = 0; i < lights.length; i++) {
-    const v = px.vis[i];
-    if (!(v > 0)) continue;
-    const m = maskAt(lights[i], px.wpos);
-    if (m > 0) E += v * m * surfaceTerm(lights[i], px.wpos, px.nrm);
+  let Y = px.albedo;
+  if (px.kind === 2) {
+    let E = plan.dark * (1 - plan.hemi + plan.hemi * (0.5 + 0.5 * px.nrm[1]));
+    for (let i = 0; i < lights.length; i++) {
+      const v = px.vis[i];
+      if (!(v > 0)) continue;
+      const m = maskAt(lights[i], px.wpos);
+      if (m > 0) E += v * m * surfaceTerm(lights[i], px.wpos, px.nrm);
+    }
+    const lit = Math.min(1, Math.max(0, px.albedo * E)), r = px.depth / plan.fogDist, tf = plan.fogMax * (1 - Math.exp(-r * r));
+    Y = lit * (1 - tf) + tf;
   }
-  const lit = Math.min(1, Math.max(0, px.albedo * E)), r = px.depth / plan.fogDist, tf = plan.fogMax * (1 - Math.exp(-r * r));
-  return lit * (1 - tf) + tf;
+  // in-scattered light along the view ray (light shafts, glow around lamps), screen-blended
+  const hz = px.haze > 0 ? Math.min(1, px.haze) : 0;
+  return hz > 0 ? 1 - (1 - Y) * (1 - hz) : Y;
 }
 
 // Tone to a level, given the threshold t in (0, 1).
@@ -72,7 +78,7 @@ export function runDitherlight(plan, lights, g) {
   const table = Array.from({ length: plan.levels }, (_, k) => levelRgb8(plan, k)), px = { vis: [0, 0, 0, 0], wpos: [0, 0, 0], nrm: [0, 0, 1], apos: [0, 0, 0], anrm: [0, 0, 1] };
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     const i = y * w + x;
-    px.kind = g.kind[i]; px.albedo = g.albedo[i]; px.depth = g.depth[i]; px.ix = x; px.iy = y;
+    px.kind = g.kind[i]; px.albedo = g.albedo[i]; px.depth = g.depth[i]; px.haze = g.haze ? g.haze[i] : 0; px.ix = x; px.iy = y;
     for (let c = 0; c < 3; c++) { px.wpos[c] = g.wpos[i * 3 + c]; px.nrm[c] = g.nrm[i * 3 + c]; px.apos[c] = g.apos[i * 3 + c]; px.anrm[c] = g.anrm[i * 3 + c]; }
     for (let c = 0; c < 4; c++) px.vis[c] = g.vis[i * 4 + c];
     const Y = toneOf(plan, lights, px), [cx, cy] = anchorCell(plan, px);
