@@ -46,7 +46,8 @@ function(raw_native_embed_wgsl out)
         "inline constexpr const char* kSwrWgsl = R\"WGSL(${swr})WGSL\";\n"
         "inline constexpr const char* kRtWgsl = R\"WGSL(${rt})WGSL\";\n"
         "inline constexpr const char* kPtWgsl = R\"WGSL(${pt})WGSL\";\n"
-        "inline constexpr const char* kSdfWgsl = R\"WGSL(${sdf})WGSL\";\n")
+        "inline constexpr const char* kSdfWgsl = R\"WGSL(${sdf})WGSL\";\n"
+        "inline constexpr const char* kStyleWgsl = R\"WGSL(${style})WGSL\";\n")
     configure_file("${out}.tmp" "${out}" COPYONLY)
 endfunction()
 
