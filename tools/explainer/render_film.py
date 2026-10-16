@@ -58,8 +58,7 @@ def main() -> int:
     start = out / "start.json"
     if not start.exists():
         git = lambda *c: subprocess.run(["git", *c], capture_output=True, text=True, cwd=ROOT).stdout.strip()
-        start.write_text(json.dumps({"commit": git("rev-parse", "HEAD"), "dirty_tree": bool(git("status", "--porcelain"))}) + "
-", encoding="utf-8")
+        start.write_text(json.dumps({"commit": git("rev-parse", "HEAD"), "dirty_tree": bool(git("status", "--porcelain"))}) + "\n", encoding="utf-8")
     begun = json.loads(start.read_text(encoding="utf-8"))
     parts, t = [], 0.0
     while t < a.seconds - 1e-9:
