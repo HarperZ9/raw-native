@@ -2,7 +2,7 @@
 // P (f32): 0 w, 1 h, 2 levels, 3 source (0 bayer8, 1 blue64), 4 anchor (0 screen, 1 world-fixed,
 // 2 world-octave), 5 cell, 6 px, 7 pa, 8 gamma, 9 dark, 10 hemi, 11 fogDist, 12 fogMax,
 // 13 light count, 14..16 ink (linear), 17..19 paper (linear).
-// gb: six vec4f per pixel: (albedo, kind, depth, 0), wpos, nrm, apos, anrm, vis.
+// gb: six vec4f per pixel: (albedo, kind, depth, haze), wpos, nrm, apos, anrm, vis.
 // lights: six vec4f per light: (kind 0 radial / 1 beam, intensity, radius or range, core or
 // cos outer), (pos, wrap), (dir, cos inner), (tan, slats), (bit, duty), (phase, 0, 0, 0).
 // bn: blue-noise ranks, 64 x 64. lvl: output level per pixel. out8: RGBA8 per pixel.
@@ -77,6 +77,7 @@ fn level_lin(k: f32, n: f32, gamma: f32) -> f32 { return pow(k / (n - 1.0), gamm
     let lit = min(1.0, max(0.0, g0.x * E)); let r = g0.z / P[11]; let tf = P[12] * (1.0 - exp(-r * r));
     Y = lit * (1.0 - tf) + tf;
   }
+  let hz = min(1.0, max(0.0, g0.w)); if (hz > 0.0) { Y = 1.0 - (1.0 - Y) * (1.0 - hz); }
   // anchor cell
   var cx = i32(id.x); var cy = i32(id.y);
   if (P[4] > 0.5) {

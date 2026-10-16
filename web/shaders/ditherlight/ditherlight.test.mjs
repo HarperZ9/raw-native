@@ -80,3 +80,23 @@ test("the demo scene renders deterministically and a full 1-bit frame uses both 
   assert.deepEqual(a.level, b.level); assert.ok(a.level.includes(0) && a.level.includes(1));
   const p = project(spec.cam, 48, 27, [0, 1.7, -10]); assert.ok(Math.abs(p[0] - 23.5) < 1.5);
 });
+
+test("haze: zero haze changes nothing, full haze is paper white, and it screen-blends monotonically", () => {
+  const plan = resolveDitherlight("ink"), base = { kind: 2, albedo: 0.4, depth: 6, nrm: [0, 1, 0], wpos: [0, 0, 0], vis: [0, 0, 0, 0] };
+  const t0 = toneOf(plan, [], base);
+  assert.equal(toneOf(plan, [], { ...base, haze: 0 }), t0); assert.equal(toneOf(plan, [], { ...base, haze: 1 }), 1);
+  let prev = t0; for (let h = 0.05; h <= 1; h += 0.05) { const t = toneOf(plan, [], { ...base, haze: h }); assert.ok(t >= prev - 1e-12 && t <= 1); prev = t; }
+  assert.ok(Math.abs(toneOf(plan, [], { ...base, haze: 0.5 }) - (1 - (1 - t0) * 0.5)) < 1e-12);
+  // sky and emissive pixels take haze too (a beam shows against the sky)
+  assert.equal(toneOf(plan, [], { kind: 0, albedo: 0.2, depth: 40, nrm: [0, 1, 0], wpos: [0, 0, 0], vis: [0, 0, 0, 0], haze: 0.5 }), 0.6);
+});
+test("the second Salt Road renders deterministically with haze, and haze rises with a light in the ray", async () => {
+  const { renderFrame2, lightsOf2 } = await import("../fixtures/dream2.mjs");
+  const spec = { cam: { pos: [0.2, 1.1, -2], yaw: 0.15, pitch: 0.12 }, beamAngle: 2.75, flicker: 0, time: 3, spin: 1 }, a = renderFrame2(spec, 40, 24), b = renderFrame2(spec, 40, 24);
+  assert.deepEqual(Array.from(a.haze), Array.from(b.haze)); assert.ok(a.haze.every((v) => v >= 0 && v < 1));
+  assert.ok(Math.max(...a.haze) > 0.02, "some haze");
+  const dark = { ...spec, cam: { pos: [0.2, 1.1, 40], yaw: Math.PI, pitch: 0 } }, d = renderFrame2(dark, 40, 24);
+  assert.ok(Math.max(...d.haze) < 0.2 * Math.max(...a.haze), "facing away from every light there is far less haze");
+  const plan = resolveDitherlight("ink", {}, { height: 24 }), r = runDitherlight(plan, lightsOf2(spec), a);
+  assert.ok(r.level.includes(0) && r.level.includes(1));
+});

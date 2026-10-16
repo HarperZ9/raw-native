@@ -49,6 +49,24 @@
       "over2_fraction": 0,
       "mean": 0,
       "max": 0
+    },
+    {
+      "id": "v2-haze-beam",
+      "decisionMismatch": 0,
+      "decisions": 20736,
+      "mismatch_fraction": 0,
+      "over2_fraction": 0,
+      "mean": 0,
+      "max": 0
+    },
+    {
+      "id": "v2-haze-1bit-blue",
+      "decisionMismatch": 0,
+      "decisions": 20736,
+      "mismatch_fraction": 0,
+      "over2_fraction": 0,
+      "mean": 0,
+      "max": 0
     }
   ],
   "adapter": {
