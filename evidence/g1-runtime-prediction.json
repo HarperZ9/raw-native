@@ -1,0 +1,40 @@
+{
+  "what": "G1 runtime (fixed loop, input actions, cameras, picking): predictions and pass bounds, written 2026-10-15 before any test was run",
+  "checks": {
+    "fixed_step_determinism": {
+      "setup": "the same 10.0 s of simulated time delivered as 600 frames of 1/60 s, as 1000 random frame lengths in [0.1 ms, 33 ms] scaled to the same total of whole microseconds, and as 7 frames of irregular length",
+      "prediction": "identical step counts (600 for 10 s at 60 Hz) and bitwise-identical state across all partitions, because steps are counted on an integer microsecond clock",
+      "bound": "state equality is exact (deepStrictEqual); step count exact"
+    },
+    "max_steps_bound": {
+      "prediction": "a 2 s stall at 60 Hz with maxSteps 8 runs 8 steps and reports 112/60 s dropped",
+      "bound": "dropped seconds within 1e-9 of 112/60"
+    },
+    "interpolation": {
+      "prediction": "alpha equals the remainder fraction of a step; a lerped view lies between previous and current state",
+      "bound": "|alpha - expected| < 1e-6"
+    },
+    "input_replay": {
+      "setup": "a live session driven by a scripted random device sequence (keys, gamepad axes, pointer taps) with a recorder, then a fresh session fed the recording after a JSON round trip",
+      "prediction": "final states equal",
+      "bound": "exact equality"
+    },
+    "taps": {
+      "prediction": "a key down and up between two samples reads pressed and held for exactly one sample and released on the next",
+      "bound": "exact"
+    },
+    "picking_3d": {
+      "setup": "a G0 Scene with a unit box at (0,0,-5), a box scaled x2 and rotated 90 degrees about y at (4,0,-5), and a triangle node",
+      "prediction": "a ray from the origin along -z hits the first box at t = 4.5; a ray toward (4,0,-5) hits the scaled box at t = 5 - 1 (its half extent in world after scale); misses return null; the nearest of two overlapping boxes wins",
+      "bound": "|t - expected| < 1e-9"
+    },
+    "picking_iso": {
+      "prediction": "web/world/iso.mjs pick inverts toScreen at every cell centre of a 24 x 24 map after the Motion view2d camera is inverted",
+      "bound": "every cell exact"
+    },
+    "camera_zoom_anchor": {
+      "prediction": "zooming view2d about an anchor keeps the scene point under the anchor fixed",
+      "bound": "drift < 1e-6 scene units after 120 steps"
+    }
+  }
+}

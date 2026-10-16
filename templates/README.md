@@ -4,9 +4,16 @@ These are the three starter templates the author chose on 9 October 2026 (ADR 00
 
 | Template | In the author's words | Uses today | Waits on |
 |---|---|---|---|
-| [painted-iso-rpg](painted-iso-rpg/) | "more Disco Elysium and less Rogue Trader", "very, very, very abstract, artistic, grotesque", "very, very indie", "make it real funky" | isometric tile maps; the painterly pass when it is registered (film until then) | the painterly pass (PR #55); depth-sorted sprites; reference frames from the author |
+| [painted-iso-rpg](painted-iso-rpg/) | "more Disco Elysium and less Rogue Trader", "very, very, very abstract, artistic, grotesque", "very, very indie", "make it real funky" | isometric tile maps; the painterly pass when it is registered (film until then); playable (G1): pointer picking, click to walk by the shortest path, stick walking, zoom about the pointer | the painterly pass (PR #55); depth-sorted sprites (the walker draws over blocks in front of it); reference frames from the author |
 | [pixel-2.5d](pixel-2.5d/) | "pixel art, 2.5D, somewhat semi 3D" | orthogonal tile maps at two depths for parallax; PICO-8 palette with ordered dither | pixel-perfect scaling (M2 criterion 7); sprites; real tiles |
-| [retro-thriller](retro-thriller/) | "more like Disco Elysium and less like horror ... I want it to be scary ... not ... focused entirely on horror and on jump scares and fear" | a tile map, an unsteady practical light, colour negative film, a soft tube | sprites, input (G1), real art |
+| [retro-thriller](retro-thriller/) | "more like Disco Elysium and less like horror ... I want it to be scary ... not ... focused entirely on horror and on jump scares and fear" | a tile map, an unsteady practical light, colour negative film, a soft tube; playable (G1): walk, click to walk, follow camera, zoom | sprites, real art |
+
+Play one (keyboard, pointer or gamepad; the controls and rebinding are under the view):
+```sh
+python scripts/motion_render.py --root . --serve 8765
+# then open http://localhost:8765/web/game/play.html?scene=../../templates/retro-thriller/scene.mjs
+```
+A playable template's film plays its scripted demo through the same simulation, so a capture shows play.
 
 Run one in the live player:
 ```sh
