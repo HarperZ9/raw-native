@@ -58,19 +58,19 @@
    "blend_three": 0.9536265432098765
   },
   "pop": {
-   "max": 5.6621374255882984e-14,
+   "max": 29.291488588509242,
    "p999": [
-    2.8310687127941492e-14,
-    2.8310687127941492e-14,
-    2.8310687127941492e-14,
-    2.8310687127941492e-14,
-    2.8310687127941492e-14,
-    2.8310687127941492e-14,
-    2.8310687127941492e-14,
-    5.6621374255882984e-14,
-    2.8310687127941492e-14,
-    2.8310687127941492e-14,
-    0
+    0.00863808302022373,
+    0.0011903572304042265,
+    3.054982404905984,
+    2.50785357139432,
+    2.252763126244215,
+    0.22880243279716175,
+    1.4373375448362677,
+    2.069850373594511,
+    4.443216582446147,
+    0.0021629485604379717,
+    0.016143245478340562
    ]
   }
  },
@@ -122,22 +122,22 @@
   {
    "id": "K5 copy exactness secondary 2",
    "pass": true,
-   "detail": "max 0 over 66236 pixels, hole fraction 0.8743"
+   "detail": "max 0 over 560858 pixels, hole fraction 0.2121"
   },
   {
    "id": "K1 keyframe 0 (yaw 0, elev 0)",
    "pass": true,
-   "detail": "max 0 mean 0.00000 over 8160 pixels"
+   "detail": "(needs >= 50000 compared) max 0 mean 0.00000 over 516738 pixels"
   },
   {
    "id": "K1 keyframe 1 (yaw 30, elev -10)",
    "pass": true,
-   "detail": "max 0 mean 0.00000 over 0 pixels"
+   "detail": "(needs >= 50000 compared) max 0 mean 0.00000 over 518001 pixels"
   },
   {
    "id": "K1 keyframe 2 (yaw -30, elev -10)",
    "pass": true,
-   "detail": "max 0 mean 0.00000 over 0 pixels"
+   "detail": "(needs >= 50000 compared) max 0 mean 0.00000 over 517791 pixels"
   },
   {
    "id": "K3 holes yaw5",
@@ -192,17 +192,17 @@
   {
    "id": "K6 seam p95",
    "pass": true,
-   "detail": "p95 12"
+   "detail": "p95 10"
   },
   {
    "id": "K7 pop p99.9",
-   "pass": true,
-   "detail": "per base view 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00 0.00"
+   "pass": false,
+   "detail": "per base view 0.01 0.00 3.05 2.51 2.25 0.23 1.44 2.07 4.44 0.00 0.02"
   },
   {
    "id": "K7 pop max",
-   "pass": true,
-   "detail": "max 0.00"
+   "pass": false,
+   "detail": "max 29.29"
   }
  ]
 }
