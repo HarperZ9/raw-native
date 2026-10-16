@@ -12,7 +12,7 @@
 // An .rnfx file: the 8 bytes "RNFX0001", a little-endian u32 header length, the header as UTF-8
 // JSON, zero padding to a multiple of 8, then the arrays. The header names each array with its
 // type (u8, u32, f32, f64), element count and byte offset from the start of the array block.
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { resolveDitherlight, toneOf, quantise, levelRgb8, runDitherlight } from "../../web/shaders/ditherlight/ditherlight.mjs";
@@ -130,4 +130,6 @@ if (!out) { console.error("usage: node tools/port/export_style_fixtures.mjs <out
 mkdirSync(out, { recursive: true });
 const t0 = Date.now(), counts = { ditherlight: ditherlight(out), paintover: paintover(out), lookkeys: lookkeys(out), poststack: postStack(out),
   purity: purity(out), lightpaint: lightpaint(out), glaze: glaze(out), hatch: hatch(out) };
+// The file list, for hosts that copy the fixtures by name (web/test/texture-identity.html).
+writeFileSync(join(out, "files.json"), JSON.stringify(readdirSync(out).filter((f) => f.endsWith(".rnfx") || f === "lookkeys.json").sort()));
 console.log(JSON.stringify({ out, cases: counts, seconds: (Date.now() - t0) / 1000 }));
