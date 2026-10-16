@@ -16,15 +16,17 @@
 // render passes (ROADMAP M2 criterion 3). Version 3 adds float and depth formats, up to four
 // colour targets and a depth target per pass, depth testing and culling, and read-only
 // storage buffers in raster stages for vertex pulling (ROADMAP M3; evidence/m3-rhi3-bounds.json).
-// Swapchains, queries and multiple
-// queues are added behind the same handles when the renderer needs them
-// (docs/architecture/adr/0002-rhi.md).
+// Additive since version 3 (N2,
+// evidence/n2-presentation-bounds.json): the RGB10A2Unorm format, a swapchain on a native
+// window, device loss, and devices the caller owns. Queries and multiple queues are added
+// behind the same handles when the renderer needs them (docs/architecture/adr/0002-rhi.md).
 //
 // Textures track their own state inside the backend: an upload, a draw that
 // samples it, a render pass that targets it and a copy out of it each move it to
 // the state that use needs. Buffers still take explicit barriers.
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <span>
 #include <string>
 namespace raw::rhi {
@@ -93,8 +95,9 @@ struct ComputePipelineDesc {
 
 // Textures: 2D, one mip level. RGBA8Unorm is linear (no sRGB decode on sampling). The float
 // formats and Depth32Float are render targets read back by copy; RGBA8Unorm and RGBA16Float
-// can also be sampled.
-enum class TextureFormat : uint8_t { RGBA8Unorm, RGBA16Float, RGBA32Float, R32Float, Depth32Float };
+// can also be sampled. RGB10A2Unorm (10 bits a colour channel, 2 for alpha, red in the low
+// bits of a 32-bit word) is the HDR10 swapchain format; RGBA32Float can also be uploaded.
+enum class TextureFormat : uint8_t { RGBA8Unorm, RGBA16Float, RGBA32Float, R32Float, Depth32Float, RGB10A2Unorm };
 constexpr uint32_t bytesPerTexel(TextureFormat f){
     switch (f){
         case TextureFormat::RGBA16Float: return 8;
@@ -157,6 +160,47 @@ struct RenderPassDesc {
     float depthClear{1.0f};
 };
 
+class CommandList;
+// A swapchain presents a native window's backbuffers (N2). Its current backbuffer is an
+// ordinary texture of the device (usage RenderTarget | CopySrc) for the frame being drawn;
+// prepare() records its move to the present state as the frame's last command, and present()
+// runs after the submission that drew it has finished. Formats: RGBA8Unorm (SDR),
+// RGB10A2Unorm with ColourSpace::Hdr10Pq (HDR10) and RGBA16Float with ColourSpace::ScRgbLinear.
+enum class ColourSpace : uint8_t { SrgbNonlinear, Hdr10Pq, ScRgbLinear };
+enum class PresentStatus : uint8_t { NotPresented, Presented, Occluded, DeviceLost, Failed };
+struct SwapchainDesc {
+    void* window{nullptr};                 // the native window: an HWND on Windows
+    uint32_t width{0}, height{0};
+    TextureFormat format{TextureFormat::RGBA8Unorm};
+    ColourSpace colourSpace{ColourSpace::SrgbNonlinear};
+    uint32_t bufferCount{2};
+    bool allowTearing{false};              // sync interval 0 may tear when the system allows it
+    bool waitable{false};                  // a frame latency waitable object, maximum latency 1
+};
+// What the presentation engine reports about past presents, when the output gives it.
+struct PresentStats { bool valid{false}; uint32_t presentCount{0}, presentRefreshCount{0}, syncRefreshCount{0}; int64_t syncQpc{0}; };
+class Swapchain {
+public:
+    virtual ~Swapchain() = default;
+    virtual TextureHandle current() = 0;
+    virtual uint32_t width() const = 0;
+    virtual uint32_t height() const = 0;
+    virtual TextureFormat format() const = 0;
+    // True when the colour space was set on the swapchain; false when the output did not
+    // report support for it (the buffer still holds the encoded signal).
+    virtual bool colourSpaceApplied() const = 0;
+    virtual bool tearingAllowed() const = 0;
+    virtual void prepare(CommandList& cmd) = 0;
+    virtual PresentStatus present(uint32_t syncInterval, std::string& err) = 0;
+    // New buffer sizes (non-zero). The device must be idle, as it is after submitAndWait.
+    virtual bool resize(uint32_t width, uint32_t height, std::string& err) = 0;
+    // Block until the swapchain can take a new frame (waitable swapchains); false on timeout.
+    virtual bool waitForFrame(uint32_t timeoutMs) = 0;
+    virtual PresentStats stats() = 0;
+    // The output's refresh rate in its current mode, in hertz; 0 when unknown.
+    virtual double refreshHz() = 0;
+};
+
 // Records one submission. Errors are kept and reported by submitAndWait, so a
 // recording call never needs a return value. Uploads are ordered before the
 // list's other commands that follow them.
@@ -200,6 +244,14 @@ public:
     // Map a MapRead buffer after the submission that wrote it. Valid until unmap.
     virtual const void* mapRead(BufferHandle buffer, uint64_t size, std::string& err) = 0;
     virtual void unmap(BufferHandle buffer) = 0;
+    // A swapchain on a native window. Backends without one return null with the reason.
+    virtual std::unique_ptr<Swapchain> createSwapchain(const SwapchainDesc& desc, std::string& err){
+        (void)desc; err = std::string(backendName()) + ": no swapchain in this backend"; return nullptr; }
+    // True once the device is lost (removed, reset, or a driver fault); every handle is then dead
+    // and the caller makes a new device.
+    virtual bool lost() const { return false; }
+    // Remove the device on purpose, to test recovery. False with the reason where unsupported.
+    virtual bool loseForTest(std::string& err){ err = std::string(backendName()) + ": cannot remove the device"; return false; }
 };
 
 // The backend linked into this build: "d3d12", "webgpu" or "none".
@@ -207,4 +259,7 @@ const char* linkedBackend();
 // The device of the linked backend, created on first call and kept for the
 // process. Null with the reason when there is no backend or no adapter.
 Device* device(std::string& err);
+// A new device of the linked backend that the caller owns, for a host that must replace a
+// lost device. Defined by the d3d12 and null backends.
+std::unique_ptr<Device> createDevice(std::string& err);
 }
