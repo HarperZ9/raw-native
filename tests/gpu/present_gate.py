@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
 """Gate for N2 native presentation (evidence/n2-presentation-bounds.json). Standard library only.
 
-  present_gate.py same A.json B.json [C.json ...]   every frame list identical (index, size, hash)
+  present_gate.py same A.json B.json [C.json ...] [--size WxH]
+                                                    every frame list identical (index, size, hash);
+                                                    --size: every frame of the first list is W x H
   present_gate.py control REF.json CONTROL.json     the control must differ on at least 99% of frames
   present_gate.py lifecycle PRESENTED.json OFFSCREEN.json [--no-minimise]
                                                     lists identical, one loss and one recovery, no size
@@ -28,10 +30,15 @@ def frames(d):
     return [(f["i"], f["w"], f["h"], f["sha256"]) for f in d["frames"]]
 
 
-def same(paths):
+def same(paths, size=None):
     lists = [frames(load(p)) for p in paths]
     ref = lists[0]
     ok = len(ref) > 0 and all(f[3] for f in ref)
+    if size:
+        w, h = (int(v) for v in size.lower().split("x"))
+        off = sum(1 for f in ref if (f[1], f[2]) != (w, h))
+        print(f"{paths[0]}: {off} of {len(ref)} frames are not {w}x{h}")
+        ok = ok and off == 0
     for p, lst in zip(paths[1:], lists[1:]):
         diff = sum(1 for a, b in zip(ref, lst) if a != b) + abs(len(ref) - len(lst))
         print(f"{paths[0]} vs {p}: {len(ref)} and {len(lst)} frames, {diff} differ")
@@ -98,8 +105,15 @@ def main(a):
         print(__doc__)
         return 2
     cmd, rest = a[0], a[1:]
+    size = None
+    if cmd == "same" and "--size" in rest:
+        k = rest.index("--size")
+        size, rest = (rest[k + 1] if k + 1 < len(rest) else ""), rest[:k] + rest[k + 2:]
+        if "x" not in size.lower():
+            print(__doc__)
+            return 2
     if cmd == "same" and len(rest) >= 2:
-        ok = same(rest)
+        ok = same(rest, size)
     elif cmd == "control" and len(rest) == 2:
         ok = control(*rest)
     elif cmd == "lifecycle" and len(rest) in (2, 3):
