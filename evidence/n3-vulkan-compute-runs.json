@@ -1,13 +1,13 @@
 {
  "schema": "raw-native.evidence/1",
  "bounds": "evidence/n3-vulkan-compute-bounds.json (committed 96e8fe1 before any pass ran on Vulkan)",
- "code": "84658e0, raw_native_cli_vk built with RAW_NATIVE_VULKAN_RHI=ON",
+ "code": "84658e0 (first CI run) and 70c80da (CPU golden comparison added), raw_native_cli_vk built with RAW_NATIVE_VULKAN_RHI=ON",
  "ci": "GitHub Actions job vulkan-linux on PR #165, ubuntu-24.04, lavapipe (llvmpipe, LLVM 20.1.2, Mesa 25.2.8), Khronos validation layer on. Records: evidence/n3-lavapipe-compute/*.json. The same commands in WSL Ubuntu 24.04 with the same Mesa gave byte-identical identity outputs (90 files).",
  "date": "2026-10-16",
  "results": {
   "c2_identity_quick": {"result": "pass: 4 of 4 GPU certificates verified", "prediction": "held"},
   "c2_gltf_models": {"result": "pass: 10 of 10 GPU certificates verified", "prediction": "held"},
-  "c2_golden_per_device_class": {"result": "the quick matrix of this run is committed as evidence/n3-identity-golden-vulkan-lavapipe.json; CI compares every later run with it, byte for byte (arena_certificate.json left out, as for the CPU golden). Two local runs and this CI run were identical. CPU outputs were not re-compared in this job; the backend does not touch the CPU path, and the build-test job keeps the CPU golden.", "prediction": "held for the GPU golden; the CPU half of the bound was not run here (recorded)"},
+  "c2_golden_per_device_class": {"result": "pass. GPU: the quick matrix of the first CI run is committed as evidence/n3-identity-golden-vulkan-lavapipe.json; the next CI run (70c80da) compared with it: 4 cases, 90 files, all identical. CPU (added after the first run, see the bounds addendum of 2026-10-16): the Vulkan build's CPU outputs against evidence/identity-golden.json, 10 cases, 107 files, all identical (the no-gpu-64 case left out by design), and against evidence/m2-gltf-golden.json, 10 cases, 80 files, all identical.", "prediction": "held"},
   "c2_m2_m3_corpora": {
    "result": "texture-identity, pbr-parity, swr-render (6 of 6 frames bit-exact), swr-parity, rt-bvh-parity, rt-pt-parity (gate), rt-hybrid-parity, sdf-parity (gate, the Mandelbulb within), post-parity (gate; TAA passes, a recorded failure on WARP) and raster-identity through WARP's gate (raw-hall nave G-buffer the same recorded open failure; 8 subpixel bits) all pass.",
    "misses": [
