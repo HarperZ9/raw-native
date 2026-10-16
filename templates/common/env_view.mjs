@@ -54,8 +54,14 @@ export function clothItems([x, y], { length = 70, width = 120, angle = 0, colour
   }
   const pts = [...left];
   for (let k = n; k >= 0; k--) pts.push(right[2 * k], right[2 * k + 1]);
+  // Folds: darker lines from the rail down the cloth, bent with it.
+  const folds = [0.25, 0.5, 0.75].map((u) => {
+    const line = [];
+    for (let k = 0; k <= n; k++) line.push(left[2 * k] + (right[2 * k] - left[2 * k]) * u, left[2 * k + 1]);
+    return { shape: polyline(line), fill: null, stroke: [0, 0, 0, 0.35], width: 2 };
+  });
   return [{ shape: polyline([x - width / 2 - 4, y, x + width / 2 + 4, y]), fill: null, stroke: "#1a1714", width: 4 },
-    { shape: polyline(pts, true), fill: colour, opacity: 0.92 }];
+    { shape: polyline(pts, true), fill: colour, opacity: 0.92 }, ...folds];
 }
 
 // A potted plant from above: leaves around the pot, each rotated by the sway angle scaled by

@@ -114,7 +114,9 @@ export const game = {
     const [px, py] = s.p, ahead = [px + Math.cos(s.facing) * 22, py + Math.sin(s.facing) * 22];
     const g = 1 + 0.35 * s.gutter * Math.sin(t * 23) * Math.sin(t * 7.3), hl = 0.35 * s.lampLight * g;
     const mat = wetMaterial({ albedo: [0.2, 0.22, 0.23], roughness: 0.7, porosity: 0.8 }, snap.zones.outside.wetness);
-    const sight = sightRange(snap, zone, { clearRange: 40, carried: s.lamp.lit ? 4 : 0 }) * UNITS_PER_M;
+    // A practical light near the walker lets them see as far as it reaches, whatever the sky does.
+    const practical = Math.max(0, 1 - Math.hypot(px - LAMP[0], py - LAMP[1]) / 260) * 5 + Math.max(0, 1 - Math.hypot(px - POST[0], py - POST[1]) / 180) * 3.5;
+    const sight = sightRange(snap, zone, { clearRange: 40, carried: Math.max(s.lamp.lit ? 4 : 0, practical) }) * UNITS_PER_M;
     const fog = look.fog, items = [
       { kind: "tilemap", map: A.map, tileset: "thriller-set", x: 0, y: 0, scale: 1, opacity: Math.min(0.95, 0.35 + 0.6 * look.brightness) },
       shade(COURT, 1 - Math.min(1, court.brightness / Math.max(0.05, look.brightness)) * 0.9),
@@ -122,12 +124,14 @@ export const game = {
       { shape: circle(LAMP[0], LAMP[1], 260, 96), fill: { radial: [LAMP[0], LAMP[1], 260], stops: [[0, lamp], [1, [0, 0, 0, 0]]] }, blend: "add" },
       { shape: circle(POST[0], POST[1], 180, 72), fill: { radial: [POST[0], POST[1], 180], stops: [[0, [...post.map((c) => c * 0.45), 1]], [1, [0, 0, 0, 0]]] }, blend: "add" },
       ...plantItems([1020, 480], s.plantOut.angle), ...plantItems([770, 190], s.plantIn.angle, { colour: "#35603f" }),
-      ...clothItems([936, 150], { angle: s.cloth.angle }),
+      ...clothItems([936, 150], { angle: s.cloth.angle, width: 70, length: 110, colour: "#4a2320" }),
       ...figureTopDown(s.p, s.facing, s.phase, { scale: 1.9, stride: s.moving ? 1 : 0, coat: "#4a3f36" }),
       hl > 0.01 ? { shape: circle(ahead[0], ahead[1], 70, 48), fill: { radial: [ahead[0], ahead[1], 70], stops: [[0, [hl, hl * 0.8, hl * 0.5, 1]], [1, [0, 0, 0, 0]]] }, blend: "add" } : null,
       ...rainItems(COURT, snap.zones.outside.rain, snap.zones.outside.wind, t),
-      court.flash > 0.02 ? { shape: rect(...COURT), fill: [0.8, 0.85, 1, 0.5 * court.flash], blend: "add" } : null,
-      { shape: rect(0, 0, W * T, H * T), fill: [...fog.colour, fog.amount * 0.55] },
+      court.flash > 0.02 ? { shape: rect(...COURT), fill: { linear: [0, COURT[1], 0, COURT[1] + COURT[3]], stops: [[0, [0.8, 0.85, 1, 0.45 * court.flash]], [1, [0.8, 0.85, 1, 0.12 * court.flash]]] }, blend: "add" } : null,
+      // Fog lies in the open courtyard; a little drifts into the corridor.
+      { shape: rect(...COURT), fill: [...fog.colour, fog.amount * 0.6] },
+      { shape: rect(0, 0, W * T, H * T), fill: [...fog.colour, fog.amount * 0.12] },
       { shape: rect(0, 0, W * T, H * T), fill: [...look.tint, 0.08] },
       sightMask(s.p, sight),
     ];
