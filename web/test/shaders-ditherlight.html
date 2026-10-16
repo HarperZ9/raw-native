@@ -1,0 +1,34 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Dither-quantised lighting: GPU against the CPU reference</title>
+<link rel="icon" href="data:,">
+<!-- Run by tests/web/shaders_parity.py --shader ditherlight. Each case of
+     evidence/shaders-ditherlight-parity-bounds.json renders a G-buffer of the Salt Road scene, then
+     runs it through ditherlight.mjs (CPU, float64) and ditherlight/gpu.mjs; levels and the 8-bit
+     output are compared. -->
+<script type="module">
+import { createHost } from "../raw-gpu.mjs";
+import { resolveDitherlight, runDitherlight } from "../shaders/ditherlight/ditherlight.mjs";
+import { createGpuDitherlight } from "../shaders/ditherlight/gpu.mjs";
+import { renderFrame, pathSpecs, lightsOf, FOV } from "../shaders/fixtures/dream.mjs";
+import { codeStats } from "../shaders/lab/gpu-kit.mjs";
+const q = new URLSearchParams(location.search);
+try {
+  const host = await createHost({ timing: false });
+  const gpuErrors = []; host.device.onuncapturederror = (e) => gpuErrors.push(e.error.message);
+  const bounds = await (await fetch("../../evidence/shaders-ditherlight-parity-bounds.json")).json(), { width: W, height: H } = bounds.output;
+  const cases = [];
+  for (const c of bounds.cases) {
+    if (q.get("case") && q.get("case") !== c.id) continue;
+    const spec = pathSpecs(c.path, c.frame + 1, { fixed: !c.sweep, lanternAttached: !!c.attached })[c.frame], g = renderFrame(spec, W, H), lights = lightsOf(spec);
+    const plan = resolveDitherlight(c.preset, c.overrides, { height: H, fov: FOV }), want = runDitherlight(plan, lights, g);
+    const d = await createGpuDitherlight(host, c.preset, c.overrides, { w: W, h: H }, { fov: FOV }); d.frame(g, lights);
+    const got = await d.read(); d.destroy();
+    let mism = 0; for (let i = 0; i < want.level.length; i++) if (want.level[i] !== got.level[i]) mism++;
+    const st = codeStats(want.rgba, got.packed);
+    cases.push({ id: c.id, decisionMismatch: mism, decisions: want.level.length, mismatch_fraction: mism / want.level.length, over2_fraction: st.over2 / st.n, mean: st.mean, max: st.max });
+  }
+  await host.done();
+  window.__result = { bounds: bounds.bounds, cases, adapter: host.info, gpuErrors };
+} catch (e) { window.__result = { error: String(e && e.stack || e) }; }
+</script>

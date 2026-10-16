@@ -1,0 +1,62 @@
+{
+  "bounds": {
+    "max_decision_mismatch_fraction": 0.0005,
+    "over2_fraction": 0.0005,
+    "mean_abs_code": 0.12
+  },
+  "cases": [
+    {
+      "id": "ink-bayer-screen",
+      "decisionMismatch": 0,
+      "decisions": 20736,
+      "mismatch_fraction": 0,
+      "over2_fraction": 0,
+      "mean": 0,
+      "max": 0
+    },
+    {
+      "id": "ink-blue-octave",
+      "decisionMismatch": 0,
+      "decisions": 20736,
+      "mismatch_fraction": 0,
+      "over2_fraction": 0,
+      "mean": 0,
+      "max": 0
+    },
+    {
+      "id": "tones4-bayer-fixed",
+      "decisionMismatch": 0,
+      "decisions": 20736,
+      "mismatch_fraction": 0,
+      "over2_fraction": 0,
+      "mean": 0,
+      "max": 0
+    },
+    {
+      "id": "tones4-blue-screen-beam",
+      "decisionMismatch": 0,
+      "decisions": 20736,
+      "mismatch_fraction": 0,
+      "over2_fraction": 0,
+      "mean": 0,
+      "max": 0
+    },
+    {
+      "id": "tones8-bayer-octave-object",
+      "decisionMismatch": 0,
+      "decisions": 20736,
+      "mismatch_fraction": 0,
+      "over2_fraction": 0,
+      "mean": 0,
+      "max": 0
+    }
+  ],
+  "adapter": {
+    "vendor": "google",
+    "architecture": "swiftshader",
+    "device": "",
+    "description": ""
+  },
+  "gpuErrors": [],
+  "adapter_kind": "swiftshader"
+}

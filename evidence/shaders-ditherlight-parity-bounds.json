@@ -1,0 +1,15 @@
+{
+  "what": "Dither-quantised lighting (web/shaders/ditherlight/): GPU pass against the float64 CPU reference on G-buffers of the Salt Road scene",
+  "fixed_before_first_run": "2026-10-15",
+  "source": "fixtures/dream.mjs renderFrame at 192 x 108; the same f32 G-buffer feeds both sides",
+  "output": { "width": 192, "height": 108 },
+  "cases": [
+    { "id": "ink-bayer-screen", "preset": "ink", "overrides": { "source": "bayer8", "anchor": "screen" }, "path": "static", "frame": 0 },
+    { "id": "ink-blue-octave", "preset": "ink", "overrides": { "source": "blue64", "anchor": "world-octave" }, "path": "orbit", "frame": 5 },
+    { "id": "tones4-bayer-fixed", "preset": "tones4", "overrides": { "source": "bayer8", "anchor": "world-fixed" }, "path": "dolly", "frame": 7 },
+    { "id": "tones4-blue-screen-beam", "preset": "tones4", "overrides": { "source": "blue64", "anchor": "screen" }, "path": "strafe", "frame": 4, "sweep": true },
+    { "id": "tones8-bayer-octave-object", "preset": "tones4", "overrides": { "levels": 8, "source": "bayer8", "anchor": "world-octave" }, "path": "spin", "frame": 3, "attached": true }
+  ],
+  "bounds": { "max_decision_mismatch_fraction": 5e-4, "over2_fraction": 5e-4, "mean_abs_code": 0.12 },
+  "why": "A level decision is discrete. f32 against f64 can flip it only where the tone sits within rounding of a threshold, or where a world anchor sits within rounding of a cell edge or the dominant-axis switch. A flip changes one pixel by a whole level step, so the bounds are fractions of pixels, not code values."
+}

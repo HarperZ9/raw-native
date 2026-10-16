@@ -1,0 +1,64 @@
+<!-- writing-profile: research -->
+# Signature effects program: plan
+
+Dated 2026-10-15. Direction from the author, same day: go back to the roots (the ENB work, and the ENB and ReShade effects authors), "dig into practical effects and visual hacks", build ray tracing, rasterisation and "unique creative and even novel" effect techniques, and make something beautiful and playable. This plan ranks a signature suite for raw-native's raster and RT paths. All shader code is original. Where this plan names ideas from other authors it names the idea and cites it in NOVELTY.md; no code is taken from anyone.
+
+Status words used below. "Built" means code, tests and parity exist in this repository. "Candidate" means a technique that may be new; it stays "candidate" until a dated row in NOVELTY.md backs it, and "known" where the check found prior art. No row below is "novel".
+
+## Lessons from Elder ENB (live release)
+
+Source: the author's live release as installed in the Skyground Chronicles list (Elder ENB, Nexus mod 119003, d2026.2.15.0), read only: `enbseries.ini`, the per-effect `.fx.ini` files, the weather files, the preset overlays and the `.fx` shader headers. Nothing was copied, written or renamed. The `_LiveValidation*` folders were not read. These are my notes, in my words.
+
+Provenance caveat. The folder mixes hand-tuned settings with generated and tool-assisted files (templated weather files, backup folders, a native runtime plugin, shared helper headers). The postpass header credits effects 1 to 9 as adapted from a third-party suite. The files do not show which lines were written by hand, so the lessons below describe the release as shipped.
+
+The effect stack as shipped (ENB's fixed stage order, with a large addon layer):
+- Prepass: ambient occlusion and bounce (radius, AO intensity, power curve, surface thickness, multi-bounce, specular occlusion, fade range, denoise), skylighting, volumetric fog (density per time of day, height falloff, extinction, scatter albedo, sun anisotropy g, noise octaves, sun occlusion), aerial perspective (Rayleigh and Mie density, anisotropy, multi-scatter), god rays.
+- Bloom: a mip pyramid with one weight per octave (1024 down to 16), peaking at 256 (0.5, 0.8, 1.0, 0.9, 0.6, 0.3, 0.1), a soft-knee threshold, a Gaussian or Kawase mode, day sigma 7, night 5, interior 4, day intensity 5.0, night 1.0, interior 0.8.
+- Lens: ghosts (intensity 0.5, spacing 0.4, six aperture blades, roundness, chromatic dispersion, a thin-film coating control), anamorphic streaks (width 8, angle, blue tint), halo (ring width 0.35), optional dirt. Day 1.0, night 0.5, interior 0.3.
+- Depth of field: autofocus with variance rejection and centre bias, near and far blur curves (3.0 and 0.1), bokeh up to 40 px over 12 rings, six blades, cat-eye, ring bokeh.
+- Effect (grade): a selectable tone operator (linear, Reinhard, Hejl, Hable, ACES, AgX), white point by time of day (60, 50, 30), adaptation min 0.05 and max 2.0, brightness, contrast and saturation per time of day (night 0.75 and 0.9), an optional film pipeline (negative stock, print curve).
+- Postpass: ten ordered passes, each a toggle and all off by default: diffusion (strength 0.25, local radius 2 px), halation (strength 0.2, threshold 0.6, knee 0.25, wavelength spread red to blue 1.5), light leaks (0.15), chromatic aberration (1.1), anamorphic squeeze, gate weave (0.4 px horizontal, 0.6 px vertical), optical vignette (0.5; cos^4, mechanical, cat-eye), letterbox, film damage (scratches 0.2, dust 0.15, hair 0.15), then sharpening, grain (0.12) and dither last. Further optional blocks: CRT (scanlines 0.3, mask 0.4), VHS, rain droplets, motion blur.
+
+How it is tuned, as far as the files show:
+1. Everything that matters is keyed to a small fixed set of looks. The shader inis use three slots (Day, Night, Interior). The engine ini uses eight (Dawn, Sunrise, Day, Sunset, Dusk, Night, InteriorDay, InteriorNight), and bloom and lens ignore the weather system by setting.
+2. The weather layer is a template. All 610 weather files have the same size (41,292 bytes) and differ in a few keys. The keys that vary are the ones that carry mood: ambient lighting (0.05 to 5.6), volumetric fog intensity (0.45 to 3.0), moon intensity (0.5 to 3.0), sky gradient, sun glow, god-ray range and intensity. Per-weather hand tuning is spent on light and atmosphere, not on the film or lens stage.
+3. Looks are composable. About 175 preset overlays store relative operations on named parameters (for example "+ 0.6" on fog intensity at dawn) with one Amount slider, so a look such as "Cinematic Drama" or "Infrared Film" layers on any base.
+4. Controls speak in physical terms with artistic range: wavelength spread, thin-film coating, aperture blades, cat-eye, projected-black grain in the letterbox. The physical names are handles, not simulations.
+5. Conservative defaults and opt-in stacking: the film-lab passes are off until chosen, and the dither is the last colour operation.
+
+What this means for raw-native (my reading, not the author's statement):
+- The engine already holds the physical film and CRT work. What the ENB release has that the engine lacks is the lens stage (ghost, anamorphic, halo), a look-key system with relative-operation overlays, and per-parameter curves over time of day. Those belong in the plan as infrastructure (item 0) and as candidate 3.
+- Keep the author's principle that mood is carried by light and atmosphere keyed to time and place, and that the optical stack stays an opt-in layer the player or designer can read.
+
+## What exists, so nothing is built twice
+
+In `web/shaders` today: physical CRT and a classic CRT, spectral film (red-first halation, grain, printer points, gate weave), palette and dither (Bayer, blue noise, mix modes), pixel art scaling, VHS, painterly Kubelka-Munk, pigment-space lighting, glaze, hatching, fibre, caricature warp, hysteresis quantisation, scan-causal sag, purity. Built in this task: dither-quantised lighting with shaped beams, fog to paper white and a motion study (`web/shaders/ditherlight`, `project-docs/DITHER-LIGHTING-RESULTS.md`). The listing has no anamorphic or lens-ghost module.
+
+## Ranked plan
+
+Ranking uses four tests: gap (nothing equivalent in the engine), template pull (how much it changes one of the three playable templates), cost to a measurable first result on software adapters, and risk of cloning existing work.
+
+| Rank | Effect (family) | Serves (playable showcase) | Raster and RT path | Novelty | First measurable result |
+|---|---|---|---|---|---|
+| 0 | Look keys: time-of-day and place keyed parameter curves plus relative-operation overlays with one Amount (infrastructure, from the Elder lessons) | All three templates; the look of every playable | CPU-side, drives any pass | Known (ENB practice); our version is original code | A template look switches across eight keys with a bounded, tested interpolation; overlay Amount 0 equals base exactly |
+| 1 | Paint-over projection: block-out render at a locked camera, export, paint, reimport, project as the surface (paint-over family) | Painted isometric RPG (templates/painted-iso-rpg): a street or harbour you walk through that is an illustration | Raster projector material; RT visibility finds surfaces the painting cannot cover | Candidate (1): export and reimport loop that suggests secondary projectors from visibility; (2): parallax-aware blend of several keyframes by camera angle. Camera projection mapping itself is known | Round trip: render, paint a known test paint-over we author, reproject, and the reprojected frame at the locked camera equals the painting within 1/255 on covered pixels; coverage map reports uncovered pixels |
+| 2 | Palette-locked lighting with palette-cycle animation (dither and halftone family) | 2.5D pixel (templates/pixel-2.5d): a graveyard and chapel at night with void pools that cycle | Lighting evaluated in ramp coordinates in raster; RT shadows feed the same ramp | Candidate: lamps shift hue along authored ramps from a spectral light, not only value. Palette ordered dither and post-lighting quantisation are known | Every output pixel is a palette entry (exact); across a moving lamp the ramp step changes by at most one per frame (hysteresis, reusing the existing module) |
+| 3 | Lens suite: anamorphic streak and squeeze from a cylindrical-element model, ghosts from a real aperture with thin-film coating, starburst, halo (film and lens family) | Retro-look thriller (templates/retro-thriller): headlights and a desk lamp in a night office, a sun-through-window shot | Raster post stage; RT can supply the bright-source list instead of a threshold | Candidate (unchecked): physically derived streak and ghost from a lens prescription. Streaks and ghosts as effects are known | Energy: a point source's streak plus core conserves total energy within 1%; ghost positions match a hand-traced two-element prescription within 0.5 px |
+| 4 | Halftone and line-screen output stage with hysteresis, and dither-lit extensions: object-only anchoring, a hysteresis variant of the screen cell, RT visibility through the threshold (dither and halftone family) | Retro thriller (the monochrome surreal walk, the Salt Road demo as the seed); 2.5D pixel for the 1-bit night | Raster post; RT shadow ray whose single sample is quantised by the same threshold that dithers the tone | Candidate (unchecked): one ray per pixel whose stochastic visibility and ordered threshold are one number, so the pattern is the estimator. Halftone screens and ordered dither are known | Mean-preservation within half a rank at every level count (tested for the lighting model); the one-ray visibility matches a 64-ray reference mean within 2% over a flat penumbra |
+| 5 | Era-faithful low-poly mode: affine texturing, vertex snap and fixed-point jitter, vertex lighting, low-resolution textures as selectable hardware choices (era mode) | Retro thriller: the grotesque halls; a PS1-era level with torch sprites | Raster only (an RT path would contradict the look) | Known for the effects (dense prior). Candidate only for a hardware-faithful fixed-point model derived from documented integer coordinate ranges (unchecked) | Snap grid and affine error match a reference rasteriser we author within 1 px on a test mesh we author |
+| 6 | Emissive line and lattice rendering with a draw-on parameter (emissive line family) | All three: the spider web at the pond (thriller), a rune lattice (RPG), a pixel constellation (2.5D) | Raster analytic-coverage lines; RT treats a lattice as an area emitter with importance sampling | Candidate (unchecked): the draw-on front is an energy-conserving line integral, so brightness does not pop as segments appear. Line rendering is known | Coverage error against a supersampled reference under 1/255 mean; total emitted energy equal before and after a draw-on step within 1% |
+
+Cross-cutting rules for every row: a CPU float64 reference first, GPU parity on SwiftShader or WARP with bounds committed before the first run, a falsification control that fails when the pass is wrong, temporal behaviour measured on a moving camera, and our own assets only (no test models).
+
+Why this order:
+- Rank 1 is the author's named favourite template (painted isometric, "more Disco Elysium"), has no counterpart in the engine today, and its first result is a pure round-trip check that needs no judge.
+- Rank 2 reuses the lighting model built in this task and the hysteresis module, and a pixel template exists to host it.
+- Rank 3 is the part of the ENB tradition (lens) the engine lacks, and the Elder release spends a full stage and an ini file on it.
+- Rank 4 continues the work with measured findings in hand. Rank 5 has the densest prior art, so the clone risk is highest. Rank 6 is cheap but its payoff depends on a showcase scene.
+- Rank 0 is infrastructure and should land beside rank 1, because the painted look needs time-of-day keys.
+
+## Open questions this plan leaves
+
+- Which of the lens controls the author wants exposed as handles (wavelength spread, thin-film, blades) and which stay fixed.
+- Human raters for screen against world anchoring (the motion study is software only).
+- Whether the look keys use three slots or eight.
