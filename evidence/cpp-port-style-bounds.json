@@ -9,14 +9,14 @@
   },
   "cpu_link": {
     "ditherlight": {
-      "tone_max_abs": 1e-9,
+      "tone_max_abs": 1e-09,
       "level_mismatch_unexcused": 0,
       "level_tie_excuse": "A level mismatch is excused only where the C++ fraction f is within 1e-9 of the threshold t. Excused mismatches are counted and reported, and must be at most 2 per case.",
       "rgba8_mismatch_where_levels_agree": 0,
       "coverage": "every pixel of every case is compared (decisions = 192 x 108 per case)"
     },
     "paintover": {
-      "rgb_max_abs_on_both_covered": 1e-9,
+      "rgb_max_abs_on_both_covered": 1e-09,
       "coverage_mismatch_unexcused": 0,
       "coverage_tie_excuse": "A coverage mismatch is excused only where one of the C++ decision quantities (frame edge, facing against fMin, depth against its tolerance) is within 1e-9 of its threshold; at most 2 excused per case.",
       "hit_count_mismatch_where_coverage_agrees": 0,
@@ -29,9 +29,20 @@
     }
   },
   "gpu_link": {
-    "backends": ["d3d12 on WARP (Microsoft Basic Render Driver)", "webgpu on SwiftShader through the WebAssembly WebGPU build"],
-    "ditherlight": { "max_decision_mismatch_fraction": 5e-4, "over2_fraction": 5e-4, "mean_abs_code": 0.12 },
-    "paintover": { "max_decision_mismatch_fraction": 5e-4, "over2_fraction": 5e-4, "mean_abs_code": 0.05 },
+    "backends": [
+      "d3d12 on WARP (Microsoft Basic Render Driver)",
+      "webgpu on SwiftShader through the WebAssembly WebGPU build"
+    ],
+    "ditherlight": {
+      "max_decision_mismatch_fraction": 0.0005,
+      "over2_fraction": 0.0005,
+      "mean_abs_code": 0.12
+    },
+    "paintover": {
+      "max_decision_mismatch_fraction": 0.0005,
+      "over2_fraction": 0.0005,
+      "mean_abs_code": 0.05
+    },
     "why": "The same numbers as the web parity bounds, because the comparison is the same kind: an f32 pass against a float64 reference on the same inputs. A level or coverage decision flips only within f32 rounding of its threshold, and a flip moves a pixel by a whole step, so the bounds are fractions of pixels.",
     "lookkeys": "no GPU link: look keys run on the CPU and reach the GPU as uniform values"
   },
@@ -47,5 +58,11 @@
     "rule": "Run once by hand and recorded in evidence/cpp-port-style-runs.json: edit one constant in the source, rebuild, run, see the check fail, revert, rebuild, see it pass.",
     "ditherlight": "In the C++ reference and, separately, in style.wgsl (regenerating the HLSL): the hemisphere constant 0.5 in (0.5 + 0.5 n.y) to 0.6. Prediction: the CPU link fails on every case; the WARP link fails on at least the 4- and 8-level cases.",
     "paintover": "In the C++ reference and, separately, in style.wgsl: the bilinear sample's divisor 255 to 256. Prediction: the CPU link fails on every case; the WARP link fails on mean_abs_code on every case."
+  },
+  "addendum_a": {
+    "written": "2026-10-15, after the first CPU-link run and before any GPU-link run",
+    "finding": "The paint-over controls as first written (the view camera moved one pixel to the right) did not fail on the three orthographic cases (primary-aligned, three-off-axis, three-at-secondary); they failed on the perspective case. The reason is in the reference, not in the check: the shading reads the view camera only through its direction to the surface point, and an orthographic camera's direction does not depend on its position. The web test's one-pixel-shift control re-renders the G-buffer from the moved camera; the C++ check has no renderer for the Lamp Quay fixture, so moving the camera left the surface positions where they were.",
+    "change": "paintover_cpu and paintover_gpu controls: every surface position of the view G-buffer is moved by one view pixel (pixelWorld at its depth) along the view's right axis, so each pixel reads its projectors one pixel off. The bound each control must break is unchanged. The first control is still run on every case and reported as view_shift_control_fails; it decides nothing.",
+    "unchanged": "Every bound value, the cases and the other controls."
   }
 }
