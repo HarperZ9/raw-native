@@ -1,0 +1,2 @@
+78c961a (branch feat/n2-native-presentation, PR #160); built with RAW_NATIVE_GPU_D3D12=ON Release, MSVC 19.50
+967144a71f86de71d0a7314262055e57ede92d95b265085dbfee434c27066af9 *bin-n2/raw_native_present.exe

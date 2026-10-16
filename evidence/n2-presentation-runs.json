@@ -28,13 +28,16 @@
   },
   "c4_pacing": {
    "warp": "pass for the harness only: 599 intervals written, all finite and positive (median 16.78 ms at 60 Hz). WARP misses the RTX bounds (p99 35.1 ms, 27 intervals above 1.5 T); that is expected of a software rasterizer and is not a pacing result.",
-   "rtx4090": "queued, not run: the GPU lock D:/gpu.lock.d is held by MMBU FT7. The job waits for the lock, takes it with its own token and releases only that token."
-  }
+   "rtx4090": "pass: 10,000 frames (120 warm-up), vsync on, borderless fullscreen 1920 x 1080 on a 60 Hz output (T = 16.667 ms), NVIDIA GeForce RTX 4090, driver 610.88 (DXGI 32.0.16.1088), under D:/gpu.lock.d 2026-10-16 21:49:43 to 21:52:57Z. 9,999 intervals: median 16.663 ms (0.02% from T; bound 1%), p95 17.735 ms, p99 18.140 ms (1.088 T; bound 1.25 T), 4 intervals above 1.5 T (bound 20), max 33.66 ms; DXGI counted 5 missed refreshes over 9,996 intervals with statistics; no occluded present, no wait timeout. Prediction held on all three (median within 0.2%, p99 at most 1.1 T, at most 5 above 1.5 T). Records: evidence/n2-rtx4090/.",
+   "rtx4090_vsync_off": "exploratory, no bound: 2,000 frames with sync interval 0 and tearing allowed, median 0.245 ms between presents (about 4,000 presents a second), max 67.1 ms (one interval)."
+  },
+  "c2_hardware": "on the RTX 4090 (no WARP): two presented runs of 600 frames and the offscreen run give 600 of 600 equal hashes, and the offscreen list equals the WARP list of evidence/n2-warp/offscreen.json 600 of 600: the frames are the same on WARP, lavapipe, SwiftShader and the RTX 4090."
  },
  "mistakes_found_on_the_way": [
   "The first lifecycle run failed to recover: the host passed an error string that already held the loss message into D3d12Device::init, which reports success as an empty string, so a good new device read as a failure. Fixed in the host (a fresh string) and in rhi::createDevice (its own string).",
   "With the debug layer on, the process ended with exit code 0x87D at teardown: the swapchain was released while its last Present was still queued. The swapchain now drains the queue before a resize or a release.",
   "While removing temporary trace lines, a sed over src/ deleted two lines of src/rhi/d3d12/hw_rayquery.cpp that contained the word TRACE (PREFER_FAST_TRACE). Caught in git status before the commit and restored from git; not in any commit."
  ],
- "does_not_prove": "Anything about a hardware adapter except what the queued RTX run will record; what the compositor or the panel shows; recovery from a real driver fault, since WARP removal is triggered by the API."
+ "does_not_prove": "Anything about a hardware adapter except what the queued RTX run will record; what the compositor or the panel shows; recovery from a real driver fault, since WARP removal is triggered by the API.",
+ "rtx_binary": "evidence/n2-rtx4090/BINARY.txt: the pinned raw_native_present.exe of 78c961a and its sha256"
 }
