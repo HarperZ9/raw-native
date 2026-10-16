@@ -10,7 +10,7 @@
 //   const flow = kit.flow([{ c: [x0, y0, x1, y1, x2, y2, x3, y3], weight: 0.8, phase: 0 }, ...]);
 //   items.push({ kind: "layer", layer: flow, reveal: 1, phase: 0.3, width: 3, opacity: 1 });
 // A layer object may appear several times in one frame (uniform slots ring per frame).
-import { project } from "../motion/vector.mjs";
+import { project, DEFAULT_CAMERA } from "../motion/vector.mjs";
 import { FIELD_WGSL, POINTS_WGSL, FLOW_WGSL } from "./wgsl.mjs";
 import { orbFloats, atmosFloats, rampFloats } from "./pack.mjs";
 import { lodFraction, hashUnit } from "./ref.mjs";
@@ -89,11 +89,19 @@ class Points {
     while (lo < hi) { const m = (lo + hi) >> 1; if (this.hs[m] < keep) lo = m + 1; else hi = m; }
     return lo;
   }
-  draw(rp, item, f) {
-    const P = project({ z: item.z || 0, screen: item.screen }, f.cam, f.W, f.H, f.design);
-    if (!P) return;
+  // The level of detail an item gets at camera cam on a W x H target: { keep, gain, drawn }.
+  // Pure in its inputs, so a scene can label a frame with what that frame draws.
+  lodFor(item, cam, W, H, design = [1920, 1080]) {
+    const P = project({ z: item.z || 0, screen: item.screen }, { ...DEFAULT_CAMERA, ...cam }, W, H, design);
+    if (!P) return null;
     const covered = (item.area ?? 1) * P.k * P.k;            // item.area: the cloud's area in scene units^2
     const lod = item.keep !== undefined ? { keep: item.keep, gain: 1 / item.keep } : lodFraction(this.count, covered, item.density ?? 1.5);
+    return { ...lod, P, drawn: lod.keep >= 1 ? this.count : this.prefix(lod.keep) };
+  }
+  draw(rp, item, f) {
+    const lod = this.lodFor(item, f.cam, f.W, f.H, f.design);
+    if (!lod) return;
+    const P = lod.P;
     const gain = Math.min(item.maxGain ?? 8, lod.gain) * (item.gainScale ?? 1);
     const r = rampFloats(item.ramp || INK_RAMP), range = item.range || [0, 1], sel = item.sel ?? -1;
     const u = this.slots.next(f.frameKey);
@@ -102,7 +110,7 @@ class Points {
       lod.keep, gain, this.count, sel,
       range[0], range[1], item.opacity ?? 1, item.selGain ?? 4,
       ...r.xs, ...r.cs]));
-    const drawn = lod.keep >= 1 ? this.count : this.prefix(lod.keep);
+    const drawn = lod.drawn;
     this.last = { keep: lod.keep, gain, drawn };
     rp.setPipeline(this.pipe);
     rp.setBindGroup(0, this.host.bind(this.pipe, [f.view, u, this.buf]));
