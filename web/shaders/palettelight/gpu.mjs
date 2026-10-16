@@ -2,7 +2,6 @@
 //   const p = await createGpuPalettelight(host, plan, { w, h });
 //   p.frame(gbuffer, time);  await p.read() -> { idx: Uint32Array, packed: Uint8Array RGBA8 }
 import { gpuKit } from "../lab/gpu-kit.mjs";
-import { MOON_DIR } from "../fixtures/chapel-render.mjs";
 import { PALETTELIGHT_WGSL } from "./palettelight.wgsl.mjs";
 
 const CLASSES = ["ground", "stone", "wood", "foliage"];
@@ -13,10 +12,10 @@ export function packTable(plan) {
   return Uint32Array.from(t);
 }
 export function packEntries(plan) { return Uint32Array.from(plan.palette.entries.map((e) => e.rgb[0] | (e.rgb[1] << 8) | (e.rgb[2] << 16) | (255 << 24))); }
-const radial = (L) => [...L.pos, L.radius, L.core, L.intensity, L.wrap];
+const radial = (L) => [...L.pos, L.radius, L.core, L.intensity, L.wrap, 0];
 export function packParams(plan, size, time) {
   const P = new Float32Array(40);
-  P.set([size.w, size.h, plan.steps, plan.voidSteps, plan.gain, plan.ambient, plan.moon, plan.cycleRate, time, ...MOON_DIR, ...radial(plan.lamp), ...radial(plan.glows[0]), ...radial(plan.glows[1])], 0);
+  P.set([size.w, size.h, plan.steps, plan.voidSteps, plan.gain, plan.ambient, plan.moon, plan.cycleRate, time, ...plan.moonDir, ...radial(plan.lamp), ...radial(plan.glows[0]), ...radial(plan.glows[1])], 0);
   return P;
 }
 export function packGbuffer(g) {

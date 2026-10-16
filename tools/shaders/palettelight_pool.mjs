@@ -16,4 +16,4 @@ export async function renderChapels(tasks, workers = Math.max(1, Math.min(os.cpu
   })));
   return out;
 }
-if (!isMainThread) parentPort.on("message", ({ i, t }) => parentPort.postMessage({ i, g: renderChapel(t.cam, t.w, t.h, { lamp: t.lamp }) }));
+if (!isMainThread) parentPort.on("message", ({ i, t }) => parentPort.postMessage({ i, g: renderChapel(t.cam, t.w, t.h, { lamp: t.lamp, moon: t.moon }) }));

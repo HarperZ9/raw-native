@@ -25,7 +25,7 @@ function shadow(P, N, L, maxT, k = 8) {
   return Math.max(0, Math.min(1, res));
 }
 
-export function renderChapel(cam, w, h, { lamp = LAMP } = {}) {
+export function renderChapel(cam, w, h, { lamp = LAMP, moon = MOON_DIR } = {}) {
   const n = w * h, g = { w, h, hit: new Uint8Array(n), cls: new Uint8Array(n), a: new Float32Array(n), depth: new Float32Array(n), P: new Float32Array(n * 3), N: new Float32Array(n * 3), vis: new Float32Array(n * 3), phase: new Float32Array(n) };
   const asp = w / h;
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
@@ -41,7 +41,7 @@ export function renderChapel(cam, w, h, { lamp = LAMP } = {}) {
     for (let c = 0; c < 3; c++) { g.P[i * 3 + c] = P[c]; g.N[i * 3 + c] = N[c]; }
     g.phase[i] = so.cls === CLS.void ? poolPhase(P[0], P[2]) : 0;
     if (so.cls !== CLS.window && so.cls !== CLS.lamp && so.cls !== CLS.void) {
-      g.vis[i * 3] = shadow(P, N, MOON_DIR, 40);
+      g.vis[i * 3] = shadow(P, N, moon, 40);
       const toL = [lamp[0] - P[0], lamp[1] - P[1], lamp[2] - P[2]], dist = Math.hypot(...toL);
       g.vis[i * 3 + 1] = dist < 11 ? shadow(P, N, [toL[0] / dist, toL[1] / dist, toL[2] / dist], dist - 0.95, 5) : 0;
       g.vis[i * 3 + 2] = 1;

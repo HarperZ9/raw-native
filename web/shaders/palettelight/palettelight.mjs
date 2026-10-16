@@ -21,7 +21,7 @@ import { LAMP, WINDOWS } from "../fixtures/chapel.mjs";
 import { buildPalette, CLASS_BASES } from "./palette.mjs";
 import { srgbToLinear, linearToSrgb } from "../common.mjs";
 
-export const PL_DEFAULTS = { gain: 1.5, ambient: 0.08, moon: 0.45, cycleRate: 0.18, steps: 4, voidSteps: 6, lampPos: LAMP };
+export const PL_DEFAULTS = { gain: 1.5, ambient: 0.08, moon: 0.45, cycleRate: 0.18, steps: 4, voidSteps: 6, lampPos: LAMP, moonDir: MOON_DIR };
 export function resolvePalettelight(over = {}) {
   const p = { ...PL_DEFAULTS, ...over }, palette = buildPalette({ steps: p.steps, voidSteps: p.voidSteps });
   return { ...p, palette, lamp: makeRadial({ pos: p.lampPos, radius: 11, core: 1.6, intensity: 6, wrap: 0.25 }), glows: WINDOWS.map((w) => makeRadial({ pos: [w[0], w[1] - 0.2, w[2] + 0.9], radius: 6, core: 1.0, intensity: 1.3, wrap: 0.5 })) };
@@ -30,7 +30,7 @@ export function resolvePalettelight(over = {}) {
 const CLS_NAME = ["ground", "stone", "wood", "foliage"];
 // Cool and warm irradiance at a lit pixel. px: { P, N, vis: [moon, lamp, window] }.
 export function irradiance(plan, px) {
-  const nl = Math.max(0, px.N[0] * MOON_DIR[0] + px.N[1] * MOON_DIR[1] + px.N[2] * MOON_DIR[2]), cool = plan.ambient * (0.7 + 0.3 * (0.5 + 0.5 * px.N[1])) + plan.moon * nl * px.vis[0];
+  const md = plan.moonDir, nl = Math.max(0, px.N[0] * md[0] + px.N[1] * md[1] + px.N[2] * md[2]), cool = plan.ambient * (0.7 + 0.3 * (0.5 + 0.5 * px.N[1])) + plan.moon * nl * px.vis[0];
   let warm = 0;
   const m = maskAt(plan.lamp, px.P); if (m > 0) warm += px.vis[1] * m * surfaceTerm(plan.lamp, px.P, px.N);
   for (const g of plan.glows) { const q = maskAt(g, px.P); if (q > 0) warm += px.vis[2] * q * surfaceTerm(g, px.P, px.N); }
