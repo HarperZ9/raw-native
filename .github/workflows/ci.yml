@@ -430,7 +430,7 @@ jobs:
       - name: Configure with RAW_NATIVE_VULKAN_RHI=ON
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRAW_NATIVE_VULKAN_RHI=ON
       - name: Build
-        run: cmake --build build -j 4 --target raw_native_present_vk
+        run: cmake --build build -j 4 --target raw_native_present_vk raw_native_cli_vk
       - name: Start Xvfb and a headless Weston
         run: |
           Xvfb :99 -screen 0 1280x720x24 > xvfb.log 2>&1 &
@@ -473,6 +473,45 @@ jobs:
           python3 $g lifecycle n3-wayland-lifecycle.json n3-lifecycle-offscreen.json --no-minimise
           $p run --frames 60 --fullscreen-check --out n3-wayland-fullscreen.json
           python3 -c "import json,sys; d=json.load(open('n3-wayland-fullscreen.json')); print(d['events']); sys.exit(0 if d['fullscreen_ok'] else 1)"
+      - name: N3 criteria 2 and 3 on lavapipe; the renderer's passes in SPIR-V against the same references and gates as WARP; the swap control fails; lighting shading and the shadow-map identity are recorded misses (evidence/n3-vulkan-compute-runs.json)
+        run: |
+          c=build/raw_native_cli_vk
+          $c --gpu --out n3c-gpu --width 128 --height 128 > /dev/null
+          grep -q '"verdict":"verified"' n3c-gpu/gpu_certificate.json
+          python3 scripts/identity_matrix.py run $c n3c-quick.json n3c-quick-out --gpu --quick
+          n=$(grep -l '"verdict":"verified"' n3c-quick-out/*/gpu_certificate.json | wc -l); echo "verified: $n of 4"; test "$n" = 4
+          if [ -f evidence/n3-identity-golden-vulkan-lavapipe.json ]; then
+            python3 scripts/identity_matrix.py compare evidence/n3-identity-golden-vulkan-lavapipe.json n3c-quick.json --except arena_certificate.json
+          fi
+          RAW_NATIVE_SPIRV_CONTROL=swap python3 scripts/identity_matrix.py run $c n3c-control.json n3c-control-out --gpu --quick
+          n=$(grep -l '"verdict":"verified"' n3c-control-out/*/gpu_certificate.json | wc -l); echo "control verified: $n of 4 (must be fewer)"; test "$n" -lt 4
+          $c texture-identity > n3c-texture.json; grep -q '"pass": true' n3c-texture.json
+          $c pbr-parity > n3c-pbr.json; grep -q '"pass": true' n3c-pbr.json
+          $c lighting-parity > n3c-lighting.json || echo "lighting-parity: recorded miss, see the runs file"
+          $c raster-identity --out n3c-rhi3.json > /dev/null || true
+          python3 -c "import json,sys; d=json.load(open('n3c-rhi3.json')); ok=not d['error'] and all(f['mismatches']==0 for f in d['formats']) and d['depth_order_equal'] and d['depth_control_differs'] and d['control_moved_triangle_fails'] and all(g['pass'] for g in d['gbuffer'] if g['scene']!='raw-hall nave'); print(json.dumps(d['gbuffer'])); sys.exit(0 if ok else 1)"
+          $c shadow-parity --out n3c-shadow.json > /dev/null || true
+          python3 tests/gpu/shadow_gate.py n3c-shadow.json --min-scenes 4
+          $c post-parity --out n3c-post.json > /dev/null || true
+          python3 tests/gpu/post_gate.py n3c-post.json --min-scenes 5
+          $c swr-render --out n3c-swr > /dev/null
+          python3 -c "import json,sys; f=json.load(open('n3c-swr/swr.json'))['frames']; print([x['pixels_differing'] for x in f]); sys.exit(0 if len(f)==6 and all(x['pixels_differing']==0 for x in f) else 1)"
+          $c swr-parity > n3c-swr-parity.json; grep -q '"pass": true' n3c-swr-parity.json
+          $c rt-bvh-parity --quick > n3c-bvh.json; grep -q '"pass": true' n3c-bvh.json
+          $c rt-pt-parity --quick > n3c-pt.json || true
+          python3 tests/gpu/pt_gate.py n3c-pt.json
+          $c rt-hybrid-parity > n3c-hybrid.json; grep -q '"pass": true' n3c-hybrid.json
+          $c sdf-parity --quick > n3c-sdf.json || true
+          python3 tests/gpu/sdf_gate.py n3c-sdf.json
+          node tools/port/export_style_fixtures.mjs style-fixtures
+          $c style-parity --fixtures style-fixtures --out n3c-style.json
+      - name: The ten glTF models on lavapipe with verified GPU certificates (N3 criterion 2, M2 criterion 1)
+        run: |
+          python3 tools/assets/fetch_gltf.py gltf-models
+          python3 scripts/identity_matrix.py run build/raw_native_cli_vk n3c-gltf.json n3c-gltf --models gltf-models --gpu
+          n=$(grep -l '"verdict":"verified"' n3c-gltf/*/gpu_certificate.json | wc -l)
+          echo "verified GPU certificates: $n of 10"
+          test "$n" = 10
       - name: Keep the N3 records
         if: always()
         uses: actions/upload-artifact@v4
@@ -480,6 +519,8 @@ jobs:
           name: n3-vulkan-lavapipe
           path: |
             n3-*.json
+            n3c-*.json
+            n3c-quick-out/*/gpu_certificate.json
             weston.log
   fuzz-sanitizers:
     # ROADMAP M2 criterion 2: one million fuzzed glTF inputs under AddressSanitizer and
