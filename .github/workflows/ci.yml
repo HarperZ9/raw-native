@@ -704,6 +704,8 @@ jobs:
           python tests/web/tiles_check.py --adapter swiftshader
       - name: Vertex snap and affine UVs match their CPU twin on the committed mesh set (M2 criterion 8)
         run: python tests/web/retro3d_check.py --adapter swiftshader
+      - name: The explainer kit's WGSL matches its float64 reference, points land where projected, and a 1,048,576-point cloud keeps the reference LOD count
+        run: python tests/web/explainer_parity.py --adapter swiftshader --out media-out/explainer-parity.json
       - name: The isometric fade on the GPU matches its CPU twin and changes only the faded cells (M2 criterion 9)
         run: python tests/web/iso_fade.py --adapter swiftshader
       - name: Low-resolution frames scale to the output exactly, and a slow pan moves edges smoothly (M2 criterion 7)
