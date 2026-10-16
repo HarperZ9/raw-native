@@ -24,8 +24,8 @@ import { maskAt, surfaceTerm } from "./lights.mjs";
 import { linearToSrgb } from "../common.mjs";
 
 export const DL_PRESETS = {
-  ink: { levels: 2, ink: [0.012, 0.011, 0.01], paper: [0.92, 0.9, 0.84], source: "bayer8", anchor: "world-octave", cell: 0.1, px: 2, gamma: 2.2, dark: 0.16, hemi: 0.5, fogDist: 38, fogMax: 1 },
-  tones4: { levels: 4, ink: [0.012, 0.011, 0.01], paper: [0.92, 0.9, 0.84], source: "bayer8", anchor: "world-octave", cell: 0.1, px: 2, gamma: 2.2, dark: 0.16, hemi: 0.5, fogDist: 38, fogMax: 1 },
+  ink: { levels: 2, ink: [0.012, 0.011, 0.01], paper: [0.92, 0.9, 0.84], source: "bayer8", anchor: "screen", cell: 0.1, px: 2, gamma: 2.2, dark: 0.16, hemi: 0.5, fogDist: 38, fogMax: 1 },
+  tones4: { levels: 4, ink: [0.012, 0.011, 0.01], paper: [0.92, 0.9, 0.84], source: "bayer8", anchor: "screen", cell: 0.1, px: 2, gamma: 2.2, dark: 0.16, hemi: 0.5, fogDist: 38, fogMax: 1 },
 };
 export function resolveDitherlight(preset = "ink", overrides = {}, { height = 180, fov = (70 * Math.PI) / 180 } = {}) {
   const base = DL_PRESETS[preset];

@@ -1,0 +1,811 @@
+{
+ "protocol": "evidence/ditherlight-motion-protocol.json",
+ "size": [
+  256,
+  144
+ ],
+ "frames": 32,
+ "results": {
+  "dolly": {
+   "bayer8/screen": {
+    "L": 0.21596825984432244,
+    "F": 1.2808656859409333,
+    "A": 2.507700540200831,
+    "S": null,
+    "L_displaced": 0.3933689860589789
+   },
+   "bayer8/world-fixed": {
+    "L": 0.1911879587876253,
+    "F": 11.323476759368418,
+    "A": 10.119397583966078,
+    "S": null,
+    "L_displaced": 0.31033146566882197
+   },
+   "bayer8/world-octave": {
+    "L": 0.11540893810613626,
+    "F": 10.011095723626495,
+    "A": 15.640126888166549,
+    "S": 0.01701636930312936,
+    "L_displaced": 0.33375433046431086
+   },
+   "blue64/screen": {
+    "L": 0.21282996533838458,
+    "F": 1.3088157392285573,
+    "A": 3.6881996505339654,
+    "S": null,
+    "L_displaced": 0.2954486301184696
+   },
+   "blue64/world-fixed": {
+    "L": 0.1805943359075662,
+    "F": 11.06131501487556,
+    "A": 9.939812617691032,
+    "S": null,
+    "L_displaced": 0.3210822422248389
+   },
+   "blue64/world-octave": {
+    "L": 0.11195775213608887,
+    "F": 10.351228131040779,
+    "A": 16.38637345613677,
+    "S": 0.01701636930312936,
+    "L_displaced": 0.33077394514602415
+   }
+  },
+  "strafe": {
+   "bayer8/screen": {
+    "L": 0.22500948245828872,
+    "F": 1.1742798125481462,
+    "A": 2.3320154065099747,
+    "S": null,
+    "L_displaced": 0.4589735187536161
+   },
+   "bayer8/world-fixed": {
+    "L": 0.1199474480134875,
+    "F": 7.369837337133033,
+    "A": 8.72375867751299,
+    "S": null,
+    "L_displaced": 0.2586441015276474
+   },
+   "bayer8/world-octave": {
+    "L": 0.05527496257692234,
+    "F": 6.608727774669613,
+    "A": 13.844616620137277,
+    "S": 0.0004399424084459586,
+    "L_displaced": 0.26024439591147297
+   },
+   "blue64/screen": {
+    "L": 0.27242666825209705,
+    "F": 1.1716099817101242,
+    "A": 3.4423683642177205,
+    "S": null,
+    "L_displaced": 0.32543388932315886
+   },
+   "blue64/world-fixed": {
+    "L": 0.10829993716493151,
+    "F": 7.20465351100532,
+    "A": 8.766358871342108,
+    "S": null,
+    "L_displaced": 0.2560104752177278
+   },
+   "blue64/world-octave": {
+    "L": 0.04958602996113625,
+    "F": 7.155723793508538,
+    "A": 14.843332923598501,
+    "S": 0.0004399424084459586,
+    "L_displaced": 0.24299252546806224
+   }
+  },
+  "yaw": {
+   "bayer8/screen": {
+    "L": 0.3561908809641496,
+    "F": 1.5347767236612575,
+    "A": 2.369972731641046,
+    "S": null,
+    "L_displaced": 0.4576966184690754
+   },
+   "bayer8/world-fixed": {
+    "L": 0.20560514926034398,
+    "F": 10.887744080516878,
+    "A": 8.491473669614221,
+    "S": null,
+    "L_displaced": 0.3234038755698372
+   },
+   "bayer8/world-octave": {
+    "L": 0.13691078299397222,
+    "F": 12.885211807072496,
+    "A": 13.733885860443108,
+    "S": 0.0024642947876358187,
+    "L_displaced": 0.2880824779586839
+   },
+   "blue64/screen": {
+    "L": 0.3650875929035855,
+    "F": 1.571426158623973,
+    "A": 3.5012067071949122,
+    "S": null,
+    "L_displaced": 0.32361591365345654
+   },
+   "blue64/world-fixed": {
+    "L": 0.1952742126085826,
+    "F": 11.37424266497388,
+    "A": 8.558935227522953,
+    "S": null,
+    "L_displaced": 0.31465916572843283
+   },
+   "blue64/world-octave": {
+    "L": 0.12816043810596534,
+    "F": 13.679533627795207,
+    "A": 14.718637607040906,
+    "S": 0.0024642947876358187,
+    "L_displaced": 0.26885098222380927
+   }
+  },
+  "orbit": {
+   "bayer8/screen": {
+    "L": 0.14941408309311435,
+    "F": 0.8176329191348525,
+    "A": 2.51881831557477,
+    "S": null,
+    "L_displaced": 0.32679730903815407
+   },
+   "bayer8/world-fixed": {
+    "L": 0.1744879819782886,
+    "F": 9.754382157670852,
+    "A": 8.16143726562187,
+    "S": null,
+    "L_displaced": 0.25419408677996147
+   },
+   "bayer8/world-octave": {
+    "L": 0.08860534173622955,
+    "F": 8.13018796755697,
+    "A": 15.696949804021221,
+    "S": 0.0030144516718984865,
+    "L_displaced": 0.28743514687898825
+   },
+   "blue64/screen": {
+    "L": 0.14559680573311706,
+    "F": 0.8393447170620855,
+    "A": 3.733206070071391,
+    "S": null,
+    "L_displaced": 0.25759200158098594
+   },
+   "blue64/world-fixed": {
+    "L": 0.1694500337753208,
+    "F": 9.628400892796417,
+    "A": 7.972094843036701,
+    "S": null,
+    "L_displaced": 0.26722210839043375
+   },
+   "blue64/world-octave": {
+    "L": 0.0853872618277476,
+    "F": 8.418032372569318,
+    "A": 16.58064253497873,
+    "S": 0.0030144516718984865,
+    "L_displaced": 0.28843348228420035
+   }
+  },
+  "spin": {
+   "bayer8/screen": {
+    "L": 0.000049074521210459115,
+    "F": 0.02469671788656148,
+    "A": 2.654703072499904,
+    "S": null,
+    "L_displaced": 0.36972260962532333
+   },
+   "bayer8/world-fixed": {
+    "L": 0.0017725690180978226,
+    "F": 0.0991939796533242,
+    "A": 14.05977769093314,
+    "S": null,
+    "L_displaced": 0.2875508172092116
+   },
+   "bayer8/world-octave": {
+    "L": 0.0006072017672582982,
+    "F": 0.07432218305846351,
+    "A": 18.504219296472694,
+    "S": 0,
+    "L_displaced": 0.3022150981857088
+   },
+   "blue64/screen": {
+    "L": 0.000038810097766295,
+    "F": 0.023695251996181027,
+    "A": 3.7130063691540216,
+    "S": null,
+    "L_displaced": 0.28763358358082824
+   },
+   "blue64/world-fixed": {
+    "L": 0.0018249710130029987,
+    "F": 0.10670787274186455,
+    "A": 14.797058524895785,
+    "S": null,
+    "L_displaced": 0.2735368336486451
+   },
+   "blue64/world-octave": {
+    "L": 0.0006402702762735863,
+    "F": 0.07481746931696848,
+    "A": 20.01129812407098,
+    "S": 0,
+    "L_displaced": 0.28065132684078714
+   }
+  },
+  "static": {
+   "bayer8/screen": {
+    "L": 0,
+    "F": 0.07044999238521128,
+    "A": 2.361652216888256,
+    "S": null,
+    "L_displaced": 0.46567217828900087
+   },
+   "bayer8/world-fixed": {
+    "L": 0,
+    "F": 0.0754462816639325,
+    "A": 8.37054432748444,
+    "S": null,
+    "L_displaced": 0.360082674335011
+   },
+   "bayer8/world-octave": {
+    "L": 0,
+    "F": 0.0920577519291141,
+    "A": 13.565648245389355,
+    "S": 0,
+    "L_displaced": 0.3887491013659239
+   },
+   "blue64/screen": {
+    "L": 0,
+    "F": 0.06720026160013776,
+    "A": 3.483998406113445,
+    "S": null,
+    "L_displaced": 0.32930445722501794
+   },
+   "blue64/world-fixed": {
+    "L": 0,
+    "F": 0.07715138712161622,
+    "A": 8.5906025400764,
+    "S": null,
+    "L_displaced": 0.3536574406901511
+   },
+   "blue64/world-octave": {
+    "L": 0,
+    "F": 0.08705634773791601,
+    "A": 14.737811671482865,
+    "S": 0,
+    "L_displaced": 0.36848490294751984
+   }
+  }
+ },
+ "checks": [
+  {
+   "id": "P1 dolly bayer8/screen",
+   "pass": true,
+   "detail": "L 0.2160 model 0.2050 tol 0.0717"
+  },
+  {
+   "id": "P1 dolly bayer8/world-fixed",
+   "pass": false,
+   "detail": "L 0.1912 model 0.1010 tol 0.0353"
+  },
+  {
+   "id": "P1 dolly bayer8/world-octave",
+   "pass": false,
+   "detail": "L 0.1154 model 0.0503 tol 0.0200"
+  },
+  {
+   "id": "P1 dolly blue64/screen",
+   "pass": true,
+   "detail": "L 0.2128 model 0.2050 tol 0.0717"
+  },
+  {
+   "id": "P1 dolly blue64/world-fixed",
+   "pass": false,
+   "detail": "L 0.1806 model 0.1010 tol 0.0353"
+  },
+  {
+   "id": "P1 dolly blue64/world-octave",
+   "pass": false,
+   "detail": "L 0.1120 model 0.0503 tol 0.0200"
+  },
+  {
+   "id": "P1 strafe bayer8/screen",
+   "pass": true,
+   "detail": "L 0.2250 model 0.2566 tol 0.0898"
+  },
+  {
+   "id": "P1 strafe bayer8/world-fixed",
+   "pass": false,
+   "detail": "L 0.1199 model 0.0777 tol 0.0272"
+  },
+  {
+   "id": "P1 strafe bayer8/world-octave",
+   "pass": false,
+   "detail": "L 0.0553 model 0.0303 tol 0.0200"
+  },
+  {
+   "id": "P1 strafe blue64/screen",
+   "pass": true,
+   "detail": "L 0.2724 model 0.2566 tol 0.0898"
+  },
+  {
+   "id": "P1 strafe blue64/world-fixed",
+   "pass": false,
+   "detail": "L 0.1083 model 0.0777 tol 0.0272"
+  },
+  {
+   "id": "P1 strafe blue64/world-octave",
+   "pass": true,
+   "detail": "L 0.0496 model 0.0303 tol 0.0200"
+  },
+  {
+   "id": "P1 yaw bayer8/screen",
+   "pass": true,
+   "detail": "L 0.3562 model 0.3245 tol 0.1136"
+  },
+  {
+   "id": "P1 yaw bayer8/world-fixed",
+   "pass": false,
+   "detail": "L 0.2056 model 0.1127 tol 0.0394"
+  },
+  {
+   "id": "P1 yaw bayer8/world-octave",
+   "pass": false,
+   "detail": "L 0.1369 model 0.0522 tol 0.0200"
+  },
+  {
+   "id": "P1 yaw blue64/screen",
+   "pass": true,
+   "detail": "L 0.3651 model 0.3245 tol 0.1136"
+  },
+  {
+   "id": "P1 yaw blue64/world-fixed",
+   "pass": false,
+   "detail": "L 0.1953 model 0.1127 tol 0.0394"
+  },
+  {
+   "id": "P1 yaw blue64/world-octave",
+   "pass": false,
+   "detail": "L 0.1282 model 0.0522 tol 0.0200"
+  },
+  {
+   "id": "P1 orbit bayer8/screen",
+   "pass": true,
+   "detail": "L 0.1494 model 0.1180 tol 0.0413"
+  },
+  {
+   "id": "P1 orbit bayer8/world-fixed",
+   "pass": false,
+   "detail": "L 0.1745 model 0.1097 tol 0.0384"
+  },
+  {
+   "id": "P1 orbit bayer8/world-octave",
+   "pass": false,
+   "detail": "L 0.0886 model 0.0372 tol 0.0200"
+  },
+  {
+   "id": "P1 orbit blue64/screen",
+   "pass": true,
+   "detail": "L 0.1456 model 0.1180 tol 0.0413"
+  },
+  {
+   "id": "P1 orbit blue64/world-fixed",
+   "pass": false,
+   "detail": "L 0.1695 model 0.1097 tol 0.0384"
+  },
+  {
+   "id": "P1 orbit blue64/world-octave",
+   "pass": false,
+   "detail": "L 0.0854 model 0.0372 tol 0.0200"
+  },
+  {
+   "id": "P1 spin bayer8/screen",
+   "pass": true,
+   "detail": "L 0.00005"
+  },
+  {
+   "id": "P1 spin bayer8/world-fixed",
+   "pass": true,
+   "detail": "L 0.00177"
+  },
+  {
+   "id": "P1 spin bayer8/world-octave",
+   "pass": true,
+   "detail": "L 0.00061"
+  },
+  {
+   "id": "P1 spin blue64/screen",
+   "pass": true,
+   "detail": "L 0.00004"
+  },
+  {
+   "id": "P1 spin blue64/world-fixed",
+   "pass": true,
+   "detail": "L 0.00182"
+  },
+  {
+   "id": "P1 spin blue64/world-octave",
+   "pass": true,
+   "detail": "L 0.00064"
+  },
+  {
+   "id": "P2 dolly bayer8",
+   "pass": true,
+   "detail": "L 0.216 > 0.191 > 0.115"
+  },
+  {
+   "id": "P3 dolly bayer8",
+   "pass": true,
+   "detail": "F screen 1.281 fixed 11.323 octave 10.011"
+  },
+  {
+   "id": "P2 strafe bayer8",
+   "pass": true,
+   "detail": "L 0.225 > 0.120 > 0.055"
+  },
+  {
+   "id": "P3 strafe bayer8",
+   "pass": true,
+   "detail": "F screen 1.174 fixed 7.370 octave 6.609"
+  },
+  {
+   "id": "P2 yaw bayer8",
+   "pass": true,
+   "detail": "L 0.356 > 0.206 > 0.137"
+  },
+  {
+   "id": "P3 yaw bayer8",
+   "pass": true,
+   "detail": "F screen 1.535 fixed 10.888 octave 12.885"
+  },
+  {
+   "id": "P2 orbit bayer8",
+   "pass": true,
+   "detail": "octave lowest: 0.089"
+  },
+  {
+   "id": "P2 dolly blue64",
+   "pass": true,
+   "detail": "L 0.213 > 0.181 > 0.112"
+  },
+  {
+   "id": "P3 dolly blue64",
+   "pass": true,
+   "detail": "F screen 1.309 fixed 11.061 octave 10.351"
+  },
+  {
+   "id": "P2 strafe blue64",
+   "pass": true,
+   "detail": "L 0.272 > 0.108 > 0.050"
+  },
+  {
+   "id": "P3 strafe blue64",
+   "pass": true,
+   "detail": "F screen 1.172 fixed 7.205 octave 7.156"
+  },
+  {
+   "id": "P2 yaw blue64",
+   "pass": true,
+   "detail": "L 0.365 > 0.195 > 0.128"
+  },
+  {
+   "id": "P3 yaw blue64",
+   "pass": true,
+   "detail": "F screen 1.571 fixed 11.374 octave 13.680"
+  },
+  {
+   "id": "P2 orbit blue64",
+   "pass": true,
+   "detail": "octave lowest: 0.085"
+  },
+  {
+   "id": "P4 L dolly screen",
+   "pass": true,
+   "detail": "bayer 0.2160 blue 0.2128"
+  },
+  {
+   "id": "P4 F dolly screen",
+   "pass": true,
+   "detail": "bayer 1.281 blue 1.309"
+  },
+  {
+   "id": "P4 A dolly screen",
+   "pass": false,
+   "detail": "bayer 2.508 blue 3.688"
+  },
+  {
+   "id": "P4 L dolly world-fixed",
+   "pass": true,
+   "detail": "bayer 0.1912 blue 0.1806"
+  },
+  {
+   "id": "P4 F dolly world-fixed",
+   "pass": false,
+   "detail": "bayer 11.323 blue 11.061"
+  },
+  {
+   "id": "P4 A dolly world-fixed",
+   "pass": true,
+   "detail": "bayer 10.119 blue 9.940"
+  },
+  {
+   "id": "P4 L dolly world-octave",
+   "pass": true,
+   "detail": "bayer 0.1154 blue 0.1120"
+  },
+  {
+   "id": "P4 F dolly world-octave",
+   "pass": true,
+   "detail": "bayer 10.011 blue 10.351"
+  },
+  {
+   "id": "P4 A dolly world-octave",
+   "pass": true,
+   "detail": "bayer 15.640 blue 16.386"
+  },
+  {
+   "id": "P4 L strafe screen",
+   "pass": false,
+   "detail": "bayer 0.2250 blue 0.2724"
+  },
+  {
+   "id": "P4 F strafe screen",
+   "pass": false,
+   "detail": "bayer 1.174 blue 1.172"
+  },
+  {
+   "id": "P4 A strafe screen",
+   "pass": false,
+   "detail": "bayer 2.332 blue 3.442"
+  },
+  {
+   "id": "P4 L strafe world-fixed",
+   "pass": true,
+   "detail": "bayer 0.1199 blue 0.1083"
+  },
+  {
+   "id": "P4 F strafe world-fixed",
+   "pass": false,
+   "detail": "bayer 7.370 blue 7.205"
+  },
+  {
+   "id": "P4 A strafe world-fixed",
+   "pass": true,
+   "detail": "bayer 8.724 blue 8.766"
+  },
+  {
+   "id": "P4 L strafe world-octave",
+   "pass": false,
+   "detail": "bayer 0.0553 blue 0.0496"
+  },
+  {
+   "id": "P4 F strafe world-octave",
+   "pass": true,
+   "detail": "bayer 6.609 blue 7.156"
+  },
+  {
+   "id": "P4 A strafe world-octave",
+   "pass": true,
+   "detail": "bayer 13.845 blue 14.843"
+  },
+  {
+   "id": "P4 L yaw screen",
+   "pass": true,
+   "detail": "bayer 0.3562 blue 0.3651"
+  },
+  {
+   "id": "P4 F yaw screen",
+   "pass": true,
+   "detail": "bayer 1.535 blue 1.571"
+  },
+  {
+   "id": "P4 A yaw screen",
+   "pass": false,
+   "detail": "bayer 2.370 blue 3.501"
+  },
+  {
+   "id": "P4 L yaw world-fixed",
+   "pass": true,
+   "detail": "bayer 0.2056 blue 0.1953"
+  },
+  {
+   "id": "P4 F yaw world-fixed",
+   "pass": true,
+   "detail": "bayer 10.888 blue 11.374"
+  },
+  {
+   "id": "P4 A yaw world-fixed",
+   "pass": true,
+   "detail": "bayer 8.491 blue 8.559"
+  },
+  {
+   "id": "P4 L yaw world-octave",
+   "pass": true,
+   "detail": "bayer 0.1369 blue 0.1282"
+  },
+  {
+   "id": "P4 F yaw world-octave",
+   "pass": true,
+   "detail": "bayer 12.885 blue 13.680"
+  },
+  {
+   "id": "P4 A yaw world-octave",
+   "pass": true,
+   "detail": "bayer 13.734 blue 14.719"
+  },
+  {
+   "id": "P4 L orbit screen",
+   "pass": true,
+   "detail": "bayer 0.1494 blue 0.1456"
+  },
+  {
+   "id": "P4 F orbit screen",
+   "pass": true,
+   "detail": "bayer 0.818 blue 0.839"
+  },
+  {
+   "id": "P4 A orbit screen",
+   "pass": false,
+   "detail": "bayer 2.519 blue 3.733"
+  },
+  {
+   "id": "P4 L orbit world-fixed",
+   "pass": true,
+   "detail": "bayer 0.1745 blue 0.1695"
+  },
+  {
+   "id": "P4 F orbit world-fixed",
+   "pass": false,
+   "detail": "bayer 9.754 blue 9.628"
+  },
+  {
+   "id": "P4 A orbit world-fixed",
+   "pass": true,
+   "detail": "bayer 8.161 blue 7.972"
+  },
+  {
+   "id": "P4 L orbit world-octave",
+   "pass": true,
+   "detail": "bayer 0.0886 blue 0.0854"
+  },
+  {
+   "id": "P4 F orbit world-octave",
+   "pass": true,
+   "detail": "bayer 8.130 blue 8.418"
+  },
+  {
+   "id": "P4 A orbit world-octave",
+   "pass": true,
+   "detail": "bayer 15.697 blue 16.581"
+  },
+  {
+   "id": "P4 F spin screen",
+   "pass": false,
+   "detail": "bayer 0.025 blue 0.024"
+  },
+  {
+   "id": "P4 A spin screen",
+   "pass": false,
+   "detail": "bayer 2.655 blue 3.713"
+  },
+  {
+   "id": "P4 F spin world-fixed",
+   "pass": true,
+   "detail": "bayer 0.099 blue 0.107"
+  },
+  {
+   "id": "P4 A spin world-fixed",
+   "pass": true,
+   "detail": "bayer 14.060 blue 14.797"
+  },
+  {
+   "id": "P4 F spin world-octave",
+   "pass": true,
+   "detail": "bayer 0.074 blue 0.075"
+  },
+  {
+   "id": "P4 A spin world-octave",
+   "pass": true,
+   "detail": "bayer 18.504 blue 20.011"
+  },
+  {
+   "id": "P5 static bayer8/screen",
+   "pass": false,
+   "detail": "L 0 F 0.07044999238521128"
+  },
+  {
+   "id": "P5 static bayer8/world-fixed",
+   "pass": false,
+   "detail": "L 0 F 0.0754462816639325"
+  },
+  {
+   "id": "P5 static bayer8/world-octave",
+   "pass": false,
+   "detail": "L 0 F 0.0920577519291141"
+  },
+  {
+   "id": "P5 static blue64/screen",
+   "pass": false,
+   "detail": "L 0 F 0.06720026160013776"
+  },
+  {
+   "id": "P5 static blue64/world-fixed",
+   "pass": false,
+   "detail": "L 0 F 0.07715138712161622"
+  },
+  {
+   "id": "P5 static blue64/world-octave",
+   "pass": false,
+   "detail": "L 0 F 0.08705634773791601"
+  },
+  {
+   "id": "P5 displaced dolly",
+   "pass": false,
+   "detail": "bayer 0.393 blue 0.295 independent 0.333"
+  },
+  {
+   "id": "P5 displaced strafe",
+   "pass": false,
+   "detail": "bayer 0.459 blue 0.325 independent 0.333"
+  },
+  {
+   "id": "P5 displaced yaw",
+   "pass": false,
+   "detail": "bayer 0.458 blue 0.324 independent 0.325"
+  },
+  {
+   "id": "P6 dolly bayer8",
+   "pass": true,
+   "detail": "S 0.0170"
+  },
+  {
+   "id": "P6 strafe bayer8",
+   "pass": true,
+   "detail": "S 0.0004"
+  },
+  {
+   "id": "P6 yaw bayer8",
+   "pass": true,
+   "detail": "S 0.0025"
+  },
+  {
+   "id": "P6 dolly blue64",
+   "pass": true,
+   "detail": "S 0.0170"
+  },
+  {
+   "id": "P6 strafe blue64",
+   "pass": true,
+   "detail": "S 0.0004"
+  },
+  {
+   "id": "P6 yaw blue64",
+   "pass": true,
+   "detail": "S 0.0025"
+  }
+ ],
+ "decision": {
+  "cellScore": {
+   "bayer8/screen": 0.7778637789451786,
+   "bayer8/world-fixed": 0.9534401962414044,
+   "bayer8/world-octave": 0.8505506133594019,
+   "blue64/screen": 0.8083898090596537,
+   "blue64/world-fixed": 0.9545995864519821,
+   "blue64/world-octave": 0.889845795492703
+  },
+  "accuracyMean": {
+   "bayer8/screen": 2.4766420132853053,
+   "bayer8/world-fixed": 9.911168977529659,
+   "bayer8/world-octave": 15.483959693848169,
+   "blue64/screen": 3.615597432234402,
+   "blue64/world-fixed": 10.006852016897716,
+   "blue64/world-octave": 16.508056929165175
+  },
+  "eligible": [
+   "bayer8/screen"
+  ],
+  "relDiff": {
+   "L": 0.004559441718391113,
+   "F": 0.02373617146007911
+  },
+  "sourceChoice": "bayer8 (cost choice: not separated by the metric)",
+  "anchorChoice": "screen",
+  "winnerCellOverall": "bayer8/screen",
+  "p7": "miss",
+  "stills_key_sha256": "b6b65589ee0c003472ab38eaa39e6af25f17db764ba377b6cd89449c48e10451"
+ }
+}
