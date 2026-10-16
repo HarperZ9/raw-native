@@ -13,6 +13,14 @@
 
 export const TAU = Math.PI * 2;
 
+// The default orb, in linear light. pack.mjs and the WGSL use these same values.
+export const ORB = Object.freeze({
+  core: [1.0, 0.62, 0.22], mid: [0.95, 0.18, 0.42], rim: [0.32, 0.16, 0.85],
+  soft: 0.18, coreGain: 2.2, coreR: 0.22, haloGain: 0.18, haloR: 0.9, ring: 0, ringW: 0.012,
+  iris: Object.freeze({ blades: 0, open: 1.2, rot: 0 }), gain: 1,
+});
+export const orbSpec = (spec = {}) => ({ ...ORB, ...spec, iris: { ...ORB.iris, ...(spec.iris || {}) } });
+
 // lowbias32 (Wellons): a 32-bit integer hash. Math.imul keeps it in u32 arithmetic.
 export function hash32(x) {
   x = x >>> 0;
@@ -50,7 +58,7 @@ export function rampAt(stops, x) {
 
 // The iris: n straight blades rotated by `rot`, opened to radius `open` (in orb radii, at the
 // blade's middle). Returns the edge radius at angle theta. n < 3 gives a circle.
-export function apertureEdge(theta, { blades = 7, open = 1, rot = 0 } = {}) {
+export function apertureEdge(theta, { blades = ORB.iris.blades, open = ORB.iris.open, rot = ORB.iris.rot } = {}) {
   if (blades < 3) return open;
   const seg = TAU / blades, x = theta - rot;
   const a = x - seg * Math.floor(x / seg);
@@ -61,11 +69,10 @@ export function apertureEdge(theta, { blades = 7, open = 1, rot = 0 } = {}) {
 // a hot core (gaussian), the body (a radial ramp core -> mid -> rim with a soft edge at r = 1), and a
 // halo that falls off as 1 / (1 + (r / haloR)^2). The iris masks the body and core with a soft edge and
 // draws a thin ring on the blade line.
-export function orbAt(r, theta, s) {
-  const core = s.core ?? [1.0, 0.62, 0.22], mid = s.mid ?? [0.95, 0.18, 0.42], rim = s.rim ?? [0.32, 0.16, 0.85];
-  const soft = s.soft ?? 0.18, gain = s.gain ?? 1, coreGain = s.coreGain ?? 2.2, coreR = s.coreR ?? 0.22;
-  const haloGain = s.haloGain ?? 0.18, haloR = s.haloR ?? 0.9, ring = s.ring ?? 0, ringW = s.ringW ?? 0.012;
-  const edge = apertureEdge(theta, s.iris || {});
+export function orbAt(r, theta, spec) {
+  const s = orbSpec(spec);
+  const { core, mid, rim, soft, gain, coreGain, coreR, haloGain, haloR, ring, ringW } = s;
+  const edge = apertureEdge(theta, s.iris);
   const m = 1 - smoothstep(edge - soft * 0.25, edge + soft * 0.25, r);
   const body = (1 - smoothstep(1 - soft, 1 + soft, r)) * m;
   const tint = r < 0.5 ? mix3(core, mid, r / 0.5) : mix3(mid, rim, clamp((r - 0.5) / 0.5, 0, 1));

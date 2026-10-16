@@ -22,12 +22,19 @@ fn ramp4(xs: vec4f, c0: vec3f, c1: vec3f, c2: vec3f, c3: vec3f, x: f32) -> vec3f
   if (x <= xs.w) { return mix(c2, c3, (x - xs.z) / max(1e-6, xs.w - xs.z)); }
   return c3;
 }
+// cos on |x| <= pi / 3 by its Taylor series to x^14 (error below 1e-9 there). WGSL lets cos be
+// off by 2^-11 absolute, which moves a thin iris ring visibly; this keeps the edge exact to f32.
+fn cos_near(x: f32) -> f32 {
+  let y = x * x;
+  return 1.0 + y * (-0.5 + y * (4.16666667e-2 + y * (-1.38888889e-3 + y * (2.48015873e-5 + y * (-2.75573192e-7 + y * (2.08767570e-9 + y * -1.14707456e-11))))));
+}
 fn aperture_edge(theta: f32, blades: f32, open: f32, rot: f32) -> f32 {
   if (blades < 3.0) { return open; }
   let seg = TAU / blades;
   let x = theta - rot;
   let a = x - seg * floor(x / seg);
-  return open * cos(3.141592653589793 / blades) / cos(a - 3.141592653589793 / blades);
+  let h = 3.141592653589793 / blades;
+  return open * cos_near(h) / cos_near(a - h);
 }
 struct OrbSpec { core: vec4f, mid: vec4f, rim: vec4f, p1: vec4f, p2: vec4f, p3: vec4f, }
 // p1: soft, coreGain, coreR, haloGain   p2: haloR, ring, ringW, blades   p3: open, rot, gain, unused
@@ -112,7 +119,8 @@ struct PU { cam: vec4f, lod: vec4f, val: vec4f, xs: vec4f, c0: vec4f, c1: vec4f,
 struct VO { @builtin(position) p: vec4f, @location(0) uv: vec2f, @location(1) col: vec4f, @location(2) r: f32, }
 @vertex fn vs(@builtin(vertex_index) v: u32, @builtin(instance_index) i: u32) -> VO {
   var o: VO;
-  let sel = i == u32(U.lod.w);
+  // lod.w < 0 means no selection (a negative float converts to u32 0, which would select point 0).
+  let sel = U.lod.w >= 0.0 && i == u32(U.lod.w);
   if (!lod_keep(i, U.lod.x) && !sel) { o.p = vec4f(2.0, 2.0, 0.0, 1.0); return o; }
   let q = pts[i];
   var r = U.cam.w;
