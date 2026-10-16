@@ -105,3 +105,29 @@ export function film(out) {
   B.write(join(out, "film.rnfx"));
   return B.head.cases.length;
 }
+
+// The lens suite (evidence/cpp-port-style-bounds-7.json), as web/test/shaders-lens.html builds it.
+import { lensLightsFrame, lensLightsList } from "../../web/shaders/fixtures/lens-lights.mjs";
+import { renderQuay } from "../../web/shaders/fixtures/quay-street-render.mjs";
+import { resolveLens, extractSources, prepareSources, runLens } from "../../web/shaders/lens/lens.mjs";
+import { labEncode8 } from "../../web/shaders/lab/gpu-kit.mjs";
+export function lens(out) {
+  const b = readJson("evidence/shaders-lens-parity-bounds.json"), { width: W, height: H, gain } = b.output, B = new Bundle("lens");
+  B.head.cases = [];
+  const f32 = (f) => ({ width: f.width, height: f.height, data: Float64Array.from(Float32Array.from(f.data)) });
+  for (const c of b.cases) {
+    const frame = f32(c.frame === "street" ? renderQuay(5, W, H) : lensLightsFrame(W, H)), plan = resolveLens(c.params, { width: W, height: H });
+    let list, keep = null;
+    if (c.mode === "list") list = lensLightsList(W, H); else { const s = extractSources(plan, frame); list = s.list; keep = s.keep; }
+    const srcs = prepareSources(plan, list), res = runLens(plan, frame, srcs, keep), id = c.id;
+    B.add(`${id}.frame`, "f32", frame.data); B.add(`${id}.js`, "f64", res.data); B.add(`${id}.codes`, "u8", labEncode8(res, gain));
+    B.add(`${id}.keep`, "u8", keep || new Uint8Array(0)); B.add(`${id}.star`, "f64", plan.star.data);
+    B.add(`${id}.ghosts`, "f64", plan.ghosts.flatMap((g) => g.flat()));
+    B.head.cases.push({ id, frame: c.frame, mode: c.mode || "extract", params: c.params, width: W, height: H, gain,
+      list, srcs: srcs.map((s) => ({ x: s.x, y: s.y, E: s.E, theta: s.theta, ghost: s.ghost, streak: s.streak })),
+      plan: { D: plan.D, tanHalf: plan.tanHalf, Rbar: plan.Rbar, R0: plan.R0, halo: plan.halo, caScale: plan.caScale, phi: plan.phi, binRgb: plan.binRgb,
+        starCell: plan.starCell, starM: plan.star.M, streakLenPx: plan.p.streakLenPx, streakThickPx: plan.p.streakThickPx, minGhostPx: plan.p.minGhostPx, haloRadiusPx: plan.p.haloRadiusPx } });
+  }
+  B.write(join(out, "lens.rnfx"));
+  return B.head.cases.length;
+}

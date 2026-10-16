@@ -54,7 +54,7 @@ double radialReturn(const BaseGlass& g, double dr, double rMax, std::vector<doub
 }
 std::vector<double> convolve(const std::vector<double>& a, const std::vector<double>& b, int R) {
     const int S = 2 * R + 1;
-    std::vector<double> o(std::size_t(S) * S, 0.0);
+    std::vector<double> o(static_cast<std::size_t>(S) * S, 0.0);
     for (int ay = 0; ay < S; ++ay) for (int ax = 0; ax < S; ++ax) {
         const double va = a[std::size_t(ay * S + ax)];
         if (va == 0) continue;
@@ -129,7 +129,7 @@ HaloKernel filmHaloKernel(const BaseGlass& g, double mmPerPx, int maxCells) {
     const double dr = cellMm / 8;
     std::vector<double> bins;
     hk.kappa = radialReturn(g, dr, (R + 0.5) * cellMm, bins);
-    std::vector<double> K1(std::size_t(S) * S, 0.0);
+    std::vector<double> K1(static_cast<std::size_t>(S) * S, 0.0);
     const int A = 96;
     for (std::size_t i = 0; i < bins.size(); ++i) {
         if (bins[i] == 0) continue;
@@ -165,7 +165,7 @@ std::vector<float> filmVarianceTable() {
 }
 const std::vector<std::uint32_t>& filmPoissonTable() {
     static const std::vector<std::uint32_t> T = [] {
-        std::vector<std::uint32_t> t(std::size_t(kMuLevels) * kPoisK);
+        std::vector<std::uint32_t> t(static_cast<std::size_t>(kMuLevels) * kPoisK);
         for (int m = 0; m < kMuLevels; ++m) {
             const double mu = ((m + 0.5) * kMuMax) / kMuLevels;
             double p = std::exp(-mu), F = p;

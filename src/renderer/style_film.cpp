@@ -34,7 +34,7 @@ double curve(double x, double dmin, double span, double k, double x0) { return d
 
 std::vector<float> expose(const FilmPlan& plan, const std::vector<float>& scene, int f) {
     const auto dxy = filmWeave(plan, f);
-    std::vector<float> H(std::size_t(plan.outW) * plan.outH * 4, 0.0f);
+    std::vector<float> H(static_cast<std::size_t>(plan.outW) * plan.outH * 4, 0.0f);
     const double k = std::pow(2, plan.p.ev), sx = double(plan.inW) / plan.outW, sy = double(plan.inH) / plan.outH;
     const M3& E = plan.t.E;
     for (int y = 0; y < plan.outH; ++y) for (int x = 0; x < plan.outW; ++x) {
@@ -59,7 +59,7 @@ std::vector<float> mtfPass(const FilmPlan& plan, const std::vector<float>& src, 
 }
 std::vector<float> haloDown(const FilmPlan& plan, const std::vector<float>& em, int gw, int gh) {
     const int q = plan.haloQ, W = plan.outW, H = plan.outH;
-    std::vector<float> g(std::size_t(gw) * gh * 4, 0.0f);
+    std::vector<float> g(static_cast<std::size_t>(gw) * gh * 4, 0.0f);
     for (int gy = 0; gy < gh; ++gy) for (int gx = 0; gx < gw; ++gx) {
         double r = 0, gg = 0, b = 0, n = 0;
         for (int y = gy * q; y < std::min(H, gy * q + q); ++y) for (int x = gx * q; x < std::min(W, gx * q + q); ++x) {
@@ -122,7 +122,7 @@ std::vector<float> develop(const FilmPlan& plan, const std::vector<float>& H, co
 std::vector<float> filmMtfWeights(double sigmaPx) {
     if (!(sigmaPx >= 0.15)) return {1.0f};
     const int r = std::min(16, int(std::ceil(3 * sigmaPx)));
-    std::vector<float> w(std::size_t(2 * r + 1));
+    std::vector<float> w(static_cast<std::size_t>(2 * r + 1));
     double s = 0;
     for (int i = -r; i <= r; ++i) { const double q = i / sigmaPx; w[std::size_t(i + r)] = float(std::exp(-0.5 * (q * q))); s += w[std::size_t(i + r)]; }
     for (float& v : w) v = float(double(v) / s);

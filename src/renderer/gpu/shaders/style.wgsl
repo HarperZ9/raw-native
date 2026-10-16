@@ -170,6 +170,17 @@ struct FilmParams {
     out2: vec4f,
 }
 
+// The lens suite. a: cx, cy, squeeze, iris roundness; b: cos and sin of the streak angle, streak
+// length, streak thickness (px); c: star cell (px), star gain, threshold, display gain; phi per channel.
+struct LensGpuParams {
+    width: u32, height: u32, n_src: u32, n_ghost: u32,
+    star_m: u32, tile: u32, tiles_x: u32, blades: u32,
+    a: vec4f,
+    b: vec4f,
+    c: vec4f,
+    phi: vec4f,
+}
+
 fn sat1(x: f32) -> f32 {
     return clamp(x, 0.0, 1.0);
 }
@@ -2458,4 +2469,143 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     }
     let rgb: vec3f = vec3f(dot(U.out0.xyz, xyz), dot(U.out1.xyz, xyz), dot(U.out2.xyz, xyz));
     out8[i] = pack_rgb8(rgb);
+}
+
+//@pass style_lens_core
+// The lens suite (raw/renderer/style_lens.hpp), core pass: each pixel of a kept tile gives up phi
+// (per channel) of its over-threshold light to the lens terms.
+@group(0) @binding(0) var<uniform> U: LensGpuParams;
+@group(0) @binding(1) var<storage, read> img: array<vec4f>;
+@group(0) @binding(2) var<storage, read> keep: array<u32>;
+@group(0) @binding(3) var<storage, read_write> core: array<vec4f>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    let x: u32 = i % U.width;
+    let y: u32 = i / U.width;
+    let c: vec4f = img[i];
+    var k: f32 = 0.0;
+    if (keep[(y / U.tile) * U.tiles_x + x / U.tile] != 0u) {
+        let Y: f32 = 0.2126 * c.x + 0.7152 * c.y + 0.0722 * c.z;
+        if (Y > U.c.z) { k = (Y - U.c.z) / Y; }
+    }
+    core[i] = vec4f(c.x * (1.0 - U.phi.x * k), c.y * (1.0 - U.phi.y * k), c.z * (1.0 - U.phi.z * k), 1.0);
+}
+
+//@pass style_lens_gather
+// The lens suite, gather pass: lateral dispersion resamples the core per wavelength bin, then
+// every source adds its starburst, anamorphic streak, halation and ghosts; lab-encoded to RGBA8.
+// bins: RGB weight (8 x 3), dispersion scale (8), halation gain and radius (8 x 2). srcs: 24
+// floats a source (x, y, E, ghost factor per bin, streak factor per bin). ghosts: per pair and
+// bin (m, radius, rotation, 1 / area).
+@group(0) @binding(0) var<uniform> U: LensGpuParams;
+@group(0) @binding(1) var<storage, read> core: array<vec4f>;
+@group(0) @binding(2) var<storage, read> ghosts: array<f32>;
+@group(0) @binding(3) var<storage, read> srcs: array<f32>;
+@group(0) @binding(4) var<storage, read> star: array<f32>;
+@group(0) @binding(5) var<storage, read> bins: array<f32>;
+@group(0) @binding(6) var<storage, read_write> out8: array<u32>;
+
+const LENS_TAU: f32 = 6.283185307179586;
+const LENS_PI: f32 = 3.141592653589793;
+
+fn rgbw(l: u32) -> vec3f {
+    return vec3f(bins[l * 3u], bins[l * 3u + 1u], bins[l * 3u + 2u]);
+}
+fn samp(px: f32, py: f32) -> vec3f {
+    let w: u32 = U.width;
+    let h: u32 = U.height;
+    let x: f32 = min(f32(w - 1u), max(0.0, px - 0.5));
+    let y: f32 = min(f32(h - 1u), max(0.0, py - 0.5));
+    let x0: u32 = min(w - 2u, u32(floor(x)));
+    let y0: u32 = min(h - 2u, u32(floor(y)));
+    let fx: f32 = x - f32(x0);
+    let fy: f32 = y - f32(y0);
+    let i: u32 = y0 * w + x0;
+    return (core[i].xyz * (1.0 - fx) + core[i + 1u].xyz * fx) * (1.0 - fy) + (core[i + w].xyz * (1.0 - fx) + core[i + w + 1u].xyz * fx) * fy;
+}
+fn star_at(u: f32, v: f32) -> vec3f {
+    let M: u32 = U.star_m;
+    let mf: f32 = f32(M - 1u);
+    if (u < 0.0 || v < 0.0 || u > mf || v > mf) { return vec3f(0.0); }
+    let x0: u32 = min(M - 2u, u32(floor(u)));
+    let y0: u32 = min(M - 2u, u32(floor(v)));
+    let fx: f32 = u - f32(x0);
+    let fy: f32 = v - f32(y0);
+    let i: u32 = (y0 * M + x0) * 3u;
+    let j: u32 = i + M * 3u;
+    let a: vec3f = vec3f(star[i], star[i + 1u], star[i + 2u]);
+    let b: vec3f = vec3f(star[i + 3u], star[i + 4u], star[i + 5u]);
+    let c: vec3f = vec3f(star[j], star[j + 1u], star[j + 2u]);
+    let d: vec3f = vec3f(star[j + 3u], star[j + 4u], star[j + 5u]);
+    return (a * (1.0 - fx) + b * fx) * (1.0 - fy) + (c * (1.0 - fx) + d * fx) * fy;
+}
+fn edge_rot(phi: f32, n: f32, rnd: f32, rot: f32) -> f32 {
+    let seg: f32 = LENS_TAU / n;
+    let x: f32 = phi - rot;
+    let a: f32 = x - floor(x / seg) * seg;
+    let poly: f32 = cos(LENS_PI / n) / cos(a - LENS_PI / n);
+    return poly + (1.0 - poly) * rnd;
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    let qx: f32 = f32(i % U.width) + 0.5;
+    let qy: f32 = f32(i / U.width) + 0.5;
+    let cx: f32 = U.a.x;
+    let cy: f32 = U.a.y;
+    var o: vec3f = vec3f(0.0);
+    for (var l: u32 = 0u; l < 8u; l++) {
+        let s: f32 = bins[24u + l];
+        o = o + rgbw(l) * samp(cx + (qx - cx) / s, cy + (qy - cy) / s);
+    }
+    let n: f32 = f32(U.blades);
+    let rnd: f32 = U.a.w;
+    let ca: f32 = U.b.x;
+    let sa: f32 = U.b.y;
+    let L: f32 = U.b.z;
+    let sg: f32 = U.b.w;
+    let cell: f32 = U.c.x;
+    let hm: f32 = (f32(U.star_m) - 1.0) * 0.5;
+    let sinv: f32 = 1.0 / (cell * cell);
+    for (var si: u32 = 0u; si < U.n_src; si++) {
+        let b: u32 = si * 24u;
+        let sx: f32 = srcs[b];
+        let sy: f32 = srcs[b + 1u];
+        let E: vec3f = vec3f(srcs[b + 2u], srcs[b + 3u], srcs[b + 4u]);
+        let dx: f32 = qx - sx;
+        let dy: f32 = qy - sy;
+        o = o + E * U.c.y * star_at(dx / cell + hm, dy / cell + hm) * sinv;
+        let a: f32 = ca * dx + sa * dy;
+        let bb: f32 = -sa * dx + ca * dy;
+        let k: f32 = (exp(-abs(a) / L) / (2.0 * L)) * (exp(-bb * bb / (2.0 * sg * sg)) / (sg * 2.5066282746310002));
+        let r: f32 = sqrt(dx * dx + dy * dy);
+        for (var l2: u32 = 0u; l2 < 8u; l2++) {
+            let ha: f32 = bins[32u + l2 * 2u];
+            let hr: f32 = bins[33u + l2 * 2u];
+            let f: f32 = srcs[b + 13u + l2] * k + ha * exp(-r / hr) / (LENS_TAU * hr * hr);
+            o = o + E * rgbw(l2) * f;
+        }
+        for (var g: u32 = 0u; g < U.n_ghost; g++) {
+            for (var l3: u32 = 0u; l3 < 8u; l3++) {
+                let gb: u32 = (g * 8u + l3) * 4u;
+                let m: f32 = ghosts[gb];
+                let rad: f32 = ghosts[gb + 1u];
+                let gx: f32 = cx + m * (sx - cx);
+                let gy: f32 = cy + m * (sy - cy);
+                let vx: f32 = (qx - gx) * U.a.z;
+                let vy: f32 = qy - gy;
+                let rr: f32 = sqrt(vx * vx + vy * vy);
+                if (rr > rad + 1.0) { continue; }
+                let cov: f32 = clamp(rad * edge_rot(atan2(vy, vx), n, rnd, ghosts[gb + 2u]) - rr + 0.5, 0.0, 1.0);
+                if (cov <= 0.0) { continue; }
+                o = o + E * rgbw(l3) * (srcs[b + 5u + l3] * cov * ghosts[gb + 3u]);
+            }
+        }
+    }
+    out8[i] = lab_pack(o, U.c.w);
 }
