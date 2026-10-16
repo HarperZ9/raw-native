@@ -1,0 +1,25 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Raw Native play</title>
+<link rel="icon" href="data:,">
+<script type="importmap">{ "imports": { "@raw-native/motion/": "../motion/" } }</script>
+<style>
+  :root { color-scheme: dark; --ink: #ece5d6; --ink-2: #b8b0a0; --void: #060608; --frame: #2a2830; }
+  body { margin: 0; background: var(--void); color: var(--ink); font: 15px/1.5 system-ui, sans-serif; }
+  main { max-width: 1280px; margin: 0 auto; padding: 16px; }
+  canvas { display: block; width: 100%; aspect-ratio: 16 / 9; background: #000; outline: none; }
+  canvas:focus-visible { outline: 2px solid #63d4ce; outline-offset: 2px; }
+  .bar { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; margin: .75rem 0; color: var(--ink-2); }
+  table { border-collapse: collapse; } td { padding: .2rem .6rem .2rem 0; vertical-align: middle; }
+  button { font: inherit; color: inherit; background: none; border: 1px solid var(--frame); border-radius: 2px; padding: .3rem .6rem; cursor: pointer; min-height: 2.25rem; }
+  code { font-family: ui-monospace, monospace; font-size: .9em; }
+</style>
+<main>
+  <canvas id="c" tabindex="0" aria-label="Game view"></canvas>
+  <div class="bar"><span id="status">Loading</span><span id="stats"></span></div>
+  <details><summary>Controls and rebinding</summary><table id="binds"></table></details>
+</main>
+<script type="module" src="./play.mjs"></script>
+</html>

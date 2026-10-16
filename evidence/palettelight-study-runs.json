@@ -1,0 +1,79 @@
+{
+ "protocol": "evidence/palettelight-protocol.json",
+ "size": [
+  320,
+  180
+ ],
+ "means": {
+  "purityA": 1,
+  "purityB": 0.41247612843348985,
+  "fidA_ideal": 1.2740791404630265,
+  "fidB_ideal": 9.689275282644223,
+  "fidA_naive": 8.792469443943917,
+  "fidB_naive": 1.0921778518834968,
+  "chA": 0.01067847628596061,
+  "chB": 0.056923937681340485,
+  "flipA": 0,
+  "flipB": 0.048205626434136985,
+  "exactA": 1,
+  "exactB": 1
+ },
+ "hueShift": 27.129192193741503,
+ "idxMean": {
+  "ground": 0.00006601389513616329,
+  "stone": 0.0019390259305107627,
+  "wood": 0.0007586000231142309,
+  "foliage": 0.0004924735972594574
+ },
+ "cycle": {
+  "rot": 1305,
+  "nv": 1305
+ },
+ "checks": [
+  {
+   "id": "S1 exactness",
+   "pass": true,
+   "detail": "locked 1 post 1"
+  },
+  {
+   "id": "S2 purity",
+   "pass": true,
+   "detail": "locked 1.0000 post 0.4125 (post bound <= 0.85)"
+  },
+  {
+   "id": "S3 look fidelity",
+   "pass": true,
+   "detail": "locked 1.274 post 9.689 ratio 0.131"
+  },
+  {
+   "id": "S4 physical fidelity",
+   "pass": true,
+   "detail": "locked 8.792 post 1.092 ratio 0.124"
+  },
+  {
+   "id": "S5 change rate",
+   "pass": false,
+   "detail": "locked 0.0107 post 0.0569 ratio 0.188"
+  },
+  {
+   "id": "S5 class flips",
+   "pass": true,
+   "detail": "locked 0 post 0.0482"
+  },
+  {
+   "id": "S6 hue shift",
+   "pass": true,
+   "detail": "27.13 deg over 81 near and 2155 far stone pixels"
+  },
+  {
+   "id": "S7 index mean",
+   "pass": true,
+   "detail": "{\"ground\":0.0001,\"stone\":0.0019,\"wood\":0.0008,\"foliage\":0.0005}"
+  },
+  {
+   "id": "S8 cycle rotation",
+   "pass": true,
+   "detail": "1305 of 1305"
+  }
+ ]
+}
