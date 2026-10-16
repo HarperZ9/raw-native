@@ -1,7 +1,8 @@
-// Palette and type for explainer films, from the design canon: ink on a calm ground, colour
-// only as a verdict, one hot mark per view, two type families (Hanken Grotesk for every text
-// role, one mono for data and metadata rows). The spectrum stays in the art layers (orb,
-// atmosphere, clouds); nothing here is a spectrum.
+// Palette and type for explainer films, from the site's design rules (DESIGN-RULES.md in
+// HarperZ9.github.io): two principal families with distinct roles, Hanken Grotesk for headings,
+// reading text and labels, and Conso for data, characters and code, as the site delivers them.
+// Labels are mixed case with no added tracking (no tracked caps, no eyebrows). Text colour is ink;
+// accents carry states and always sit beside text. Figures may use a limited explanatory palette.
 //
 //   const T = await loadType((p) => ctx.json(p));        // the atlases, once
 //   items.push(...T.head("How attention moves information", { x: 160, y: 200, size: 72, ground: "night" }));
@@ -19,7 +20,7 @@ export const GROUNDS = Object.freeze({
 export const FONTS = Object.freeze({
   head: "fonts/hanken-grotesk-700.atlas.json",
   body: "../../docs/motion/hanken-grotesk-500.atlas.json",
-  mono: "fonts/cascadia-mono-400.atlas.json",
+  mono: "fonts/conso-400.atlas.json",
 });
 
 // A cache of laid-out strings: layout is the costly part of text, and labels repeat every frame.
@@ -41,7 +42,7 @@ export function typeKit(atlases) {
     memo(`${role}|${str}|${size}|${x}|${y}|${anchor}|${tracking}`, () => text(str, { atlas: atlases[role], size, x, y, anchor, tracking }));
   function draw(role, str, o = {}) {
     const g = GROUNDS[o.ground || "night"], size = o.size ?? 32, anchor = o.anchor ?? "left";
-    const tracking = o.tracking ?? (role === "mono" ? 0.06 : role === "head" ? -0.01 : 0);
+    const tracking = o.tracking ?? (role === "head" ? -0.01 : 0);
     const t = lay(role, str, size, o.x ?? 0, o.y ?? 0, anchor, tracking);
     const n = t.glyphs.length, k = Math.round((o.reveal ?? 1) * n);
     if (k <= 0 || (o.opacity ?? 1) <= 0) return [];
@@ -50,11 +51,12 @@ export function typeKit(atlases) {
   }
   return {
     atlases,
-    width: (role, str, size, tracking = role === "mono" ? 0.06 : 0) => lay(role, str, size, 0, 0, "left", tracking).width,
+    width: (role, str, size, tracking = 0) => lay(role, str, size, 0, 0, "left", tracking).width,
     head: (s, o = {}) => draw("head", s, { size: 64, ...o }),
     body: (s, o = {}) => draw("body", s, { size: 32, ...o }),
-    // Mono metadata rows: model, seed, source, units. Caps by convention, wide tracking.
-    meta: (s, o = {}) => draw("mono", s, { size: 18, tone: "ink2", ...o }),
+    // Labels: figure labels, units, sources. Small, secondary ink, sentence case.
+    meta: (s, o = {}) => draw("body", s, { size: 20, tone: "ink2", ...o }),
+    // Data: characters, values, commands, in Conso.
     mono: (s, o = {}) => draw("mono", s, { size: 22, ...o }),
     // A big bound number: the string is computed by the caller from data.
     figure: (s, o = {}) => draw("head", s, { size: 120, ...o }),

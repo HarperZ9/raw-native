@@ -4,7 +4,7 @@
     python tools/explainer/render_film.py --scene ../../docs/explainer/attention.scene.mjs \\
         --out OUTDIR [--seconds 72] [--chunk 6] [--fps 30] [--width 1920 --height 1080] [--vtt FILE]
 
-Each chunk is rendered by scripts/motion_render.py (SwiftShader, raw frames, x264) with
+Each chunk is rendered by scripts/motion_render.py (SwiftShader by default, raw frames, x264) with
 --hash-frames, so every frame's SHA-256 is kept. A chunk whose .mp4 and .frames.sha256 exist is
 skipped, so a stopped render resumes where it stopped. The chunks are joined without re-encoding
 into OUTDIR/film.mp4, and OUTDIR/receipt.json records the commit, the scene, the settings and the
@@ -33,7 +33,7 @@ def chunk(a, i: int, t0: float, t1: float, out: Path) -> Path:
         return mp4
     cmd = [sys.executable, str(ROOT / "scripts/motion_render.py"), "--root", str(ROOT), "--scene", a.scene, "--out", str(mp4),
            "--width", str(a.width), "--height", str(a.height), "--fps", str(a.fps), "--from", str(t0), "--to", str(t1),
-           "--adapter", "swiftshader", "--transport", "raw", "--codec", "libx264", "--quality", "16", "--hash-frames"]
+           "--adapter", a.adapter, "--transport", "raw", "--codec", "libx264", "--quality", "16", "--hash-frames"]
     for attempt in range(3):   # a long CPU render can drop a localhost request; the chunk restarts whole
         print(f"chunk {i}: {t0}-{t1} s, attempt {attempt + 1}", flush=True)
         if subprocess.run(cmd, cwd=ROOT).returncode == 0:
@@ -51,6 +51,8 @@ def main() -> int:
     ap.add_argument("--width", type=int, default=1920)
     ap.add_argument("--height", type=int, default=1080)
     ap.add_argument("--vtt")
+    ap.add_argument("--adapter", choices=["swiftshader", "gpu"], default="swiftshader",
+                    help="gpu needs the machine's GPU lock and RAW_NATIVE_GPU_TOKEN (scripts/motion_render.py)")
     a = ap.parse_args()
     import imageio_ffmpeg
     ff = imageio_ffmpeg.get_ffmpeg_exe()
@@ -78,7 +80,7 @@ def main() -> int:
         else:
             missing.append(p.name)
     receipt = {"schema": "raw-native.film-receipt/1", "scene": a.scene, "commit": begun["commit"], "dirty_tree": begun["dirty_tree"],
-               "size": [a.width, a.height], "fps": a.fps, "seconds": a.seconds, "adapter": "swiftshader (CPU)",
+               "size": [a.width, a.height], "fps": a.fps, "seconds": a.seconds, "adapter": a.adapter,
                "frames_hashed": len(frames), "frames_sha256": hashlib.sha256("\n".join(frames).encode()).hexdigest() if frames else None,
                "chunks_without_frame_hashes": missing, "chunks_sha256": {p.name: sha(p) for p in parts},
                "film_sha256": sha(film), "vtt_sha256": sha(Path(a.vtt)) if a.vtt else None,
