@@ -631,6 +631,8 @@ jobs:
         run: python tests/web/shaders_parity.py --shader ditherlight --adapter swiftshader --out media-out/shaders-ditherlight-parity.json
       - name: Paint-over projection, GPU coverage and colour equal the f64 reference's on Lamp Quay views (evidence/shaders-paintover-parity-bounds.json), on the CPU adapter
         run: python tests/web/shaders_parity.py --shader paintover --adapter swiftshader --out media-out/shaders-paintover-parity.json
+      - name: Palette-locked lighting, GPU palette indices equal the f64 reference's on Chapel Yard views (evidence/shaders-palettelight-parity-bounds.json), on the CPU adapter
+        run: python tests/web/shaders_parity.py --shader palettelight --adapter swiftshader --out media-out/shaders-palettelight-parity.json
       - name: Shader library, pixel art and scaling, GPU against the CPU reference within the committed bounds, on the CPU adapter
         run: python tests/web/shaders_parity.py --shader pixel --adapter swiftshader --out media-out/shaders-pixel-parity.json
       - name: Shader library, VHS, GPU against the CPU reference within the committed bounds, on the CPU adapter
