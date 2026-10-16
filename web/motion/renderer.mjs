@@ -1,5 +1,5 @@
 // The Motion renderer on the raw-native web host: vector paths, GPU particles,
-// the Threads and Worlds layers, bloom and the finish, one command buffer per
+// the Threads and Worlds layers, custom layers (kind "layer"), bloom and the finish, one command buffer per
 // frame. It draws a display list (scene.mjs) at any size; capture() returns the
 // frame's pixels for offline video.
 //
@@ -136,6 +136,7 @@ class Motion {
       pm.prepare(list);           // a live draw renders full size until the low-resolution one is ready
     }
     const d = this.device, W = this.w, H = this.h, host = this.host;
+    this.frameKey = (this.frameKey || 0) + 1;
     const cam = { ...DEFAULT_CAMERA, ...(list.camera || {}) };
     const t0 = performance.now();
     const c = compile(list.items || [], cam, W, H, this.design, this.cpuOut, this.images);
@@ -186,6 +187,9 @@ class Motion {
         rp.draw(3);
       } else if (r.kind === "tilemap") {
         tslot = this.tiles.draw(rp, r.item, cam, W, H, this.design, this.images, this.atlasView, tslot);
+      } else if (r.kind === "layer" && r.item.layer) {
+        // A custom GPU layer (web/explainer/layers.mjs): it records its own draw into this pass.
+        r.item.layer.draw(rp, r.item, { cam, W, H, design: this.design, view: this.view, time, frame, frameKey: this.frameKey });
       } else if (r.kind === "world" && this.worldTex) {
         const u = this.layerU[li++ % 4];
         host.write(u, new Float32Array([W, H, 0, 0, W, H, 0, 0, r.item.opacity ?? 1, (r.item.blur || 0) * W / this.design[0], 0, 0]));
