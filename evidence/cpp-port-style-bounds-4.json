@@ -18,5 +18,15 @@
   "controls": {
     "built_in": "Ordered modes: the C++ reference with palette entry 0's OKLab L raised by 0.01. Mix modes: the C++ reference with palette entry 0's linear red raised by 0.01. Each must give at least one index mismatch on the CPU link, and on the GPU link at least one (ordered) or more than 1e-5 of pixels (mix), on every case.",
     "source_edit": "C++: the pair penalty 0.12 to 0.13. Prediction: the CPU link fails on at least the bayer4 cases of ega and pico8, and on no none or mix case. WGSL: the blue-noise divisor 4096 to 4095. Prediction: WARP fails on at least one blue and one mix-blue case, and on no bayer or none case."
+  },
+  "adjacency": {
+    "written": "2026-10-16, before the C++ reference, the WGSL rewrite and the first run of development adjacency",
+    "fixtures": "The four cases of evidence/shaders-adjacency-parity-bounds.json at 320 x 200: the street fixture (presets eberhard, mackie, exhausted) and the edges plate (eberhard), scene-linear f32. The exporter takes D and A (float64) from the JavaScript develop() and forms the float64 output scene (D + eps) / (A free + eps), checking that Math.fround of each value equals develop()'s own frame.",
+    "cpu_link": { "value_max_rel": 1e-09, "rule": "|cpp - js| <= 1e-9 max(1, |js|) on every output value; 8-bit lab codes equal except at a rounding edge within 1e-9 (at most 2 a case)" },
+    "gpu_link": { "max_abs_code": 3, "p999_abs_code": 1, "mean_abs_code": 0.05, "why": "The web parity bounds: the same explicit Euler steps on both sides; the diffusion is contractive, so f32 error stays near one rounding a step." },
+    "controls": {
+      "built_in": "the C++ reference with the development rate k multiplied by 1.1: must exceed value_max_rel on the CPU link and the GPU bound, on every case",
+      "source_edit": "C++ and WGSL: the 4 of the chemistry Laplacian (- 4 f0) to 3.9. Prediction: the CPU link fails on every case; WARP fails on at least one case."
+    }
   }
 }
