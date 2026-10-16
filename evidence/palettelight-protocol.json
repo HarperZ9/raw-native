@@ -1,0 +1,17 @@
+{
+  "what": "Palette-locked lighting comparison against post-quantised dither; protocol fixed before the study tool existed",
+  "fixed_before_first_run": "2026-10-15",
+  "note": "project-docs/PALETTE-LIGHTING-PROTOCOL.md",
+  "size": [320, 180], "sweep": { "frames": 24, "x0": 2.5, "x1": 9.5, "y": 3.6, "z": 5.6, "hue_frame_x": 6 },
+  "post_dither": { "mode": "mix-bayer8", "palette": "the same 44 entries" },
+  "predictions": {
+    "S1": { "exactness": 1.0 },
+    "S2": { "purity_locked": 1.0, "purity_post_max": 0.85 },
+    "S3": { "look_fidelity_locked_over_post_max": 0.7 },
+    "S4": { "physical_fidelity_post_over_locked_max": 0.9 },
+    "S5": { "change_rate_ratio_range": [0.7, 1.3], "class_flips_locked": 0, "class_flips_post_min": 0.02 },
+    "S6": { "hue_shift_deg_min": 12 },
+    "S7": { "index_mean_abs_max": 0.02 },
+    "S8": { "cycle_rotation": 1.0 }
+  }
+}
