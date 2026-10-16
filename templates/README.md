@@ -8,6 +8,8 @@ These are the three starter templates the author chose on 9 October 2026 (ADR 00
 | [pixel-2.5d](pixel-2.5d/) | "pixel art, 2.5D, somewhat semi 3D" | orthogonal tile maps at two depths for parallax; PICO-8 palette with ordered dither | pixel-perfect scaling (M2 criterion 7); sprites; real tiles |
 | [retro-thriller](retro-thriller/) | "more like Disco Elysium and less like horror ... I want it to be scary ... not ... focused entirely on horror and on jump scares and fear" | a tile map, an unsteady practical light, colour negative film, a soft tube; playable (G1): walk, click to walk, follow camera, zoom | sprites, real art |
 
+The retro-thriller folder also holds the first vertical slice, **Low Water: the ferry shelter** (`retro-thriller/slice.mjs`). It is a waiting room and a quay through one turning night, and the environment state (ADR 0017) drives its light, wet surfaces, rain, wind, sight, lamps and rules.
+
 Play one (keyboard, pointer or gamepad; the controls and rebinding are under the view):
 ```sh
 python scripts/motion_render.py --root . --serve 8765

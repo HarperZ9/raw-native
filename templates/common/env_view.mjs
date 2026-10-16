@@ -37,7 +37,7 @@ export function rainItems([x0, y0, w, h], rainRate, wind, t, seed = 11) {
   for (let i = 0; i < n; i++) {
     const ph = hash01(seed, 21, i) * period, k = Math.floor((t + ph) / period), f = ((t + ph) % period) / period;
     const x = x0 + w * hash01(seed, 22 + (k & 1023), i), y = y0 + h * hash01(seed, 23 + (k & 1023), i);
-    if (f < 0.55) out.push({ shape: circle(x, y, 1 + 7 * f, 12), fill: null, stroke: [0.75, 0.8, 0.9, 0.35 * (1 - f / 0.55)], width: 1.1 });
+    if (f < 0.55) out.push({ shape: circle(x, y, 1 + 7 * f, 12), fill: null, stroke: [0.8, 0.85, 0.95, 0.6 * (1 - f / 0.55)], width: 1.6 });
     else if (i % 3 === 0) { const g = (f - 0.55) / 0.45; out.push({ shape: polyline([x - sx * (1 - g) - 2, y - 26 * (1 - g) + sy * (1 - g), x - sx * (1 - g) * 0.6, y - 18 * (1 - g)]), fill: null, stroke: [0.7, 0.75, 0.85, 0.25], width: 1 }); }
   }
   return out;

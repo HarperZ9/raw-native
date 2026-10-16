@@ -9,7 +9,7 @@
 //   step(state, input, dt, assets) -> state
 //   lerp(prev, curr, alpha) -> view state (optional)
 //   view(viewState, assets, ctx) -> a Motion display list { background, camera, items, post }
-//   demo(index, map)        -> the action frame of step index for the scripted demo (a film,
+//   demo(index, map, state) -> the action frame of step index for the scripted demo (a film,
 //                              the capture and the CI check play this; a person plays live)
 //
 // filmFrame(game, ctx, t) replays the demo from step 0 up to time t and draws the interpolated
@@ -28,7 +28,7 @@ export function filmFrame(game, ctx, t, { seed = 1 } = {}) {
     const map = createActionMap(game.actions || {});
     c = ctx.gameFilm = { game, map, session: createSession(game, { seed, assets: ctx.assets, hz, maxSteps: Number.MAX_SAFE_INTEGER }) };
   }
-  const s = c.session, input = (i) => game.demo(i, c.map);
+  const s = c.session, input = (i) => game.demo(i, c.map, s.state);
   const need = steps - s.loop.steps;
   if (need > 0) s.stepN(need, input);
   // The interpolation factor is the film's position inside the current step.
