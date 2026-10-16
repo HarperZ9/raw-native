@@ -25,7 +25,8 @@ supersedes it and both stay.
 | [0015](0015-api-snapshot.md) | A versioned API snapshot at M3; the freeze waits for a complete engine (amends A6) | Accepted |
 | [0016](0016-style-templates.md) | Three starter templates as the style acceptance corpus | Accepted |
 | [0017](0017-environment-state.md) | One environment state (time, weather, wind, moisture, temperature, light, atmosphere) shared by lighting, effects, materials, particles, audio, animation and gameplay | Proposed |
-| [0019](0019-style-passes-in-the-core.md) | Style passes in the C++ core: one translator-subset WGSL source, a float64 C++ reference, the JavaScript reference kept as an oracle (0018 is reserved for the runtime-host record) | Accepted |
+| [0018](0018-renderer-first-one-core-buildlang.md) | Renderer first, one C++ core native and in WebAssembly, gameplay in BuildLang, Low Water as the showcase (D1, D2, D3, D10); D4 to D9 and D11 pending | Accepted |
+| [0019](0019-style-passes-in-the-core.md) | Style passes in the C++ core: one translator-subset WGSL source, a float64 C++ reference, the JavaScript reference kept as an oracle | Accepted |
 
 To add one, copy the shape of an existing record: status and date, context,
 decision, consequences, alternatives, and the signal that would reverse it.

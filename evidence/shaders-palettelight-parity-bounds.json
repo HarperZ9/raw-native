@@ -1,0 +1,15 @@
+{
+  "what": "Palette-locked lighting (web/shaders/palettelight): GPU pass against the float64 CPU reference on Chapel Yard G-buffers",
+  "fixed_before_first_run": "2026-10-15",
+  "source": "fixtures/chapel-render.mjs at 192 x 108; the same f32 G-buffer feeds both sides",
+  "output": { "width": 192, "height": 108 },
+  "cases": [
+    { "id": "lamp-left-t0", "lamp": [3, 3.6, 5.6], "time": 0 },
+    { "id": "lamp-right-cycle", "lamp": [9, 3.6, 5.6], "time": 1.7 },
+    { "id": "three-steps", "lamp": [6, 3.6, 5.6], "time": 0.4, "plan": { "steps": 3 } },
+    { "id": "five-steps-low-moon", "lamp": [5, 3.6, 5.6], "time": 2.9, "plan": { "steps": 5, "moon": 0.2, "gain": 2 } },
+    { "id": "other-camera", "lamp": [6, 3.6, 5.6], "time": 0.9, "camera": { "yawDeg": -25, "elevDeg": 35 } }
+  ],
+  "bounds": { "max_decision_mismatch_fraction": 5e-4, "over2_fraction": 5e-4, "mean_abs_code": 0.15 },
+  "why": "A palette index is a discrete decision. f32 against f64 can flip it only where a ramp coordinate, a warm fraction or a cycle phase sits within rounding of a threshold; a flip changes one pixel to a neighbouring entry, so the bounds are fractions of pixels."
+}

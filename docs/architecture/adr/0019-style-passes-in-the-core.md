@@ -2,8 +2,7 @@
 
 **Status:** Accepted for the passes it covers (dither lighting, paint-over projection, look
 keys); the rule applies to every later port. **Date:** 2026-10-15. **Builds on:** 0002 (A5),
-0005, 0006, 0010. **Number:** 0018 stays reserved for the release plan's runtime-host record
-(RELEASE-PLAN.md, D1 and D2).
+0005, 0006, 0010, 0018 (the author's D1 and D2 decisions are recorded there).
 
 ## Context
 
