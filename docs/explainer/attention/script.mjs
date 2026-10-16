@@ -5,8 +5,8 @@ import { show } from "../../../web/explainer/data.mjs";
 
 // Beat times (seconds).
 export const CUE = Object.freeze({
-  open: 0, title: 2.5, cloud: 8, cloudPush: 13, task: 20, taskCard: 25, step1: 31, step1Card: 37,
-  step2: 45, step2Focus: 50, step2Card: 54, iris: 60, close: 61.6, source: 66, end: 72,
+  open: 0, title: 2.5, cloud: 8, cloudPush: 15, task: 21, taskCard: 26, step1: 32, step1Card: 38,
+  step2: 46, step2Focus: 51, step2Card: 55, iris: 61, close: 62.6, source: 67, end: 73,
 });
 
 // One row per caption: [start, end, text]. `d` is data.json.
@@ -16,7 +16,7 @@ export function script(d) {
   return [
     [CUE.title, CUE.cloud, "How attention moves information between tokens."],
     [CUE.cloud, CUE.cloudPush, `Every dot is one number this small model computed: ${show(n, "int")} of them.`],
-    [CUE.cloudPush, CUE.task, "Here is one sequence it read, 64 positions deep."],
+    [CUE.cloudPush, CUE.task, "This is one sequence it read: 64 positions, 64 numbers each."],
     [CUE.task, CUE.taskCard, "The sequence is 64 random characters. One stretch of them repeats."],
     [CUE.taskCard, CUE.step1, `Outside the repeat the model gets ${show(a.elsewhere, "pct")} of next characters right, about chance. Inside it, ${show(a.repeat, "pct")}.`],
     [CUE.step1, CUE.step1Card, "First, a head in layer 0 moves each character one position forward."],
