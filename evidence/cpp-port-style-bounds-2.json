@@ -1,0 +1,74 @@
+{
+  "schema": "raw-native.evidence/1",
+  "what": "Round 2 of the C++ core port of the web-only style passes (ADR 0019): the post-stack driver and the passes after PR #151. Same three links per pass as evidence/cpp-port-style-bounds.json: the JavaScript float64 reference against the C++ float64 reference (CPU link), and the C++ float64 reference against the one WGSL source (src/renderer/gpu/shaders/style.wgsl) on D3D12 (WARP) and on WebGPU (SwiftShader). Each section below is written and committed before the first run of the code it bounds.",
+  "author_decisions": "2026-10-15: \"No, renderer first\"; \"One C++ core\".",
+  "rules": {
+    "controls": "Every link carries a built-in control that must fail on every run; a run whose control passes fails as a whole. Separately, one constant in the C++ reference and one in style.wgsl are edited by hand, rebuilt and run, the failure recorded in evidence/cpp-port-style-runs-2.json, and the edit reverted.",
+    "adapters": "Software adapters only: WARP (RAW_NATIVE_D3D12_WARP=1 on every D3D12 command) and SwiftShader in CI. No hardware GPU run is used as evidence.",
+    "codes": "8-bit comparisons use codeStats of web/shaders/lab/gpu-kit.mjs over the RGB channels: max, p99.9 and mean absolute code difference, and the fraction of values more than 2 codes apart.",
+    "ties": "On the CPU link an 8-bit code mismatch is excused only where the C++ float64 value, scaled to codes, is within 1e-9 of a rounding edge (x.5). Excused ties are counted and reported; at most 2 a case."
+  },
+  "post_stack": {
+    "written": "2026-10-16, before the C++ driver and its first run",
+    "what": "The post stack's driver in C++: the pass registry (stage, input and output encoding, history), the encoding contract of web/motion/post.mjs planScenePasses (srgb-decode inserted before a pass that reads linear light from display values; refusals), the scene and display split of web/motion/renderer.mjs, and the run order of web/motion/post_run.mjs PostRunner.run (ping-pong, history slots), executed as a frame graph on the host (CPU references) or on a device (WGSL passes).",
+    "fixtures": "Plan lists: twelve lists over the passes the web registers (exposure, srgb-decode, crt, film, crt-classic, dither, paint), with and without post.colour, built and planned by tools/port/export_style_fixtures.mjs with web/motion/post.mjs and web/shaders/post.mjs unchanged. Chains: three lists of the passes with both a JavaScript and a C++ reference (exposure, srgb-decode), run over the street fixture (web/shaders/lab/sources.mjs labSource('street', 160, 100)) for three frames, the JavaScript side by each pass's cpu() in the planned order.",
+    "plan_link": {
+      "plan_mismatch": 0,
+      "rule": "For every list, the C++ plan (scene passes after insertion, display passes) equals the JavaScript plan pass for pass, and the C++ refuses exactly the lists the JavaScript refuses."
+    },
+    "cpu_link": {
+      "max_ulp_f32": 1,
+      "differing_fraction_max": 0.0001,
+      "rule": "The JavaScript cpu() functions return Float32Array frames, so the C++ host executor rounds each pass's float64 output to f32 between passes, as the stack stores frames. Every value of the final frame is within one f32 ulp of the JavaScript value, and at most 1e-4 of the values differ at all."
+    },
+    "gpu_link": {
+      "max_abs_rel": 1e-05,
+      "rule": "|gpu - cpu| <= 1e-5 max(1, |cpu|) for every value of the final frame of every chain, on WARP and on SwiftShader.",
+      "why": "f32 pow on the GPU against float64 pow, through at most three passes; D3D's pow is exp2(log2) with about 2^-21 relative error, and an exposure doubles the value."
+    },
+    "controls": {
+      "plan": "The C++ plans with post.colour flipped against the JavaScript plans: must differ on at least one list.",
+      "cpu": "The C++ host chain with its first two passes swapped against the JavaScript chain: must exceed the cpu_link bound on the chain that has two passes before its last.",
+      "gpu": "The GPU chain against the C++ chain with its first two passes swapped: must exceed max_abs_rel on that chain.",
+      "source_edit": "C++: the sRGB decode threshold 0.04045 to 0.05; WGSL: the same constant in style_srgb_decode. Prediction: the C++ edit fails the CPU link, the WGSL edit fails the WARP link."
+    }
+  },
+  "image_passes": {
+    "written": "2026-10-16, before the C++ references, the WGSL rewrites and the first run",
+    "what": "purity (CRT colour purity and degauss), lightpaint (pigment-space lighting), glaze (interference glazes), hatch (curvature hatching from the SDF Hessian).",
+    "fixtures": {
+      "purity": "The four cases of evidence/shaders-purity-parity-bounds.json at 320 x 240: displayLinear('street'), white and red plates, presets magnetised, degauss (t 0.3 and 0.1) and earth-field.",
+      "lightpaint": "The four cases of evidence/shaders-lightpaint-parity-bounds.json at 320 x 200: the street fixture's albedo, irradiance, fog and kind (dusk and day), presets disco, grotesque and complement.",
+      "glaze": "The four cases of evidence/shaders-glaze-parity-bounds.json at 320 x 200: the street fixture plus normals, depth and camera, presets beetle, oil-slick and bruise.",
+      "hatch": "The three cases of evidence/shaders-hatch-parity-bounds.json at 320 x 200: the owned SDF still life (web/shaders/fixtures/stilllife.mjs), presets engraving, crosshatch and ink.",
+      "how": "The exporter recomputes each pixel in float64 with the web modules' exported functions (landingError and landing; shade; glazeColour and thicknessAt; camRay, march, curvature, coords and hatchLines), checks that Math.fround of every value equals the web module's own frame output, and exports the float64 values. Inputs are the f32 arrays the web pages feed both of their implementations; cameras are float64 JSON. The pigment tables (K, S, W in float64, the 17^3 latent lookup in f32) are generated into src/renderer/data/pigments.hpp by tools/port/gen_pigments.mjs, which CI reruns with --check (ADR 0019, rule 4)."
+    },
+    "cpu_link": {
+      "value_max_abs": 1e-09,
+      "code_mismatch_unexcused": 0,
+      "hatch_hit_mismatch": 0,
+      "coverage": "every pixel of every case; hatch also compares the per-pixel fallback (umbilic) flag, equal on every pixel where both implementations hit"
+    },
+    "gpu_link": {
+      "purity": {"max_abs_code": 2, "p999_abs_code": 1, "mean_abs_code": 0.05},
+      "lightpaint": {"max_abs_code": 2, "p999_abs_code": 1, "mean_abs_code": 0.05},
+      "glaze": {"max_abs_code": 2, "p999_abs_code": 1, "mean_abs_code": 0.05},
+      "hatch": {"over2_fraction": 0.005, "mean_abs_code": 0.5},
+      "why": "The web parity bounds of each pass, because the comparison is the same kind: an f32 pass against a float64 reference on the same inputs, as 8-bit codes after the same display encode (purity and hatch: sRGB; lightpaint and glaze: the lab shoulder 1 - exp(-2.4 v) then sRGB)."
+    },
+    "controls": {
+      "built_in": {
+        "purity": "the C++ reference with the phosphor stripe width s 0.26 changed to 0.19 (narrower than the beam, so light is lost even with no landing error): must exceed value_max_abs on the CPU link and the GPU bound on every case",
+        "lightpaint": "the C++ reference with Emid multiplied by 1.25: must exceed value_max_abs on the CPU link and mean_abs_code on the GPU link",
+        "glaze": "the C++ reference with coverage reduced by 0.1: must exceed value_max_abs on the CPU link and mean_abs_code on the GPU link",
+        "hatch": "the C++ reference with freq raised by 1 line a unit: must exceed value_max_abs on the CPU link and the GPU bound"
+      },
+      "source_edit": {
+        "purity": "C++ and, separately, WGSL: the degauss radial term 0.3 in (0.3 + r^2) to 0.35. Prediction: the CPU link fails on the two degauss cases; the WARP link fails on at least white-degauss-0.1s.",
+        "lightpaint": "C++ and WGSL: the luminance weight 0.7152 to 0.72 in Y. Prediction: the CPU link fails on every case; the WARP link fails on at least one case.",
+        "glaze": "C++ and WGSL: the noise octave weight 0.65 to 0.7 in the film thickness. Prediction: the CPU link fails on the oil-slick and bruise cases (dVar > 0); WARP fails on at least oil-slick.",
+        "hatch": "C++ and WGSL: the tone floor 0.12 to 0.15. Prediction: the CPU link fails on every case; WARP fails on at least one case."
+      }
+    }
+  }
+}
