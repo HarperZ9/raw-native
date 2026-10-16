@@ -1,0 +1,23 @@
+{
+  "schema": "raw-native.evidence/1",
+  "what": "The spectral film shader (web/shaders/film: expose with gate weave, emulsion MTF, halation through the base, develop with interimage, Boolean-model grain, spectral print and projection) in the C++ core (ADR 0019). Same links as the earlier bounds files: JavaScript reference against the C++ reference (CPU link), and the C++ reference against the one WGSL source on D3D12 (WARP), WebGPU (SwiftShader) and Vulkan (lavapipe). Written before the film C++ reference, the WGSL rewrite and the first run.",
+  "author_decisions": "2026-10-15: \"No, renderer first\"; \"One C++ core\".",
+  "written": "2026-10-17",
+  "controls": "Every link carries a built-in control that must fail on every case of every run; a run whose control passes fails as a whole. Separately, one constant in the C++ reference and one in style.wgsl are edited by hand, rebuilt and run, the result recorded in evidence/cpp-port-style-runs-6.json with the prediction below, and the edit reverted.",
+  "film": {
+    "fixtures": "The six cases of evidence/shaders-film-parity-bounds.json at 480 x 270 on sceneCard(480, 270), built as web/test/shaders-film.html builds them; for the two-frame case the last frame (f = 1) is compared, as the page does. The JavaScript createFilm frame gives the display-linear image (Float32Array) and encodeFilm8 the RGBA8 codes; both are exported, with the plan: the stock tables (E, negPrim, negConst, printW, printPrim, projV, out, logGain and the curve constants), the halo kernel (q, R, weights), the halo strengths, the grain radii and contrasts, the MTF weights, the J variance table and the Poisson threshold table.",
+    "data": "The CIE 1931 colour matching functions are generated once from web/shaders/cie1931.mjs into src/renderer/data/cie1931.hpp (tools/port/gen_cie.mjs, CI --check), ADR 0019 rule 4. Every other table is computed by the C++ reference and compared with the exported one.",
+    "reference_arithmetic": "The JavaScript stores the exposure, the halo grids, the developed fractions, the image, the MTF and halo weights and the J table as f32 and computes in float64 between; the C++ keeps those f32 stores.",
+    "cpu_link": {
+      "plan_equal": "Every float64 table and constant within 1e-12 relative (the colour timing's Newton solve within 1e-10 on logGain); every f32 table (halo weights, MTF weights, J table) within 1e-6 relative; the Poisson thresholds equal entry by entry. If the Poisson thresholds differ, the table moves to a generated header (rule 4) and that is recorded as an addendum before any GPU run.",
+      "image_max_abs": 1e-05,
+      "code_mismatch": "codes equal except where the JavaScript image value lies within 255e-5 codes of a rounding edge; at most 1e-4 of the channel values a case",
+      "why": "exp, log10, pow and tan in the tables and passes may differ in the last bit between V8 and the C++ library; the f32 stores keep such a difference near one f32 rounding. The grain's cloud counts are integer comparisons of u32 hashes against u32 thresholds, and cloud coverage is continuous in position."
+    },
+    "gpu_link": { "max_abs_code": 6, "p999_abs_code": 1, "mean_abs_code": 0.05, "why": "The web bounds: f32 against float64 through a spectral path with exp and log, and the Monte Carlo grain can flip a point on a cloud's edge, moving one pixel by a few codes." },
+    "controls": {
+      "built_in": "The C++ reference with the exposure raised by a third of a stop (ev + 1/3): it must exceed image_max_abs on the CPU link and the GPU bounds, on every case.",
+      "source_edit": "C++: the interimage gain read in develop() multiplied by 1.1 (0.3 to 0.33 for both negatives). Prediction: the CPU link fails on every case. WGSL: the print curve's offset in the print pass (log10 H + logGain) shifted by +0.01. Prediction: WARP fails on every case."
+    }
+  }
+}
