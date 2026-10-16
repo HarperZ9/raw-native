@@ -1,0 +1,1 @@
+- **Look keys** (`web/look/keys.mjs`). Terms keyed to time-of-day slots: 8 slots by default, 6 accepted, fewer than 6 refused. A periodic monotone cubic curve passes through every key and never overshoots. It is the time axis of the proposed environment state (ADR 0017).
