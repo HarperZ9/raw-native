@@ -1,0 +1,399 @@
+{
+ "protocol": "evidence/paintover-protocol.json",
+ "views": {
+  "yaw0": {
+   "holes_primary": 0.005555555555555556,
+   "holes_three": 0.0009876543209876543,
+   "blend_three": 0.9306095679012346,
+   "stretch": {
+    "ground": {
+     "n": 25841,
+     "M_mean": 1.00000217041857,
+     "M_p95": 1.0000082255086375,
+     "A_mean": 1.0000043414339894,
+     "A_p95": 1.000010907681851
+    },
+    "wall": {
+     "n": 9942,
+     "M_mean": 1.0000022335482486,
+     "M_p95": 1.000007033397552,
+     "A_mean": 1.000004464073048,
+     "A_p95": 1.000009834853732
+    }
+   }
+  },
+  "yaw5": {
+   "holes_primary": 0.06526234567901235,
+   "holes_three": 0.01324074074074074,
+   "blend_three": 0.8949382716049382,
+   "stretch": {
+    "ground": {
+     "n": 25106,
+     "M_mean": 1.049528444798791,
+     "M_p95": 1.0878887643034425,
+     "A_mean": 1.1050551585030999,
+     "A_p95": 1.1181304785414798
+    },
+    "wall": {
+     "n": 9435,
+     "M_mean": 1.0487659122613155,
+     "M_p95": 1.0984001876625,
+     "A_mean": 1.1059834428719446,
+     "A_p95": 1.1197872955553527
+    }
+   }
+  },
+  "yaw10": {
+   "holes_primary": 0.1189429012345679,
+   "holes_three": 0.016828703703703703,
+   "blend_three": 0.8650925925925926,
+   "stretch": {
+    "ground": {
+     "n": 24453,
+     "M_mean": 1.1015577723179566,
+     "M_p95": 1.173229754966879,
+     "A_mean": 1.220826675712077,
+     "A_p95": 1.2570727634843346
+    },
+    "wall": {
+     "n": 8835,
+     "M_mean": 1.1045496970353932,
+     "M_p95": 1.1907506614979417,
+     "A_mean": 1.2224690521734998,
+     "A_p95": 1.272831046101124
+    }
+   }
+  },
+  "yaw20": {
+   "holes_primary": 0.20689814814814814,
+   "holes_three": 0.010462962962962962,
+   "blend_three": 0.8235956790123456,
+   "stretch": {
+    "ground": {
+     "n": 22714,
+     "M_mean": 1.2116695429171773,
+     "M_p95": 1.3206383031814954,
+     "A_mean": 1.483402720414396,
+     "A_p95": 1.7183706866082715
+    },
+    "wall": {
+     "n": 7454,
+     "M_mean": 1.2374873786626013,
+     "M_p95": 1.36708479947902,
+     "A_mean": 1.4808982458679616,
+     "A_p95": 1.7602161386409774
+    }
+   }
+  },
+  "yaw30": {
+   "holes_primary": 0.2767052469135802,
+   "holes_three": 0.009606481481481481,
+   "blend_three": 0.8049922839506173,
+   "stretch": {
+    "ground": {
+     "n": 19912,
+     "M_mean": 1.3265517401684686,
+     "M_p95": 1.4467882912121313,
+     "A_mean": 1.7831307106167857,
+     "A_p95": 1.8793598780323613
+    },
+    "wall": {
+     "n": 6583,
+     "M_mean": 1.37887847095986,
+     "M_p95": 1.5198915063102272,
+     "A_mean": 1.7765387931420278,
+     "A_p95": 2.887552456629833
+    }
+   }
+  },
+  "yaw45": {
+   "holes_primary": 0.351929012345679,
+   "holes_three": 0.07616512345679012,
+   "blend_three": 0.7357716049382717,
+   "stretch": {
+    "ground": {
+     "n": 17103,
+     "M_mean": 1.5013645997951148,
+     "M_p95": 1.5953189113365172,
+     "A_mean": 2.1699151837999686,
+     "A_p95": 2.356887695787271
+    },
+    "wall": {
+     "n": 5223,
+     "M_mean": 1.5941933286289802,
+     "M_p95": 1.704400755465375,
+     "A_mean": 1.8193434771014703,
+     "A_p95": 2.0434268072740798
+    }
+   }
+  },
+  "yaw60": {
+   "holes_primary": 0.39066358024691356,
+   "holes_three": 0.1278395061728395,
+   "blend_three": 0.6756172839506173,
+   "stretch": {
+    "ground": {
+     "n": 13416,
+     "M_mean": 1.6393915005727946,
+     "M_p95": 1.768530513109695,
+     "A_mean": 2.591882681494844,
+     "A_p95": 2.825964011676952
+    },
+    "wall": {
+     "n": 4481,
+     "M_mean": 1.705770132863067,
+     "M_p95": 1.8591466076191783,
+     "A_mean": 2.1346239501968514,
+     "A_p95": 2.5345861133203247
+    }
+   }
+  },
+  "yaw90": {
+   "holes_primary": 0.47412037037037036,
+   "holes_three": 0.21430555555555555,
+   "blend_three": 0.5798070987654321,
+   "stretch": {
+    "ground": {
+     "n": 9352,
+     "M_mean": 1.8509367038135118,
+     "M_p95": 1.9652963380851884,
+     "A_mean": 3.1165317394062972,
+     "A_p95": 3.3316893382691837
+    },
+    "wall": {
+     "n": 3305,
+     "M_mean": 1.9184456776659131,
+     "M_p95": 1.918806821060558,
+     "A_mean": 3.186776109714645,
+     "A_p95": 3.2434860559731264
+    }
+   }
+  },
+  "elev-10": {
+   "holes_primary": 0.23756172839506173,
+   "holes_three": 0.08405864197530864,
+   "blend_three": 0.7834336419753086,
+   "stretch": {
+    "ground": {
+     "n": 20215,
+     "M_mean": 1.0373342256826399,
+     "M_p95": 1.1862402148992455,
+     "A_mean": 1.3277407943568535,
+     "A_p95": 1.3776052844101092
+    },
+    "wall": {
+     "n": 10084,
+     "M_mean": 1.175087140538581,
+     "M_p95": 1.2000107575427255,
+     "A_mean": 1.2539637950848037,
+     "A_p95": 1.2832467396749274
+    }
+   }
+  },
+  "elev10": {
+   "holes_primary": 0.045208333333333336,
+   "holes_three": 0.004583333333333333,
+   "blend_three": 0.9329166666666666,
+   "stretch": {
+    "ground": {
+     "n": 30266,
+     "M_mean": 1.2108893803445326,
+     "M_p95": 1.2714300307952349,
+     "A_mean": 1.2374953833665447,
+     "A_p95": 1.309323670907181
+    },
+    "wall": {
+     "n": 8139,
+     "M_mean": 1.068786448664296,
+     "M_p95": 1.0771600578758218,
+     "A_mean": 1.3082764453560352,
+     "A_p95": 1.335052794945751
+    }
+   }
+  }
+ },
+ "secondaries": [
+  {
+   "dyaw": 30,
+   "delev": -10,
+   "gain": 75821,
+   "gain_fraction": 0.565984637549174
+  },
+  {
+   "dyaw": -30,
+   "delev": -10,
+   "gain": 41095,
+   "gain_fraction": 0.30676380791711144
+  }
+ ],
+ "missed_points_start": 133963,
+ "missed_points_left": 17047,
+ "pop": {
+  "max": 12.002432469159618,
+  "p999": [
+   1.580403684918782,
+   1.5698228552315505,
+   1.2335993342648144,
+   1.691608586622419,
+   2.5637109554289044,
+   0.002848987668290226
+  ]
+ },
+ "checks": [
+  {
+   "id": "P1 ground M yaw0",
+   "pass": true,
+   "detail": "measured 1.000 model 1.000"
+  },
+  {
+   "id": "P1 ground A yaw0",
+   "pass": true,
+   "detail": "measured 1.000 model 1.000"
+  },
+  {
+   "id": "P1 ground M yaw5",
+   "pass": true,
+   "detail": "measured 1.050 model 1.052"
+  },
+  {
+   "id": "P1 ground A yaw5",
+   "pass": true,
+   "detail": "measured 1.105 model 1.106"
+  },
+  {
+   "id": "P1 ground M yaw10",
+   "pass": true,
+   "detail": "measured 1.102 model 1.105"
+  },
+  {
+   "id": "P1 ground A yaw10",
+   "pass": true,
+   "detail": "measured 1.221 model 1.222"
+  },
+  {
+   "id": "P1 ground M yaw20",
+   "pass": true,
+   "detail": "measured 1.212 model 1.217"
+  },
+  {
+   "id": "P1 ground A yaw20",
+   "pass": true,
+   "detail": "measured 1.483 model 1.481"
+  },
+  {
+   "id": "P1 ground M yaw30",
+   "pass": true,
+   "detail": "measured 1.327 model 1.330"
+  },
+  {
+   "id": "P1 ground A yaw30",
+   "pass": true,
+   "detail": "measured 1.783 model 1.768"
+  },
+  {
+   "id": "P1 ground M yaw45",
+   "pass": true,
+   "detail": "measured 1.501 model 1.488"
+  },
+  {
+   "id": "P1 ground A yaw45",
+   "pass": true,
+   "detail": "measured 2.170 model 2.215"
+  },
+  {
+   "id": "P1 ground M yaw60",
+   "pass": true,
+   "detail": "measured 1.639 model 1.618"
+  },
+  {
+   "id": "P1 ground A yaw60",
+   "pass": true,
+   "detail": "measured 2.592 model 2.618"
+  },
+  {
+   "id": "P1 ground M elev-10",
+   "pass": false,
+   "detail": "measured 1.037 model 1.000"
+  },
+  {
+   "id": "P1 ground A elev-10",
+   "pass": true,
+   "detail": "measured 1.328 model 1.353"
+  },
+  {
+   "id": "P1 ground M elev10",
+   "pass": true,
+   "detail": "measured 1.211 model 1.230"
+  },
+  {
+   "id": "P1 ground A elev10",
+   "pass": true,
+   "detail": "measured 1.237 model 1.230"
+  },
+  {
+   "id": "P2 holes yaw5",
+   "pass": false,
+   "detail": "0.0653 <= 0.01"
+  },
+  {
+   "id": "P2 holes yaw10",
+   "pass": false,
+   "detail": "0.1189 <= 0.03"
+  },
+  {
+   "id": "P2 holes yaw20",
+   "pass": false,
+   "detail": "0.2069 <= 0.1"
+  },
+  {
+   "id": "P2 holes yaw30",
+   "pass": false,
+   "detail": "0.2767 <= 0.2"
+  },
+  {
+   "id": "P2 holes yaw90",
+   "pass": true,
+   "detail": "0.4741 >= 0.25"
+  },
+  {
+   "id": "P2 monotone",
+   "pass": true,
+   "detail": "0.006 0.065 0.119 0.207 0.277 0.352 0.391 0.474"
+  },
+  {
+   "id": "P3 secondaries at yaw30",
+   "pass": true,
+   "detail": "0.0096 vs 0.1107"
+  },
+  {
+   "id": "P3 secondaries at yaw90",
+   "pass": true,
+   "detail": "0.2143 vs 0.2845"
+  },
+  {
+   "id": "P4 secondary yaw",
+   "pass": true,
+   "detail": "yaw offsets 30, -30"
+  },
+  {
+   "id": "P4 separation",
+   "pass": true,
+   "detail": "separation 60"
+  },
+  {
+   "id": "P5 walls yaw30",
+   "pass": true,
+   "detail": "M 1.379 A 1.777"
+  },
+  {
+   "id": "P6 blend contamination at the primary",
+   "pass": false,
+   "detail": "max 172 mean 0.02005 (candidate index 25 unused: cameras built directly)"
+  },
+  {
+   "id": "default rule: no pop above 8 codes per degree (max over views)",
+   "pass": false,
+   "detail": "max 12.00, p99.9 per base view 1.58 1.57 1.23 1.69 2.56 0.00"
+  }
+ ]
+}

@@ -1,0 +1,208 @@
+{
+ "protocol": "evidence/paintover-keyframes-protocol.json",
+ "roundtrip": {
+  "covered_fraction": 0.9967939814814815,
+  "max_abs_code": 0,
+  "mean_abs_code": 0,
+  "compared": 516738
+ },
+ "views": {
+  "yaw0": {
+   "holes_primary": 0.005555555555555556,
+   "holes_three": 0.0009876543209876543,
+   "blend_three": 0.9790740740740741
+  },
+  "yaw5": {
+   "holes_primary": 0.024266975308641976,
+   "holes_three": 0.0014737654320987653,
+   "blend_three": 0.9602391975308642
+  },
+  "yaw10": {
+   "holes_primary": 0.043479938271604936,
+   "holes_three": 0.001404320987654321,
+   "blend_three": 0.9475617283950617
+  },
+  "yaw20": {
+   "holes_primary": 0.09420524691358025,
+   "holes_three": 0.002515432098765432,
+   "blend_three": 0.919729938271605
+  },
+  "yaw30": {
+   "holes_primary": 0.15442901234567902,
+   "holes_three": 0.009606481481481481,
+   "blend_three": 0.8786342592592593
+  },
+  "yaw45": {
+   "holes_primary": 0.22524691358024693,
+   "holes_three": 0.055324074074074074,
+   "blend_three": 0.8252237654320987
+  },
+  "yaw60": {
+   "holes_primary": 0.26597993827160493,
+   "holes_three": 0.09521604938271605,
+   "blend_three": 0.7800462962962963
+  },
+  "yaw90": {
+   "holes_primary": 0.28803240740740743,
+   "holes_three": 0.16628086419753085,
+   "blend_three": 0.720925925925926
+  },
+  "elev-10": {
+   "holes_primary": 0.11332561728395062,
+   "holes_three": 0.0036805555555555554,
+   "blend_three": 0.9226466049382716
+  },
+  "elev10": {
+   "holes_primary": 0.045208333333333336,
+   "holes_three": 0.004583333333333333,
+   "blend_three": 0.9536265432098765
+  },
+  "pop": {
+   "max": 29.291488588509242,
+   "p999": [
+    0.00863808302022373,
+    0.0011903572304042265,
+    3.054982404905984,
+    2.50785357139432,
+    2.252763126244215,
+    0.22880243279716175,
+    1.4373375448362677,
+    2.069850373594511,
+    4.443216582446147,
+    0.0021629485604379717,
+    0.016143245478340562
+   ]
+  }
+ },
+ "secondaries": [
+  {
+   "dyaw": 30,
+   "delev": -10,
+   "gain": 55600
+  },
+  {
+   "dyaw": -30,
+   "delev": -10,
+   "gain": 20973
+  }
+ ],
+ "missed_points_start": 81880,
+ "missed_points_left": 5307,
+ "checks": [
+  {
+   "id": "K2 max",
+   "pass": true,
+   "detail": "max 0"
+  },
+  {
+   "id": "K2 mean",
+   "pass": true,
+   "detail": "mean 0.00000"
+  },
+  {
+   "id": "K2 covered",
+   "pass": true,
+   "detail": "covered 0.99679"
+  },
+  {
+   "id": "K2 shift control",
+   "pass": true,
+   "detail": "mean 3.208"
+  },
+  {
+   "id": "K2 wrong-depth control",
+   "pass": true,
+   "detail": "covered 0.00000"
+  },
+  {
+   "id": "K5 copy exactness secondary 1",
+   "pass": true,
+   "detail": "max 0 over 438719 pixels, hole fraction 0.3769"
+  },
+  {
+   "id": "K5 copy exactness secondary 2",
+   "pass": true,
+   "detail": "max 0 over 560858 pixels, hole fraction 0.2121"
+  },
+  {
+   "id": "K1 keyframe 0 (yaw 0, elev 0)",
+   "pass": true,
+   "detail": "(needs >= 50000 compared) max 0 mean 0.00000 over 516738 pixels"
+  },
+  {
+   "id": "K1 keyframe 1 (yaw 30, elev -10)",
+   "pass": true,
+   "detail": "(needs >= 50000 compared) max 0 mean 0.00000 over 518001 pixels"
+  },
+  {
+   "id": "K1 keyframe 2 (yaw -30, elev -10)",
+   "pass": true,
+   "detail": "(needs >= 50000 compared) max 0 mean 0.00000 over 517791 pixels"
+  },
+  {
+   "id": "K3 holes yaw5",
+   "pass": true,
+   "detail": "0.0243 <= 0.04"
+  },
+  {
+   "id": "K3 holes yaw10",
+   "pass": true,
+   "detail": "0.0435 <= 0.08"
+  },
+  {
+   "id": "K3 holes yaw20",
+   "pass": true,
+   "detail": "0.0942 <= 0.15"
+  },
+  {
+   "id": "K3 holes yaw30",
+   "pass": true,
+   "detail": "0.1544 <= 0.22"
+  },
+  {
+   "id": "K3 holes yaw90",
+   "pass": true,
+   "detail": "0.2880 >= 0.15"
+  },
+  {
+   "id": "K4 ratio yaw30",
+   "pass": true,
+   "detail": "0.0096 vs 0.0618"
+  },
+  {
+   "id": "K4 ratio yaw90",
+   "pass": true,
+   "detail": "0.1663 vs 0.1728"
+  },
+  {
+   "id": "K4 absolute yaw20",
+   "pass": true,
+   "detail": "0.0025 <= 0.02"
+  },
+  {
+   "id": "K4 absolute yaw30",
+   "pass": true,
+   "detail": "0.0096 <= 0.02"
+  },
+  {
+   "id": "K6 seam median",
+   "pass": true,
+   "detail": "median 1 over 121904 overlap pixels"
+  },
+  {
+   "id": "K6 seam p95",
+   "pass": true,
+   "detail": "p95 10"
+  },
+  {
+   "id": "K7 pop p99.9",
+   "pass": false,
+   "detail": "per base view 0.01 0.00 3.05 2.51 2.25 0.23 1.44 2.07 4.44 0.00 0.02"
+  },
+  {
+   "id": "K7 pop max",
+   "pass": false,
+   "detail": "max 29.29"
+  }
+ ]
+}

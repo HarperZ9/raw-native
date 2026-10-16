@@ -24,6 +24,7 @@ supersedes it and both stay.
 | [0014](0014-game-runtime.md) | A game runtime in scope, staged G0 to G4, and M6 authoring (amends A3) | Accepted |
 | [0015](0015-api-snapshot.md) | A versioned API snapshot at M3; the freeze waits for a complete engine (amends A6) | Accepted |
 | [0016](0016-style-templates.md) | Three starter templates as the style acceptance corpus | Accepted |
+| [0017](0017-environment-state.md) | One environment state (time, weather, wind, moisture, temperature, light, atmosphere) shared by lighting, effects, materials, particles, audio, animation and gameplay | Proposed |
 
 To add one, copy the shape of an existing record: status and date, context,
 decision, consequences, alternatives, and the signal that would reverse it.
