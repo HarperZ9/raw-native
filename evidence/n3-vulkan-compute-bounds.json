@@ -36,5 +36,10 @@
    "prediction": "every scene whose certificate checks ray-traced AO is refuted"
   }
  },
- "does_not_prove": "Behaviour on hardware Vulkan drivers or a Steam Deck; anything about timings; that glslang and dxc give the same SPIR-V (they need not; each is checked against the reference, not against the other)."
+ "does_not_prove": "Behaviour on hardware Vulkan drivers or a Steam Deck; anything about timings; that glslang and dxc give the same SPIR-V (they need not; each is checked against the reference, not against the other).",
+ "addendum_2026_10_16": {
+  "written": "2026-10-16, after the first CI run of #165 and before the CPU comparison first ran in CI; it narrows no other bound",
+  "what": "The first CI run left out the c2_golden_per_device_class CPU comparison. It is now in the vulkan-linux job: the Vulkan build's CPU outputs byte for byte against evidence/identity-golden.json and evidence/m2-gltf-golden.json, with arena_certificate.json left out as the build-test job does.",
+  "exception": "The identity golden's case no-gpu-64 checks that a build without a GPU backend answers --gpu with exit 4 and an unverifiable certificate. The Vulkan build has a backend, so that case renders and differs by design; it is removed from the golden copy the job compares against. Every other case (10 of 11) is compared. Run once in WSL with the same Mesa before this addendum: 10 cases, 107 files, all identical."
+ }
 }

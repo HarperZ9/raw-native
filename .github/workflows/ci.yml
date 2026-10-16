@@ -476,6 +476,12 @@ jobs:
       - name: N3 criteria 2 and 3 on lavapipe; the renderer's passes in SPIR-V against the same references and gates as WARP; the swap control fails; lighting shading and the shadow-map identity are recorded misses (evidence/n3-vulkan-compute-runs.json)
         run: |
           c=build/raw_native_cli_vk
+          # The Vulkan build's CPU outputs, byte for byte against the committed CPU golden. The golden's
+          # no-gpu-64 case checks that a build without a GPU answers --gpu with exit 4; this build has one,
+          # so that case is left out (dated addendum in evidence/n3-vulkan-compute-bounds.json).
+          python3 scripts/identity_matrix.py run $c n3c-cpu.json n3c-cpu-out
+          python3 -c "import json; g=json.load(open('evidence/identity-golden.json')); g['cases'].pop('no-gpu-64'); json.dump(g, open('golden-cpu-only.json', 'w'))"
+          python3 scripts/identity_matrix.py compare golden-cpu-only.json n3c-cpu.json --except arena_certificate.json
           $c --gpu --out n3c-gpu --width 128 --height 128 > /dev/null
           grep -q '"verdict":"verified"' n3c-gpu/gpu_certificate.json
           python3 scripts/identity_matrix.py run $c n3c-quick.json n3c-quick-out --gpu --quick
@@ -505,9 +511,11 @@ jobs:
           python3 tests/gpu/sdf_gate.py n3c-sdf.json
           node tools/port/export_style_fixtures.mjs style-fixtures
           $c style-parity --fixtures style-fixtures --out n3c-style.json
-      - name: The ten glTF models on lavapipe with verified GPU certificates (N3 criterion 2, M2 criterion 1)
+      - name: The ten glTF models on the Vulkan build; CPU outputs byte-identical to the M2 golden and GPU certificates verified on lavapipe (N3 criterion 2, M2 criterion 1)
         run: |
           python3 tools/assets/fetch_gltf.py gltf-models
+          python3 scripts/identity_matrix.py run build/raw_native_cli_vk n3c-gltf-cpu.json n3c-gltf-cpu --models gltf-models
+          python3 scripts/identity_matrix.py compare evidence/m2-gltf-golden.json n3c-gltf-cpu.json --except arena_certificate.json
           python3 scripts/identity_matrix.py run build/raw_native_cli_vk n3c-gltf.json n3c-gltf --models gltf-models --gpu
           n=$(grep -l '"verdict":"verified"' n3c-gltf/*/gpu_certificate.json | wc -l)
           echo "verified GPU certificates: $n of 10"
