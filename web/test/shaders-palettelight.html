@@ -1,0 +1,31 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Palette-locked lighting: GPU against the CPU reference</title>
+<link rel="icon" href="data:,">
+<!-- Run by tests/web/shaders_parity.py --shader palettelight. Each case of
+     evidence/shaders-palettelight-parity-bounds.json renders a Chapel Yard G-buffer, then runs it through
+     palettelight.mjs (CPU, float64) and palettelight/gpu.mjs; palette indices and the 8-bit output are compared. -->
+<script type="module">
+import { createHost } from "../raw-gpu.mjs";
+import { chapelCamera, renderChapel } from "../shaders/fixtures/chapel-render.mjs";
+import { resolvePalettelight, runPalettelight } from "../shaders/palettelight/palettelight.mjs";
+import { createGpuPalettelight } from "../shaders/palettelight/gpu.mjs";
+import { codeStats } from "../shaders/lab/gpu-kit.mjs";
+const q = new URLSearchParams(location.search);
+try {
+  const host = await createHost({ timing: false });
+  const gpuErrors = []; host.device.onuncapturederror = (e) => gpuErrors.push(e.error.message);
+  const bounds = await (await fetch("../../evidence/shaders-palettelight-parity-bounds.json")).json(), { width: W, height: H } = bounds.output;
+  const cases = [];
+  for (const c of bounds.cases) {
+    if (q.get("case") && q.get("case") !== c.id) continue;
+    const cam = chapelCamera(c.camera || {}), g = renderChapel(cam, W, H, { lamp: c.lamp }), plan = resolvePalettelight({ lampPos: c.lamp, ...(c.plan || {}) }), want = runPalettelight(plan, g, c.time);
+    const d = await createGpuPalettelight(host, plan, { w: W, h: H }); d.frame(g, c.time); const got = await d.read(); d.destroy();
+    let mism = 0; for (let i = 0; i < want.idx.length; i++) if (want.idx[i] !== got.idx[i]) mism++;
+    const st = codeStats(want.rgba, got.packed);
+    cases.push({ id: c.id, decisionMismatch: mism, decisions: want.idx.length, mismatch_fraction: mism / want.idx.length, over2_fraction: st.over2 / st.n, mean: st.mean, max: st.max });
+  }
+  await host.done();
+  window.__result = { bounds: bounds.bounds, cases, adapter: host.info, gpuErrors };
+} catch (e) { window.__result = { error: String(e && e.stack || e) }; }
+</script>
