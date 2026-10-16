@@ -3,7 +3,7 @@
 //   node tools/port/export_style_fixtures.mjs <out dir>
 // Writes <out>/ditherlight.rnfx, <out>/paintover.rnfx, <out>/lookkeys.json and, from round 2
 // (evidence/cpp-port-style-bounds-2.json), <out>/poststack.rnfx and <out>/<pass>.rnfx for purity,
-// lightpaint, glaze and hatch. The cases are the
+// lightpaint, glaze and hatch, and (evidence/cpp-port-style-bounds-3.json) hysteresis and palettelight. The cases are the
 // ones of the web parity bounds files, built with the web modules exactly as the web parity pages
 // build them (web/test/shaders-ditherlight.html, shaders-paintover.html). Nothing under web/ is
 // changed. The reference functions are called per pixel (toneOf, shadePoint) so their float64
@@ -27,6 +27,7 @@ import { createLookKeys, resolveSlots } from "../../web/look/keys.mjs";
 import { Bundle } from "./rnfx.mjs";
 import { postStack } from "./fixtures_post.mjs";
 import { purity, lightpaint, glaze, hatch } from "./fixtures_image.mjs";
+import { hysteresis, palettelight } from "./fixtures_quantise.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const readJson = (p) => JSON.parse(readFileSync(join(ROOT, p), "utf8"));
@@ -129,7 +130,7 @@ const out = process.argv[2];
 if (!out) { console.error("usage: node tools/port/export_style_fixtures.mjs <out dir>"); process.exit(2); }
 mkdirSync(out, { recursive: true });
 const t0 = Date.now(), counts = { ditherlight: ditherlight(out), paintover: paintover(out), lookkeys: lookkeys(out), poststack: postStack(out),
-  purity: purity(out), lightpaint: lightpaint(out), glaze: glaze(out), hatch: hatch(out) };
+  purity: purity(out), lightpaint: lightpaint(out), glaze: glaze(out), hatch: hatch(out), hysteresis: hysteresis(out), palettelight: palettelight(out) };
 // The file list, for hosts that copy the fixtures by name (web/test/texture-identity.html).
 writeFileSync(join(out, "files.json"), JSON.stringify(readdirSync(out).filter((f) => f.endsWith(".rnfx") || f === "lookkeys.json").sort()));
 console.log(JSON.stringify({ out, cases: counts, seconds: (Date.now() - t0) / 1000 }));

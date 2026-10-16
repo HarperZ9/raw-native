@@ -213,16 +213,18 @@ void paintCases(rhi::Device* dev, const fx::Bundle& b, StyleParity& r) {
 LookKeysResult lookKeysParity(const std::string& path, std::string& err);   // style_lookkeys_parity.cpp
 PostStackResult postStackParity(rhi::Device* dev, const std::string& path, std::string& err);   // post_stack_parity.cpp
 int imageParity(rhi::Device* dev, const std::string& dir, StyleParity& r);                      // style_parity_image.cpp
+int quantiseParity(rhi::Device* dev, const std::string& dir, StyleParity& r);                   // style_parity_quantise.cpp
 std::string styleParityJson(const StyleParity& r);                          // style_parity_json.cpp
 
 bool StyleParity::cpuPass() const {
     bool ok = error.empty() && !cases.empty() && lookkeys.pass() && poststack.cpuPass();
-    int dither = 0, paint = 0, image = 0;
+    int dither = 0, paint = 0, image = 0, quant = 0;
     for (const StyleCase& c : cases) {
         ok = ok && c.cpuPass; dither += c.pass == "ditherlight"; paint += c.pass == "paintover";
         image += c.pass == "purity" || c.pass == "lightpaint" || c.pass == "glaze" || c.pass == "hatch";
+        quant += c.pass == "hysteresis" || c.pass == "palettelight";
     }
-    return ok && dither == expectDither && dither >= 5 && paint == expectPaint && paint >= 4 && image == expectImage && image >= 15;
+    return ok && dither == expectDither && dither >= 5 && paint == expectPaint && paint >= 4 && image == expectImage && image >= 15 && quant == expectQuant && quant >= 8;
 }
 bool StyleParity::gpuPass() const {
     bool ok = error.empty() && !cases.empty() && poststack.gpuPass();
@@ -244,6 +246,7 @@ StyleParity styleParity(rhi::Device* dev, const std::string& dir) {
         if (r.error.empty()) r.lookkeys = lookKeysParity(dir + "/lookkeys.json", r.error);
         if (r.error.empty()) r.poststack = postStackParity(dev, dir + "/poststack.rnfx", r.error);
         if (r.error.empty()) r.expectImage = imageParity(dev, dir, r);
+        if (r.error.empty()) r.expectQuant = quantiseParity(dev, dir, r);
     } catch (const std::exception& e) {
         r.error = std::string("fixture: ") + e.what();
     }

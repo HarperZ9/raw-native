@@ -1,0 +1,47 @@
+{
+  "schema": "raw-native.evidence/1",
+  "what": "Round 2, second PR, of the C++ core port of the web-only style passes (ADR 0019): hysteresis quantisation (decisions that remember the previous frame), palette-locked lighting, and palette dither. Same links as evidence/cpp-port-style-bounds.json: JavaScript float64 against C++ float64 (CPU link), and C++ float64 against the one WGSL source on D3D12 (WARP) and WebGPU (SwiftShader). Each section is committed before the first run of the code it bounds; the dither section is added in its own commit before dither's first run.",
+  "author_decisions": "2026-10-15: \"No, renderer first\"; \"One C++ core\".",
+  "rules": "As evidence/cpp-port-style-bounds-2.json: built-in controls that must fail on every run; one hand edit of a constant in the C++ and one in style.wgsl per pass, run, recorded in evidence/cpp-port-style-runs-3.json and reverted; software adapters only (RAW_NATIVE_D3D12_WARP=1 on every D3D12 command); codeStats over RGB.",
+  "hysteresis": {
+    "written": "2026-10-16, before the C++ reference, the WGSL rewrite and the first run",
+    "fixtures": "The three cases of evidence/shaders-hysteresis-parity-bounds.json at 320 x 200: bands6 and pico8 over 12 frames of the street lamp flicker (t = f / 24), and bands6 over 8 frames of a camera orbit with motion vectors (web/shaders/hysteresis/sequences.mjs). Frames, motion vectors and view distances are exported as the f32 arrays the web page feeds both implementations; the JavaScript step() runs the sequence and its decisions and RGBA8 codes are exported per frame.",
+    "previous_frame": "Both C++ paths carry the state between frames: the CPU reference as a decision, count and distance per pixel; the GPU path as two state buffers swapped each frame, the previous frame's read and this frame's written, as web/shaders/hysteresis/gpu.mjs does.",
+    "cpu_link": {
+      "decision_mismatch_unexcused": 0,
+      "tie_excuse": "A decision mismatch is excused only where one of the C++ decision quantities (the band coordinate L N against a rounding edge or a keep-interval edge; a palette distance against the nearest or the keep margin; the persistence count is an integer) is within 1e-9 of its threshold; at most 2 excused a case over all its frames.",
+      "code_mismatch_where_decisions_agree": "0, except at an 8-bit rounding edge within 1e-9 (counted with the excused ties)"
+    },
+    "gpu_link": { "max_decision_mismatch_fraction": 0.0002, "over2_fraction": 0.0002, "mean_abs_code": 0.05, "why": "The web parity bounds: a decision flips only within f32 rounding of a threshold or margin edge, and hysteresis can carry a flip to later frames." },
+    "controls": {
+      "built_in": "the C++ reference with the margin raised by 0.1: must give at least one decision mismatch on the CPU link and exceed max_decision_mismatch_fraction on the GPU link, on every case",
+      "source_edit": "C++ and, separately, WGSL: the 0.5 of the bands keep interval [p - 0.5 - m, p + 0.5 + m] to 0.45. Prediction: the CPU link fails on the two bands cases and passes on the palette case; WARP fails on at least bands-flicker."
+    }
+  },
+  "palettelight": {
+    "written": "2026-10-16, before the C++ reference, the WGSL rewrite and the first run",
+    "fixtures": "The five cases of evidence/shaders-palettelight-parity-bounds.json: Chapel Yard G-buffers from web/shaders/fixtures/chapel-render.mjs at 192 x 108 (f32 G-buffer, the same for every implementation), with each case's lamp position, time, plan overrides and camera.",
+    "palette": "The C++ builds the ramp palette itself (a port of web/shaders/palettelight/palette.mjs on the core's OKLab); the CPU link requires every entry's 8-bit sRGB to equal the JavaScript palette's, and the ramp tables to be equal.",
+    "cpu_link": {
+      "palette_rgb_mismatch": 0,
+      "index_mismatch_unexcused": 0,
+      "tie_excuse": "An index mismatch is excused only where a decision quantity (a ramp fraction or cycle phase against its Bayer threshold, the warm fraction against 0.3, 0.7 or its threshold) is within 1e-9 of its threshold; at most 2 a case."
+    },
+    "gpu_link": { "max_decision_mismatch_fraction": 0.0005, "over2_fraction": 0.0005, "mean_abs_code": 0.15, "why": "The web parity bounds: an index flips only where a coordinate sits within f32 rounding of a threshold, and a flip moves one pixel to a neighbouring entry." },
+    "controls": {
+      "built_in": "the C++ reference with the tone gain multiplied by 1.1: must give index mismatches on the CPU link and exceed max_decision_mismatch_fraction on the GPU link, on every case",
+      "source_edit": "C++ and WGSL: the ambient constant 0.7 in ambient (0.7 + 0.3 (0.5 + 0.5 n.y)) to 0.75. Prediction: the CPU link fails on every case; WARP fails on at least one case."
+    }
+  },
+  "addendum_a": {
+    "written": "2026-10-16, after the first CPU-link run of hysteresis and palettelight, and before any GPU-link run",
+    "finding": "The hysteresis built-in control as first written (the margin raised by 0.1) did not fail on bands-flicker: the CPU link matched the JavaScript on every decision and code of every case (0 mismatches, 0 ties), and so did the control on that case. A probe of the JavaScript reference shows why: over the 12 flicker frames the reference holds 7,727 decisions at margin 0.3 and the same 7,727 at margin 0.4, so a wider margin changes nothing on this sequence. The control on palette-flicker and bands-orbit failed as required.",
+    "change": "The hysteresis built-in control on both links becomes the margin set to 0, which turns the hysteresis off (a decision is kept only inside its own plain interval). On bands-flicker that changes 7,727 of 768,000 decisions (1.0%), above the GPU bound of 2e-4. The rule that a run whose control passes fails as a whole is unchanged, and so is every bound.",
+    "unchanged": "Every bound, case, tie rule, the palettelight controls and the source-edit controls."
+  },
+  "addendum_b": {
+    "written": "2026-10-16, after the source-edit control runs; nothing changed",
+    "finding": "The hysteresis source edit (the keep interval's 0.5 to 0.45) failed bands-orbit on both links and passed bands-flicker on both, against the prediction for bands-flicker. On the flicker sequence a held decision sits well inside its keep interval, so narrowing the interval by 0.05 changes no decision there. The palettelight edit failed every case on both links, as predicted.",
+    "consequence": "Recorded as a miss in evidence/cpp-port-style-runs-3.json. Every run still carries built-in controls that fail on every case."
+  }
+}
