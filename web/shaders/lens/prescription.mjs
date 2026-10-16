@@ -10,7 +10,7 @@
 //   surface of curvature C:  omega' = omega - y (n' - n) C
 // A reflection is a surface with n' = -n; a ray travelling backwards carries a negative index.
 // Element edges (vignetting) are not modelled.
-import { GLASS, cauchy, LAMBDA_D, BIN_NM, BINS } from "./spectrum.mjs";
+import { GLASS, cauchy, LAMBDA_D, BIN_NM } from "./spectrum.mjs";
 
 // Our own three-element design, mm: { R (radius, Infinity flat), t (gap to next), glass after }.
 // The stop sits in the air gap after surface 3, `stopAt` mm behind it. The radii came from a
@@ -72,15 +72,15 @@ export function firstOrder(lens = LENS, nm = LAMBDA_D) {
 
 // Ghost table: for every pair i > j and every wavelength bin, the position factor m, the radius
 // rho (mm, per unit stop semi-diameter at the entrance pupil), and the sign of the image.
-export function ghostTable(lens = LENS) {
+export function ghostTable(lens = LENS, bins = BIN_NM) {
   const { f, bfd } = firstOrder(lens), stop = toStop(lens, LAMBDA_D);
   const a = stop([1, 0]), b = stop([0, 1]); // stop height = a y0 + b omega0
   const u0 = 1e-3, yImg = forward(lens, LAMBDA_D, [-(b * u0) / a, u0], 0, bfd)[0]; // chief ray, main path
   const ghosts = [], n = lens.surfaces.length;
   for (let i = 1; i < n; i++) for (let j = 0; j < i; j++) {
     const m = [], rho = [];
-    for (let l = 0; l < BINS; l++) {
-      const nm = BIN_NM[l], sl = toStop(lens, nm), al = sl([1, 0]), bl = sl([0, 1]);
+    for (let l = 0; l < bins.length; l++) {
+      const nm = bins[l], sl = toStop(lens, nm), al = sl([1, 0]), bl = sl([0, 1]);
       const chief = ghostPath(lens, nm, [-(bl * u0) / al, u0], i, j, bfd)[0];
       const marg = ghostPath(lens, nm, [1, 0], i, j, bfd)[0]; // entrance height 1 mm
       m.push(chief / yImg); rho.push(marg);

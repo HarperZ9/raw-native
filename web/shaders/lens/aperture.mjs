@@ -79,10 +79,10 @@ export function starburstTable({ iris = IRIS, n = 256, rad = 24, M = 129, core =
   for (let i = 0; i < M * M; i++) for (let k = 0; k < 3; k++) out[i * 3 + k] /= sum[k];
   return { M, data: out };
 }
-// Spikes: sample a centred table along a ring of radius r, count local maxima that stand more
+// Spikes: sample a table centred at `centre` (n / 2 for the FFT table) along a ring of radius r, count local maxima that stand more
 // than `prominence` times above the ring's median. Used by the study and the tests.
-export function countSpikes(table, n, r, { samples = 1440, prominence = 3 } = {}) {
-  const c = (n - 1) / 2, v = new Float64Array(samples);
+export function countSpikes(table, n, r, { samples = 1440, prominence = 3, centre = n / 2 } = {}) {
+  const c = centre, v = new Float64Array(samples);
   for (let k = 0; k < samples; k++) { const a = (2 * Math.PI * k) / samples; v[k] = bilinear(table, n, c + r * Math.cos(a), c + r * Math.sin(a)); }
   const med = Float64Array.from(v).sort()[samples >> 1], w = Math.round(samples / 72);
   let count = 0;
@@ -92,4 +92,19 @@ export function countSpikes(table, n, r, { samples = 1440, prominence = 3 } = {}
     if (peak) count++;
   }
   return count;
+}
+// Angular harmonics of a centred table over a radial band: amplitude of each harmonic k of the
+// angular profile, relative to its mean (k = 0). A pattern with N-fold spikes peaks at k = N.
+export function angularHarmonics(table, n, [r0, r1], { samples = 1440, kMax = 40, radial = 41, centre = n / 2 } = {}) {
+  const c = centre, prof = new Float64Array(samples);
+  for (let s = 0; s < samples; s++) {
+    const a = (2 * Math.PI * s) / samples, ca = Math.cos(a), sa = Math.sin(a);
+    for (let j = 0; j < radial; j++) { const r = r0 + ((r1 - r0) * j) / (radial - 1); prof[s] += bilinear(table, n, c + r * ca, c + r * sa) * r; }
+  }
+  const mean = prof.reduce((x, y) => x + y, 0) / samples, amp = [1];
+  for (let k = 1; k <= kMax; k++) {
+    let re = 0, im = 0; for (let s = 0; s < samples; s++) { const a = (2 * Math.PI * k * s) / samples; re += prof[s] * Math.cos(a); im += prof[s] * Math.sin(a); }
+    amp.push((2 * Math.hypot(re, im)) / samples / mean);
+  }
+  return amp;
 }
