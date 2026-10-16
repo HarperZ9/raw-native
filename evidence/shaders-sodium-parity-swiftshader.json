@@ -1,0 +1,45 @@
+{
+  "bounds": {
+    "max_abs_code": 2,
+    "p999_abs_code": 1,
+    "mean_abs_code": 0.03
+  },
+  "cases": [
+    {
+      "id": "night-sodium",
+      "max": 1,
+      "p999": 0,
+      "mean": 0.0001768261316872428,
+      "over2_fraction": 0
+    },
+    {
+      "id": "van-close",
+      "max": 1,
+      "p999": 0,
+      "mean": 0.00020897633744855967,
+      "over2_fraction": 0
+    },
+    {
+      "id": "pure-sodium-no-mist",
+      "max": 1,
+      "p999": 0,
+      "mean": 6.430041152263375e-05,
+      "over2_fraction": 0
+    },
+    {
+      "id": "rain-heavy",
+      "max": 1,
+      "p999": 0,
+      "mean": 0.00019290123456790122,
+      "over2_fraction": 0
+    }
+  ],
+  "adapter": {
+    "vendor": "google",
+    "architecture": "swiftshader",
+    "device": "",
+    "description": ""
+  },
+  "gpuErrors": [],
+  "adapter_kind": "swiftshader"
+}

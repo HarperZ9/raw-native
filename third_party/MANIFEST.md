@@ -30,14 +30,13 @@ No OpenColorIO code is linked. The notice is in `third_party/NOTICE-OpenColorIO.
 |---|---|---|---|---|
 | Hanken Grotesk, weight 500 | github.com/marcologous/hanken-grotesk | OFL-1.1 | `docs/motion/hanken-grotesk-500.atlas.json` (glyph outlines and kerning; the copyright line and licence URL are inside) | `scripts/glyph_atlas.py` |
 | Hanken Grotesk Bold (700), version 3.013, font file SHA-256 `4ca80ac105e80a582f892b3bbdd67dba26905f8bdefc837cb8a8908ad7be7fc9` | github.com/marcologous/hanken-grotesk | OFL-1.1 (full text: `third_party/fonts/OFL-hanken-grotesk.txt`) | `web/explainer/fonts/hanken-grotesk-700.atlas.json` | `scripts/glyph_atlas.py` |
-| Cascadia Mono, weight 400 (variable font instanced), version 2407.024, font file SHA-256 `08026f617eea315caca59898784e999f6cdb2d0c34d2040deeb042bcdc359fa2` | github.com/microsoft/cascadia-code | OFL-1.1 (the font's licence URL field) | `web/explainer/fonts/cascadia-mono-400.atlas.json` | `scripts/glyph_atlas.py` |
+| Conso Regular (400), version 1.000, webfont SHA-256 `0e4a48ca69d9f6b6a1916eb1c6459fe6947bd4a9f999c684f1237beda1c24f78` (the file the author's site ships, `system/fonts/conso-regular.woff2`) | Pavel Larin | Unknown: the source archive has no licence file. The author's site records that the author holds the designer's licence privately; public use here follows the author's own site (author ruling, 2026-10-16) | `web/explainer/fonts/conso-400.atlas.json` | `scripts/glyph_atlas.py` |
 
 ## Open items
 
 These were found while writing this manifest and are not resolved here:
 
 - **The Hanken Grotesk font version is not recorded.** The atlas does not record which release of the font file it was cut from. The next atlas build should write the font's version string and the SHA-256 of its file into the atlas.
-- **Cascadia Mono's copy came from a Windows-supplied file.** Its licence URL field names the OFL, and the upstream project is OFL-1.1, but its description field says "Microsoft supplied font" and points to the Microsoft product's terms. The atlas should be recut from an upstream release file, with its licence text beside it, before a release depends on it. The canon's mono, Conso, is not used: no licence to redistribute its outlines is on record in this repository.
 - **The full OFL-1.1 text is not in the repository.** (Resolved for Hanken Grotesk on 2026-10-16: `third_party/fonts/OFL-hanken-grotesk.txt`, copied from the site repository's vendored copy.) The atlas carries the copyright line and the licence URL. The OFL asks that the licence travel with the font software, and whether a derived glyph atlas needs the full text beside it is not settled here. Adding the text from the upstream repository needs a download, which waits for the author's approval.
 - **The Threads shader names no source.** `src/renderer/gpu/shaders/threads.wgsl` says it was "ported from a GLSL thread renderer" but does not name which. If that renderer is the author's own, it is first party and belongs nowhere in this file. If it is not, it needs a row here.
 
@@ -72,5 +71,5 @@ b3afebfca166385ff54f518b382ffa9f53846e46c9b9716cbd9af5f8c83698e4  src/renderer/a
 e319da67ce990a6d163411db1ef81641fbe76b9047f98575e9067280f69cb6bd  docs/motion/hanken-grotesk-500.atlas.json
 e02ccb89a86839b22feff7872ff5cc355cc0f58318d29eee20e2cf83a612f16d  third_party/fonts/OFL-hanken-grotesk.txt
 7b3d72d7a0221040e7ac0d4ab587fb126e95ed40287af14e17f52443e770aa2a  web/explainer/fonts/hanken-grotesk-700.atlas.json
-1aea85f48537a52fc62e17b263350efc4655c382f0e025a18158060e18a982db  web/explainer/fonts/cascadia-mono-400.atlas.json
+1968931d0fcf5ae45dba14a9b688bf5f9fc739f6b935472914abc824d8144b93  web/explainer/fonts/conso-400.atlas.json
 ```

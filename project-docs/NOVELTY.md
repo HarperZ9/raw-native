@@ -37,6 +37,16 @@ The searches were general web, Google Scholar and arXiv. The ACM Digital Library
 | Paint-over projection plus a traced view-dependent reflection layer (proposed) | CANDIDATE | 2.5D matte painting and camera projection (SideFX forum); Debevec 1996 view-dependent texturing; a patent on projection-painting preview (US 8,373,715). | The runtime reflection pass over a projected painting. |
 | Low-pressure sodium as a near-monochromatic 589 nm light in a game renderer (proposed) | CANDIDATE | The physics (RP Photonics on sodium lamps); remarks that RGB rendering cannot reproduce it (Moments in Graphics, spectral rendering series). | Colour that vanishes only under sodium light, as a game mechanic. |
 
+## Checked on 2026-10-16 (sodium light)
+
+General web searches (three queries); the ACM Digital Library and Shadertoy were not retried, since both were behind bot checks on 2026-10-15.
+
+| Technique | Verdict | Nearest prior found | What ours adds, and the check |
+|---|---|---|---|
+| Low-pressure sodium as a near-monochromatic line light in a spectral renderer, so surfaces lose their colour under it | KNOWN in offline spectral rendering | Eclat Digital, "Rendering metamerism" (Ocean renderer, a sodium-lamp example); Moments in Graphics, spectral rendering series (single-wavelength light versus RGB) | Nothing claimed for the rendering itself. |
+| A precomputed light-type by material response table (spectra integrated once, lines as delta terms) driving a real-time deferred pass on CPU and GPU (built, web/shaders/sodium) | KNOWN as an idea | Spectral prefiltering for RGB rendering (Ward and Eydelberg-Vileshin 2002, cited from memory with moderate confidence) | Engineering and measurement: GPU parity, the chroma-spread metric, and the mixed-light recovery study. |
+| Colour that reads only outside sodium light, used as a game mechanic (proposed for Low Water) | CANDIDATE | No game found with this mechanic in this search. There is popular-science material on why colours vanish under sodium light. | The mechanic and its tuning rule (the sky fill must stay low where sodium should erase colour, measured in SODIUM-LIGHT-RESULTS.md). |
+
 ## Not yet checked
 
 Emissive lattice with a draw-on parameter; era-faithful low-poly mode (the PS1 look has many shader implementations, so the prior is dense; only a hardware-faithful fixed-point model is a candidate); halftone and line-screen output stage with hysteresis. Each stays "candidate" in EFFECTS-PROGRAM.md.
@@ -48,7 +58,7 @@ Emissive lattice with a draw-on parameter; era-faithful low-poly mode (the PS1 l
 - Energy-conserving bloom discussion: https://polycount.com/discussion/comment/2050577
 - Dithered sampling: https://history.siggraph.org/?p=213916 ; https://diglib.eg.org/handle/10.1111/cgf13778 ; https://www.arxiv.org/pdf/2105.12620
 - Wet materials: https://graphics.ucsd.edu/~henrik/papers/rendering_wet_materials/ ; https://graphics.cs.yale.edu/sites/default/files/drying_materials.pdf
-- Sodium lamps: https://www.rp-photonics.com/sodium_vapor_lamps.html ; https://momentsingraphics.de/SpectralRendering3Results.html
+- Sodium lamps: https://eclat-digital.com/rendering-metamerism/ ; https://www.lamptech.co.uk/Documents/SO%20Spectral.htm ; https://www.rp-photonics.com/sodium_vapor_lamps.html ; https://momentsingraphics.de/SpectralRendering3Results.html
 
 - Dither3D: https://runevision.com/tech/dither3d
 - Obra Dinn dithering, via summaries: https://blog.playstation.com/archive/2019/10/17/lucas-pope-on-return-of-the-obra-dinns-art-style ; https://www.alanzucconi.com/?p=10365 ; devlog thread named at https://github.com/samuelbigos/godot_dither_shader

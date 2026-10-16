@@ -126,7 +126,7 @@ test("tensorGrid places every element and its inverse names the element under a 
 
 test("type: labels type on glyph by glyph; cards show the bound value, not a typed one", async () => {
   const atlas = await json("../../docs/motion/hanken-grotesk-500.atlas.json");
-  const mono = await json("./fonts/cascadia-mono-400.atlas.json");
+  const mono = await json("./fonts/conso-400.atlas.json");
   const T = typeKit({ head: atlas, body: atlas, mono });
   const full = T.meta("SEED 7", { x: 0, y: 0 })[0].shape.length, half1 = T.meta("SEED 7", { x: 0, y: 0, reveal: 0.5 })[0].shape.length;
   assert.ok(half1 < full && half1 > 0);

@@ -1,0 +1,11 @@
+{
+  "what": "Low-pressure sodium light (project-docs/SODIUM-LIGHT-PROTOCOL.md): predictions fixed before the module, scene and study exist",
+  "fixed_before_first_run": "2026-10-16",
+  "lights": { "sodium": { "D2_nm": 589.0, "D1_nm": 589.6, "ratio_D2_D1": 2, "impurity_default": 0.02, "impurity_lines_nm": [568.5, 615.8] }, "window_K": 2700, "led": { "blue_nm": 450, "phosphor_nm": 560 }, "sky_K": 4100 },
+  "metric": "max pairwise distance of OKLab (a/L, b/L) over the 8-material palette, from XYZ, no white balance",
+  "Q1_pure_sodium_S_max": 0.001,
+  "Q2_default_sodium_S_max": 0.03,
+  "Q3_window_S_min": 0.15,
+  "Q4_mixing": { "steps": 21, "monotone": true, "S_half_over_S_one": [0.3, 0.7], "f50": [0.25, 0.6] },
+  "Q5_distance": { "max_abs_error_m": 0.3, "pass": "direct light, shadows on, mist off", "report_only": "full render with mist and reflections" }
+}
