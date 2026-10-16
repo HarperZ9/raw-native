@@ -34,9 +34,11 @@ def chunk(a, i: int, t0: float, t1: float, out: Path) -> Path:
     cmd = [sys.executable, str(ROOT / "scripts/motion_render.py"), "--root", str(ROOT), "--scene", a.scene, "--out", str(mp4),
            "--width", str(a.width), "--height", str(a.height), "--fps", str(a.fps), "--from", str(t0), "--to", str(t1),
            "--adapter", "swiftshader", "--transport", "raw", "--codec", "libx264", "--quality", "16", "--hash-frames"]
-    print(f"chunk {i}: {t0}-{t1} s", flush=True)
-    subprocess.run(cmd, check=True, cwd=ROOT)
-    return mp4
+    for attempt in range(3):   # a long CPU render can drop a localhost request; the chunk restarts whole
+        print(f"chunk {i}: {t0}-{t1} s, attempt {attempt + 1}", flush=True)
+        if subprocess.run(cmd, cwd=ROOT).returncode == 0:
+            return mp4
+    raise SystemExit(f"chunk {i} failed three times")
 
 
 def main() -> int:
