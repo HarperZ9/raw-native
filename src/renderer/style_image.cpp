@@ -3,6 +3,7 @@
 #include "data/pigments.hpp"
 #include <algorithm>
 #include <cmath>
+#include <iterator>
 namespace raw::style {
 
 std::uint32_t pcg(std::uint32_t v) {

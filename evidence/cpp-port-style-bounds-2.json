@@ -70,5 +70,10 @@
         "hatch": "C++ and WGSL: the tone floor 0.12 to 0.15. Prediction: the CPU link fails on every case; WARP fails on at least one case."
       }
     }
+  },
+  "addendum_a": {
+    "written": "2026-10-16, after the source-edit control runs; no bound, case or built-in control changed",
+    "finding": "The WGSL source-edit control of lightpaint (the luminance weight 0.7152 to 0.72 in lum) passed the WARP link on every case, against the prediction. The weight sits in both the light value e = Y(E) and the luminance the paint is rescaled to, so the edit moves chromaticity by less than one 8-bit step almost everywhere. The C++ edit of the same constant failed the CPU link on every case.",
+    "consequence": "Recorded as a miss in evidence/cpp-port-style-runs-2.json. The built-in lightpaint control (Emid x 1.25) fails both links on every run, so every run still carries a control that fails."
   }
 }

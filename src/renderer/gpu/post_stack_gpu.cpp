@@ -4,6 +4,7 @@
 #include "style_gpu.hpp"
 #include "shaders/style_layout.hpp"
 #include <cstring>
+#include <stdexcept>
 namespace raw::gpu_check::post_gpu {
 using post_stack::Spec;
 using rhi::Access;
