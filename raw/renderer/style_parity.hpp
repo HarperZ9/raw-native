@@ -74,6 +74,7 @@ struct StyleParity {
     int expectPaletteDither{0};            // palette dither cases (bounds-4)
     int expectAdjacency{0};                // development adjacency cases (bounds-4)
     int expectSignal{0};                   // crt-classic, VHS and fibre cases (bounds-5)
+    int expectFilm{0};                     // spectral film cases (bounds-6)
     std::vector<StyleCase> cases;
     LookKeysResult lookkeys;
     PostStackResult poststack;
@@ -84,9 +85,9 @@ struct StyleParity {
 };
 // fixtureDir holds ditherlight.rnfx, paintover.rnfx, lookkeys.json and, from round 2,
 // poststack.rnfx, purity.rnfx, lightpaint.rnfx, glaze.rnfx, hatch.rnfx, hysteresis.rnfx and
-// palettelight.rnfx, dither.rnfx, adjacency.rnfx, crtclassic.rnfx, vhs.rnfx, fibre.rnfx. dev may be
+// palettelight.rnfx, dither.rnfx, adjacency.rnfx, crtclassic.rnfx, vhs.rnfx, fibre.rnfx, film.rnfx. dev may be
 // null (CPU only).
-// only: empty for the full check, or one group (poststack, image, quantise, dither, adjacency, signal) for a
+// only: empty for the full check, or one group (poststack, image, quantise, dither, adjacency, signal, film) for a
 // development run, which the JSON marks and which is not the check of record.
 StyleParity styleParity(rhi::Device* dev, const std::string& fixtureDir, const std::string& only = "");
 

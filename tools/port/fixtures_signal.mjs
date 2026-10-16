@@ -78,3 +78,30 @@ export function fibre(out) {
   B.write(join(out, "fibre.rnfx"));
   return B.head.cases.length;
 }
+
+// The spectral film shader (evidence/cpp-port-style-bounds-6.json): the image of the last frame
+// of each case, its 8-bit codes, and the plan's tables, as web/test/shaders-film.html runs it.
+import { createFilm, encodeFilm8 } from "../../web/shaders/film/run.mjs";
+import { poissonTable } from "../../web/shaders/film/grain.mjs";
+import { sceneCard } from "../../web/shaders/fixtures/scene.mjs";
+export function film(out) {
+  const b = readJson("evidence/shaders-film-parity-bounds.json"), { width: W, height: H } = b.output, src = sceneCard(W, H), B = new Bundle("film");
+  B.add("src", "f32", src.data); B.add("poisson", "u32", poissonTable());
+  B.head.src = { width: src.width, height: src.height }; B.head.cases = [];
+  const flat = (rows) => rows.flat();
+  for (const c of b.cases) {
+    const cpu = createFilm(c.preset, c.overrides || {}, { w: src.width, h: src.height }, { w: W, h: H }), pl = cpu.plan, t = pl.t;
+    let ref = null;
+    for (let f = 0; f < c.frames; f++) ref = cpu.frame(src, f);
+    const id = c.id;
+    B.add(`${id}.img`, "f32", ref.img); B.add(`${id}.js`, "u8", encodeFilm8(ref.img, W, H));
+    B.add(`${id}.negPrim`, "f64", flat(t.negPrim)); B.add(`${id}.printW`, "f64", flat(t.printW)); B.add(`${id}.printPrim`, "f64", flat(t.printPrim));
+    B.add(`${id}.projV`, "f64", flat(t.projV)); B.add(`${id}.negConst`, "f64", t.negConst);
+    B.add(`${id}.haloWeights`, "f32", pl.halo.weights); B.add(`${id}.mtf`, "f32", pl.mtf); B.add(`${id}.jTable`, "f32", pl.jTable);
+    B.head.cases.push({ id, preset: c.preset, overrides: c.overrides || {}, frames: c.frames, width: W, height: H,
+      plan: { E: t.E, out: t.out, logGain: t.logGain, neg: t.neg, prt: t.prt, bleach: t.bleach, interimage: t.interimage, printBase: t.printBase,
+        umPerPx: pl.umPerPx, haloQ: pl.halo.q, haloR: pl.halo.R, haloStrength: pl.haloStrength, grainUm: pl.grainUm, grainContrast: pl.grainContrast } });
+  }
+  B.write(join(out, "film.rnfx"));
+  return B.head.cases.length;
+}

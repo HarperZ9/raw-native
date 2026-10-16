@@ -219,6 +219,7 @@ int adjacencyParity(rhi::Device* dev, const std::string& dir, StyleParity& r);  
 int crtClassicParity(rhi::Device* dev, const std::string& dir, StyleParity& r);                 // style_parity_crt.cpp
 int vhsParity(rhi::Device* dev, const std::string& dir, StyleParity& r);                        // style_parity_vhs.cpp
 int fibreParity(rhi::Device* dev, const std::string& dir, StyleParity& r);                      // style_parity_fibre.cpp
+int filmParity(rhi::Device* dev, const std::string& dir, StyleParity& r);                       // style_parity_film.cpp
 // The signal group (bounds-5): crt-classic, VHS and fibre.
 static int signalParity(rhi::Device* dev, const std::string& dir, StyleParity& r) {
     int n = crtClassicParity(dev, dir, r);
@@ -236,7 +237,7 @@ bool StyleParity::cpuPass() const {
         return ok;
     }
     bool ok = error.empty() && !cases.empty() && lookkeys.pass() && poststack.cpuPass();
-    int dither = 0, paint = 0, image = 0, quant = 0, pdither = 0, adj = 0, sig = 0;
+    int dither = 0, paint = 0, image = 0, quant = 0, pdither = 0, adj = 0, sig = 0, film = 0;
     for (const StyleCase& c : cases) {
         ok = ok && c.cpuPass; dither += c.pass == "ditherlight"; paint += c.pass == "paintover";
         image += c.pass == "purity" || c.pass == "lightpaint" || c.pass == "glaze" || c.pass == "hatch";
@@ -244,9 +245,10 @@ bool StyleParity::cpuPass() const {
         pdither += c.pass == "dither";
         adj += c.pass == "adjacency";
         sig += c.pass == "crtclassic" || c.pass == "vhs" || c.pass == "fibre";
+        film += c.pass == "film";
     }
     return ok && dither == expectDither && dither >= 5 && paint == expectPaint && paint >= 4 && image == expectImage && image >= 15 && quant == expectQuant && quant >= 8 && pdither == expectPaletteDither && pdither >= 114 &&
-           adj == expectAdjacency && adj >= 4 && sig == expectSignal && sig >= 13;
+           adj == expectAdjacency && adj >= 4 && sig == expectSignal && sig >= 13 && film == expectFilm && film >= 6;
 }
 bool StyleParity::gpuPass() const {
     if (only == "poststack") return error.empty() && poststack.gpuPass();
@@ -269,7 +271,8 @@ static StyleParity onlyGroup(rhi::Device* dev, const std::string& dir, const std
         else if (only == "dither") r.expectPaletteDither = ditherParity(dev, dir, r);
         else if (only == "adjacency") r.expectAdjacency = adjacencyParity(dev, dir, r);
         else if (only == "signal") r.expectSignal = signalParity(dev, dir, r);
-        else r.error = "style-parity --only takes poststack, image, quantise, dither, adjacency or signal";
+        else if (only == "film") r.expectFilm = filmParity(dev, dir, r);
+        else r.error = "style-parity --only takes poststack, image, quantise, dither, adjacency, signal or film";
     } catch (const std::exception& e) {
         r.error = std::string("fixture: ") + e.what();
     }
@@ -294,6 +297,7 @@ StyleParity styleParity(rhi::Device* dev, const std::string& dir, const std::str
         if (r.error.empty()) r.expectPaletteDither = ditherParity(dev, dir, r);
         if (r.error.empty()) r.expectAdjacency = adjacencyParity(dev, dir, r);
         if (r.error.empty()) r.expectSignal = signalParity(dev, dir, r);
+        if (r.error.empty()) r.expectFilm = filmParity(dev, dir, r);
     } catch (const std::exception& e) {
         r.error = std::string("fixture: ") + e.what();
     }
