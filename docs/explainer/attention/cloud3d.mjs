@@ -29,7 +29,7 @@ export function slabs(t, A, ctx, cam) {
     if (op <= 0.003) continue;
     items.push({ ...A.slabItem, layer: A.slabs[k], z, opacity: op, sel: k === 0 ? A.sel ?? -1 : -1 });
   }
-  if (fine > 0) items.push({ kind: "layer", layer: A.tile, keep: 1, radius: A.grid.cell * 0.36, range: A.range, ramp: A.RAMP, gainScale: 0.22, opacity: o * fine, sel: A.selTile ?? -1 });
+  if (fine > 0) items.push({ kind: "layer", layer: A.tile, keep: 1, radius: A.grid.cell * 0.4, range: A.range, ramp: A.RAMP, gainScale: 0.75, opacity: o * fine, sel: A.selTile ?? -1 });
   return items;
 }
 
