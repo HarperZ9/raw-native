@@ -16,7 +16,27 @@
 // of the window: a point any projector sees is never a hole.
 import { project, toCamera, pixelWorld, dot } from "./camera.mjs";
 
-export const DEFAULTS = { thetaMaxDeg: 40, facingPow: 2, fMin: 0.12, floor: 1e-4, tolBase: 2, tolGrazing: 6 };
+export const DEFAULTS = { thetaMaxDeg: 40, facingPow: 2, fMin: 0.12, floor: 1e-4, tolBase: 2, tolGrazing: 6, reach: false };
+// Keyframe weights (the default for new code): a projector's window reaches out to the nearest other
+// projector's direction (and no further than thetaMax), so at every projector's own camera the others
+// weigh the floor and the view is that painting unchanged, while between two projectors the weights
+// cross-fade. DEFAULTS keeps the fixed thetaMax window used in the first measurement.
+export const KEYFRAME = { ...DEFAULTS, reach: true };
+const reachCache = new WeakMap();
+// Angular reach of each projector in radians: the angle to the nearest other projector (between
+// their view axes), at most thetaMax and at least 8 degrees.
+export function reaches(projectors, opt) {
+  const key = projectors; let hit = reachCache.get(key);
+  if (hit && hit.opt === opt) return hit.r;
+  const tm = (opt.thetaMaxDeg * Math.PI) / 180, r = projectors.map((a, k) => {
+    if (!opt.reach || projectors.length < 2) return tm;
+    let m = Infinity;
+    projectors.forEach((b, j) => { if (j !== k) m = Math.min(m, Math.acos(Math.min(1, Math.max(-1, dot(a.cam.fwd, b.cam.fwd))))); });
+    return Math.min(tm, Math.max(m, (8 * Math.PI) / 180));
+  });
+  reachCache.set(key, { opt, r });
+  return r;
+}
 
 export function makeProjector(cam, w, h, rgba, depth) { return { cam, w, h, rgba, depth }; }
 
@@ -46,14 +66,14 @@ export function covered(pr, P, N, opt = DEFAULTS) {
 const window2 = (a) => { const t = Math.max(0, 1 - a * a); return t * t; };
 // The blended colour at P as seen from viewCam. Returns { rgb, wsum, hit: number of projectors that cover, weights }.
 export function shadePoint(projectors, P, N, viewCam, opt = DEFAULTS) {
-  const v = toCamera(viewCam, P), thetaMax = (opt.thetaMaxDeg * Math.PI) / 180;
+  const v = toCamera(viewCam, P), reach = reaches(projectors, opt);
   let wsum = 0, r = 0, g = 0, b = 0, hit = 0;
   const weights = new Array(projectors.length).fill(0);
   for (let k = 0; k < projectors.length; k++) {
     const pr = projectors[k], c = covered(pr, P, N, opt);
     if (!c) continue;
     hit++;
-    const ang = Math.acos(Math.min(1, Math.max(-1, dot(toCamera(pr.cam, P), v)))), w = Math.pow(c.f, opt.facingPow) * Math.max(window2(ang / thetaMax), opt.floor);
+    const ang = Math.acos(Math.min(1, Math.max(-1, dot(toCamera(pr.cam, P), v)))), w = Math.pow(c.f, opt.facingPow) * Math.max(window2(ang / reach[k]), opt.floor);
     const col = sampleRgb(pr, c.px, c.py);
     wsum += w; r += w * col[0]; g += w * col[1]; b += w * col[2]; weights[k] = w;
   }
