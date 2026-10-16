@@ -24,6 +24,7 @@ export function orbFloats(spec = {}) {
     s.soft, s.coreGain, s.coreR, s.haloGain,
     s.haloR, s.ring, s.ringW, s.iris.blades,
     s.iris.open, s.iris.rot, s.gain, 0,
+    s.spokes, s.spokeGain, s.spokeSharp, s.prism,
   ];
 }
 

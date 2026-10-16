@@ -36,8 +36,25 @@ fn aperture_edge(theta: f32, blades: f32, open: f32, rot: f32) -> f32 {
   let h = 3.141592653589793 / blades;
   return open * cos_near(h) / cos_near(a - h);
 }
-struct OrbSpec { core: vec4f, mid: vec4f, rim: vec4f, p1: vec4f, p2: vec4f, p3: vec4f, }
+// sin on |x| <= pi / 4, Taylor to x^13.
+fn sin_near(x: f32) -> f32 {
+  let y = x * x;
+  return x * (1.0 + y * (-1.66666667e-1 + y * (8.33333333e-3 + y * (-1.98412698e-4 + y * (2.75573192e-6 + y * (-2.50521084e-8 + y * 1.60590438e-10))))));
+}
+// cos(2 pi x) for any x: reduce to one turn, then to an octant, then a polynomial.
+fn cos_turns(x: f32) -> f32 {
+  let f = x - floor(x);                 // 0..1 turns
+  let q = floor(f * 8.0);               // octant 0..7
+  let a = (f - (q + 0.5) / 8.0) * TAU;   // |a| <= pi / 8 around the octant's centre
+  // cos and sin at the octant centres (q + 0.5) * pi / 4, as constants (no builtin trig).
+  let C = array<f32, 8>(0.9238795325, 0.3826834324, -0.3826834324, -0.9238795325, -0.9238795325, -0.3826834324, 0.3826834324, 0.9238795325);
+  let S = array<f32, 8>(0.3826834324, 0.9238795325, 0.9238795325, 0.3826834324, -0.3826834324, -0.9238795325, -0.9238795325, -0.3826834324);
+  let k = min(u32(q), 7u);
+  return C[k] * cos_near(a) - S[k] * sin_near(a);
+}
+struct OrbSpec { core: vec4f, mid: vec4f, rim: vec4f, p1: vec4f, p2: vec4f, p3: vec4f, p4: vec4f, }
 // p1: soft, coreGain, coreR, haloGain   p2: haloR, ring, ringW, blades   p3: open, rot, gain, unused
+// p4: spokes, spokeGain, spokeSharp, prism
 fn orb_at(r: f32, theta: f32, s: OrbSpec) -> vec3f {
   let edge = aperture_edge(theta, s.p2.w, s.p3.x, s.p3.y);
   let soft = s.p1.x;
@@ -49,9 +66,16 @@ fn orb_at(r: f32, theta: f32, s: OrbSpec) -> vec3f {
   let hot = s.p1.y * exp(-(rc * rc)) * m;
   let rh = r / s.p2.x;
   let halo = s.p1.w / (1.0 + rh * rh);
-  let rr = (r - edge) / s.p2.z;
-  let rl = s.p2.y * exp(-(rr * rr));
-  return s.p3.z * (tint * body + s.core.rgb * hot + s.rim.rgb * halo + vec3f(rl));
+  var spoke = 0.0;
+  if (s.p4.x > 0.0) {
+    let c = 0.5 + 0.5 * cos_turns(s.p4.x * theta / TAU);
+    let fr = (r - edge) / 0.35;
+    spoke = s.p4.y * pow(c, s.p4.z) * sstep(edge * 0.9, edge * 1.05, r) / (1.0 + fr * fr);
+  }
+  let e = edge * (vec3f(1.0) + s.p4.w * vec3f(-1.0, 0.0, 1.0));
+  let d = (vec3f(r) - e) / s.p2.z;
+  let rl = s.p2.y * exp(-(d * d));
+  return s.p3.z * (tint * body + s.core.rgb * hot + s.rim.rgb * halo + s.core.rgb * spoke + rl);
 }
 fn value_noise(x: f32, y: f32, seed: u32) -> f32 {
   let xi = floor(x); let yi = floor(y);
@@ -88,7 +112,7 @@ fn pulse_at(u: f32, phase: f32, width: f32) -> f32 { let d = (u - phase) / width
 // Full-frame fields: the atmosphere and the orb, drawn into Motion's linear HDR target.
 export const FIELD_WGSL = COMMON + /* wgsl */ `
 struct View { size: vec2f, inv: vec2f, time: f32, frame: f32, pad: vec2f, }
-struct Field { orb: OrbSpec, atmos: AtmosSpec, bandC: vec4f, place: vec4f, misc: vec4f, }
+struct Field { orb: OrbSpec, atmos: AtmosSpec, bandC: vec4f, place: vec4f, misc: vec4f, }   // 68 floats
 // place: orb centre x, y (px), orb radius (px), opacity     misc: time, unused...
 @group(0) @binding(0) var<uniform> V: View;
 @group(0) @binding(1) var<uniform> F: Field;
@@ -120,9 +144,10 @@ struct VO { @builtin(position) p: vec4f, @location(0) uv: vec2f, @location(1) co
 @vertex fn vs(@builtin(vertex_index) v: u32, @builtin(instance_index) i: u32) -> VO {
   var o: VO;
   // lod.w < 0 means no selection (a negative float converts to u32 0, which would select point 0).
-  let sel = U.lod.w >= 0.0 && i == u32(U.lod.w);
-  if (!lod_keep(i, U.lod.x) && !sel) { o.p = vec4f(2.0, 2.0, 0.0, 1.0); return o; }
   let q = pts[i];
+  let id = u32(q.w);   // points are stored sorted by hash_unit(id); the id rides in w
+  let sel = U.lod.w >= 0.0 && id == u32(U.lod.w);
+  if (!lod_keep(id, U.lod.x) && !sel) { o.p = vec4f(2.0, 2.0, 0.0, 1.0); return o; }
   var r = U.cam.w;
   if (sel) { r = max(6.0, r * 4.0); }
   let rr = max(r, 0.75);

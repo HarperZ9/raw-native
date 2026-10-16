@@ -13,7 +13,7 @@
 import { project } from "../motion/vector.mjs";
 import { FIELD_WGSL, POINTS_WGSL, FLOW_WGSL } from "./wgsl.mjs";
 import { orbFloats, atmosFloats, rampFloats } from "./pack.mjs";
-import { lodFraction } from "./ref.mjs";
+import { lodFraction, hashUnit } from "./ref.mjs";
 
 const HDR = "rgba16float";
 const OVER = { color: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" }, alpha: { srcFactor: "one", dstFactor: "one-minus-src-alpha", operation: "add" } };
@@ -36,7 +36,7 @@ async function pipeline(device, code, label, fs = "fs") {
 }
 
 class Field {
-  constructor(host, pipes) { this.host = host; this.pipes = pipes; this.slots = new Slots(host, 256, "explainer field"); }
+  constructor(host, pipes) { this.host = host; this.pipes = pipes; this.slots = new Slots(host, 288, "explainer field"); }
   draw(rp, item, f) {
     const u = this.slots.next(f.frameKey), a = atmosFloats(item.spec || {});
     let place = [0, 0, 1, item.opacity ?? 1];
@@ -45,12 +45,12 @@ class Field {
       if (!P) return;
       place = [item.x * P.k + P.ox, item.y * P.k + P.oy, Math.max(1, item.radius * P.k), item.opacity ?? 1];
     }
-    const data = new Float32Array(64);
+    const data = new Float32Array(68);
     data.set(orbFloats(item.spec || {}), 0);
-    data.set(a.floats, 24);
-    data.set(a.bandC, 52);
-    data.set(place, 56);
-    data.set([item.time ?? f.time, 0, 0, 0], 60);
+    data.set(a.floats, 28);
+    data.set(a.bandC, 56);
+    data.set(place, 60);
+    data.set([item.time ?? f.time, 0, 0, 0], 64);
     this.host.write(u, data);
     const pipe = item.mode === "orb" ? this.pipes.orb : this.pipes.atmos;
     rp.setPipeline(pipe);
@@ -60,33 +60,54 @@ class Field {
   destroy() { this.slots.destroy(); }
 }
 
-// A point cloud: Float32Array of [x, y, value, aux] per point, in scene units.
+// A point cloud: Float32Array of [x, y, value, unused] per point, in scene units. A point's id
+// is its index in that array. The layer stores the points sorted by hashUnit(id), with the id in
+// the fourth slot, so the points LOD keeps (hashUnit(id) < keep) are a prefix: a frame draws only
+// that many instances. The selected point (item.sel) is drawn again on top.
 class Points {
   constructor(host, pipe, data) {
     this.host = host; this.pipe = pipe; this.count = data.length / 4;
-    this.buf = host.buffer({ size: Math.max(16, data.byteLength), usage: ["storage", "copy-dst"], label: "explainer points" });
-    host.write(this.buf, data);
+    const n = this.count, h = new Float64Array(n), order = new Uint32Array(n);
+    for (let i = 0; i < n; i++) { h[i] = hashUnit(i); order[i] = i; }
+    order.sort((x, y) => h[x] - h[y] || x - y);
+    const sorted = new Float32Array(4 * n);
+    this.slot = new Uint32Array(n);                 // id -> position in the sorted buffer
+    this.hs = new Float64Array(n);                  // sorted hash values, for the prefix length
+    for (let k = 0; k < n; k++) {
+      const i = order[k];
+      sorted.set([data[4 * i], data[4 * i + 1], data[4 * i + 2], i], 4 * k);
+      this.slot[i] = k; this.hs[k] = h[i];
+    }
+    this.buf = host.buffer({ size: Math.max(16, sorted.byteLength), usage: ["storage", "copy-dst"], label: "explainer points" });
+    host.write(this.buf, sorted);
     this.slots = new Slots(host, 128, "explainer points u");
     this.last = null;
   }
-  // The LOD a frame used: { keep, gain, drawn } (read by tests and the inspector).
+  // How many points have hashUnit(id) < keep: the drawn prefix.
+  prefix(keep) {
+    let lo = 0, hi = this.count;
+    while (lo < hi) { const m = (lo + hi) >> 1; if (this.hs[m] < keep) lo = m + 1; else hi = m; }
+    return lo;
+  }
   draw(rp, item, f) {
     const P = project({ z: item.z || 0, screen: item.screen }, f.cam, f.W, f.H, f.design);
     if (!P) return;
     const covered = (item.area ?? 1) * P.k * P.k;            // item.area: the cloud's area in scene units^2
     const lod = item.keep !== undefined ? { keep: item.keep, gain: 1 / item.keep } : lodFraction(this.count, covered, item.density ?? 1.5);
     const gain = Math.min(item.maxGain ?? 8, lod.gain) * (item.gainScale ?? 1);
-    const r = rampFloats(item.ramp || INK_RAMP), range = item.range || [0, 1];
+    const r = rampFloats(item.ramp || INK_RAMP), range = item.range || [0, 1], sel = item.sel ?? -1;
     const u = this.slots.next(f.frameKey);
     this.host.write(u, new Float32Array([
       P.k, P.ox, P.oy, (item.radius ?? 1) * P.k,
-      lod.keep, gain, this.count, item.sel ?? -1,
+      lod.keep, gain, this.count, sel,
       range[0], range[1], item.opacity ?? 1, item.selGain ?? 4,
       ...r.xs, ...r.cs]));
-    this.last = { keep: lod.keep, gain, drawn: Math.round(lod.keep * this.count) };
+    const drawn = lod.keep >= 1 ? this.count : this.prefix(lod.keep);
+    this.last = { keep: lod.keep, gain, drawn };
     rp.setPipeline(this.pipe);
     rp.setBindGroup(0, this.host.bind(this.pipe, [f.view, u, this.buf]));
-    rp.draw(4, this.count);
+    if (drawn) rp.draw(4, drawn);
+    if (sel >= 0 && sel < this.count) rp.draw(4, 1, 0, this.slot[sel]);
   }
   destroy() { this.buf.destroy(); this.slots.destroy(); }
 }

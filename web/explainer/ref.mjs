@@ -13,11 +13,14 @@
 
 export const TAU = Math.PI * 2;
 
-// The default orb, in linear light. pack.mjs and the WGSL use these same values.
+// The default orb: the canon's luminous aperture (DESIGN-INSPIRATION.md, "The mark"): a warm
+// incandescent core, a fine radial line-work corona, and one prismatic ring where the light
+// refracts (the art's single spectral mark). Linear light. pack.mjs and the WGSL use these values.
 export const ORB = Object.freeze({
-  core: [1.0, 0.62, 0.22], mid: [0.95, 0.18, 0.42], rim: [0.32, 0.16, 0.85],
-  soft: 0.18, coreGain: 2.2, coreR: 0.22, haloGain: 0.18, haloR: 0.9, ring: 0, ringW: 0.012,
+  core: [1.0, 0.78, 0.45], mid: [0.95, 0.42, 0.12], rim: [0.30, 0.10, 0.04],
+  soft: 0.18, coreGain: 2.4, coreR: 0.24, haloGain: 0.10, haloR: 0.9, ring: 0, ringW: 0.012,
   iris: Object.freeze({ blades: 0, open: 1.2, rot: 0 }), gain: 1,
+  spokes: 0, spokeGain: 0.35, spokeSharp: 24, prism: 0.025,
 });
 export const orbSpec = (spec = {}) => ({ ...ORB, ...spec, iris: { ...ORB.iris, ...(spec.iris || {}) } });
 
@@ -78,9 +81,24 @@ export function orbAt(r, theta, spec) {
   const tint = r < 0.5 ? mix3(core, mid, r / 0.5) : mix3(mid, rim, clamp((r - 0.5) / 0.5, 0, 1));
   const hot = coreGain * Math.exp(-((r / coreR) ** 2)) * m;
   const halo = haloGain / (1 + (r / haloR) ** 2);
-  const rl = ring * Math.exp(-(((r - edge) / ringW) ** 2));
-  const out = [0, 1, 2].map((i) => gain * (tint[i] * body + core[i] * hot + rim[i] * halo + rl));
-  return out;
+  // The corona: thin radial lines outside the iris, fading with distance.
+  let spoke = 0;
+  if (s.spokes > 0) {
+    const c = 0.5 + 0.5 * cosTurns(s.spokes * theta / TAU);
+    spoke = s.spokeGain * c ** s.spokeSharp * smoothstep(edge * 0.9, edge * 1.05, r) / (1 + ((r - edge) / 0.35) ** 2);
+  }
+  // The prismatic ring: the ring drawn at three radii, one per channel.
+  return [0, 1, 2].map((i) => {
+    const e = edge * (1 + s.prism * (i - 1)), d = (r - e) / ringW;
+    return gain * (tint[i] * body + core[i] * hot + rim[i] * halo + core[i] * spoke + ring * Math.exp(-(d * d)));
+  });
+}
+
+// cos of a whole number of turns plus a fraction: cos(2 pi x), reduced to one turn first. The
+// WGSL twin reduces the same way and evaluates a polynomial, so large spoke counts stay exact.
+export function cosTurns(x) {
+  const f = x - Math.floor(x);
+  return Math.cos(TAU * f);
 }
 
 // Smooth value noise on an integer lattice, from hash32. Quintic fade.

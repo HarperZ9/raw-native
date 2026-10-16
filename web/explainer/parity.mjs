@@ -9,7 +9,7 @@ import { createLayers } from "./layers.mjs";
 
 export const ORB_SPECS = [
   {},
-  { iris: { blades: 7, open: 0.85, rot: 0.3 }, ring: 0.6, ringW: 0.015 },
+  { iris: { blades: 7, open: 0.85, rot: 0.3 }, ring: 0.6, ringW: 0.015, spokes: 96, spokeSharp: 24, prism: 0.03 },
   { haloGain: 0.5, haloR: 1.6, coreR: 0.35, soft: 0.05 },
 ];
 export const ATMOS_SPECS = [NIGHT, PAPER];
@@ -21,8 +21,8 @@ export const CONTROLS = {
 };
 
 function uniform(orb, atmos) {
-  const f = new Float32Array(68), a = atmosFloats(atmos);
-  f.set(orbFloats(orb), 0); f.set(a.floats, 24); f.set(a.bandC, 52); f.set(CURVE, 56);
+  const f = new Float32Array(72), a = atmosFloats(atmos);
+  f.set(orbFloats(orb), 0); f.set(a.floats, 28); f.set(a.bandC, 56); f.set(CURVE, 60);
   return f;
 }
 
@@ -30,7 +30,7 @@ export async function kernel(device, code) {
   const module = device.createShaderModule({ code, label: "explainer parity" });
   const pipe = await device.createComputePipelineAsync({ layout: "auto", compute: { module, entryPoint: "main" } });
   return async (uni, mode, rows) => {
-    uni[64] = mode;
+    uni[68] = mode;
     const n = rows.length / 4, mk = (size, usage) => device.createBuffer({ size, usage });
     const U = mk(uni.byteLength, 0x40 | 0x08), I = mk(rows.byteLength, 0x80 | 0x08), O = mk(rows.byteLength, 0x80 | 0x04), R = mk(rows.byteLength, 0x01 | 0x08);
     device.queue.writeBuffer(U, 0, uni); device.queue.writeBuffer(I, 0, rows);
@@ -133,7 +133,7 @@ export async function millionCheck(motion, kit, device) {
   await motion.capture(list, { frame: 0 });
   const t0 = performance.now();
   for (let f = 1; f <= 3; f++) await motion.capture(list, { frame: f });
-  const ms = (performance.now() - t0) / 3, keep = cloud.last.keep;
+  const ms = (performance.now() - t0) / 3, keep = cloud.last.keep, drawn = cloud.last.drawn;
   const run = await kernel(device, PARITY_WGSL), rows = new Float32Array(4 * n), u32 = new Uint32Array(rows.buffer);
   for (let i = 0; i < n; i++) { u32[4 * i] = i; rows[4 * i + 1] = keep; }
   const g = await run(uniform({}, {}), 3, rows);
@@ -147,7 +147,7 @@ export async function millionCheck(motion, kit, device) {
   await motion.capture(full, { frame: 9 });
   const msFull = performance.now() - t1;
   cloud.destroy();
-  return { points: n, keep, gpuKept, refKept, countError: Math.abs(gpuKept - refKept), msPerFrameLod: ms, msFrameAllPoints: msFull, msFrameNoPoints: msEmpty, size: [1280, 720] };
+  return { points: n, keep, gpuKept, refKept, drawnInstances: drawn, countError: Math.max(Math.abs(gpuKept - refKept), Math.abs(drawn - refKept)), msPerFrameLod: ms, msFrameAllPoints: msFull, msFrameNoPoints: msEmpty, size: [1280, 720] };
 }
 
 export async function runAll() {
