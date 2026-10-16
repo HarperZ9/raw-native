@@ -1,0 +1,40 @@
+{
+ "criterion": "RELEASE-PLAN.md N3, criteria 2 and 3: the golden identity matrix and the M2 and M3 corpora pass on Vulkan with a software driver in CI on Ubuntu, with a golden per device class; the N1 passes pass their parity bounds on Vulkan",
+ "written": "2026-10-16, before the first run of any renderer pass on Vulkan",
+ "route": "One source per pass, as ADR 0019 requires: the WGSL in src/renderer/gpu/shaders/ is translated to HLSL by scripts/wgsl_to_hlsl.py (unchanged), and the generated HLSL is compiled to SPIR-V by glslang's HLSL front end, as it is to DXIL by dxc for D3D12. No pass content changes; style.wgsl is not edited. Bindings: compute passes use b0 and u<i> for binding i, which map to Vulkan binding i unchanged; raster passes count their texture, sampler and storage registers from 0, so glslang's register shifts place them at their layout index.",
+ "feasibility_before_bounds": "Probed before writing: all 52 compute passes compile with glslang (HLSL front end, Vulkan 1.3) and with the Vulkan SDK's dxc -spirv, and pass spirv-val; the 5 raster passes compile for both stages. Nothing was run on a device.",
+ "adapters": "lavapipe (Mesa) in Ubuntu CI is the record; SwiftShader on Windows is a local development check, offscreen only (no windows). No hardware GPU.",
+ "checks": {
+  "c2_identity_quick": {
+   "what": "scripts/identity_matrix.py run raw_native_cli --gpu --quick on the Vulkan build, as the D3D12 job runs it on WARP",
+   "bound": "4 of 4 GPU certificates verified (the same verdict rule and tolerances as D3D12 and WebGPU)",
+   "prediction": "4 of 4"
+  },
+  "c2_gltf_models": {
+   "what": "the ten glTF models of M2 criterion 1 with --gpu on the Vulkan build",
+   "bound": "10 of 10 GPU certificates verified",
+   "prediction": "10 of 10"
+  },
+  "c2_golden_per_device_class": {
+   "what": "the Vulkan build's CPU outputs against evidence/identity-golden.json and evidence/m2-gltf-golden.json; and a GPU golden for the device class 'vulkan-lavapipe', committed from the first CI run and compared byte for byte on every later run",
+   "bound": "CPU outputs byte-identical to the existing golden (the backend does not touch the CPU path); the GPU golden equal from run to run",
+   "prediction": "holds"
+  },
+  "c2_m2_m3_corpora": {
+   "what": "texture-identity (M2 criterion 3), pbr-parity, lighting-parity, raster-identity, shadow-parity, post-parity (M3), and the RT stage checks swr-parity, rt-bvh-parity, rt-pt-parity, rt-hybrid-parity, sdf-parity, each through the same gate and bounds file the D3D12 job uses on WARP",
+   "bound": "each gate passes as it does on WARP; a row recorded as an open failure on WARP (raw-hall nave G-buffer, TAA parity, shadow map identity, P4 albedo and depth, the Mandelbulb and the fog march) is reported with its numbers and does not count as a pass or as a new failure",
+   "prediction": "every gate that passes on WARP passes on lavapipe; the recorded WARP failures may pass or fail on lavapipe, and each outcome is recorded"
+  },
+  "c3_style_passes": {
+   "what": "raw_native_cli style-parity on the exported fixtures, GPU (Vulkan) against the C++ float64 reference, as on WARP and SwiftShader WebGPU (ADR 0019)",
+   "bound": "the bounds of evidence/cpp-port-style-bounds.json: 0 dither levels and 0 coverage decisions differ, continuous outputs within their stated bound",
+   "prediction": "holds"
+  },
+  "control": {
+   "what": "the Vulkan build with RAW_NATIVE_SPIRV_CONTROL=swap set, which makes the shader table hand out the ssao pass in place of the rtao pass (one table entry, nothing else)",
+   "bound": "the quick identity matrix must then report at least one GPU certificate not verified, or the run fails",
+   "prediction": "every scene whose certificate checks ray-traced AO is refuted"
+  }
+ },
+ "does_not_prove": "Behaviour on hardware Vulkan drivers or a Steam Deck; anything about timings; that glslang and dxc give the same SPIR-V (they need not; each is checked against the reference, not against the other)."
+}
