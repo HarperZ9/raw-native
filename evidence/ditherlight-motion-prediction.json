@@ -1,0 +1,44 @@
+{
+ "what": "model prediction of L from the motion field and tone of frame pair (0,1) of each path; no threshold read",
+ "size": [
+  256,
+  144
+ ],
+ "paths": {
+  "dolly": {
+   "valid_fraction": 0.6307779947916666,
+   "independent_2f1mf": 0.33259377718389466,
+   "screen": 0.20497945434179082,
+   "world-fixed": 0.10098144820450491,
+   "world-octave": 0.0503421336527181
+  },
+  "strafe": {
+   "valid_fraction": 0.6268174913194444,
+   "independent_2f1mf": 0.33339985871731276,
+   "screen": 0.25662310916655223,
+   "world-fixed": 0.07765660545608194,
+   "world-octave": 0.03033396581735548
+  },
+  "yaw": {
+   "valid_fraction": 0.6520453559027778,
+   "independent_2f1mf": 0.32451122686369593,
+   "screen": 0.32451122686369593,
+   "world-fixed": 0.11269401790180057,
+   "world-octave": 0.05216576283193064
+  },
+  "orbit": {
+   "valid_fraction": 0.60009765625,
+   "independent_2f1mf": 0.2694464666211608,
+   "screen": 0.11798790243508417,
+   "world-fixed": 0.10967468068814898,
+   "world-octave": 0.037195869931947324
+  },
+  "spin": {
+   "valid_fraction": 0.7680935329861112,
+   "independent_2f1mf": 0.29364764686016404,
+   "screen": 0,
+   "world-fixed": 0.0013101086662074516,
+   "world-octave": 0.00032752716655186923
+  }
+ }
+}
