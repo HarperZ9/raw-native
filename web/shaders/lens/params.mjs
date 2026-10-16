@@ -9,7 +9,7 @@
 import { createLookKeys } from "../../look/keys.mjs";
 
 export const DEFAULT_LENS = {
-  threshold: 1.0,        // scene-linear luminance above which light feeds the lens terms
+  threshold: 2.0,        // scene-linear luminance above which light feeds the lens terms
   refHeight: 1080,       // lengths below in px are px at this frame height, scaled to the frame
   tile: 16,              // source extraction tile, px (not scaled)
   maxSources: 24,
@@ -30,7 +30,7 @@ export const DEFAULT_LENS = {
 // Night opens the iris and lowers the threshold so street lights flare; noon stops down, so
 // ghosts shrink and spikes grow, and only the sun's glints pass the threshold.
 export const LENS_KEYS = {
-  threshold: { values: [0.8, 0.8, 1.6, 4, 6, 3, 1.4, 0.9], min: 0.05 },
+  threshold: { values: [2, 2, 2.5, 5, 8, 4, 2.5, 2], min: 0.05 },
   fNumber: { values: [2.8, 2.8, 4, 8, 11, 5.6, 4, 2.8], min: 1.4, max: 22 },
   ghostGain: { values: [30, 28, 18, 8, 6, 14, 22, 30], min: 0 },
   streakGain: { values: [0.06, 0.06, 0.04, 0.015, 0.01, 0.03, 0.05, 0.06], min: 0 },

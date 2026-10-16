@@ -1,0 +1,35 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Lens suite: GPU against the CPU reference</title>
+<link rel="icon" href="data:,">
+<!-- Run by tests/web/shaders_parity.py --shader lens. Each case of evidence/shaders-lens-parity-bounds.json
+     builds an HDR frame (synthetic lights or a Quay Street frame), extracts sources on the CPU, then runs
+     lens.mjs (float64) and lens/gpu.mjs on the same f32 input and source list; the 8-bit encodes are compared. -->
+<script type="module">
+import { createHost } from "../raw-gpu.mjs";
+import { lensLightsFrame, lensLightsList } from "../shaders/fixtures/lens-lights.mjs";
+import { renderQuay } from "../shaders/fixtures/quay-street-render.mjs";
+import { resolveLens, extractSources, prepareSources, runLens } from "../shaders/lens/lens.mjs";
+import { createGpuLens } from "../shaders/lens/gpu.mjs";
+import { codeStats, labEncode8 } from "../shaders/lab/gpu-kit.mjs";
+const q = new URLSearchParams(location.search);
+const f32 = (f) => ({ width: f.width, height: f.height, data: Float64Array.from(Float32Array.from(f.data)) });
+try {
+  const host = await createHost({ timing: false });
+  const gpuErrors = []; host.device.onuncapturederror = (e) => gpuErrors.push(e.error.message);
+  const bounds = await (await fetch("../../evidence/shaders-lens-parity-bounds.json")).json(), { width: W, height: H, gain } = bounds.output;
+  const cases = [];
+  for (const c of bounds.cases) {
+    if (q.get("case") && q.get("case") !== c.id) continue;
+    const frame = f32(c.frame === "street" ? renderQuay(5, W, H) : lensLightsFrame(W, H)), plan = resolveLens(c.params, { width: W, height: H });
+    let list, keep = null;
+    if (c.mode === "list") list = lensLightsList(W, H); else { const s = extractSources(plan, frame); list = s.list; keep = s.keep; }
+    const srcs = prepareSources(plan, list), want = labEncode8(runLens(plan, frame, srcs, keep), gain);
+    const g = await createGpuLens(host, plan, { gain }); g.frame(frame, srcs, keep); const got = await g.read(); g.destroy();
+    const st = codeStats(want, got.packed);
+    cases.push({ id: c.id, sources: srcs.length, max: st.max, p999: st.p999, mean: st.mean, over2_fraction: st.over2 / st.n });
+  }
+  await host.done();
+  window.__result = { bounds: bounds.bounds, cases, adapter: host.info, gpuErrors };
+} catch (e) { window.__result = { error: String(e && e.stack || e) }; }
+</script>
