@@ -656,6 +656,8 @@ jobs:
         run: python tests/web/shaders_parity.py --shader palettelight --adapter swiftshader --out media-out/shaders-palettelight-parity.json
       - name: Lens suite, GPU ghosts, streaks, starburst, halation and dispersion equal the f64 reference's (evidence/shaders-lens-parity-bounds.json), on the CPU adapter
         run: python tests/web/shaders_parity.py --shader lens --adapter swiftshader --out media-out/shaders-lens-parity.json
+      - name: Spectral sodium shading, GPU equals the f64 reference on Sodium Quay G-buffers (evidence/shaders-sodium-parity-bounds.json), on the CPU adapter
+        run: python tests/web/shaders_parity.py --shader sodium --adapter swiftshader --out media-out/shaders-sodium-parity.json
       - name: Shader library, pixel art and scaling, GPU against the CPU reference within the committed bounds, on the CPU adapter
         run: python tests/web/shaders_parity.py --shader pixel --adapter swiftshader --out media-out/shaders-pixel-parity.json
       - name: Shader library, VHS, GPU against the CPU reference within the committed bounds, on the CPU adapter
