@@ -715,6 +715,6 @@
    ]
   }
  ],
- "webgpu": "pending: the WebGPU build runs in CI (Chrome on SwiftShader); this machine has no Emscripten SDK. The WGSL of both passes compiled with no messages and built compute pipelines on Chrome's SwiftShader adapter (a compile check only, 2026-10-15).",
+ "webgpu": "CI run 38860929573 (head f403038): the WebGPU build in Chrome on SwiftShader passed every case and control: 0 decisions differ in all 11 cases; paint-over mean 8.0e-5 and 6.4e-5 codes on two cases, max 1 code. Record: evidence/cpp-port-style-webgpu-swiftshader.json. The same run's d3d12 job passed the WARP step on the runner.",
  "source_edit_controls_note": "The source-edit controls ran on the five-case build before Addendum B; the haze change did not touch the edited constants."
 }
