@@ -11,12 +11,12 @@ import { DITHERLIGHT_WGSL } from "./ditherlight.wgsl.mjs";
 export function packParams(plan, size, nLights) {
   return Float32Array.from([size.w, size.h, plan.levels, SOURCES[plan.source], ANCHORS[plan.anchor], plan.cell, plan.px, plan.pa, plan.gamma, plan.dark, plan.hemi, plan.fogDist, plan.fogMax, nLights, ...plan.ink, ...plan.paper]);
 }
-// Six vec4f per pixel: (albedo, kind, depth, 0), wpos, nrm, apos, anrm, vis.
+// Six vec4f per pixel: (albedo, kind, depth, haze), wpos, nrm, apos, anrm, vis.
 export function packGbuffer(g) {
   const n = g.width * g.height, o = new Float32Array(n * 24);
   for (let i = 0; i < n; i++) {
     const b = i * 24;
-    o[b] = g.albedo[i]; o[b + 1] = g.kind[i]; o[b + 2] = g.depth[i];
+    o[b] = g.albedo[i]; o[b + 1] = g.kind[i]; o[b + 2] = g.depth[i]; o[b + 3] = g.haze ? g.haze[i] : 0;
     for (let c = 0; c < 3; c++) { o[b + 4 + c] = g.wpos[i * 3 + c]; o[b + 8 + c] = g.nrm[i * 3 + c]; o[b + 12 + c] = g.apos[i * 3 + c]; o[b + 16 + c] = g.anrm[i * 3 + c]; }
     for (let c = 0; c < 4; c++) o[b + 20 + c] = g.vis[i * 4 + c];
   }
