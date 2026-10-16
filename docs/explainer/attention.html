@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How attention moves information</title>
+<link rel="icon" href="data:,">
+<style>
+  :root { color-scheme: dark; --ink: #ece5d6; --ink-2: #9a9284; --void: #050508; --frame: #2a2830; --verified: #7fd6a8; }
+  body { margin: 0; background: var(--void); color: var(--ink); font: 16px/1.5 system-ui, sans-serif; }
+  main { max-width: 1180px; margin: 0 auto; padding: 24px 16px; }
+  h1 { font-size: 1.6rem; margin: 0 0 .25rem; font-weight: 650; }
+  p { margin: .25rem 0 1rem; color: var(--ink-2); max-width: 70ch; }
+  #readout { font-family: ui-monospace, monospace; font-size: .9rem; min-height: 2.8em; padding: .5rem 0; border-top: 1px solid var(--frame); color: var(--ink); }
+  #readout b { color: var(--verified); font-weight: 500; }
+  code { font-family: ui-monospace, monospace; font-size: .9em; }
+</style>
+<main>
+  <h1>How attention moves information</h1>
+  <p>A 72-second film drawn live from a model trained on a CPU. Pause anywhere and point at the picture:
+  over the cloud you read any one of its 1,048,576 numbers; over the characters you read where each
+  position attends. Space plays and pauses, the comma and period keys step one frame.</p>
+  <div id="film"></div>
+  <div id="readout" aria-live="polite">Pause, then point at a dot or a character.</div>
+  <p>Source: <code>python tools/explainer/attention_model.py --seed 7</code>. The numbers come from
+  <code>attention/data.json</code> and <code>attention/residual.npy</code>; their SHA-256 values are checked
+  when the page loads. No narration: the lines in the picture are the captions.</p>
+</main>
+<script type="module">
+import { mountPlayer } from "../../web/motion/player.mjs";
+import { inspect } from "./attention.scene.mjs";
+
+const el = document.getElementById("film"), out = document.getElementById("readout");
+const player = await mountPlayer(el, {
+  sceneUrl: new URL("attention.scene.mjs", location.href).href,
+  shaders: new URL("../../src/renderer/gpu/shaders/", location.href).href,
+  captions: new URL("attention/captions.vtt", location.href).href,
+  label: "How attention moves information: a film drawn from a small model's numbers. The captions carry every line.",
+});
+window.__explainer = player;   // for tests: tests/web drive the page through it
+if (player) {
+  const eng = player.engine, A = eng.ctx.assets, canvas = el.querySelector("canvas");
+  // Canvas pixel to scene units, through the camera the frame used.
+  const toScene = (ev) => {
+    const r = canvas.getBoundingClientRect(), W = canvas.width, H = canvas.height;
+    const px = ((ev.clientX - r.left) / r.width) * W, py = ((ev.clientY - r.top) / r.height) * H;
+    const cam = { x: 960, y: 540, zoom: 1, ...A.cam(player.time) }, k = cam.zoom * (W / 1920);
+    return [(px - (W / 2 - cam.x * k)) / k, (py - (H / 2 - cam.y * k)) / k];
+  };
+  const show = (ev) => {
+    const [x, y] = toScene(ev), hit = inspect(player.time, x, y, A);
+    A.sel = hit && hit.sel !== undefined ? hit.sel : -1;
+    A.selTile = hit && hit.sel !== undefined && hit.sel < 4096 ? hit.sel : -1;
+    out.innerHTML = "";
+    if (hit) { const b = document.createElement("b"); b.textContent = hit.text; out.append(b); }
+    else out.textContent = "Nothing to read here at this moment.";
+    player.seek(player.time);   // redraw with the selection
+  };
+  canvas.addEventListener("pointermove", (ev) => { if (ev.pointerType === "mouse") show(ev); });
+  // A click while paused inspects and stays paused; while playing it pauses (the player) and inspects.
+  canvas.addEventListener("click", (ev) => {
+    if (!el.querySelector(".mo-bar button").textContent.startsWith("Pause")) { ev.stopImmediatePropagation(); }
+    show(ev);
+  }, { capture: true });
+}
+</script>
+</html>

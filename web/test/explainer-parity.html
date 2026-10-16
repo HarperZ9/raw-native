@@ -1,0 +1,11 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Explainer kit parity</title>
+<!-- The explainer kit's WGSL against its float64 reference, the point layer's placement, and a
+     1,048,576-point cloud with LOD (evidence/explainer-parity-bounds.json). Run by
+     tests/web/explainer_parity.py. -->
+<script type="module">
+import { runAll } from '../explainer/parity.mjs';
+try { window.__result = await runAll(); }
+catch (e) { window.__result = { error: String(e && e.stack || e) }; }
+</script>

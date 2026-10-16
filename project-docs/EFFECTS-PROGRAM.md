@@ -74,8 +74,19 @@ Low Water is a painted isometric night-shift thriller in a tidal harbour, and in
 - Low-pressure sodium as a spectral light. **Built 2026-10-16** after the author's "Sodium lights, yes" (`web/shaders/sodium`, results in `project-docs/SODIUM-LIGHT-RESULTS.md`). Near-monochromatic 589 nm lamps make colour vanish under them and only there, so a clue's colour reads only when it is carried out of the sodium pool. Measured: palette spread 0.0001 under pure sodium against 0.64 under a warm window; GPU parity max 1 code. Missed: the distance-recovery prediction, because sky fill and LED light are broadband too. Design rule found: keep the sky fill low where sodium should erase colour. The rendering is known (offline spectral renderers); the game mechanic stays candidate.
 - Lens controls that follow the weather. Mist density from the environment state scales the threshold and the halation, so a fog bank changes how lamps bloom. Status: a design step, not a research claim.
 
+## Player-facing lens settings (author, 2026-10-16)
+
+The author's decision: "some lens controls can be player settings". `web/shaders/lens/settings.mjs` is the data and API layer. No game UI exists yet, so nothing draws these settings. There are five settings:
+- flare, 0 to 1.5, default 1: scales the ghosts and the starburst;
+- streaks, on or off: the anamorphic streak;
+- halation, 0 to 1.5, default 1;
+- fringing, on or off: lateral chromatic dispersion;
+- flashSafe, off by default: doubles the source threshold and halves the number of sources, so only the brightest lights flare.
+
+There are three presets: `default`, `reduced-flash` (the accessibility preset: flare 0.25, no streaks, halation 0.5, no fringing, flashSafe on) and `off`. Settings are applied after the time-of-day slot curves are read, so every term keeps its per-slot shape. The defaults are the identity: the parameters are deep-equal and the rendered frame is bit-identical to the engine's at every hour tested. The physical controls stay engine-side (glass dispersion, the thin-film coating, blade count and shape, f-number, the prescription). Bad settings are refused with an error and are not clamped. A comparison is in `docs/images/lens-settings-presets.png` (default, reduced-flash, off). A temporal flash limiter (a cap on how fast lens light may rise between frames, for flash-safety guidance) is not built.
+
 ## Open questions this plan leaves
 
-- Which of the lens controls the author wants exposed as handles (wavelength spread, thin-film, blades) and which stay fixed. The engine has all of them as slot-keyed parameters (`web/shaders/lens/params.mjs`), and no player UI exists.
+- Which of the lens controls the author wants exposed as handles (wavelength spread, thin-film, blades) and which stay fixed. Decided 2026-10-16: some become player settings (see the section above); the physical ones stay engine-side.
 - Human raters for screen against world anchoring (the motion study is software only).
 - Which weather states ship in the first slice of the environment state.

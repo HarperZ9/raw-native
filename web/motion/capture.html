@@ -110,6 +110,7 @@ try {
       if (i % 8 === 0) await eng.host.done();
     } else {
       const img = await eng.capture(i, fps);
+      if (hashing) hashes.push(hex(await crypto.subtle.digest("SHA-256", img.data)));   // raw frames are hashed too
       await post("/frame?i=" + i, img.data);
     }
     cpu.push(performance.now() - t0);
