@@ -61,8 +61,11 @@ export function facadeAt(side, y, z, t) {
   const shop = cy === 0 && u > 0.08 && u < 0.92 && v > 0.12 && v < 0.8 && hash(cz * 3 + side, 77) < 0.35;
   const lit = hash(cz + side * 101, cy * 7 + 3) < 0.28, flick = 0.9 + 0.1 * Math.sin(t * 3 + cz);
   const base = 0.11 + 0.06 * hash(cz >> 2, side + 9) + 0.04 * fbm(z * 0.7, y * 0.9);
-  if (shop) return { albedo: [0.05, 0.05, 0.05], emit: [1.1, 0.75, 0.4].map((c) => c * (0.7 + 0.3 * hash(cz, 5))) };
-  if (inWin) return { albedo: [0.03, 0.035, 0.04], emit: lit ? [0.55, 0.38, 0.19].map((c) => c * flick * (0.6 + 0.6 * hash(cz, cy))) : [0, 0, 0], glass: !lit };
+  if (shop) { const k = (0.35 + 0.35 * hash(cz, 5)) * (1.1 - 0.8 * v) * (0.75 + 0.25 * Math.sin(u * 19 + cz)); return { albedo: [0.05, 0.05, 0.05], emit: [0.9, 0.62, 0.34].map((c) => c * k) }; }
+  const hue = hash(cz * 5 + side, cy * 11), warm = hue < 0.8 ? [0.55, 0.36, 0.17] : [0.18, 0.26, 0.42], lv = 0.25 + 0.9 * hash(cz, cy) ** 2;
+  const frame = inWin && (u < 0.27 || u > 0.73 || v < 0.3 || v > 0.8);
+  if (inWin && !frame) return { albedo: [0.03, 0.035, 0.04], emit: lit ? warm.map((c) => c * flick * lv) : [0, 0, 0], glass: !lit };
+  if (frame) return { albedo: [0.05, 0.045, 0.04], emit: [0, 0, 0] };
   return { albedo: [base * 1.05, base * 0.95, base * 0.85], emit: [0, 0, 0] };
 }
 // Ground at (x, z): wetness 0..1 (1 = standing water), albedo, and a bump for the normal.

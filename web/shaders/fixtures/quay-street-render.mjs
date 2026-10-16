@@ -7,7 +7,7 @@
 import * as Q from "./quay-street.mjs";
 import { STREET, lamps, van, objects, facadeAt, groundAt, skyAt, blockHeight, fbm } from "./quay-street.mjs";
 
-const FOV = (50 * Math.PI) / 180, MIST = { scatter: 0.011, extinct: 0.008 };
+const FOV = (50 * Math.PI) / 180, MIST = { scatter: 0.008, extinct: 0.007 };
 const sub = (a, b) => [a[0] - b[0], a[1] - b[1], a[2] - b[2]], dot = (a, b) => a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
 const nrm = (a) => { const l = Math.hypot(a[0], a[1], a[2]); return [a[0] / l, a[1] / l, a[2] / l]; };
 const cross = (a, b) => [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
@@ -31,7 +31,7 @@ function objNormal(p, vs) { const e = 0.003, f = (x, y, z) => objects(x, y, z, v
 function shadow(p, L, vs) {
   const v = sub(L, p), dist = Math.hypot(v[0], v[1], v[2]), d = [v[0] / dist, v[1] / dist, v[2] / dist];
   let res = 1, t = 0.05;
-  for (let i = 0; i < 40 && t < dist - 0.3; i++) { const h = objects(p[0] + d[0] * t, p[1] + d[1] * t, p[2] + d[2] * t, vs); if (h < 0.002) return 0; res = Math.min(res, (10 * h) / t); t += Math.max(h, 0.05); }
+  for (let i = 0; i < 64 && t < dist - 0.75; i++) { const h = objects(p[0] + d[0] * t, p[1] + d[1] * t, p[2] + d[2] * t, vs); if (h < 0.001) return 0; res = Math.min(res, (8 * h) / t); t += Math.min(0.6, Math.max(h, 0.015)); }
   return Math.max(0, Math.min(1, res));
 }
 // Nearest analytic surface: street, pavement, quay wall, water, facades.
