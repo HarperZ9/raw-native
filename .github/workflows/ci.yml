@@ -384,6 +384,34 @@ jobs:
           n=$(grep -l '"verdict":"verified"' gltf-warp/*/gpu_certificate.json | wc -l)
           echo "verified GPU certificates: $n of 10"
           test "$n" = 10
+      - name: Native presentation on WARP with the debug layer; 600 presented frames twice equal each other and the offscreen render, the control fails, resize, minimise, fullscreen and device removal recover, HDR10 within one code (N2, evidence/n2-presentation-bounds.json)
+        shell: bash
+        env:
+          RAW_NATIVE_D3D12_WARP: "1"
+          RAW_NATIVE_D3D12_DEBUG: "1"
+        run: |
+          p=build/Release/raw_native_present.exe; g=tests/gpu/present_gate.py
+          $p run --frames 600 --out n2-run1.json
+          $p run --frames 600 --out n2-run2.json
+          $p run --frames 600 --offscreen --out n2-offscreen.json
+          python $g same n2-run1.json n2-run2.json n2-offscreen.json
+          $p run --frames 600 --control --out n2-control.json
+          python $g control n2-offscreen.json n2-control.json
+          $p run --frames 600 --lifecycle --out n2-lifecycle.json
+          $p run --frames 600 --lifecycle --offscreen --out n2-lifecycle-offscreen.json
+          python $g lifecycle n2-lifecycle.json n2-lifecycle-offscreen.json
+          $p run --frames 60 --vsync off --fullscreen-check --out n2-fullscreen.json
+          python -c "import json,sys; d=json.load(open('n2-fullscreen.json')); print(d['events']); sys.exit(0 if d['fullscreen_ok'] else 1)"
+          $p hdr --out n2-hdr.json
+          python $g hdr n2-hdr.json
+          $p pacing --frames 600 --warmup 30 --out n2-pacing-warp.json
+          python $g pacing n2-pacing-warp.json --warp
+      - name: Keep the N2 records
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: n2-presentation-warp
+          path: n2-*.json
   fuzz-sanitizers:
     # ROADMAP M2 criterion 2: one million fuzzed glTF inputs under AddressSanitizer and
     # UndefinedBehaviorSanitizer; any report, other exception or slow input fails the job.

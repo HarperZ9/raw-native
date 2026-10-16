@@ -21,6 +21,7 @@ DXGI_FORMAT dxgiFormat(TextureFormat f){
         case TextureFormat::RGBA32Float: return DXGI_FORMAT_R32G32B32A32_FLOAT;
         case TextureFormat::R32Float: return DXGI_FORMAT_R32_FLOAT;
         case TextureFormat::Depth32Float: return DXGI_FORMAT_D32_FLOAT;
+        case TextureFormat::RGB10A2Unorm: return DXGI_FORMAT_R10G10B10A2_UNORM;
         default: return DXGI_FORMAT_R8G8B8A8_UNORM;
     }
 }
@@ -81,6 +82,12 @@ TextureHandle D3d12Device::createTexture(const TextureDesc& desc, std::string& e
     return {id.index, id.gen};
 }
 void D3d12Device::destroyTexture(TextureHandle h){ textures_.erase(h.index, h.gen); }
+bool D3d12Device::reserveRtv(UINT& slot, std::string& err){
+    if (!srvCpu.heap && !initHeaps(err)) return false;
+    if (rtvCpu.next >= rtvCpu.capacity){ err = "d3d12: out of RTV slots"; return false; }
+    slot = rtvCpu.next++;
+    return true;
+}
 
 SamplerHandle D3d12Device::createSampler(const SamplerDesc& desc, std::string& err){
     if (!srvCpu.heap && !initHeaps(err)) return {};

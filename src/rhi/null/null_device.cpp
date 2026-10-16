@@ -8,4 +8,5 @@ Device* device(std::string& err){
           "or use the raw-native-gpu WebAssembly build";
     return nullptr;
 }
+std::unique_ptr<Device> createDevice(std::string& err){ device(err); return nullptr; }
 }

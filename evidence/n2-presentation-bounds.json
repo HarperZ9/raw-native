@@ -1,0 +1,51 @@
+{
+ "criterion": "RELEASE-PLAN.md N2, native presentation, criteria 1 to 4",
+ "written": "2026-10-16, before the first run of raw_native_present on any adapter",
+ "scope": "A Win32 window and a D3D12 flip-model swapchain as renderer infrastructure. It checks what the engine writes into the presented buffer, read back before Present. It does not check what the desktop compositor or a panel shows.",
+ "adapters": {
+  "ci_and_local": "WARP (RAW_NATIVE_D3D12_WARP=1), the Windows software rasterizer. Its results are not GPU evidence.",
+  "rtx4090": "Pacing only (criterion 4), queued behind the GPU lock D:/gpu.lock.d; nothing else in this file needs the GPU."
+ },
+ "frames": {
+  "scene": "pass present_scene: one full-screen triangle; each pixel is an integer hash of (x, y, frame) mixed with gradients and moving bars, written as RGBA8. Integer arithmetic only, so the value of a pixel does not depend on float rounding.",
+  "presented": "present_scene into an offscreen RGBA8 texture, then present_blit (a texel Load at pixel + offset, offset (0, 0)) into the swapchain backbuffer (R8G8B8A8_UNORM, DXGI_SWAP_EFFECT_FLIP_DISCARD, 2 buffers), then a copy of the backbuffer into a read-back buffer, then the backbuffer's move to PRESENT. One submission; the hash is taken after the wait and before Present.",
+  "offscreen": "present_scene into the offscreen texture, copied to a read-back buffer. No window and no swapchain.",
+  "hash": "SHA-256 of the frame's tight RGBA8 rows, top row first (the 256-byte row padding of the copy dropped), listed with the frame index, width and height."
+ },
+ "checks": {
+  "c2_determinism": {
+   "what": "600 frames at 320 x 180, presented with vsync on, run twice in two processes; the same 600 frames rendered offscreen in a third process",
+   "bound": "the two presented lists are identical (600 of 600 equal) and equal the offscreen list (600 of 600). Any differing frame fails.",
+   "prediction": "600 of 600 equal in both comparisons: the blit is a Load of the same RGBA8 texel into an RGBA8 target, and WARP is deterministic for integer work."
+  },
+  "c2_lifecycle": {
+   "what": "600 frames with events: resize to 256 x 144 before frame 200, back to 320 x 180 before frame 400, minimise before frame 450 and restore (no frame is drawn while the client area is empty), the device removed (ID3D12Device5::RemoveDevice) before frame 500 and recovered with a new device and swapchain on the same window. Compared with an offscreen run on the same size schedule.",
+   "bound": "600 of 600 hashes equal the offscreen list; the swapchain size equals the client size after every resize; no ResizeBuffers to zero while minimised; exactly one device loss is detected and one recovery made; exit code 0.",
+   "prediction": "all equal; the removal is reported by the first Present or submit after it, with DXGI_ERROR_DEVICE_REMOVED or the reason GetDeviceRemovedReason gives."
+  },
+  "c2_control": {
+   "what": "the presented run with the blit's offset constant changed from (0, 0) to (1, 0), every other setting the same",
+   "bound": "the gate must report a difference against the offscreen list, or the run fails",
+   "prediction": "every one of the 600 frames differs, since every row of the scene varies along x"
+  },
+  "c3_hdr": {
+   "what": "swapchain R10G10B10A2_UNORM with colour space DXGI_COLOR_SPACE_RGB_FULL_G2084_NONE_P2020 (applied only when the output reports support; recorded either way). The committed M1 criterion 2 grid (36,787 inputs, raw::colour::grid()) goes through the C++ pipeline aces2-hdr1000/rec2100-pq in float32; its encoded output is decoded with pqDecode (float64) to linear Rec.2020 light (1.0 = 100 nits) and uploaded as RGBA32F. The present pass PQ-encodes it on the GPU (SMPTE ST 2084, float32) into the backbuffer, at 256 x 144 (36,864 pixels, the last 77 unused). The 10-bit codes are read back before Present.",
+   "bound": "every channel of every input: |code / 1023 - cpu| <= 1 / 1023, where cpu is the C++ float32 encode. This is M1 criterion 3(b)'s PQ bound applied to the presented buffer.",
+   "prediction": "maximum difference at most one code, most channels at zero codes; the largest absolute difference near 0.5 / 1023 from the UNORM rounding",
+   "control": "the PQ encode compiled with m1 = 2610 / 4096 (the factor of 4 dropped, M1's control) must exceed 1 / 1023 on some channel, or the run fails",
+   "scope_limit": "the tone map ahead of the encode is the C++ reference, not GPU code; M1 3(b) checks the WGSL tone map on WebGPU. This check covers the encode, the 10-bit swapchain format and the read-back of the presented buffer."
+  },
+  "c1_host": {
+   "what": "raw_native_present opens a window, presents, handles resize (window resize and ResizeBuffers), minimise (no present, no resize to zero), borderless fullscreen on the window's monitor and back, vsync on (sync interval 1) and off (sync interval 0, tearing when DXGI allows it), and exits with code 0",
+   "bound": "exit code 0; after fullscreen the swapchain size equals the monitor rectangle and after leaving it the earlier client size; the frame graph records the present (its plan holds the present pass and the graph's present status is Presented or Occluded)"
+  },
+  "c4_pacing_rtx4090": {
+   "what": "10,000 frames presented with vsync on (sync interval 1), borderless fullscreen on the primary output, no read-back, the frame latency waitable object with maximum latency 1. Present-to-present intervals from QueryPerformanceCounter at the return of each Present, and DXGI frame statistics (PresentRefreshCount, SyncQPCTime) when the output gives them. T is the refresh period of the output's current mode, recorded from DXGI.",
+   "bound": "median interval within 1% of T; 99th percentile at most 1.25 T; at most 0.2% of intervals above 1.5 T (20 of 9,999)",
+   "prediction": "median within 0.2% of T, 99th percentile at most 1.1 T, at most 5 intervals above 1.5 T. A variable-refresh display mode may move the median; the record keeps the mode and the run is read against it.",
+   "warp": "WARP proves the harness only (600 frames): 599 intervals written, every one finite and positive. No pacing claim is made from WARP."
+  }
+ },
+ "known_before_writing": "No presentation code existed. The D3D12 backend renders offscreen only (RHI version 3). WARP passes the existing raster checks bit for bit (evidence/m3-rhi3-runs.json).",
+ "does_not_prove": "What a display shows or when light leaves it; that the compositor passes the HDR signal to a panel unchanged; behaviour on hardware adapters other than the RTX 4090 for pacing and WARP for everything else; recovery from a real driver fault, since WARP removal is triggered by the API."
+}

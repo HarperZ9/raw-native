@@ -16,6 +16,7 @@
 // reorders them, which keeps the arena's allocation order and every
 // certificate unchanged.
 //
+// A device graph may end at a swapchain (presentTo): the present is the frame's last step.
 // Not yet here: transient memory aliasing, async compute, split barriers,
 // textures and cross-frame resources. The plan records every resource's first
 // and last use, which is what aliasing will need.
@@ -56,6 +57,16 @@ public:
     // The caller reads this resource after execute, so its writers are kept.
     void markOutput(Resource r);
     void addPass(std::string name, std::vector<Use> uses, PassFn fn);
+    // The frame ends at a swapchain (N2). The returned host resource stands for the backbuffer:
+    // passes that draw into swapchain.current() declare a write of it, which keeps them. execute
+    // records the backbuffer's move to the present state after the last kept pass, submits and
+    // waits, runs beforePresent (a read-back of the presented image; false stops the frame
+    // before Present), then presents with syncInterval. A graph presents once per execute.
+    Resource presentTo(rhi::Swapchain& swapchain, uint32_t syncInterval,
+                       std::function<bool(std::string&)> beforePresent = {});
+    // NotPresented until an execute reaches Present; DeviceLost when the submission or Present
+    // found the device lost.
+    rhi::PresentStatus presentStatus() const { return presentStatus_; }
 
     bool compile(std::string& err);
     bool execute(std::string& err);   // compiles first when needed
@@ -84,7 +95,12 @@ private:
     void planBarriers();
     bool createBuffers(std::string& err);
 
+    bool finishPresent(std::string& err);
     rhi::Device* device_;
+    rhi::Swapchain* swapchain_{nullptr};
+    uint32_t syncInterval_{1};
+    std::function<bool(std::string&)> beforePresent_;
+    rhi::PresentStatus presentStatus_{rhi::PresentStatus::NotPresented};
     std::vector<Res> resources_;
     std::vector<Pass> passes_;
     std::vector<Step> plan_;
