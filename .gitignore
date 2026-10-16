@@ -12,6 +12,7 @@ cmake-build-*/
 !web/explainer/fonts/*.atlas.json
 # The explainer demo's data bundle (tools/explainer/attention_model.py); its hash is on screen.
 !docs/explainer/attention/data.json
+!docs/explainer/attention/narration.placement.json
 # The media spec (docs/architecture/adr/0012-media-engine.md).
 !docs/media/media.json
 !web/colour/tables/*.json

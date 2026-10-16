@@ -1,0 +1,86 @@
+[
+ {
+  "row": 0,
+  "slot": 2.5,
+  "placed": 2.5,
+  "late": 0.0,
+  "dur": 2.96
+ },
+ {
+  "row": 1,
+  "slot": 8,
+  "placed": 8,
+  "late": 0,
+  "dur": 6.24
+ },
+ {
+  "row": 2,
+  "slot": 15,
+  "placed": 15,
+  "late": 0,
+  "dur": 4.82
+ },
+ {
+  "row": 3,
+  "slot": 21,
+  "placed": 21,
+  "late": 0,
+  "dur": 4.86
+ },
+ {
+  "row": 4,
+  "slot": 26,
+  "placed": 26.11,
+  "late": 0.11,
+  "dur": 7.56
+ },
+ {
+  "row": 5,
+  "slot": 32,
+  "placed": 33.92,
+  "late": 1.92,
+  "dur": 4.08
+ },
+ {
+  "row": 6,
+  "slot": 38,
+  "placed": 38.25,
+  "late": 0.25,
+  "dur": 7.22
+ },
+ {
+  "row": 7,
+  "slot": 46,
+  "placed": 46,
+  "late": 0,
+  "dur": 3.4
+ },
+ {
+  "row": 8,
+  "slot": 51,
+  "placed": 51,
+  "late": 0,
+  "dur": 4.44
+ },
+ {
+  "row": 9,
+  "slot": 55,
+  "placed": 55.69,
+  "late": 0.69,
+  "dur": 4.72
+ },
+ {
+  "row": 10,
+  "slot": 62.6,
+  "placed": 62.6,
+  "late": 0.0,
+  "dur": 5.24
+ },
+ {
+  "row": 11,
+  "slot": 67,
+  "placed": 68.09,
+  "late": 1.09,
+  "dur": 3.76
+ }
+]

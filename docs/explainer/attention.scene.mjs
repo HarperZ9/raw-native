@@ -1,8 +1,10 @@
 // "How attention moves information" (v2, LOOK.md): a 73-second explainer made with the explainer
 // kit (web/explainer/), driven by a model trained on a CPU (tools/explainer/attention_model.py,
 // seed 7). Every number on screen is read from attention/data.json and attention/residual.npy;
-// the bundle's SHA-256 values are checked when the scene loads. No narration in this cut: the
-// words are the on-screen lines, and attention/captions.vtt carries the same rows.
+// the bundle's SHA-256 values are checked when the scene loads. The narration
+// (attention/narration.m4a, a synthesized voice; the author approved it on 2026-10-16) plays the
+// same lines; attention/captions.vtt carries them, and narration.placement.json records where each
+// sentence starts against its caption row.
 import { span, ease } from "../../web/motion/timeline.mjs";
 import { createLayers, loadBundle, typeKit, shots, arc, quantile, show, NIGHT, PAPER, AURORA, GROUNDS } from "../../web/explainer/index.mjs";
 import { CUE, script } from "./attention/script.mjs";
