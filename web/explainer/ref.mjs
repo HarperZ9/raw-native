@@ -59,8 +59,9 @@ export function rampAt(stops, x) {
   return stops[stops.length - 1][1].slice();
 }
 
-// The iris: n straight blades rotated by `rot`, opened to radius `open` (in orb radii, at the
-// blade's middle). Returns the edge radius at angle theta. n < 3 gives a circle.
+// The iris: n straight blades rotated by `rot`; `open` is the radius at the blade corners (in orb
+// radii), so a blade's middle sits at open * cos(pi / n). Returns the edge radius at angle theta.
+// n < 3 gives a circle.
 export function apertureEdge(theta, { blades = ORB.iris.blades, open = ORB.iris.open, rot = ORB.iris.rot } = {}) {
   if (blades < 3) return open;
   const seg = TAU / blades, x = theta - rot;
