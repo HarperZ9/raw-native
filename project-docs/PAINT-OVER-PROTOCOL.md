@@ -51,7 +51,7 @@ The first run also showed a design problem the protocol did not foresee. With se
 Design changes, made after seeing those results (the default rule of the protocol allows a change to the window; the other two are additions):
 1. Keyframe windows: a projector's window reaches out to the nearest other projector (at most 40 degrees, at least 8), so at each projector's own camera the others weigh only the floor and the view is that painting unchanged.
 2. Secondary paintings continue the primary: pixels the existing projectors already cover are copied unchanged into the new painting, and only the uncovered pixels (dilated by 2) are painted. Where two projectors overlap they agree, so the cross-fade does not double the brush strokes.
-3. Overscan: paintings are 1.2 times the screen view in each dimension at the same pixel size (1152 x 648 for the 960 x 540 view, 3 pixel-aligned offsets of 96 and 54), so small camera moves do not run off the painting.
+3. Overscan: paintings are 1.2 times the screen view in each dimension at the same pixel size (1152 x 648 for the 960 x 540 view; the offsets of 96 and 54 pixels keep the grids aligned), so small camera moves do not run off the painting.
 
 Amended pop criterion. The first run's rule (no pixel changing by more than 8 codes per degree) is driven by isolated pixels where two paintings differ by about 200 codes. The amended criterion is the 99.9th percentile at most 4 codes per degree and the maximum at most 16, over view yaw offsets -50 to +50 in 10 degree steps with all three projectors. This is an amendment made after seeing the first run, and it is labelled as such.
 
