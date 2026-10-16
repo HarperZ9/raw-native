@@ -3,7 +3,7 @@
   "what": "The C++ core port of the web-only style passes (ADR 0019): dither-quantised lighting, paint-over projection and look keys. Three links per pass: the JavaScript float64 reference against the C++ float64 reference (CPU link), and the C++ float64 reference against the one WGSL source run on D3D12 (WARP) and on WebGPU (SwiftShader).",
   "written": "2026-10-15, before the C++ references, the WGSL rewrite and the first run",
   "fixtures": {
-    "ditherlight": "The five cases of evidence/shaders-ditherlight-parity-bounds.json (Salt Road G-buffers from web/shaders/fixtures/dream.mjs at 192 x 108), built by tools/port/export_style_fixtures.mjs with the web modules unchanged. The same f32 G-buffer feeds all three implementations.",
+    "ditherlight": "The five cases of evidence/shaders-ditherlight-parity-bounds.json (Salt Road G-buffers from web/shaders/fixtures/dream.mjs at 192 x 108), built by tools/port/export_style_fixtures.mjs with the web modules unchanged. The same f32 G-buffer feeds all three implementations. From Addendum B: the seven cases of that file, the two v2 cases rendered by web/shaders/fixtures/dream2.mjs with their haze.",
     "paintover": "The four cases of evidence/shaders-paintover-parity-bounds.json (Lamp Quay, three painted projectors at 384 x 216, views at 192 x 108, one perspective), built the same way. Paintings are 8-bit, depth maps and G-buffers f32; cameras are float64 on the CPU links and f32 on the GPU.",
     "lookkeys": "web/look/keys.test.mjs's terms: 8 slots (exposure8 and its vector tint), 6 slots, the step series [0,0,1,1,0,0,1,0], the monotone ramp 0..7 and the clamped series (min 0.18, max 1.1), each sampled at every hour from -2 to 26 in steps of 0.01, plus the slot hours exactly. The refusal inputs of keys.test.mjs (fewer than 6 slots, slots = 3, a non-increasing hour, a wrong value count, an unknown term)."
   },
@@ -64,5 +64,10 @@
     "finding": "The paint-over controls as first written (the view camera moved one pixel to the right) did not fail on the three orthographic cases (primary-aligned, three-off-axis, three-at-secondary); they failed on the perspective case. The reason is in the reference, not in the check: the shading reads the view camera only through its direction to the surface point, and an orthographic camera's direction does not depend on its position. The web test's one-pixel-shift control re-renders the G-buffer from the moved camera; the C++ check has no renderer for the Lamp Quay fixture, so moving the camera left the surface positions where they were.",
     "change": "paintover_cpu and paintover_gpu controls: every surface position of the view G-buffer is moved by one view pixel (pixelWorld at its depth) along the view's right axis, so each pixel reads its projectors one pixel off. The bound each control must break is unchanged. The first control is still run on every case and reported as view_shift_control_fails; it decides nothing.",
     "unchanged": "Every bound value, the cases and the other controls."
+  },
+  "addendum_b": {
+    "written": "2026-10-15, after PR #146 merged into main and before any run of the changed reference",
+    "what_changed_upstream": "PR #146 added a per-pixel haze input to the JavaScript dither-lighting reference (tone = 1 - (1 - tone)(1 - haze), screen-blended in-scattering) and two cases on a second Salt Road scene (v2-haze-beam, v2-haze-1bit-blue) to evidence/shaders-ditherlight-parity-bounds.json.",
+    "change": "The C++ reference, style.wgsl and the fixture exporter take the haze input (G-buffer word 3, as the web pass packs it), and the dither-lighting cases are the seven cases of the web bounds file. Every bound value, tie rule and control is unchanged and applies to the two new cases."
   }
 }
