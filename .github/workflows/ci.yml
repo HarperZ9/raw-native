@@ -6,6 +6,20 @@ on:
 permissions:
   contents: read
 jobs:
+  changelog:
+    # Each change adds changelog.d/<date>-<slug>.md; CHANGELOG.md changes only at release.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Every changelog entry is well formed
+        run: node tools/changelog/assemble.mjs --check
+      - name: The PR adds an entry and does not edit CHANGELOG.md directly
+        env:
+          SKIP_CHANGELOG: ${{ contains(github.event.pull_request.labels.*.name, 'no-changelog') }}
+        run: node tools/ci/changelog_entries.mjs "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}"
   build-test:
     strategy:
       fail-fast: false

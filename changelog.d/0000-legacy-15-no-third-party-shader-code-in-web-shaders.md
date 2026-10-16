@@ -1,0 +1,1 @@
+- **No third-party shader code in `web/shaders`.** A CI check (`tools/ci/no_third_party_shaders.mjs`) fails on a licence or ownership header, a non-relative import, or a header naming a known third-party shader source; it has a falsification test of eight markers and one reasoned allowlist entry.
