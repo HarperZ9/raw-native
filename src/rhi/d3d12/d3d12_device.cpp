@@ -71,6 +71,16 @@ bool D3d12Device::pickAdapter(std::string& err){
     err = "no hardware D3D12 adapter" + (skipped.empty() ? std::string() : "; skipped: " + skipped);
     return false;
 }
+D3d12Device::~D3d12Device(){ if (event_) CloseHandle(event_); }
+bool D3d12Device::lost() const {
+    return device_ && device_->GetDeviceRemovedReason() != S_OK;
+}
+bool D3d12Device::loseForTest(std::string& err){
+    ComPtr<ID3D12Device5> d5;
+    if (!device_ || FAILED(device_.As(&d5))){ err = "d3d12: ID3D12Device5::RemoveDevice is not available"; return false; }
+    d5->RemoveDevice();
+    return true;
+}
 bool D3d12Device::init(std::string& err){
     if (envOn("RAW_NATIVE_D3D12_DEBUG")){
         ComPtr<ID3D12Debug> dbg;
@@ -167,6 +177,12 @@ CommandList* D3d12Device::begin(std::string& err){
     open_ = true;
     return &cmd_;
 }
+void D3d12Device::drain(){
+    if (!queue_ || !fence_) return;
+    const uint64_t v = ++fenceValue_;
+    if (FAILED(queue_->Signal(fence_.Get(), v)) || fence_->GetCompletedValue() >= v) return;
+    if (SUCCEEDED(fence_->SetEventOnCompletion(v, event_))) WaitForSingleObject(event_, 5000);
+}
 bool D3d12Device::submitAndWait(std::string& err){
     if (!open_){ err = "d3d12: no command list is open"; return false; }
     open_ = false;
@@ -233,5 +249,11 @@ Device* device(std::string& err){
     }
     if (!once.dev) err = once.error;
     return once.dev.get();
+}
+std::unique_ptr<Device> createDevice(std::string& err){
+    auto d = std::make_unique<d3d12::D3d12Device>();
+    std::string e;   // init reports success as an empty string, whatever the caller's held
+    if (!d->init(e)){ err = e; return nullptr; }
+    return d;
 }
 }

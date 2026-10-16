@@ -11,7 +11,8 @@
 #                            src/renderer/gpu/shaders/hlsl/*.hlsl, generated from
 #                            the WGSL by scripts/wgsl_to_hlsl.py, compiled to DXIL
 #                            by the Windows SDK's dxc.exe at build time. Links
-#                            d3d12.lib and dxgi.lib from the Windows SDK; nothing else.
+#                            d3d12.lib, dxgi.lib and user32.lib (the swapchain's window
+#                            and monitor queries, N2) from the Windows SDK; nothing else.
 option(RAW_NATIVE_GPU "Build the WebGPU CLI (Emscripten only)" OFF)
 option(RAW_NATIVE_GPU_D3D12 "Build the D3D12 backend into raw_native_cli (Windows only)" OFF)
 
@@ -225,12 +226,12 @@ if(RAW_NATIVE_GPU_D3D12)
     raw_native_d3d12_shaders("${gen}" "${gen}/raw_d3d12_dxil.hpp")
     raw_native_hw_shaders("${gen}" "${gen}/raw_hw_dxil.hpp")
     add_library(raw_native_d3d12 STATIC src/rhi/d3d12/d3d12_device.cpp src/rhi/d3d12/d3d12_commands.cpp
-        src/rhi/d3d12/d3d12_raster.cpp src/rhi/d3d12/d3d12_texture.cpp
+        src/rhi/d3d12/d3d12_raster.cpp src/rhi/d3d12/d3d12_texture.cpp src/rhi/d3d12/d3d12_swapchain.cpp
         src/renderer/gpu/shaders_dxil.cpp
         src/rhi/d3d12/hw_queue.cpp src/rhi/d3d12/hw_probe.cpp src/rhi/d3d12/hw_checks.cpp src/rhi/d3d12/hw_rayquery.cpp src/rhi/d3d12/hw_async.cpp src/rhi/d3d12/hw_wave16.cpp src/rhi/d3d12/hw_mesh.cpp
         ${RAW_NATIVE_DXIL_HEADERS} ${RAW_NATIVE_HW_DXIL_HEADERS})
     target_include_directories(raw_native_d3d12 PRIVATE "${gen}")
-    target_link_libraries(raw_native_d3d12 PUBLIC raw_native d3d12 dxgi)
+    target_link_libraries(raw_native_d3d12 PUBLIC raw_native d3d12 dxgi user32)
     target_link_libraries(raw_native_cli PRIVATE raw_native_d3d12)
     if(RAW_NATIVE_BUILD_TESTS)
         # Renders on the D3D12 adapter and checks the GPU certificate. Without a
@@ -307,6 +308,7 @@ if(RAW_NATIVE_GPU_D3D12)
         add_test(NAME gpu_hw_rayquery COMMAND gpu_hw_rayquery)
         set_tests_properties(gpu_hw_rayquery PROPERTIES SKIP_RETURN_CODE 77)
     endif()
+    include(cmake/present.cmake)   # N2: raw_native_present, the window and swapchain host
     message(STATUS "raw-native: D3D12 backend on, shaders compiled by ${RAW_NATIVE_DXC}")
 else()
     target_sources(raw_native_cli PRIVATE ${RAW_NATIVE_NULL_BACKEND})

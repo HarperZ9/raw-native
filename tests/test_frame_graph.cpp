@@ -31,7 +31,9 @@ struct Recorder final : rhi::Device, rhi::CommandList {
     void endRenderPass() override {}
     rhi::PipelineHandle createComputePipeline(const rhi::ComputePipelineDesc&, std::string&) override { return {1, 1}; }
     rhi::CommandList* begin(std::string&) override { log.push_back("begin"); return this; }
-    bool submitAndWait(std::string&) override { log.push_back("submit"); return true; }
+    bool submitAndWait(std::string& e) override { log.push_back("submit"); if (failSubmit) e = "lost"; return !failSubmit; }
+    bool lost() const override { return failSubmit; }
+    bool failSubmit{false};
     const void* mapRead(rhi::BufferHandle, uint64_t, std::string&) override { return nullptr; }
     void unmap(rhi::BufferHandle) override {}
     void barrier(std::span<const rhi::BufferBarrier> b) override {
@@ -131,9 +133,58 @@ void deviceGraph(){
     }
     CHECK(dev.live == 0);
 }
+// A swapchain that logs what the graph asks of it (N2).
+struct LogSwapchain final : rhi::Swapchain {
+    std::vector<std::string>& log;
+    explicit LogSwapchain(std::vector<std::string>& l) : log(l) {}
+    rhi::TextureHandle current() override { return {1, 1}; }
+    uint32_t width() const override { return 4; }
+    uint32_t height() const override { return 4; }
+    rhi::TextureFormat format() const override { return rhi::TextureFormat::RGBA8Unorm; }
+    bool colourSpaceApplied() const override { return true; }
+    bool tearingAllowed() const override { return false; }
+    void prepare(rhi::CommandList&) override { log.push_back("prepare"); }
+    rhi::PresentStatus present(uint32_t sync, std::string&) override {
+        log.push_back("present " + std::to_string(sync)); return rhi::PresentStatus::Presented; }
+    bool resize(uint32_t, uint32_t, std::string&) override { return true; }
+    bool waitForFrame(uint32_t) override { return true; }
+    rhi::PresentStats stats() override { return {}; }
+    double refreshHz() override { return 0; }
+};
+// The frame graph owns the present: the passes that write the swapchain resource are kept, the
+// move to the present state is the last command, and the before-present step runs after the
+// submission and before Present. A lost device or a failed before-present step stops the frame.
+void presentOrder(){
+    for (int mode = 0; mode < 3; ++mode){
+        Recorder dev;
+        dev.failSubmit = mode == 1;
+        LogSwapchain sc(dev.log);
+        graph::FrameGraph g(&dev);
+        auto image = g.createHost("image");
+        auto back = g.presentTo(sc, 1, [&](std::string& e){ dev.log.push_back("hash"); if (mode == 2) e = "no hash"; return mode != 2; });
+        g.addPass("scene", {{image, Access::StorageWrite}}, [&](graph::PassContext&){ dev.log.push_back("scene"); });
+        g.addPass("blit", {{image, Access::StorageRead}, {back, Access::StorageWrite}}, [&](graph::PassContext&){ dev.log.push_back("blit"); });
+        g.addPass("unused", {{g.createHost("other"), Access::StorageWrite}}, [&](graph::PassContext&){ dev.log.push_back("unused"); });
+        std::string err;
+        const bool ok = g.execute(err);
+        if (mode == 0){
+            const std::vector<std::string> want = {"begin", "scene", "blit", "prepare", "submit", "hash", "present 1"};
+            CHECK(ok && dev.log == want);
+            CHECK(g.presentStatus() == rhi::PresentStatus::Presented);
+            CHECK(g.describe().find("pass unused culled") != std::string::npos);
+            CHECK(g.describe().find("present sync 1") != std::string::npos);
+        } else if (mode == 1){
+            CHECK(!ok && g.presentStatus() == rhi::PresentStatus::DeviceLost && !has(dev.log, "hash") && !has(dev.log, "present 1"));
+        } else {
+            CHECK(!ok && err == "no hash" && has(dev.log, "hash") && !has(dev.log, "present 1"));
+            CHECK(g.presentStatus() == rhi::PresentStatus::NotPresented);
+        }
+    }
+}
 }  // namespace
 
 int main(){
+    presentOrder();
     readBeforeWrite();
     malformed();
     hostCulling();

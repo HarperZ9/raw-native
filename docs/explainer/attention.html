@@ -23,7 +23,8 @@
   <div id="readout" aria-live="polite">Pause, then point at a dot or a character.</div>
   <p>Source: <code>python tools/explainer/attention_model.py --seed 7</code>. The numbers come from
   <code>attention/data.json</code> and <code>attention/residual.npy</code>; their SHA-256 values are checked
-  when the page loads. No narration: the lines in the picture are the captions.</p>
+  when the page loads. The narration is a synthesized voice, made from the author's own recordings;
+  the captions carry every line.</p>
 </main>
 <script type="module">
 import { mountPlayer } from "../../web/motion/player.mjs";
@@ -34,6 +35,7 @@ const player = await mountPlayer(el, {
   sceneUrl: new URL("attention.scene.mjs", location.href).href,
   shaders: new URL("../../src/renderer/gpu/shaders/", location.href).href,
   captions: new URL("attention/captions.vtt", location.href).href,
+  audio: new URL("attention/narration.m4a", location.href).href,
   label: "How attention moves information: a film drawn from a small model's numbers. The captions carry every line.",
 });
 window.__explainer = player;   // for tests: tests/web drive the page through it
