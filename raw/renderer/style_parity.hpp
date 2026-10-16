@@ -68,6 +68,7 @@ struct StyleParity {
     bool gpuWanted{true};
     int expectDither{0}, expectPaint{0};   // cases in the fixture bundles
     int expectImage{0};                    // round 2 image cases in their bundles
+    int expectQuant{0};                    // hysteresis and palettelight cases (bounds-3)
     std::vector<StyleCase> cases;
     LookKeysResult lookkeys;
     PostStackResult poststack;
@@ -77,7 +78,8 @@ struct StyleParity {
     std::string json() const;
 };
 // fixtureDir holds ditherlight.rnfx, paintover.rnfx, lookkeys.json and, from round 2,
-// poststack.rnfx, purity.rnfx, lightpaint.rnfx, glaze.rnfx and hatch.rnfx. dev may be null (CPU only).
+// poststack.rnfx, purity.rnfx, lightpaint.rnfx, glaze.rnfx, hatch.rnfx, hysteresis.rnfx and
+// palettelight.rnfx. dev may be null (CPU only).
 StyleParity styleParity(rhi::Device* dev, const std::string& fixtureDir);
 
 }  // namespace raw::gpu_check

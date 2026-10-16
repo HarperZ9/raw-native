@@ -68,6 +68,27 @@ struct HatchParams {
     paper: vec4f,
 }
 
+// Hysteresis quantisation. mode 0 bands, 1 palette; a: N, margin, gain, depthTol; b: K.
+struct HystParams {
+    width: u32, height: u32, mode: u32, palSize: u32,
+    hasState: u32, hasMotion: u32, on: u32, pad0: u32,
+    a: vec4f,
+    b: vec4f,
+}
+// Palette-locked lighting. a: gain, ambient, moon, cycle rate; b: time, moon direction; the lamp
+// and two window glows as (position, radius), (core, intensity, wrap, 0).
+struct PalettelightParams {
+    width: u32, height: u32, steps: u32, voidSteps: u32,
+    a: vec4f,
+    b: vec4f,
+    lampA: vec4f,
+    lampB: vec4f,
+    g0a: vec4f,
+    g0b: vec4f,
+    g1a: vec4f,
+    g1b: vec4f,
+}
+
 fn sat1(x: f32) -> f32 {
     return clamp(x, 0.0, 1.0);
 }
@@ -819,4 +840,212 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
         col = U.paper.xyz * (1.0 - ink) + U.ink.xyz * ink;
     }
     out8[i] = pack_rgb8(col);
+}
+
+//@pass style_hysteresis
+// Hysteresis quantisation (raw/renderer/style_quantise.hpp), one dispatch a frame. pal: palette
+// OKLab (palette mode); img: scene-linear RGBA; motion: (mx, my, expected previous distance, this
+// frame's distance); prev and next: the state, (decision, persistence count, distance, 0), the
+// previous frame's read and this frame's written. Writes the sRGB RGBA8 word a pixel.
+@group(0) @binding(0) var<uniform> U: HystParams;
+@group(0) @binding(1) var<storage, read> pal: array<vec4f>;
+@group(0) @binding(2) var<storage, read> img: array<vec4f>;
+@group(0) @binding(3) var<storage, read> motion: array<vec4f>;
+@group(0) @binding(4) var<storage, read> prev: array<vec4f>;
+@group(0) @binding(5) var<storage, read_write> next: array<vec4f>;
+@group(0) @binding(6) var<storage, read_write> out8: array<u32>;
+
+fn cbrt_p(x: f32) -> f32 {
+    return select(0.0, pow(x, 1.0 / 3.0), x > 0.0);
+}
+fn shoulder(v: f32) -> f32 {
+    return 1.0 - exp(-max(0.0, v) * U.a.z);
+}
+fn to_oklab(c: vec3f) -> vec3f {
+    let l: f32 = cbrt_p(0.4122214708 * c.x + 0.5363325363 * c.y + 0.0514459929 * c.z);
+    let m: f32 = cbrt_p(0.2119034982 * c.x + 0.6806995451 * c.y + 0.1073969566 * c.z);
+    let s: f32 = cbrt_p(0.0883024619 * c.x + 0.2817188376 * c.y + 0.6299787005 * c.z);
+    return vec3f(0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s, 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s, 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s);
+}
+fn from_oklab(q: vec3f) -> vec3f {
+    let l0: f32 = q.x + 0.3963377774 * q.y + 0.2158037573 * q.z;
+    let m0: f32 = q.x - 0.1055613458 * q.y - 0.0638541728 * q.z;
+    let s0: f32 = q.x - 0.0894841775 * q.y - 1.291485548 * q.z;
+    let l: f32 = l0 * l0 * l0;
+    let m: f32 = m0 * m0 * m0;
+    let s: f32 = s0 * s0 * s0;
+    return vec3f(4.0767416621 * l - 3.3077115913 * m + 0.2309699292 * s, -1.2684380046 * l + 2.6097574011 * m - 0.3413193965 * s, -0.0041960863 * l - 0.7034186147 * m + 1.707614701 * s);
+}
+fn plain_decision(lab: vec3f) -> i32 {
+    if (U.mode == 0u) { return i32(clamp(floor(lab.x * U.a.x + 0.5), 0.0, U.a.x)); }
+    var best: i32 = 0;
+    var bd: f32 = 1.0e30;
+    for (var k: u32 = 0u; k < U.palSize; k++) {
+        let d: f32 = length(lab - pal[k].xyz);
+        if (d < bd) {
+            bd = d;
+            best = i32(k);
+        }
+    }
+    return best;
+}
+fn keep(lab: vec3f, p: i32, pl: i32) -> bool {
+    if (U.mode == 0u) {
+        let x: f32 = lab.x * U.a.x;
+        return x >= f32(p) - 0.5 - U.a.y && x <= f32(p) + 0.5 + U.a.y;
+    }
+    return length(lab - pal[u32(p)].xyz) <= length(lab - pal[u32(pl)].xyz) + U.a.y;
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    let w: i32 = i32(U.width);
+    let h: i32 = i32(U.height);
+    let x: i32 = i32(i % U.width);
+    let y: i32 = i32(i / U.width);
+    let c: vec3f = img[i].xyz;
+    let lab: vec3f = to_oklab(vec3f(shoulder(c.x), shoulder(c.y), shoulder(c.z)));
+    let pl: i32 = plain_decision(lab);
+    var d: i32 = pl;
+    var cnt: f32 = 0.0;
+    let mo: vec4f = motion[i];
+    if (U.on > 0u && U.hasState > 0u) {
+        var mx: f32 = 0.0;
+        var my: f32 = 0.0;
+        if (U.hasMotion > 0u) {
+            mx = mo.x;
+            my = mo.y;
+        }
+        let px: i32 = i32(floor(f32(x) + 0.5 - mx));
+        let py: i32 = i32(floor(f32(y) + 0.5 - my));
+        if (px >= 0 && py >= 0 && px < w && py < h) {
+            let s: vec4f = prev[u32(py * w + px)];
+            let expect: f32 = mo.z;
+            if (abs(s.z - expect) <= U.a.w * expect) {
+                let pv: i32 = i32(floor(s.x + 0.5));
+                if (pv != pl && keep(lab, pv, pl)) {
+                    let cc: f32 = s.y + 1.0;
+                    if (cc < U.b.x) {
+                        d = pv;
+                        cnt = cc;
+                    }
+                }
+            }
+        }
+    }
+    next[i] = vec4f(f32(d), cnt, mo.w, 0.0);
+    var rgb: vec3f = vec3f(0.0);
+    if (U.mode == 0u) {
+        let Lq: f32 = f32(d) / U.a.x;
+        var sc: f32 = 0.0;
+        if (lab.x > 1.0e-9) { sc = Lq / lab.x; }
+        rgb = from_oklab(vec3f(Lq, lab.y * sc, lab.z * sc));
+    } else {
+        rgb = from_oklab(pal[u32(d)].xyz);
+    }
+    out8[i] = pack_rgb8(rgb);
+}
+
+//@pass style_palettelight
+// Palette-locked lighting (raw/renderer/style_quantise.hpp). gb: four vec4f a pixel: (hit, class,
+// detail, pool phase), (P, vis moon), (N, vis lamp), (vis window, 0, 0, 0). tbl: palette indices,
+// (class * 2 + variant) * K + step for the four lit classes, then the void ramp, three window
+// entries, two lamp entries, the night entry. ent: RGBA8 of every entry. Writes an index and RGBA8.
+@group(0) @binding(0) var<uniform> U: PalettelightParams;
+@group(0) @binding(1) var<storage, read> gb: array<vec4f>;
+@group(0) @binding(2) var<storage, read> tbl: array<u32>;
+@group(0) @binding(3) var<storage, read> ent: array<u32>;
+@group(0) @binding(4) var<storage, read_write> outIdx: array<u32>;
+@group(0) @binding(5) var<storage, read_write> out8: array<u32>;
+
+fn bayer8(x0: i32, y0: i32) -> u32 {
+    let x: u32 = u32(x0 & 7);
+    let y: u32 = u32(y0 & 7);
+    let v: u32 = x ^ y;
+    return ((v & 1u) << 5u) | ((y & 1u) << 4u) | (((v >> 1u) & 1u) << 3u) | (((y >> 1u) & 1u) << 2u) | (((v >> 2u) & 1u) << 1u) | ((y >> 2u) & 1u);
+}
+fn thr(x: i32, y: i32) -> f32 {
+    return (f32(bayer8(x, y)) + 0.5) / 64.0;
+}
+fn radial(la: vec4f, lb: vec4f, p: vec3f, n: vec3f, vis: f32) -> f32 {
+    let v: vec3f = p - la.xyz;
+    let r2: f32 = dot(v, v);
+    let q: f32 = r2 / (la.w * la.w);
+    if (q >= 1.0) { return 0.0; }
+    let m: f32 = (lb.y * (1.0 - q) * (1.0 - q)) / (1.0 + r2 / (lb.x * lb.x));
+    let tov: vec3f = la.xyz - p;
+    let l: f32 = length(tov);
+    var term: f32 = 1.0;
+    if (l >= 1.0e-6) { term = sat1((dot(n, tov) / l + lb.z) / (1.0 + lb.z)); }
+    return vis * m * term;
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    let ix: i32 = i32(i % U.width);
+    let iy: i32 = i32(i / U.width);
+    let b: u32 = i * 4u;
+    let v0: vec4f = gb[b];
+    let v1: vec4f = gb[b + 1u];
+    let v2: vec4f = gb[b + 2u];
+    let v3: vec4f = gb[b + 3u];
+    let K: u32 = U.steps;
+    let vs: u32 = U.voidSteps;
+    var idx: u32 = tbl[8u * K + vs + 5u];
+    let T1: f32 = thr(ix, iy);
+    let T2: f32 = thr(ix + 11, iy + 7);
+    let time: f32 = U.b.x;
+    if (v0.x > 0.5) {
+        let cls: u32 = u32(v0.y + 0.5);
+        let voidBase: u32 = 8u * K;
+        let winBase: u32 = voidBase + vs;
+        let lampBase: u32 = winBase + 3u;
+        if (cls == 4u) {
+            let pos0: f32 = v0.w * f32(vs) + time * U.a.w * f32(vs);
+            let pos: f32 = pos0 - floor(pos0 / f32(vs)) * f32(vs);
+            let lo: u32 = u32(floor(pos));
+            let f: f32 = pos - floor(pos);
+            var st: u32 = lo;
+            if (f > T1) { st = lo + 1u; }
+            idx = tbl[voidBase + (st % vs)];
+        } else if (cls == 5u) {
+            let s: f32 = 1.4 + 0.6 * sin(time * 5.0 + v1.x * 3.0) + 0.4 * (v0.z - 0.5);
+            let tone: f32 = clamp(s, 0.0, 2.0);
+            let lo: u32 = min(1u, u32(floor(tone)));
+            var st: u32 = lo;
+            if (tone - f32(lo) > T1) { st = lo + 1u; }
+            idx = tbl[winBase + st];
+        } else if (cls == 6u) {
+            var st: u32 = 0u;
+            if (0.5 + 0.2 * sin(time * 7.0) > T1) { st = 1u; }
+            idx = tbl[lampBase + st];
+        } else {
+            let p: vec3f = v1.xyz;
+            let n: vec3f = v2.xyz;
+            let nl: f32 = max(0.0, dot(n, U.b.yzw));
+            let cool: f32 = U.a.y * (0.7 + 0.3 * (0.5 + 0.5 * n.y)) + U.a.z * nl * v1.w;
+            let warm: f32 = radial(U.lampA, U.lampB, p, n, v2.w) + radial(U.g0a, U.g0b, p, n, v3.x) + radial(U.g1a, U.g1b, p, n, v3.x);
+            let E: f32 = cool + warm;
+            let tone: f32 = 1.0 - exp(-U.a.x * E * v0.z);
+            let s: f32 = min(f32(K - 1u), max(0.0, tone * f32(K - 1u)));
+            var wf: f32 = 0.0;
+            if (E > 1.0e-9) { wf = warm / E; }
+            let lo: u32 = min(K - 2u, u32(floor(s)));
+            var st: u32 = lo;
+            if (s - f32(lo) > T1) { st = lo + 1u; }
+            var variant: u32 = 0u;
+            if (wf >= 0.7) {
+                variant = 1u;
+            } else if (wf > 0.3) {
+                if ((wf - 0.3) / 0.4 > T2) { variant = 1u; }
+            }
+            idx = tbl[(cls * 2u + variant) * K + st];
+        }
+    }
+    outIdx[i] = idx;
+    out8[i] = ent[idx];
 }
