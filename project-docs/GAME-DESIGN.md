@@ -1,7 +1,8 @@
 <!-- writing-profile: research -->
 # Showcase game: design document
 
-Dated 2026-10-15. Status: proposal for the author's decision. Nothing here is built yet
+Dated 2026-10-15. Status: Low Water confirmed by the author on 2026-10-15 ("Yes, Low Water",
+ADR 0018); the title stays a working title. Nothing here is built yet
 except the engine parts named as built. The release plan that schedules this work is
 [RELEASE-PLAN.md](RELEASE-PLAN.md); the engine gaps it depends on are in
 [PARITY-MATRIX.md](PARITY-MATRIX.md).
@@ -163,7 +164,7 @@ Rules for the rules:
 | Painted places | Each place is a block-out with keyframe paintings projected on it | Paint-over projection at runtime, keyframe blend, hole fill | Built as a module with tests and SwiftShader parity (PR #145); not in a runtime |
 | Lighting modes | Normal (painted, graded), blackout (dither-quantised) | Look keys, dither lighting pass, a cross-fade between modes | Both passes built separately; no mode switch |
 | Movement and camera | Click or stick to move on a navigation mesh; fixed isometric camera per place with small pans | G1 main loop, input, picking (M2 criterion 9 has grid picking) | Picking and occlusion fade built; no loop, no navigation |
-| Dialogue | Branching conversation with conditions on facts, environment and instruments | A text format, an interpreter, a dialogue UI with readable type at 1280 x 800 | None |
+| Dialogue | Branching conversation with conditions on facts, environment and instruments | BuildLang dialogue modules, a dialogue UI with readable type at 1280 x 800 | None |
 | Instruments | Turn environment state into readings and evidence | Gameplay queries `lightAt`, `isWet`, `windAt` with hysteresis | None |
 | Ledger | Evidence, claims and the dawn verdict | Data model, UI | None |
 | Schedules | People and their routines by slot and weather | World layer (G3) | None |
@@ -171,9 +172,11 @@ Rules for the rules:
 | Save and load | Snapshot of the command log, facts, Ledger and position | G3 save and load | None |
 | Settings and accessibility | Section 7 | UI, persistence | None |
 
-Data first: places, people, dialogue, rules and schedules are text files in the game
-repository, loaded by the engine. A designer edits them without a rebuild. This is the near
-term answer to scripting (decision D3 in the release plan).
+Gameplay is BuildLang code (the author's decision D3, "BuildLang from the start", ADR 0018):
+movement rules, instruments, dialogue, the Ledger and schedules are BuildLang modules in the
+game repository, compiled to C and linked into the engine natively and in WebAssembly. Hot
+reload in development builds lets a designer change them without restarting the game. The
+integration is the BuildLang track in the release plan, section 4.
 
 ## 6. Showcasing the engine, by feature
 
@@ -215,7 +218,7 @@ Writing carries this game. Targets, to be revised from measured cost at the vert
 
 The full-game numbers are a target. The slice measures words per day,
 paintings per day and test cost per rule, and the full-game scope is set from those numbers
-at milestone R3 (release plan).
+at milestone W3 (release plan).
 
 AI agents may draft, but the author decides the voice, approves every character and owns
 the final text. Steam requires a disclosure for AI-generated content; the release plan
@@ -240,8 +243,8 @@ The slice is done when every item passes. It is the playable demo candidate.
 7. **Performance.** p95 frame time at most 16.7 ms at 1920 x 1080 on a named mid-tier GPU,
    and at most 33.3 ms at 1280 x 800 on a named low-power device, each over a scripted
    walkthrough.
-8. **Builds.** Windows x64 and a web build from a clean checkout in CI. Linux as a stretch
-   goal at this stage.
+8. **Builds.** Windows x64, Linux x64 and a web build from a clean checkout in CI
+   (Linux follows from milestone N3).
 9. **Reliability.** A crash writes a report with the build ID. No crash in the 8 observed
    sessions and the 1,000 fuzz runs.
 
