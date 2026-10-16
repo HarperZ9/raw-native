@@ -16,7 +16,7 @@ film on how attention moves information between tokens, driven by a model traine
 | `wgsl.mjs` | The WGSL. One `COMMON` block feeds both the passes and the parity kernel. |
 | `data.mjs` | `loadBundle()`: a JSON file plus the `.npy` arrays it lists, each checked against its SHA-256. `parseNpy()`, `show()` for formatting bound numbers. |
 | `layout.mjs` | `tensorGrid()` lays out a 3-axis tensor as points and inverts a point back to its element; `tokenRow()`, `ellipseLattice()`. |
-| `style.mjs` | Two type families: Hanken Grotesk for every text role, Cascadia Mono for data and metadata rows. Colour is ink plus the three verdicts. |
+| `style.mjs` | Type and colour by the site's design rules (DESIGN-RULES.md in HarperZ9.github.io): Hanken Grotesk for headings, text and labels in sentence case; Conso for data, characters and code. Ink text, restrained accents beside text, a limited explanatory palette in figures. |
 | `cards.mjs` | Data cards, bars, attention matrices, image grids. A card takes a value and a format, never a typed number. |
 | `shots.mjs` | Camera keys with easing (zoom in log space), the orb iris transition, focus pulls, pulse phase. Under reduced motion moves become cuts. |
 
@@ -59,3 +59,10 @@ hardware GPU was not measured (the machine's GPU was in use by another job).
 
 The render runs in resumable 6-second chunks on the CPU adapter and writes `OUT/receipt.json`
 with the commit, every frame's SHA-256 and the film's.
+
+## Fonts
+
+Hanken Grotesk is under the SIL Open Font License 1.1 (`third_party/fonts/OFL-hanken-grotesk.txt`).
+Conso's atlas is cut from the webfont the author's site ships. Its licence terms are unknown: the
+source archive carries no licence file. The site records that the author holds the designer's
+licence privately, and the use here follows the site's own.

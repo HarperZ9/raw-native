@@ -157,15 +157,17 @@ def evaluate(model, torch, np, seed, out):
         prev, ind = pick_heads(atts, start, L)
         hp, hi = int(np.argmax(prev)), int(np.argmax(ind))
         acc = accuracy(logits, test, mask)
-        abl = {}
+        abl, abl_p = {}, {}
         for name, ab in (("induction_head_zeroed", (None, hi)), ("previous_token_head_zeroed", (hp, None)),
                          ("both_layer_1_heads_zeroed", (None, list(range(HEADS))))):
             lg, _, _ = model(test, ablate=ab)
             abl[name] = accuracy(lg, test, mask)
+            pr = lg[0, :-1].softmax(-1)
+            abl_p[name] = [float(pr[i, test[0, i + 1]]) for i in range(T - 1)]
         probs = logits[0, :-1].softmax(-1)
         p_next = [float(probs[i, test[0, i + 1]]) for i in range(T - 1)]
         np.save(out / "residual.npy", resid.numpy().astype(np.float16))
-    return {"test": test, "start": int(start[0]), "L": int(L[0]), "atts": atts, "prev": prev, "ind": ind, "hp": hp, "hi": hi, "acc": acc, "abl": abl, "p_next": p_next}
+    return {"test": test, "start": int(start[0]), "L": int(L[0]), "atts": atts, "prev": prev, "ind": ind, "hp": hp, "hi": hi, "acc": acc, "abl": abl, "abl_p": abl_p, "p_next": p_next}
 
 
 def main() -> int:
@@ -205,6 +207,7 @@ def main() -> int:
             "repeat_length": e["L"],
             "text": "".join(ALPHABET[i] for i in e["test"][0].tolist()),
             "p_next": [r(x) for x in e["p_next"]],
+            "p_next_ablated": {k: [r(x) for x in v] for k, v in e["abl_p"].items()},
             "previous_token_rows": [[r(x) for x in row] for row in e["atts"][0][0, hp].tolist()],
             "induction_rows": [[r(x) for x in row] for row in e["atts"][1][0, hi].tolist()],
         },

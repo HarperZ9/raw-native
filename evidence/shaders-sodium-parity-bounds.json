@@ -1,0 +1,14 @@
+{
+  "what": "Spectral sodium shading (web/shaders/sodium): GPU pass against the float64 CPU reference",
+  "fixed_before_first_run": "2026-10-16",
+  "source": "Sodium Quay G-buffers at 192 x 108; the same f32 G-buffer and the same f64 response table (as f32) feed both sides",
+  "output": { "width": 192, "height": 108, "gain": 2.0 },
+  "cases": [
+    { "id": "night-sodium", "time": 2.0, "plan": {} },
+    { "id": "van-close", "time": 5.5, "plan": {} },
+    { "id": "pure-sodium-no-mist", "time": 3.0, "plan": { "impurity": 0, "mist": 0 } },
+    { "id": "rain-heavy", "time": 4.0, "plan": { "rain": 2.0 } }
+  ],
+  "bounds": { "max_abs_code": 2, "p999_abs_code": 1, "mean_abs_code": 0.03 },
+  "why": "Shading is a sum of products of f32 table entries and smooth geometric terms; f32 against f64 moves values by rounding only."
+}
