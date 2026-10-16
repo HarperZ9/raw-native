@@ -1,0 +1,137 @@
+{
+ "cases": {
+  "default.gpu": {
+   "args": [
+    "--gpu"
+   ],
+   "exit": 0,
+   "files": {
+    "ao_error.pgm": "c9ebb0348c76d42b2f6916f24fd12c43164331b8131cf0ebd0cb9e32d8bce4dd",
+    "ao_rt.pfm": "1e4946a0fd3828195a710f8f0ba219a420daedb215372c93660441a54ca997c0",
+    "ao_rt.pgm": "533ba688d52a7c86ac097fee636b366089380c61dcacc69f6e359a2b9ef5216c",
+    "ao_ss.pfm": "66c99812f843fe487eabb77e397fbe05e08864f981fd0b1179eba6fb78f86fb3",
+    "ao_ss.pgm": "305edb16225ab27a29223ef2d70e0ad3ac4799e3b4492904ce07616f5ad14acc",
+    "certificate.json": "6d89c9a02348ddd6c65a5e16e2458247f229907edb783a17c2519c543c98a1fb",
+    "channels.json": "9443419257a920e8ec26cfec1ec1e7f5bae86aa0c42e795cf8a1fce4b5e60d18",
+    "cpu/ao_error.pgm": "1f2b8dacd738ce231dfbe60d9ecef16c1972a5bcc59890c145edc139c9a04197",
+    "cpu/ao_rt.pfm": "3bd5cce0f7424363c04d17b7bf644b82a9f51338297b4666329d398e9fb886ee",
+    "cpu/ao_rt.pgm": "0a83697599343d297929b12227240f811d1e90f53a4bc76ca11eb568c2892f48",
+    "cpu/ao_ss.pfm": "66c99812f843fe487eabb77e397fbe05e08864f981fd0b1179eba6fb78f86fb3",
+    "cpu/ao_ss.pgm": "305edb16225ab27a29223ef2d70e0ad3ac4799e3b4492904ce07616f5ad14acc",
+    "cpu/certificate.json": "4222e191c520d7e1ed0e589b62ce9926bdf6079c75a48f775fd093c282439962",
+    "cpu/channels.json": "33aaaabdbcf4e819f23e720584544ed21cb94d525cc2bce5d6a6faac12117eb3",
+    "cpu/frame.ppm": "e276f24f4a2a23e7b43b61d2e45147446468bf8d99a75809675f2cea91edb06d",
+    "cpu/frame_hdr.pfm": "5e598db0424414e7e37904592dbb295cbdb8623070ffb7350bd8e3ed867557db",
+    "cpu/mask.pgm": "413410cd6f8755f3b234272f0c100125a38ddd89c6a8bc302fe7463170f96108",
+    "cpu/receipt.json": "bc812c97fe971714dc578a79437d3cc678438ba6af45f8503a8c776bff1714f1",
+    "frame.ppm": "05a966288630fac3313dfcad051e54053f208994caf737577ea4d465ff4608ad",
+    "frame_hdr.pfm": "ea3a3244b6d61b45572ae27c5ba773d2334cb1a43d805cd5b2a0de4f99725237",
+    "gpu_certificate.json": "e0accd3a5ea5656acadcdccc5988763595612b107b13c2ae2b464b64efec0538",
+    "gpu_receipt.json": "196647ee47a5d0231dc4ba0401144f41779820711b328bf8a9f57d74ee3b6730",
+    "mask.pgm": "bd19ba924f8ae0c9cfdcba2560e0257d61f272897580d23da52c32ce4906f103",
+    "receipt.json": "67d01307b1e3e2f14446adf40624a85a3235c48199596ae3d7c9f33cd7c040d6"
+   }
+  },
+  "motion-256.gpu": {
+   "args": [
+    "--gpu",
+    "--width",
+    "256",
+    "--height",
+    "256",
+    "--prev-eye",
+    "4.3,4,5.7"
+   ],
+   "exit": 0,
+   "files": {
+    "ao_error.pgm": "c9ebb0348c76d42b2f6916f24fd12c43164331b8131cf0ebd0cb9e32d8bce4dd",
+    "ao_rt.pfm": "1e4946a0fd3828195a710f8f0ba219a420daedb215372c93660441a54ca997c0",
+    "ao_rt.pgm": "533ba688d52a7c86ac097fee636b366089380c61dcacc69f6e359a2b9ef5216c",
+    "ao_ss.pfm": "66c99812f843fe487eabb77e397fbe05e08864f981fd0b1179eba6fb78f86fb3",
+    "ao_ss.pgm": "305edb16225ab27a29223ef2d70e0ad3ac4799e3b4492904ce07616f5ad14acc",
+    "certificate.json": "301de0d8a8dccb0c5cc550de253524e5efb4b2b0cd1219a14f83faed38387c0d",
+    "channels.json": "72a3968f29f82b6b926d8ef772bdc5c9636f9a86662ce3eec576a79eda8a5d7a",
+    "cpu/ao_error.pgm": "1f2b8dacd738ce231dfbe60d9ecef16c1972a5bcc59890c145edc139c9a04197",
+    "cpu/ao_rt.pfm": "3bd5cce0f7424363c04d17b7bf644b82a9f51338297b4666329d398e9fb886ee",
+    "cpu/ao_rt.pgm": "0a83697599343d297929b12227240f811d1e90f53a4bc76ca11eb568c2892f48",
+    "cpu/ao_ss.pfm": "66c99812f843fe487eabb77e397fbe05e08864f981fd0b1179eba6fb78f86fb3",
+    "cpu/ao_ss.pgm": "305edb16225ab27a29223ef2d70e0ad3ac4799e3b4492904ce07616f5ad14acc",
+    "cpu/certificate.json": "7e7fd09d34950a5287e9dda1491c001d4426c07efe0b08676c12ebbb5304626a",
+    "cpu/channels.json": "2c700d25f7b6c419aa0bd3cc20996144bc6dd99dd70b01f3d0a2fbd5249d15e3",
+    "cpu/frame.ppm": "e276f24f4a2a23e7b43b61d2e45147446468bf8d99a75809675f2cea91edb06d",
+    "cpu/frame_hdr.pfm": "5e598db0424414e7e37904592dbb295cbdb8623070ffb7350bd8e3ed867557db",
+    "cpu/mask.pgm": "413410cd6f8755f3b234272f0c100125a38ddd89c6a8bc302fe7463170f96108",
+    "cpu/receipt.json": "5c137d619b1d76a4250d3b75c3a7b423f96c01a6ffa2144b686555bd037746ac",
+    "frame.ppm": "05a966288630fac3313dfcad051e54053f208994caf737577ea4d465ff4608ad",
+    "frame_hdr.pfm": "ea3a3244b6d61b45572ae27c5ba773d2334cb1a43d805cd5b2a0de4f99725237",
+    "gpu_certificate.json": "e931bff1e1c76075989ecb9a6786dce7d22ef86a564ec76e57400092d5fd262a",
+    "gpu_receipt.json": "ed1a9eb8ca5f4874d7e0c4ef3e8ec7f46c51ef5e3ab4797877aca705e3377562",
+    "mask.pgm": "bd19ba924f8ae0c9cfdcba2560e0257d61f272897580d23da52c32ce4906f103",
+    "receipt.json": "5cf721e9b734f34c927f6f5c48bd9d0026edb9ada84499ec35fc9db84c85ac1a"
+   }
+  },
+  "nort-256.gpu": {
+   "args": [
+    "--gpu",
+    "--no-rt"
+   ],
+   "exit": 0,
+   "files": {
+    "ao_ss.pfm": "66c99812f843fe487eabb77e397fbe05e08864f981fd0b1179eba6fb78f86fb3",
+    "ao_ss.pgm": "305edb16225ab27a29223ef2d70e0ad3ac4799e3b4492904ce07616f5ad14acc",
+    "certificate.json": "2e8acb8e7ba116b1efc536fe94b4e75bbff0beaf555fb0367f365d842bf650cb",
+    "channels.json": "5d59dfd071d163d55e895967c0a4bddcf6df1050b10809e0f9bd08f90f3a20cd",
+    "cpu/ao_ss.pfm": "66c99812f843fe487eabb77e397fbe05e08864f981fd0b1179eba6fb78f86fb3",
+    "cpu/ao_ss.pgm": "305edb16225ab27a29223ef2d70e0ad3ac4799e3b4492904ce07616f5ad14acc",
+    "cpu/certificate.json": "6566a7bdd6534baa6425e74a392f976897b11f112dd50b0f2e162308f6009b49",
+    "cpu/channels.json": "5d59dfd071d163d55e895967c0a4bddcf6df1050b10809e0f9bd08f90f3a20cd",
+    "cpu/frame.ppm": "88f3ae3e625e50ad9e87437a0dbd3e3079069391130a3dd99abdf655d28b8e8f",
+    "cpu/frame_hdr.pfm": "639f92d90b6c1e9081fbe9998d8dfc40ae8c5f6fca55d00f43a4d12098d26eba",
+    "cpu/mask.pgm": "413410cd6f8755f3b234272f0c100125a38ddd89c6a8bc302fe7463170f96108",
+    "cpu/receipt.json": "899a7a667db7a8f5ed1322d22c96bddf2c9405f973f006a15227ed14afff484e",
+    "frame.ppm": "88f3ae3e625e50ad9e87437a0dbd3e3079069391130a3dd99abdf655d28b8e8f",
+    "frame_hdr.pfm": "639f92d90b6c1e9081fbe9998d8dfc40ae8c5f6fca55d00f43a4d12098d26eba",
+    "gpu_certificate.json": "a712df48d4d1690f2e5276f279850d2d162a2969efeb024476d1408798aa9ec9",
+    "gpu_receipt.json": "57a0d154430750ca4eea9b1616603283b2e019ccd1b4abebb73f7ad5c3bb7773",
+    "mask.pgm": "413410cd6f8755f3b234272f0c100125a38ddd89c6a8bc302fe7463170f96108",
+    "receipt.json": "3111d53981c1c80353ab54cfd927961e7835d29f916bc91f4add3d93ac4a3694"
+   }
+  },
+  "threads4-256.gpu": {
+   "args": [
+    "--gpu",
+    "--threads",
+    "4"
+   ],
+   "exit": 0,
+   "files": {
+    "ao_error.pgm": "c9ebb0348c76d42b2f6916f24fd12c43164331b8131cf0ebd0cb9e32d8bce4dd",
+    "ao_rt.pfm": "1e4946a0fd3828195a710f8f0ba219a420daedb215372c93660441a54ca997c0",
+    "ao_rt.pgm": "533ba688d52a7c86ac097fee636b366089380c61dcacc69f6e359a2b9ef5216c",
+    "ao_ss.pfm": "66c99812f843fe487eabb77e397fbe05e08864f981fd0b1179eba6fb78f86fb3",
+    "ao_ss.pgm": "305edb16225ab27a29223ef2d70e0ad3ac4799e3b4492904ce07616f5ad14acc",
+    "certificate.json": "6d89c9a02348ddd6c65a5e16e2458247f229907edb783a17c2519c543c98a1fb",
+    "channels.json": "9443419257a920e8ec26cfec1ec1e7f5bae86aa0c42e795cf8a1fce4b5e60d18",
+    "cpu/ao_error.pgm": "1f2b8dacd738ce231dfbe60d9ecef16c1972a5bcc59890c145edc139c9a04197",
+    "cpu/ao_rt.pfm": "3bd5cce0f7424363c04d17b7bf644b82a9f51338297b4666329d398e9fb886ee",
+    "cpu/ao_rt.pgm": "0a83697599343d297929b12227240f811d1e90f53a4bc76ca11eb568c2892f48",
+    "cpu/ao_ss.pfm": "66c99812f843fe487eabb77e397fbe05e08864f981fd0b1179eba6fb78f86fb3",
+    "cpu/ao_ss.pgm": "305edb16225ab27a29223ef2d70e0ad3ac4799e3b4492904ce07616f5ad14acc",
+    "cpu/certificate.json": "4222e191c520d7e1ed0e589b62ce9926bdf6079c75a48f775fd093c282439962",
+    "cpu/channels.json": "33aaaabdbcf4e819f23e720584544ed21cb94d525cc2bce5d6a6faac12117eb3",
+    "cpu/frame.ppm": "e276f24f4a2a23e7b43b61d2e45147446468bf8d99a75809675f2cea91edb06d",
+    "cpu/frame_hdr.pfm": "5e598db0424414e7e37904592dbb295cbdb8623070ffb7350bd8e3ed867557db",
+    "cpu/mask.pgm": "413410cd6f8755f3b234272f0c100125a38ddd89c6a8bc302fe7463170f96108",
+    "cpu/receipt.json": "bc812c97fe971714dc578a79437d3cc678438ba6af45f8503a8c776bff1714f1",
+    "frame.ppm": "05a966288630fac3313dfcad051e54053f208994caf737577ea4d465ff4608ad",
+    "frame_hdr.pfm": "ea3a3244b6d61b45572ae27c5ba773d2334cb1a43d805cd5b2a0de4f99725237",
+    "gpu_certificate.json": "e0accd3a5ea5656acadcdccc5988763595612b107b13c2ae2b464b64efec0538",
+    "gpu_receipt.json": "196647ee47a5d0231dc4ba0401144f41779820711b328bf8a9f57d74ee3b6730",
+    "mask.pgm": "bd19ba924f8ae0c9cfdcba2560e0257d61f272897580d23da52c32ce4906f103",
+    "receipt.json": "67d01307b1e3e2f14446adf40624a85a3235c48199596ae3d7c9f33cd7c040d6"
+   }
+  }
+ },
+ "cli_version": "raw-native 0.8.0",
+ "gpu": true
+}
