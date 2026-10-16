@@ -27,14 +27,14 @@ const reachCache = new WeakMap();
 // their view axes), at most thetaMax and at least 8 degrees.
 export function reaches(projectors, opt) {
   const key = projectors; let hit = reachCache.get(key);
-  if (hit && hit.opt === opt) return hit.r;
+  if (hit && hit.opt === opt && hit.n === projectors.length) return hit.r;
   const tm = (opt.thetaMaxDeg * Math.PI) / 180, r = projectors.map((a, k) => {
     if (!opt.reach || projectors.length < 2) return tm;
     let m = Infinity;
     projectors.forEach((b, j) => { if (j !== k) m = Math.min(m, Math.acos(Math.min(1, Math.max(-1, dot(a.cam.fwd, b.cam.fwd))))); });
     return Math.min(tm, Math.max(m, (8 * Math.PI) / 180));
   });
-  reachCache.set(key, { opt, r });
+  reachCache.set(key, { opt, n: projectors.length, r });
   return r;
 }
 

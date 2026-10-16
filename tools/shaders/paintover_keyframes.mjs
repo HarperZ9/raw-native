@@ -45,9 +45,11 @@ function compareAt(projectors, g, viewCam, projIndex, opts = KEYFRAME) {
     const x = i % g.w, y = (i / g.w) | 0, j = (y + OY) * pr.w + (x + OX);
     for (let c = 0; c < 3; c++) { const d = Math.abs(rgb8(r.rgb[i * 3 + c]) - pr.rgba[j * 4 + c]); sum += d; if (d > max) max = d; }
   }
+  if (process.env.DBG) console.log('dbg', projIndex, 'hit', hit, 'cov', cov, 'n', n, 'proj', pr.w, pr.h);
   return { covered_fraction: cov / hit, max_abs_code: max, mean_abs_code: sum / (n * 3 || 1), compared: n, image: r };
 }
 const rt = compareAt([primary], gScreen0, camScreen(0), 0);
+console.log("K2 compared", rt.compared, "of", rt.covered_fraction); if (process.env.STOP_K2) process.exit(0);
 add("K2 max", rt.max_abs_code <= B.K2.max_abs_code, `max ${rt.max_abs_code}`); add("K2 mean", rt.mean_abs_code <= B.K2.mean_abs_code, `mean ${rt.mean_abs_code.toFixed(5)}`);
 add("K2 covered", rt.covered_fraction >= B.K2.covered_fraction_min, `covered ${rt.covered_fraction.toFixed(5)}`);
 const sh = compareAt([primary], gShift, { ...camScreen(0), pos: gShift ? camScreen(0).pos.map((v, i) => v + camScreen(0).right[i] * ((2 * 9) / SH)) : null }, 0);
@@ -89,11 +91,12 @@ for (let s = 0; s < chosen.length; s++) {
   projectors.push(makeProjector(cam, BW, BH, painting.rgba8, g.depth)); secondaryInfo.push({ dyaw: c.dyaw, delev: c.delev, painting });
 }
 
+if (process.env.DBG) { const g = gScreen0, i = 270 * 960 + 480, P = [g.P[i*3], g.P[i*3+1], g.P[i*3+2]], N = [g.N[i*3], g.N[i*3+1], g.N[i*3+2]]; const r = shadePoint(projectors, P, N, camScreen(0), KEYFRAME); console.log('probe', JSON.stringify(r), projectors.map((q) => [q.w, q.h, q.rgba.length, q.depth.length, Object.keys(q.cam).join()])); }
 // ---- K1: keyframe exactness from each projector's own camera ----
 const keyTasks = chosen.map((c) => ({ cam: camScreen(c.dyaw, c.delev), w: SW, h: SH, shadeOn: false })), gKey = await renderGbufs(keyTasks);
 [[camScreen(0), gScreen0, 0], ...chosen.map((c, k) => [camScreen(c.dyaw, c.delev), gKey[k], k + 1])].forEach(([cam, g, idx]) => {
   const r = compareAt(projectors, g, cam, idx);
-  add(`K1 keyframe ${idx} (yaw ${idx ? chosen[idx - 1].dyaw : 0}, elev ${idx ? chosen[idx - 1].delev : 0})`, r.max_abs_code <= B.K1.max_abs_code && r.mean_abs_code <= B.K1.mean_abs_code, `max ${r.max_abs_code} mean ${r.mean_abs_code.toFixed(5)} over ${r.compared} pixels`);
+  add(`K1 keyframe ${idx} (yaw ${idx ? chosen[idx - 1].dyaw : 0}, elev ${idx ? chosen[idx - 1].delev : 0})`, r.compared >= 50000 && r.max_abs_code <= B.K1.max_abs_code && r.mean_abs_code <= B.K1.mean_abs_code, `(needs >= 50000 compared) max ${r.max_abs_code} mean ${r.mean_abs_code.toFixed(5)} over ${r.compared} pixels`);
 });
 
 // ---- K3/K4: holes ----
