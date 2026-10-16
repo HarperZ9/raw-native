@@ -14,7 +14,7 @@ export { quayCamera };
 const MAT = Object.fromEntries(MATERIALS.map((m, i) => [m.name, i]));
 export const MAT_IDS = MAT;
 export const SHOP = { side: 1, z0: -22, z1: -17.5, light: [5.95, 1.5, -19.6] };
-export const STRIP = { x0: 3.9, z0: -15, x1: 5.6, z1: -20.6, width: 0.42, tiles: 32 }; // ground segment, lamp foot to shop
+export const STRIP = { x0: 3.9, z0: -15, x1: 5.6, z1: -20.6, width: 1.0, tiles: 16 }; // ground segment, lamp foot to shop
 export const MAX_LIGHTS = 10;
 export const EMIT = { sodium: 0, window: 1, led: 2, sky: 3 };
 
@@ -49,8 +49,8 @@ function surfaceOf(kind, side, p, id, t) {
   if (kind === "facade") {
     const f = facadeAt(side, p[1], p[2], t), e = lumOf(f.emit);
     const shop = side === SHOP.side && p[2] > SHOP.z0 && p[2] < SHOP.z1 && p[1] > 0.4 && p[1] < 2.6;
-    if (shop) return { mat: MAT.glass, scale: 1, emitType: EMIT.window, emitI: 0.9 + 0.3 * fbm(p[2] * 3, p[1] * 2) };
-    if (e > 0) return { mat: MAT.glass, scale: 1, emitType: EMIT.window, emitI: e * 1.6 };
+    if (shop) return { mat: MAT.glass, scale: 1, emitType: EMIT.window, emitI: 0.3 + 0.15 * fbm(p[2] * 3, p[1] * 2) };
+    if (e > 0) return { mat: MAT.glass, scale: 1, emitType: EMIT.window, emitI: p[1] < 3.1 ? e * 0.12 : e * 0.8 }; // ground-floor shopfronts other than SHOP are dim, closed for the night
     const cz = Math.floor(-p[2] / 2.6), door = p[1] < 2.2 && (cz % 5) === 2 && Math.abs(-p[2] / 2.6 - cz - 0.5) < 0.22;
     if (door) return { mat: [MAT["green door"], MAT["red paint"], MAT["blue van"], MAT["teal hull"]][((cz / 5) | 0) % 4], scale: 0.8, emitType: -1, emitI: 0 };
     const brick = ((Math.floor(-p[2] / 9) + (side > 0 ? 1 : 0)) & 1) === 1;
