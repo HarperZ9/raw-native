@@ -200,6 +200,10 @@ A painting made over a render from a camera-locked camera (orthographic isometri
 
 Terms keyed to time-of-day slots (8 by default, 6 accepted, fewer than 6 refused), with a periodic monotone cubic curve through every key. It is the time axis of the environment state proposed in `docs/architecture/adr/0017-environment-state.md`.
 
+## Palette-locked lighting (`web/shaders/palettelight/`)
+
+Light resolved into the palette's own ramps. `palette.mjs` builds the palette: per material class a cool and a warm ramp built in OKLab (shadows toward blue-violet, lights toward warm), a cycling void ramp, short emissive ramps; every colour an exact 8-bit entry. `palettelight.mjs` is the CPU reference: irradiance splits into cool and warm parts, the ramp coordinate and warm fraction pick a variant and a step by Bayer thresholds at two phases, void pools cycle (palette-cycle animation). GPU pass `palettelight.wgsl.mjs` and `gpu.mjs`; parity page `web/test/shaders-palettelight.html`; bounds `evidence/shaders-palettelight-parity-bounds.json`. Protocol, results and limits: `project-docs/PALETTE-LIGHTING-PROTOCOL.md`, `PALETTE-LIGHTING-RESULTS.md`. Demo: `node tools/shaders/palettelight_demo.mjs --out DIR`. Scene: `web/shaders/fixtures/chapel*.mjs`.
+
 ## Not landed: peripheral crowding
 
 A crowding look for the thriller (detail rearranged away from the gaze, local mean kept) was built and failed its committed criteria: keeping the worst local-mean change under 0.02 and scrambling enough detail conflict near strong edges. The code and every run are on a separate branch; nothing here claims it.
