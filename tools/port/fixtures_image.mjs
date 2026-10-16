@@ -122,3 +122,21 @@ export function hatch(out) {
   B.write(join(out, "hatch.rnfx"));
   return B.head.cases.length;
 }
+
+// Development adjacency (evidence/cpp-port-style-bounds-4.json): the float64 output from develop()'s
+// D and A, checked against its own Float32 frame.
+import { resolveAdjacency, develop, EPS } from "../../web/shaders/adjacency/adjacency.mjs";
+export function adjacency(out) {
+  const b = casesOf("adjacency"), { width: W, height: H } = b.output, B = new Bundle("adjacency");
+  B.head.cases = [];
+  for (const c of b.cases) {
+    const src = labSource(c.frame, W, H), plan = resolveAdjacency(c.preset, {}, { w: W, h: H }), r = develop(plan, src), n = W * H, v = new Float64Array(n * 4), free = 1 - plan.decay;
+    for (let i = 0; i < n; i++) { for (let k = 0; k < 3; k++) v[i * 4 + k] = src.data[i * 4 + k] * ((r.D[i * 3 + k] + EPS) / (r.A[i * 3 + k] * free + EPS)); v[i * 4 + 3] = 1; }
+    same(c.id, v, r.out.data);
+    B.add(`${c.id}.src`, "f32", src.data); B.add(`${c.id}.js`, "f64", v);
+    const { w, h, s, cw, ch, Dc, Db, steps, dt, decay } = plan;
+    B.head.cases.push({ id: c.id, preset: c.preset, width: W, height: H, p: plan.p, plan: { w, h, s, cw, ch, Dc, Db, steps, dt, decay } });
+  }
+  B.write(join(out, "adjacency.rnfx"));
+  return B.head.cases.length;
+}

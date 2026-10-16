@@ -26,8 +26,8 @@ import { renderGbuf } from "../../web/shaders/fixtures/harbour-render.mjs";
 import { createLookKeys, resolveSlots } from "../../web/look/keys.mjs";
 import { Bundle } from "./rnfx.mjs";
 import { postStack } from "./fixtures_post.mjs";
-import { purity, lightpaint, glaze, hatch } from "./fixtures_image.mjs";
-import { hysteresis, palettelight } from "./fixtures_quantise.mjs";
+import { purity, lightpaint, glaze, hatch, adjacency } from "./fixtures_image.mjs";
+import { hysteresis, palettelight, dither } from "./fixtures_quantise.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const readJson = (p) => JSON.parse(readFileSync(join(ROOT, p), "utf8"));
@@ -130,7 +130,8 @@ const out = process.argv[2];
 if (!out) { console.error("usage: node tools/port/export_style_fixtures.mjs <out dir>"); process.exit(2); }
 mkdirSync(out, { recursive: true });
 const t0 = Date.now(), counts = { ditherlight: ditherlight(out), paintover: paintover(out), lookkeys: lookkeys(out), poststack: postStack(out),
-  purity: purity(out), lightpaint: lightpaint(out), glaze: glaze(out), hatch: hatch(out), hysteresis: hysteresis(out), palettelight: palettelight(out) };
+  purity: purity(out), lightpaint: lightpaint(out), glaze: glaze(out), hatch: hatch(out), hysteresis: hysteresis(out), palettelight: palettelight(out),
+  dither: dither(out), adjacency: adjacency(out) };
 // The file list, for hosts that copy the fixtures by name (web/test/texture-identity.html).
 writeFileSync(join(out, "files.json"), JSON.stringify(readdirSync(out).filter((f) => f.endsWith(".rnfx") || f === "lookkeys.json").sort()));
 console.log(JSON.stringify({ out, cases: counts, seconds: (Date.now() - t0) / 1000 }));
