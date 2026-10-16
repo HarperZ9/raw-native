@@ -33,6 +33,7 @@ struct StyleCase {
     bool gpuPass{false};
     // Round 2 image passes (purity, lightpaint, glaze, hatch; evidence/cpp-port-style-bounds-2.json)
     bool presetEqual{true};         // the C++ preset gives the exported plan
+    std::string presetDetail;       // which part differed, when presetEqual is false
     long hitMismatch{0}, fallbackMismatch{0};   // hatch: ray hits, and umbilic fallbacks where both hit
     int gpuP999{0};
 };

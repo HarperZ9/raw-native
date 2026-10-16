@@ -22,6 +22,7 @@ std::string styleParityJson(const StyleParity& r) {
         if (c.pass == "ditherlight") s += std::string(", \"plan_equal\": ") + tf(c.planEqual);
         else if (c.pass != "paintover") {
             s += std::string(", \"preset_equal\": ") + tf(c.presetEqual);
+            if (!c.presetDetail.empty()) s += ", \"preset_detail\": \"" + jsonText(c.presetDetail) + "\"";
             if (c.pass == "hatch") s += ", \"hit_mismatch\": " + std::to_string(c.hitMismatch) + ", \"fallback_mismatch\": " + std::to_string(c.fallbackMismatch);
         } else s += ", \"covered\": " + std::to_string(c.covered) + ", \"surface\": " + std::to_string(c.surface) +
                   ", \"view_shift_control_fails\": " + tf(c.viewShiftControlFails);

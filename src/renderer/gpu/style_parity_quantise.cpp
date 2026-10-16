@@ -9,6 +9,7 @@ namespace raw::gpu_check {
 namespace {
 using assets::Json;
 namespace fx = style_fx;
+using style::V3;
 constexpr double kTie = 1e-9;
 constexpr long kMaxExcused = 2;
 
@@ -118,10 +119,16 @@ void palettelightCases(rhi::Device* dev, const fx::Bundle& b, StyleParity& r) {
         if (ov.get("gain")) p.gain = num(ov, "gain");
         if (ov.get("moon")) p.moon = num(ov, "moon");
         const Json& q = *c.get("plan");
-        s.presetEqual = p.gain == num(q, "gain") && p.ambient == num(q, "ambient") && p.moon == num(q, "moon") && p.cycleRate == num(q, "cycleRate") &&
-                        p.steps == int(num(q, "steps")) && p.voidSteps == int(num(q, "voidSteps")) && p.moonDir == fx::v3(*q.get("moonDir")) &&
-                        sameLight(p.lamp, *q.get("lamp")) && sameLight(p.glows[0], q.get("glows")->at(0)) && sameLight(p.glows[1], q.get("glows")->at(1)) &&
-                        samePalette(p.palette, *c.get("palette"));
+        // The moon direction is normalised with hypot, whose last bit differs between C libraries
+        // (the WebAssembly build's musl against MSVC's and V8's), so it is compared within 1e-15.
+        const V3 md = fx::v3(*q.get("moonDir"));
+        const bool scalars = p.gain == num(q, "gain") && p.ambient == num(q, "ambient") && p.moon == num(q, "moon") && p.cycleRate == num(q, "cycleRate") &&
+                             p.steps == int(num(q, "steps")) && p.voidSteps == int(num(q, "voidSteps"));
+        const bool moon = std::abs(p.moonDir[0] - md[0]) <= 1e-15 && std::abs(p.moonDir[1] - md[1]) <= 1e-15 && std::abs(p.moonDir[2] - md[2]) <= 1e-15;
+        const bool lights = sameLight(p.lamp, *q.get("lamp")) && sameLight(p.glows[0], q.get("glows")->at(0)) && sameLight(p.glows[1], q.get("glows")->at(1));
+        const bool palette = samePalette(p.palette, *c.get("palette"));
+        s.presetEqual = scalars && moon && lights && palette;
+        if (!s.presetEqual) s.presetDetail = std::string(scalars ? "" : "scalars ") + (moon ? "" : "moonDir ") + (lights ? "" : "lights ") + (palette ? "" : "palette");
         style::ChapelGBuffer g;
         g.w = int(num(c, "width")); g.h = int(num(c, "height"));
         const std::string pre = s.id + ".";
