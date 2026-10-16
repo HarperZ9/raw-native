@@ -1,0 +1,15 @@
+{
+  "what": "Paint-over projection material (web/shaders/paintover): GPU pass against the float64 CPU reference on Lamp Quay G-buffers",
+  "fixed_before_first_run": "2026-10-15",
+  "source": "fixtures/harbour-render.mjs G-buffers; paintings by paintover/painter.mjs at 384 x 216 (overscan scale 10.8); view 192 x 108 (scale 9)",
+  "output": { "width": 192, "height": 108 },
+  "projectors": { "w": 384, "h": 216, "scale": 10.8, "seeds": [7, 11, 13], "set": [[0, 0], [30, -10], [-30, -10]] },
+  "cases": [
+    { "id": "primary-aligned", "use": [0], "view": { "dyaw": 0, "delev": 0 } },
+    { "id": "three-off-axis", "use": [0, 1, 2], "view": { "dyaw": 20, "delev": 3 } },
+    { "id": "three-at-secondary", "use": [0, 1, 2], "view": { "dyaw": 30, "delev": -10 } },
+    { "id": "perspective-view", "use": [0, 1, 2], "view": { "dyaw": 12, "delev": 0, "ortho": false } }
+  ],
+  "bounds": { "max_decision_mismatch_fraction": 5e-4, "over2_fraction": 5e-4, "mean_abs_code": 0.05 },
+  "why": "Coverage is a decision (inside the painting, facing, not hidden) and the colour is a blend of bilinear samples. f32 against f64 can flip a coverage decision only within rounding of an edge or a depth tolerance; a flip changes one pixel by a whole colour, so the bounds are fractions of pixels."
+}
