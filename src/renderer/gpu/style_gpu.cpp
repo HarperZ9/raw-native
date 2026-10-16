@@ -14,35 +14,46 @@ void put3(float* o, const style::V3& v, double w) { o[0] = float(v[0]); o[1] = f
 }  // namespace
 
 // Runs one dispatch of `pass` over n invocations after the uploads, then reads the storage
-// buffers `outs` (each n words) into `dst`.
-bool dispatchAndRead(util::Gpu& gpu, int pass, const std::vector<rhi::BufferHandle>& binds, const std::vector<Access>& inAccess,
-                     const std::vector<rhi::BufferHandle>& outs, uint32_t n, std::vector<std::vector<std::uint32_t>*> dst) {
+// buffers `outs` (words[k] words a pixel each) into `dst`. before[k] is binding k's access when
+// the submission starts (an uploaded input: CopyDst; a buffer kept from an earlier submission:
+// Undefined, since D3D12 buffers decay to the common state between submissions).
+bool dispatchAndReadEx(util::Gpu& gpu, int pass, const std::vector<rhi::BufferHandle>& binds, const std::vector<Access>& inAccess,
+                       const std::vector<Access>& before, const std::vector<rhi::BufferHandle>& outs, const std::vector<std::uint32_t>& words,
+                       uint32_t n, std::vector<std::vector<std::uint32_t>*> dst) {
+    if (pass < 0) { gpu.err = "style pass not in style_layout.hpp"; return false; }
     const auto& L = style_passes::kPasses[pass];
     const rhi::PipelineHandle pipe = compute(gpu.dev, L.name, L.binds, L.bindCount, gpu.err);
     if (!pipe.valid() || !gpu.err.empty()) return false;
     std::vector<rhi::BufferHandle> rb;
-    for (std::size_t k = 0; k < outs.size(); ++k) rb.push_back(gpu.make(uint64_t(n) * 4, BufferUsage::MapRead | BufferUsage::CopyDst, "readback"));
+    for (std::size_t k = 0; k < outs.size(); ++k) rb.push_back(gpu.make(uint64_t(n) * 4 * words[k], BufferUsage::MapRead | BufferUsage::CopyDst, "readback"));
     rhi::CommandList* c = gpu.err.empty() ? gpu.dev.begin(gpu.err) : nullptr;
     if (!c) return false;
     for (auto& f : gpu.pre) f(*c);
     gpu.pre.clear();
     std::vector<rhi::BufferBarrier> in;
-    for (std::size_t k = 0; k < binds.size(); ++k) in.push_back({binds[k], inAccess[k] == Access::StorageWrite ? Access::Undefined : Access::CopyDst, inAccess[k]});
+    for (std::size_t k = 0; k < binds.size(); ++k) in.push_back({binds[k], before[k], inAccess[k]});
     c->barrier(in);
     c->dispatch(pipe, binds, (n + 63) / 64, 1, 1);
     std::vector<rhi::BufferBarrier> after;
     for (std::size_t k = 0; k < outs.size(); ++k) { after.push_back({outs[k], Access::StorageWrite, Access::CopySrc}); after.push_back({rb[k], Access::Undefined, Access::CopyDst}); }
     c->barrier(after);
-    for (std::size_t k = 0; k < outs.size(); ++k) c->copyBuffer(outs[k], 0, rb[k], 0, uint64_t(n) * 4);
+    for (std::size_t k = 0; k < outs.size(); ++k) c->copyBuffer(outs[k], 0, rb[k], 0, uint64_t(n) * 4 * words[k]);
     if (!gpu.dev.submitAndWait(gpu.err)) return false;
     for (std::size_t k = 0; k < outs.size(); ++k) {
-        const void* p = gpu.dev.mapRead(rb[k], uint64_t(n) * 4, gpu.err);
+        const std::size_t bytes = std::size_t(n) * 4 * words[k];
+        const void* p = gpu.dev.mapRead(rb[k], bytes, gpu.err);
         if (!p) return false;
-        dst[k]->resize(n);
-        std::memcpy(dst[k]->data(), p, std::size_t(n) * 4);
+        dst[k]->resize(std::size_t(n) * words[k]);
+        std::memcpy(dst[k]->data(), p, bytes);
         gpu.dev.unmap(rb[k]);
     }
     return true;
+}
+bool dispatchAndRead(util::Gpu& gpu, int pass, const std::vector<rhi::BufferHandle>& binds, const std::vector<Access>& inAccess,
+                     const std::vector<rhi::BufferHandle>& outs, uint32_t n, std::vector<std::vector<std::uint32_t>*> dst) {
+    std::vector<Access> before;
+    for (Access a : inAccess) before.push_back(a == Access::StorageWrite ? Access::Undefined : Access::CopyDst);
+    return dispatchAndReadEx(gpu, pass, binds, inAccess, before, outs, std::vector<std::uint32_t>(outs.size(), 1u), n, dst);
 }
 int passIndex(const char* name) {
     for (std::size_t k = 0; k < std::size(style_passes::kPasses); ++k)

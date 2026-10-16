@@ -27,6 +27,11 @@ static_assert(sizeof(PaintParamsGpu) == 48, "PaintParams layout");
 // after the uploads; then reads the storage buffers `outs` (n words each) into `dst`.
 bool dispatchAndRead(util::Gpu& gpu, int pass, const std::vector<rhi::BufferHandle>& binds, const std::vector<rhi::Access>& inAccess,
                      const std::vector<rhi::BufferHandle>& outs, std::uint32_t n, std::vector<std::vector<std::uint32_t>*> dst);
+// As dispatchAndRead, with each binding's access at the start of the submission and the words a
+// pixel of each read-back buffer given.
+bool dispatchAndReadEx(util::Gpu& gpu, int pass, const std::vector<rhi::BufferHandle>& binds, const std::vector<rhi::Access>& inAccess,
+                       const std::vector<rhi::Access>& before, const std::vector<rhi::BufferHandle>& outs, const std::vector<std::uint32_t>& words,
+                       std::uint32_t n, std::vector<std::vector<std::uint32_t>*> dst);
 int passIndex(const char* name);   // -1 when style.wgsl has no such pass
 
 inline constexpr int kMaxDitherLights = 8;
