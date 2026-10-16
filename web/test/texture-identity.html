@@ -5,15 +5,26 @@
      "texture-identity" (textures, samplers, a raster pipeline and a render pass through
      the RHI) and compares the read-back with the CPU sampler reference. The driver,
      tests/web/rhi_texture.py, passes the module and wasm hashes the loader checks, and the
-     command: texture-identity (default) or pbr-parity (M3, the material model's GPU parity). -->
+     command: texture-identity (default) or pbr-parity (M3, the material model's GPU parity).
+     style-parity (ADR 0019) also takes fixtures=<dir>: the files tools/port/export_style_fixtures.mjs
+     wrote there are fetched and placed in the module's file system before the command runs. -->
 <script type="module">
 import { loadRawNative } from '../../wasm/raw-loader.mjs';
 const q = new URLSearchParams(location.search), dir = q.get('dir') || 'build-wasm-gpu';
-const cmd = ['texture-identity', 'pbr-parity', 'lighting-parity', 'raster-identity', 'shadow-parity', 'post-parity', 'swr-parity', 'rt-bvh-parity', 'rt-pt-parity', 'rt-hybrid-parity', 'sdf-parity'].includes(q.get('cmd')) ? q.get('cmd') : 'texture-identity';
+const cmd = ['texture-identity', 'pbr-parity', 'lighting-parity', 'raster-identity', 'shadow-parity', 'post-parity', 'swr-parity', 'rt-bvh-parity', 'rt-pt-parity', 'rt-hybrid-parity', 'sdf-parity', 'style-parity'].includes(q.get('cmd')) ? q.get('cmd') : 'texture-identity';
 try {
   const raw = await loadRawNative({ moduleUrl: `../../${dir}/raw-native-gpu.mjs`, moduleSha256: q.get('m'),
     wasmUrl: `../../${dir}/raw-native-gpu.wasm`, wasmSha256: q.get('w') });
   const extra = q.get('args') ? q.get('args').split(',') : [];   // diagnosis flags, comma separated
+  if (cmd === 'style-parity' && q.get('fixtures')) {
+    raw.module.FS.mkdir('/style-fixtures');
+    for (const name of ['ditherlight.rnfx', 'paintover.rnfx', 'lookkeys.json']) {
+      const res = await fetch(`../../${q.get('fixtures')}/${name}`);
+      if (!res.ok) throw new Error(`fixture ${name}: HTTP ${res.status}`);
+      raw.module.FS.writeFile(`/style-fixtures/${name}`, new Uint8Array(await res.arrayBuffer()));
+    }
+    extra.push('--fixtures', '/style-fixtures');
+  }
   const r = await raw.runCliAsync([cmd, ...extra]);
   window.__result = { exitCode: r.exitCode, stdout: r.stdout };
 } catch (e) {

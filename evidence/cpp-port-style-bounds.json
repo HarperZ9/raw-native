@@ -1,0 +1,73 @@
+{
+  "schema": "raw-native.evidence/1",
+  "what": "The C++ core port of the web-only style passes (ADR 0019): dither-quantised lighting, paint-over projection and look keys. Three links per pass: the JavaScript float64 reference against the C++ float64 reference (CPU link), and the C++ float64 reference against the one WGSL source run on D3D12 (WARP) and on WebGPU (SwiftShader).",
+  "written": "2026-10-15, before the C++ references, the WGSL rewrite and the first run",
+  "fixtures": {
+    "ditherlight": "The five cases of evidence/shaders-ditherlight-parity-bounds.json (Salt Road G-buffers from web/shaders/fixtures/dream.mjs at 192 x 108), built by tools/port/export_style_fixtures.mjs with the web modules unchanged. The same f32 G-buffer feeds all three implementations. From Addendum B: the seven cases of that file, the two v2 cases rendered by web/shaders/fixtures/dream2.mjs with their haze.",
+    "paintover": "The four cases of evidence/shaders-paintover-parity-bounds.json (Lamp Quay, three painted projectors at 384 x 216, views at 192 x 108, one perspective), built the same way. Paintings are 8-bit, depth maps and G-buffers f32; cameras are float64 on the CPU links and f32 on the GPU.",
+    "lookkeys": "web/look/keys.test.mjs's terms: 8 slots (exposure8 and its vector tint), 6 slots, the step series [0,0,1,1,0,0,1,0], the monotone ramp 0..7 and the clamped series (min 0.18, max 1.1), each sampled at every hour from -2 to 26 in steps of 0.01, plus the slot hours exactly. The refusal inputs of keys.test.mjs (fewer than 6 slots, slots = 3, a non-increasing hour, a wrong value count, an unknown term)."
+  },
+  "cpu_link": {
+    "ditherlight": {
+      "tone_max_abs": 1e-09,
+      "level_mismatch_unexcused": 0,
+      "level_tie_excuse": "A level mismatch is excused only where the C++ fraction f is within 1e-9 of the threshold t. Excused mismatches are counted and reported, and must be at most 2 per case.",
+      "rgba8_mismatch_where_levels_agree": 0,
+      "coverage": "every pixel of every case is compared (decisions = 192 x 108 per case)"
+    },
+    "paintover": {
+      "rgb_max_abs_on_both_covered": 1e-09,
+      "coverage_mismatch_unexcused": 0,
+      "coverage_tie_excuse": "A coverage mismatch is excused only where one of the C++ decision quantities (frame edge, facing against fMin, depth against its tolerance) is within 1e-9 of its threshold; at most 2 excused per case.",
+      "hit_count_mismatch_where_coverage_agrees": 0,
+      "coverage": "at least 50% of the view's surface pixels are covered in every case, so the colour bound is not met over nothing"
+    },
+    "lookkeys": {
+      "max_abs": 1e-12,
+      "keys_exact": "at every slot hour the C++ value equals the key exactly (== 0 difference), as in keys.test.mjs",
+      "refusals": "every input the JavaScript refuses, the C++ refuses, and the reverse"
+    }
+  },
+  "gpu_link": {
+    "backends": [
+      "d3d12 on WARP (Microsoft Basic Render Driver)",
+      "webgpu on SwiftShader through the WebAssembly WebGPU build"
+    ],
+    "ditherlight": {
+      "max_decision_mismatch_fraction": 0.0005,
+      "over2_fraction": 0.0005,
+      "mean_abs_code": 0.12
+    },
+    "paintover": {
+      "max_decision_mismatch_fraction": 0.0005,
+      "over2_fraction": 0.0005,
+      "mean_abs_code": 0.05
+    },
+    "why": "The same numbers as the web parity bounds, because the comparison is the same kind: an f32 pass against a float64 reference on the same inputs. A level or coverage decision flips only within f32 rounding of its threshold, and a flip moves a pixel by a whole step, so the bounds are fractions of pixels.",
+    "lookkeys": "no GPU link: look keys run on the CPU and reach the GPU as uniform values"
+  },
+  "controls_built_in": {
+    "rule": "Every run carries controls that must fail; a run whose control passes fails as a whole.",
+    "ditherlight_cpu": "the C++ reference with the hemisphere term's constant 0.5 replaced by 0.6 against the JavaScript outputs: must exceed tone_max_abs",
+    "ditherlight_gpu": "the GPU levels against the C++ reference with the threshold matrix shifted by one cell: must exceed max_decision_mismatch_fraction",
+    "paintover_cpu": "the C++ reference with the view camera moved one pixel to the right: must exceed rgb_max_abs or the coverage bound",
+    "paintover_gpu": "the GPU output against the C++ reference with the view camera moved one pixel to the right: must exceed mean_abs_code",
+    "lookkeys_cpu": "the C++ series with the third key raised by 1e-6: must exceed max_abs"
+  },
+  "controls_by_source_edit": {
+    "rule": "Run once by hand and recorded in evidence/cpp-port-style-runs.json: edit one constant in the source, rebuild, run, see the check fail, revert, rebuild, see it pass.",
+    "ditherlight": "In the C++ reference and, separately, in style.wgsl (regenerating the HLSL): the hemisphere constant 0.5 in (0.5 + 0.5 n.y) to 0.6. Prediction: the CPU link fails on every case; the WARP link fails on at least the 4- and 8-level cases.",
+    "paintover": "In the C++ reference and, separately, in style.wgsl: the bilinear sample's divisor 255 to 256. Prediction: the CPU link fails on every case; the WARP link fails on mean_abs_code on every case."
+  },
+  "addendum_a": {
+    "written": "2026-10-15, after the first CPU-link run and before any GPU-link run",
+    "finding": "The paint-over controls as first written (the view camera moved one pixel to the right) did not fail on the three orthographic cases (primary-aligned, three-off-axis, three-at-secondary); they failed on the perspective case. The reason is in the reference, not in the check: the shading reads the view camera only through its direction to the surface point, and an orthographic camera's direction does not depend on its position. The web test's one-pixel-shift control re-renders the G-buffer from the moved camera; the C++ check has no renderer for the Lamp Quay fixture, so moving the camera left the surface positions where they were.",
+    "change": "paintover_cpu and paintover_gpu controls: every surface position of the view G-buffer is moved by one view pixel (pixelWorld at its depth) along the view's right axis, so each pixel reads its projectors one pixel off. The bound each control must break is unchanged. The first control is still run on every case and reported as view_shift_control_fails; it decides nothing.",
+    "unchanged": "Every bound value, the cases and the other controls."
+  },
+  "addendum_b": {
+    "written": "2026-10-15, after PR #146 merged into main and before any run of the changed reference",
+    "what_changed_upstream": "PR #146 added a per-pixel haze input to the JavaScript dither-lighting reference (tone = 1 - (1 - tone)(1 - haze), screen-blended in-scattering) and two cases on a second Salt Road scene (v2-haze-beam, v2-haze-1bit-blue) to evidence/shaders-ditherlight-parity-bounds.json.",
+    "change": "The C++ reference, style.wgsl and the fixture exporter take the haze input (G-buffer word 3, as the web pass packs it), and the dither-lighting cases are the seven cases of the web bounds file. Every bound value, tie rule and control is unchanged and applies to the two new cases."
+  }
+}
