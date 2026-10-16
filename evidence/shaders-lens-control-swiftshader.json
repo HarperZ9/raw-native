@@ -1,0 +1,50 @@
+{
+  "bounds": {
+    "max_abs_code": 3,
+    "p999_abs_code": 1,
+    "mean_abs_code": 0.03
+  },
+  "cases": [
+    {
+      "id": "three-lights",
+      "sources": 6,
+      "max": 4,
+      "p999": 4,
+      "mean": 0.547485853909465,
+      "over2_fraction": 0.025527263374485597
+    },
+    {
+      "id": "street",
+      "sources": 8,
+      "max": 24,
+      "p999": 19,
+      "mean": 2.13159079218107,
+      "over2_fraction": 0.26618762860082307
+    },
+    {
+      "id": "squeeze-7-blades-ca",
+      "sources": 6,
+      "max": 20,
+      "p999": 19,
+      "mean": 1.102318029835391,
+      "over2_fraction": 0.07092335390946503
+    },
+    {
+      "id": "list-mode-corner",
+      "sources": 4,
+      "max": 9,
+      "p999": 8,
+      "mean": 0.8493762860082305,
+      "over2_fraction": 0.10085519547325103
+    }
+  ],
+  "adapter": {
+    "vendor": "google",
+    "architecture": "swiftshader",
+    "device": "",
+    "description": ""
+  },
+  "gpuErrors": [],
+  "adapter_kind": "swiftshader",
+  "control": "false-success control, 2026-10-15: ghost position factor sign flipped in the WGSL (gx = cx - m (sx - cx)); every case must FAIL the bounds; reverted after the run"
+}

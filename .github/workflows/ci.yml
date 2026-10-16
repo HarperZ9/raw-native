@@ -654,6 +654,8 @@ jobs:
         run: python tests/web/shaders_parity.py --shader paintover --adapter swiftshader --out media-out/shaders-paintover-parity.json
       - name: Palette-locked lighting, GPU palette indices equal the f64 reference's on Chapel Yard views (evidence/shaders-palettelight-parity-bounds.json), on the CPU adapter
         run: python tests/web/shaders_parity.py --shader palettelight --adapter swiftshader --out media-out/shaders-palettelight-parity.json
+      - name: Lens suite, GPU ghosts, streaks, starburst, halation and dispersion equal the f64 reference's (evidence/shaders-lens-parity-bounds.json), on the CPU adapter
+        run: python tests/web/shaders_parity.py --shader lens --adapter swiftshader --out media-out/shaders-lens-parity.json
       - name: Shader library, pixel art and scaling, GPU against the CPU reference within the committed bounds, on the CPU adapter
         run: python tests/web/shaders_parity.py --shader pixel --adapter swiftshader --out media-out/shaders-pixel-parity.json
       - name: Shader library, VHS, GPU against the CPU reference within the committed bounds, on the CPU adapter

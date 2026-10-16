@@ -61,7 +61,9 @@ WGSL can be generated.
 | `vhs` | 245 | 4 | none | 3 h |
 | `fibre` | 230 | 5 | none | 3 h |
 | `dither` (palette, ordered, blue noise, mix) | 420 | 1 | none; the blue-noise table is already in the core | 3 h |
-| `palettelight` (open PR #149) | not on `main` | 1 | none expected | 3 h after it merges |
+| `palettelight` (PR #149, merged 2026-10-16) | 255 | 1 | none expected | 3 h |
+| `lens` (lens suite, PR #153) | 706 | 2 | none found | 6 h |
+| `ditherlight/rtvis.mjs` (one-ray visibility estimator, PR #152) | 63 | none (CPU) | none | 2 h |
 | `caricature` | 195 | 5 | workgroup memory and barriers (`var<workgroup>`, `workgroupBarrier`) | 4 h, plus 1 h of translator work shared with `sag` |
 | `sag` | 194 | 3 | workgroup memory and barriers | 3 h |
 | `film` | 709 | 5 | `arrayLength`; spectral tables | 6 h |
@@ -70,6 +72,6 @@ WGSL can be generated.
 | `crt` (physical) | 1,231 | 8 | none found | 10 h |
 | `post.mjs` (the web post stack's ordering and ping-pong) | 219 | none | a C++ post-stack driver over the frame graph | 3 h |
 
-Total about 75 hours. Order by need: the R1 slice needs paint-over and look keys (done), then
+Total about 80 hours. Order by need: the R1 slice needs paint-over and look keys (done), then
 `dither`, `hysteresis` and `film` for the templates, with the translator growth done once before
 `caricature`, `sag` and `pixel`.

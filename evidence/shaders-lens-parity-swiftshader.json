@@ -1,0 +1,49 @@
+{
+  "bounds": {
+    "max_abs_code": 3,
+    "p999_abs_code": 1,
+    "mean_abs_code": 0.03
+  },
+  "cases": [
+    {
+      "id": "three-lights",
+      "sources": 6,
+      "max": 1,
+      "p999": 0,
+      "mean": 0.00011252572016460906,
+      "over2_fraction": 0
+    },
+    {
+      "id": "street",
+      "sources": 8,
+      "max": 1,
+      "p999": 0,
+      "mean": 0.0005947788065843621,
+      "over2_fraction": 0
+    },
+    {
+      "id": "squeeze-7-blades-ca",
+      "sources": 6,
+      "max": 1,
+      "p999": 0,
+      "mean": 0.00028935185185185184,
+      "over2_fraction": 0
+    },
+    {
+      "id": "list-mode-corner",
+      "sources": 4,
+      "max": 1,
+      "p999": 0,
+      "mean": 0.0002732767489711934,
+      "over2_fraction": 0
+    }
+  ],
+  "adapter": {
+    "vendor": "google",
+    "architecture": "swiftshader",
+    "device": "",
+    "description": ""
+  },
+  "gpuErrors": [],
+  "adapter_kind": "swiftshader"
+}

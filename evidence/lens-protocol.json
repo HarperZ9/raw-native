@@ -1,0 +1,101 @@
+{
+  "what": "Lens suite (web/shaders/lens): CPU predictions, fixed before tools/shaders/lens_study.mjs exists",
+  "fixed_before_first_run": "2026-10-15",
+  "P1_energy": {
+    "frame": [
+      1025,
+      1025
+    ],
+    "source": {
+      "x": 512,
+      "y": 512,
+      "size": 3,
+      "E": [
+        300,
+        300,
+        300
+      ]
+    },
+    "params": {
+      "fNumber": 16,
+      "streakLenPx": 60,
+      "refHeight": 1025
+    },
+    "max_rel_error": 0.01,
+    "with_dispersion": {
+      "caAmount": 0.06
+    },
+    "control_C1": {
+      "keep": null,
+      "predicted_excess": [
+        0.14,
+        0.19
+      ],
+      "must_fail": true
+    }
+  },
+  "P2_spikes": {
+    "n": 256,
+    "rad": 24,
+    "ring": 40,
+    "prominence": 3,
+    "expect": {
+      "6": 6,
+      "8": 8,
+      "5": 10,
+      "7": 14,
+      "round": 0
+    }
+  },
+  "P3_ghosts": {
+    "field_deg": 0.2,
+    "frame": [
+      1920,
+      1080
+    ],
+    "max_px": 0.5,
+    "exploratory_field_deg": 10,
+    "exploratory_expect_px": [
+      1,
+      30
+    ]
+  },
+  "P4_coating": {
+    "R550_closed_form": 0.01261,
+    "tol": 1e-06,
+    "ends_over_centre": 2,
+    "min_at_30deg_nm": [
+      505,
+      521
+    ]
+  },
+  "P5_dispersion": {
+    "radius_of_half_diag": 0.9,
+    "caAmount": 0.5,
+    "max_px": 0.15
+  },
+  "P6_halation": {
+    "order": "R>G>B",
+    "ratio_RB_tol": 0.02
+  },
+  "P2b_addendum_A": {
+    "fixed": "2026-10-15, after the first run, before the P2b rerun",
+    "band_cells": [
+      20,
+      60
+    ],
+    "samples": 1440,
+    "harmonics": [
+      1,
+      40
+    ],
+    "expect_dominant": {
+      "6": 6,
+      "8": 8,
+      "5": 10,
+      "7": 14
+    },
+    "min_dominant_over_mean": 0.2,
+    "round_max_over_mean": 0.05
+  }
+}
