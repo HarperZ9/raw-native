@@ -1,0 +1,14 @@
+{
+  "what": "Lens suite (web/shaders/lens): GPU pass against the float64 CPU reference",
+  "fixed_before_first_run": "2026-10-15",
+  "source": "synthetic HDR frames and a Wet Street frame at 192 x 108; the same f32 input feeds both sides; the source list is extracted on the CPU and shared",
+  "output": { "width": 192, "height": 108, "gain": 2.4 },
+  "cases": [
+    { "id": "three-lights", "frame": "lights", "params": {} },
+    { "id": "street", "frame": "street", "params": {} },
+    { "id": "squeeze-7-blades-ca", "frame": "lights", "params": { "squeeze": 1.5, "caAmount": 0.4, "iris": { "blades": 7, "roundness": 0 }, "fNumber": 5.6 } },
+    { "id": "list-mode-corner", "frame": "lights", "mode": "list", "params": { "streakAngle": 0.3, "coating": { "quarterAt": 640 } } }
+  ],
+  "bounds": { "max_abs_code": 3, "p999_abs_code": 1, "mean_abs_code": 0.03 },
+  "why": "Every term is continuous in its inputs (ghost edges are a one-pixel ramp, tables are sampled bilinearly), so f32 against f64 moves values by rounding only; 3 codes covers the steepest ramp at the encode's shoulder."
+}
