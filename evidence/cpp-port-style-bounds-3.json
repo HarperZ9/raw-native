@@ -32,5 +32,11 @@
       "built_in": "the C++ reference with the tone gain multiplied by 1.1: must give index mismatches on the CPU link and exceed max_decision_mismatch_fraction on the GPU link, on every case",
       "source_edit": "C++ and WGSL: the ambient constant 0.7 in ambient (0.7 + 0.3 (0.5 + 0.5 n.y)) to 0.75. Prediction: the CPU link fails on every case; WARP fails on at least one case."
     }
+  },
+  "addendum_a": {
+    "written": "2026-10-16, after the first CPU-link run of hysteresis and palettelight, and before any GPU-link run",
+    "finding": "The hysteresis built-in control as first written (the margin raised by 0.1) did not fail on bands-flicker: the CPU link matched the JavaScript on every decision and code of every case (0 mismatches, 0 ties), and so did the control on that case. A probe of the JavaScript reference shows why: over the 12 flicker frames the reference holds 7,727 decisions at margin 0.3 and the same 7,727 at margin 0.4, so a wider margin changes nothing on this sequence. The control on palette-flicker and bands-orbit failed as required.",
+    "change": "The hysteresis built-in control on both links becomes the margin set to 0, which turns the hysteresis off (a decision is kept only inside its own plain interval). On bands-flicker that changes 7,727 of 768,000 decisions (1.0%), above the GPU bound of 2e-4. The rule that a run whose control passes fails as a whole is unchanged, and so is every bound.",
+    "unchanged": "Every bound, case, tie rule, the palettelight controls and the source-edit controls."
   }
 }
