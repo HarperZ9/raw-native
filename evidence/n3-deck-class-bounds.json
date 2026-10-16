@@ -1,0 +1,49 @@
+{
+ "criterion": "RELEASE-PLAN.md N3, criterion 5 (Steam Deck class): the Linux build and the Windows build under Proton each draw a committed scene at 1280 x 800; the p95 frame time is recorded on Deck-class hardware when it is available, otherwise the row says \"not measured\".",
+ "written": "2026-10-16, before the first run of either route at 1280 x 800 and before the Windows build has run under Wine on any machine",
+ "scene": "raw-hero, the owned M3 hero asset (raw/tools/owned_assets.hpp), exported by `raw_native_cli export-assets` (byte-identical on every compiler, scripts/check_owned_assets.py) and drawn by `raw_native_cli --model raw-hero.gltf --gpu --width 1280 --height 800`, which renders it on the GPU backend and on the CPU reference and writes a GPU certificate. The presented check is the N2 frame set (src/tools/present/) at 1280 x 800.",
+ "routes": {
+  "linux": "raw_native_cli_vk and raw_native_present_vk (RAW_NATIVE_VULKAN_RHI=ON, GCC) on lavapipe, ubuntu-24.04, X11 on Xvfb. This is the route a native Linux build takes on a Deck in desktop or game mode (SteamOS runs gamescope, which offers Wayland and Xwayland; N3 criterion 4 already covers Wayland).",
+  "proton": "raw_native_cli.exe and raw_native_present.exe from the D3D12 build (MSVC, windows-latest), copied unchanged to ubuntu-24.04 and run under Wine with DXVK's dxgi.dll and vkd3d-proton's d3d12.dll and d3d12core.dll, on lavapipe, X11 on Xvfb. These are the D3D12 and DXGI layers Proton ships. It is not Proton itself (no Steam runtime, no Proton build of Wine): Wine is Ubuntu's package, DXVK and vkd3d-proton are their current releases, pinned by SHA-256 from the GitHub release digests (DXVK v3.1.1, 2026-09-15; vkd3d-proton v3.0.1, 2026-05-06)."
+ },
+ "checks": {
+  "d1_linux_scene": {
+   "what": "linux route: raw-hero at 1280 x 800 with --gpu",
+   "bound": "GPU certificate verdict verified, backend vulkan, adapter llvmpipe; the CPU reference image byte-identical to the CPU image the Windows MSVC build writes for the same command (d3_proton_scene and the WARP run in the Windows job)",
+   "prediction": "holds (high: the ten glTF models already verify on lavapipe and the identity matrix's CPU golden is shared by GCC and MSVC)"
+  },
+  "d2_linux_present": {
+   "what": "linux route: raw_native_present_vk run, 600 frames at 1280 x 800, presented twice and offscreen once",
+   "bound": "600 of 600 hashes equal across the three lists, each frame 1280 x 800, and equal to the D3D12 WARP offscreen list at 1280 x 800 written by the Windows job",
+   "prediction": "holds (high: N3 criterion 4 already matched WARP at 320 x 180)"
+  },
+  "d3_proton_scene": {
+   "what": "proton route: raw-hero at 1280 x 800 with --gpu, the D3D12 backend on lavapipe through vkd3d-proton",
+   "bound": "GPU certificate verdict verified, backend d3d12, adapter not Microsoft (not WARP); CPU image byte-identical to the Linux build's",
+   "prediction": "uncertain, about even odds. Known risks before any run: vkd3d-proton 3.x may require Vulkan features lavapipe on Ubuntu 24.04 lacks; DXVK may hide or flag a CPU adapter, and the D3D12 backend skips adapters flagged software; DXIL passes through dxil-spirv may contract multiply-adds differently. Any of these is recorded as a miss with its cause, not worked around silently. The CPU image is predicted equal (Wine's CRT math is not used by the engine's deterministic paths); if it differs, that is a finding about Wine, recorded."
+  },
+  "d4_proton_present": {
+   "what": "proton route: raw_native_present.exe run, 600 frames at 1280 x 800, presented twice and offscreen once, in a Win32 window under Wine on Xvfb",
+   "bound": "600 of 600 equal across the three lists and equal to the WARP offscreen list at 1280 x 800",
+   "prediction": "uncertain, about even odds, for the same reasons as d3; if the device opens, the hashes are predicted equal (the frame is integer arithmetic into RGBA8)"
+  },
+  "d5_controls": {
+   "what": "false-success controls, on each route that runs: (a) the presented list at 1280 x 720 judged against the 1280 x 800 offscreen list; (b) the blit offset control (--control) judged against the reference list",
+   "bound": "the gate fails both: (a) on size, (b) at least 99% of frames differ",
+   "prediction": "both fail on every route that opens a device"
+  },
+  "d6_pacing_harness": {
+   "what": "pacing, 600 frames at 1280 x 800, on each route that runs",
+   "bound": "599 finite positive intervals. No pacing or frame-time claim from a software driver on Xvfb.",
+   "prediction": "holds on the linux route; on the proton route if d4 opens a device"
+  },
+  "d7_deck_hardware": {
+   "what": "p95 frame time on Deck-class hardware (a Steam Deck, AMD Van Gogh, RADV)",
+   "bound": "recorded when the hardware is available",
+   "prediction": "not measured: no Deck-class hardware is reachable from this work. The row stays \"not measured\" and N3 criterion 5 closes on the two routes only if the plan's wording (\"otherwise the row says not measured\") is read as allowing it; the status line says so plainly."
+  }
+ },
+ "not_in_this_change": "HDR10 on Vulkan and frame pacing on Vulkan hardware (both need a hardware driver; queued separately); Steam's own Proton build, the Steam runtime container and gamescope; Valve's Deck compatibility review (W4).",
+ "dependencies": "CI only, never shipped: Ubuntu's wine package, and DXVK and vkd3d-proton release archives downloaded in the job and checked against the SHA-256 above before use. Reason: they are the D3D12 path Proton uses, and the plan's risk table asks for the Proton route to be checked early. Nothing enters the build or the release archive.",
+ "does_not_prove": "Behaviour on a Steam Deck, on RADV or any hardware Vulkan driver, under Steam's Proton build or gamescope; frame times; what the panel shows. A software driver on Xvfb checks that the engine draws the right pixels through each route, not how fast."
+}
