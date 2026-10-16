@@ -212,7 +212,7 @@ def main() -> int:
                      "what": "final residual stream: sequence, position, dimension"},
         "files": {"residual.npy": sha(out / "residual.npy")},
     }
-    (out / "data.json").write_text(json.dumps(data, indent=1) + "\n", encoding="utf-8")
+    (out / "data.json").write_text(json.dumps(data, indent=1) + "\n", encoding="utf-8", newline="\n")   # LF on every OS
     print(json.dumps({"heads": [hp, hi], "w": [data["heads"]["previous_token"]["mean_weight"], data["heads"]["induction"]["mean_weight"]],
                       "acc": data["accuracy"], "abl": data["ablations"]}))
     return 0

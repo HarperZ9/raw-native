@@ -9,6 +9,9 @@ cmake-build-*/
 *.json
 # Glyph atlases are source data for web/motion (scripts/glyph_atlas.py).
 !docs/motion/*.atlas.json
+!web/explainer/fonts/*.atlas.json
+# The explainer demo's data bundle (tools/explainer/attention_model.py); its hash is on screen.
+!docs/explainer/attention/data.json
 # The media spec (docs/architecture/adr/0012-media-engine.md).
 !docs/media/media.json
 !web/colour/tables/*.json

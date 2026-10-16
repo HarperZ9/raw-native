@@ -25,3 +25,7 @@ docs/motion/hanken-grotesk-500.atlas.json -text
 
 # The committed anisotropic table (cmake/embed.cmake) is hashed by its exact bytes.
 src/renderer/data/aniso_albedo.f32 binary
+
+# Hashed data the explainer kit shows or checks: keep the committed bytes on every checkout.
+docs/explainer/attention/data.json -text
+web/explainer/fonts/*.atlas.json -text
