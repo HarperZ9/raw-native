@@ -309,6 +309,7 @@ if(RAW_NATIVE_GPU_D3D12)
         set_tests_properties(gpu_hw_rayquery PROPERTIES SKIP_RETURN_CODE 77)
     endif()
     include(cmake/present.cmake)   # N2: raw_native_present, the window and swapchain host
+    raw_native_add_present("" raw_native_d3d12 dxil "${CMAKE_CURRENT_SOURCE_DIR}/src/platform/win32/window_win32.cpp" user32)
     message(STATUS "raw-native: D3D12 backend on, shaders compiled by ${RAW_NATIVE_DXC}")
 else()
     target_sources(raw_native_cli PRIVATE ${RAW_NATIVE_NULL_BACKEND})
@@ -364,3 +365,6 @@ if(RAW_NATIVE_VULKAN AND NOT EMSCRIPTEN)
     target_link_libraries(raw_native_vk_probe PRIVATE Vulkan::Vulkan)
     message(STATUS "raw-native: Vulkan probe tool on (${Vulkan_LIBRARY})")
 endif()
+
+# N3: the RHI on Vulkan and raw_native_present_vk (cmake/vulkan_rhi.cmake), off by default.
+include(cmake/vulkan_rhi.cmake)

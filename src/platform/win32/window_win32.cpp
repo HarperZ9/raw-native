@@ -26,6 +26,8 @@ public:
     ~Win32Window() override { if (hwnd_) DestroyWindow(hwnd_); }
     bool create(const WindowDesc& d, std::string& err);
     void* nativeHandle() const override { return hwnd_; }
+    NativeWindow native() const override { return {NativeWindow::System::Win32, nullptr, hwnd_}; }
+    const char* systemName() const override { return "win32"; }
     std::vector<WindowEvent> pump() override {
         MSG m;
         while (PeekMessageW(&m, nullptr, 0, 0, PM_REMOVE)){ TranslateMessage(&m); DispatchMessageW(&m); }

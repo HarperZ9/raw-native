@@ -3,12 +3,15 @@
 
   present_gate.py same A.json B.json [C.json ...]   every frame list identical (index, size, hash)
   present_gate.py control REF.json CONTROL.json     the control must differ on at least 99% of frames
-  present_gate.py lifecycle PRESENTED.json OFFSCREEN.json
+  present_gate.py lifecycle PRESENTED.json OFFSCREEN.json [--no-minimise]
                                                     lists identical, one loss and one recovery, no size
-                                                    mismatch, every scheduled event seen
+                                                    mismatch, every scheduled event seen; --no-minimise
+                                                    for a window system that never reports a minimise
+                                                    (Wayland): the record must say the step was skipped
   present_gate.py hdr HDR.json                      within one 10-bit code, the control outside
-  present_gate.py pacing PACING.json [--warp]       --warp: the harness wrote finite positive
-                                                    intervals; otherwise the RTX bounds
+  present_gate.py pacing PACING.json [--warp]       --warp (or --harness): the harness wrote finite
+                                                    positive intervals (any software adapter);
+                                                    otherwise the RTX bounds
 Exit 0 when the check holds, 1 when it does not, 2 on usage.
 """
 import json
@@ -44,12 +47,13 @@ def control(ref_path, ctl_path):
     return n > 0 and len(ref) == len(ctl) and diff >= math.ceil(0.99 * n)
 
 
-def lifecycle(pres_path, off_path):
+def lifecycle(pres_path, off_path, no_minimise=False):
     p = load(pres_path)
     ok = same([pres_path, off_path])
     ev = " | ".join(p["events"])
     print(f"recoveries {p['recoveries']}, size mismatches {p['size_mismatches']}, events: {ev}")
-    want = ["resized 256x144", "resized 320x180", "minimised", "restored", "device removed", "device lost", "recovered"]
+    want = ["resized 256x144", "resized 320x180", "device removed", "device lost", "recovered"]
+    want += ["minimise skipped"] if no_minimise else ["minimised", "restored"]
     seen = all(any(w in e for e in p["events"]) for w in want)
     if not seen:
         print("missing events:", [w for w in want if not any(w in e for e in p["events"])])
@@ -98,12 +102,12 @@ def main(a):
         ok = same(rest)
     elif cmd == "control" and len(rest) == 2:
         ok = control(*rest)
-    elif cmd == "lifecycle" and len(rest) == 2:
-        ok = lifecycle(*rest)
+    elif cmd == "lifecycle" and len(rest) in (2, 3):
+        ok = lifecycle(rest[0], rest[1], "--no-minimise" in rest[2:])
     elif cmd == "hdr" and len(rest) == 1:
         ok = hdr(rest[0])
     elif cmd == "pacing" and rest:
-        ok = pacing(rest[0], "--warp" in rest[1:])
+        ok = pacing(rest[0], "--warp" in rest[1:] or "--harness" in rest[1:])
     else:
         print(__doc__)
         return 2

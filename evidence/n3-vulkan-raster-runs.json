@@ -1,0 +1,24 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/n3-vulkan-raster-bounds.json (committed df6ca42 before any code or run)",
+ "code": "5a25ef0, raw_native_present_vk built with RAW_NATIVE_VULKAN_RHI=ON",
+ "ci": "GitHub Actions run 38953936900, job vulkan-linux, ubuntu-24.04: lavapipe (llvmpipe, LLVM 20.1.2, Mesa 25.2.8, Vulkan 1.4.318), Xvfb at 1280 x 720 x 24, Weston headless (pixman) at 1280 x 720, the Khronos validation layer on (any error fails the run). Records: evidence/n3-lavapipe/*.json, each the program's own output.",
+ "date": "2026-10-16",
+ "results": {
+  "v1_x11": {"result": "pass: presented run 1, presented run 2 and the offscreen run, 600 of 600 equal", "prediction": "held"},
+  "v2_wayland": {"result": "pass: two presented runs on Weston, 600 of 600 equal to each other and to the offscreen run", "prediction": "held"},
+  "v3_cross_api": {"result": "pass: the lavapipe offscreen list and both Wayland lists equal the committed D3D12 WARP list (evidence/n2-warp/offscreen.json), 600 of 600. The same frames, hash for hash, on two APIs and three drivers (WARP, lavapipe, and SwiftShader for the 5 frames run locally).", "prediction": "held"},
+  "v4_control": {"result": "pass: with the blit offset (1, 0), 600 of 600 frames differ, so the gate fails as required", "prediction": "held"},
+  "v5_lifecycle_x11": {"result": "pass: 600 of 600 equal the offscreen run on the same size schedule; events in order: resized 256x144, resized 320x180, minimised (unmap), restored 320x180, device loss injected before frame 500, VK_ERROR_DEVICE_LOST at the next submission, recovered on a new device and swapchain 320x180. One loss, one recovery, no size mismatch.", "prediction": "held"},
+  "v6_lifecycle_wayland": {"result": "pass: 600 of 600 equal; the record says the minimise step was skipped because xdg-shell does not report it; one loss, one recovery", "prediction": "held"},
+  "v7_fullscreen": {"result": "pass on both: the swapchain reached 1280 x 720, three frames there equal offscreen frames of that size, and it returned to 320 x 180", "prediction": "held"},
+  "v8_pacing_harness": {"result": "pass for the harness only: 599 finite positive intervals. Xvfb has no vertical blank, so FIFO presents were not paced (median 0.76 ms) and no refresh period was known; no pacing claim is made.", "prediction": "held"},
+  "local_swiftshader": {"result": "pass: the selftest on Windows with SwiftShader and a Win32 surface, validation layer on: presented equals offscreen, control fails, fullscreen and the lifecycle run recover; the first 5 offscreen frames equal WARP's. HDR10 skipped: the surface offers only sRGB.", "prediction": "held"},
+  "local_wsl": "lavapipe in WSL Ubuntu 24.04 (nice 19): the X11 selftest on Xvfb and the Wayland lifecycle runs under WSLg passed before CI, and lavapipe's 600 offscreen frames equalled WARP's. CI is the record; these were development checks."
+ },
+ "mistakes_found_on_the_way": [
+  "The first validation-layer run failed: the PQ pass's storage buffer was at binding 0. glslang moves an HLSL RWStructuredBuffer with --shift-ssbo-binding; the --shift-UAV-binding flag first used does not apply to it. An earlier manual check of the SPIR-V had looked at the blit pass only. Fixed before any recorded run.",
+  "The Vulkan loader could not open the SwiftShader manifest in its Playwright folder; a copy in the scratch folder loads. Not a code issue."
+ ],
+ "does_not_prove": "Behaviour on hardware Vulkan drivers, on a Steam Deck or under Proton; HDR10 through a Vulkan swapchain (not offered by these drivers); recovery from a driver's own device loss (the loss here is injected at the RHI); frame pacing on Linux."
+}

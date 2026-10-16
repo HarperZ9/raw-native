@@ -45,7 +45,9 @@ int selftest(){
     ok &= report("lifecycle run (resize, minimise, device removal)", rc == kOk, presL.error + ev);
     ok &= report("lifecycle frames equal offscreen frames", differing(presL, offL) == 0, std::to_string(differing(presL, offL)) + " of 60 differ");
     ok &= report("one device loss, one recovery", presL.recoveries == 1, std::to_string(presL.recoveries));
-    ok &= report("HDR10 signal within one code, control outside", hdrCommand("", false) == kOk, "");
+    const int hdr = hdrCommand("", false);
+    if (hdr == kSkip) std::printf("SKIP HDR10 signal: this surface offers no HDR10 swapchain (reason above)\n");
+    else ok &= report("HDR10 signal within one code, control outside", hdr == kOk, "");
     return ok ? kOk : kCheckFailed;
 }
 }  // namespace raw::present

@@ -1,6 +1,7 @@
 #pragma once
 // A native window for presentation (N2). One implementation per platform under
-// src/platform/<os>/; only Win32 exists today (src/platform/win32/window_win32.cpp).
+// src/platform/<os>/: Win32 (src/platform/win32/), and on Linux X11 through xcb and Wayland through
+// xdg-shell (src/platform/linux/), chosen by RAW_NATIVE_WINDOW=x11|wayland or by WAYLAND_DISPLAY.
 // The window reports what happened to it as events; the host decides what to do (resize the
 // swapchain, stop presenting while minimised, leave on close). No game input: that is G1 at M3.
 #include <cstdint>
@@ -20,11 +21,22 @@ struct WindowDesc {
     bool visible{true};
 };
 struct Rect { int32_t x{0}, y{0}; uint32_t width{0}, height{0}; };
+// What a graphics API needs to make a surface: the system, its connection and the window.
+struct NativeWindow {
+    enum class System : uint8_t { Win32, Xcb, Wayland };
+    System system{System::Win32};
+    void* display{nullptr};   // xcb_connection_t* or wl_display*; null on Win32
+    void* window{nullptr};    // HWND, the xcb_window_t (as an integer) or wl_surface*
+};
 
 class Window {
 public:
     virtual ~Window() = default;
     virtual void* nativeHandle() const = 0;              // an HWND on Windows
+    virtual NativeWindow native() const = 0;
+    // False where the window system never tells a client it was minimised (Wayland's xdg-shell).
+    virtual bool reportsMinimise() const { return true; }
+    virtual const char* systemName() const = 0;         // "win32", "x11" or "wayland"
     // Handle every waiting OS message and return the events they produced, in order.
     virtual std::vector<WindowEvent> pump() = 0;
     virtual uint32_t clientWidth() const = 0;

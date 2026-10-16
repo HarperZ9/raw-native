@@ -44,7 +44,11 @@ LAYERS = {
 }
 # System headers that belong to one backend or platform directory.
 API_HEADERS = [
-    (re.compile(r"(windows|d3d12|d3d12sdklayers|dxgi\w*|d3dcompiler)\.h$|^wrl/"), ("src/rhi/d3d12/", "src/platform/win32/")),
+    (re.compile(r"(d3d12|d3d12sdklayers|dxgi\w*|d3dcompiler)\.h$|^wrl/"), ("src/rhi/d3d12/", "src/platform/win32/")),
+    # windows.h also where the Vulkan backend makes a Win32 surface (N3).
+    (re.compile(r"^windows\.h$"), ("src/rhi/d3d12/", "src/platform/win32/", "src/rhi/vulkan/")),
+    # The Linux window systems' client headers: the windows, and the Vulkan backend's surfaces (N3).
+    (re.compile(r"^(xcb/|X11/|wayland-)"), ("src/platform/linux/", "src/rhi/vulkan/")),
     (re.compile(r"^webgpu/"), ("src/rhi/webgpu/",)),
     (re.compile(r"^(vulkan/|vk_mem_alloc)"), ("src/rhi/vulkan/",)),
     (re.compile(r"^(Metal/|QuartzCore/)"), ("src/rhi/metal/", "src/platform/apple/")),
@@ -52,7 +56,7 @@ API_HEADERS = [
 # Vendored headers (third_party/) and the files allowed to include them.
 VENDORED = {"superstack.hpp": ("src/tools/",)}
 # Headers CMake generates into the build tree, and the files that include them.
-GENERATED = {"raw_d3d12_dxil.hpp": ("src/renderer/gpu/",), "raw_hw_dxil.hpp": ("src/rhi/d3d12/",), "raw_vk_spirv.hpp": ("src/rhi/vulkan/",), "raw_gpu_shaders.hpp": ("src/renderer/gpu/",), "raw_present_dxil.hpp": ("src/tools/present/",)}
+GENERATED = {"raw_d3d12_dxil.hpp": ("src/renderer/gpu/",), "raw_hw_dxil.hpp": ("src/rhi/d3d12/",), "raw_vk_spirv.hpp": ("src/rhi/vulkan/",), "raw_gpu_shaders.hpp": ("src/renderer/gpu/",), "raw_present_shaders.hpp": ("src/tools/present/",), "xdg-shell-client-protocol.h": ("src/platform/linux/",)}
 INCLUDE = re.compile(r'^\s*#\s*include\s*([<"])([^>"]+)[>"]', re.M)
 
 

@@ -81,10 +81,10 @@ struct BufferBarrier {
 // generated from the WGSL source (src/renderer/gpu/shaders/pass_layout.hpp).
 enum class Binding : uint8_t { Uniform, StorageRead, StorageReadWrite };
 
-enum class ShaderFormat : uint8_t { Wgsl, Dxil };
+enum class ShaderFormat : uint8_t { Wgsl, Dxil, Spirv };
 struct ShaderCode {
     ShaderFormat format{ShaderFormat::Wgsl};
-    const void* bytes{nullptr};   // WGSL text (not null-terminated) or DXIL bytecode
+    const void* bytes{nullptr};   // WGSL text (not null-terminated), DXIL bytecode or SPIR-V words
     std::size_t size{0};
 };
 struct ComputePipelineDesc {
@@ -97,7 +97,8 @@ struct ComputePipelineDesc {
 // formats and Depth32Float are render targets read back by copy; RGBA8Unorm and RGBA16Float
 // can also be sampled. RGB10A2Unorm (10 bits a colour channel, 2 for alpha, red in the low
 // bits of a 32-bit word) is the HDR10 swapchain format; RGBA32Float can also be uploaded.
-enum class TextureFormat : uint8_t { RGBA8Unorm, RGBA16Float, RGBA32Float, R32Float, Depth32Float, RGB10A2Unorm };
+// BGRA8Unorm is the order some Vulkan surfaces offer for an 8-bit swapchain (N3).
+enum class TextureFormat : uint8_t { RGBA8Unorm, RGBA16Float, RGBA32Float, R32Float, Depth32Float, RGB10A2Unorm, BGRA8Unorm };
 constexpr uint32_t bytesPerTexel(TextureFormat f){
     switch (f){
         case TextureFormat::RGBA16Float: return 8;
@@ -164,12 +165,16 @@ class CommandList;
 // A swapchain presents a native window's backbuffers (N2). Its current backbuffer is an
 // ordinary texture of the device (usage RenderTarget | CopySrc) for the frame being drawn;
 // prepare() records its move to the present state as the frame's last command, and present()
-// runs after the submission that drew it has finished. Formats: RGBA8Unorm (SDR),
+// runs after the submission that drew it has finished. Formats: RGBA8Unorm (SDR; a Vulkan surface
+// may give BGRA8Unorm instead, which format() then reports),
 // RGB10A2Unorm with ColourSpace::Hdr10Pq (HDR10) and RGBA16Float with ColourSpace::ScRgbLinear.
+enum class WindowSystem : uint8_t { Win32, Xcb, Wayland };
 enum class ColourSpace : uint8_t { SrgbNonlinear, Hdr10Pq, ScRgbLinear };
 enum class PresentStatus : uint8_t { NotPresented, Presented, Occluded, DeviceLost, Failed };
 struct SwapchainDesc {
-    void* window{nullptr};                 // the native window: an HWND on Windows
+    WindowSystem system{WindowSystem::Win32};
+    void* display{nullptr};                // the xcb_connection_t or wl_display; unused on Win32
+    void* window{nullptr};                 // the HWND, the xcb window id (cast) or the wl_surface
     uint32_t width{0}, height{0};
     TextureFormat format{TextureFormat::RGBA8Unorm};
     ColourSpace colourSpace{ColourSpace::SrgbNonlinear};

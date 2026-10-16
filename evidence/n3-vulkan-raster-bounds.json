@@ -1,0 +1,57 @@
+{
+ "criterion": "RELEASE-PLAN.md N3, criteria 1 and 4: the RHI on Vulkan (textures, samplers, graphics pipelines, render passes, a swapchain) and a Linux build that presents a window on X11 and on Wayland and runs the N2 frame-hash check. Criteria 2, 3 and 5 are not in this change.",
+ "written": "2026-10-16, before the first run of the Vulkan backend on any driver",
+ "scope": "Software Vulkan drivers only: lavapipe (Mesa, Ubuntu 24.04 CI) and SwiftShader (the copy bundled with Chromium, local Windows runs). No hardware GPU is touched; the backend refuses a device whose type is not CPU unless RAW_NATIVE_VK_HW=1. It checks what the engine writes into the presented image, read back before vkQueuePresentKHR; not what a compositor or panel shows.",
+ "frames": "The N2 frames unchanged (evidence/n2-presentation-bounds.json): the same present.hlsl, compiled to SPIR-V by glslang's HLSL front end (register shifts map b0, t1/u1 to bindings 0 and 1), the same scene, blit and read-back, the same SHA-256 of tight RGBA8 rows. A BGRA8 swapchain image is swizzled to RGBA before hashing.",
+ "checks": {
+  "v1_x11": {
+   "what": "lavapipe, an X11 window (xcb surface) on Xvfb: 600 frames at 320 x 180 presented twice in two processes, and the same 600 frames offscreen",
+   "bound": "600 of 600 hashes equal across all three lists",
+   "prediction": "600 of 600"
+  },
+  "v2_wayland": {
+   "what": "lavapipe, a Wayland window (xdg-shell toplevel, wl_surface) on a headless Weston: the same three lists",
+   "bound": "600 of 600 equal",
+   "prediction": "600 of 600"
+  },
+  "v3_cross_api": {
+   "what": "the lavapipe offscreen list against the committed D3D12 WARP offscreen list (evidence/n2-warp/offscreen.json)",
+   "bound": "600 of 600 equal",
+   "prediction": "600 of 600: the scene is integer arithmetic written as k / 255 into an RGBA8 target, and both APIs round float to UNORM to nearest. If a driver rounds differently, the miss is recorded with the count, not hidden."
+  },
+  "v4_control": {
+   "what": "the blit offset constant (0, 0) changed to (1, 0) on lavapipe X11",
+   "bound": "the gate must fail: at least 99% of frames differ",
+   "prediction": "600 of 600 differ"
+  },
+  "v5_lifecycle_x11": {
+   "what": "600 frames with: resize to 256 x 144 before frame 200 and back before 400 (ConfigureNotify, swapchain recreated), minimise before 450 as an unmap with no window manager (UnmapNotify; nothing drawn until MapNotify), and a device loss before frame 500, then recovery on a new device and swapchain; against an offscreen run on the same size schedule",
+   "bound": "600 of 600 equal, one loss and one recovery, no size mismatch",
+   "prediction": "holds",
+   "loss_is_injected": "Vulkan has no call that removes a device. Device::loseForTest marks the backend's device lost and its next submission returns VK_ERROR_DEVICE_LOST from raw-native's code, not from the driver. This checks the host's recovery path; it does not check a driver's behaviour after a real loss."
+  },
+  "v6_lifecycle_wayland": {
+   "what": "the same on Wayland, without the minimise step: xdg-shell has no event that tells a client it was minimised, so the host cannot observe it; the run records that and draws on",
+   "bound": "600 of 600 equal, one loss and one recovery, no size mismatch",
+   "prediction": "holds"
+  },
+  "v7_fullscreen": {
+   "what": "Wayland: xdg_toplevel.set_fullscreen and back on headless Weston; X11: _NET_WM_STATE_FULLSCREEN plus a configure to the screen size and back (Xvfb has no window manager). Three frames drawn fullscreen against offscreen frames of the same size.",
+   "bound": "the swapchain reaches the output size and returns to the windowed size; the three frames are equal",
+   "prediction": "holds on both"
+  },
+  "v8_pacing_harness": {
+   "what": "raw_native_present_vk pacing, 600 frames, FIFO, on lavapipe X11",
+   "bound": "599 finite positive intervals; no pacing claim from a software driver",
+   "prediction": "holds"
+  },
+  "local_swiftshader": {
+   "what": "the v1 and v4 checks on Windows with SwiftShader and a Win32 surface, before CI, as a development check",
+   "bound": "same as v1 and v4",
+   "prediction": "holds; if SwiftShader's Win32 surface support is missing, the local run is skipped and only CI counts"
+  }
+ },
+ "not_in_this_change": "HDR10 through a Vulkan swapchain (lavapipe and SwiftShader offer only sRGB colour spaces on these surfaces); the golden identity matrix and the M2 and M3 corpora on Vulkan (criterion 2, which needs the renderer's compute passes in SPIR-V); the N1 passes on Vulkan (criterion 3); Steam Deck (criterion 5).",
+ "dependencies": "Linux only, when RAW_NATIVE_VULKAN_RHI=ON: the Vulkan loader and headers (libvulkan-dev), glslang-tools, libxcb, libwayland-client with wayland-scanner and wayland-protocols for xdg-shell. All are system packages the window systems themselves require; none is vendored, and the default build is unchanged.",
+ "does_not_prove": "Behaviour on hardware Vulkan drivers, on a Steam Deck or under Proton; what a compositor shows; recovery from a real device loss."
+}

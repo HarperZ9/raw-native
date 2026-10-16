@@ -80,16 +80,23 @@ int runPresented(const RunOptions& o, RunResult& r){
         r.events.push_back("the window's client area is " + size(s.sc->width(), s.sc->height()) + ", not " + size(o.width, o.height));
     const Schedule& sch = o.schedule;
     uint32_t skipped = 0;
+    bool minimiseNoted = false;
+    r.windowSystem = win->systemName(); r.backend = s.dev->backendName();
     for (uint32_t f = 0; f < o.frames && !close;){
         if (sch.on && skipped == 0){
             if (f == sch.resizeA || f == sch.resizeB){ uint32_t w, h; sch.sizeAt(f, o.width, o.height, w, h); win->setClientSize(w, h); }
-            if (f == sch.minimise && !win->minimised()){
+            if (f == sch.minimise && !win->reportsMinimise() && !minimiseNoted){
+                minimiseNoted = true;
+                r.events.push_back(std::string("minimise skipped: ") + win->systemName() + " does not tell a client it was minimised");
+            } else if (f == sch.minimise && !win->minimised() && win->reportsMinimise()){
                 win->minimise();
                 if (!settle(*win, s, r, close, [&]{ return win->minimised(); })) return kRuntime;
             }
             if (f == sch.lose && r.recoveries == 0){
                 std::string e;
-                r.events.push_back(s.dev->loseForTest(e) ? "device removed before frame " + std::to_string(f) : "removal refused: " + e);
+                const bool injected = std::strcmp(s.dev->backendName(), "vulkan") == 0;   // Vulkan has no removal call
+                r.events.push_back(s.dev->loseForTest(e) ? "device removed before frame " + std::to_string(f) + (injected ? " (injected at the RHI)" : "")
+                                                         : "removal refused: " + e);
             }
         }
         if (!handleEvents(*win, s, r, close)) return kRuntime;
