@@ -21,6 +21,53 @@ struct PaintParams {
     opt2: vec4f,
 }
 
+// The post stack's passes (web/motion/post.mjs PostPass): size (width, height, frame, time) and
+// 16 parameter floats.
+struct PostParams {
+    size: vec4f,
+    p0: vec4f,
+    p1: vec4f,
+    p2: vec4f,
+    p3: vec4f,
+}
+// CRT purity. a: s, w (beam), mag, magScale; b: earth, degauss, tau, mains; c: field, blank,
+// wobble, t; d: spread, 0, 0, 0.
+struct PurityParams {
+    width: u32, height: u32, pad0: u32, pad1: u32,
+    a: vec4f,
+    b: vec4f,
+    c: vec4f,
+    d: vec4f,
+}
+// Pigment-space lighting. a: Emid, t0, strength, shape; fog: colour and the display gain.
+struct LightpaintParams {
+    width: u32, height: u32, complement: u32, pad0: u32,
+    a: vec4f,
+    shadow: vec4f,
+    lightp: vec4f,
+    fog: vec4f,
+}
+// Interference glaze. a: d0, dVar, noiseScale, coverage; b: n0, n2, A, B; c: filmN, aspect, tan,
+// gain; the camera's axes and eye; fog colour.
+struct GlazeParams {
+    width: u32, height: u32, dispersion: u32, pad0: u32,
+    a: vec4f,
+    b: vec4f,
+    c: vec4f,
+    fwd: vec4f,
+    right: vec4f,
+    up: vec4f,
+    eye: vec4f,
+    fog: vec4f,
+}
+// Curvature hatching. a: freq, width, umb, contour; ink; paper.
+struct HatchParams {
+    width: u32, height: u32, layers: u32, pad0: u32,
+    a: vec4f,
+    ink: vec4f,
+    paper: vec4f,
+}
+
 fn sat1(x: f32) -> f32 {
     return clamp(x, 0.0, 1.0);
 }
@@ -37,6 +84,26 @@ fn pack_rgb8(c: vec3f) -> u32 {
     let r: u32 = u32(floor(linear_to_srgb(c.x) * 255.0 + 0.5));
     let g: u32 = u32(floor(linear_to_srgb(c.y) * 255.0 + 0.5));
     let b: u32 = u32(floor(linear_to_srgb(c.z) * 255.0 + 0.5));
+    return r | (g << 8u) | (b << 16u) | (255u << 24u);
+}
+
+// The shader library's hash and noise fade (web/shaders/common.mjs, purity.mjs).
+fn pcg(v: u32) -> u32 {
+    let state: u32 = v * 747796405u + 2891336453u;
+    let word: u32 = ((state >> ((state >> 28u) + 4u)) ^ state) * 277803737u;
+    return (word >> 22u) ^ word;
+}
+fn hash3(x: u32, y: u32, z: u32) -> f32 {
+    return f32(pcg(x ^ pcg(y ^ pcg(z)))) / 4294967296.0;
+}
+fn fade5(t: f32) -> f32 {
+    return t * t * t * (t * (t * 6.0 - 15.0) + 10.0);
+}
+// The lab parity pages' display encode (web/shaders/lab/gpu-kit.mjs): a soft shoulder, sRGB, 8 bits.
+fn lab_pack(c: vec3f, gain: f32) -> u32 {
+    let r: u32 = u32(floor(linear_to_srgb(1.0 - exp(-max(0.0, c.x) * gain)) * 255.0 + 0.5));
+    let g: u32 = u32(floor(linear_to_srgb(1.0 - exp(-max(0.0, c.y) * gain)) * 255.0 + 0.5));
+    let b: u32 = u32(floor(linear_to_srgb(1.0 - exp(-max(0.0, c.z) * gain)) * 255.0 + 0.5));
     return r | (g << 8u) | (b << 16u) | (255u << 24u);
 }
 
@@ -276,4 +343,480 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     } else {
         out8[i] = 0u;
     }
+}
+
+//@pass style_exposure
+// The post stack's built-in exposure (web/motion/post.mjs): linear light times 2^ev, ev = p0.x.
+// src, prev and dst are one vec4f a pixel; prev is unused.
+@group(0) @binding(0) var<uniform> S: PostParams;
+@group(0) @binding(1) var<storage, read> src: array<vec4f>;
+@group(0) @binding(2) var<storage, read> prev: array<vec4f>;
+@group(0) @binding(3) var<storage, read_write> dst: array<vec4f>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= u32(S.size.x) * u32(S.size.y)) { return; }
+    // prev is read only behind a guard that never holds (p3.w is 0), so every backend keeps the
+    // binding in the pass's layout: WebGPU's derived layout drops a binding the shader never uses.
+    if (S.p3.w > 1.0e30) {
+        dst[i] = prev[i];
+        return;
+    }
+    let c: vec4f = src[i];
+    dst[i] = vec4f(c.xyz * exp2(S.p0.x), c.w);
+}
+
+//@pass style_srgb_decode
+// The sRGB decode (IEC 61966-2-1) the encoding contract inserts before a pass that reads linear
+// light from display values; negative values pass through sign-symmetric.
+@group(0) @binding(0) var<uniform> S: PostParams;
+@group(0) @binding(1) var<storage, read> src: array<vec4f>;
+@group(0) @binding(2) var<storage, read> prev: array<vec4f>;
+@group(0) @binding(3) var<storage, read_write> dst: array<vec4f>;
+
+fn dec(v: f32) -> f32 {
+    let a: f32 = abs(v);
+    var l: f32 = a / 12.92;
+    if (a > 0.04045) { l = pow((a + 0.055) / 1.055, 2.4); }
+    return select(l, -l, v < 0.0);
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= u32(S.size.x) * u32(S.size.y)) { return; }
+    // prev is read only behind a guard that never holds (p3.w is 0), so every backend keeps the
+    // binding in the pass's layout: WebGPU's derived layout drops a binding the shader never uses.
+    if (S.p3.w > 1.0e30) {
+        dst[i] = prev[i];
+        return;
+    }
+    let c: vec4f = src[i];
+    dst[i] = vec4f(dec(c.x), dec(c.y), dec(c.z), c.w);
+}
+
+//@pass style_purity
+// CRT colour purity and degauss (raw/renderer/style_purity.hpp). src: display-linear RGBA; writes
+// the sRGB-encoded RGBA8 word a pixel.
+@group(0) @binding(0) var<uniform> U: PurityParams;
+@group(0) @binding(1) var<storage, read> src: array<vec4f>;
+@group(0) @binding(2) var<storage, read_write> out8: array<u32>;
+
+fn centre(k: i32) -> f32 {
+    return f32(k - 1) / 3.0;
+}
+fn overlap(a0: f32, a1: f32, b0: f32, b1: f32) -> f32 {
+    return max(0.0, min(a1, b1) - max(a0, b0));
+}
+fn vnoise2(x: f32, y: f32, seed: u32) -> f32 {
+    let fx: f32 = floor(x);
+    let fy: f32 = floor(y);
+    let xi: i32 = i32(fx);
+    let yi: i32 = i32(fy);
+    let u: f32 = fade5(x - fx);
+    let v: f32 = fade5(y - fy);
+    let a: f32 = hash3(u32(xi + 4096), u32(yi + 4096), seed);
+    let b: f32 = hash3(u32(xi + 4097), u32(yi + 4096), seed);
+    let c: f32 = hash3(u32(xi + 4096), u32(yi + 4097), seed);
+    let d: f32 = hash3(u32(xi + 4097), u32(yi + 4097), seed);
+    return (a * (1.0 - u) + b * u) * (1.0 - v) + (c * (1.0 - u) + d * u) * v;
+}
+// The fraction of gun k's light on stripe j for its landing error ek.
+fn landing_f(k: i32, j: i32, ek: f32) -> f32 {
+    let a0: f32 = centre(k) + ek - U.a.y / 2.0;
+    let a1: f32 = centre(k) + ek + U.a.y / 2.0;
+    var f: f32 = 0.0;
+    for (var m: i32 = -1; m <= 1; m++) {
+        f += overlap(a0, a1, centre(j) + f32(m) - U.a.x / 2.0, centre(j) + f32(m) + U.a.x / 2.0) / U.a.y;
+    }
+    return f;
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    let x: i32 = i32(i % U.width);
+    let y: i32 = i32(i / U.width);
+    let wf: f32 = f32(U.width);
+    let hf: f32 = f32(U.height);
+    let u: f32 = ((f32(x) + 0.5) / wf) * 2.0 - 1.0;
+    let v: f32 = ((f32(y) + 0.5) / hf) * 2.0 - 1.0;
+    let asp: f32 = wf / hf;
+    let r2: f32 = (u * u * asp * asp + v * v) / (asp * asp + 1.0) * 2.0;
+    let sc: f32 = U.a.w * wf;
+    let m: f32 = U.a.z * ((0.65 * vnoise2(f32(x) / sc, f32(y) / sc, 31u) + 0.35 * vnoise2(f32(x) / (0.4 * sc), f32(y) / (0.4 * sc), 37u)) - 0.5) * 2.0;
+    let stat: f32 = m + U.b.x * u * r2;
+    let tl: f32 = U.c.w + (f32(y) / hf) * (1.0 - U.c.y) / U.c.x;
+    let dg: f32 = U.b.y * exp(-tl / U.b.z) * sin(2.0 * 3.141592653589793 * U.b.w * tl) * (0.3 + r2);
+    let e: f32 = stat + dg;
+    let xs: f32 = f32(x) - U.c.z * (dg / max(U.b.y, 1.0e-9));
+    let x0f: f32 = floor(xs);
+    let x0: i32 = i32(x0f);
+    let fx: f32 = xs - x0f;
+    let wl: i32 = i32(U.width) - 1;
+    let row: u32 = u32(y) * U.width;
+    let c0: vec3f = src[row + u32(clamp(x0, 0, wl))].xyz;
+    let c1: vec3f = src[row + u32(clamp(x0 + 1, 0, wl))].xyz;
+    let I: vec3f = c0 * (1.0 - fx) + c1 * fx;
+    var o: vec3f = vec3f(0.0);
+    for (var k: i32 = 0; k < 3; k++) {
+        let ek: f32 = e * (1.0 + U.d.x * f32(k - 1));
+        let ik: f32 = select(select(I.x, I.y, k == 1), I.z, k == 2);
+        o += vec3f(landing_f(k, 0, ek), landing_f(k, 1, ek), landing_f(k, 2, ek)) * ik;
+    }
+    out8[i] = pack_rgb8(o);
+}
+
+//@pass style_lightpaint
+// Pigment-space lighting (raw/renderer/style_relight.hpp). pig: the pigment tables as
+// style_image.hpp packPigments (K at 0, S at 124, W at 248, the latent lookup at 341); alb, light:
+// albedo and irradiance; aux: (fog fraction, kind, view distance, 0). Writes the lab-encoded RGBA8.
+@group(0) @binding(0) var<uniform> U: LightpaintParams;
+@group(0) @binding(1) var<storage, read> pig: array<f32>;
+@group(0) @binding(2) var<storage, read> alb: array<vec4f>;
+@group(0) @binding(3) var<storage, read> light: array<vec4f>;
+@group(0) @binding(4) var<storage, read> aux: array<vec4f>;
+@group(0) @binding(5) var<storage, read_write> out8: array<u32>;
+
+fn km_decode(c: vec4f) -> vec3f {
+    var o: vec3f = vec3f(0.0);
+    for (var w: u32 = 0u; w < 31u; w++) {
+        let K: f32 = dot(c, vec4f(pig[4u * w], pig[4u * w + 1u], pig[4u * w + 2u], pig[4u * w + 3u]));
+        let S: f32 = dot(c, vec4f(pig[124u + 4u * w], pig[124u + 4u * w + 1u], pig[124u + 4u * w + 2u], pig[124u + 4u * w + 3u]));
+        let q: f32 = K / max(S, 1.0e-9);
+        let R: f32 = 1.0 + q - sqrt(q * q + 2.0 * q);
+        o += R * vec3f(pig[248u + 3u * w], pig[248u + 3u * w + 1u], pig[248u + 3u * w + 2u]);
+    }
+    return o;
+}
+fn lut_conc(s: vec3f) -> vec4f {
+    let f: vec3f = clamp(s, vec3f(0.0), vec3f(1.0)) * 16.0;
+    let i0: vec3i = vec3i(min(vec3f(15.0), floor(f)));
+    let t: vec3f = f - vec3f(i0);
+    var c: vec4f = vec4f(0.0);
+    for (var dz: i32 = 0; dz < 2; dz++) {
+        for (var dy: i32 = 0; dy < 2; dy++) {
+            for (var dx: i32 = 0; dx < 2; dx++) {
+                let w: f32 = select(1.0 - t.x, t.x, dx == 1) * select(1.0 - t.y, t.y, dy == 1) * select(1.0 - t.z, t.z, dz == 1);
+                let o: u32 = 341u + u32((((i0.z + dz) * 17 + i0.y + dy) * 17 + i0.x + dx) * 4);
+                c += w * vec4f(pig[o], pig[o + 1u], pig[o + 2u], pig[o + 3u]);
+            }
+        }
+    }
+    return c;
+}
+fn srgb3(c: vec3f) -> vec3f {
+    return vec3f(linear_to_srgb(c.x), linear_to_srgb(c.y), linear_to_srgb(c.z));
+}
+fn lum(c: vec3f) -> f32 {
+    return 0.2126 * c.x + 0.7152 * c.y + 0.0722 * c.z;
+}
+fn complement_of(lc: vec3f) -> vec3f {
+    let mx: f32 = max(lc.x, max(lc.y, lc.z));
+    let mn: f32 = min(lc.x, min(lc.y, lc.z));
+    let q: vec3f = vec3f(mx + mn) - lc;
+    let m: f32 = max(max(q.x, max(q.y, q.z)), 1.0e-9);
+    return 0.3 * q / m;
+}
+fn shade(a: vec3f, E: vec3f) -> vec3f {
+    let e: f32 = lum(E);
+    if (!(e > 1.0e-12)) { return vec3f(0.0); }
+    let lc: vec3f = E / e;
+    let t: f32 = e / (e + U.a.x);
+    let t0: f32 = U.a.y;
+    var ws: f32 = 0.0;
+    var wl: f32 = 0.0;
+    if (t < t0) { ws = U.a.z * pow((t0 - t) / t0, U.a.w); }
+    if (t > t0) { wl = U.a.z * pow((t - t0) / (1.0 - t0), U.a.w); }
+    let ca: vec4f = lut_conc(srgb3(a));
+    let ra: vec3f = a - km_decode(ca);
+    var cs: vec4f = U.shadow;
+    if (U.complement > 0u) { cs = lut_conc(srgb3(complement_of(lc))); }
+    let wa: f32 = 1.0 - ws - wl;
+    let c: vec4f = wa * ca + ws * cs + wl * U.lightp;
+    let paint: vec3f = clamp(km_decode(c) + wa * ra, vec3f(0.0), vec3f(1.0));
+    let tint: vec3f = paint * lc;
+    let yt: f32 = lum(tint);
+    let tgt: f32 = lum(a * E);
+    if (!(yt > 1.0e-9)) { return a * E; }
+    return tint * (tgt / yt);
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    let E: vec3f = light[i].xyz;
+    let k: vec4f = aux[i];
+    var c: vec3f = E;
+    if (k.y > 1.5) { c = shade(alb[i].xyz, E); }
+    let o: vec3f = c * (1.0 - k.x) + U.fog.xyz * k.x;
+    out8[i] = lab_pack(o, U.fog.w);
+}
+
+//@pass style_glaze
+// Interference glazes (raw/renderer/style_relight.hpp). pig, alb, light, aux as style_lightpaint;
+// nrm: the surface normal a pixel. Writes the lab-encoded RGBA8.
+@group(0) @binding(0) var<uniform> U: GlazeParams;
+@group(0) @binding(1) var<storage, read> pig: array<f32>;
+@group(0) @binding(2) var<storage, read> alb: array<vec4f>;
+@group(0) @binding(3) var<storage, read> light: array<vec4f>;
+@group(0) @binding(4) var<storage, read> aux: array<vec4f>;
+@group(0) @binding(5) var<storage, read> nrm: array<vec4f>;
+@group(0) @binding(6) var<storage, read_write> out8: array<u32>;
+
+fn lut_conc(s: vec3f) -> vec4f {
+    let f: vec3f = clamp(s, vec3f(0.0), vec3f(1.0)) * 16.0;
+    let i0: vec3i = vec3i(min(vec3f(15.0), floor(f)));
+    let t: vec3f = f - vec3f(i0);
+    var c: vec4f = vec4f(0.0);
+    for (var dz: i32 = 0; dz < 2; dz++) {
+        for (var dy: i32 = 0; dy < 2; dy++) {
+            for (var dx: i32 = 0; dx < 2; dx++) {
+                let w: f32 = select(1.0 - t.x, t.x, dx == 1) * select(1.0 - t.y, t.y, dy == 1) * select(1.0 - t.z, t.z, dz == 1);
+                let o: u32 = 341u + u32((((i0.z + dz) * 17 + i0.y + dy) * 17 + i0.x + dx) * 4);
+                c += w * vec4f(pig[o], pig[o + 1u], pig[o + 2u], pig[o + 3u]);
+            }
+        }
+    }
+    return c;
+}
+fn airy(r01: f32, r12: f32, cd: f32) -> f32 {
+    return (r01 * r01 + r12 * r12 + 2.0 * r01 * r12 * cd) / (1.0 + r01 * r01 * r12 * r12 + 2.0 * r01 * r12 * cd);
+}
+fn film_reflectance(lam: f32, cos_air: f32, d: f32) -> f32 {
+    let lm: f32 = lam / 1000.0;
+    var n1: f32 = U.c.x;
+    if (U.dispersion > 0u) { n1 = U.b.z + U.b.w / (lm * lm); }
+    let n0: f32 = U.b.x;
+    let n2: f32 = U.b.y;
+    let sa: f32 = sqrt(max(0.0, 1.0 - cos_air * cos_air));
+    let s0: f32 = sa / n0;
+    let c0: f32 = sqrt(1.0 - s0 * s0);
+    let s1: f32 = sa / n1;
+    let c1: f32 = sqrt(1.0 - s1 * s1);
+    let s2: f32 = sa / n2;
+    let c2: f32 = sqrt(1.0 - s2 * s2);
+    let cd: f32 = cos((4.0 * 3.141592653589793 * n1 * d * c1) / lam);
+    let rs: f32 = airy((n0 * c0 - n1 * c1) / (n0 * c0 + n1 * c1), (n1 * c1 - n2 * c2) / (n1 * c1 + n2 * c2), cd);
+    let rp: f32 = airy((n1 * c0 - n0 * c1) / (n1 * c0 + n0 * c1), (n2 * c1 - n1 * c2) / (n2 * c1 + n1 * c2), cd);
+    return 0.5 * (rs + rp);
+}
+fn vlayer(xi: i32, yi: i32, u: f32, v: f32, kz: u32) -> f32 {
+    let a: f32 = hash3(u32(xi + 4096), u32(yi + 4096), kz);
+    let b: f32 = hash3(u32(xi + 4097), u32(yi + 4096), kz);
+    let c: f32 = hash3(u32(xi + 4096), u32(yi + 4097), kz);
+    let d: f32 = hash3(u32(xi + 4097), u32(yi + 4097), kz);
+    return (a * (1.0 - u) + b * u) * (1.0 - v) + (c * (1.0 - u) + d * u) * v;
+}
+fn vnoise3(x: f32, y: f32, z: f32, seed: u32) -> f32 {
+    let fx: f32 = floor(x);
+    let fy: f32 = floor(y);
+    let fz: f32 = floor(z);
+    let zi: i32 = i32(fz);
+    let u: f32 = fade5(x - fx);
+    let v: f32 = fade5(y - fy);
+    let w: f32 = fade5(z - fz);
+    let a0: f32 = vlayer(i32(fx), i32(fy), u, v, u32(zi + 4096) * 131u + seed);
+    let a1: f32 = vlayer(i32(fx), i32(fy), u, v, u32(zi + 4097) * 131u + seed);
+    return a0 * (1.0 - w) + a1 * w;
+}
+fn thickness_at(q: vec3f) -> f32 {
+    let s1: vec3f = q / U.a.z;
+    let s2: vec3f = q / (0.37 * U.a.z);
+    return U.a.x + U.a.y * ((0.65 * vnoise3(s1.x, s1.y, s1.z, 17u) + 0.35 * vnoise3(s2.x, s2.y, s2.z, 29u)) - 0.5) * 2.0;
+}
+fn glaze_colour(a: vec3f, cos_air: f32, d: f32) -> vec3f {
+    let c: vec4f = lut_conc(vec3f(linear_to_srgb(a.x), linear_to_srgb(a.y), linear_to_srgb(a.z)));
+    var o: vec3f = a;
+    for (var w: u32 = 0u; w < 31u; w++) {
+        let K: f32 = dot(c, vec4f(pig[4u * w], pig[4u * w + 1u], pig[4u * w + 2u], pig[4u * w + 3u]));
+        let S: f32 = dot(c, vec4f(pig[124u + 4u * w], pig[124u + 4u * w + 1u], pig[124u + 4u * w + 2u], pig[124u + 4u * w + 3u]));
+        let q: f32 = K / max(S, 1.0e-9);
+        let Rb: f32 = 1.0 + q - sqrt(q * q + 2.0 * q);
+        let Rf: f32 = U.a.w * film_reflectance(400.0 + 10.0 * f32(w), cos_air, d);
+        let Rt: f32 = Rf + ((1.0 - Rf) * (1.0 - Rf) * Rb) / (1.0 - Rf * Rb);
+        o += vec3f(pig[248u + 3u * w], pig[248u + 3u * w + 1u], pig[248u + 3u * w + 2u]) * (Rt - Rb);
+    }
+    return o;
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    let x: u32 = i % U.width;
+    let y: u32 = i / U.width;
+    let E: vec3f = light[i].xyz;
+    let k: vec4f = aux[i];
+    var c: vec3f = E;
+    if (k.y > 1.5) {
+        let sx: f32 = ((f32(x) + 0.5) / f32(U.width) - 0.5) * 2.0 * U.c.y * U.c.z;
+        let sy: f32 = (0.5 - (f32(y) + 0.5) / f32(U.height)) * 2.0 * U.c.z;
+        let r: vec3f = U.fwd.xyz + U.right.xyz * sx + U.up.xyz * sy;
+        let rl: f32 = length(r);
+        let cos_air: f32 = min(1.0, abs(dot(nrm[i].xyz, r)) / rl);
+        let q: vec3f = U.eye.xyz + r * (k.z / rl);
+        c = glaze_colour(alb[i].xyz, cos_air, thickness_at(q)) * E;
+    }
+    let o: vec3f = c * (1.0 - k.x) + U.fog.xyz * k.x;
+    out8[i] = lab_pack(o, U.c.w);
+}
+
+//@pass style_hatch
+// Curvature hatching (raw/renderer/style_hatch.hpp) over the owned still life of
+// web/shaders/fixtures/stilllife.mjs, seen from its camera. Writes the sRGB-encoded RGBA8.
+@group(0) @binding(0) var<uniform> U: HatchParams;
+@group(0) @binding(1) var<storage, read_write> out8: array<u32>;
+
+fn sd_sphere(p: vec3f) -> f32 {
+    return length(p - vec3f(-0.9, 0.55, 0.2)) - 0.55;
+}
+fn sd_torus(p: vec3f) -> f32 {
+    let qx: f32 = length(vec2f(p.x - 0.75, p.z - 0.45)) - 0.5;
+    let qy: f32 = p.y - 0.18;
+    return sqrt(qx * qx + qy * qy) - 0.18;
+}
+fn sd_capsule(p: vec3f) -> f32 {
+    let pa: vec3f = p - vec3f(0.05, 0.25, -0.95);
+    let ba: vec3f = vec3f(0.0, 1.3, 0.0);
+    let h: f32 = clamp(dot(pa, ba) / dot(ba, ba), 0.0, 1.0);
+    return length(pa - ba * h) - 0.25;
+}
+fn sd_round_box(p: vec3f) -> f32 {
+    let q: vec3f = abs(p - vec3f(1.65, 0.3, -0.6)) - vec3f(0.22, 0.22, 0.22);
+    return length(max(q, vec3f(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0) - 0.08;
+}
+fn still_sdf(p: vec3f) -> f32 {
+    return min(min(min(min(p.y, sd_sphere(p)), sd_torus(p)), sd_capsule(p)), sd_round_box(p));
+}
+fn mixed(p: vec3f, ei: vec3f, ej: vec3f) -> f32 {
+    return (still_sdf(p + ei + ej) - still_sdf(p + ei - ej) - still_sdf(p - ei + ej) + still_sdf(p - ei - ej)) / (4.0 * 0.01 * 0.01);
+}
+// The surface normal and the line direction's normal partner at p; returns 1 at an umbilic.
+fn curvature(p: vec3f, nout: ptr<function, vec3f>, other: ptr<function, vec3f>) -> f32 {
+    let ex: vec3f = vec3f(0.01, 0.0, 0.0);
+    let ey: vec3f = vec3f(0.0, 0.01, 0.0);
+    let ez: vec3f = vec3f(0.0, 0.0, 0.01);
+    let f0: f32 = still_sdf(p);
+    let fxp: f32 = still_sdf(p + ex);
+    let fxm: f32 = still_sdf(p - ex);
+    let fyp: f32 = still_sdf(p + ey);
+    let fym: f32 = still_sdf(p - ey);
+    let fzp: f32 = still_sdf(p + ez);
+    let fzm: f32 = still_sdf(p - ez);
+    let g: vec3f = vec3f(fxp - fxm, fyp - fym, fzp - fzm) / (2.0 * 0.01);
+    let gl: f32 = length(g);
+    let n: vec3f = g / gl;
+    let hxy: f32 = mixed(p, ex, ey);
+    let hxz: f32 = mixed(p, ex, ez);
+    let hyz: f32 = mixed(p, ey, ez);
+    let r0: vec3f = vec3f((fxp - 2.0 * f0 + fxm) / (0.01 * 0.01), hxy, hxz);
+    let r1: vec3f = vec3f(hxy, (fyp - 2.0 * f0 + fym) / (0.01 * 0.01), hyz);
+    let r2: vec3f = vec3f(hxz, hyz, (fzp - 2.0 * f0 + fzm) / (0.01 * 0.01));
+    var aux: vec3f = vec3f(1.0, 0.0, 0.0);
+    if (abs(n.y) < 0.9) { aux = vec3f(0.0, 1.0, 0.0); }
+    let t1: vec3f = normalize(cross(n, aux));
+    let t2: vec3f = cross(n, t1);
+    let h1: vec3f = vec3f(dot(r0, t1), dot(r1, t1), dot(r2, t1));
+    let h2: vec3f = vec3f(dot(r0, t2), dot(r1, t2), dot(r2, t2));
+    let a: f32 = dot(t1, h1) / gl;
+    let b: f32 = dot(t1, h2) / gl;
+    let d: f32 = dot(t2, h2) / gl;
+    let m: f32 = 0.5 * (a + d);
+    let r: f32 = sqrt(0.25 * (a - d) * (a - d) + b * b);
+    let k1: f32 = m + r;
+    let k2: f32 = m - r;
+    var kmax: f32 = k2;
+    if (abs(k1) >= abs(k2)) { kmax = k1; }
+    var ex2: f32 = b;
+    var ey2: f32 = kmax - a;
+    if (abs(kmax - d) > abs(kmax - a)) {
+        ex2 = kmax - d;
+        ey2 = b;
+    }
+    let el: f32 = sqrt(ex2 * ex2 + ey2 * ey2);
+    var umb: f32 = 0.0;
+    if (r < U.a.z * max(max(abs(k1), abs(k2)), 0.05) || el < 1.0e-12) { umb = 1.0; }
+    var dir: vec3f = t1;
+    if (el > 0.0) { dir = normalize(t1 * (ex2 / el) + t2 * (ey2 / el)); }
+    if (umb > 0.5) {
+        let up: vec3f = vec3f(0.0, 1.0, 0.0) - n * n.y;
+        dir = t1;
+        if (length(up) > 1.0e-6) { dir = normalize(up); }
+    }
+    *nout = n;
+    *other = cross(n, dir);
+    return umb;
+}
+fn line_cov(s: f32, freq: f32, half_w: f32, px: f32) -> f32 {
+    let u: f32 = s * freq;
+    let fr: f32 = u - floor(u);
+    let dist: f32 = min(fr, 1.0 - fr) / freq;
+    return clamp((half_w - dist) / px + 0.5, 0.0, 1.0) * min(1.0, (2.0 * half_w) / px);
+}
+fn hatch_lines(s: f32, freq: f32, px: f32, half_w: f32) -> f32 {
+    let lev: f32 = max(0.0, log2((px * freq) / 0.25));
+    let l0: f32 = floor(lev);
+    let t: f32 = lev - l0;
+    let f0: f32 = freq / exp2(l0);
+    return line_cov(s, f0, half_w, px) * (1.0 - t) + line_cov(s, f0 / 2.0, half_w, px) * t;
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    let x: f32 = f32(i % U.width);
+    let y: f32 = f32(i / U.width);
+    let wf: f32 = f32(U.width);
+    let hf: f32 = f32(U.height);
+    let eye: vec3f = vec3f(3.2, 2.3, 3.7);
+    let fwd: vec3f = normalize(vec3f(0.25, 0.5, -0.15) - eye);
+    let right: vec3f = normalize(vec3f(-fwd.z, 0.0, fwd.x));
+    let up: vec3f = cross(right, fwd);
+    let sx: f32 = ((x + 0.5) / wf - 0.5) * 2.0 * (wf / hf) * 0.42;
+    let sy: f32 = (0.5 - (y + 0.5) / hf) * 2.0 * 0.42;
+    let rd: vec3f = normalize(fwd + right * sx + up * sy);
+    var t: f32 = 0.0;
+    var hit: f32 = -1.0;
+    for (var it: i32 = 0; it < 160; it++) {
+        let d: f32 = still_sdf(eye + rd * t);
+        if (d < 1.0e-4 * (1.0 + t)) {
+            hit = t;
+            break;
+        }
+        t += d;
+        if (t > 30.0) { break; }
+    }
+    var col: vec3f = U.paper.xyz;
+    if (hit > 0.0) {
+        let q: vec3f = eye + rd * hit;
+        var cn: vec3f = vec3f(0.0);
+        var co: vec3f = vec3f(0.0);
+        let umb: f32 = curvature(q, &cn, &co);
+        let tone: f32 = 0.12 + 0.88 * max(0.0, dot(cn, normalize(vec3f(-0.5, 0.8, 0.45))));
+        let px: f32 = (hit * 2.0 * 0.42) / hf;
+        let half_w: f32 = 0.5 * U.a.y * px;
+        let dark: f32 = 1.0 - tone;
+        let second: f32 = dot(q, vec3f(0.6246950475544243, 0.4685212856658182, -0.6246950475544243));
+        var s1: f32 = dot(q, co);
+        var s2: f32 = second;
+        if (umb > 0.5 && abs(cn.y) > 0.95) {
+            s1 = dot(q, vec3f(0.9578262852211514, 0.0, 0.28734788556634544));
+            s2 = dot(q, vec3f(-0.28734788556634544, 0.0, 0.9578262852211514));
+        } else if (umb > 0.5) {
+            s1 = q.y;
+        }
+        var ink: f32 = hatch_lines(s1, U.a.x, px, half_w * (0.4 + 1.6 * dark));
+        if (U.layers > 1u && tone < 0.5) { ink = 1.0 - (1.0 - ink) * (1.0 - hatch_lines(s2, U.a.x, px, half_w * (0.4 + 2.0 * (0.5 - tone)))); }
+        if (U.a.w > 0.0) {
+            let nv: f32 = abs(dot(cn, rd));
+            if (nv < U.a.w) { ink = max(ink, min(1.0, (U.a.w - nv) / (0.5 * U.a.w))); }
+        }
+        col = U.paper.xyz * (1.0 - ink) + U.ink.xyz * ink;
+    }
+    out8[i] = pack_rgb8(col);
 }

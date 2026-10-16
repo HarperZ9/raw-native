@@ -108,7 +108,7 @@ function(raw_native_d3d12_shaders gen out_header)
         rt_scan_chunk rt_scan_top rt_scan_add rt_ploc_merge rt_trace
         pt_trace pt_finish pt_hybrid
         sdf_march sdf_terms sdf_fog sdf_god sdf_composite
-        style_ditherlight style_paintover)
+        style_ditherlight style_paintover style_exposure style_srgb_decode style_purity style_lightpaint style_glaze style_hatch)
     set(headers "")
     set(includes "")
     set(table "")
