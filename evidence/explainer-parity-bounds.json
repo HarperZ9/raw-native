@@ -1,0 +1,25 @@
+{
+  "schema": "raw-native.parity-bounds/1",
+  "what": "Explainer kit WGSL (web/explainer/wgsl.mjs) against its float64 reference (web/explainer/ref.mjs)",
+  "committed_before_first_run": true,
+  "date": "2026-10-16",
+  "check": "python tests/web/explainer_parity.py --adapter swiftshader",
+  "bounds": {
+    "lod_hash": {"metric": "mismatched keep decisions and hash_unit values over 65,536 ids x 5 keep fractions", "max": 0,
+                  "why": "integer hash, top 24 bits to float: exact in f32 and f64"},
+    "bezier": {"metric": "max abs error of the curve point, scene units, control points within 0..2000", "max": 0.002,
+                "why": "f32 epsilon 1.2e-7 x coordinates up to 2000 x about 8 terms"},
+    "pulse": {"metric": "max abs error of the pulse brightness", "max": 1e-5},
+    "orb": {"metric": "max abs error per channel, linear radiance (values up to about 3.5), over a 256 x 64 polar grid r in 0..2, three specs (plain, 7-blade iris with a ring, wide halo)", "max": 0.001, "p99": 0.0002,
+             "why": "f32 atan2, exp and smoothstep; the iris edge has kinks at blade corners but no jumps"},
+    "atmosphere": {"metric": "max abs error per channel over a 128 x 72 grid at t = 0 and t = 37.5, two specs", "max": 0.001, "p99": 0.0001,
+                    "why": "value noise is C2 across lattice cells, so an f32 floor that lands on the other side of an integer still gives a nearby value"},
+    "points_placement": {"metric": "max distance between the drawn centroid of each of 64 isolated points and its CPU projection, px, at 512 x 288", "max": 0.35},
+    "points_lod_1m": {"metric": "a 1,048,576-point cloud draws with LOD; the drawn count equals the reference count of ids with hash_unit(id) < keep", "max_count_error": 0}
+  },
+  "controls": {
+    "orb_core_radius_3pct": "the kernel with the core radius scaled by 1.03 must exceed the orb bound",
+    "hash_constant_changed": "the kernel with one hash multiplier changed must show LOD mismatches",
+    "points_shifted_1px": "the reference positions shifted by 1 px must exceed the placement bound"
+  }
+}
