@@ -84,7 +84,7 @@ struct StyleParity {
 // fixtureDir holds ditherlight.rnfx, paintover.rnfx, lookkeys.json and, from round 2,
 // poststack.rnfx, purity.rnfx, lightpaint.rnfx, glaze.rnfx, hatch.rnfx, hysteresis.rnfx and
 // palettelight.rnfx, dither.rnfx, adjacency.rnfx. dev may be null (CPU only).
-// only: empty for the full check, or one group (image, quantise, dither, adjacency) for a
+// only: empty for the full check, or one group (poststack, image, quantise, dither, adjacency) for a
 // development run, which the JSON marks and which is not the check of record.
 StyleParity styleParity(rhi::Device* dev, const std::string& fixtureDir, const std::string& only = "");
 

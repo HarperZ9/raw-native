@@ -220,6 +220,7 @@ std::string styleParityJson(const StyleParity& r);                          // s
 
 bool StyleParity::cpuPass() const {
     if (!only.empty()) {   // a development run of one group: its own cases only
+        if (only == "poststack") return error.empty() && poststack.cpuPass();
         bool ok = error.empty() && !cases.empty();
         for (const StyleCase& c : cases) ok = ok && c.cpuPass;
         return ok;
@@ -237,6 +238,7 @@ bool StyleParity::cpuPass() const {
            adj == expectAdjacency && adj >= 4;
 }
 bool StyleParity::gpuPass() const {
+    if (only == "poststack") return error.empty() && poststack.gpuPass();
     bool ok = error.empty() && !cases.empty() && (!only.empty() || poststack.gpuPass());
     for (const StyleCase& c : cases) ok = ok && c.gpuRun && c.gpuPass;
     return ok;
@@ -250,11 +252,12 @@ static StyleParity onlyGroup(rhi::Device* dev, const std::string& dir, const std
     r.gpuWanted = dev != nullptr;
     if (dev) { r.backend = dev->backendName(); r.adapter = dev->adapter().description; }
     try {
-        if (only == "image") r.expectImage = imageParity(dev, dir, r);
+        if (only == "poststack") r.poststack = postStackParity(dev, dir + "/poststack.rnfx", r.error);
+        else if (only == "image") r.expectImage = imageParity(dev, dir, r);
         else if (only == "quantise") r.expectQuant = quantiseParity(dev, dir, r);
         else if (only == "dither") r.expectPaletteDither = ditherParity(dev, dir, r);
         else if (only == "adjacency") r.expectAdjacency = adjacencyParity(dev, dir, r);
-        else r.error = "style-parity --only takes image, quantise, dither or adjacency";
+        else r.error = "style-parity --only takes poststack, image, quantise, dither or adjacency";
     } catch (const std::exception& e) {
         r.error = std::string("fixture: ") + e.what();
     }
