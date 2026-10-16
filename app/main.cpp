@@ -21,6 +21,7 @@
 #include "raw/tools/hw_async_cmd.hpp"
 #include "raw/tools/hw_wave16_cmd.hpp"
 #include "raw/tools/hw_mesh_cmd.hpp"
+#include "raw/tools/style_cmd.hpp"
 #include "raw/rhi/rhi.hpp"
 #include "raw/renderer/raster.hpp"
 #include "raw/renderer/accel.hpp"
@@ -170,6 +171,7 @@ int main(int argc, char** argv){
     if (argc >= 2 && std::strcmp(argv[1], "raster-identity") == 0) return rasterIdentityCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "shadow-parity") == 0) return shadowParityCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "post-parity") == 0) return postParityCommand(argc - 1, argv + 1);
+    if (argc >= 2 && std::strcmp(argv[1], "style-parity") == 0) return styleParityCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "shadow-parity") == 0) return shadowParityCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "hw-probe") == 0) return hwProbeCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "swr-render") == 0) return swrRenderCommand(argc - 1, argv + 1);
