@@ -1,0 +1,12 @@
+{
+  "what": "RT visibility through the dither threshold (project-docs/RT-DITHER-VISIBILITY-PROTOCOL.md): predictions fixed before the estimator, scene and study tool exist",
+  "fixed_before_first_run": "2026-10-15",
+  "scene": { "name": "Penumbra Yard", "px": 256, "metres": 8, "light": { "radius": 0.6, "height": 3 }, "blockers": ["wall-x", "wall-z", "sphere"], "albedo": 0.8, "ambient": 0.1, "levels": [2, 4] },
+  "penumbra_tile": { "tile": 8, "vis_open_interval": [0.02, 0.98] },
+  "truth_samples": 4096,
+  "Q0_net": { "m": 6, "s": 3, "boxes_each_exactly_one": true },
+  "Q1_bias": { "net1_white1_abs_max": 0.01, "rank1_abs_min_in_some_wall": 0.03 },
+  "Q2_accuracy": { "net1_over_white1_max": 0.6, "net1_over_ref64_max": 2.0 },
+  "Q3_temporal": { "static_frames": 8, "net1_changes": 0, "white1_min_fraction": 0.05, "moving": { "step_m": 0.02, "frames": 16, "net1_over_ref64_max": 1.5 } },
+  "Q4_cost_rays": { "net1": 1, "ref64": 64 }
+}
