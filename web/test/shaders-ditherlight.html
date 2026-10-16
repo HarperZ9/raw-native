@@ -11,6 +11,7 @@ import { createHost } from "../raw-gpu.mjs";
 import { resolveDitherlight, runDitherlight } from "../shaders/ditherlight/ditherlight.mjs";
 import { createGpuDitherlight } from "../shaders/ditherlight/gpu.mjs";
 import { renderFrame, pathSpecs, lightsOf, FOV } from "../shaders/fixtures/dream.mjs";
+import { renderFrame2, lightsOf2 } from "../shaders/fixtures/dream2.mjs";
 import { codeStats } from "../shaders/lab/gpu-kit.mjs";
 const q = new URLSearchParams(location.search);
 try {
@@ -20,7 +21,9 @@ try {
   const cases = [];
   for (const c of bounds.cases) {
     if (q.get("case") && q.get("case") !== c.id) continue;
-    const spec = pathSpecs(c.path, c.frame + 1, { fixed: !c.sweep, lanternAttached: !!c.attached })[c.frame], g = renderFrame(spec, W, H), lights = lightsOf(spec);
+    let spec, g, lights;
+    if (c.scene === "v2") { spec = { cam: c.cam, beamAngle: c.beamAngle, flicker: 0.4, time: 10, spin: c.spin }; g = renderFrame2(spec, W, H); lights = lightsOf2(spec); }
+    else { spec = pathSpecs(c.path, c.frame + 1, { fixed: !c.sweep, lanternAttached: !!c.attached })[c.frame]; g = renderFrame(spec, W, H); lights = lightsOf(spec); }
     const plan = resolveDitherlight(c.preset, c.overrides, { height: H, fov: FOV }), want = runDitherlight(plan, lights, g);
     const d = await createGpuDitherlight(host, c.preset, c.overrides, { w: W, h: H }, { fov: FOV }); d.frame(g, lights);
     const got = await d.read(); d.destroy();

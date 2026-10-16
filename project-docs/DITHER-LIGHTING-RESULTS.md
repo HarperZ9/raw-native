@@ -42,3 +42,12 @@ Misses, with causes where known:
 ## Limits and next
 
 One scene, one resolution, one frame rate, software metrics, one non-independent rater. The pre-registered F and L describe two viewing models and a 4x4 box is one scale. Next: clips with human raters for the screen versus world question, a temporal-hysteresis variant of the screen cell (the hysteresis module already exists), and object-only anchoring for isolated moving objects on a screen-anchored scene (the spin path: screen L 0.000, F 0.02).
+
+## Demo look, second version (2026-10-15)
+
+A reviewer's look at the first demo frames found the ground flat, the geometry blocky and the lighting short of drama, and asked for a more surreal composition closer to the reference stills. The second Salt Road (`web/shaders/fixtures/dream2*.mjs`, separate files so the evidence above stays reproducible) changes:
+- Ground: cracked salt polygons, ripples, scattered stones, a pale road that winds to the lighthouse, and a small bump in the height field, all in the albedo and the geometry.
+- Geometry: hanging gothic arches with brick courses and pillars, a fluted inverted spire with buttress fins and orbiting stones, a banded black and white ring, trees with a leaf-noise canopy (the forest reads as dither texture, as in the reference stills), floating octahedral shards, and a large moon lit from the side with craters.
+- Light: a darker night (darkness level 0.02, down from 0.16), tighter key pools from the lantern and orbs, a flickering lantern, a sweeping beam, and a new per-pixel haze input to the lighting model: light scattered toward the camera along each view ray, integrated from the lights through a density that falls with height, screen-blended into the tone (`1 - (1 - tone)(1 - haze)`). It is in the CPU reference, the WGSL pass and the packer; two new parity cases on SwiftShader show 0 decisions differing, and zeroing the haze in the WGSL fails both (48.9% and 6.9% of pixels differ).
+- Composition: a low camera under the arches and through the ring toward a bright passage, with the spire and shards overhead at the end; 1 bit first, then 4 tones.
+Before and after stills are in `docs/images/ditherlight-*.png` and `ditherlight2-*.png`. Limits: the frames were judged by eye only; the beam shafts are visible but subtle at 1 bit; the large hanging slabs still read as heavy flat masses from below.
