@@ -24,11 +24,19 @@ export function shots(keys, { reduced = false } = {}) {
         if (t <= t0) return pick(a);
         let u = (t - t0) / Math.max(1e-6, b.t - t0);
         u = reduced ? (u < 0.5 ? 0 : 1) : (EASE[b.ease || "inOut"] || ease.inOut)(u);
-        return { x: lerp(a.x, b.x, u), y: lerp(a.y, b.y, u), zoom: lerpLog(a.zoom, b.zoom, u), aperture: lerp(a.aperture || 0, b.aperture || 0, u), focus: 0 };
+        const z = lerpLog(a.zoom, b.zoom, u);
+        return { x: toward(a.x, b.x, a.zoom, b.zoom, z, u), y: toward(a.y, b.y, a.zoom, b.zoom, z, u), zoom: z, aperture: lerp(a.aperture || 0, b.aperture || 0, u), focus: 0 };
       }
     }
     return pick(ks[ks.length - 1]);
   };
+}
+// Zoom to a point: on a push-in the destination's screen offset shrinks linearly to zero, so the
+// target never leaves the frame (a plain lerp of the centre swings it off screen at high zoom);
+// a pull-out runs the same move backwards from the start point.
+export function toward(a, b, za, zb, z, u) {
+  if (zb >= za) return b - (1 - u) * (b - a) * (za / z);
+  return a + u * (b - a) * (zb / z);
 }
 const pick = (k) => ({ x: k.x, y: k.y, zoom: k.zoom, aperture: k.aperture || 0, focus: 0 });
 

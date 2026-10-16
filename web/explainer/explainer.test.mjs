@@ -141,7 +141,10 @@ test("camera shots ease between keys, zoom in log space, and cut under reduced m
   const keys = [{ t: 0, x: 0, y: 0, zoom: 1 }, { t: 10, x: 100, y: 0, zoom: 4 }];
   const cam = shots(keys), cut = shots(keys, { reduced: true });
   assert.equal(cam(5).zoom, 2);                    // geometric midpoint, inOut eases to 0.5 at 5
-  assert.equal(cam(5).x, 50);
+  assert.equal((100 - cam(5).x) * cam(5).zoom, 50);   // the target's screen offset shrinks linearly
+  for (let t = 0; t <= 10; t += 0.25) assert.ok(Math.abs((100 - cam(t).x) * cam(t).zoom) <= 100 + 1e-9, "the target stays in frame");
+  const back = shots([{ t: 0, x: 100, y: 0, zoom: 4 }, { t: 10, x: 0, y: 0, zoom: 1 }]);
+  assert.equal(back(10).x, 0); assert.equal(back(0).x, 100);
   assert.equal(cut(4.9).x, 0);
   assert.equal(cut(5.1).x, 100);
   const ir = iris(10, 9, 11), irR = iris(10, 9, 11, { reduced: true });
