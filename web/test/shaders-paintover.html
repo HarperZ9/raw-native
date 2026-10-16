@@ -1,0 +1,47 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Paint-over projection: GPU against the CPU reference</title>
+<link rel="icon" href="data:,">
+<!-- Run by tests/web/shaders_parity.py --shader paintover. Each case of
+     evidence/shaders-paintover-parity-bounds.json builds painted projectors on Lamp Quay, renders a view
+     through renderProjected (CPU, float64) and paintover/gpu.mjs, and compares coverage and the 8-bit colour. -->
+<script type="module">
+import { createHost } from "../raw-gpu.mjs";
+import { isoCamera } from "../shaders/paintover/camera.mjs";
+import { makeProjector, renderProjected, KEYFRAME } from "../shaders/paintover/projector.mjs";
+import { paint } from "../shaders/paintover/painter.mjs";
+import { createGpuPaintover } from "../shaders/paintover/gpu.mjs";
+import { renderGbuf } from "../shaders/fixtures/harbour-render.mjs";
+import { codeStats } from "../shaders/lab/gpu-kit.mjs";
+const q = new URLSearchParams(location.search), TARGET = [1, 1.5, 0];
+try {
+  const host = await createHost({ timing: false });
+  const gpuErrors = []; host.device.onuncapturederror = (e) => gpuErrors.push(e.error.message);
+  const bounds = await (await fetch("../../evidence/shaders-paintover-parity-bounds.json")).json(), { width: W, height: H } = bounds.output, PR = bounds.projectors;
+  const projectors = PR.set.map(([dy, de], k) => {
+    const cam = isoCamera({ yawDeg: 45 + dy, elevDeg: 35.264 + de, target: TARGET, scale: PR.scale }), g = renderGbuf(cam, PR.w, PR.h, { shadeOn: true });
+    const p = paint({ w: PR.w, h: PR.h, rgb: g.shade }, { id: g.id, N: g.N }, { seed: PR.seeds[k] });
+    return makeProjector(cam, PR.w, PR.h, p.rgba8, g.depth);
+  });
+  const cases = [];
+  for (const c of bounds.cases) {
+    if (q.get("case") && q.get("case") !== c.id) continue;
+    const set = c.use.map((k) => projectors[k]), vc = c.view.ortho === false ? isoCamera({ yawDeg: 45 + c.view.dyaw, elevDeg: 35.264 + c.view.delev, target: TARGET, dist: 60, ortho: false, fovY: 0.5 }) : isoCamera({ yawDeg: 45 + c.view.dyaw, elevDeg: 35.264 + c.view.delev, target: TARGET, scale: 9 });
+    const g = renderGbuf(vc, W, H, { shadeOn: false }), cpu = renderProjected(set, g, vc, { opt: KEYFRAME, fallback: () => [0, 0, 0] });
+    const d = await createGpuPaintover(host, set, { w: W, h: H }); d.frame(g, vc); const got = await d.read(); d.destroy();
+    let mism = 0, hitPx = 0; const want = new Uint8Array(W * H * 4), have = new Uint8Array(W * H * 4);
+    for (let i = 0; i < W * H; i++) {
+      if (!g.hit[i]) continue;
+      hitPx++;
+      const gc = got[i * 4 + 3] === 255, cc = cpu.covered[i] === 1;
+      if (gc !== cc) { mism++; continue; }
+      if (!cc) continue;
+      for (let k = 0; k < 3; k++) { want[i * 4 + k] = Math.round(Math.min(1, Math.max(0, cpu.rgb[i * 3 + k])) * 255); have[i * 4 + k] = got[i * 4 + k]; }
+    }
+    const st = codeStats(want, have);
+    cases.push({ id: c.id, decisionMismatch: mism, decisions: hitPx, mismatch_fraction: mism / hitPx, over2_fraction: st.over2 / st.n, mean: st.mean, max: st.max });
+  }
+  await host.done();
+  window.__result = { bounds: bounds.bounds, cases, adapter: host.info, gpuErrors };
+} catch (e) { window.__result = { error: String(e && e.stack || e) }; }
+</script>

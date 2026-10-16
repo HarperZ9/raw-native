@@ -1,0 +1,3 @@
+[
+  { "path": "pixel/probe.mjs", "reason": "A comment cites the licence of the paper it implements from (Ebert, Texel Splatting, CC BY 4.0). The code is original and written from the paper; no paper code is included." }
+]

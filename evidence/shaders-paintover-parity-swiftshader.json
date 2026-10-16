@@ -1,0 +1,53 @@
+{
+  "bounds": {
+    "max_decision_mismatch_fraction": 0.0005,
+    "over2_fraction": 0.0005,
+    "mean_abs_code": 0.05
+  },
+  "cases": [
+    {
+      "id": "primary-aligned",
+      "decisionMismatch": 0,
+      "decisions": 20736,
+      "mismatch_fraction": 0,
+      "over2_fraction": 0,
+      "mean": 0,
+      "max": 0
+    },
+    {
+      "id": "three-off-axis",
+      "decisionMismatch": 0,
+      "decisions": 20736,
+      "mismatch_fraction": 0,
+      "over2_fraction": 0,
+      "mean": 8.037551440329218e-05,
+      "max": 1
+    },
+    {
+      "id": "three-at-secondary",
+      "decisionMismatch": 0,
+      "decisions": 20736,
+      "mismatch_fraction": 0,
+      "over2_fraction": 0,
+      "mean": 0,
+      "max": 0
+    },
+    {
+      "id": "perspective-view",
+      "decisionMismatch": 0,
+      "decisions": 20736,
+      "mismatch_fraction": 0,
+      "over2_fraction": 0,
+      "mean": 6.430041152263375e-05,
+      "max": 1
+    }
+  ],
+  "adapter": {
+    "vendor": "google",
+    "architecture": "swiftshader",
+    "device": "",
+    "description": ""
+  },
+  "gpuErrors": [],
+  "adapter_kind": "swiftshader"
+}

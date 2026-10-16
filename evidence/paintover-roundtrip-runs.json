@@ -1,0 +1,71 @@
+{
+ "protocol": "evidence/paintover-protocol.json",
+ "size": [
+  960,
+  540
+ ],
+ "roundtrip": {
+  "covered_fraction": 0.9967939814814815,
+  "max_abs_code": 0,
+  "mean_abs_code": 0,
+  "covered": 516738,
+  "hit_pixels": 518400,
+  "uncovered": 1662
+ },
+ "shift": {
+  "covered_fraction": 0.9957523148148149,
+  "max_abs_code": 196,
+  "mean_abs_code": 3.2065777085536946,
+  "covered": 516198,
+  "hit_pixels": 518400,
+  "uncovered": 2202
+ },
+ "unpainted": {
+  "covered_fraction": 0.9967939814814815,
+  "max_abs_code": 206,
+  "mean_abs_code": 4.347246251162742,
+  "covered": 516738,
+  "hit_pixels": 518400,
+  "uncovered": 1662
+ },
+ "wrong_depth": {
+  "covered_fraction": 0,
+  "max_abs_code": 0,
+  "mean_abs_code": null,
+  "covered": 0,
+  "hit_pixels": 518400,
+  "uncovered": 518400
+ },
+ "checks": [
+  {
+   "id": "R1 max",
+   "pass": true,
+   "detail": "max 0 (bound 1)"
+  },
+  {
+   "id": "R1 mean",
+   "pass": true,
+   "detail": "mean 0.00000 (bound 0.02)"
+  },
+  {
+   "id": "R2 covered",
+   "pass": true,
+   "detail": "covered 0.99679, 1662 uncovered of 518400 (bound 0.995)"
+  },
+  {
+   "id": "R3 shift control",
+   "pass": true,
+   "detail": "mean 3.207 (needs >= 2)"
+  },
+  {
+   "id": "R4 unpainted control",
+   "pass": false,
+   "detail": "mean 4.347 (needs >= 5)"
+  },
+  {
+   "id": "R5 wrong-depth control",
+   "pass": true,
+   "detail": "covered 0.00000 (needs <= 0.01)"
+  }
+ ]
+}

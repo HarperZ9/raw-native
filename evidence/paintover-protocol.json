@@ -1,0 +1,20 @@
+{
+  "what": "Paint-over projection: round-trip and off-axis protocol, fixed before the measurement tools ran",
+  "fixed_before_first_run": "2026-10-15",
+  "note": "project-docs/PAINT-OVER-PROTOCOL.md holds the prose",
+  "primary": { "yawDeg": 45, "elevDeg": 35.264, "target": [1, 1.5, 0], "scale": 9, "ortho": true, "painting": [960, 540], "seed": 7 },
+  "roundtrip": { "size": [960, 540], "bounds": { "max_abs_code": 1, "mean_abs_code": 0.02, "covered_fraction_min": 0.995 }, "controls": { "shift_one_pixel_mean_min": 2.0, "unpainted_mean_min": 5.0, "wrong_depth_covered_max": 0.01 } },
+  "offaxis": {
+    "view": [480, 270], "yaw_offsets": [0, 5, 10, 20, 30, 45, 60, 90], "elev_offsets_at_yaw0": [-10, 10],
+    "secondaries": { "count": 2, "candidate_yaw": [-150, -120, -90, -60, -30, -20, 20, 30, 60, 90, 120, 150], "candidate_elev": [-10, 0, 15], "required_yaw": [-30, -20, 20, 30], "required_elev": [-10, 0, 10], "seeds": [11, 13] },
+    "predictions": {
+      "P1_ground_stretch_rel": 0.03,
+      "P2_holes_primary_only": { "5": 0.01, "10": 0.03, "20": 0.1, "30": 0.2, "90_min": 0.25, "monotone_slack": 0.005 },
+      "P3_secondary_hole_ratio_max": { "30": 0.4, "90": 0.6 },
+      "P4_secondary_yaw_from_primary_min": 25, "P4_secondary_separation_min": 30,
+      "P5_walls_yaw30": { "M_max": 1.9, "A_max": 2.6 },
+      "P6": "view at the primary with a secondary 60 degrees away satisfies R1"
+    }
+  },
+  "default_rule": "theta max stays 40 degrees unless P6 fails or a pop of more than 8 codes appears between views 1 degree apart"
+}

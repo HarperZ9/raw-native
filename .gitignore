@@ -17,6 +17,8 @@ cmake-build-*/
 !tests/media/budget-*/*/media.json
 # API snapshots (ADR 0015).
 !api/snapshot-*/manifest.json
+# The third-party-shader check's reasoned allowlist (tools/ci).
+!tools/ci/*.json
 
 # CMake artifacts
 CMakeCache.txt

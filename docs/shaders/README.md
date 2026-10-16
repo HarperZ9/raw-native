@@ -192,6 +192,14 @@ Checks: no salience leaves the frame unchanged; random salience with a huge stre
 
 Resolves light through a threshold matrix into N tones (`levels` 2 is 1 bit). Passes: world albedo, a darkness level, radial lights and shaped beams (`lights.mjs`), fog to paper white, then the pattern (`thresholds.mjs`: Bayer 8x8 by bit interleave or the 64x64 blue-noise mask; anchoring `screen`, `world-fixed` or `world-octave`). Tones sit at linear light `(k/(N-1))^gamma` and the fraction between two levels is taken in linear light. Presets `ink` and `tones4` default to Bayer 8x8, screen-anchored, the choice recorded in `project-docs/DITHER-LIGHTING-RESULTS.md`. CPU reference `ditherlight.mjs`, GPU pass `ditherlight.wgsl.mjs` and `gpu.mjs`, parity page `web/test/shaders-ditherlight.html`, bounds `evidence/shaders-ditherlight-parity-bounds.json`. Demo: `node tools/shaders/ditherlight_demo.mjs --out DIR`. Original scene: `web/shaders/fixtures/dream*.mjs`. The second version of the scene, with a haze input (`g.haze`, light scattered along each view ray), is `dream2*.mjs`; demo: `node tools/shaders/ditherlight_demo2.mjs --out DIR`.
 
+## Paint-over projection (`web/shaders/paintover/`)
+
+A painting made over a render from a camera-locked camera (orthographic isometric or perspective) is projected back onto the geometry and becomes its surface colour. `projector.mjs` holds the CPU reference: coverage (inside the painting, facing, not hidden by the depth map) and a keyframe blend by view angle, each window reaching the nearest other projector so the view from any projector is its painting unchanged. `painter.mjs` is a procedural painter (layered brush strokes clipped to objects, with a mask option to fill only holes). `grade.mjs` grades the baked painting by time of day from the look keys. GPU pass `projector.wgsl.mjs` and `gpu.mjs`; parity page `web/test/shaders-paintover.html`; bounds `evidence/shaders-paintover-parity-bounds.json`. Protocol, results and limits: `project-docs/PAINT-OVER-PROTOCOL.md`, `PAINT-OVER-RESULTS.md`. Demo: `node tools/shaders/paintover_demo.mjs --out DIR`. The harbour block-out is `web/shaders/fixtures/harbour*.mjs`.
+
+## Look keys (`web/look/keys.mjs`)
+
+Terms keyed to time-of-day slots (8 by default, 6 accepted, fewer than 6 refused), with a periodic monotone cubic curve through every key. It is the time axis of the environment state proposed in `docs/architecture/adr/0017-environment-state.md`.
+
 ## Not landed: peripheral crowding
 
 A crowding look for the thriller (detail rearranged away from the gaze, local mean kept) was built and failed its committed criteria: keeping the worst local-mean change under 0.02 and scrambling enough detail conflict near strong edges. The code and every run are on a separate branch; nothing here claims it.
