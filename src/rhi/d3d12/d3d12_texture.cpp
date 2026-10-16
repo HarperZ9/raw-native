@@ -22,6 +22,7 @@ DXGI_FORMAT dxgiFormat(TextureFormat f){
         case TextureFormat::R32Float: return DXGI_FORMAT_R32_FLOAT;
         case TextureFormat::Depth32Float: return DXGI_FORMAT_D32_FLOAT;
         case TextureFormat::RGB10A2Unorm: return DXGI_FORMAT_R10G10B10A2_UNORM;
+        case TextureFormat::BGRA8Unorm: return DXGI_FORMAT_B8G8R8A8_UNORM;
         default: return DXGI_FORMAT_R8G8B8A8_UNORM;
     }
 }

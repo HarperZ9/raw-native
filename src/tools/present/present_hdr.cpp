@@ -90,6 +90,8 @@ int hdrCommand(const std::string& out, bool quiet){
     Session s; bool noDevice = false;
     if (!openSession(s, win.get(), rhi::TextureFormat::RGB10A2Unorm, rhi::ColourSpace::Hdr10Pq, 1, false, err, &noDevice)){
         if (noDevice){ std::printf("SKIP: %s\n", err.c_str()); return kSkip; }
+        // A surface without an HDR10 format (lavapipe, SwiftShader) is a skip with its reason, not a pass.
+        if (err.find("offers no format") != std::string::npos){ std::printf("SKIP: HDR10 swapchain: %s\n", err.c_str()); return kSkip; }
         std::fprintf(stderr, "hdr: %s\n", err.c_str()); return kRuntime;
     }
     if (s.sc->width() != kW || s.sc->height() != kH){ std::fprintf(stderr, "hdr: the swapchain is %ux%u, not %ux%u\n", s.sc->width(), s.sc->height(), kW, kH); return kRuntime; }

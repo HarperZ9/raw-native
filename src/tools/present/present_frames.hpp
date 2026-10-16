@@ -12,10 +12,12 @@
 namespace raw::present {
 
 struct Pipelines {
-    rhi::RasterPipelineHandle scene, blitRgba8, pq, pqControl;
+    rhi::RasterPipelineHandle scene, blit, pq, pqControl;
 };
-// Every pass on `dev`; the blit targets RGBA8Unorm, the PQ passes RGB10A2Unorm.
-bool createPipelines(rhi::Device& dev, Pipelines& p, std::string& err);
+// Every pass on `dev`, from the shader table of the device's format (DXIL or SPIR-V). The blit
+// targets `blitFormat`, the swapchain's format (BGRA8Unorm where a Vulkan surface offers only it);
+// the PQ passes target RGB10A2Unorm.
+bool createPipelines(rhi::Device& dev, rhi::TextureFormat blitFormat, Pipelines& p, std::string& err);
 
 // The per-size resources of a frame.
 struct Targets {
@@ -26,8 +28,9 @@ struct Targets {
 bool makeTargets(rhi::Device& dev, uint32_t w, uint32_t h, Targets& t, std::string& err);
 void dropTargets(rhi::Device& dev, Targets& t);
 
-// SHA-256 of tight rows of 4-byte texels (the copy's row padding dropped), top row first.
-std::string hashRows(const void* mapped, uint32_t w, uint32_t h, uint32_t pitch);
+// SHA-256 of tight rows of 4-byte texels (the copy's row padding dropped), top row first, as
+// RGBA: a BGRA8 image is swizzled first, so the hash does not depend on the swapchain's order.
+std::string hashRows(const void* mapped, uint32_t w, uint32_t h, uint32_t pitch, bool bgra = false);
 
 struct FrameSpec {
     uint32_t frame{0};

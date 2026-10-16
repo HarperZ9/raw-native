@@ -398,6 +398,75 @@ jobs:
         with:
           name: n2-presentation-warp
           path: n2-*.json
+  vulkan-linux:
+    # N3 (evidence/n3-vulkan-raster-bounds.json): the RHI on Vulkan with lavapipe, Mesa's software
+    # driver, presenting on X11 (Xvfb) and on Wayland (a headless Weston), with the Khronos validation
+    # layer on: any error it reports fails the run. lavapipe is not a GPU; these are not GPU results.
+    runs-on: ubuntu-24.04
+    env:
+      VK_DRIVER_FILES: /usr/share/vulkan/icd.d/lvp_icd.json
+      RAW_NATIVE_VK_VALIDATION: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the Vulkan loader and headers, lavapipe, glslang, the validation layer and the window systems' client libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libvulkan-dev glslang-tools mesa-vulkan-drivers vulkan-validationlayers \
+            libxcb1-dev libwayland-dev wayland-protocols xvfb weston
+      - name: Configure with RAW_NATIVE_VULKAN_RHI=ON
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRAW_NATIVE_VULKAN_RHI=ON
+      - name: Build
+        run: cmake --build build -j 4 --target raw_native_present_vk
+      - name: Start Xvfb and a headless Weston
+        run: |
+          Xvfb :99 -screen 0 1280x720x24 > xvfb.log 2>&1 &
+          mkdir -p /tmp/xdg && chmod 700 /tmp/xdg
+          XDG_RUNTIME_DIR=/tmp/xdg weston --backend=headless --renderer=pixman --socket=wayland-n3 --width=1280 --height=720 --idle-time=0 > weston.log 2>&1 &
+          sleep 3
+          test -S /tmp/xdg/wayland-n3 || { cat weston.log; exit 1; }
+          echo "DISPLAY=:99" >> "$GITHUB_ENV"
+          echo "XDG_RUNTIME_DIR=/tmp/xdg" >> "$GITHUB_ENV"
+      - name: N3 on X11 with lavapipe; 600 presented frames twice equal the offscreen render and the D3D12 WARP render of N2, the control fails, resize, minimise, fullscreen and device loss recover
+        env:
+          RAW_NATIVE_WINDOW: x11
+        run: |
+          p=build/raw_native_present_vk; g=tests/gpu/present_gate.py
+          $p selftest
+          $p run --frames 600 --out n3-x11-run1.json
+          $p run --frames 600 --out n3-x11-run2.json
+          $p run --frames 600 --offscreen --out n3-offscreen.json
+          python3 $g same n3-x11-run1.json n3-x11-run2.json n3-offscreen.json
+          python3 $g same evidence/n2-warp/offscreen.json n3-offscreen.json
+          $p run --frames 600 --control --out n3-x11-control.json
+          python3 $g control n3-offscreen.json n3-x11-control.json
+          $p run --frames 600 --lifecycle --out n3-x11-lifecycle.json
+          $p run --frames 600 --lifecycle --offscreen --out n3-lifecycle-offscreen.json
+          python3 $g lifecycle n3-x11-lifecycle.json n3-lifecycle-offscreen.json
+          $p run --frames 60 --fullscreen-check --out n3-x11-fullscreen.json
+          python3 -c "import json,sys; d=json.load(open('n3-x11-fullscreen.json')); print(d['events']); sys.exit(0 if d['fullscreen_ok'] else 1)"
+          $p pacing --frames 600 --warmup 30 --width 320 --height 180 --out n3-x11-pacing.json
+          python3 $g pacing n3-x11-pacing.json --harness
+      - name: N3 on Wayland with lavapipe; the same frames, lifecycle without the minimise step (xdg-shell does not report it), fullscreen
+        env:
+          RAW_NATIVE_WINDOW: wayland
+          WAYLAND_DISPLAY: wayland-n3
+        run: |
+          p=build/raw_native_present_vk; g=tests/gpu/present_gate.py
+          $p run --frames 600 --out n3-wayland-run1.json
+          $p run --frames 600 --out n3-wayland-run2.json
+          python3 $g same n3-wayland-run1.json n3-wayland-run2.json n3-offscreen.json
+          $p run --frames 600 --lifecycle --out n3-wayland-lifecycle.json
+          python3 $g lifecycle n3-wayland-lifecycle.json n3-lifecycle-offscreen.json --no-minimise
+          $p run --frames 60 --fullscreen-check --out n3-wayland-fullscreen.json
+          python3 -c "import json,sys; d=json.load(open('n3-wayland-fullscreen.json')); print(d['events']); sys.exit(0 if d['fullscreen_ok'] else 1)"
+      - name: Keep the N3 records
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: n3-vulkan-lavapipe
+          path: |
+            n3-*.json
+            weston.log
   fuzz-sanitizers:
     # ROADMAP M2 criterion 2: one million fuzzed glTF inputs under AddressSanitizer and
     # UndefinedBehaviorSanitizer; any report, other exception or slow input fails the job.

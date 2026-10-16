@@ -34,7 +34,7 @@ struct FrameRecord { uint32_t frame, width, height; std::string hash; };
 struct RunResult {
     std::vector<FrameRecord> frames;
     std::vector<std::string> events;   // what happened, in order, for the record
-    std::string adapter, graph, error;
+    std::string adapter, graph, error, backend, windowSystem;
     uint32_t recoveries{0}, drawnWhileMinimised{0}, zeroResizes{0}, sizeMismatches{0};
     bool tearing{false}, fullscreenChecked{false}, fullscreenOk{false};
 };

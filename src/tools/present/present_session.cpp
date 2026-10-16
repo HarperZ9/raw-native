@@ -19,16 +19,22 @@ bool openSession(Session& s, platform::Window* w, rhi::TextureFormat format, rhi
     if (!s.dev){ if (noDevice) *noDevice = true; return false; }
     const rhi::AdapterInfo& a = s.dev->adapter();
     s.adapter = a.description + " (" + a.backend + ", vendor " + a.vendor + ", driver " + a.driver + ")";
-    if (!createPipelines(*s.dev, s.pipes, err)) return false;
     uint32_t width = 0, height = 0;
     if (w){
+        const platform::NativeWindow n = w->native();
         rhi::SwapchainDesc d;
-        d.window = w->nativeHandle(); d.width = w->clientWidth(); d.height = w->clientHeight();
+        d.system = n.system == platform::NativeWindow::System::Xcb ? rhi::WindowSystem::Xcb
+                 : n.system == platform::NativeWindow::System::Wayland ? rhi::WindowSystem::Wayland : rhi::WindowSystem::Win32;
+        d.display = n.display; d.window = n.window; d.width = w->clientWidth(); d.height = w->clientHeight();
         d.format = format; d.colourSpace = cs; d.allowTearing = sync == 0; d.waitable = waitable;
         s.sc = s.dev->createSwapchain(d, err);
         if (!s.sc) return false;
         width = s.sc->width(); height = s.sc->height();
     }
+    // The blit draws into the backbuffer, so its pipeline takes the swapchain's format.
+    const rhi::TextureFormat blitFormat = s.sc && s.sc->format() == rhi::TextureFormat::BGRA8Unorm ? rhi::TextureFormat::BGRA8Unorm
+                                                                                                     : rhi::TextureFormat::RGBA8Unorm;
+    if (!createPipelines(*s.dev, blitFormat, s.pipes, err)) return false;
     return !w || makeTargets(*s.dev, width, height, s.targets, err);
 }
 void closeSession(Session& s){
@@ -49,7 +55,7 @@ int runOffscreen(const RunOptions& o, RunResult& r){
     bool noDevice = false;
     if (!openSession(s, nullptr, rhi::TextureFormat::RGBA8Unorm, rhi::ColourSpace::SrgbNonlinear, o.syncInterval, false, r.error, &noDevice))
         return noDevice ? kSkip : kRuntime;
-    r.adapter = s.adapter;
+    r.adapter = s.adapter; r.backend = s.dev->backendName(); r.windowSystem = "none";
     for (uint32_t f = 0; f < o.frames; ++f){
         uint32_t w, h;
         o.schedule.sizeAt(f, o.width, o.height, w, h);
