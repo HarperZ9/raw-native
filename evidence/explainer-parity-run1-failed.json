@@ -1,0 +1,96 @@
+{
+ "kernel": {
+  "orb": [
+   {
+    "max": 0.5837033960906169,
+    "p99": 0.4111676549741444,
+    "n": 49152
+   },
+   {
+    "max": 0.0050710946295353665,
+    "p99": 0.0017282412674741732,
+    "n": 49152
+   },
+   {
+    "max": 0.8066375806722865,
+    "p99": 0.47297383951012023,
+    "n": 49152
+   }
+  ],
+  "atmosphere": [
+   {
+    "max": 1.8263374768068275e-07,
+    "p99": 1.115465204648558e-07,
+    "n": 55296
+   },
+   {
+    "max": 1.3631904383082372e-07,
+    "p99": 9.022117009038766e-08,
+    "n": 55296
+   }
+  ],
+  "bezier": {
+   "max": 0.00020678341955170315,
+   "p99": 0.00018356305616136262,
+   "n": 1001
+  },
+  "pulse": {
+   "max": 7.952769939256754e-07,
+   "p99": 4.2409559769529537e-07,
+   "n": 1001
+  },
+  "lod": {
+   "ids": 65536,
+   "keeps": [
+    0.01,
+    0.1,
+    0.25,
+    0.5,
+    0.9
+   ],
+   "mismatches": 0
+  },
+  "controls": {
+   "orb": {
+    "max": 0.5837033960906169,
+    "p99": 0.4111676549741444,
+    "n": 49152
+   },
+   "hash": {
+    "ids": 4096,
+    "keeps": [
+     0.25
+    ],
+    "mismatches": 4095
+   }
+  }
+ },
+ "placement": {
+  "points": 64,
+  "max": 0.37230379885727943,
+  "controlShiftedMax": 1.1334958754690383
+ },
+ "million": {
+  "points": 1048576,
+  "keep": 0.3523362122174832,
+  "gpuKept": 370325,
+  "refKept": 370325,
+  "countError": 0,
+  "msPerFrameLod": 6309.666666666667,
+  "msFrameAllPoints": 7398.9000000059605,
+  "size": [
+   1280,
+   720
+  ]
+ },
+ "adapter": "google swiftshader",
+ "adapter_kind": "swiftshader",
+ "problems": [
+  "orb spec 0: max 0.584, p99 0.411",
+  "orb spec 1: max 0.00507, p99 0.00173",
+  "orb spec 2: max 0.807, p99 0.473",
+  "placement max 0.372 px"
+ ],
+ "commit": "34fc8bb914f4cb29873d765c87644f538eab3905",
+ "does_not_prove": "That the pictures look right to a viewer, or that a GPU other than this adapter agrees; the timings are this adapter only."
+}

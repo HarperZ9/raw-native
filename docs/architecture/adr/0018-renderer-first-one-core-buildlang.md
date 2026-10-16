@@ -1,6 +1,7 @@
 # ADR 0018: renderer first, one C++ core, gameplay in BuildLang, Low Water as the showcase
 
-**Status:** Accepted (D1, D2, D3, D10); D4 to D9 and D11 pending. **Date:** 2026-10-15.
+**Status:** Accepted (D1, D2, D3, D10 on 2026-10-15; D11 on 2026-10-16); D4 to D9 pending.
+**Date:** 2026-10-15, amended 2026-10-16.
 **Builds on:** [0014](0014-game-runtime.md), [0016](0016-style-templates.md),
 [0017](0017-environment-state.md). **Amends:** [0007](0007-plugin-model.md) and 0014 on the
 scripting language only (see Decision 3).
@@ -46,7 +47,6 @@ Pending, with the recommendation from the plan kept for the author:
 | D7 | A plain statement that games made with raw-native are permitted use under FSL-1.1-MIT | Yes, in the README and the docs |
 | D8 | Languages at launch | English, with string tables ready |
 | D9 | Spend: the Steam Direct fee, an optional code-signing certificate | The author's call; itch.io needs no spend |
-| D11 | A statement that BuildLang's compiled output may ship inside games, commercial ones included (new, from the BuildLang study) | Yes; needed before the public demo |
 
 ## Consequences
 
@@ -74,3 +74,14 @@ Pending, with the recommendation from the plan kept for the author:
 The author's review. For D3, a finding in the BuildLang study that a needed property (a
 determinism contract, an embedding path inside the WebAssembly build) cannot be met, reported
 to the author with the evidence before any gameplay is written another way.
+
+## Amendment, 2026-10-16: D11 decided
+
+D11 asked for a statement that BuildLang's compiled output may ship inside games, commercial
+ones included. It came out of the BuildLang study in RELEASE-PLAN.md section 4. The author
+answered on 2026-10-16: "yes - games may ship buildlang generated code."
+
+So the C that BuildLang generates, together with its built-in header, may ship inside games made
+with raw-native, under terms the shipper chooses. The BuildLang compiler itself stays under the
+BuildLang Fair-Source License 1.0; it runs at build time and is not shipped. The BuildLang
+repository records the same statement beside its LICENSE file. The decisions above are unchanged.

@@ -294,7 +294,7 @@ Read only. Nothing was written to the BuildLang repository.
 | REPL | `buildc repl` type-checks expressions (`:type`); it does not run code | No embedded interpreter exists |
 | Runtime library | `compiler/src/runtime/STATUS.md`: the GC, async and FFI modules are designs; no compiled program links a runtime library. The C backend's support is an embedded C header | Gameplay has no GC to schedule; memory is whatever the generated C allocates |
 | Watch | `buildc watch --target c` recompiles on change | A base for hot reload: recompile, rebuild a module, reload |
-| Licence | BuildLang Fair-Source License 1.0: any purpose except a Competing Use; covers "the BuildLang compiler and toolchain" | Whether the generated C and its embedded header, shipped inside a game, carry any restriction is not stated |
+| Licence | BuildLang Fair-Source License 1.0: any purpose except a Competing Use; covers "the BuildLang compiler and toolchain" | Cleared on 2026-10-16: the author decided (D11) that games may ship BuildLang-generated code, the generated C and its embedded header included, under the shipper's terms |
 | Known gaps | No `Box<T>` (issue #83, open per the 2026-10-15 state) | Recursive gameplay data (dialogue trees) needs indices or arenas until it lands |
 
 ### 4.2 What raw-native needs from it
@@ -321,7 +321,7 @@ Read only. Nothing was written to the BuildLang repository.
    that changes the layout, with a message. No hot reload in shipped or web builds.
 6. **Source lines in crash reports.** `-g` exists; the generated C should carry `#line` mappings
    to `.bld` files so a crash report names the BuildLang line.
-7. **A licence statement for compiled output** (decision D11 below).
+7. **A licence statement for compiled output.** Done: decision D11, 2026-10-16 (section 7).
 
 ### 4.3 Stages
 
@@ -417,12 +417,14 @@ SharedArrayBuffer hosting is checked.
 - **AI disclosure.** Steam requires a disclosure of AI-generated content (section 5). Drafts by
   AI agents count. The store page states it.
 - **BuildLang.** The compiler is under the BuildLang Fair-Source License 1.0. It runs at build
-  time and is not shipped. Generated C and its embedded header do ship inside a game; their
-  terms are decision D11 (section 7).
+  time and is not shipped. Generated C and its embedded header do ship inside a game; the author
+  decided on 2026-10-16 that games may ship them under terms of the shipper's choosing (D11,
+  section 7).
 
 ## 7. Decisions
 
-Decided by the author on 2026-10-15 and recorded in ADR 0018:
+Decided by the author and recorded in ADR 0018 (D1, D2, D3 and D10 on 2026-10-15; D11 on
+2026-10-16):
 
 | ID | Decision | Answer |
 |---|---|---|
@@ -430,6 +432,7 @@ Decided by the author on 2026-10-15 and recorded in ADR 0018:
 | D2 | Which runtime hosts games | "One C++ core" |
 | D3 | How gameplay is authored | "BuildLang from the start" |
 | D10 | The showcase game | "Yes, Low Water" (working title) |
+| D11 (2026-10-16) | May games ship BuildLang's compiled output (the generated C and its embedded header) | "yes - games may ship buildlang generated code." |
 
 Pending:
 
@@ -441,7 +444,6 @@ Pending:
 | D7 | A plain statement that games made with raw-native are permitted use under FSL | Yes, in the README and the docs |
 | D8 | Languages at launch | English at launch with string tables ready; a second language after release if demand shows |
 | D9 | Spend: Steam Direct fee, an optional code-signing certificate | The author's call; the plan works on itch.io with no spend |
-| D11 | A statement that BuildLang's compiled output (the generated C and its embedded header) may ship inside games, including commercial ones, without the Fair-Source restrictions | Yes, as the author is the licensor of both; needed before W4 |
 
 ## 8. Risks
 
@@ -458,7 +460,7 @@ Pending:
 | Steam Deck under Proton fails, or Vulkan raster slips | Medium | The Deck review fails | N3 checks both routes early |
 | The GPU lock is held for long periods by other work | High | No RTX timings | Software adapters carry correctness; RTX timings are recorded when the lock is free and are never a merge gate |
 | Scope of a full game for one developer | High | The game never ships | The slice measures production rates and the scope is reset at W3 |
-| Licence uncertainty puts off game makers (engine or BuildLang output) | Medium | Low adoption | Decisions D7 and D11 |
+| Licence uncertainty puts off game makers | Medium | Low adoption | Decision D7 for the engine; D11 settled BuildLang's output on 2026-10-16 |
 
 ## 9. Parallel work streams
 
