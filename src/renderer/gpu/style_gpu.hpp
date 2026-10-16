@@ -4,6 +4,7 @@
 #include "raw/renderer/style_ditherlight.hpp"
 #include "raw/renderer/style_paintover.hpp"
 #include "raw/rhi/rhi.hpp"
+#include "gpu_util.hpp"
 #include <cstdint>
 #include <string>
 #include <vector>
@@ -21,6 +22,12 @@ struct PaintParamsGpu {
     float opt[4], opt2[4];
 };
 static_assert(sizeof(PaintParamsGpu) == 48, "PaintParams layout");
+
+// One dispatch of the style pass at index `pass` (style_layout.hpp) over n invocations, 64 a group,
+// after the uploads; then reads the storage buffers `outs` (n words each) into `dst`.
+bool dispatchAndRead(util::Gpu& gpu, int pass, const std::vector<rhi::BufferHandle>& binds, const std::vector<rhi::Access>& inAccess,
+                     const std::vector<rhi::BufferHandle>& outs, std::uint32_t n, std::vector<std::vector<std::uint32_t>*> dst);
+int passIndex(const char* name);   // -1 when style.wgsl has no such pass
 
 inline constexpr int kMaxDitherLights = 8;
 inline constexpr int kMaxProjectors = 4;
