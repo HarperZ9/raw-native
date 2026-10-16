@@ -36,3 +36,9 @@ Bounds in `evidence/shaders-lens-parity-bounds.json`, fixed now: at 192 x 108 on
 ## Look
 
 I look at every frame I report. Critique of the frames is mine unless it is quoted with a name.
+
+## Addendum A (2026-10-15, after the first study run, before the rerun of P2 only)
+
+The first run missed P2 for 7 blades (0 spikes counted, 14 expected) and 8 blades (7 counted, 8 expected). An exploratory sweep (not evidence) showed the counter depends on the ring radius and the prominence threshold: with 7 blades it counts 0, 0, 1 and 14 spikes on rings of 20, 30, 40 and 50 cells. The Airy side-lobe rings dominate a single ring, so the instrument, not the pattern, decides the count. P2 stands as a miss in the results.
+
+New instrument P2b, fixed now: integrate the monochrome pattern over the radial band 20 to 60 cells into an angular profile of 1440 samples, take its discrete Fourier series over angle, and find the harmonic k in 1 to 40 with the largest amplitude. Bounds: for 6 and 8 blades the dominant harmonic is k = N; for 5 and 7 blades it is k = 2N; for each bladed iris the dominant amplitude is at least 0.2 of the mean (k = 0); for the round iris every harmonic in 1 to 40 is below 0.05 of the mean. Same irises as P2 (roundness 0.15, rotation 0.3).
