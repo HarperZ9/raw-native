@@ -748,5 +748,14 @@
  },
  "findings": [
   "The web encoding contract (web/motion/post.mjs planScenePasses) changes the encoding only through a pass's input or output field. srgb-decode is registered with input any, so a list that names srgb-decode itself before a linear-input pass gets a second decode: [srgb-decode, film] plans as [srgb-decode, srgb-decode, film]. The C++ plan follows the web plan, because the web plan is the oracle. Reported to the owner of web/shaders and web/motion; not changed here."
- ]
+ ],
+ "webgpu_swiftshader": {
+  "run": "CI run 38935258373 (head c39da7a), job wasm, Chrome on SwiftShader through the WebAssembly WebGPU build",
+  "record": "evidence/cpp-port-style-webgpu-swiftshader.json",
+  "result": "All 26 cases and the post-stack chains pass: purity, lightpaint and glaze max 1 code, mean at most 1.5e-3; hatch max 2 codes, mean at most 8.8e-4; chains max relative 1.0e-6; every built-in control fails.",
+  "incidents": [
+   "First CI run: the page copied three fixed fixture names, so the round 2 bundles were missing (fixed by a files.json manifest, 46efbfa).",
+   "Second CI run: WebGPU derives a bind group layout from the bindings a shader uses, and style_exposure and style_srgb_decode never read prev (binding 2), so the dispatch failed. Each now reads prev behind a guard that never holds (c39da7a); WARP passed both before and after."
+  ]
+ }
 }

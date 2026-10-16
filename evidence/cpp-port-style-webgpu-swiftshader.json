@@ -1,6 +1,6 @@
 {
  "check": "style passes in the C++ core (ADR 0019)",
- "bounds": "evidence/cpp-port-style-bounds.json",
+ "bounds": "evidence/cpp-port-style-bounds.json, evidence/cpp-port-style-bounds-2.json",
  "backend": "webgpu",
  "adapter": "",
  "error": "",
@@ -25,6 +25,7 @@
     "over2_fraction": 0,
     "mean": 0,
     "max": 0,
+    "p999": 0,
     "control_fails": true,
     "pass": true
    }
@@ -48,6 +49,7 @@
     "over2_fraction": 0,
     "mean": 0,
     "max": 0,
+    "p999": 0,
     "control_fails": true,
     "pass": true
    }
@@ -71,6 +73,7 @@
     "over2_fraction": 0,
     "mean": 0,
     "max": 0,
+    "p999": 0,
     "control_fails": true,
     "pass": true
    }
@@ -94,6 +97,7 @@
     "over2_fraction": 0,
     "mean": 0,
     "max": 0,
+    "p999": 0,
     "control_fails": true,
     "pass": true
    }
@@ -117,6 +121,7 @@
     "over2_fraction": 0,
     "mean": 0,
     "max": 0,
+    "p999": 0,
     "control_fails": true,
     "pass": true
    }
@@ -140,6 +145,7 @@
     "over2_fraction": 0,
     "mean": 0,
     "max": 0,
+    "p999": 0,
     "control_fails": true,
     "pass": true
    }
@@ -163,6 +169,7 @@
     "over2_fraction": 0,
     "mean": 0,
     "max": 0,
+    "p999": 0,
     "control_fails": true,
     "pass": true
    }
@@ -188,6 +195,7 @@
     "over2_fraction": 0,
     "mean": 0,
     "max": 0,
+    "p999": 0,
     "control_fails": true,
     "pass": true
    }
@@ -213,6 +221,7 @@
     "over2_fraction": 0,
     "mean": 8.03755e-05,
     "max": 1,
+    "p999": 0,
     "control_fails": true,
     "pass": true
    }
@@ -238,6 +247,7 @@
     "over2_fraction": 0,
     "mean": 0,
     "max": 0,
+    "p999": 0,
     "control_fails": true,
     "pass": true
    }
@@ -263,6 +273,373 @@
     "over2_fraction": 0,
     "mean": 6.43004e-05,
     "max": 1,
+    "p999": 0,
+    "control_fails": true,
+    "pass": true
+   }
+  },
+  {
+   "pass": "purity",
+   "id": "street-magnetised",
+   "decisions": 76800,
+   "cpu": {
+    "max_abs": 0,
+    "mismatch": 0,
+    "excused_ties": 0,
+    "secondary_mismatch": 0,
+    "preset_equal": true,
+    "control_fails": true,
+    "pass": true
+   },
+   "gpu": {
+    "mismatch": 0,
+    "mismatch_fraction": 0,
+    "over2_fraction": 0,
+    "mean": 4.34028e-06,
+    "max": 1,
+    "p999": 0,
+    "control_fails": true,
+    "pass": true
+   }
+  },
+  {
+   "pass": "purity",
+   "id": "street-degauss-0.3s",
+   "decisions": 76800,
+   "cpu": {
+    "max_abs": 3.33067e-16,
+    "mismatch": 0,
+    "excused_ties": 0,
+    "secondary_mismatch": 0,
+    "preset_equal": true,
+    "control_fails": true,
+    "pass": true
+   },
+   "gpu": {
+    "mismatch": 0,
+    "mismatch_fraction": 0,
+    "over2_fraction": 0,
+    "mean": 0.000190972,
+    "max": 1,
+    "p999": 0,
+    "control_fails": true,
+    "pass": true
+   }
+  },
+  {
+   "pass": "purity",
+   "id": "white-degauss-0.1s",
+   "decisions": 76800,
+   "cpu": {
+    "max_abs": 5.55112e-16,
+    "mismatch": 0,
+    "excused_ties": 0,
+    "secondary_mismatch": 0,
+    "preset_equal": true,
+    "control_fails": true,
+    "pass": true
+   },
+   "gpu": {
+    "mismatch": 0,
+    "mismatch_fraction": 0,
+    "over2_fraction": 0,
+    "mean": 0.00145833,
+    "max": 1,
+    "p999": 1,
+    "control_fails": true,
+    "pass": true
+   }
+  },
+  {
+   "pass": "purity",
+   "id": "red-earth-field",
+   "decisions": 76800,
+   "cpu": {
+    "max_abs": 0,
+    "mismatch": 0,
+    "excused_ties": 0,
+    "secondary_mismatch": 0,
+    "preset_equal": true,
+    "control_fails": true,
+    "pass": true
+   },
+   "gpu": {
+    "mismatch": 0,
+    "mismatch_fraction": 0,
+    "over2_fraction": 0,
+    "mean": 4.34028e-06,
+    "max": 1,
+    "p999": 0,
+    "control_fails": true,
+    "pass": true
+   }
+  },
+  {
+   "pass": "lightpaint",
+   "id": "street-disco",
+   "decisions": 64000,
+   "cpu": {
+    "max_abs": 3.33067e-16,
+    "mismatch": 0,
+    "excused_ties": 0,
+    "secondary_mismatch": 0,
+    "preset_equal": true,
+    "control_fails": true,
+    "pass": true
+   },
+   "gpu": {
+    "mismatch": 0,
+    "mismatch_fraction": 0,
+    "over2_fraction": 0,
+    "mean": 2.08333e-05,
+    "max": 1,
+    "p999": 0,
+    "control_fails": true,
+    "pass": true
+   }
+  },
+  {
+   "pass": "lightpaint",
+   "id": "street-grotesque",
+   "decisions": 64000,
+   "cpu": {
+    "max_abs": 3.33067e-16,
+    "mismatch": 0,
+    "excused_ties": 0,
+    "secondary_mismatch": 0,
+    "preset_equal": true,
+    "control_fails": true,
+    "pass": true
+   },
+   "gpu": {
+    "mismatch": 0,
+    "mismatch_fraction": 0,
+    "over2_fraction": 0,
+    "mean": 1.04167e-05,
+    "max": 1,
+    "p999": 0,
+    "control_fails": true,
+    "pass": true
+   }
+  },
+  {
+   "pass": "lightpaint",
+   "id": "street-complement",
+   "decisions": 64000,
+   "cpu": {
+    "max_abs": 3.05311e-16,
+    "mismatch": 0,
+    "excused_ties": 0,
+    "secondary_mismatch": 0,
+    "preset_equal": true,
+    "control_fails": true,
+    "pass": true
+   },
+   "gpu": {
+    "mismatch": 0,
+    "mismatch_fraction": 0,
+    "over2_fraction": 0,
+    "mean": 1.5625e-05,
+    "max": 1,
+    "p999": 0,
+    "control_fails": true,
+    "pass": true
+   }
+  },
+  {
+   "pass": "lightpaint",
+   "id": "day-disco",
+   "decisions": 64000,
+   "cpu": {
+    "max_abs": 6.66134e-16,
+    "mismatch": 0,
+    "excused_ties": 0,
+    "secondary_mismatch": 0,
+    "preset_equal": true,
+    "control_fails": true,
+    "pass": true
+   },
+   "gpu": {
+    "mismatch": 0,
+    "mismatch_fraction": 0,
+    "over2_fraction": 0,
+    "mean": 3.125e-05,
+    "max": 1,
+    "p999": 0,
+    "control_fails": true,
+    "pass": true
+   }
+  },
+  {
+   "pass": "glaze",
+   "id": "street-beetle",
+   "decisions": 64000,
+   "cpu": {
+    "max_abs": 3.33067e-16,
+    "mismatch": 0,
+    "excused_ties": 0,
+    "secondary_mismatch": 0,
+    "preset_equal": true,
+    "control_fails": true,
+    "pass": true
+   },
+   "gpu": {
+    "mismatch": 0,
+    "mismatch_fraction": 0,
+    "over2_fraction": 0,
+    "mean": 0.000114583,
+    "max": 1,
+    "p999": 0,
+    "control_fails": true,
+    "pass": true
+   }
+  },
+  {
+   "pass": "glaze",
+   "id": "street-oil-slick",
+   "decisions": 64000,
+   "cpu": {
+    "max_abs": 6.82787e-15,
+    "mismatch": 0,
+    "excused_ties": 0,
+    "secondary_mismatch": 0,
+    "preset_equal": true,
+    "control_fails": true,
+    "pass": true
+   },
+   "gpu": {
+    "mismatch": 0,
+    "mismatch_fraction": 0,
+    "over2_fraction": 0,
+    "mean": 0.000125,
+    "max": 1,
+    "p999": 0,
+    "control_fails": true,
+    "pass": true
+   }
+  },
+  {
+   "pass": "glaze",
+   "id": "street-bruise",
+   "decisions": 64000,
+   "cpu": {
+    "max_abs": 1.00475e-14,
+    "mismatch": 0,
+    "excused_ties": 0,
+    "secondary_mismatch": 0,
+    "preset_equal": true,
+    "control_fails": true,
+    "pass": true
+   },
+   "gpu": {
+    "mismatch": 0,
+    "mismatch_fraction": 0,
+    "over2_fraction": 0,
+    "mean": 0.000130208,
+    "max": 1,
+    "p999": 0,
+    "control_fails": true,
+    "pass": true
+   }
+  },
+  {
+   "pass": "glaze",
+   "id": "day-beetle",
+   "decisions": 64000,
+   "cpu": {
+    "max_abs": 5.55112e-16,
+    "mismatch": 0,
+    "excused_ties": 0,
+    "secondary_mismatch": 0,
+    "preset_equal": true,
+    "control_fails": true,
+    "pass": true
+   },
+   "gpu": {
+    "mismatch": 0,
+    "mismatch_fraction": 0,
+    "over2_fraction": 0,
+    "mean": 3.64583e-05,
+    "max": 1,
+    "p999": 0,
+    "control_fails": true,
+    "pass": true
+   }
+  },
+  {
+   "pass": "hatch",
+   "id": "stilllife-engraving",
+   "decisions": 64000,
+   "cpu": {
+    "max_abs": 1.5099e-14,
+    "mismatch": 0,
+    "excused_ties": 0,
+    "secondary_mismatch": 0,
+    "preset_equal": true,
+    "hit_mismatch": 0,
+    "fallback_mismatch": 0,
+    "control_fails": true,
+    "pass": true
+   },
+   "gpu": {
+    "mismatch": 0,
+    "mismatch_fraction": 0,
+    "over2_fraction": 0,
+    "mean": 0.000588542,
+    "max": 1,
+    "p999": 0,
+    "control_fails": true,
+    "pass": true
+   }
+  },
+  {
+   "pass": "hatch",
+   "id": "stilllife-crosshatch",
+   "decisions": 64000,
+   "cpu": {
+    "max_abs": 2.05391e-14,
+    "mismatch": 0,
+    "excused_ties": 0,
+    "secondary_mismatch": 0,
+    "preset_equal": true,
+    "hit_mismatch": 0,
+    "fallback_mismatch": 0,
+    "control_fails": true,
+    "pass": true
+   },
+   "gpu": {
+    "mismatch": 0,
+    "mismatch_fraction": 0,
+    "over2_fraction": 0,
+    "mean": 0.000739583,
+    "max": 2,
+    "p999": 0,
+    "control_fails": true,
+    "pass": true
+   }
+  },
+  {
+   "pass": "hatch",
+   "id": "stilllife-ink",
+   "decisions": 64000,
+   "cpu": {
+    "max_abs": 1.63203e-14,
+    "mismatch": 0,
+    "excused_ties": 0,
+    "secondary_mismatch": 0,
+    "preset_equal": true,
+    "hit_mismatch": 0,
+    "fallback_mismatch": 0,
+    "control_fails": true,
+    "pass": true
+   },
+   "gpu": {
+    "mismatch": 0,
+    "mismatch_fraction": 0,
+    "over2_fraction": 0,
+    "mean": 0.000880208,
+    "max": 1,
+    "p999": 0,
     "control_fails": true,
     "pass": true
    }
@@ -278,8 +655,61 @@
   "control_fails": true,
   "pass": true
  },
+ "poststack": {
+  "lists": 12,
+  "plan_mismatch": 0,
+  "plan_control_differs": true,
+  "chains": [
+   {
+    "id": "one-exposure",
+    "values": 192000,
+    "cpu": {
+     "max_ulp": 0,
+     "differing_fraction": 0,
+     "control_fails": false,
+     "pass": true
+    },
+    "gpu": {
+     "max_rel": 0,
+     "control_fails": false,
+     "pass": true
+    }
+   },
+   {
+    "id": "decode-exposure-exposure",
+    "values": 192000,
+    "cpu": {
+     "max_ulp": 0,
+     "differing_fraction": 0,
+     "control_fails": true,
+     "pass": true
+    },
+    "gpu": {
+     "max_rel": 8.00453e-07,
+     "control_fails": true,
+     "pass": true
+    }
+   },
+   {
+    "id": "exposure-decode",
+    "values": 192000,
+    "cpu": {
+     "max_ulp": 0,
+     "differing_fraction": 0,
+     "control_fails": true,
+     "pass": true
+    },
+    "gpu": {
+     "max_rel": 9.93302e-07,
+     "control_fails": true,
+     "pass": true
+    }
+   }
+  ],
+  "cpu_pass": true,
+  "gpu_pass": true
+ },
  "cpu_pass": true,
  "gpu_pass": true,
- "pass": true,
- "source": "CI run 38860929573, job 116842793596 (wasm, ubuntu-24.04): the WebGPU build in Chrome on SwiftShader; the WebGPU backend reports no adapter description, as in evidence/m3-post-gpu-webgpu-swiftshader.json"
+ "pass": true
 }
