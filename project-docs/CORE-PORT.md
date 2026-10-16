@@ -4,8 +4,9 @@
 Dated 2026-10-15, round 2 added 2026-10-16. The author's decisions of 2026-10-15: "No, renderer
 first" and "One C++ core". Design: [ADR 0019](../docs/architecture/adr/0019-style-passes-in-the-core.md).
 Bounds, written before the first run: `evidence/cpp-port-style-bounds.json` (round 1, with
-Addenda A and B) and `evidence/cpp-port-style-bounds-2.json` (round 2, with Addendum A). Runs:
-`evidence/cpp-port-style-runs.json` and `evidence/cpp-port-style-runs-2.json`; the records are
+Addenda A and B) and `evidence/cpp-port-style-bounds-2.json` (round 2, with Addendum A) and
+`evidence/cpp-port-style-bounds-3.json` (hysteresis and palettelight, with Addenda A and B). Runs:
+`evidence/cpp-port-style-runs.json`, `-runs-2.json` and `-runs-3.json`; the records are
 `evidence/cpp-port-style-d3d12-warp.json` and `evidence/cpp-port-style-webgpu-swiftshader.json` (CI).
 
 ## How a pass is ported
@@ -41,6 +42,8 @@ RAW_NATIVE_D3D12_WARP=1 build/Release/raw_native_cli.exe style-parity --fixtures
 | Lightpaint, 4 cases | value max 2.2e-16; 0 codes differ | max 1 code, mean at most 1.0e-5 | CI |
 | Glaze, 4 cases | value max 7.7e-15; 0 codes differ | max 1 code, mean at most 2.6e-5 | CI |
 | Hatch, 3 cases | value max 2.1e-14; 0 codes, hits or fallbacks differ | max 2 codes, mean at most 8.8e-4 | CI |
+| Hysteresis, 3 sequences (32 frames) | 0 of 2,048,000 decisions and 0 codes differ | 0 decisions differ; max 1 code, mean at most 2.4e-5 | CI |
+| Palette-locked lighting, 5 cases | 0 indices differ; the C++-built palette equals the JavaScript one | 0 indices differ; 0 codes | CI |
 
 Bounds: tone and colour 1e-9; GPU decision flips 5e-4 of pixels, mean 0.12 (dither) and 0.05
 (paint-over) codes. Round 2: values 1e-9 and 0 unexcused code flips on the CPU link; the web bounds
@@ -52,7 +55,9 @@ link that reads it. One edit taught something: scaling the reference's paint-ove
 needs both links. Round 2 found the same once more: the lightpaint luminance weight 0.7152 to 0.72
 in the WGSL passed WARP (the weight also sets the luminance the result is rescaled to), and the
 same edit in the C++ failed the CPU link on every case. Nine of the ten round 2 source edits failed
-as predicted.
+as predicted. For hysteresis, two controls could not fail on the flicker sequence (a wider margin
+and a narrower keep interval change no held decision there); the built-in control became margin 0
+before any GPU run (bounds-3 Addendum A), and the source-edit miss is recorded (Addendum B).
 
 Round 2 adds the post stack's driver (`raw/renderer/post_stack.hpp`): the registry, the encoding
 contract and stage split of `web/motion/post.mjs` and `renderer.mjs`, and the run order of
@@ -73,13 +78,11 @@ WGSL can be generated.
 
 | Pass (`web/shaders/`) | JavaScript lines | Entry points | Subset work | Estimate |
 |---|---|---|---|---|
-| `hysteresis` | 212 | 1 | none; needs a previous-frame buffer in the check | 2.5 h |
 | `adjacency` | 199 | 4 | none (`round` of integer parameters becomes u32 uniform fields) | 3 h |
 | `crt-classic` | 216 | 5 | none | 3 h |
 | `vhs` | 245 | 4 | none | 3 h |
 | `fibre` | 230 | 5 | none | 3 h |
 | `dither` (palette, ordered, blue noise, mix) | 420 | 1 | none; the blue-noise table is already in the core | 3 h |
-| `palettelight` (PR #149, merged 2026-10-16) | 255 | 1 | none expected | 3 h |
 | `lens` (lens suite, PR #153) | 706 | 2 | none found | 6 h |
 | `ditherlight/rtvis.mjs` (one-ray visibility estimator, PR #152) | 63 | none (CPU) | none | 2 h |
 | `caricature` | 195 | 5 | workgroup memory and barriers (`var<workgroup>`, `workgroupBarrier`) | 4 h, plus 1 h of translator work shared with `sag` |
@@ -89,6 +92,6 @@ WGSL can be generated.
 | `paint` (painterly, Kubelka-Munk) | 1,073 | 11 | atomics, `unpack4x8unorm` | 10 h |
 | `crt` (physical) | 1,231 | 8 | none found | 10 h |
 
-Total left about 70 hours (round 2 took the driver and four passes, estimated at 10.5 hours). Order by need: the R1 slice needs paint-over and look keys (done), then
+Total left about 64 hours (round 2 took the driver and six passes, estimated at 16 hours). Order by need: the R1 slice needs paint-over and look keys (done), then
 `dither`, `hysteresis` and `film` for the templates, with the translator growth done once before
 `caricature`, `sag` and `pixel`.
