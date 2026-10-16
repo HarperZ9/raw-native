@@ -57,6 +57,11 @@ hardware GPU was not measured (the machine's GPU was in use by another job).
     node tools/explainer/captions.mjs docs/explainer/attention/script.mjs docs/explainer/attention/data.json docs/explainer/attention/captions.vtt
     python tools/explainer/render_film.py --scene ../../docs/explainer/attention.scene.mjs --out OUT --seconds 72 --vtt docs/explainer/attention/captions.vtt
 
+The demo's narration (`docs/explainer/attention/narration.m4a`) is a synthesized voice made with
+the author's own pipeline; the author approved it for this film on 2026-10-16. Each sentence is
+placed at its caption row's start, or just after the previous sentence when that runs long
+(`narration.placement.json`, up to 1.9 s late).
+
 The render runs in resumable 6-second chunks on the CPU adapter and writes `OUT/receipt.json`
 with the commit, every frame's SHA-256 and the film's.
 
