@@ -357,6 +357,12 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 fn main(@builtin(global_invocation_id) gid: vec3u) {
     let i: u32 = gid.x;
     if (i >= u32(S.size.x) * u32(S.size.y)) { return; }
+    // prev is read only behind a guard that never holds (p3.w is 0), so every backend keeps the
+    // binding in the pass's layout: WebGPU's derived layout drops a binding the shader never uses.
+    if (S.p3.w > 1.0e30) {
+        dst[i] = prev[i];
+        return;
+    }
     let c: vec4f = src[i];
     dst[i] = vec4f(c.xyz * exp2(S.p0.x), c.w);
 }
@@ -380,6 +386,12 @@ fn dec(v: f32) -> f32 {
 fn main(@builtin(global_invocation_id) gid: vec3u) {
     let i: u32 = gid.x;
     if (i >= u32(S.size.x) * u32(S.size.y)) { return; }
+    // prev is read only behind a guard that never holds (p3.w is 0), so every backend keeps the
+    // binding in the pass's layout: WebGPU's derived layout drops a binding the shader never uses.
+    if (S.p3.w > 1.0e30) {
+        dst[i] = prev[i];
+        return;
+    }
     let c: vec4f = src[i];
     dst[i] = vec4f(dec(c.x), dec(c.y), dec(c.z), c.w);
 }
