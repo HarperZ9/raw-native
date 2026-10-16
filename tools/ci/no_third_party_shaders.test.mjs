@@ -42,3 +42,9 @@ test("an allowlist entry needs to name the file, and exempts only that file", ()
   const files = { "v.mjs": "// Copyright (c) 2019 Vendor\nexport const a = 1;\n", "w.mjs": "// Copyright (c) 2019 Vendor\nexport const a = 1;\n" };
   assert.deepEqual(kinds(files, [{ path: "v.mjs", reason: "test" }]), ["w.mjs:licence"]);
 });
+test("the allowlist file is tracked by git, so CI sees the same allowlist as a local run", async () => {
+  const { execFileSync } = await import("node:child_process");
+  let tracked = true;
+  try { execFileSync("git", ["ls-files", "--error-unmatch", "tools/ci/third_party_allowlist.json"], { stdio: "pipe" }); } catch (e) { tracked = e.code === "ENOENT"; }
+  assert.ok(tracked, "tools/ci/third_party_allowlist.json is not tracked (check .gitignore)");
+});
