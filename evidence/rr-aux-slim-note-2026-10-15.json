@@ -1,0 +1,30 @@
+{
+ "schema": "raw-native.evidence/1",
+ "about": "HW H2 inference speed, round 2: slim the version-4 aux buffer the feature step writes (88 bytes a pixel). Follows evidence/rr-speed-result-2026-10-15.json; elaborates evidence/rr-inference-bounds.json; changes no bound.",
+ "written": "2026-10-15 20:18Z, before the change or any run",
+ "baseline": "RTX 4090, v4, 1080p (rr-h2-v4/rtx4090-speed/v4-r1-timing.json): frame 11.81 ms; feature step 2.49 ms, of which the aux writes cost 1.02 ms (variant C); blend (ACC) 0.36 and 0.32 ms; combine 0.30 and 0.39 ms (diffuse, specular).",
+ "change": "the aux keeps only what needs the history warps: warped diffuse 0:3, warped specular 3:6, validity 6 (7 floats, 28 bytes). The blend step recomputes the demodulated radiance from the input X with the feature step's arithmetic (radiance / (albedo + eps)); the combine step reads the albedos and the emission from X. Versions 1 to 3 keep their 10-float aux unchanged.",
+ "bounds": {
+  "parity": "unchanged: max |GPU - PyTorch float32| at most 1e-2 on every test pixel; the perturbed control must still fail",
+  "equivalence": "the change moves arithmetic, it does not alter it: SwiftShader scalar parity on all three v4 test sequences must equal the values before the change to the printed six digits (raw_hero 3.17037e-4, iso_street 2.34735e-3, raw_hall 7.0008e-3), and v3 on raw_hero must stay 0.112599 (the version-3 path is untouched)",
+  "timing": "three runs with GPU snapshots, interleaved with the same window's baseline runs (the split binary without this change), 500 frames each after 50 warm-up"
+ },
+ "predictions": {
+  "feature_step": "falls by 0.5 to 0.85 ms (60 of 88 written bytes removed, about 68% of the 1.02 ms the writes cost)",
+  "blend_and_combine": "each within +-0.15 ms of the baseline: they read about as many floats as before, from X's 128-byte pixel instead of the aux",
+  "frame": "falls by 0.3 to 0.9 ms against the same window's baseline; the 2.0 ms budget stays failed"
+ },
+ "control": "a timing claim needs all three runs to agree in sign; if the frame change is inside the baseline runs' spread, the result is recorded as null.",
+ "does_not_prove": "Anything about the convolutions (about 4.8 ms, or more with the split operands) or the 2 ms budget; speed on other GPUs.",
+ "results": {
+  "recorded": "2026-10-15 23:17Z",
+  "clock_note": "the 'written' field says 20:18Z; the note was committed at 20:17Z, before the change",
+  "equivalence": "met: SwiftShader scalar parity on v4 raw_hero, iso_street, raw_hall and v3 raw_hero is identical to the values before the change in every printed field (evidence/rr-aux-slim-2026-10-15/); controls fail; 0 validation errors",
+  "rtx_windows": "measured on top of the tensor-core split branch (PR #142, not merged): window 1 (21:38Z to 21:47Z) against round 2, window 2 (22:32Z to 22:42Z) against round 3; three runs of each binary interleaved, 500 frames after 50 warm-up, GPU snapshots in rtx4090/gpu-snapshots.txt. The convolution code is the same on both sides of every comparison, and the aux change touches no convolution.",
+  "feature_step": "2.511 to 1.605 ms in both windows (-0.906). Prediction 0.5 to 0.85: missed, high by about 0.06 ms",
+  "blend_and_combine": "blend +0.017 and +0.021 ms, combine -0.021 and -0.026 ms. Prediction within 0.15: met",
+  "frame": "window 1: 12.756, 12.764, 12.770 to 11.812, 11.840, 11.823 ms (-0.94); window 2: 14.687, 14.744, 14.742 to 13.798, 13.814, 13.820 ms (-0.91 to -0.93). Prediction 0.3 to 0.9: missed, high by up to 0.04 ms. All six runs agree in sign; the change is about 40 times the run-to-run spread, so it is not a null",
+  "rtx_parity": "identical to the base binary in both windows, every field (the cooperative-matrix path fails 1e-2 for the reason in rr-tc-note-2026-10-15.json, unrelated to this change; scalar 2.93e-3 passes; perturbed control fails; 0 validation errors)",
+  "reading": "the aux writes were the cost the profile variants attributed to them; the remaining 1.6 ms of the feature pass is the 100-byte feature write and the warps. The 2.0 ms budget stays failed (frame about 11.0 ms on main's unsplit convolutions, inferred: 11.88 minus 0.93; not measured on this exact binary)"
+ }
+}

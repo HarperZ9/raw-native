@@ -1,0 +1,11 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/rr-inference-bounds.json",
+ "device": "NVIDIA GeForce RTX 4090",
+ "sequence": "raw_hero_p7",
+ "frames": 2,
+ "coop":{"ran":true,"split":true,"parity":{"max_abs":0.0234413,"p99_99_abs_upper":0.001,"mean_abs":8.93534e-06,"values":777600,"max_at_frame":1,"max_at_pixel":64083,"within_1e-2":false},"timing_1080p":{"width":1920,"height":1080,"feat_variant":0,"n":500,"median_ms":13.7984,"p5_ms":13.3649,"p95_ms":13.8527,"p99_ms":14.0116,"iqr_ms":0.224632,"step_median_ms":[0.0936,0.002048,1.60461,1.24723,1.00885,0.316896,0.510976,0.203424,0.26016,0.147776,0.51168,0.454656,1.0108,1.84432,0.114496,0.371472,1.21493,0.026448,0.075872,0.02912,0.27576,0.342848,1.21109,0.026464,0.076,0.029152,0.361856],"step_note":"steps in Net::frame order (mean depth, features, 12 convolutions, then the glue passes; v4 runs them once a signal); a timestamp after every step","within_2ms":false}},"control_coop_unsplit":{"parity":{"max_abs":0.0453377,"p99_99_abs_upper":0.00135899,"mean_abs":1.18866e-05,"values":777600,"max_at_frame":1,"max_at_pixel":64082,"within_1e-2":false},"fails":true},"scalar":{"ran":true,"parity":{"max_abs":0.000408471,"p99_99_abs_upper":0.001,"mean_abs":1.00223e-07,"values":777600,"max_at_frame":1,"max_at_pixel":51087,"within_1e-2":true},"timing_1080p":{"width":1920,"height":1080,"feat_variant":0,"n":500,"median_ms":65.4983,"p5_ms":64.977,"p95_ms":65.773,"p99_ms":65.8519,"iqr_ms":0.256136,"step_median_ms":[0.093648,0.002048,1.60461,6.72614,5.96275,3.21098,6.5245,2.39718,2.90938,1.57936,6.3676,1.92906,6.12226,14.54,0.832176,0.371456,1.21547,0.02656,0.075808,0.02912,0.275712,0.342464,1.21344,0.0264,0.076304,0.02912,0.36224],"step_note":"steps in Net::frame order (mean depth, features, 12 convolutions, then the glue passes; v4 runs them once a signal); a timestamp after every step","within_2ms":false}},
+ "control_perturbed":{"parity":{"max_abs":0.924664,"p99_99_abs_upper":0.0239437,"mean_abs":0.000103092,"values":777600,"max_at_frame":1,"max_at_pixel":64083,"within_1e-2":false},"fails":true},
+ "validation_errors": 0,
+ "pass": false
+}

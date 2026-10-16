@@ -6,6 +6,11 @@ the day the release was published on GitHub, in UTC.
 
 ## Unreleased
 
+- **Denoiser inference: slimmer aux buffer** (HW H2). The v4 feature pass wrote 88 bytes a pixel of auxiliary data; it
+  now writes 28 (the warped histories and the validity). The blend recomputes the demodulated radiance from the input and
+  the combine reads the albedos and emission from it, with the same arithmetic: SwiftShader parity is identical on every
+  test sequence. On the RTX 4090 the feature pass falls from 2.51 to 1.61 ms and the frame by 0.93 to 0.94 ms (three runs
+  in each of two windows). The 2.0 ms budget still fails. Prediction and bounds: `evidence/rr-aux-slim-note-2026-10-15.json`.
 - **Denoiser inference: mean depth in two passes** (HW H2). The single-workgroup reduction took 2.34 ms at 1080p on the
   RTX 4090; two passes take 0.10 ms, and the v4 frame falls from 14.08 to 11.8 ms (prediction committed before: at most
   0.4 ms and 12.2 ms). Timing-only variants of the feature pass show its aux writes cost about 1.0 ms of 2.49. The 2.0 ms
