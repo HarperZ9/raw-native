@@ -1,0 +1,17 @@
+{
+ "check": "m3 rhi3 raster identity",
+ "backend": "vulkan",
+ "adapter": "llvmpipe (LLVM 20.1.2, 256 bits)",
+ "error": "",
+ "formats": [{"format": "rgba8unorm", "texels": 12288, "mismatches": 0}, {"format": "rgba16float", "texels": 12288, "mismatches": 0}, {"format": "rgba32float", "texels": 12288, "mismatches": 0}, {"format": "r32float", "texels": 3072, "mismatches": 0}],
+ "depth_order_equal": true,
+ "depth_control_differs": true,
+ "subpixel_bits": 8,
+ "gbuffer": [
+  {"scene": "built-in test scene", "size": 256, "same_triangle_pixels": 37996, "differing_pixels": 0, "explained_by_edge_or_tie": 0, "position_ratio": 0.0575, "normal_ratio": 0.0000, "distance_ratio": 0.2303, "albedo_diffs": 0, "pass": true, "unexplained": []},
+  {"scene": "raw-hero", "size": 256, "same_triangle_pixels": 36654, "differing_pixels": 2, "explained_by_edge_or_tie": 2, "position_ratio": 0.3101, "normal_ratio": 0.4643, "distance_ratio": 0.8777, "albedo_diffs": 0, "pass": true, "unexplained": []},
+  {"scene": "raw-hall nave", "size": 256, "same_triangle_pixels": 58010, "differing_pixels": 62, "explained_by_edge_or_tie": 62, "position_ratio": 3.2763, "normal_ratio": 822.9713, "distance_ratio": 28.2082, "albedo_diffs": 0, "pass": false, "unexplained": []}
+ ],
+ "control_moved_triangle_fails": true,
+ "pass": false
+}

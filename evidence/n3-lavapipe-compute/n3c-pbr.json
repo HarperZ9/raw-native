@@ -1,0 +1,17 @@
+{
+ "check": "m3 materials gpu_parity",
+ "backend": "vulkan",
+ "adapter": "llvmpipe (LLVM 20.1.2, 256 bits)",
+ "error": "",
+ "cases": 4096,
+ "seed": 20261010,
+ "bound": "|gpu - ref| <= 1e-3 |ref| + 1e-5",
+ "worst_ratio_to_bound": 0.0535,
+ "worst_abs": 9.743e-05,
+ "worst_case": 2166,
+ "worst_family": 6,
+ "values_outside": 0,
+ "control_no_multiple_scattering_worst_ratio": 858.578,
+ "control_fails": true,
+ "pass": true
+}

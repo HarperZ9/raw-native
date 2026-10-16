@@ -17,8 +17,10 @@ VkCompareOp compareOf(CompareFunc c){
 }
 bool shader(VkDevice d, const ShaderCode& c, VkShaderModule& out, const std::string& pass, std::string& err){
     if (c.format != ShaderFormat::Spirv || !c.bytes || c.size % 4){ err = "pass " + pass + ": the Vulkan backend takes SPIR-V"; return false; }
+    // No multiply-add fusion, as the D3D12 build's -Gis (vk_rhi_spirv.cpp).
+    const std::vector<uint32_t> words = noContraction((const uint32_t*)c.bytes, c.size / 4);
     VkShaderModuleCreateInfo ci{VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO};
-    ci.codeSize = c.size; ci.pCode = (const uint32_t*)c.bytes;
+    ci.codeSize = words.size() * 4; ci.pCode = words.data();
     const VkResult r = vkCreateShaderModule(d, &ci, nullptr, &out);
     if (r != VK_SUCCESS){ err = vkError("vkCreateShaderModule " + pass, r); return false; }
     return true;

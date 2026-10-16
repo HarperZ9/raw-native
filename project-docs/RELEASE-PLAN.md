@@ -206,6 +206,12 @@ the RHI on Vulkan with a swapchain, and X11 and Wayland windows running the N2 f
 frames equal the D3D12 WARP frames hash for hash. Criteria 2, 3 and 5 are open; HDR10 on Vulkan is
 not checked (the software drivers offer only sRGB).
 
+Status of criteria 2 and 3 (2026-10-16, `evidence/n3-vulkan-compute-runs.json`): on lavapipe the quick
+identity matrix verifies 4 of 4 with a committed golden for the device class, the ten glTF models
+verify, the M2 and M3 checks pass their WARP gates, and the style passes pass their ADR 0019 bounds.
+Two misses are recorded: lighting shading (3 of 4,096 samples over the bound) and the shadow-map
+identity's depth bound on two scenes. Criterion 5 (Steam Deck) is open.
+
 ### ROADMAP M3 to M6
 
 Unchanged (`docs/architecture/ROADMAP.md`). M3 carries G1 (loop, input, camera controllers,

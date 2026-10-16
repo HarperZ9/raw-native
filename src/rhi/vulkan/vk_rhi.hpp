@@ -49,6 +49,8 @@ private:
     std::vector<uint32_t> free_;
 };
 VkFormat vkFormat(TextureFormat f);
+// Every float add, subtract, multiply and dot product decorated NoContraction (vk_rhi_spirv.cpp).
+std::vector<uint32_t> noContraction(const uint32_t* words, size_t count);
 
 struct BufferRec { VkBuffer buf{VK_NULL_HANDLE}; VkDeviceMemory mem{VK_NULL_HANDLE}; void* map{nullptr}; uint64_t size{0}; bool host{false}; };
 struct TexRec {

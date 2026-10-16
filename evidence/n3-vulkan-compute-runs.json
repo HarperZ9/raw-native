@@ -1,0 +1,25 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/n3-vulkan-compute-bounds.json (committed 96e8fe1 before any pass ran on Vulkan)",
+ "code": "84658e0 (first CI run) and 70c80da (CPU golden comparison added), raw_native_cli_vk built with RAW_NATIVE_VULKAN_RHI=ON",
+ "ci": "GitHub Actions job vulkan-linux on PR #165, ubuntu-24.04, lavapipe (llvmpipe, LLVM 20.1.2, Mesa 25.2.8), Khronos validation layer on. Records: evidence/n3-lavapipe-compute/*.json. The same commands in WSL Ubuntu 24.04 with the same Mesa gave byte-identical identity outputs (90 files).",
+ "date": "2026-10-16",
+ "results": {
+  "c2_identity_quick": {"result": "pass: 4 of 4 GPU certificates verified", "prediction": "held"},
+  "c2_gltf_models": {"result": "pass: 10 of 10 GPU certificates verified", "prediction": "held"},
+  "c2_golden_per_device_class": {"result": "pass. GPU: the quick matrix of the first CI run is committed as evidence/n3-identity-golden-vulkan-lavapipe.json; the next CI run (70c80da) compared with it: 4 cases, 90 files, all identical. CPU (added after the first run, see the bounds addendum of 2026-10-16): the Vulkan build's CPU outputs against evidence/identity-golden.json, 10 cases, 107 files, all identical (the no-gpu-64 case left out by design), and against evidence/m2-gltf-golden.json, 10 cases, 80 files, all identical.", "prediction": "held"},
+  "c2_m2_m3_corpora": {
+   "result": "texture-identity, pbr-parity, swr-render (6 of 6 frames bit-exact), swr-parity, rt-bvh-parity, rt-pt-parity (gate), rt-hybrid-parity, sdf-parity (gate, the Mandelbulb within), post-parity (gate; TAA passes, a recorded failure on WARP) and raster-identity through WARP's gate (raw-hall nave G-buffer the same recorded open failure; 8 subpixel bits) all pass.",
+   "misses": [
+    "lighting-parity: shading worst ratio 1.095 to its bound, 3 of 4,096 samples outside; clusters and prefilter pass. SwiftShader passes the same check (0.374). Recorded, not gated in the vulkan-linux job.",
+    "shadow-parity map identity: lookups, contact shadows and all controls pass, but raw-hero (worst depth 2.3e-5, one texel of cascade 2 unexplained) and raw-hall nave (worst depth 1.4e-4) exceed the 1e-5 map bound that --gate-maps applies on WARP. On lavapipe the map identity is recorded and not gated, as for SwiftShader."
+   ],
+   "prediction": "missed for lighting and the shadow-map identity; held for every other gate"
+  },
+  "c3_style_passes": {"result": "pass: style-parity GPU on lavapipe against the C++ float64 reference within the ADR 0019 bounds", "prediction": "held"},
+  "control": {"result": "pass: with RAW_NATIVE_SPIRV_CONTROL=swap, 1 of 4 certificates verified (nort-256, which has no ray-traced AO); the 3 others refuted", "prediction": "held"}
+ },
+ "finding": "Without NoContraction, lavapipe fused multiply-adds: the software rasterizer differed from its CPU reference on 3 of 6 frames (134, 61 and 5 pixels) and the Mandelbulb march was outside its bound. The backend now decorates every float add, subtract, multiply and dot product NoContraction before vkCreateShaderModule (src/rhi/vulkan/vk_rhi_spirv.cpp), the SPIR-V side of dxc -Gis; then all 6 frames are bit-exact and the Mandelbulb is within.",
+ "local_swiftshader": "Windows, SwiftShader (Chromium's copy), offscreen: --gpu verified, quick identity 4 of 4, texture, PBR and lighting parity pass, the swap control refutes. Its 4 subpixel bits fail the G-buffer comparisons (known). post-parity crashed with an access violation; which pass triggers it is unknown; lavapipe runs it cleanly.",
+ "does_not_prove": "Behaviour on hardware Vulkan drivers or a Steam Deck; timings; that the shadow-map and lighting misses are driver precision rather than a backend fault (the evidence points to precision: every differing texel but one is an explained tie, and SwiftShader passes the lighting check)."
+}
