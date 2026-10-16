@@ -31,6 +31,29 @@ struct StyleCase {
     int gpuMax{0};
     bool gpuControlFails{false};
     bool gpuPass{false};
+    // Round 2 image passes (purity, lightpaint, glaze, hatch; evidence/cpp-port-style-bounds-2.json)
+    bool presetEqual{true};         // the C++ preset gives the exported plan
+    long hitMismatch{0}, fallbackMismatch{0};   // hatch: ray hits, and umbilic fallbacks where both hit
+    int gpuP999{0};
+};
+// The post stack's driver (round 2): plans against web/motion/post.mjs, chains on the host and the
+// device against the JavaScript cpu() chains.
+struct PostChain {
+    std::string id;
+    long values{0};
+    double cpuMaxUlp{0}, cpuDifferingFraction{0};
+    bool cpuControlFails{false}, cpuPass{false};
+    bool gpuRun{false};
+    double gpuMaxRel{0};
+    bool gpuControlFails{false}, gpuPass{false};
+};
+struct PostStackResult {
+    int lists{0};
+    int planMismatch{0};
+    bool planControlDiffers{false};
+    std::vector<PostChain> chains;
+    bool cpuPass() const;
+    bool gpuPass() const;
 };
 struct LookKeysResult {
     int series{0};
@@ -44,14 +67,17 @@ struct StyleParity {
     std::string error, backend, adapter;
     bool gpuWanted{true};
     int expectDither{0}, expectPaint{0};   // cases in the fixture bundles
+    int expectImage{0};                    // round 2 image cases in their bundles
     std::vector<StyleCase> cases;
     LookKeysResult lookkeys;
+    PostStackResult poststack;
     bool cpuPass() const;
     bool gpuPass() const;           // false when the GPU links did not run
     bool pass() const { return cpuPass() && (!gpuWanted || gpuPass()); }
     std::string json() const;
 };
-// fixtureDir holds ditherlight.rnfx, paintover.rnfx and lookkeys.json. dev may be null (CPU only).
+// fixtureDir holds ditherlight.rnfx, paintover.rnfx, lookkeys.json and, from round 2,
+// poststack.rnfx, purity.rnfx, lightpaint.rnfx, glaze.rnfx and hatch.rnfx. dev may be null (CPU only).
 StyleParity styleParity(rhi::Device* dev, const std::string& fixtureDir);
 
 }  // namespace raw::gpu_check

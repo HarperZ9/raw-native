@@ -10,9 +10,12 @@ using namespace util;
 using rhi::Access;
 using rhi::BufferUsage;
 
+void put3(float* o, const style::V3& v, double w) { o[0] = float(v[0]); o[1] = float(v[1]); o[2] = float(v[2]); o[3] = float(w); }
+}  // namespace
+
 // Runs one dispatch of `pass` over n invocations after the uploads, then reads the storage
 // buffers `outs` (each n words) into `dst`.
-bool dispatchAndRead(Gpu& gpu, int pass, const std::vector<rhi::BufferHandle>& binds, const std::vector<Access>& inAccess,
+bool dispatchAndRead(util::Gpu& gpu, int pass, const std::vector<rhi::BufferHandle>& binds, const std::vector<Access>& inAccess,
                      const std::vector<rhi::BufferHandle>& outs, uint32_t n, std::vector<std::vector<std::uint32_t>*> dst) {
     const auto& L = style_passes::kPasses[pass];
     const rhi::PipelineHandle pipe = compute(gpu.dev, L.name, L.binds, L.bindCount, gpu.err);
@@ -41,8 +44,11 @@ bool dispatchAndRead(Gpu& gpu, int pass, const std::vector<rhi::BufferHandle>& b
     }
     return true;
 }
-void put3(float* o, const style::V3& v, double w) { o[0] = float(v[0]); o[1] = float(v[1]); o[2] = float(v[2]); o[3] = float(w); }
-}  // namespace
+int passIndex(const char* name) {
+    for (std::size_t k = 0; k < std::size(style_passes::kPasses); ++k)
+        if (std::strcmp(style_passes::kPasses[k].name, name) == 0) return int(k);
+    return -1;
+}
 
 bool runDither(rhi::Device& dev, const style::DitherPlan& p, const std::vector<style::DitherLight>& lights, const style::DitherGBuffer& g,
                std::vector<std::uint32_t>& level, std::vector<std::uint32_t>& packed, std::string& err) {

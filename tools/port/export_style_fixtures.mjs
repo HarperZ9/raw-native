@@ -1,7 +1,9 @@
 // Exports the fixtures and the JavaScript float64 reference outputs of the ported style passes, for
 // the C++ core's CPU link (ADR 0019, evidence/cpp-port-style-bounds.json).
 //   node tools/port/export_style_fixtures.mjs <out dir>
-// Writes <out>/ditherlight.rnfx, <out>/paintover.rnfx and <out>/lookkeys.json. The cases are the
+// Writes <out>/ditherlight.rnfx, <out>/paintover.rnfx, <out>/lookkeys.json and, from round 2
+// (evidence/cpp-port-style-bounds-2.json), <out>/poststack.rnfx and <out>/<pass>.rnfx for purity,
+// lightpaint, glaze and hatch. The cases are the
 // ones of the web parity bounds files, built with the web modules exactly as the web parity pages
 // build them (web/test/shaders-ditherlight.html, shaders-paintover.html). Nothing under web/ is
 // changed. The reference functions are called per pixel (toneOf, shadePoint) so their float64
@@ -10,7 +12,7 @@
 // An .rnfx file: the 8 bytes "RNFX0001", a little-endian u32 header length, the header as UTF-8
 // JSON, zero padding to a multiple of 8, then the arrays. The header names each array with its
 // type (u8, u32, f32, f64), element count and byte offset from the start of the array block.
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { resolveDitherlight, toneOf, quantise, levelRgb8, runDitherlight } from "../../web/shaders/ditherlight/ditherlight.mjs";
@@ -22,27 +24,13 @@ import { makeProjector, shadePoint, reaches, KEYFRAME } from "../../web/shaders/
 import { paint } from "../../web/shaders/paintover/painter.mjs";
 import { renderGbuf } from "../../web/shaders/fixtures/harbour-render.mjs";
 import { createLookKeys, resolveSlots } from "../../web/look/keys.mjs";
+import { Bundle } from "./rnfx.mjs";
+import { postStack } from "./fixtures_post.mjs";
+import { purity, lightpaint, glaze, hatch } from "./fixtures_image.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const readJson = (p) => JSON.parse(readFileSync(join(ROOT, p), "utf8"));
 
-class Bundle {
-  constructor(pass) { this.head = { pass, arrays: {} }; this.blobs = []; this.size = 0; }
-  add(name, type, arr) {
-    const T = { u8: Uint8Array, u32: Uint32Array, f32: Float32Array, f64: Float64Array }[type];
-    const a = arr instanceof T ? arr : T.from(arr), bytes = new Uint8Array(a.buffer, a.byteOffset, a.byteLength);
-    this.head.arrays[name] = { type, count: a.length, offset: this.size };
-    this.blobs.push(bytes); this.size += bytes.length;
-    const pad = (8 - (this.size % 8)) % 8; if (pad) { this.blobs.push(new Uint8Array(pad)); this.size += pad; }
-  }
-  write(path) {
-    const head = new TextEncoder().encode(JSON.stringify(this.head)), lenPad = (8 - ((12 + head.length) % 8)) % 8;
-    const out = new Uint8Array(12 + head.length + lenPad + this.size), dv = new DataView(out.buffer);
-    out.set(new TextEncoder().encode("RNFX0001"), 0); dv.setUint32(8, head.length, true); out.set(head, 12);
-    let o = 12 + head.length + lenPad; for (const b of this.blobs) { out.set(b, o); o += b.length; }
-    writeFileSync(path, out);
-  }
-}
 
 // Dither lighting: the cases of the web bounds file; tone in float64 from toneOf.
 function ditherlight(out) {
@@ -140,5 +128,8 @@ function lookkeys(out) {
 const out = process.argv[2];
 if (!out) { console.error("usage: node tools/port/export_style_fixtures.mjs <out dir>"); process.exit(2); }
 mkdirSync(out, { recursive: true });
-const t0 = Date.now(), counts = { ditherlight: ditherlight(out), paintover: paintover(out), lookkeys: lookkeys(out) };
+const t0 = Date.now(), counts = { ditherlight: ditherlight(out), paintover: paintover(out), lookkeys: lookkeys(out), poststack: postStack(out),
+  purity: purity(out), lightpaint: lightpaint(out), glaze: glaze(out), hatch: hatch(out) };
+// The file list, for hosts that copy the fixtures by name (web/test/texture-identity.html).
+writeFileSync(join(out, "files.json"), JSON.stringify(readdirSync(out).filter((f) => f.endsWith(".rnfx") || f === "lookkeys.json").sort()));
 console.log(JSON.stringify({ out, cases: counts, seconds: (Date.now() - t0) / 1000 }));

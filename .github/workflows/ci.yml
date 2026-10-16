@@ -109,6 +109,7 @@ jobs:
         shell: bash
         run: |
           node tools/port/gen_bluenoise.mjs --check
+          node tools/port/gen_pigments.mjs --check
           node tools/port/export_style_fixtures.mjs style-fixtures
           if [ -x build/raw_native_cli ]; then cli=build/raw_native_cli; else cli=build/Release/raw_native_cli.exe; fi
           "$cli" style-parity --fixtures style-fixtures --cpu-only --out style-cpu.json > /dev/null
@@ -258,7 +259,7 @@ jobs:
         run: |
           build/Release/raw_native_cli.exe post-parity --out post-warp.json > /dev/null || true
           python tests/gpu/post_gate.py post-warp.json --min-scenes 5
-      - name: The core's style passes (dither lighting, paint-over) on WARP match the C++ float64 reference, which matches the JavaScript one (ADR 0019)
+      - name: The core's style passes and post-stack driver on WARP match the C++ float64 reference, which matches the JavaScript one (ADR 0019)
         shell: bash
         env:
           RAW_NATIVE_D3D12_WARP: "1"
