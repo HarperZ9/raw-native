@@ -200,6 +200,12 @@ is committed.
    scene at 1280 x 800. The p95 frame time is recorded on Deck-class hardware when it is
    available, otherwise the row says "not measured".
 
+Status (2026-10-16). Criteria 1 and 4 pass on lavapipe in CI against bounds committed before the
+first run (`evidence/n3-vulkan-raster-bounds.json`, results in `evidence/n3-vulkan-raster-runs.json`):
+the RHI on Vulkan with a swapchain, and X11 and Wayland windows running the N2 frame-hash check, whose
+frames equal the D3D12 WARP frames hash for hash. Criteria 2, 3 and 5 are open; HDR10 on Vulkan is
+not checked (the software drivers offer only sRGB).
+
 ### ROADMAP M3 to M6
 
 Unchanged (`docs/architecture/ROADMAP.md`). M3 carries G1 (loop, input, camera controllers,
