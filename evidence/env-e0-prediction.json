@@ -1,0 +1,17 @@
+{
+  "what": "Environment state E0 (ADR 0017 first slice): predictions and pass bounds, written 2026-10-15 before any test was run",
+  "built_on": "ADR 0017 as written in open PR #145 (Proposed, not merged when this was written)",
+  "checks": {
+    "determinism": { "prediction": "same seed and same command script give deep-equal frozen snapshots after 2400 steps at 60 Hz; seed 8 changes wind only, not time", "bound": "exact" },
+    "save_load": { "prediction": "a run saved at step 1100, sent through JSON and resumed equals the straight run to step 2400, snapshot and command log; a queued command survives the save", "bound": "exact" },
+    "slots": { "prediction": "8 slots by default; a 6-slot environment equals the 8-slot curve at its own slot hours; 3 slots and an undeclared term are refused", "bound": "|difference| < 1e-12" },
+    "composition": { "prediction": "direct + ambient = key level and direct / key = balance at every hour; explicit mode with direct 0.6 and ambient 0.2 reports balance 0.75", "bound": "< 1e-12" },
+    "wetness": { "prediction": "after 30 s of play with rain from 1 s (10 s blend) and storm from 15 s, the open zone's wetness exceeds 0.9 and the roofed zone stays 0; a fully wet clear-noon surface dries monotonically and is below 0.9 after 60 s", "bound": "as stated" },
+    "events": { "prediction": "rain-start fires exactly once (hysteresis), wet and at least one thunder fire within 40 s; the door gust of 6 m/s reaches the roofed room at 4 to 6 m/s one step later and is gone 200 steps later", "bound": "as stated" },
+    "reader_lighting": { "prediction": "storm at dusk gives lower look brightness, more fog, more bloom and a lower balance than clear at the same hour; the roofed room's key is below outside and its shadow strength is 0", "bound": "strict inequalities" },
+    "reader_material": { "prediction": "fully wet, porosity 1: albedo x 0.55, roughness 0.7 -> 0.156, peak gain (0.7/0.156)^4 > 100; darkening and roughness are monotone in wetness; low porosity darkens less", "bound": "< 1e-12 on the formulas" },
+    "reader_sway": { "prediction": "rest in still air; steady wind 2, 6, -6 m/s settles to response * wind / stiffness; wind along the sway axis gives zero", "bound": "within 1 percent after 20 s" },
+    "torch_rule": { "prediction": "outside in the storm the torch goes out after 1 / (rain * 0.006) s; under the roof it stays lit; relight works only sheltered and once soak < 0.3", "bound": "within 0.05 s" },
+    "fog_sight": { "prediction": "fog at noon cuts sight range below a quarter of clear noon; a carried light keeps its radius as the floor", "bound": "as stated" }
+  }
+}

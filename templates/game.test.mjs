@@ -19,11 +19,25 @@ const run = async (scene, steps, input) => {
 };
 
 test("retro thriller: the demo walks the corridor and never leaves the floor rows", async () => {
-  const { seen } = await run(thriller, 720);
+  const { seen } = await run(thriller, 1200);
   const xs = seen.map((st) => st.p[0]), ys = seen.map((st) => st.p[1]);
   assert.ok(Math.max(...xs) - Math.min(...xs) > 250, "walked east and back");
   for (const y of ys) assert.ok(y >= 6 * 24 + 8 && y <= 22 * 24 - 8, `y ${y} inside the corridor`);
   assert.ok(seen.at(-1).cam.zoom > 2.2, "zoomed in at the end");
+  // The environment: entering the courtyard brings the storm; the open floor wets, the roofed
+  // one does not; the lamp drowns in the courtyard and relights under the roof; the cloth sways.
+  const enter = seen.findIndex((st) => st.p[0] >= 34 * 24), stormCmd = seen.at(-1).env.log.find((e) => e.cmd.type === "setWeatherTarget");
+  assert.equal(stormCmd.cmd.state, "storm"); assert.equal(stormCmd.step, enter - 1, "applied in the step that crossed into the courtyard");
+  assert.match(stormCmd.reason, /storm starts/);
+  const end = seen.at(-1).snap;
+  assert.ok(end.zones.outside.wetness > 0.5 && end.zones.corridor.wetness === 0);
+  const out = seen.findIndex((st) => !st.lamp.lit), back = seen.findIndex((st, i) => i > out && st.lamp.lit);
+  assert.ok(out > enter && seen[out].p[0] >= 34 * 24, "the lamp went out in the courtyard");
+  assert.ok(back > out && seen[back].p[0] < 34 * 24, "and was relit under the roof");
+  assert.ok(Math.max(...seen.map((st) => Math.abs(st.cloth.angle))) > 0.2, "the cloth swayed in the storm");
+  const thunder = seen.findIndex((st) => st.snap.events.some((e) => e.type === "thunder"));
+  assert.ok(thunder > 0 && seen.slice(0, thunder).every((st) => st.plantIn.angle === 0), "the plant indoors is still until thunder rattles the door");
+  assert.ok(seen.slice(thunder, thunder + 120).some((st) => Math.abs(st.plantIn.angle) > 0.01), "and sways after");
   // Holding up forever stops at the wall.
   const { s } = await run(thriller, 600, (i, map) => frame(map, { axes: { moveY: -1 } }));
   assert.equal(s.state.p[1], 6 * 24 + 8);

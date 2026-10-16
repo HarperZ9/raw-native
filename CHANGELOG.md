@@ -9,6 +9,52 @@ the day the release was published on GitHub, in UTC.
 Changes not yet in a release are one file each in [`changelog.d/`](changelog.d/), so parallel pull
 requests do not edit the same lines. `node tools/changelog/assemble.mjs --preview` prints them as
 this list will read; at release, `--release X.Y.Z --date YYYY-MM-DD` writes them in here.
+- **Environment state, first slice** (ADR 0017, `web/env`). One shared, serialisable, versioned state: time of day on the look keys' slots (8 by default, 6 accepted), weather as weights over named states with timed blends, wind with seeded gusts, moisture, temperature, light and atmosphere terms, and the direct-to-ambient balance as an explicit term (or reported, in explicit mode). Each term has a unit and a range. It steps on the G1 fixed step, and systems read a frozen snapshot or subscribe. Gameplay writes through logged commands (`setWeatherTarget`, `addWind`, `wet`, `heat`, `setZone`, `setTime`). Rules wet open zones in rain and dry them with wind, warmth and dry air, form frost and lift dust. Events (rain start and stop, wet, dark, thunder) use hysteresis. Readers: lighting and the look, wet materials (darker by porosity, glossier, with the GGX peak gain), wind sway on a damped spring, a lamp that rain puts out, and sight range under fog and darkness. The retro-thriller template runs on it. Its courtyard is open to the sky, and the first step into it brings the storm: the look darkens, the floor wets and reflects the lamps, rain falls, a cloth and plants sway, the hand lamp drowns and relights under the roof, and thunder rattles the door so the plant indoors moves. Same seed and commands give the same snapshot; a save and load mid-run equals the straight run. Prediction and bounds, committed before the tests: `evidence/env-e0-prediction.json`. A step with its snapshot costs about 22 us in Node on the development machine (the ADR's limit is 0.1 ms).
+- **Paint-over projection** (graphics program, `web/shaders/paintover`). A painting made over a camera-locked render of block-out geometry is projected back as the surface, with keyframe projectors blended by view angle (each window reaches the nearest other projector, so every keyframe view is exact), depth-map visibility, a greedy search for secondary projectors and hole-filling secondary paintings. Original procedural painter (layered brush strokes, no outside art), an original harbour block-out, a WGSL pass with SwiftShader parity (0 decisions differ in each of 4 cases), and a demo video. Round trip: maximum 0 codes, mean 0.00000 on covered pixels; keyframe views exact over three projectors; off-axis ground stretch within 3% of an analytic model. Missed and recorded: the pop bound (99.9th percentile up to 4.4 codes per degree), and several first-run predictions (`project-docs/PAINT-OVER-RESULTS.md`). Not new: view-dependent texture mapping and greedy view selection have prior art (`project-docs/NOVELTY.md`).
+- **Look keys** (`web/look/keys.mjs`). Terms keyed to time-of-day slots: 8 slots by default, 6 accepted, fewer than 6 refused. A periodic monotone cubic curve passes through every key and never overshoots. It is the time axis of the proposed environment state (ADR 0017).
+- **No third-party shader code in `web/shaders`.** A CI check (`tools/ci/no_third_party_shaders.mjs`) fails on a licence or ownership header, a non-relative import, or a header naming a known third-party shader source; it has a falsification test of eight markers and one reasoned allowlist entry.
+- **Game runtime G1** (ADR 0014, `web/game`). A fixed-step loop with interpolated rendering on an integer microsecond clock, so the same play time in any split of frame lengths gives the same steps and the same state; a stall is bounded (8 steps a frame by default) and the dropped time is reported. Input is named actions over keyboard (layout-independent codes), pointer and gamepad, rebindable at run time, saved as JSON, with a tap shorter than a step still seen. Action frames record and replay to the identical state. Camera controllers: 2D and isometric pan, follow and zoom about the pointer; first person with wall sliding and pointer rays; the orbit camera on actions. Picking: rays against boxes, spheres and triangles in a G0 scene through each node's inverse transform, and isometric cells through the Motion camera. The retro-thriller and painted-iso-rpg templates are now playable (walk, click to walk, path around blocks, zoom) at `web/game/play.html`; their films, captures and the CI template check play a scripted demo through the same simulation. Prediction and bounds, committed before the tests: `evidence/g1-runtime-prediction.json`; one adjustment: 600 frames of exactly 1/60 s count 10.0002 s on the microsecond clock (still 600 steps).
+- **Dither-quantised lighting** (graphics program, `web/shaders/ditherlight`). Light and shadow resolve through a threshold matrix into N tones, 1 bit as the limit case: a darkness level, radial lights, shaped beams with blades, fog to paper white, Bayer 8x8 or blue-noise thresholds, and screen, world or world-octave anchoring. The quantiser works on a linear-light fraction, so a threshold period's mean equals the tone to half a rank. GPU levels equal the f64 reference on SwiftShader (0 of 20,736 decisions differ in each of 5 cases; a 30% ambient error fails every case). Motion study on an original scene, with the prediction and bounds committed before the run: no measured separation between Bayer and blue noise, and screen anchoring wins on accuracy (error 2.5 against 8 to 16 for world anchoring), while a surface-attached pattern cuts surface-lock error by 40% to 76% (world-octave against screen). 65 of 101 predictions held. Not new: the technique has prior art (`project-docs/NOVELTY.md`). Also `project-docs/EFFECTS-PROGRAM.md`, the ranked plan for the effects suite.
+- **Denoiser inference: slimmer aux buffer** (HW H2). The v4 feature pass wrote 88 bytes a pixel of auxiliary data; it
+  now writes 28 (the warped histories and the validity). The blend recomputes the demodulated radiance from the input and
+  the combine reads the albedos and emission from it, with the same arithmetic: SwiftShader parity is identical on every
+  test sequence. On the RTX 4090 the feature pass falls from 2.51 to 1.61 ms and the frame by 0.93 to 0.94 ms (three runs
+  in each of two windows). The 2.0 ms budget still fails. Prediction and bounds: `evidence/rr-aux-slim-note-2026-10-15.json`.
+- **Denoiser inference: mean depth in two passes** (HW H2). The single-workgroup reduction took 2.34 ms at 1080p on the
+  RTX 4090; two passes take 0.10 ms, and the v4 frame falls from 14.08 to 11.8 ms (prediction committed before: at most
+  0.4 ms and 12.2 ms). Timing-only variants of the feature pass show its aux writes cost about 1.0 ms of 2.49. The 2.0 ms
+  budget still fails. Parity on the scalar path is unchanged (2.9e-3).
+- **Frame and pass budgets** (roadmap M1, criterion 7). `docs/media/media.json` held only the smoke
+  wall-clock budget, so `tools/media/budget.py` could not fail a local GPU run: a stats file with a
+  900 ms p95 frame and a 40 ms draw pass read "within budget". The file now sets one frame at 60 Hz
+  (16.7 ms p95) for both media scenes and per-pass budgets (draw 4 ms; particles, bloom and finish
+  2 ms) on GPU adapters. The RTX 4090 record of 2026-10-10 is within them; a CI step checks that
+  record and an over-budget control, which must fail.
+- **M1 evidence from the RTX 4090** committed: `evidence/m1-post-passes-rtx4090.json` (every post
+  pass within one code of its CPU reference) and the board-reported energy of both media scenes
+  (`evidence/m1-energy-*-rtx4090.json`, 1.098 J a frame for what-it-draws; not a meter reading).
+- **CRT: pixel-locked mask and the `pvm-20-soft` preset** (shader lab 4, #122). The stripe or slot
+  mask can lock to the output pixel grid (`mask.lock: "pixel"`, `mask.pitchPx`), on the CPU
+  reference and in WGSL. Every CRT parity case is within one code on SwiftShader. Merged just
+  before the 0.8.0 tag was cut and not in 0.8.0.
+- **Dither temporal stability, measured** (shader lab 4, #126). `tools/shaders/dither_temporal.mjs`
+  measures flicker for every dither mode on four sequences and two palettes, under a protocol
+  committed before it ran (`evidence/shaders-dither-temporal-runs.json`).
+- **Lab 4 blind panel results** (#128). The pixel template now uses `mix-bayer4`, which flickers less
+  on moving content under steady light; under a flickering light the mix modes flicker more.
+- **M1 closes** with the Studio layer evidence: `evidence/m1-studio-layer-swiftshader.json`, from the
+  Finish layer check run against the live site (four looks within one code of the CPU references;
+  each shifted-reference control fails). Every M1 row in `docs/architecture/ROADMAP.md` now passes.
+- **PNG reader and one-frame Motion stills** (#121): `tools/shaders/png.mjs` gains `readPng`, and
+  `scripts/motion_still.py` renders one lossless frame on SwiftShader.
+- **Canvas 2D drawer for Motion** (#125): `web/motion/canvas2d.mjs` draws a Motion display list
+  without WebGPU, approximating blur and depth of field.
+- **Explainer guides** (#100): the three guides, their rig, worlds and render tools under
+  `templates/guides/` and `tools/guides/`.
+- **`mix-bayer8` is not a duplicate of `mix-bayer4`.** Shader lab 4 reported it identical by
+  construction. That holds at strength 1 only; below it the modes differ, so `mix-bayer8` keeps its
+  behaviour and is not made an alias. `docs/shaders/README.md` said "the same indices" without the
+  condition and is corrected; `web/shaders/dither-mix.test.mjs` checks both cases on four palettes.
 
 ## 0.8.0 (2026-10-14)
 
