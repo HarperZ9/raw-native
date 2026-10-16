@@ -41,7 +41,7 @@ fn pack_rgb8(c: vec3f) -> u32 {
 }
 
 //@pass style_ditherlight
-// One invocation per pixel. gb: six vec4f a pixel: (albedo, kind, depth, 0), world position,
+// One invocation per pixel. gb: six vec4f a pixel: (albedo, kind, depth, haze), world position,
 // normal, anchor position, anchor normal, the four lights' shadow visibility. lights: six vec4f
 // a light: (kind 0 radial or 1 beam, intensity, radius or range, core or cos outer),
 // (position, wrap), (axis, cos inner), (tangent, slats), (bitangent, duty), (phase, 0, 0, 0).
@@ -135,6 +135,8 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
         let tf: f32 = D.b.w * (1.0 - exp(-r * r));
         tone = lit * (1.0 - tf) + tf;
     }
+    let hz: f32 = min(1.0, max(0.0, g0.w));
+    if (hz > 0.0) { tone = 1.0 - (1.0 - tone) * (1.0 - hz); }
     var cx: i32 = i32(x);
     var cy: i32 = i32(y);
     if (D.anchor > 0u) {

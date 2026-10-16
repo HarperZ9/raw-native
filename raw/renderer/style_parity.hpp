@@ -43,6 +43,7 @@ struct LookKeysResult {
 struct StyleParity {
     std::string error, backend, adapter;
     bool gpuWanted{true};
+    int expectDither{0}, expectPaint{0};   // cases in the fixture bundles
     std::vector<StyleCase> cases;
     LookKeysResult lookkeys;
     bool cpuPass() const;

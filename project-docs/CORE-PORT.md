@@ -30,7 +30,7 @@ RAW_NATIVE_D3D12_WARP=1 build/Release/raw_native_cli.exe style-parity --fixtures
 
 | Pass | CPU link (C++ against JavaScript, float64) | D3D12 on WARP (GPU against C++) | WebGPU on SwiftShader |
 |---|---|---|---|
-| Dither lighting, 5 cases | tone max 2.2e-16; 0 of 103,680 levels differ; plans equal | 0 of 103,680 levels differ; 8-bit max 0 | run in CI (WGSL compiles on SwiftShader) |
+| Dither lighting, 7 cases (2 with the haze input of PR #146) | tone max 2.2e-16; 0 of 145,152 levels differ; plans equal | 0 of 145,152 levels differ; 8-bit max 0 | run in CI (WGSL compiles on SwiftShader) |
 | Paint-over, 4 cases | colour max 1.0e-15; 0 coverage flips | 0 coverage flips; mean at most 8.0e-5 codes, max 1 code | run in CI |
 | Look keys, 6 series | max 0 over 19,607 samples; keys exact; refusals match | no GPU link (CPU terms) | no GPU link |
 

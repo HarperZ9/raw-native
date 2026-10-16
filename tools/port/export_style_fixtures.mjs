@@ -16,6 +16,7 @@ import { fileURLToPath } from "node:url";
 import { resolveDitherlight, toneOf, quantise, levelRgb8, runDitherlight } from "../../web/shaders/ditherlight/ditherlight.mjs";
 import { anchorCell, thresholdAt } from "../../web/shaders/ditherlight/thresholds.mjs";
 import { renderFrame, pathSpecs, lightsOf, FOV } from "../../web/shaders/fixtures/dream.mjs";
+import { renderFrame2, lightsOf2 } from "../../web/shaders/fixtures/dream2.mjs";
 import { isoCamera } from "../../web/shaders/paintover/camera.mjs";
 import { makeProjector, shadePoint, reaches, KEYFRAME } from "../../web/shaders/paintover/projector.mjs";
 import { paint } from "../../web/shaders/paintover/painter.mjs";
@@ -48,12 +49,15 @@ function ditherlight(out) {
   const bounds = readJson("evidence/shaders-ditherlight-parity-bounds.json"), { width: W, height: H } = bounds.output, B = new Bundle("ditherlight");
   B.head.cases = [];
   for (const c of bounds.cases) {
-    const spec = pathSpecs(c.path, c.frame + 1, { fixed: !c.sweep, lanternAttached: !!c.attached })[c.frame], g = renderFrame(spec, W, H), lights = lightsOf(spec);
+    // as web/test/shaders-ditherlight.html builds each case
+    let spec, g, lights;
+    if (c.scene === "v2") { spec = { cam: c.cam, beamAngle: c.beamAngle, flicker: 0.4, time: 10, spin: c.spin }; g = renderFrame2(spec, W, H); lights = lightsOf2(spec); }
+    else { spec = pathSpecs(c.path, c.frame + 1, { fixed: !c.sweep, lanternAttached: !!c.attached })[c.frame]; g = renderFrame(spec, W, H); lights = lightsOf(spec); }
     const plan = resolveDitherlight(c.preset, c.overrides, { height: H, fov: FOV }), official = runDitherlight(plan, lights, g);
     const n = W * H, tone = new Float64Array(n), level = new Uint8Array(n), rgba = new Uint8Array(n * 4), px = { vis: [0, 0, 0, 0], wpos: [0, 0, 0], nrm: [0, 0, 1], apos: [0, 0, 0], anrm: [0, 0, 1] };
     for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
       const i = y * W + x;
-      px.kind = g.kind[i]; px.albedo = g.albedo[i]; px.depth = g.depth[i]; px.ix = x; px.iy = y;
+      px.kind = g.kind[i]; px.albedo = g.albedo[i]; px.depth = g.depth[i]; px.haze = g.haze ? g.haze[i] : 0; px.ix = x; px.iy = y;
       for (let k = 0; k < 3; k++) { px.wpos[k] = g.wpos[i * 3 + k]; px.nrm[k] = g.nrm[i * 3 + k]; px.apos[k] = g.apos[i * 3 + k]; px.anrm[k] = g.anrm[i * 3 + k]; }
       for (let k = 0; k < 4; k++) px.vis[k] = g.vis[i * 4 + k];
       const Y = toneOf(plan, lights, px), [cx, cy] = anchorCell(plan, px), k = quantise(plan, Y, thresholdAt(plan.source, cx, cy));
@@ -62,7 +66,7 @@ function ditherlight(out) {
     }
     const p = `${c.id}.`;
     B.add(p + "albedo", "f32", g.albedo); B.add(p + "kind", "u8", g.kind); B.add(p + "depth", "f32", g.depth);
-    B.add(p + "wpos", "f32", g.wpos); B.add(p + "nrm", "f32", g.nrm); B.add(p + "apos", "f32", g.apos); B.add(p + "anrm", "f32", g.anrm); B.add(p + "vis", "f32", g.vis);
+    B.add(p + "wpos", "f32", g.wpos); B.add(p + "nrm", "f32", g.nrm); B.add(p + "apos", "f32", g.apos); B.add(p + "anrm", "f32", g.anrm); B.add(p + "vis", "f32", g.vis); B.add(p + "haze", "f32", g.haze ?? new Float32Array(W * H));
     B.add(p + "js_tone", "f64", tone); B.add(p + "js_level", "u8", level); B.add(p + "js_rgba", "u8", rgba);
     B.head.cases.push({ id: c.id, preset: c.preset, overrides: c.overrides, width: W, height: H, fov: FOV, plan, lights });
   }

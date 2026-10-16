@@ -37,7 +37,7 @@ style::DitherGBuffer ditherGbuf(const fx::Bundle& b, const std::string& p, int w
     g.w = w; g.h = h;
     g.albedo = b.arr<float>(p + "albedo", "f32"); g.kind = b.arr<std::uint8_t>(p + "kind", "u8"); g.depth = b.arr<float>(p + "depth", "f32");
     g.wpos = b.arr<float>(p + "wpos", "f32"); g.nrm = b.arr<float>(p + "nrm", "f32"); g.apos = b.arr<float>(p + "apos", "f32");
-    g.anrm = b.arr<float>(p + "anrm", "f32"); g.vis = b.arr<float>(p + "vis", "f32");
+    g.anrm = b.arr<float>(p + "anrm", "f32"); g.vis = b.arr<float>(p + "vis", "f32"); g.haze = b.arr<float>(p + "haze", "f32");
     return g;
 }
 
@@ -217,7 +217,7 @@ bool StyleParity::cpuPass() const {
     bool ok = error.empty() && !cases.empty() && lookkeys.pass();
     int dither = 0, paint = 0;
     for (const StyleCase& c : cases) { ok = ok && c.cpuPass; dither += c.pass == "ditherlight"; paint += c.pass == "paintover"; }
-    return ok && dither == 5 && paint == 4;
+    return ok && dither == expectDither && dither >= 5 && paint == expectPaint && paint >= 4;
 }
 bool StyleParity::gpuPass() const {
     bool ok = error.empty() && !cases.empty();
@@ -233,6 +233,7 @@ StyleParity styleParity(rhi::Device* dev, const std::string& dir) {
     try {
         fx::Bundle d, p;
         if (!fx::loadBundle(dir + "/ditherlight.rnfx", d, r.error) || !fx::loadBundle(dir + "/paintover.rnfx", p, r.error)) return r;
+        r.expectDither = int(d.head.get("cases")->a.size()); r.expectPaint = int(p.head.get("cases")->a.size());
         ditherCases(dev, d, r);
         if (r.error.empty()) paintCases(dev, p, r);
         if (r.error.empty()) r.lookkeys = lookKeysParity(dir + "/lookkeys.json", r.error);

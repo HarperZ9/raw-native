@@ -14,6 +14,105 @@
    "n": 2,
    "date": "2026-10-15",
    "what": "CPU and WARP links after Addendum A",
+   "file": "superseded by run 3 (evidence/cpp-port-style-d3d12-warp.json now holds run 3)",
+   "pass": true,
+   "cases": [
+    {
+     "pass": "ditherlight",
+     "id": "ink-bayer-screen",
+     "cpu_pass": true,
+     "cpu_max_abs": 2.22045e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "ditherlight",
+     "id": "ink-blue-octave",
+     "cpu_pass": true,
+     "cpu_max_abs": 1.11022e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "ditherlight",
+     "id": "tones4-bayer-fixed",
+     "cpu_pass": true,
+     "cpu_max_abs": 2.22045e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "ditherlight",
+     "id": "tones4-blue-screen-beam",
+     "cpu_pass": true,
+     "cpu_max_abs": 1.66533e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "ditherlight",
+     "id": "tones8-bayer-octave-object",
+     "cpu_pass": true,
+     "cpu_max_abs": 2.22045e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "paintover",
+     "id": "primary-aligned",
+     "cpu_pass": true,
+     "cpu_max_abs": 0,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "paintover",
+     "id": "three-off-axis",
+     "cpu_pass": true,
+     "cpu_max_abs": 0,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 8.03755e-05
+    },
+    {
+     "pass": "paintover",
+     "id": "three-at-secondary",
+     "cpu_pass": true,
+     "cpu_max_abs": 2.77556e-17,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "paintover",
+     "id": "perspective-view",
+     "cpu_pass": true,
+     "cpu_max_abs": 9.99201e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 6.43004e-05
+    }
+   ]
+  },
+  {
+   "n": 3,
+   "date": "2026-10-15",
+   "what": "CPU and WARP links after Addendum B (haze input, seven dither cases), with the D3D12 debug layer",
    "file": "evidence/cpp-port-style-d3d12-warp.json",
    "pass": true,
    "cases": [
@@ -60,6 +159,26 @@
     {
      "pass": "ditherlight",
      "id": "tones8-bayer-octave-object",
+     "cpu_pass": true,
+     "cpu_max_abs": 2.22045e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "ditherlight",
+     "id": "v2-haze-beam",
+     "cpu_pass": true,
+     "cpu_max_abs": 2.22045e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "ditherlight",
+     "id": "v2-haze-1bit-blue",
      "cpu_pass": true,
      "cpu_max_abs": 2.22045e-16,
      "cpu_mismatch": 0,
@@ -596,5 +715,6 @@
    ]
   }
  ],
- "webgpu": "pending: the WebGPU build runs in CI (Chrome on SwiftShader); this machine has no Emscripten SDK. The WGSL of both passes compiled with no messages and built compute pipelines on Chrome's SwiftShader adapter (a compile check only, 2026-10-15)."
+ "webgpu": "pending: the WebGPU build runs in CI (Chrome on SwiftShader); this machine has no Emscripten SDK. The WGSL of both passes compiled with no messages and built compute pipelines on Chrome's SwiftShader adapter (a compile check only, 2026-10-15).",
+ "source_edit_controls_note": "The source-edit controls ran on the five-case build before Addendum B; the haze change did not touch the edited constants."
 }

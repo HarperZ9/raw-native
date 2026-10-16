@@ -7,6 +7,8 @@
 //   lit  = albedo * (d (1 - h + h (0.5 + 0.5 n.y)) + sum_i vis_i mask_i term_i)
 //   tone = clamp(lit, 0, 1) (1 - tf) + tf,   tf = fogMax (1 - exp(-(depth / fogDist)^2))
 // Sky (kind 0) and emissive (kind 1) pixels are already tones and skip the lights and the fog.
+// A per-pixel haze h in [0, 1] (light scattered along the view ray) screen-blends every kind:
+// tone = 1 - (1 - tone)(1 - h).
 // Levels sit at linear light l_k = (k / (N - 1))^gamma; a tone in [l_k, l_k+1] takes level k + 1
 // when its fraction f = (Y - l_k) / (l_k+1 - l_k) exceeds the pixel's threshold, else level k.
 // A threshold is (rank + 0.5) / M for a Bayer 8 x 8 rank (M = 64) or a blue-noise rank (M = 4096).
@@ -65,7 +67,7 @@ std::array<std::uint8_t, 3> levelRgb8(const DitherPlan& p, int k);
 // One G-buffer pixel, as the geometry pass writes it.
 struct DitherPixel {
     int kind{2};                 // 0 sky, 1 emissive, 2 lit surface
-    double albedo{0}, depth{0};
+    double albedo{0}, depth{0}, haze{0};
     V3 wpos{}, nrm{0, 0, 1}, apos{}, anrm{0, 0, 1};
     std::array<double, 4> vis{};
     int ix{0}, iy{0};
@@ -80,6 +82,7 @@ int quantise(const DitherPlan& p, double Y, double t, double* fraction = nullptr
 struct DitherGBuffer {
     int w{0}, h{0};
     std::vector<float> albedo, depth, wpos, nrm, apos, anrm, vis;
+    std::vector<float> haze;   // one a pixel, or empty for none
     std::vector<std::uint8_t> kind;
     DitherPixel pixel(int x, int y) const;
 };

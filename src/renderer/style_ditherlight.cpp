@@ -94,16 +94,21 @@ std::array<std::uint8_t, 3> levelRgb8(const DitherPlan& p, int k) {
 }
 
 double toneOf(const DitherPlan& p, const std::vector<DitherLight>& lights, const DitherPixel& px) {
-    if (px.kind != 2) return px.albedo;
-    double E = p.dark * (1 - p.hemi + p.hemi * (p.hemiConst + 0.5 * px.nrm[1]));
-    for (std::size_t i = 0; i < lights.size() && i < 4; ++i) {
-        const double v = px.vis[i];
-        if (!(v > 0)) continue;
-        const double m = maskAt(lights[i], px.wpos);
-        if (m > 0) E += v * m * surfaceTerm(lights[i], px.wpos, px.nrm);
+    double Y = px.albedo;
+    if (px.kind == 2) {
+        double E = p.dark * (1 - p.hemi + p.hemi * (p.hemiConst + 0.5 * px.nrm[1]));
+        for (std::size_t i = 0; i < lights.size() && i < 4; ++i) {
+            const double v = px.vis[i];
+            if (!(v > 0)) continue;
+            const double m = maskAt(lights[i], px.wpos);
+            if (m > 0) E += v * m * surfaceTerm(lights[i], px.wpos, px.nrm);
+        }
+        const double lit = std::min(1.0, std::max(0.0, px.albedo * E)), r = px.depth / p.fogDist, tf = p.fogMax * (1 - std::exp(-r * r));
+        Y = lit * (1 - tf) + tf;
     }
-    const double lit = std::min(1.0, std::max(0.0, px.albedo * E)), r = px.depth / p.fogDist, tf = p.fogMax * (1 - std::exp(-r * r));
-    return lit * (1 - tf) + tf;
+    // in-scattered light along the view ray, screen-blended
+    const double hz = px.haze > 0 ? std::min(1.0, px.haze) : 0;
+    return hz > 0 ? 1 - (1 - Y) * (1 - hz) : Y;
 }
 
 std::array<int, 2> anchorCell(const DitherPlan& p, const DitherPixel& px) {
@@ -132,7 +137,7 @@ int quantise(const DitherPlan& p, double Y, double t, double* fraction) {
 DitherPixel DitherGBuffer::pixel(int x, int y) const {
     const std::size_t i = std::size_t(y) * std::size_t(w) + std::size_t(x);
     DitherPixel px;
-    px.kind = kind[i]; px.albedo = albedo[i]; px.depth = depth[i]; px.ix = x; px.iy = y;
+    px.kind = kind[i]; px.albedo = albedo[i]; px.depth = depth[i]; px.haze = haze.empty() ? 0.0 : double(haze[i]); px.ix = x; px.iy = y;
     for (std::size_t c = 0; c < 3; ++c) { px.wpos[c] = wpos[i * 3 + c]; px.nrm[c] = nrm[i * 3 + c]; px.apos[c] = apos[i * 3 + c]; px.anrm[c] = anrm[i * 3 + c]; }
     for (std::size_t c = 0; c < 4; ++c) px.vis[c] = vis[i * 4 + c];
     return px;

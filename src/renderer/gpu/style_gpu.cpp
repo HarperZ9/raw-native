@@ -55,7 +55,7 @@ bool runDither(rhi::Device& dev, const style::DitherPlan& p, const std::vector<s
     std::vector<float> gb(std::size_t(n) * 24, 0.0f), lb(std::size_t(std::max<std::size_t>(1, lights.size())) * 24, 0.0f);
     for (std::size_t i = 0; i < n; ++i) {
         float* o = gb.data() + i * 24;
-        o[0] = g.albedo[i]; o[1] = float(g.kind[i]); o[2] = g.depth[i];
+        o[0] = g.albedo[i]; o[1] = float(g.kind[i]); o[2] = g.depth[i]; o[3] = g.haze.empty() ? 0.0f : g.haze[i];
         for (std::size_t c = 0; c < 3; ++c) { o[4 + c] = g.wpos[i * 3 + c]; o[8 + c] = g.nrm[i * 3 + c]; o[12 + c] = g.apos[i * 3 + c]; o[16 + c] = g.anrm[i * 3 + c]; }
         for (std::size_t c = 0; c < 4; ++c) o[20 + c] = g.vis[i * 4 + c];
     }
