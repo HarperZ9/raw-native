@@ -1,0 +1,24 @@
+{
+ "criterion": "RELEASE-PLAN.md N3, open items after criteria 1 to 4: frame timing on Vulkan and HDR10 through a Vulkan swapchain. Neither is a numbered N3 criterion; both carry N2's criteria 3 and 4 over to the Vulkan backend so the Linux and Steam Deck route has the same checks as the Windows route.",
+ "written": "2026-10-16, before the code below exists and before any run",
+ "change": "The Vulkan swapchain reports the output's refresh rate, which the pacing bound needs (it reads intervals against the refresh period T). Windows: the display configuration's exact rational for the monitor holding the window, the same function the D3D12 swapchain uses, moved to one shared header. Linux: VK_GOOGLE_display_timing's refresh cycle when the device offers the extension, otherwise 0 (unknown). The run record gains refresh_hz so the value can be checked without the pacing window.",
+ "checks": {
+  "t1_refresh_windows": {
+   "what": "raw_native_present_vk run --hidden --frames 10 on SwiftShader (Win32 surface) and raw_native_present run --hidden --frames 10 on WARP, on this machine's monitor; hidden windows, nothing covers the screen",
+   "bound": "refresh_hz on Vulkan equals refresh_hz on D3D12 exactly (same function, same monitor)",
+   "prediction": "equal"
+  },
+  "t2_refresh_linux_ci": {
+   "what": "raw_native_present_vk run on lavapipe, X11 on Xvfb and Wayland on headless Weston, in the vulkan-linux CI job",
+   "bound": "none; recorded. A value of 0 means the driver does not offer VK_GOOGLE_display_timing on that surface",
+   "prediction": "0 on both (lavapipe's window-system layers are not expected to offer display timing on Xvfb or headless Weston)"
+  },
+  "t3_rtx_vulkan_queued": {
+   "what": "on the RTX 4090 with RAW_NATIVE_VK_HW=1, under the GPU lock and only after the author agrees to a fullscreen window on the monitor: (a) pacing, 10,000 frames, FIFO, borderless fullscreen, no read-back; (b) 600 presented frames twice and offscreen; (c) hdr, HDR10 (A2B10G10R10, HDR10_ST2084) through the Vulkan swapchain, read back before present",
+   "bound": "(a) the N2 bound unchanged (evidence/n2-presentation-bounds.json c4): median within 1% of T, p99 at most 1.25 T, at most 0.2% of intervals above 1.5 T; (b) 600 of 600 equal across the three lists and equal to the D3D12 WARP offscreen list; (c) within one 10-bit code of the C++ PQ encode with the wrong-exponent control outside, as N2 criterion 3",
+   "prediction": "(a) holds, as D3D12 did (median 16.663 ms at 60 Hz); (b) holds; (c) holds if the driver offers HDR10_ST2084 on the surface, which NVIDIA's Windows driver is expected to do whether or not Windows HDR is on; if it does not, the run records the offered colour spaces and the check stays open",
+   "status": "not run: needs the GPU lock and the author's agreement to a fullscreen test on the machine in use. The job script is prepared in mission-control and not launched."
+  }
+ },
+ "does_not_prove": "Pacing or HDR on a Steam Deck or on RADV; what the panel shows; anything from a software driver beyond the refresh value it reports."
+}
