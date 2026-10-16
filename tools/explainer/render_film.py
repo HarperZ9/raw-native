@@ -28,7 +28,7 @@ def sha(p: Path) -> str:
 
 def chunk(a, i: int, t0: float, t1: float, out: Path) -> Path:
     mp4 = out / f"chunk{i:03d}.mp4"
-    if mp4.exists() and Path(str(mp4) + ".frames.sha256").exists():
+    if mp4.exists() and Path(str(mp4) + ".stats.json").exists():
         print(f"chunk {i} done, skipped", flush=True)
         return mp4
     cmd = [sys.executable, str(ROOT / "scripts/motion_render.py"), "--root", str(ROOT), "--scene", a.scene, "--out", str(mp4),
@@ -70,12 +70,17 @@ def main() -> int:
     lst.write_text("".join(f"file '{p.name}'\n" for p in parts), encoding="utf-8")
     film = out / "film.mp4"
     subprocess.run([ff, "-y", "-loglevel", "error", "-f", "concat", "-safe", "0", "-i", str(lst), "-c", "copy", "-movflags", "+faststart", str(film)], check=True)
-    frames = []
+    frames, missing = [], []
     for p in parts:
-        frames += Path(str(p) + ".frames.sha256").read_text(encoding="utf-8").splitlines()
+        h = Path(str(p) + ".frames.sha256")
+        if h.exists():
+            frames += h.read_text(encoding="utf-8").splitlines()
+        else:
+            missing.append(p.name)
     receipt = {"schema": "raw-native.film-receipt/1", "scene": a.scene, "commit": begun["commit"], "dirty_tree": begun["dirty_tree"],
                "size": [a.width, a.height], "fps": a.fps, "seconds": a.seconds, "adapter": "swiftshader (CPU)",
-               "frames": len(frames), "frames_sha256": hashlib.sha256("\n".join(frames).encode()).hexdigest(),
+               "frames_hashed": len(frames), "frames_sha256": hashlib.sha256("\n".join(frames).encode()).hexdigest() if frames else None,
+               "chunks_without_frame_hashes": missing, "chunks_sha256": {p.name: sha(p) for p in parts},
                "film_sha256": sha(film), "vtt_sha256": sha(Path(a.vtt)) if a.vtt else None,
                "does_not_prove": "That another adapter draws identical bytes; the frame hashes are this adapter's."}
     (out / "receipt.json").write_text(json.dumps(receipt, indent=1) + "\n", encoding="utf-8")
