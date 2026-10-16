@@ -42,6 +42,12 @@ void FrameGraph::addPass(std::string name, std::vector<Use> uses, PassFn fn){
     passes_.push_back({std::move(name), std::move(uses), std::move(fn)});
     compiled_ = false;
 }
+Resource FrameGraph::presentTo(rhi::Swapchain& swapchain, uint32_t syncInterval, std::function<bool(std::string&)> beforePresent){
+    swapchain_ = &swapchain; syncInterval_ = syncInterval; beforePresent_ = std::move(beforePresent);
+    const Resource r = createHost("swapchain");
+    markOutput(r);
+    return r;
+}
 rhi::BufferHandle FrameGraph::buffer(Resource r) const {
     return r.index < resources_.size() ? resources_[r.index].buffer : rhi::BufferHandle{};
 }
@@ -134,7 +140,21 @@ bool FrameGraph::execute(std::string& err){
         if (!b.empty()) ctx.cmd->barrier(b);
         passes_[s.pass].fn(ctx);
     }
-    return device_->submitAndWait(err);
+    if (!swapchain_) return device_->submitAndWait(err);
+    swapchain_->prepare(*ctx.cmd);
+    return finishPresent(err);
+}
+// Submit, wait, run the before-present step, present. A lost device is reported as such so the
+// host can replace the device instead of failing the run.
+bool FrameGraph::finishPresent(std::string& err){
+    presentStatus_ = rhi::PresentStatus::NotPresented;
+    if (!device_->submitAndWait(err)){
+        presentStatus_ = device_->lost() ? rhi::PresentStatus::DeviceLost : rhi::PresentStatus::Failed;
+        return false;
+    }
+    if (beforePresent_ && !beforePresent_(err)) return false;
+    presentStatus_ = swapchain_->present(syncInterval_, err);
+    return presentStatus_ == rhi::PresentStatus::Presented || presentStatus_ == rhi::PresentStatus::Occluded;
 }
 std::string FrameGraph::describe() const {
     std::string o;
@@ -150,6 +170,7 @@ std::string FrameGraph::describe() const {
         }
         o += "\n";
     }
+    if (swapchain_) o += "present sync " + std::to_string(syncInterval_) + "\n";
     return o;
 }
 }

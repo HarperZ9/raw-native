@@ -15,6 +15,8 @@
 // CPU-only heaps and are copied into shader-visible rings at each draw. A raster pipeline's
 // uniform is a root CBV, each texture an SRV table, each sampler a sampler table and each
 // read-only storage buffer a root UAV.
+// Swapchains (d3d12_swapchain.cpp, N2): flip-discard swapchains whose backbuffers are adopted
+// as texture records with RTVs in slots reserved once, so a resize reuses them.
 #ifndef WIN32_LEAN_AND_MEAN
 #define WIN32_LEAN_AND_MEAN
 #endif
@@ -80,6 +82,7 @@ private:
 
 class D3d12Device final : public Device {
 public:
+    ~D3d12Device() override;
     // Pick the first hardware adapter in the DXGI high-performance order that
     // creates a feature level 11_0 device with shader model 6.0. Software
     // adapters (WARP, the Basic Render Driver: the software flag or Microsoft's
@@ -103,6 +106,17 @@ public:
     bool submitAndWait(std::string& err) override;
     const void* mapRead(BufferHandle buffer, uint64_t size, std::string& err) override;
     void unmap(BufferHandle buffer) override;
+    std::unique_ptr<Swapchain> createSwapchain(const SwapchainDesc& desc, std::string& err) override;
+    bool lost() const override;
+    bool loseForTest(std::string& err) override;
+    ID3D12CommandQueue* queue(){ return queue_.Get(); }
+    // A texture record the device did not create (a swapchain backbuffer); destroyTexture drops it.
+    TextureHandle adoptTexture(TexRec t){ auto id = textures_.insert(std::move(t)); return {id.index, id.gen}; }
+    // An RTV slot kept for the device's life (heaps are bump-allocated and never free a slot).
+    bool reserveRtv(UINT& slot, std::string& err);
+    // Wait until the queue has finished everything sent to it, Presents included (a swapchain
+    // drains before it resizes or goes away). A lost device has nothing left to wait for.
+    void drain();
 
     BufferRec* buffer(BufferHandle h){ return buffers_.get(h.index, h.gen); }
     PipeRec* pipeline(PipelineHandle h){ return pipes_.get(h.index, h.gen); }

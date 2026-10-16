@@ -1,0 +1,40 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/n2-presentation-bounds.json (committed ea5182b before any code or run)",
+ "code": "78c961a, raw_native_present built with RAW_NATIVE_GPU_D3D12=ON, Release, MSVC 19.50",
+ "adapter": "WARP (Microsoft Basic Render Driver, 10.0.26100.9587), RAW_NATIVE_D3D12_WARP=1 and the D3D12 debug layer on; not a GPU",
+ "date": "2026-10-16",
+ "records": "evidence/n2-warp/*.json; each is the program's own output; tests/gpu/present_gate.py reads them",
+ "results": {
+  "c2_determinism": {
+   "result": "pass: presented run 1, presented run 2 and the offscreen run give 600 of 600 equal frame hashes (presented-run1.json and presented-run2.json are byte-identical, sha256 095ba68a...). A presented run with vsync off (sync interval 0) also gives 600 of 600 equal.",
+   "prediction": "held (600 of 600)"
+  },
+  "c2_control": {
+   "result": "pass: with the blit offset constant moved from (0, 0) to (1, 0), 600 of 600 frames differ from the offscreen list, so the gate fails as required",
+   "prediction": "held (every frame differs)"
+  },
+  "c2_lifecycle": {
+   "result": "pass: 600 of 600 hashes equal the offscreen run on the same size schedule; events in order: resized 256x144, resized 320x180, minimised, restored 320x180, device removed before frame 500, device lost at frame 500 (the next upload's Map returned DXGI_ERROR_DEVICE_REMOVED, 0x887A0005), recovered on a new device and swapchain 320x180. One loss, one recovery, no size mismatch, nothing drawn while minimised, exit 0.",
+   "prediction": "held, with one detail: the loss surfaced at the first Map of the next frame's uniform upload, before any submission or Present"
+  },
+  "c1_host": {
+   "result": "pass: borderless fullscreen reached the monitor rectangle (1920 x 1080 here), three frames drawn there equal offscreen frames of the same size, and leaving fullscreen returned the swapchain to 320 x 180. Vsync on and off both present; tearing was allowed with sync interval 0 on this machine. Every run exited 0. The frame graph's plan for each presented frame is scene, blit, readback, then 'present sync 1'.",
+   "note": "fullscreen.json holds the run on the author's machine; CI repeats it on the runner's display"
+  },
+  "c3_hdr": {
+   "result": "pass: 36,787 inputs, 110,361 channels; maximum |code / 1023 - cpu| = 4.93e-4 (0.50 of a code), 110,235 channels at the same code and 126 one code apart, none over the bound of 1 / 1023. The control (m1 = 2610 / 4096) exceeds the bound on 110,314 channels, maximum 0.627. DXGI accepted the G2084 / P2020 colour space on this machine's output; the check reads the buffer either way.",
+   "prediction": "held (maximum near 0.5 / 1023, at most one code)"
+  },
+  "c4_pacing": {
+   "warp": "pass for the harness only: 599 intervals written, all finite and positive (median 16.78 ms at 60 Hz). WARP misses the RTX bounds (p99 35.1 ms, 27 intervals above 1.5 T); that is expected of a software rasterizer and is not a pacing result.",
+   "rtx4090": "queued, not run: the GPU lock D:/gpu.lock.d is held by MMBU FT7. The job waits for the lock, takes it with its own token and releases only that token."
+  }
+ },
+ "mistakes_found_on_the_way": [
+  "The first lifecycle run failed to recover: the host passed an error string that already held the loss message into D3d12Device::init, which reports success as an empty string, so a good new device read as a failure. Fixed in the host (a fresh string) and in rhi::createDevice (its own string).",
+  "With the debug layer on, the process ended with exit code 0x87D at teardown: the swapchain was released while its last Present was still queued. The swapchain now drains the queue before a resize or a release.",
+  "While removing temporary trace lines, a sed over src/ deleted two lines of src/rhi/d3d12/hw_rayquery.cpp that contained the word TRACE (PREFER_FAST_TRACE). Caught in git status before the commit and restored from git; not in any commit."
+ ],
+ "does_not_prove": "Anything about a hardware adapter except what the queued RTX run will record; what the compositor or the panel shows; recovery from a real driver fault, since WARP removal is triggered by the API."
+}
