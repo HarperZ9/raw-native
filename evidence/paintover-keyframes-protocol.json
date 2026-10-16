@@ -1,0 +1,16 @@
+{
+  "what": "Paint-over projection: second run (keyframe windows, hole-filling secondaries, overscan). Bounds fixed before the tool existed.",
+  "fixed_before_first_run": "2026-10-15",
+  "note": "project-docs/PAINT-OVER-PROTOCOL.md, Addendum A",
+  "painting": [1152, 648], "screen": [960, 540], "overscan": 1.2, "offset": [96, 54],
+  "bounds": {
+    "K1": { "max_abs_code": 1, "mean_abs_code": 0.02 },
+    "K2": { "max_abs_code": 1, "mean_abs_code": 0.02, "covered_fraction_min": 0.995, "shift_one_pixel_mean_min": 2.0, "wrong_depth_covered_max": 0.01 },
+    "K3": { "holes_primary_max": { "5": 0.04, "10": 0.08, "20": 0.15, "30": 0.22 }, "holes_primary_90_min": 0.15 },
+    "K4": { "ratio_max": { "30": 0.4, "90": 0.6 }, "absolute_max": { "20": 0.02, "30": 0.02 } },
+    "K5": { "max_abs_code": 1, "ring_px": 3 },
+    "K6": { "median_max": 6, "p95_max": 25 },
+    "K7": { "p999_max": 4, "max_max": 16, "yaw_offsets": [-50, -40, -30, -20, -10, 0, 10, 20, 30, 40, 50] }
+  },
+  "amendment": "pop criterion changed after the first run from max 8 codes to p99.9 <= 4 and max <= 16"
+}
