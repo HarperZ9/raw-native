@@ -1,0 +1,20 @@
+{
+  "schema": "raw-native.evidence/1",
+  "what": "The lens suite (web/shaders/lens, PR #153: source extraction, core removal, lateral dispersion, ghosts from a paraxial prescription, anamorphic streak, diffraction starburst from the iris's FFT, halation) in the C++ core (ADR 0019). Same links as the earlier bounds files: JavaScript float64 against C++ float64 (CPU link), and C++ float64 against the one WGSL source on D3D12 (WARP), WebGPU (SwiftShader) and Vulkan (lavapipe). Written before the lens C++ reference, the WGSL rewrite and the first run.",
+  "author_decisions": "2026-10-15: \"No, renderer first\"; \"One C++ core\".",
+  "written": "2026-10-17",
+  "controls": "Every link carries a built-in control that must fail on every case of every run; a run whose control passes fails as a whole. Separately, one constant in the C++ reference and one in style.wgsl are edited by hand, rebuilt and run, the result recorded in evidence/cpp-port-style-runs-7.json with the prediction below, and the edit reverted.",
+  "lens": {
+    "fixtures": "The four cases of evidence/shaders-lens-parity-bounds.json at 192 x 108, built as web/test/shaders-lens.html builds them: lensLightsFrame or renderQuay(5) rounded to f32; sources extracted from the frame (extractSources) or, in list mode, lensLightsList. Exported: the frame, the JavaScript source list and keep mask, the prepared sources, the plan (ghosts, coating reflectances, halation, dispersion scales, phi, bin weights, the starburst table and the scaled lengths) and runLens's float64 output with its lab codes (gain 2.4).",
+    "cpu_link": {
+      "plan_equal": "Every plan value within 1e-12 relative, except the starburst table (an FFT of a supersampled iris): every entry within 1e-9 of the table's largest entry. The C++ source extraction gives the same kept tiles, and source positions and energies within 1e-12 relative; prepared ghost and streak factors within 1e-12 relative.",
+      "value_max_rel": 1e-09,
+      "rule": "|cpp - js| <= 1e-9 max(1, |js|) on every output value; lab codes equal except at a rounding edge within 1e-9 (at most 2 a case)"
+    },
+    "gpu_link": { "max_abs_code": 3, "p999_abs_code": 1, "mean_abs_code": 0.03, "why": "The web bounds: every term is continuous in its inputs (ghost edges are a one-pixel ramp, tables are sampled bilinearly), so f32 against f64 moves values by rounding only." },
+    "controls": {
+      "built_in": "The C++ reference with the ghost gain multiplied by 1.25 (the prepared ghost factors and phi recomputed): it must exceed value_max_rel on the CPU link and the GPU bounds, on every case.",
+      "source_edit": "C++: the streak's gaussian normaliser 2.5066282746310002 (sqrt(2 pi)) to 2.6. Prediction: the CPU link fails on every case. WGSL: the halation term's 2 pi (TAU) in the gather pass to 6.0. Prediction: WARP fails on at least the cases with extracted sources (three-lights, street, squeeze-7-blades-ca)."
+    }
+  }
+}
