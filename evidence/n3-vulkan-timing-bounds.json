@@ -20,5 +20,11 @@
    "status": "not run: needs the GPU lock and the author's agreement to a fullscreen test on the machine in use. The job script is prepared in mission-control and not launched."
   }
  },
- "does_not_prove": "Pacing or HDR on a Steam Deck or on RADV; what the panel shows; anything from a software driver beyond the refresh value it reports."
+ "does_not_prove": "Pacing or HDR on a Steam Deck or on RADV; what the panel shows; anything from a software driver beyond the refresh value it reports.",
+ "addendum_a": {
+  "written": "2026-10-16, after the code and before any run",
+  "what_changed": "The bounds said the Windows refresh function would move to one shared header used by both backends. The layer rules (scripts/check_layers.py) forbid a backend from including a platform file, so the function lives in the Win32 window (raw/platform/window.hpp gains Window::refreshHz) and the D3D12 swapchain keeps its own copy, unchanged. The host takes the swapchain's value when it is non-zero and the window's otherwise, and records which (refresh_source). The Wayland window also reports its output's current mode refresh (wl_output.mode), which the bounds did not plan.",
+  "t1_unchanged": "t1 still compares the two values on one monitor; it now also checks that the two copies of the function agree.",
+  "t2_prediction_revised": "X11 on Xvfb: 0, source none. Wayland on headless Weston: Weston's nominal output refresh from wl_output.mode (source window), expected 60 Hz; the value is recorded, not gated."
+ }
 }

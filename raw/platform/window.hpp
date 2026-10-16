@@ -53,6 +53,10 @@ public:
     virtual void setFullscreen(bool on) = 0;
     virtual bool fullscreen() const = 0;
     virtual Rect monitorRect() const = 0;
+    // The refresh rate of the monitor holding the window in its current mode, in hertz; 0 when the
+    // window system does not say (X11 without RandR). Win32: the display configuration's exact
+    // rational; Wayland: the output's current mode.
+    virtual double refreshHz() const { return 0; }
 };
 // Null with the reason when the platform has no window system or the window cannot be made.
 std::unique_ptr<Window> createWindow(const WindowDesc& desc, std::string& err);

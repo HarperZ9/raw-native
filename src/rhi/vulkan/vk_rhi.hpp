@@ -128,6 +128,8 @@ public:
     uint32_t family() const { return family_; }
     VkDescriptorPool descriptorPool() const { return dpool_; }
     bool hasInstanceExtension(const char* name) const;
+    // VK_GOOGLE_display_timing was offered and enabled (the refresh cycle of a swapchain's output).
+    bool hasDisplayTiming() const { return displayTiming_; }
     // A buffer outside the slot table (staging), host-visible and mapped when `host`.
     bool makeBuffer(uint64_t size, VkBufferUsageFlags usage, bool host, BufferRec& out, std::string& err);
     void freeBuffer(BufferRec& b);
@@ -160,7 +162,7 @@ private:
     void release(TexRec& t);
     void release(PipeRec& p);
     VkrCommandList cmd_{*this};
-    bool lost_{false}, injectedLoss_{false};
+    bool lost_{false}, injectedLoss_{false}, displayTiming_{false};
 public:
     // Validation messages counted by the messenger (RAW_NATIVE_VK_VALIDATION=1).
     uint32_t validationCount{0};
