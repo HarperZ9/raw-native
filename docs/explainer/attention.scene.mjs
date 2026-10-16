@@ -108,7 +108,7 @@ function closing(t, A, ctx) {
 // For the interactive page: what is under scene point (x, y) at time t.
 export function inspect(t, x, y, A) {
   if (t >= CUE.cloud - 1 && t < CUE.task) {
-    const hit = A.grid.at(x, y);
+    const hit = A.grid.at(x, y, { snap: true });
     if (!hit) return null;
     const [s, p, dim] = hit.coords;
     return { sel: hit.index, text: `sequence ${s}, position ${p}, dimension ${dim}: ${A.res.data[hit.index].toFixed(4)} (residual.npy, float16)` };

@@ -54,6 +54,13 @@ def main() -> int:
     ff = imageio_ffmpeg.get_ffmpeg_exe()
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
+    # The commit the frames are drawn from: recorded at the start, and kept across resumes.
+    start = out / "start.json"
+    if not start.exists():
+        git = lambda *c: subprocess.run(["git", *c], capture_output=True, text=True, cwd=ROOT).stdout.strip()
+        start.write_text(json.dumps({"commit": git("rev-parse", "HEAD"), "dirty_tree": bool(git("status", "--porcelain"))}) + "
+", encoding="utf-8")
+    begun = json.loads(start.read_text(encoding="utf-8"))
     parts, t = [], 0.0
     while t < a.seconds - 1e-9:
         parts.append(chunk(a, len(parts), t, min(a.seconds, t + a.chunk), out))
@@ -65,9 +72,7 @@ def main() -> int:
     frames = []
     for p in parts:
         frames += Path(str(p) + ".frames.sha256").read_text(encoding="utf-8").splitlines()
-    commit = subprocess.run(["git", "rev-parse", "HEAD"], capture_output=True, text=True, cwd=ROOT).stdout.strip()
-    dirty = bool(subprocess.run(["git", "status", "--porcelain"], capture_output=True, text=True, cwd=ROOT).stdout.strip())
-    receipt = {"schema": "raw-native.film-receipt/1", "scene": a.scene, "commit": commit, "dirty_tree": dirty,
+    receipt = {"schema": "raw-native.film-receipt/1", "scene": a.scene, "commit": begun["commit"], "dirty_tree": begun["dirty_tree"],
                "size": [a.width, a.height], "fps": a.fps, "seconds": a.seconds, "adapter": "swiftshader (CPU)",
                "frames": len(frames), "frames_sha256": hashlib.sha256("\n".join(frames).encode()).hexdigest(),
                "film_sha256": sha(film), "vtt_sha256": sha(Path(a.vtt)) if a.vtt else None,

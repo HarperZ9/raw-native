@@ -31,12 +31,15 @@ export function tensorGrid({ shape, x = 0, y = 0, w = 1600, h = 800, cols = 0, g
       }
       return out;
     },
-    at(px, py) {
+    // snap: a point in the gap between tiles names the nearest element of its tile.
+    at(px, py, { snap = false } = {}) {
       const tx = Math.floor((px - x) / tw), ty = Math.floor((py - y) / th);
       if (tx < 0 || ty < 0 || tx >= tilesX) return null;
       const a = ty * tilesX + tx;
       if (a >= A) return null;
-      const [ox, oy] = tile(a), c = Math.floor((px - ox) / cell), b = Math.floor((py - oy) / cell);
+      const [ox, oy] = tile(a);
+      let c = Math.floor((px - ox) / cell), b = Math.floor((py - oy) / cell);
+      if (snap) { c = Math.max(0, Math.min(C - 1, c)); b = Math.max(0, Math.min(B - 1, b)); }
       if (c < 0 || b < 0 || c >= C || b >= B) return null;
       return { index: (a * B + b) * C + c, coords: [a, b, c] };
     },
