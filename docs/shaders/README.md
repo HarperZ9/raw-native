@@ -188,6 +188,10 @@ For the grotesque register: salience from the scene's materials (head, hat, coat
 
 Checks: no salience leaves the frame unchanged; random salience with a huge strength never folds, in one step or composed; the figure's head is magnified at least 1.2 times.
 
+## Dither-quantised lighting (`web/shaders/ditherlight/`)
+
+Resolves light through a threshold matrix into N tones (`levels` 2 is 1 bit). Passes: world albedo, a darkness level, radial lights and shaped beams (`lights.mjs`), fog to paper white, then the pattern (`thresholds.mjs`: Bayer 8x8 by bit interleave or the 64x64 blue-noise mask; anchoring `screen`, `world-fixed` or `world-octave`). Tones sit at linear light `(k/(N-1))^gamma` and the fraction between two levels is taken in linear light. Presets `ink` and `tones4` default to Bayer 8x8, screen-anchored, the choice recorded in `project-docs/DITHER-LIGHTING-RESULTS.md`. CPU reference `ditherlight.mjs`, GPU pass `ditherlight.wgsl.mjs` and `gpu.mjs`, parity page `web/test/shaders-ditherlight.html`, bounds `evidence/shaders-ditherlight-parity-bounds.json`. Demo: `node tools/shaders/ditherlight_demo.mjs --out DIR`. Original scene: `web/shaders/fixtures/dream*.mjs`.
+
 ## Not landed: peripheral crowding
 
 A crowding look for the thriller (detail rearranged away from the gaze, local mean kept) was built and failed its committed criteria: keeping the worst local-mean change under 0.02 and scrambling enough detail conflict near strong edges. The code and every run are on a separate branch; nothing here claims it.

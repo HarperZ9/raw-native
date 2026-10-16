@@ -26,10 +26,12 @@ export function project(cam, w, h, P) {
 export function lightsOf(spec) {
   const c = spec.cam, b = cameraBasis(c), lp = spec.lanternAttached
     ? [c.pos[0] + b.right[0] * 0.35 + b.fwd[0] * 0.4, c.pos[1] - 0.3, c.pos[2] + b.right[2] * 0.35 + b.fwd[2] * 0.4] : spec.lanternPos;
-  const a = spec.beamAngle, dir = [Math.sin(a) * 0.99, -0.1, -Math.cos(a) * 0.99];
-  return [makeRadial({ pos: lp, radius: 7, core: 1.4, intensity: 1.6 }), makeRadial({ pos: [ORBS[0][0], ORBS[0][1] + 0.3, ORBS[0][2]], radius: 9, core: 1.8, intensity: 1.5 }),
-    makeRadial({ pos: [ORBS[1][0], ORBS[1][1] + 0.3, ORBS[1][2]], radius: 9, core: 1.8, intensity: 1.5 }),
-    makeBeam({ pos: [LIGHTHOUSE.x, LIGHTHOUSE.lanternY, LIGHTHOUSE.z], dir, outerDeg: 11, innerDeg: 5, range: 60, intensity: 3.2, slats: 5, duty: 0.34, phase: 0 })];
+  const a = spec.beamAngle, demo = !!spec.demo, dir = [Math.sin(a) * 0.99, demo ? -0.36 : -0.1, -Math.cos(a) * 0.99];
+  // The measurement lights (demo false) are fixed; the evidence in evidence/ditherlight-motion-*.json was made with them.
+  const rad = demo ? { r: 9, core: 1.2, I: 3.2 } : { r: 9, core: 1.8, I: 1.5 }, lant = demo ? { r: 8, core: 1.3, I: 3.4 } : { r: 7, core: 1.4, I: 1.6 };
+  return [makeRadial({ pos: lp, radius: lant.r, core: lant.core, intensity: lant.I }), makeRadial({ pos: [ORBS[0][0], ORBS[0][1] + 0.3, ORBS[0][2]], radius: rad.r, core: rad.core, intensity: rad.I }),
+    makeRadial({ pos: [ORBS[1][0], ORBS[1][1] + 0.3, ORBS[1][2]], radius: rad.r, core: rad.core, intensity: rad.I }),
+    makeBeam({ pos: [LIGHTHOUSE.x, LIGHTHOUSE.lanternY, LIGHTHOUSE.z], dir, outerDeg: demo ? 12 : 11, innerDeg: 5, range: demo ? 90 : 60, intensity: demo ? 4 : 3.2, slats: 5, duty: 0.34, phase: 0 })];
 }
 
 function normalAt(x, y, z) {
