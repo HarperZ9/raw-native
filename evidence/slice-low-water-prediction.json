@@ -1,0 +1,13 @@
+{
+  "what": "Low Water vertical slice (retro-thriller template): predictions and pass bounds, written 2026-10-15 before slice.test.mjs and before the capture",
+  "disclosure": "One exploratory run of the scripted walk (state printed every 2 s) came first and set the demo's timings (the relight press moved from 32 s to 33.2 s because the lamp was still too wet). The rule bounds below follow from the rule specifications in slice/rules.mjs and web/env/readers.mjs, not from that run.",
+  "checks": {
+    "film_determinism": { "prediction": "frame(t) at 0, 7.5, 21, 33.5 and 39.9 s is identical whether the film is played forward, seeked backward or started fresh", "bound": "deep equality of the display list's camera and item count" },
+    "walk_solid": { "prediction": "over the whole demo the walker never stands within 9 units of a solid cell or prop", "bound": "every step" },
+    "door_rule": { "prediction": "with the door open in rain the room's wetness rises; with it shut it does not rise; open is shelter 0.95", "bound": "strictly increasing over 5 s open, unchanged over 5 s shut" },
+    "footprints": { "prediction": "walking on a quay with wetness above 0.25 leaves a print every 0.45 s; a print of strength 1 is gone in about 1 / (0.02 * rain) s, so about 1.7 s in a 30 mm/h storm and never in dry clear weather (fade 0.002 per s keeps it for over 8 minutes)", "bound": "erase time within 0.1 s of 0.98 / (0.02 * rain + 0.002)" },
+    "street_lamps": { "prediction": "lamps switch on in order 0.4 s apart after the quay turns dark and reach full level 1 / 1.5 s after switching", "bound": "switch-on steps differ by 24 steps" },
+    "lamp_and_stove": { "prediction": "in the demo the hand lamp goes out on the quay during the storm and is lit again at the stove after the door is shut", "bound": "as stated" },
+    "readers_visible": { "prediction": "the capture shows, at the stated times: the room lit by the stove at 0 s; rain rings on the quay at 10 s; wet reflections of the street lamps at 20 s; lamp out and sight closing at 23 s; fog over the quay at 38 s", "bound": "checked by eye on the reported frames" }
+  }
+}
