@@ -1,0 +1,600 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/cpp-port-style-bounds.json",
+ "machine": "the author's Windows 11 workstation; WARP (Microsoft Basic Render Driver), software only, with the D3D12 debug layer on run 2 and without it on the source-edit runs; the GPU lock was not taken and no hardware adapter was used",
+ "runs": [
+  {
+   "n": 1,
+   "date": "2026-10-15",
+   "what": "CPU link, first run, after the bounds commit 5d1e25f",
+   "result": "Dither lighting and look keys within every bound. Paint-over: colour and coverage within bounds on all four cases, but the one-pixel view-shift control did not fail on the three orthographic cases (it failed on the perspective case), so the CPU link failed on those three as the rule requires.",
+   "cause": "An orthographic view's shading reads the camera only through its direction; moving the camera without re-rendering the G-buffer changed nothing. Addendum A (b438bc5) moved the control to the surface positions before any GPU run."
+  },
+  {
+   "n": 2,
+   "date": "2026-10-15",
+   "what": "CPU and WARP links after Addendum A",
+   "file": "evidence/cpp-port-style-d3d12-warp.json",
+   "pass": true,
+   "cases": [
+    {
+     "pass": "ditherlight",
+     "id": "ink-bayer-screen",
+     "cpu_pass": true,
+     "cpu_max_abs": 2.22045e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "ditherlight",
+     "id": "ink-blue-octave",
+     "cpu_pass": true,
+     "cpu_max_abs": 1.11022e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "ditherlight",
+     "id": "tones4-bayer-fixed",
+     "cpu_pass": true,
+     "cpu_max_abs": 2.22045e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "ditherlight",
+     "id": "tones4-blue-screen-beam",
+     "cpu_pass": true,
+     "cpu_max_abs": 1.66533e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "ditherlight",
+     "id": "tones8-bayer-octave-object",
+     "cpu_pass": true,
+     "cpu_max_abs": 2.22045e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "paintover",
+     "id": "primary-aligned",
+     "cpu_pass": true,
+     "cpu_max_abs": 0,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "paintover",
+     "id": "three-off-axis",
+     "cpu_pass": true,
+     "cpu_max_abs": 0,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 8.03755e-05
+    },
+    {
+     "pass": "paintover",
+     "id": "three-at-secondary",
+     "cpu_pass": true,
+     "cpu_max_abs": 2.77556e-17,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "paintover",
+     "id": "perspective-view",
+     "cpu_pass": true,
+     "cpu_max_abs": 9.99201e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 6.43004e-05
+    }
+   ]
+  }
+ ],
+ "source_edit_controls": [
+  {
+   "edit": "C++ reference: hemisphere constant 0.5 to 0.6 (raw/renderer/style_ditherlight.hpp)",
+   "prediction": "CPU link fails on every dither case",
+   "result": "CPU link failed on all five dither cases (tone max_abs 0.0060 to 0.0063); the WARP link, which compares the GPU with the edited reference, also failed on all five",
+   "cases": [
+    {
+     "pass": "ditherlight",
+     "id": "ink-bayer-screen",
+     "cpu_pass": false,
+     "cpu_max_abs": 0.00623258,
+     "cpu_mismatch": 49,
+     "gpu_pass": false,
+     "gpu_mismatch_fraction": 0.00236304,
+     "gpu_mean": 0.507266
+    },
+    {
+     "pass": "ditherlight",
+     "id": "ink-blue-octave",
+     "cpu_pass": false,
+     "cpu_max_abs": 0.0060155,
+     "cpu_mismatch": 41,
+     "gpu_pass": false,
+     "gpu_mismatch_fraction": 0.00197724,
+     "gpu_mean": 0.424447
+    },
+    {
+     "pass": "ditherlight",
+     "id": "tones4-bayer-fixed",
+     "cpu_pass": false,
+     "cpu_max_abs": 0.00626095,
+     "cpu_mismatch": 192,
+     "gpu_pass": false,
+     "gpu_mismatch_fraction": 0.00925926,
+     "gpu_mean": 0.722688
+    },
+    {
+     "pass": "ditherlight",
+     "id": "tones4-blue-screen-beam",
+     "cpu_pass": false,
+     "cpu_max_abs": 0.00623247,
+     "cpu_mismatch": 187,
+     "gpu_pass": false,
+     "gpu_mismatch_fraction": 0.00901813,
+     "gpu_mean": 0.707305
+    },
+    {
+     "pass": "ditherlight",
+     "id": "tones8-bayer-octave-object",
+     "cpu_pass": false,
+     "cpu_max_abs": 0.00623271,
+     "cpu_mismatch": 500,
+     "gpu_pass": false,
+     "gpu_mismatch_fraction": 0.0241127,
+     "gpu_mean": 0.821116
+    },
+    {
+     "pass": "paintover",
+     "id": "primary-aligned",
+     "cpu_pass": true,
+     "cpu_max_abs": 0,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "paintover",
+     "id": "three-off-axis",
+     "cpu_pass": true,
+     "cpu_max_abs": 0,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 8.03755e-05
+    },
+    {
+     "pass": "paintover",
+     "id": "three-at-secondary",
+     "cpu_pass": true,
+     "cpu_max_abs": 2.77556e-17,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "paintover",
+     "id": "perspective-view",
+     "cpu_pass": true,
+     "cpu_max_abs": 9.99201e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 6.43004e-05
+    }
+   ]
+  },
+  {
+   "edit": "WGSL: hemisphere constant 0.5 to 0.6 in style.wgsl, HLSL regenerated",
+   "prediction": "WARP link fails on at least the 4- and 8-level cases",
+   "result": "WARP link failed on all five dither cases (level mismatch fraction 0.0020 to 0.024 against the bound 5e-4); the CPU link stayed green, as it does not read the WGSL",
+   "cases": [
+    {
+     "pass": "ditherlight",
+     "id": "ink-bayer-screen",
+     "cpu_pass": true,
+     "cpu_max_abs": 2.22045e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": false,
+     "gpu_mismatch_fraction": 0.00236304,
+     "gpu_mean": 0.507266
+    },
+    {
+     "pass": "ditherlight",
+     "id": "ink-blue-octave",
+     "cpu_pass": true,
+     "cpu_max_abs": 1.11022e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": false,
+     "gpu_mismatch_fraction": 0.00197724,
+     "gpu_mean": 0.424447
+    },
+    {
+     "pass": "ditherlight",
+     "id": "tones4-bayer-fixed",
+     "cpu_pass": true,
+     "cpu_max_abs": 2.22045e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": false,
+     "gpu_mismatch_fraction": 0.00925926,
+     "gpu_mean": 0.722688
+    },
+    {
+     "pass": "ditherlight",
+     "id": "tones4-blue-screen-beam",
+     "cpu_pass": true,
+     "cpu_max_abs": 1.66533e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": false,
+     "gpu_mismatch_fraction": 0.00901813,
+     "gpu_mean": 0.707305
+    },
+    {
+     "pass": "ditherlight",
+     "id": "tones8-bayer-octave-object",
+     "cpu_pass": true,
+     "cpu_max_abs": 2.22045e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": false,
+     "gpu_mismatch_fraction": 0.0241127,
+     "gpu_mean": 0.821116
+    },
+    {
+     "pass": "paintover",
+     "id": "primary-aligned",
+     "cpu_pass": true,
+     "cpu_max_abs": 0,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "paintover",
+     "id": "three-off-axis",
+     "cpu_pass": true,
+     "cpu_max_abs": 0,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 8.03755e-05
+    },
+    {
+     "pass": "paintover",
+     "id": "three-at-secondary",
+     "cpu_pass": true,
+     "cpu_max_abs": 2.77556e-17,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "paintover",
+     "id": "perspective-view",
+     "cpu_pass": true,
+     "cpu_max_abs": 9.99201e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 6.43004e-05
+    }
+   ]
+  },
+  {
+   "edit": "WGSL: the bilinear divisor (a uniform, 255) replaced by the literal 256.0 in style.wgsl, HLSL regenerated",
+   "prediction": "WARP link fails mean_abs_code on every paint-over case",
+   "result": "WARP link failed on all four paint-over cases (mean 0.24 to 0.34 codes against the bound 0.05)",
+   "cases": [
+    {
+     "pass": "ditherlight",
+     "id": "ink-bayer-screen",
+     "cpu_pass": true,
+     "cpu_max_abs": 2.22045e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "ditherlight",
+     "id": "ink-blue-octave",
+     "cpu_pass": true,
+     "cpu_max_abs": 1.11022e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "ditherlight",
+     "id": "tones4-bayer-fixed",
+     "cpu_pass": true,
+     "cpu_max_abs": 2.22045e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "ditherlight",
+     "id": "tones4-blue-screen-beam",
+     "cpu_pass": true,
+     "cpu_max_abs": 1.66533e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "ditherlight",
+     "id": "tones8-bayer-octave-object",
+     "cpu_pass": true,
+     "cpu_max_abs": 2.22045e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "paintover",
+     "id": "primary-aligned",
+     "cpu_pass": true,
+     "cpu_max_abs": 0,
+     "cpu_mismatch": 0,
+     "gpu_pass": false,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0.336339
+    },
+    {
+     "pass": "paintover",
+     "id": "three-off-axis",
+     "cpu_pass": true,
+     "cpu_max_abs": 0,
+     "cpu_mismatch": 0,
+     "gpu_pass": false,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0.344345
+    },
+    {
+     "pass": "paintover",
+     "id": "three-at-secondary",
+     "cpu_pass": true,
+     "cpu_max_abs": 2.77556e-17,
+     "cpu_mismatch": 0,
+     "gpu_pass": false,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0.31041
+    },
+    {
+     "pass": "paintover",
+     "id": "perspective-view",
+     "cpu_pass": true,
+     "cpu_max_abs": 9.99201e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": false,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0.240918
+    }
+   ]
+  },
+  {
+   "edit": "C++ reference: divisor 255 to 256 (raw/renderer/style_paintover.hpp)",
+   "prediction": "CPU link fails on every paint-over case",
+   "result": "CPU link failed on all four (colour max_abs 0.0039). The WARP link passed on all four: after 8-bit rounding the GPU differs from the edited reference by a mean of at most 0.0024 codes, under the 0.05 bound. A 0.4 percent colour scale error in the reference is caught by the CPU link only; this is why the chain keeps both links.",
+   "cases": [
+    {
+     "pass": "ditherlight",
+     "id": "ink-bayer-screen",
+     "cpu_pass": true,
+     "cpu_max_abs": 2.22045e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "ditherlight",
+     "id": "ink-blue-octave",
+     "cpu_pass": true,
+     "cpu_max_abs": 1.11022e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "ditherlight",
+     "id": "tones4-bayer-fixed",
+     "cpu_pass": true,
+     "cpu_max_abs": 2.22045e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "ditherlight",
+     "id": "tones4-blue-screen-beam",
+     "cpu_pass": true,
+     "cpu_max_abs": 1.66533e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "ditherlight",
+     "id": "tones8-bayer-octave-object",
+     "cpu_pass": true,
+     "cpu_max_abs": 2.22045e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "paintover",
+     "id": "primary-aligned",
+     "cpu_pass": false,
+     "cpu_max_abs": 0.00390625,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0.00242734
+    },
+    {
+     "pass": "paintover",
+     "id": "three-off-axis",
+     "cpu_pass": false,
+     "cpu_max_abs": 0.00388509,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 8.03755e-05
+    },
+    {
+     "pass": "paintover",
+     "id": "three-at-secondary",
+     "cpu_pass": false,
+     "cpu_max_abs": 0.00390622,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0.000594779
+    },
+    {
+     "pass": "paintover",
+     "id": "perspective-view",
+     "cpu_pass": false,
+     "cpu_max_abs": 0.00389166,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 6.43004e-05
+    }
+   ]
+  },
+  {
+   "edit": "all edits reverted, HLSL regenerated (wgsl_to_hlsl --check green)",
+   "result": "CPU and WARP links pass, numbers equal to run 2",
+   "cases": [
+    {
+     "pass": "ditherlight",
+     "id": "ink-bayer-screen",
+     "cpu_pass": true,
+     "cpu_max_abs": 2.22045e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "ditherlight",
+     "id": "ink-blue-octave",
+     "cpu_pass": true,
+     "cpu_max_abs": 1.11022e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "ditherlight",
+     "id": "tones4-bayer-fixed",
+     "cpu_pass": true,
+     "cpu_max_abs": 2.22045e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "ditherlight",
+     "id": "tones4-blue-screen-beam",
+     "cpu_pass": true,
+     "cpu_max_abs": 1.66533e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "ditherlight",
+     "id": "tones8-bayer-octave-object",
+     "cpu_pass": true,
+     "cpu_max_abs": 2.22045e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "paintover",
+     "id": "primary-aligned",
+     "cpu_pass": true,
+     "cpu_max_abs": 0,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "paintover",
+     "id": "three-off-axis",
+     "cpu_pass": true,
+     "cpu_max_abs": 0,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 8.03755e-05
+    },
+    {
+     "pass": "paintover",
+     "id": "three-at-secondary",
+     "cpu_pass": true,
+     "cpu_max_abs": 2.77556e-17,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 0
+    },
+    {
+     "pass": "paintover",
+     "id": "perspective-view",
+     "cpu_pass": true,
+     "cpu_max_abs": 9.99201e-16,
+     "cpu_mismatch": 0,
+     "gpu_pass": true,
+     "gpu_mismatch_fraction": 0,
+     "gpu_mean": 6.43004e-05
+    }
+   ]
+  }
+ ],
+ "webgpu": "pending: the WebGPU build runs in CI (Chrome on SwiftShader); this machine has no Emscripten SDK. The WGSL of both passes compiled with no messages and built compute pipelines on Chrome's SwiftShader adapter (a compile check only, 2026-10-15)."
+}
