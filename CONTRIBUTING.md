@@ -25,4 +25,11 @@ Before you open a pull request:
   before and after, then `identity_matrix.py compare before.json after.json`.
 - If a change alters rendered output, say so in the pull request and include the
   new `certificate.json` for the default view.
+- Describe a user-visible change in a new file, `changelog.d/YYYY-MM-DD-slug.md`,
+  holding one Markdown list item. Do not edit `CHANGELOG.md`: it changes only at
+  release. Each pull request then touches its own file, so parallel pull requests
+  do not conflict over one shared list. CI requires an entry when a pull request
+  changes code under `src/`, `raw/`, `web/`, `tools/` and the other code
+  directories. A change users cannot see takes the `no-changelog` label instead.
+  `changelog.d/README.md` has the details.
 - Do not commit secrets, `.env` files or generated build output.
