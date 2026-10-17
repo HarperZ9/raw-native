@@ -88,6 +88,10 @@ TextureIdentity textureIdentity(rhi::Device& dev, const rhi::ShaderCode& vs, con
         if (!cl) { r.error = err; return r; }
         if (k == 0) cl->uploadTexture(tex, src.data(), SW, SH);
         cl->upload(ubo, 0, map, sizeof map);
+        // The upload leaves the buffer in copy-dst; the draw reads it as a uniform. The RHI validation
+        // layer found this barrier missing (V07, evidence/m3-aliasing-validation-runs.json).
+        const rhi::BufferBarrier toUniform{ubo, rhi::Access::CopyDst, rhi::Access::Uniform};
+        cl->barrier({&toUniform, 1});
         rhi::RenderPassDesc pass;
         pass.color[0] = {tgt, {0, 0, 0, 0}};
         cl->beginRenderPass(pass);
