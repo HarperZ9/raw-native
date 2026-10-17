@@ -1,0 +1,35 @@
+{
+  "schema": "raw-native.evidence/1",
+  "what": "Scan-causal EHT sag (web/shaders/sag) and the salience caricature warp (web/shaders/caricature) in the C++ core (ADR 0019), the two passes that need workgroup memory (step 6 of the port order; the translator learned var<workgroup>, workgroupBarrier and the group builtins in the commit before this file). Same links as the earlier bounds files: JavaScript reference against the C++ reference (CPU link), and the C++ reference against the one WGSL source on D3D12 (WARP), WebGPU (SwiftShader) and Vulkan (lavapipe). Written before the C++ references, the WGSL rewrites and the first run of either pass.",
+  "author_decisions": "2026-10-15: \"No, renderer first\"; \"One C++ core\".",
+  "written": "2026-10-17",
+  "controls": "Every link carries a built-in control that must fail on every case of every run; a run whose control passes fails as a whole. Separately, one constant in the C++ reference and one in style.wgsl are edited by hand for each pass, rebuilt and run, the result recorded in evidence/cpp-port-style-runs-8.json with the prediction below, and the edit reverted.",
+  "sag": {
+    "fixtures": "The four cases of evidence/shaders-sag-parity-bounds.json, sources built as web/test/shaders-sag.html builds them: labSource('street-signal', 320, 240), labSource('game', 256, 224, 1) and labSource('box', 320, 240). Exported: the source, the JavaScript line currents and scan (v, k, Y, sigma per line, float64), its resampled signal (Float32Array) and signal8 codes.",
+    "cpu_link": {
+      "plan_equal": "blank lines, tauLines, alpha and the spot radius R equal (alpha within 1e-15)",
+      "scan_max_rel": 1e-12,
+      "signal_max_abs": 1e-06,
+      "code_mismatch": "signal8 codes equal except where the JavaScript value lies within 1e-4 codes of a rounding edge; at most 2 a case"
+    },
+    "gpu_link": { "max_abs_code": 2, "p999_abs_code": 1, "mean_abs_code": 0.05, "why": "The web bounds. The GPU sums each line's current by a tree in workgroup memory where the reference sums in order; the scan's recurrence runs in the same order on both sides." },
+    "controls": {
+      "built_in": "The C++ reference with the spot sigma0 multiplied by 1.5: it must exceed signal_max_abs on the CPU link and the GPU bounds, on every case.",
+      "source_edit": "C++: the blanking decay (1 - alpha)^blank to (1 - alpha)^(blank + 1). Prediction: the CPU link fails on every case. WGSL: the spot's gaussian exp(-0.5 d^2) to exp(-0.4 d^2) in the resample pass. Prediction: WARP fails on at least street-thriller and box-thriller."
+    }
+  },
+  "caricature": {
+    "fixtures": "The three cases of evidence/shaders-caricature-parity-bounds.json at 320 x 200, built as web/test/shaders-caricature.html builds them: labSource('street') and labSource('day') with their material ids. Exported: the source, the materials, the JavaScript smoothed salience, gradient and lambda (float64), its warped frame (Float32Array) and lab codes (gain 2.4).",
+    "cpu_link": {
+      "plan_equal": "the blur half-width R and taps within 1e-15",
+      "field_max_rel": "smoothed salience and gradient within 1e-12, lambda within 1e-12 relative",
+      "value_max_rel": 1e-06,
+      "rule": "|cpp - js| <= 1e-6 max(1, |js|) on every output value (f32 stores); lab codes equal except where the JavaScript value lies within 1e-4 codes of a rounding edge; at most 2 a case"
+    },
+    "gpu_link": { "max_abs_code": 2, "p999_abs_code": 1, "mean_abs_code": 0.05, "why": "The web bounds: a blur, a global maximum (a tree in workgroup memory) and a bilinear resample; f32 against f64 differs by rounding in the displacement." },
+    "controls": {
+      "built_in": "The C++ reference with the gain multiplied by 1.25: it must exceed value_max_rel on the CPU link and the GPU bounds, on every case.",
+      "source_edit": "C++: the determinant floor 0.04 in the step clamp to 0.05. Prediction: the CPU link fails on every case. WGSL: the warp's first displacement lambda g to 1.1 lambda g. Prediction: WARP fails on at least the two grotesque cases."
+    }
+  }
+}
