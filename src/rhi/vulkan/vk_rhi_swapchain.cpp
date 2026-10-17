@@ -25,9 +25,40 @@
 #include <vulkan/vulkan_wayland.h>
 #endif
 #include <algorithm>
+#include <string>
+#include <vector>
 #include <cstdint>
 namespace raw::rhi::vkr {
 namespace {
+// The surface's format and colour-space pairs, named where the host uses them and numbered
+// otherwise, so a refused swapchain request says what the driver offered.
+std::string formatName(VkFormat f){
+    switch (f){
+        case VK_FORMAT_R8G8B8A8_UNORM: return "R8G8B8A8_UNORM";
+        case VK_FORMAT_B8G8R8A8_UNORM: return "B8G8R8A8_UNORM";
+        case VK_FORMAT_R8G8B8A8_SRGB: return "R8G8B8A8_SRGB";
+        case VK_FORMAT_B8G8R8A8_SRGB: return "B8G8R8A8_SRGB";
+        case VK_FORMAT_A2B10G10R10_UNORM_PACK32: return "A2B10G10R10_UNORM";
+        case VK_FORMAT_A2R10G10B10_UNORM_PACK32: return "A2R10G10B10_UNORM";
+        case VK_FORMAT_R16G16B16A16_SFLOAT: return "R16G16B16A16_SFLOAT";
+        default: return "format " + std::to_string((int)f);
+    }
+}
+std::string colourSpaceName(VkColorSpaceKHR c){
+    switch (c){
+        case VK_COLOR_SPACE_SRGB_NONLINEAR_KHR: return "SRGB_NONLINEAR";
+        case VK_COLOR_SPACE_HDR10_ST2084_EXT: return "HDR10_ST2084";
+        case VK_COLOR_SPACE_EXTENDED_SRGB_LINEAR_EXT: return "EXTENDED_SRGB_LINEAR";
+        case VK_COLOR_SPACE_BT2020_LINEAR_EXT: return "BT2020_LINEAR";
+        case VK_COLOR_SPACE_PASS_THROUGH_EXT: return "PASS_THROUGH";
+        default: return "colour space " + std::to_string((int)c);
+    }
+}
+std::string offeredPairs(const std::vector<VkSurfaceFormatKHR>& fmts){
+    std::string o = std::to_string(fmts.size()) + ":";
+    for (std::size_t i = 0; i < fmts.size(); ++i) o += (i ? ", " : " ") + formatName(fmts[i].format) + "/" + colourSpaceName(fmts[i].colorSpace);
+    return o;
+}
 bool makeSurface(VkrDevice& dev, const SwapchainDesc& d, VkSurfaceKHR& out, std::string& err){
     VkResult r = VK_ERROR_EXTENSION_NOT_PRESENT;
     switch (d.system){
@@ -132,7 +163,10 @@ bool VkrSwapchain::init(const SwapchainDesc& d, std::string& err){
         for (const auto& f : fmts) if (f.format == w.first && f.colorSpace == w.second){ chosen_ = f; break; }
         if (chosen_.format != VK_FORMAT_UNDEFINED) break;
     }
-    if (chosen_.format == VK_FORMAT_UNDEFINED){ err = "vulkan: the surface offers no format and colour space for this swapchain request (" + std::to_string(n) + " offered)"; return false; }
+    if (chosen_.format == VK_FORMAT_UNDEFINED){
+        err = "vulkan: the surface offers no format and colour space for this swapchain request; it offers " + offeredPairs(fmts);
+        return false;
+    }
     format_ = chosen_.format == VK_FORMAT_B8G8R8A8_UNORM ? TextureFormat::BGRA8Unorm : d.format;
     csApplied_ = true;   // a format is taken only together with its requested colour space
     vkGetPhysicalDeviceSurfacePresentModesKHR(dev_.physical(), surface_, &n, nullptr);
