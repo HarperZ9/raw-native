@@ -1,0 +1,249 @@
+name: deck
+# RELEASE-PLAN.md N3 criterion 5 (Steam Deck class), bounds in evidence/n3-deck-class-bounds.json.
+# Two routes draw raw-hero and the N2 frame set at 1280 x 800 on lavapipe (software Vulkan):
+#   linux:  the Vulkan build (GCC), X11 on Xvfb;
+#   proton: the D3D12 build (MSVC) unchanged, under Wine with DXVK's dxgi and vkd3d-proton's d3d12,
+#           the D3D12 layers Proton ships (not Proton itself; see the bounds file).
+# Software drivers check the pixels each route draws, never its speed. DXVK and vkd3d-proton are
+# CI-only test tools, checked against the SHA-256 of their GitHub release digests; nothing ships.
+on:
+  pull_request:
+    paths:
+      - 'src/**'
+      - 'raw/**'
+      - 'app/**'
+      - 'cmake/**'
+      - 'CMakeLists.txt'
+      - 'tests/gpu/**'
+      - 'evidence/n3-deck-class-*'
+      - '.github/workflows/deck.yml'
+permissions:
+  contents: read
+env:
+  DXVK_URL: https://github.com/doitsujin/dxvk/releases/download/v3.1.1/dxvk-3.1.1.tar.gz
+  DXVK_SHA256: 40565b4a724aadc4433fa4e010b4b23916d9b1f1baeee64e17186db94f54e608
+  VKD3D_URL: https://github.com/HansKristian-Work/vkd3d-proton/releases/download/v3.0.1/vkd3d-proton-3.0.1.tar.zst
+  VKD3D_SHA256: 3cf2315522af5e43605ef6d3c41dad91387040bf97199934f3f7ab76caaa2f0c
+jobs:
+  windows-build:
+    # The Windows build the proton route runs, and the WARP references at 1280 x 800.
+    runs-on: windows-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure with RAW_NATIVE_GPU_D3D12=ON
+        run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRAW_NATIVE_GPU_D3D12=ON
+      - name: Build the CLI and the presentation host
+        run: cmake --build build --config Release --target raw_native_cli raw_native_present
+      - name: WARP reference at 1280 x 800 (the N2 frames offscreen; raw-hero is not drawn on WARP, see addendum B)
+        shell: bash
+        env:
+          RAW_NATIVE_D3D12_WARP: "1"
+        run: |
+          mkdir -p deck-win
+          build/Release/raw_native_present.exe run --offscreen --frames 600 --width 1280 --height 800 --out deck-win/warp-offscreen-1280x800.json
+          build/Release/raw_native_cli.exe export-assets --out assets > deck-win/export-assets.txt
+      - name: Keep the Windows build and the references
+        shell: bash
+        run: |
+          mkdir -p deck-win/bin
+          cp build/Release/raw_native_cli.exe build/Release/raw_native_present.exe deck-win/bin/
+          ls -l deck-win deck-win/bin
+      - uses: actions/upload-artifact@v4
+        with: { name: deck-windows, path: deck-win, retention-days: 30 }
+
+  linux:
+    needs: windows-build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the Vulkan loader and headers, lavapipe, glslang and the X11 client library
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libvulkan-dev glslang-tools mesa-vulkan-drivers \
+            libxcb1-dev libwayland-dev wayland-protocols xvfb
+      - uses: actions/download-artifact@v4
+        with: { name: deck-windows, path: deck-win }
+      - name: Configure and build the Vulkan CLI and presentation host
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRAW_NATIVE_VULKAN_RHI=ON
+          cmake --build build -j 4 --target raw_native_present_vk raw_native_cli_vk
+      - name: Start Xvfb at 1920 x 1080
+        run: |
+          Xvfb :99 -screen 0 1920x1080x24 > xvfb.log 2>&1 &
+          sleep 2
+          echo "DISPLAY=:99" >> "$GITHUB_ENV"
+      - name: d1 raw-hero at 1280 x 800 on lavapipe; verified (the CPU frame is compared with the MSVC build's in cross-build)
+        run: |
+          mkdir -p deck-linux
+          build/raw_native_cli_vk export-assets --out assets > deck-linux/export-assets.txt
+          diff deck-linux/export-assets.txt <(tr -d '\r' < deck-win/export-assets.txt) && echo "exported assets identical to the MSVC build's"
+          build/raw_native_cli_vk --model assets/raw-hero.gltf --gpu --no-rt --width 1280 --height 800 --threads 4 --out hero | tail -3
+          cp hero/gpu_certificate.json deck-linux/linux-hero-gpu_certificate.json
+          sha256sum hero/cpu/frame.ppm | cut -d' ' -f1 > deck-linux/linux-hero-cpu-frame.sha256
+          python3 tests/gpu/deck_gate.py scene deck-linux/linux-hero-gpu_certificate.json --backend vulkan --size 1280x800 --rt no
+      - name: d1b the built-in test scene at 1280 x 800 on lavapipe with the ray-traced AO reference on (addendum C)
+        run: |
+          build/raw_native_cli_vk --gpu --width 1280 --height 800 --threads 4 --out testscene | tail -3
+          cp testscene/gpu_certificate.json deck-linux/linux-testscene-gpu_certificate.json
+          python3 tests/gpu/deck_gate.py scene deck-linux/linux-testscene-gpu_certificate.json --backend vulkan --size 1280x800 --rt yes
+      - name: d2 the N2 frames at 1280 x 800 in an X11 window, twice, and offscreen; equal each other and WARP
+        env:
+          RAW_NATIVE_WINDOW: x11
+        run: |
+          p=build/raw_native_present_vk; g=tests/gpu/present_gate.py; o=deck-linux
+          $p run --frames 600 --width 1280 --height 800 --out $o/linux-run1.json
+          $p run --frames 600 --width 1280 --height 800 --out $o/linux-run2.json
+          $p run --frames 600 --width 1280 --height 800 --offscreen --out $o/linux-offscreen.json
+          python3 $g same $o/linux-run1.json $o/linux-run2.json $o/linux-offscreen.json deck-win/warp-offscreen-1280x800.json --size 1280x800
+      - name: d5 controls on the linux route; a 1280 x 720 run and the blit offset control must fail
+        env:
+          RAW_NATIVE_WINDOW: x11
+        run: |
+          p=build/raw_native_present_vk; g=tests/gpu/present_gate.py; o=deck-linux
+          $p run --frames 600 --width 1280 --height 720 --out $o/linux-control-720.json
+          if python3 $g same $o/linux-control-720.json $o/linux-offscreen.json --size 1280x800; then echo "size control passed: the gate is blind"; exit 1; fi
+          $p run --frames 600 --width 1280 --height 800 --control --out $o/linux-control-offset.json
+          python3 $g control $o/linux-offscreen.json $o/linux-control-offset.json
+      - name: d6 pacing harness at 1280 x 800 (no pacing claim from a software driver)
+        env:
+          RAW_NATIVE_WINDOW: x11
+        run: |
+          build/raw_native_present_vk pacing --frames 600 --warmup 30 --width 1280 --height 800 --out deck-linux/linux-pacing.json
+          python3 tests/gpu/present_gate.py pacing deck-linux/linux-pacing.json --harness
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: deck-linux, path: deck-linux, retention-days: 30 }
+
+  proton:
+    needs: windows-build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Wine, lavapipe, Xvfb and zstd
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends wine wine64 mesa-vulkan-drivers libvulkan1 xvfb zstd
+          wine --version | tee wine-version.txt
+      - uses: actions/download-artifact@v4
+        with: { name: deck-windows, path: deck-win }
+      - name: Fetch DXVK and vkd3d-proton and check them against the release digests
+        run: |
+          mkdir -p tools-dl && cd tools-dl
+          curl -sSfL -o dxvk.tar.gz "$DXVK_URL"
+          curl -sSfL -o vkd3d.tar.zst "$VKD3D_URL"
+          echo "$DXVK_SHA256  dxvk.tar.gz" | sha256sum -c -
+          echo "$VKD3D_SHA256  vkd3d.tar.zst" | sha256sum -c -
+          tar -xzf dxvk.tar.gz
+          tar --zstd -xf vkd3d.tar.zst
+          ls
+      - name: Start Xvfb and a Wine prefix; place the Proton D3D12 layers beside the executables
+        run: |
+          Xvfb :99 -screen 0 1920x1080x24 > xvfb.log 2>&1 &
+          sleep 2
+          echo "DISPLAY=:99" >> "$GITHUB_ENV"
+          echo "WINEPREFIX=$PWD/wineprefix" >> "$GITHUB_ENV"
+          echo "WINEDEBUG=-all" >> "$GITHUB_ENV"
+          echo "WINEDLLOVERRIDES=dxgi,d3d12,d3d12core=n;winemenubuilder.exe=d" >> "$GITHUB_ENV"
+          export DISPLAY=:99 WINEPREFIX=$PWD/wineprefix WINEDEBUG=-all
+          wineboot -u
+          bin=deck-win/bin
+          cp tools-dl/dxvk-3.1.1/x64/dxgi.dll $bin/
+          cp tools-dl/vkd3d-proton-3.0.1/x64/d3d12.dll tools-dl/vkd3d-proton-3.0.1/x64/d3d12core.dll $bin/
+          ls -l $bin
+      - name: The MSVC build's CPU reference frame of raw-hero at 1280 x 800 under Wine (for cross-build; no GPU)
+        run: |
+          mkdir -p deck-proton
+          cp wine-version.txt deck-proton/
+          wine deck-win/bin/raw_native_cli.exe export-assets --out assets > deck-proton/export-assets.txt 2>&1
+          diff <(tr -d '\r' < deck-proton/export-assets.txt) <(tr -d '\r' < deck-win/export-assets.txt) && echo "exported assets identical to the Windows run"
+          wine deck-win/bin/raw_native_cli.exe --model assets/raw-hero.gltf --no-rt --width 1280 --height 800 --threads 4 --out hero-cpu > deck-proton/proton-hero-cpu.txt 2>&1
+          sha256sum hero-cpu/frame.ppm | cut -d' ' -f1 > deck-proton/msvc-wine-hero-cpu-frame.sha256
+          cat deck-proton/msvc-wine-hero-cpu-frame.sha256
+      - name: d3 to d6 on the proton route (DXVK dxgi, vkd3d-proton d3d12); a recorded miss passes only for its recorded cause (addendum D)
+        if: always()
+        run: |
+          bash tests/gpu/deck_wine_route.sh proton deck-proton deck-win/bin deck-win/warp-offscreen-1280x800.json
+          python3 tests/gpu/deck_gate.py route deck-proton proton --known-miss khrLoadStoreOpNone
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: deck-proton, path: deck-proton, retention-days: 30 }
+
+  wine-explore:
+    # Explorations x1 and x2 of addendum D: recorded whatever they show, never a gate.
+    continue-on-error: true
+    needs: windows-build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Wine, lavapipe, Xvfb and zstd
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends wine wine64 mesa-vulkan-drivers libvulkan1 xvfb zstd
+          wine --version | tee wine-version.txt
+      - uses: actions/download-artifact@v4
+        with: { name: deck-windows, path: deck-win }
+      - name: Fetch DXVK and vkd3d-proton and check them against the release digests
+        run: |
+          mkdir -p tools-dl && cd tools-dl
+          curl -sSfL -o dxvk.tar.gz "$DXVK_URL"
+          curl -sSfL -o vkd3d.tar.zst "$VKD3D_URL"
+          echo "$DXVK_SHA256  dxvk.tar.gz" | sha256sum -c -
+          echo "$VKD3D_SHA256  vkd3d.tar.zst" | sha256sum -c -
+          tar -xzf dxvk.tar.gz
+          tar --zstd -xf vkd3d.tar.zst
+          ls
+      - name: Start Xvfb and a Wine prefix; place the Proton D3D12 layers beside the executables
+        run: |
+          Xvfb :99 -screen 0 1920x1080x24 > xvfb.log 2>&1 &
+          sleep 2
+          echo "DISPLAY=:99" >> "$GITHUB_ENV"
+          echo "WINEPREFIX=$PWD/wineprefix" >> "$GITHUB_ENV"
+          echo "WINEDEBUG=-all" >> "$GITHUB_ENV"
+          echo "WINEDLLOVERRIDES=dxgi,d3d12,d3d12core=n;winemenubuilder.exe=d" >> "$GITHUB_ENV"
+          export DISPLAY=:99 WINEPREFIX=$PWD/wineprefix WINEDEBUG=-all
+          wineboot -u
+          bin=deck-win/bin
+          cp tools-dl/dxvk-3.1.1/x64/dxgi.dll $bin/
+          cp tools-dl/vkd3d-proton-3.0.1/x64/d3d12.dll tools-dl/vkd3d-proton-3.0.1/x64/d3d12core.dll $bin/
+          ls -l $bin
+      - name: Export the owned assets
+        run: wine deck-win/bin/raw_native_cli.exe export-assets --out assets > /dev/null 2>&1
+      - name: Exploration x1, Wine's dxgi with vkd3d-proton's d3d12 (not a criterion check; addendum D)
+        if: always()
+        continue-on-error: true
+        run: |
+          export WINEDLLOVERRIDES="d3d12,d3d12core=n;dxgi=b;winemenubuilder.exe=d"
+          bash tests/gpu/deck_wine_route.sh x1 deck-explore deck-win/bin deck-win/warp-offscreen-1280x800.json
+          python3 tests/gpu/deck_gate.py route deck-explore x1
+      - name: Exploration x2, Wine's own d3d12 and dxgi (upstream vkd3d; not Proton's path; addendum D)
+        if: always()
+        continue-on-error: true
+        run: |
+          export WINEDLLOVERRIDES="d3d12,d3d12core,dxgi=b;winemenubuilder.exe=d"
+          bash tests/gpu/deck_wine_route.sh x2 deck-explore deck-win/bin deck-win/warp-offscreen-1280x800.json
+          python3 tests/gpu/deck_gate.py route deck-explore x2
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: deck-wine-explore, path: deck-explore, retention-days: 30 }
+
+  cross-build:
+    # d1 and d3's CPU part: the GCC build's CPU reference frame of raw-hero equals the MSVC build's.
+    needs: [linux, proton]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: deck-linux, path: deck-linux }
+      - uses: actions/download-artifact@v4
+        with: { name: deck-proton, path: deck-proton }
+      - name: The CPU reference frames are byte-identical across GCC (Linux) and MSVC (under Wine)
+        run: |
+          a=$(cat deck-linux/linux-hero-cpu-frame.sha256); b=$(cat deck-proton/msvc-wine-hero-cpu-frame.sha256)
+          echo "gcc   $a"; echo "msvc  $b"
+          test -n "$a" && test "$a" = "$b"
