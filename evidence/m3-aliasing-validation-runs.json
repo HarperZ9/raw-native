@@ -1,0 +1,51 @@
+{
+ "schema": "raw-native.runs/1",
+ "bounds": "evidence/m3-aliasing-validation-bounds.json (3214766, before any code or run)",
+ "ci": "workflow .github/workflows/m3-graph.yml; first run 39011550394 (at the code commit), final run 39066836705 (after the one fix below), HarperZ9/raw-native PR #176",
+ "date": "2026-10-17 (UTC)",
+ "results": {
+  "a1_unit": {
+   "result": "holds",
+   "observed": "tests/test_frame_graph_alias.cpp: disjoint lifetimes share, overlapping ones do not, MapRead never shares, slot size and usage are the largest and the union, the fill and its barriers appear only where a slot changes hands; tests/test_frame_graph.cpp unchanged and passing (aliasing off gives today's command log). One expectation in the new test was wrong on the first build (the order of a step's barriers), fixed in the test."
+  },
+  "a2_identity": {
+   "result": "holds",
+   "observed": "On WARP and on lavapipe, aliasing off against on: the quick identity matrix (4 cases, 90 files), the ten glTF models (10 cases, 180 files), post-parity, style-parity, texture-identity and raster-identity all identical, wall-clock fields aside."
+  },
+  "a3_peak": {
+   "result": "holds",
+   "observed": "62 graph executes over 11 graphs on each adapter: 120,658,880 transient bytes unaliased, 117,282,464 aliased (2.80% lower), no execute worse. All of the saving is in the GPU renderer's graph (the triangle setup buffers, up to 589,824 bytes an execute). The style and post graphs save nothing: the style graphs import their buffers rather than creating transients, and the post stack's transients all live to its read-back.",
+   "prediction_check": "The prediction that the style graphs would save the most was wrong; they have no transients to alias. The GPU renderer part of the prediction held.",
+   "files": [
+    "warp/stats-summary.json",
+    "lavapipe/stats-summary.json",
+    "warp/stats-on.jsonl",
+    "lavapipe/stats-on.jsonl"
+   ]
+  },
+  "a4_control": {
+   "result": "the corpus cannot tell; the unit test does",
+   "observed": "With the zero fill skipped, every corpus output is still identical to the unaliased run on both adapters: no corpus pass reads memory it did not write. The unit control (a pass reading an aliased buffer) reads the previous occupant's bytes without the fill and zeros with it.",
+   "files": [
+    "warp/nofill-compare.txt",
+    "lavapipe/nofill-compare.txt"
+   ]
+  },
+  "v1_negative_controls": {
+   "result": "holds",
+   "observed": "tests/test_rhi_validate.cpp: 26 injected errors, 13 of 13 rules covered, every one reported under its rule and the bad call not forwarded; a list with a report fails its submission."
+  },
+  "v2_positive_control": {
+   "result": "holds",
+   "observed": "The suite's valid frame (uploads, barriers, dispatch, copy, texture upload, draw, texture copy, map) gives zero reports, twice in two lists."
+  },
+  "v3_clean_corpus": {
+   "result": "holds after one fix",
+   "observed": "First run: one report on both adapters, V07 in texture-identity: the uniform buffer 'identity map' was uploaded (copy-dst) and drawn as a uniform with no barrier between. That is a real missing barrier in the caller (D3D12 reads a constant buffer in the vertex-and-constant-buffer state). Fixed in src/renderer/gpu/texture_identity.cpp (34024cd). Final run: zero reports on WARP and lavapipe, and every output identical to the run without the layer.",
+   "files": [
+    "warp/first-run-validation-reports.txt"
+   ]
+  }
+ },
+ "does_not_prove": "Peak memory as a driver or the OS counts it (slots are ordinary buffers, not placed resources); texture aliasing; that the layer catches errors outside its 13 rules or replaces an API's debug layer; anything on a hardware GPU."
+}

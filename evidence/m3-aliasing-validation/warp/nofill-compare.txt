@@ -1,0 +1,11 @@
+compared 4 cases, 90 files: all identical
+compared 10 cases, 180 files: all identical
+m3/off/post.json vs m3/nofill/post.json: identical (wall-clock fields left out)
+PASS
+m3/off/style.json vs m3/nofill/style.json: identical (wall-clock fields left out)
+PASS
+m3/off/texture.json vs m3/nofill/texture.json: identical (wall-clock fields left out)
+PASS
+m3/off/rhi3.json vs m3/nofill/rhi3.json: identical (wall-clock fields left out)
+PASS
+exit 0

@@ -1,0 +1,76 @@
+{
+ "executes": 62,
+ "graphs": 11,
+ "unaliased_bytes": 120658880,
+ "aliased_bytes": 117282464,
+ "saved_fraction": 0.02798315383003721,
+ "executes_worse": 0,
+ "by_graph": {
+  "upload..readback": {
+   "executes": 14,
+   "unaliased_bytes": 116818880,
+   "aliased_bytes": 113442464,
+   "max_saved_bytes": 589824
+  },
+  "post upload..post readback": {
+   "executes": 9,
+   "unaliased_bytes": 3840000,
+   "aliased_bytes": 3840000,
+   "max_saved_bytes": 0
+  },
+  "adj upload..adj readback": {
+   "executes": 4,
+   "unaliased_bytes": 0,
+   "aliased_bytes": 0,
+   "max_saved_bytes": 0
+  },
+  "classic upload..classic readback": {
+   "executes": 7,
+   "unaliased_bytes": 0,
+   "aliased_bytes": 0,
+   "max_saved_bytes": 0
+  },
+  "vhs upload..vhs readback": {
+   "executes": 3,
+   "unaliased_bytes": 0,
+   "aliased_bytes": 0,
+   "max_saved_bytes": 0
+  },
+  "fibre upload..fibre readback": {
+   "executes": 3,
+   "unaliased_bytes": 0,
+   "aliased_bytes": 0,
+   "max_saved_bytes": 0
+  },
+  "film upload..film readback": {
+   "executes": 6,
+   "unaliased_bytes": 0,
+   "aliased_bytes": 0,
+   "max_saved_bytes": 0
+  },
+  "lens upload..lens readback": {
+   "executes": 4,
+   "unaliased_bytes": 0,
+   "aliased_bytes": 0,
+   "max_saved_bytes": 0
+  },
+  "sag upload..sag readback": {
+   "executes": 4,
+   "unaliased_bytes": 0,
+   "aliased_bytes": 0,
+   "max_saved_bytes": 0
+  },
+  "cari upload..cari readback": {
+   "executes": 3,
+   "unaliased_bytes": 0,
+   "aliased_bytes": 0,
+   "max_saved_bytes": 0
+  },
+  "pixel upload..pixel readback": {
+   "executes": 5,
+   "unaliased_bytes": 0,
+   "aliased_bytes": 0,
+   "max_saved_bytes": 0
+  }
+ }
+}
