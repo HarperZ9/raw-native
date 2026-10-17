@@ -37,7 +37,7 @@ list(APPEND LIB_SRCS src/renderer/gpu/gpu_renderer.cpp src/renderer/gpu/frame_pa
     src/renderer/gpu/style_graph.cpp src/renderer/gpu/style_parity_crt.cpp src/renderer/gpu/style_parity_vhs.cpp src/renderer/gpu/style_parity_fibre.cpp
     src/renderer/gpu/style_parity_film.cpp src/renderer/gpu/style_parity_lens.cpp
     src/renderer/gpu/style_parity_sag.cpp src/renderer/gpu/style_parity_rtvis.cpp
-    src/renderer/gpu/style_parity_pixel.cpp)
+    src/renderer/gpu/style_parity_pixel.cpp src/renderer/gpu/style_parity_paint.cpp)
 # The anisotropic split-albedo table, generated once and committed (cmake/embed.cmake).
 include(cmake/embed.cmake)
 raw_native_embed_aniso_table("${CMAKE_CURRENT_SOURCE_DIR}/src/renderer/data/aniso_albedo.f32"
