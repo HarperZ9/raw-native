@@ -77,6 +77,7 @@ struct StyleParity {
     int expectFilm{0};                     // spectral film cases (bounds-6)
     int expectLens{0};                     // lens suite cases (bounds-7)
     int expectWorkgroup{0};                // sag and caricature cases (bounds-8)
+    int expectRtvis{0};                    // one-ray visibility cases, CPU link only (bounds-9)
     std::vector<StyleCase> cases;
     LookKeysResult lookkeys;
     PostStackResult poststack;
@@ -87,9 +88,9 @@ struct StyleParity {
 };
 // fixtureDir holds ditherlight.rnfx, paintover.rnfx, lookkeys.json and, from round 2,
 // poststack.rnfx, purity.rnfx, lightpaint.rnfx, glaze.rnfx, hatch.rnfx, hysteresis.rnfx and
-// palettelight.rnfx, dither.rnfx, adjacency.rnfx, crtclassic.rnfx, vhs.rnfx, fibre.rnfx, film.rnfx, lens.rnfx, sag.rnfx, caricature.rnfx. dev may be
+// palettelight.rnfx, dither.rnfx, adjacency.rnfx, crtclassic.rnfx, vhs.rnfx, fibre.rnfx, film.rnfx, lens.rnfx, sag.rnfx, caricature.rnfx, rtvis.rnfx. dev may be
 // null (CPU only).
-// only: empty for the full check, or one group (poststack, image, quantise, dither, adjacency, signal, film, lens, workgroup) for a
+// only: empty for the full check, or one group (poststack, image, quantise, dither, adjacency, signal, film, lens, workgroup, rtvis) for a
 // development run, which the JSON marks and which is not the check of record.
 StyleParity styleParity(rhi::Device* dev, const std::string& fixtureDir, const std::string& only = "");
 
