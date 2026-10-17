@@ -219,6 +219,16 @@ one monitor the Vulkan and D3D12 hosts report the same rate. The RTX 4090 Vulkan
 through the Vulkan swapchain, presented hashes) is prepared but not run: it needs the GPU lock and a
 fullscreen window on the machine in use.
 
+Criterion 5, Steam Deck class (2026-10-17, `evidence/n3-deck-class-runs.json`, bounds written before
+the first run). The Linux build passes on lavapipe in CI. raw-hero at 1280 x 800 is verified, and its
+GPU frame equals the CPU frame byte for byte. The N2 frames at 1280 x 800 match across two presented
+runs, the offscreen run and D3D12 WARP. raw-hero's CPU frame is identical from GCC and from MSVC under
+Wine. The Proton route misses: DXVK 3.1.1 needs `VK_KHR_load_store_op_none`, which lavapipe lacks, so no
+device opens. With Wine's dxgi in place of DXVK's, the D3D12 build draws raw-hero through vkd3d-proton
+verified and matches the Vulkan frame, but presenting crashes inside Wine. Frame time on Deck hardware
+is not measured. Criterion 5 stays open until the Proton route runs on a driver DXVK accepts, such as a
+Steam Deck.
+
 ### ROADMAP M3 to M6
 
 Unchanged (`docs/architecture/ROADMAP.md`). M3 carries G1 (loop, input, camera controllers,

@@ -1,0 +1,88 @@
+{
+ "schema": "raw-native.runs/1",
+ "bounds": "evidence/n3-deck-class-bounds.json: written 10264b8 before any run; addenda B (78031f6) and C (5d157fa) after cancelled runs with no check result; addendum D (9459cc0) after the proton route's miss and before the explorations ran",
+ "ci": "workflow .github/workflows/deck.yml at d0ec0ae, run 39002255273 (HarperZ9/raw-native); the linux route and cross-build results are identical to run 38990481635 at 5d157fa",
+ "date": "2026-10-17 (UTC)",
+ "results": {
+  "d1_linux_scene": {
+   "result": "holds",
+   "observed": "raw-hero at 1280 x 800 on lavapipe (llvmpipe, Mesa, Vulkan 1.4.318) with --no-rt: verdict verified, identity MATCH (the GPU frame's bytes equal the CPU frame's), coverage mismatch 0, rt false recorded. GPU 162.8 s, CPU 0.2 s (not judged).",
+   "files": [
+    "linux/linux-hero-gpu_certificate.json"
+   ]
+  },
+  "d1b_linux_ray_traced_ao": {
+   "result": "holds",
+   "observed": "the built-in test scene at 1280 x 800 with the ray-traced AO reference on: verified, identity MATCH.",
+   "files": [
+    "linux/linux-testscene-gpu_certificate.json"
+   ]
+  },
+  "d1_d3_cross_build_cpu": {
+   "result": "holds",
+   "observed": "raw-hero's CPU reference frame at 1280 x 800 (--no-rt) has SHA-256 97fe88dea440935c0d506db469802d4df6ade02c772c3a69f09f0b9af5b94608 from the GCC Linux build and from the MSVC Windows build run under Wine 9.0. The exported asset files are identical too.",
+   "files": [
+    "linux/linux-hero-cpu-frame.sha256",
+    "proton/msvc-wine-hero-cpu-frame.sha256"
+   ]
+  },
+  "d2_linux_present": {
+   "result": "holds",
+   "observed": "600 of 600 frames at 1280 x 800 equal across two X11 presented runs, the offscreen run and the D3D12 WARP offscreen list from the Windows job.",
+   "files": [
+    "linux/linux-run1.json",
+    "linux/linux-run2.json",
+    "linux/linux-offscreen.json",
+    "windows/warp-offscreen-1280x800.json"
+   ]
+  },
+  "d5_controls_linux": {
+   "result": "holds",
+   "observed": "the 1280 x 720 run fails the size gate; the blit offset control differs on 600 of 600 frames.",
+   "files": [
+    "linux/linux-control-720.json",
+    "linux/linux-control-offset.json"
+   ]
+  },
+  "d6_pacing_harness_linux": {
+   "result": "holds",
+   "observed": "599 finite positive intervals at 1280 x 800 (median 7.47 ms on Xvfb, no refresh: no pacing claim).",
+   "files": [
+    "linux/linux-pacing.json"
+   ]
+  },
+  "d3_d4_d5_d6_proton": {
+   "result": "miss",
+   "observed": "No device opens. DXVK 3.1.1's dxgi.dll skips llvmpipe (Mesa 25.2.8 on ubuntu-24.04) because it lacks VK_KHR_load_store_op_none, reports no adapter, and CreateDXGIFactory2 fails with E_FAIL; vkd3d-proton is never reached. CI keeps the steps and passes them only while the logs name this cause.",
+   "cause_class": "a software-driver gap, not an engine fault: the requirement is DXVK's and a hardware driver such as RADV on a Steam Deck is expected to offer the extension (inferred, not checked here)",
+   "files": [
+    "proton/proton-summary.json",
+    "proton/proton-d3_hero.log"
+   ]
+  },
+  "x1_wine_dxgi_vkd3d_proton": {
+   "result": "offscreen holds, presentation crashes",
+   "observed": "With Wine's builtin dxgi.dll and vkd3d-proton's d3d12.dll: raw-hero (--no-rt) and the built-in scene (ray-traced AO on) at 1280 x 800 are both verified with identity MATCH, and raw-hero's GPU frame hash 2b94eac8... equals the lavapipe Vulkan build's GPU frame hash. Every presented run (d4, d5, d6) ends in an unhandled page fault inside Wine when the swapchain is made. The certificate's adapter reads 'NVIDIA GeForce GTX 470', the placeholder Wine's dxgi reports; the only Vulkan device on the runner is llvmpipe, so vkd3d-proton ran there (inferred from the runner, not from the record).",
+   "meaning": "the engine's D3D12 renderer runs correctly on Proton's D3D12 layer; Proton's presentation path (DXVK's dxgi) is what this driver cannot host",
+   "files": [
+    "explore/x1-summary.json",
+    "explore/x1-hero-x1-gpu_certificate.json",
+    "explore/x1-scene-x1-gpu_certificate.json",
+    "explore/x1-d4_frames.log"
+   ]
+  },
+  "x2_wine_builtin_d3d12": {
+   "result": "no device",
+   "observed": "Wine's own d3d12 rejects the placeholder adapter: 'no D3D12 device with shader model 6.0'. Not Proton's path.",
+   "files": [
+    "explore/x2-summary.json"
+   ]
+  },
+  "d7_deck_hardware": {
+   "result": "not measured",
+   "observed": "No Deck-class hardware was reachable."
+  }
+ },
+ "criterion_5_reading": "The Linux build draws the committed scene at 1280 x 800 and presents the N2 frames there, checked. The Windows build draws it correctly through vkd3d-proton offscreen, but the full Proton route (DXVK's dxgi) does not open a device on a software driver, so the Proton half is not met in CI. Frame time on Deck hardware: not measured. Criterion 5 stays open until the Proton route runs on a driver DXVK accepts (a Steam Deck, or any RADV or hardware Vulkan machine under Proton).",
+ "does_not_prove": "Behaviour on a Steam Deck, RADV, Steam's Proton build or gamescope; frame times; what a panel shows. lavapipe on Xvfb checks the pixels each route draws, not speed."
+}
