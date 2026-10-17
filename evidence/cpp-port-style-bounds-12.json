@@ -28,5 +28,10 @@
   "written": "2026-10-17, after the C++ reference was drafted and before any build, fixture export or run",
   "change": "Fixture size. The emission and history arrays (640 x 480 x 12 f32, 14.7 MB a case) are exported for radar-p7-persistence only, the case whose history carries light between frames; for the other ten cases the emission_and_history bound is not checked, and the signal, image and code bounds stand. The plan's packed parameter block and taps are exported in float64 (packParams and packTaps run with Float64Array in place of Float32Array), so the 1e-12 relative bound compares values before the f32 store.",
   "why": "Every case at full export would be about 255 MB, which the WebGPU build loads into wasm memory in CI."
+ },
+ "addendum_b": {
+  "written": "2026-10-17, AFTER the first CPU run, so it is not a bound set in advance",
+  "observed": "The first CPU run failed the plan check on the four cases with a notch decoder (slot-composite-notch, slot-pal, bw-p4, slot-pixel-mask): the packed taps differed by at most 3.5e-18 absolute, but up to 3.3e-12 relative on taps near 5e-9, which are residues of the notch's cancellation (a unit impulse minus the difference of two low-passes). The JavaScript's own symmetric taps differ from each other by more than that. Every signal, image and code bound passed on all eleven cases.",
+  "change": "The taps bound becomes 1e-12 of the largest tap of the packed set (every set's largest tap is between 0.9 and 1). The first run's result under the bound as written stays recorded as a failure of four cases."
  }
 }
