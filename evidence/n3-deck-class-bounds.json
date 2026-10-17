@@ -45,5 +45,14 @@
  },
  "not_in_this_change": "HDR10 on Vulkan and frame pacing on Vulkan hardware (both need a hardware driver; queued separately); Steam's own Proton build, the Steam runtime container and gamescope; Valve's Deck compatibility review (W4).",
  "dependencies": "CI only, never shipped: Ubuntu's wine package, and DXVK and vkd3d-proton release archives downloaded in the job and checked against the SHA-256 above before use. Reason: they are the D3D12 path Proton uses, and the plan's risk table asks for the Proton route to be checked early. Nothing enters the build or the release archive.",
- "does_not_prove": "Behaviour on a Steam Deck, on RADV or any hardware Vulkan driver, under Steam's Proton build or gamescope; frame times; what the panel shows. A software driver on Xvfb checks that the engine draws the right pixels through each route, not how fast."
+ "does_not_prove": "Behaviour on a Steam Deck, on RADV or any hardware Vulkan driver, under Steam's Proton build or gamescope; frame times; what the panel shows. A software driver on Xvfb checks that the engine draws the right pixels through each route, not how fast.",
+ "addendum_b": {
+  "written": "2026-10-17 00:30Z, after the first CI attempt was cancelled with no check result",
+  "what_happened": "The first run's Windows job spent 75 minutes in `raw_native_cli --model raw-hero.gltf --gpu --width 1280 --height 800` on WARP without finishing, and a local SwiftShader dev run of the same command used 42,500 CPU-seconds without output before it was stopped. The cost is the ray-traced AO reference: 64 rays a pixel over 1,024,000 pixels against raw-hero's BVH, on a software GPU and, by default, one CPU thread. No check produced a result; nothing below changes a bound or a prediction about pixels.",
+  "changes": [
+   "WARP no longer renders raw-hero. It was there only to give d1 an MSVC CPU frame to compare against; WARP is not a route in this criterion. The WARP offscreen list of the N2 frames at 1280 x 800 stays (it is cheap).",
+   "Every raw-hero run passes --threads 4. The CPU reference's output is identical for any thread count (raw/renderer/render.hpp); only the time changes.",
+   "The cross-build CPU check (part of d1 and d3) compares the SHA-256 of the CPU reference frame (cpu/frame.ppm of the linux --gpu run) with the frame of a CPU-only run of the MSVC executable under Wine (`raw_native_cli.exe --model raw-hero.gltf --width 1280 --height 800 --threads 4`), in a final job that reads both. It no longer depends on the proton route opening a GPU device. Its bound is unchanged: byte-identical."
+  ]
+ }
 }
