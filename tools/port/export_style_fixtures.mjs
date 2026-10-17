@@ -4,7 +4,7 @@
 // Writes <out>/ditherlight.rnfx, <out>/paintover.rnfx, <out>/lookkeys.json and, from round 2
 // (evidence/cpp-port-style-bounds-2.json), <out>/poststack.rnfx and <out>/<pass>.rnfx for purity,
 // lightpaint, glaze and hatch, and (evidence/cpp-port-style-bounds-3.json) hysteresis and palettelight, and (-4) dither and
-// adjacency, and (-5) crtclassic, vhs and fibre, and (-6) film, and (-7) lens, and (-8) sag and caricature, and (-9) rtvis, and (-10) pixel. The cases are the
+// adjacency, and (-5) crtclassic, vhs and fibre, and (-6) film, and (-7) lens, and (-8) sag and caricature, and (-9) rtvis, and (-10) pixel, and (-11) paint. The cases are the
 // ones of the web parity bounds files, built with the web modules exactly as the web parity pages
 // build them (web/test/shaders-ditherlight.html, shaders-paintover.html). Nothing under web/ is
 // changed. The reference functions are called per pixel (toneOf, shadePoint) so their float64
@@ -33,6 +33,7 @@ import { crtClassic, vhs, fibre, film, lens } from "./fixtures_signal.mjs";
 import { sag, caricature } from "./fixtures_workgroup.mjs";
 import { rtvis } from "./fixtures_rtvis.mjs";
 import { pixel } from "./fixtures_pixel.mjs";
+import { paint as painterly } from "./fixtures_paint.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const readJson = (p) => JSON.parse(readFileSync(join(ROOT, p), "utf8"));
@@ -136,7 +137,7 @@ if (!out) { console.error("usage: node tools/port/export_style_fixtures.mjs <out
 mkdirSync(out, { recursive: true });
 const t0 = Date.now(), counts = { ditherlight: ditherlight(out), paintover: paintover(out), lookkeys: lookkeys(out), poststack: postStack(out),
   purity: purity(out), lightpaint: lightpaint(out), glaze: glaze(out), hatch: hatch(out), hysteresis: hysteresis(out), palettelight: palettelight(out),
-  dither: dither(out), adjacency: adjacency(out), crtclassic: crtClassic(out), vhs: vhs(out), fibre: fibre(out), film: film(out), lens: lens(out), sag: sag(out), caricature: caricature(out), rtvis: rtvis(out), pixel: pixel(out) };
+  dither: dither(out), adjacency: adjacency(out), crtclassic: crtClassic(out), vhs: vhs(out), fibre: fibre(out), film: film(out), lens: lens(out), sag: sag(out), caricature: caricature(out), rtvis: rtvis(out), pixel: pixel(out), paint: painterly(out) };
 // The file list, for hosts that copy the fixtures by name (web/test/texture-identity.html).
 writeFileSync(join(out, "files.json"), JSON.stringify(readdirSync(out).filter((f) => f.endsWith(".rnfx") || f === "lookkeys.json").sort()));
 console.log(JSON.stringify({ out, cases: counts, seconds: (Date.now() - t0) / 1000 }));

@@ -9,8 +9,8 @@ Addenda A and B) and `evidence/cpp-port-style-bounds-2.json` (round 2, with Adde
 `evidence/cpp-port-style-bounds-4.json` (palette dither and development adjacency) and
 `evidence/cpp-port-style-bounds-5.json` (crt-classic, VHS and fibre), `-bounds-6.json` (film) and `-bounds-7.json`
 (lens suite, with Addendum A) `-bounds-8.json` (sag and caricature) `-bounds-9.json`
-(the one-ray visibility estimator) and `-bounds-10.json` (pixel art, with Addendum A). Runs:
-`evidence/cpp-port-style-runs.json`, `-runs-2.json`, `-runs-3.json`, `-runs-4.json`, `-runs-5.json`, `-runs-6.json`, `-runs-7.json`, `-runs-8.json`, `-runs-9.json` and `-runs-10.json`; the records are
+(the one-ray visibility estimator) `-bounds-10.json` (pixel art, with Addendum A) and `-bounds-11.json` (the painterly shader, with Addendum A). Runs:
+`evidence/cpp-port-style-runs.json`, `-runs-2.json`, `-runs-3.json`, `-runs-4.json`, `-runs-5.json`, `-runs-6.json`, `-runs-7.json`, `-runs-8.json`, `-runs-9.json`, `-runs-10.json` and `-runs-11.json`; the records are
 `evidence/cpp-port-style-d3d12-warp.json` and `evidence/cpp-port-style-webgpu-swiftshader.json` (CI).
 
 ## How a pass is ported
@@ -30,7 +30,7 @@ Run it locally:
 ```
 node tools/port/gen_pigments.mjs --check
 node tools/port/export_style_fixtures.mjs style-fixtures
-# one group while developing (not the check of record): --only poststack | image | quantise | dither | adjacency | signal | film | lens | workgroup | rtvis | pixel
+# one group while developing (not the check of record): --only poststack | image | quantise | dither | adjacency | signal | film | lens | workgroup | rtvis | pixel | paint
 build/Release/raw_native_cli.exe style-parity --fixtures style-fixtures --cpu-only
 RAW_NATIVE_D3D12_WARP=1 build/Release/raw_native_cli.exe style-parity --fixtures style-fixtures
 ```
@@ -60,6 +60,7 @@ RAW_NATIVE_D3D12_WARP=1 build/Release/raw_native_cli.exe style-parity --fixtures
 | Salience caricature, 3 cases | value max 0 (every f32 value equal); salience, gradient and lambda equal | max 1 code; one case bit-identical | CI |
 | One-ray visibility (RT dither study), 12 cases | visibility equal on every pixel of the 256 x 256 yard, 0 ties; tone max 0; net points equal | no GPU link (CPU code) | no GPU link |
 | Perspective-stable pixel art, 5 cases (240 x 150) | 0 probe texels, 0 visibility pixels and 0 codes differ; blend equal | 4 cases bit-identical; one grazing ray in turned-and-close (over2 5.3e-4) | CI |
+| Painterly (Kubelka-Munk), 15 cases: 6 stills, 3 camera sequences, 6 post frames (960 x 600) | image max 0 (every f32 value equal); 0 codes differ; tensor weights and canvas layers equal | max 1 code, mean at most 2.2e-3 (after the glaze fix below) | CI |
 
 Bounds: tone and colour 1e-9; GPU decision flips 5e-4 of pixels, mean 0.12 (dither) and 0.05
 (paint-over) codes. Round 2: values 1e-9 and 0 unexcused code flips on the CPU link; the web bounds
@@ -107,6 +108,16 @@ pass, so `atomicLoad` is not needed, and buffer lengths come from the uniform, s
 either. Its C++ reference equals the JavaScript on every texel, pixel and code. One WGSL source edit
 (the crease threshold) stayed inside the loose web bound and is recorded as a miss (Addendum A).
 
+The painterly shader runs as ten passes: prep, tensor, two blurs, the anisotropic Kuwahara filter,
+stroke, relief and compose, with the advected canvas (decide, advect, distortion) run on the GPU
+each frame of a camera sequence. Its C++ equals the JavaScript on every value. The first WARP run
+failed two watercolour post frames by up to 29 codes in one channel. The C++ compose on the GPU's
+own intermediate buffers matched the CPU, which put the fault in the GPU compose, and a pixel dump
+found it: WARP's `sinh` and `cosh` are off by about 1e-4 relative near 13, and yellow's blue channel
+is a near cancellation that the glaze ratio divides by a 1e-4 floor. The WGSL now builds both from
+one `exp`; the references are unchanged, and every case is within 1 code. Both source edits
+failed as predicted.
+
 Round 2 adds the post stack's driver (`raw/renderer/post_stack.hpp`): the registry, the encoding
 contract and stage split of `web/motion/post.mjs` and `renderer.mjs`, and the run order of
 `post_run.mjs` (ping-pong frames, history frames), run as a host frame graph on the CPU references
@@ -126,9 +137,8 @@ WGSL can be generated.
 
 | Pass (`web/shaders/`) | JavaScript lines | Entry points | Subset work | Estimate |
 |---|---|---|---|---|
-| `paint` (painterly, Kubelka-Munk) | 1,073 | 11 | atomics, `unpack4x8unorm` | 10 h |
 | `crt` (physical) | 1,231 | 8 | none found | 10 h |
 
-Total left about 20 hours: `paint` and the physical `crt` (round 2 took the driver, sixteen passes and the visibility estimator). Order by need: the R1 slice needs paint-over and look keys (done), then
+Total left about 10 hours: the physical `crt` (round 2 took the driver, sixteen passes and the visibility estimator; round 3 took `paint`). Order by need: the R1 slice needs paint-over and look keys (done), then
 `dither`, `hysteresis` and `film` for the templates, with the translator growth done once before
 `caricature`, `sag` and `pixel`.

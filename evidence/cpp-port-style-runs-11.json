@@ -1,0 +1,48 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/cpp-port-style-bounds-11.json",
+ "machine": "the author's Windows 11 workstation; WARP (Microsoft Basic Render Driver) through RAW_NATIVE_D3D12_WARP=1 on every D3D12 command, software only. The GPU was held by MMBU training and not taken; nvidia-smi sampled every 20 s during every WARP run never listed raw_native_cli. Builds and runs at Idle priority with at most 4 build jobs.",
+ "order": "Bounds committed first (11c3a96), Addendum A after the first fixture export and before any build or run (f8d2159), then code, first CPU run, first WARP run, diagnosis and a WGSL fix, WARP rerun, the C++ source edit, the WGSL source edit, revert.",
+ "first_cpu_run": {
+  "cases": 15,
+  "image_max_abs": 0,
+  "codes_differing": 0,
+  "tensor_weights_equal": true,
+  "canvas_layers_equal": true,
+  "controls_fail_every_case": true,
+  "note": "The C++ equals the JavaScript on every image value (f32) and code of all fifteen cases, the advected-canvas layer state included. The bounds allowed last-bit differences in exp, log, pow, tanh, sinh and cosh; none reached a stored value."
+ },
+ "first_warp_run": {
+  "cases": 15,
+  "passing": 13,
+  "failing": {
+   "post-ramp-watercolour": {"max_abs_code": 19, "over2_count": 145},
+   "post-bars-watercolour": {"max_abs_code": 29, "over2_count": 243}
+  },
+  "pass": false,
+  "diagnosis": "The differences sat in one channel of saturated colours. Running the C++ compose on the GPU's own Kuwahara, stroke and relief buffers matched the CPU (max 1 code), so the fault was inside the GPU compose. A dump of pixel (138, 7) of the bars frame showed the GPU glaze's blue channel at +0.00804 against the CPU's -0.000509; a numpy f32 emulation of the same glaze gives -0.000509, so f32 arithmetic was not the cause. WARP's sinh and cosh were off by about 1e-4 relative near z = 13. Yellow's blue channel is a near cancellation of the colour-matching weights, and its glaze ratio divides by a 1e-4 floor, so the error was magnified about 1e4 and clamped to the other end of [0.5, 2].",
+  "fix": "WGSL only: sinh and cosh built from one exp in the glaze, with b = sqrt(ks (2 + ks)) and a series for small z (forms equal to the reference's). The C++ and JavaScript references are unchanged."
+ },
+ "warp_rerun_after_fix": {
+  "cases": 15,
+  "max_abs_code": 1,
+  "mean_abs_code_range": [3.4e-5, 0.0022],
+  "over2_count": 0,
+  "controls_fail_every_case": true,
+  "pass": true
+ },
+ "source_edit_controls": {
+  "cpp": {
+   "edit": "XDoG difference weight 0.985 -> 0.99 (PaintParams::xdogWeight)",
+   "cpu_failing_cases": 15,
+   "against_prediction": "Held: every case failed (still and motion image max_abs 0.005 to 0.097; 776 to 454,632 codes differ)."
+  },
+  "wgsl": {
+   "edit": "canvas weave period 3.2 -> 3.0 (pt_noise kind 2)",
+   "warp_failing_cases": ["oil-grotesque", "oil", "gouache", "grotesque-panned", "motion-orbit-grotesque", "motion-pan-oil", "post-ramp-grotesque", "post-edges-grotesque", "post-bars-grotesque"],
+   "warp_passing_cases": ["watercolour", "watercolour-day", "motion-dolly-watercolour", "post-ramp-watercolour", "post-edges-watercolour", "post-bars-watercolour"],
+   "against_prediction": "Held for the stills it predicted: the four impasto cases failed (max 14 to 50 codes, mean 1.5 to 3.2) and the two watercolour cases passed (max 1). The motion and post-frame cases, not predicted, split the same way by medium."
+  }
+ },
+ "record": "evidence/cpp-port-style-d3d12-warp.json: a full WARP run of every style pass in the core after the reverts."
+}

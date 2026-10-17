@@ -116,7 +116,9 @@ function(raw_native_d3d12_shaders gen out_header)
         style_film_expose style_film_mtf style_film_halo_down style_film_halo_conv style_film_develop style_film_print
         style_lens_core style_lens_gather
         style_sag_current style_sag_scan style_sag_resample style_cari_sal style_cari_blur style_cari_grad style_cari_lambda style_cari_warp
-        style_pixel_capture style_pixel_shade style_pixel_clear style_pixel_splatz style_pixel_splatid style_pixel_resolve)
+        style_pixel_capture style_pixel_shade style_pixel_clear style_pixel_splatz style_pixel_splatid style_pixel_resolve
+        style_paint_prep style_paint_tensor style_paint_blur style_paint_akf style_paint_stroke style_paint_relief style_paint_compose
+        style_canvas_decide style_canvas_advect style_canvas_distort)
     set(headers "")
     set(includes "")
     set(table "")
