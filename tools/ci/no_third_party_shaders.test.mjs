@@ -38,6 +38,13 @@ test("clean code passes: relative imports, node imports, the author's copyright,
   };
   assert.deepEqual(kinds(ok), []);
 });
+test("--cpp: the style references in C++ carry no third-party include or licence", () => {
+  for (const root of ["src/renderer", "raw/renderer"]) assert.deepEqual(scan(root, [], { cpp: true, prefix: "style_" }), []);
+  const r = tree({ "style_a.cpp": "#include <cmath>\n#include \"raw/renderer/style_a.hpp\"\n#include \"local.hpp\"\nint f();\n",
+    "style_b.cpp": "#include <glm/glm.hpp>\nint g();\n", "style_c.hpp": "#include \"third_party/fx/crt.h\"\n", "style_d.cpp": "// Licensed under the MIT licence\n", "other.cpp": "#include <glm/glm.hpp>\n" });
+  try { assert.deepEqual(scan(r, [], { cpp: true, prefix: "style_" }).map((f) => `${f.file}:${f.kind}`).sort(), ["style_b.cpp:import", "style_c.hpp:import", "style_d.cpp:licence"]); }
+  finally { rmSync(r, { recursive: true, force: true }); }
+});
 test("an allowlist entry needs to name the file, and exempts only that file", () => {
   const files = { "v.mjs": "// Copyright (c) 2019 Vendor\nexport const a = 1;\n", "w.mjs": "// Copyright (c) 2019 Vendor\nexport const a = 1;\n" };
   assert.deepEqual(kinds(files, [{ path: "v.mjs", reason: "test" }]), ["w.mjs:licence"]);

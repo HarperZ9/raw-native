@@ -1,0 +1,38 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/cpp-port-style-bounds-12.json",
+ "machine": "the author's Windows 11 workstation; WARP (Microsoft Basic Render Driver) through RAW_NATIVE_D3D12_WARP=1 on every D3D12 command, software only. The GPU was held by MMBU training and not taken; nvidia-smi sampled every 20 s during every WARP run never listed raw_native_cli. Builds and runs at Idle priority with at most 4 build jobs.",
+ "order": "Bounds committed first (aedd4d9), Addendum A after the C++ reference was drafted and before any build or run (463c062), then the first CPU run, Addendum B (3bb497e, after that run), the WGSL and the first WARP run, the C++ source edit, the WGSL source edit, revert.",
+ "first_cpu_run": {
+  "cases": 11,
+  "passing_as_written": 7,
+  "failing_as_written": ["slot-composite-notch", "slot-pal", "bw-p4", "slot-pixel-mask"],
+  "cause": "Only the taps check failed, on the four notch-decoder cases: the packed taps differed by at most 3.5e-18 absolute, up to 3.3e-12 relative on taps near 5e-9 that are residues of the notch's cancellation. A bound error, recorded in Addendum B with the corrected bound.",
+  "signal_image_codes": "On all eleven cases: signal within 1e-6, image max 6.0e-8, 0 codes differ; the parameter blocks within 1e-12 relative, the halo weights within 1 ulp; the persistence case's emission and history within 1e-5 relative.",
+  "controls_fail_every_case": true
+ },
+ "first_warp_run": {
+  "cases": 11,
+  "cpu_link_pass": 11,
+  "max_abs_code": 1,
+  "p999_abs_code": 0,
+  "mean_abs_code_max": 0.00085,
+  "controls_fail_every_case": true,
+  "pass": true,
+  "note": "The shoulder's tanh in the display encode is built from one exp, as the paint glaze's sinh and cosh are (bounds-11 runs), before the first run."
+ },
+ "source_edit_controls": {
+  "cpp": {
+   "edit": "roomEnv ambient 0.04 -> 0.045",
+   "cpu_failing_cases": 11,
+   "against_prediction": "Held: every case failed (image max 1.28e-4 to 1.31e-4, 104,838 to 140,689 codes differ)."
+  },
+  "wgsl": {
+   "edit": "slot stagger of the face-locked stripe mask (k & 1) * Py * 0.5 -> 0.4",
+   "warp_failing_cases": ["slot-composite-notch", "slot-pal"],
+   "warp_passing_cases": ["pvm-rgb", "trinitron-composite-comb", "delta-vga", "bw-p4", "radar-p7-persistence", "pvm-interlace-zoom", "convergence", "pvm-soft-pixel-mask", "slot-pixel-mask"],
+   "against_prediction": "Held exactly: the two face-locked slot masks failed (max 18 codes, p99.9 15, mean 0.93) and the other nine passed within 1 code, the pixel-locked slot mask included."
+  }
+ },
+ "record": "evidence/cpp-port-style-d3d12-warp.json: a full WARP run of every style pass in the core after the reverts."
+}

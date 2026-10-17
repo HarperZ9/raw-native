@@ -9,8 +9,8 @@ Addenda A and B) and `evidence/cpp-port-style-bounds-2.json` (round 2, with Adde
 `evidence/cpp-port-style-bounds-4.json` (palette dither and development adjacency) and
 `evidence/cpp-port-style-bounds-5.json` (crt-classic, VHS and fibre), `-bounds-6.json` (film) and `-bounds-7.json`
 (lens suite, with Addendum A) `-bounds-8.json` (sag and caricature) `-bounds-9.json`
-(the one-ray visibility estimator) `-bounds-10.json` (pixel art, with Addendum A) and `-bounds-11.json` (the painterly shader, with Addendum A). Runs:
-`evidence/cpp-port-style-runs.json`, `-runs-2.json`, `-runs-3.json`, `-runs-4.json`, `-runs-5.json`, `-runs-6.json`, `-runs-7.json`, `-runs-8.json`, `-runs-9.json`, `-runs-10.json` and `-runs-11.json`; the records are
+(the one-ray visibility estimator) `-bounds-10.json` (pixel art, with Addendum A), `-bounds-11.json` (the painterly shader, with Addendum A) and `-bounds-12.json` (the physical CRT, with Addenda A and B). Runs:
+`evidence/cpp-port-style-runs.json`, `-runs-2.json`, `-runs-3.json`, `-runs-4.json`, `-runs-5.json`, `-runs-6.json`, `-runs-7.json`, `-runs-8.json`, `-runs-9.json`, `-runs-10.json`, `-runs-11.json` and `-runs-12.json`; the records are
 `evidence/cpp-port-style-d3d12-warp.json` and `evidence/cpp-port-style-webgpu-swiftshader.json` (CI).
 
 ## How a pass is ported
@@ -30,7 +30,7 @@ Run it locally:
 ```
 node tools/port/gen_pigments.mjs --check
 node tools/port/export_style_fixtures.mjs style-fixtures
-# one group while developing (not the check of record): --only poststack | image | quantise | dither | adjacency | signal | film | lens | workgroup | rtvis | pixel | paint
+# one group while developing (not the check of record): --only poststack | image | quantise | dither | adjacency | signal | film | lens | workgroup | rtvis | pixel | paint | crt
 build/Release/raw_native_cli.exe style-parity --fixtures style-fixtures --cpu-only
 RAW_NATIVE_D3D12_WARP=1 build/Release/raw_native_cli.exe style-parity --fixtures style-fixtures
 ```
@@ -61,6 +61,7 @@ RAW_NATIVE_D3D12_WARP=1 build/Release/raw_native_cli.exe style-parity --fixtures
 | One-ray visibility (RT dither study), 12 cases | visibility equal on every pixel of the 256 x 256 yard, 0 ties; tone max 0; net points equal | no GPU link (CPU code) | no GPU link |
 | Perspective-stable pixel art, 5 cases (240 x 150) | 0 probe texels, 0 visibility pixels and 0 codes differ; blend equal | 4 cases bit-identical; one grazing ray in turned-and-close (over2 5.3e-4) | CI |
 | Painterly (Kubelka-Munk), 15 cases: 6 stills, 3 camera sequences, 6 post frames (960 x 600) | image max 0 (every f32 value equal); 0 codes differ; tensor weights and canvas layers equal | max 1 code, mean at most 2.2e-3 (after the glaze fix below) | CI |
+| Physical CRT, 11 cases (640 x 480; RGB, composite with comb and notch, PAL, persistence, interlace, convergence, pixel-locked masks) | signal within 1e-6; image max 6.0e-8; 0 codes differ; plan, taps (Addendum B) and halo kernel equal | max 1 code, mean at most 8.5e-4 | CI |
 
 Bounds: tone and colour 1e-9; GPU decision flips 5e-4 of pixels, mean 0.12 (dither) and 0.05
 (paint-over) codes. Round 2: values 1e-9 and 0 unexcused code flips on the CPU link; the web bounds
@@ -118,6 +119,16 @@ is a near cancellation that the glaze ratio divides by a 1e-4 floor. The WGSL no
 one `exp`; the references are unchanged, and every case is within 1 code. Both source edits
 failed as predicted.
 
+The physical CRT runs as seven passes: the three signal passes (encode, separate, demod), the
+beam pass with the tube geometry, the mask and the phosphor history, and the halo, its
+convolution and compose with the display encode. The parameter block of `layout.mjs` and the
+filter taps travel as one storage array. The C++ plan resolves presets, phosphor screens
+(spectral, through the CIE tables) and the halo kernel from the glass optics itself, and matches
+the JavaScript to float64 rounding. The first CPU run failed one check that was mine: a 1e-12
+relative bound on the notch filter's near-zero taps, which are cancellation residues; Addendum B
+records it. WARP was within 1 code on the first run, with the shoulder's `tanh` built from one
+`exp` in advance. Both source edits failed exactly as predicted.
+
 Round 2 adds the post stack's driver (`raw/renderer/post_stack.hpp`): the registry, the encoding
 contract and stage split of `web/motion/post.mjs` and `renderer.mjs`, and the run order of
 `post_run.mjs` (ping-pong frames, history frames), run as a host frame graph on the CPU references
@@ -131,14 +142,8 @@ scenes, and the web passes still carry their own WGSL text (ADR 0019, rule 7).
 
 ## Remaining web-only passes
 
-Estimates are mine, in hours of one agent's work at the pace of this port, moderate to low
-confidence (plus or minus half). "Subset work" is translator growth the pass needs before its
-WGSL can be generated.
-
-| Pass (`web/shaders/`) | JavaScript lines | Entry points | Subset work | Estimate |
-|---|---|---|---|---|
-| `crt` (physical) | 1,231 | 8 | none found | 10 h |
-
-Total left about 10 hours: the physical `crt` (round 2 took the driver, sixteen passes and the visibility estimator; round 3 took `paint`). Order by need: the R1 slice needs paint-over and look keys (done), then
-`dither`, `hysteresis` and `film` for the templates, with the translator growth done once before
-`caricature`, `sag` and `pixel`.
+None. With the physical `crt` (round 3, after `paint`), every pass module under `web/shaders/`
+and the look curves have a C++ reference, one WGSL source in `style.wgsl` and the parity runs
+above; N1's status is in [RELEASE-PLAN.md](RELEASE-PLAN.md). The no-third-party check reads the
+C++ references too (`node tools/ci/no_third_party_shaders.mjs --root src/renderer --cpp --prefix
+style_`, and the same for `raw/renderer`).
