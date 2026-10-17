@@ -183,11 +183,11 @@ are G1 at M3.
 4. Frame pacing is recorded: present-to-present intervals over 10,000 frames on the RTX 4090
    when the GPU lock is free, with the bound stated before the run.
 
-Status (2026-10-16). Criteria 1 to 3 pass on WARP, in CI and locally, against bounds committed
-before the first run (`evidence/n2-presentation-bounds.json`, results in
-`evidence/n2-presentation-runs.json`). The host is `raw_native_present`. Criterion 4 has its
-harness, proved on WARP; the RTX 4090 run is queued behind the GPU lock. N2 closes when that record
-is committed.
+Status (2026-10-16). **N2 is closed: every criterion passes.** Criteria 1 to 3 pass on WARP, in CI
+and locally, against bounds committed before the first run (`evidence/n2-presentation-bounds.json`,
+results in `evidence/n2-presentation-runs.json`). Criterion 4 passes on the RTX 4090: over 10,000
+frames at 60 Hz the median interval is 16.663 ms and the 99th percentile 1.088 T, with 4 intervals
+above 1.5 T (`evidence/n2-rtx4090/`). The host is `raw_native_present`.
 
 ### N3: Vulkan raster for Linux and Steam Deck
 
