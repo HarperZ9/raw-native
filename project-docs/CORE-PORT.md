@@ -7,8 +7,9 @@ Bounds, written before the first run: `evidence/cpp-port-style-bounds.json` (rou
 Addenda A and B) and `evidence/cpp-port-style-bounds-2.json` (round 2, with Addendum A) and
 `evidence/cpp-port-style-bounds-3.json` (hysteresis and palettelight, with Addenda A and B) and
 `evidence/cpp-port-style-bounds-4.json` (palette dither and development adjacency) and
-`evidence/cpp-port-style-bounds-5.json` (crt-classic, VHS and fibre). Runs:
-`evidence/cpp-port-style-runs.json`, `-runs-2.json`, `-runs-3.json`, `-runs-4.json` and `-runs-5.json`; the records are
+`evidence/cpp-port-style-bounds-5.json` (crt-classic, VHS and fibre), `-bounds-6.json` (film) and `-bounds-7.json`
+(lens suite, with Addendum A). Runs:
+`evidence/cpp-port-style-runs.json`, `-runs-2.json`, `-runs-3.json`, `-runs-4.json`, `-runs-5.json`, `-runs-6.json` and `-runs-7.json`; the records are
 `evidence/cpp-port-style-d3d12-warp.json` and `evidence/cpp-port-style-webgpu-swiftshader.json` (CI).
 
 ## How a pass is ported
@@ -28,7 +29,7 @@ Run it locally:
 ```
 node tools/port/gen_pigments.mjs --check
 node tools/port/export_style_fixtures.mjs style-fixtures
-# one group while developing (not the check of record): --only poststack | image | quantise | dither | adjacency | signal
+# one group while developing (not the check of record): --only poststack | image | quantise | dither | adjacency | signal | film | lens
 build/Release/raw_native_cli.exe style-parity --fixtures style-fixtures --cpu-only
 RAW_NATIVE_D3D12_WARP=1 build/Release/raw_native_cli.exe style-parity --fixtures style-fixtures
 ```
@@ -52,6 +53,8 @@ RAW_NATIVE_D3D12_WARP=1 build/Release/raw_native_cli.exe style-parity --fixtures
 | crt-classic, 7 cases (960 x 600) | 0 bytes differ; transfer, beam and mask tables equal | max 1 code; 4 cases bit-identical | CI |
 | VHS, 3 cases | signal max 0 (every f32 value equal); 0 display codes differ | max 1 code, mean at most 4.0e-5 | CI |
 | Fibre-network watercolour, 3 cases | value max 2.8e-16; 0 codes differ | max 1 code, mean at most 7.9e-5 | CI |
+| Spectral film, 6 cases (480 x 270) | image max 0 (every f32 value equal); stock tables, halo kernel, grain tables and Poisson thresholds equal | max 1 code, mean at most 5.8e-4 | CI |
+| Lens suite, 4 cases (192 x 108) | value max 5.7e-16; plan, starburst table and sources equal | max 1 code; one case bit-identical | CI |
 
 Bounds: tone and colour 1e-9; GPU decision flips 5e-4 of pixels, mean 0.12 (dither) and 0.05
 (paint-over) codes. Round 2: values 1e-9 and 0 unexcused code flips on the CPU link; the web bounds
@@ -73,6 +76,16 @@ Float32Array tube stage, so its CPU link is exact: every byte of the seven 960 x
 transfer, beam and mask tables entry by entry. VHS's C++ signal equals the JavaScript signal on
 every f32 value. All six source edits of bounds-5 failed as predicted.
 
+The spectral film shader (bounds-6) needs the CIE 1931 tables, generated from
+`web/shaders/cie1931.mjs` into `src/renderer/data/cie1931.hpp` (rule 4, CI `--check`); every
+other table (stocks, colour timing, the base-glass halo kernel, the Boolean grain's variance and
+Poisson tables) is computed by the C++ and compared. Its image equals the JavaScript's on every
+f32 value, the Monte Carlo grain included. The lens suite (bounds-7) ports the paraxial ghost
+prescription and the iris's FFT starburst. One source edit missed: the halation constant in the
+lens gather pass (2 pi to 6.0) stayed inside the web bound at 192 x 108, where halation is half a
+pixel wide; Addendum A records it, and a post-hoc edit of the ghost edge ramp failed every case.
+Neither film nor lens needed `arrayLength`: counts reach the passes in their uniforms.
+
 Round 2 adds the post stack's driver (`raw/renderer/post_stack.hpp`): the registry, the encoding
 contract and stage split of `web/motion/post.mjs` and `renderer.mjs`, and the run order of
 `post_run.mjs` (ping-pong frames, history frames), run as a host frame graph on the CPU references
@@ -92,15 +105,13 @@ WGSL can be generated.
 
 | Pass (`web/shaders/`) | JavaScript lines | Entry points | Subset work | Estimate |
 |---|---|---|---|---|
-| `lens` (lens suite, PR #153) | 706 | 2 | none found | 6 h |
 | `ditherlight/rtvis.mjs` (one-ray visibility estimator, PR #152) | 63 | none (CPU) | none | 2 h |
 | `caricature` | 195 | 5 | workgroup memory and barriers (`var<workgroup>`, `workgroupBarrier`) | 4 h, plus 1 h of translator work shared with `sag` |
 | `sag` | 194 | 3 | workgroup memory and barriers | 3 h |
-| `film` | 709 | 5 | `arrayLength`; spectral tables | 6 h |
 | `pixel` | 621 | 7 | `atomicMin`, `atomicLoad`, `atomicStore`, `arrayLength` | 6 h, plus 1.5 h of translator work |
 | `paint` (painterly, Kubelka-Munk) | 1,073 | 11 | atomics, `unpack4x8unorm` | 10 h |
 | `crt` (physical) | 1,231 | 8 | none found | 10 h |
 
-Total left about 49 hours (round 2 took the driver and eleven passes; crt-classic, VHS and fibre were estimated at 9 hours). Order by need: the R1 slice needs paint-over and look keys (done), then
+Total left about 37 hours (round 2 took the driver and thirteen passes; crt-classic, VHS, fibre, film and the lens suite were estimated at 21 hours). Order by need: the R1 slice needs paint-over and look keys (done), then
 `dither`, `hysteresis` and `film` for the templates, with the translator growth done once before
 `caricature`, `sag` and `pixel`.

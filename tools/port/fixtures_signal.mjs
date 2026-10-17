@@ -78,3 +78,56 @@ export function fibre(out) {
   B.write(join(out, "fibre.rnfx"));
   return B.head.cases.length;
 }
+
+// The spectral film shader (evidence/cpp-port-style-bounds-6.json): the image of the last frame
+// of each case, its 8-bit codes, and the plan's tables, as web/test/shaders-film.html runs it.
+import { createFilm, encodeFilm8 } from "../../web/shaders/film/run.mjs";
+import { poissonTable } from "../../web/shaders/film/grain.mjs";
+import { sceneCard } from "../../web/shaders/fixtures/scene.mjs";
+export function film(out) {
+  const b = readJson("evidence/shaders-film-parity-bounds.json"), { width: W, height: H } = b.output, src = sceneCard(W, H), B = new Bundle("film");
+  B.add("src", "f32", src.data); B.add("poisson", "u32", poissonTable());
+  B.head.src = { width: src.width, height: src.height }; B.head.cases = [];
+  const flat = (rows) => rows.flat();
+  for (const c of b.cases) {
+    const cpu = createFilm(c.preset, c.overrides || {}, { w: src.width, h: src.height }, { w: W, h: H }), pl = cpu.plan, t = pl.t;
+    let ref = null;
+    for (let f = 0; f < c.frames; f++) ref = cpu.frame(src, f);
+    const id = c.id;
+    B.add(`${id}.img`, "f32", ref.img); B.add(`${id}.js`, "u8", encodeFilm8(ref.img, W, H));
+    B.add(`${id}.negPrim`, "f64", flat(t.negPrim)); B.add(`${id}.printW`, "f64", flat(t.printW)); B.add(`${id}.printPrim`, "f64", flat(t.printPrim));
+    B.add(`${id}.projV`, "f64", flat(t.projV)); B.add(`${id}.negConst`, "f64", t.negConst);
+    B.add(`${id}.haloWeights`, "f32", pl.halo.weights); B.add(`${id}.mtf`, "f32", pl.mtf); B.add(`${id}.jTable`, "f32", pl.jTable);
+    B.head.cases.push({ id, preset: c.preset, overrides: c.overrides || {}, frames: c.frames, width: W, height: H,
+      plan: { E: t.E, out: t.out, logGain: t.logGain, neg: t.neg, prt: t.prt, bleach: t.bleach, interimage: t.interimage, printBase: t.printBase,
+        umPerPx: pl.umPerPx, haloQ: pl.halo.q, haloR: pl.halo.R, haloStrength: pl.haloStrength, grainUm: pl.grainUm, grainContrast: pl.grainContrast } });
+  }
+  B.write(join(out, "film.rnfx"));
+  return B.head.cases.length;
+}
+
+// The lens suite (evidence/cpp-port-style-bounds-7.json), as web/test/shaders-lens.html builds it.
+import { lensLightsFrame, lensLightsList } from "../../web/shaders/fixtures/lens-lights.mjs";
+import { renderQuay } from "../../web/shaders/fixtures/quay-street-render.mjs";
+import { resolveLens, extractSources, prepareSources, runLens } from "../../web/shaders/lens/lens.mjs";
+import { labEncode8 } from "../../web/shaders/lab/gpu-kit.mjs";
+export function lens(out) {
+  const b = readJson("evidence/shaders-lens-parity-bounds.json"), { width: W, height: H, gain } = b.output, B = new Bundle("lens");
+  B.head.cases = [];
+  const f32 = (f) => ({ width: f.width, height: f.height, data: Float64Array.from(Float32Array.from(f.data)) });
+  for (const c of b.cases) {
+    const frame = f32(c.frame === "street" ? renderQuay(5, W, H) : lensLightsFrame(W, H)), plan = resolveLens(c.params, { width: W, height: H });
+    let list, keep = null;
+    if (c.mode === "list") list = lensLightsList(W, H); else { const s = extractSources(plan, frame); list = s.list; keep = s.keep; }
+    const srcs = prepareSources(plan, list), res = runLens(plan, frame, srcs, keep), id = c.id;
+    B.add(`${id}.frame`, "f32", frame.data); B.add(`${id}.js`, "f64", res.data); B.add(`${id}.codes`, "u8", labEncode8(res, gain));
+    B.add(`${id}.keep`, "u8", keep || new Uint8Array(0)); B.add(`${id}.star`, "f64", plan.star.data);
+    B.add(`${id}.ghosts`, "f64", plan.ghosts.flatMap((g) => g.flat()));
+    B.head.cases.push({ id, frame: c.frame, mode: c.mode || "extract", params: c.params, width: W, height: H, gain,
+      list, srcs: srcs.map((s) => ({ x: s.x, y: s.y, E: s.E, theta: s.theta, ghost: s.ghost, streak: s.streak })),
+      plan: { D: plan.D, tanHalf: plan.tanHalf, Rbar: plan.Rbar, R0: plan.R0, halo: plan.halo, caScale: plan.caScale, phi: plan.phi, binRgb: plan.binRgb,
+        starCell: plan.starCell, starM: plan.star.M, streakLenPx: plan.p.streakLenPx, streakThickPx: plan.p.streakThickPx, minGhostPx: plan.p.minGhostPx, haloRadiusPx: plan.p.haloRadiusPx } });
+  }
+  B.write(join(out, "lens.rnfx"));
+  return B.head.cases.length;
+}

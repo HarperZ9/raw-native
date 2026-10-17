@@ -1,0 +1,52 @@
+{
+  "schema": "raw-native.evidence/1",
+  "bounds": "evidence/cpp-port-style-bounds-6.json",
+  "machine": "the author's Windows 11 workstation; WARP (Microsoft Basic Render Driver) through RAW_NATIVE_D3D12_WARP=1 on every D3D12 command, software only. The GPU lock was held by MMBU training and not taken; nvidia-smi sampled once a second during every WARP run never listed raw_native_cli. Builds and runs at Idle priority with at most 4 build jobs.",
+  "order": "Film bounds committed (6d2a0cb) before the film reference, WGSL and runs; then code, first CPU run, first WARP run, the C++ source edit, the WGSL source edit, revert.",
+  "film": {
+    "first_cpu_run": {
+      "cases": 6,
+      "plan_equal": true,
+      "poisson_thresholds_equal": true,
+      "image_max_abs": 0,
+      "code_mismatch": 0,
+      "controls_fail_every_case": true,
+      "note": "Every f32 value of every image equals the JavaScript's, the Monte Carlo grain case included; no Poisson-table addendum was needed."
+    },
+    "first_warp_run": {
+      "cases": 6,
+      "max_abs_code": 1,
+      "p999_abs_code": 0,
+      "mean_abs_code_max": 0.000581,
+      "controls_fail_every_case": true,
+      "pass": true
+    },
+    "source_edit_controls": {
+      "cpp": {
+        "edit": "interimage gain read in develop() x 1.1",
+        "cpu_failing_cases": [
+          "500t-print",
+          "no-remjet-halation",
+          "bleach-bypass",
+          "250d-timed-overexposed",
+          "underexposed",
+          "grain-monte-carlo-weave"
+        ],
+        "against_prediction": "Held: every case failed (image max 0.0043 to 0.48)."
+      },
+      "wgsl": {
+        "edit": "print curve offset log10 H + logGain + 0.01 (style_film_print)",
+        "warp_failing_cases": [
+          "500t-print",
+          "no-remjet-halation",
+          "bleach-bypass",
+          "250d-timed-overexposed",
+          "underexposed",
+          "grain-monte-carlo-weave"
+        ],
+        "against_prediction": "Held: every case failed (mean 0.97 to 1.78 codes)."
+      }
+    }
+  },
+  "record": "evidence/cpp-port-style-d3d12-warp.json: a full WARP run of every style pass in the core after the reverts."
+}
