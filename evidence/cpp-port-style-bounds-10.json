@@ -1,0 +1,23 @@
+{
+  "schema": "raw-native.evidence/1",
+  "what": "Perspective-stable pixel art (web/shaders/pixel: probe capture of a raymarched diorama into a cubemap, camera-independent texel shading with posterised OKLab and outlines, texel splatting with an atomic depth key then an atomic texel index, eye-ray fill, and the cell crossfade) in the C++ core (ADR 0019). Same links as the earlier bounds files: JavaScript reference against the C++ reference (CPU link), and the C++ reference against the one WGSL source on D3D12 (WARP), WebGPU (SwiftShader) and Vulkan (lavapipe). The translator learns atomicMin as a statement (HLSL InterlockedMin) in the commit before the passes. Written before the C++ reference, the WGSL rewrite and the first run.",
+  "author_decisions": "2026-10-15: \"No, renderer first\"; \"One C++ core\".",
+  "written": "2026-10-17",
+  "controls": "Every link carries a built-in control that must fail on every case of every run; a run whose control passes fails as a whole. Separately, one constant in the C++ reference and one in style.wgsl are edited by hand, rebuilt and run, the result recorded in evidence/cpp-port-style-runs-10.json with the prediction below, and the edit reverted.",
+  "pixel": {
+    "fixtures": "The five cases of evidence/shaders-pixel-parity-bounds.json at 240 x 150, each frame sequence run through createPixel as web/test/shaders-pixel.html runs it (view(f): eye on a circle of radius 6.5 or the case's radius, height 4.2 r / 6.5, target (targetX, 0.6, 0), fovy 0.75). Exported for the last frame: the image (Float32Array) and its encodePixel8 codes, the blend, the current probe (depth, material, object, normal per texel) and its shaded colours, and the visibility (depth key and texel index per pixel).",
+    "cpu_link": {
+      "why_not_exact": "The pipeline is decision-heavy: a raymarch hit test (d < 1e-3 (1 + t)), the hard-shadow march, the posterise step floor((L + dL) bands + 0.5), the outline and crease tests, and the depth key floor(z 4096). Each reads values computed with sqrt, sin and cbrt, whose last bit may differ between V8 and the C++ library, so a decision can flip on a measure-zero set of inputs.",
+      "probe_texels_differing_max_fraction": 0.001,
+      "visibility_pixels_differing_max_fraction": 0.001,
+      "codes_over2_max_fraction": 0.002,
+      "codes_mean_max": 0.05,
+      "blend_equal": "the crossfade blend equals the JavaScript's to 1e-12"
+    },
+    "gpu_link": { "over2_fraction": 0.03, "mean_abs_code": 2.0, "why": "The web bounds: the probe marches rays in f32 on the GPU, and a ray that grazes a silhouette can hit on one side and miss on the other; at this size one texel covers about a hundred output pixels." },
+    "controls": {
+      "built_in": "The C++ reference with bands 6 to 5 (the posterise step): it must exceed the CPU link's code bounds and the GPU bounds, on every case.",
+      "source_edit": "C++: the outline's depth ratio 1.03 to 1.10. Prediction: the CPU link fails on at least orbit-front and orbit-back. WGSL: the crease threshold 0.6 to 0.4 in the texel shading pass. Prediction: WARP fails on at least one case."
+    }
+  }
+}
