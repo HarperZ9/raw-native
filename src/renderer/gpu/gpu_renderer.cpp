@@ -3,7 +3,7 @@
 // accesses come from the layout generated from the WGSL, so the graph's
 // barriers follow the shaders' own declarations.
 //
-//   upload   params (uniform) and triangles (storage)
+//   upload   params (uniform), triangles (storage) and, with rtao, the BVH (nodes and positions)
 //   setup    raster    motion    ssao    [rtao]    shade
 //   readback every requested channel into one MapRead buffer, the output
 //
@@ -13,9 +13,11 @@
 #include "raw/renderer/gpu.hpp"
 #include "raw/graph/frame_graph.hpp"
 #include "raw/rhi/rhi.hpp"
+#include "raw/renderer/bvh.hpp"
 #include "frame_pack.hpp"
 #include "shader_library.hpp"
 #include "shaders/pass_layout.hpp"
+#include <cstdlib>
 #include <cstring>
 #include <map>
 #include <string>
@@ -76,8 +78,8 @@ bool gpuInit(GpuAdapterInfo& info, std::string& err){
 
 namespace {
 // Every buffer of one frame. The graph creates only the ones a kept pass uses.
-struct FrameBuffers { Resource P, T, SF, SI, depth, pos, nrm, am, mot, ss, rt, frame, hdr; };
-FrameBuffers declareBuffers(FrameGraph& g, uint64_t trisBytes, uint32_t ntri, uint32_t N){
+struct FrameBuffers { Resource P, T, SF, SI, depth, pos, nrm, am, mot, ss, rt, frame, hdr, BN, BT; };
+FrameBuffers declareBuffers(FrameGraph& g, uint64_t trisBytes, uint32_t ntri, uint32_t N, uint64_t nodeBytes, uint64_t btriBytes){
     const BufferUsage S = BufferUsage::Storage | BufferUsage::CopySrc;
     const uint64_t n4 = N * 4ull, n16 = N * 16ull;
     auto b = [&](const char* name, uint64_t size, BufferUsage u){ return g.createBuffer(name, {size, u, name}); };
@@ -85,7 +87,9 @@ FrameBuffers declareBuffers(FrameGraph& g, uint64_t trisBytes, uint32_t ntri, ui
             b("triangles", trisBytes, BufferUsage::Storage | BufferUsage::CopyDst),
             b("setup_f", ntri * 64ull, BufferUsage::Storage), b("setup_i", ntri * 16ull, BufferUsage::Storage),
             b("depth", n4, S), b("position", n16, S), b("normal", n16, S), b("albedo_mask", n16, S),
-            b("motion", n16, S), b("ao_ss", n4, S), b("ao_rt", n4, S), b("frame", n16, S), b("hdr", n16, S)};
+            b("motion", n16, S), b("ao_ss", n4, S), b("ao_rt", n4, S), b("frame", n16, S), b("hdr", n16, S),
+            b("bvh_nodes", nodeBytes, BufferUsage::Storage | BufferUsage::CopyDst),
+            b("bvh_triangles", btriBytes, BufferUsage::Storage | BufferUsage::CopyDst)};
 }
 bool addComputePasses(FrameGraph& g, rhi::Device& dev, const FrameBuffers& b, uint32_t ntri, int w, int h,
                       bool rtao, std::string& err){
@@ -94,7 +98,7 @@ bool addComputePasses(FrameGraph& g, rhi::Device& dev, const FrameBuffers& b, ui
         && addDispatch(g, dev, "raster", {b.P, b.T, b.SF, b.SI, b.depth, b.pos, b.nrm, b.am}, gx, gy, err)
         && addDispatch(g, dev, "motion", {b.P, b.pos, b.am, b.mot}, gx, gy, err)
         && addDispatch(g, dev, "ssao", {b.P, b.pos, b.nrm, b.am, b.ss}, gx, gy, err)
-        && (!rtao || addDispatch(g, dev, "rtao", {b.P, b.T, b.pos, b.nrm, b.am, b.rt}, gx, gy, err))
+        && (!rtao || addDispatch(g, dev, "rtao", {b.P, b.T, b.pos, b.nrm, b.am, b.rt, b.BN, b.BT}, gx, gy, err))
         && addDispatch(g, dev, "shade", {b.P, b.nrm, b.am, rtao ? b.rt : b.ss, b.frame, b.hdr}, gx, gy, err);
 }
 // The read-back: every requested channel, in unpackFrame() order, copied into
@@ -132,12 +136,34 @@ bool renderGpu(const Scene& scene, int w, int h, const Mat4& prevVP,
     const Mat4 vp = mul(scene.camera.proj(), scene.camera.view());
     float pf[48] = {};
     packParams(pf, scene, vp, prevVP, w, h, ntri, opts.rtao);
+    // The rtao pass walks a BVH over the same triangles (evidence/m3-gpu-ao-bvh-bounds.json).
+    // RAW_NATIVE_AO_ORACLE=scan selects the scan of every triangle (the oracle), =skew the control.
+    std::vector<float> nodes{0, 0, 0, 0, 0, 0, 0, 0}, btris{0, 0, 0, 0, 0, 0, 0, 0, 0};
+    const char* oracle = std::getenv("RAW_NATIVE_AO_ORACLE");
+    const bool scan = oracle && std::strcmp(oracle, "scan") == 0, skew = oracle && std::strcmp(oracle, "skew") == 0;
+    if (opts.rtao && !scan && ntri){
+        std::vector<Tri> list; list.reserve(ntri);
+        for (uint32_t t = 0; t < ntri; ++t){
+            const float* q = tris.data() + 24ull * t;
+            list.push_back({{q[0], q[1], q[2]}, {q[3], q[4], q[5]}, {q[6], q[7], q[8]}});
+        }
+        Bvh bvh; bvh.build(std::move(list));
+        bvh.flatten(nodes, btris);
+    }
+    const uint32_t flags[2] = {opts.rtao && !scan && ntri ? 1u : 0u, skew ? 1u : 0u};
+    std::memcpy(pf + 46, flags, sizeof flags);
 
     FrameGraph g(dev);
-    const FrameBuffers b = declareBuffers(g, trisBytes, ntri, N);
-    g.addPass("upload", {{b.P, Access::CopyDst}, {b.T, Access::CopyDst}}, [&](graph::PassContext& c){
+    const FrameBuffers b = declareBuffers(g, trisBytes, ntri, N, nodes.size() * 4ull, btris.size() * 4ull);
+    std::vector<Use> uploads{{b.P, Access::CopyDst}, {b.T, Access::CopyDst}};
+    if (opts.rtao){ uploads.push_back({b.BN, Access::CopyDst}); uploads.push_back({b.BT, Access::CopyDst}); }
+    g.addPass("upload", std::move(uploads), [&](graph::PassContext& c){
         c.cmd->upload(c.buffer(b.P), 0, pf, sizeof pf);
         c.cmd->upload(c.buffer(b.T), 0, tris.data(), trisBytes);
+        if (opts.rtao){
+            c.cmd->upload(c.buffer(b.BN), 0, nodes.data(), nodes.size() * 4ull);
+            c.cmd->upload(c.buffer(b.BT), 0, btris.data(), btris.size() * 4ull);
+        }
     });
     if (!addComputePasses(g, *dev, b, ntri, w, h, opts.rtao, err)) return false;
     Readback rb;

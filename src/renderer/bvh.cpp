@@ -133,4 +133,27 @@ bool Bvh::occluded(const Ray& r, float tMax) const {
     return false;
 }
 
+void Bvh::flatten(std::vector<float>& nodes, std::vector<float>& positions, float pad) const {
+    nodes.clear(); positions.clear();
+    nodes.reserve(nodes_.size() * 8); positions.reserve(tris_.size() * 9);
+    for (const Node& n : nodes_){
+        const Vec3 e = n.box.mx - n.box.mn;
+        const Vec3 d{std::fabs(e.x) * pad + 1e-6f, std::fabs(e.y) * pad + 1e-6f, std::fabs(e.z) * pad + 1e-6f};
+        const Vec3 lo = n.box.mn - d, hi = n.box.mx + d;
+        nodes.insert(nodes.end(), {lo.x, lo.y, lo.z, float(n.first), hi.x, hi.y, hi.z, float(n.count)});
+    }
+    for (const Tri& t : tris_) positions.insert(positions.end(), {t.a.x, t.a.y, t.a.z, t.b.x, t.b.y, t.b.z, t.c.x, t.c.y, t.c.z});
+}
+int Bvh::maxStack() const {
+    if (nodes_.empty()) return 0;
+    // need(n): the most entries the stack holds below n's own slot while n's subtree is walked.
+    std::vector<int> need(nodes_.size(), 0);
+    for (int i = int(nodes_.size()) - 1; i >= 0; --i){   // children always follow their parent
+        const Node& n = nodes_[std::size_t(i)];
+        if (n.count) continue;
+        need[std::size_t(i)] = std::max({2, 1 + need[std::size_t(n.first)], need[std::size_t(n.right)]});
+    }
+    return std::max(1, need[0]);
+}
+
 }  // namespace raw

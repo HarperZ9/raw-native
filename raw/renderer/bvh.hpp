@@ -19,6 +19,15 @@ public:
     // Any hit with t < tMax.
     bool occluded(const Ray& r, float tMax) const;
     const std::vector<Tri>& triangles() const { return tris_; }
+    // The tree for the GPU rtao pass (src/renderer/gpu/shaders/passes.wgsl): 8 floats a node,
+    // box min, then the leaf's first triangle or the interior node's left child (its right child
+    // is the one after it), box max, then the leaf's triangle count (0 for an interior node). Boxes
+    // are padded outward by `pad` times their extent plus 1e-6, so a slab test in float never
+    // rejects a ray the triangle test would accept. Indices are exact as floats below 2^24.
+    // positions: the triangles in the tree's order, 9 floats each (a, b, c).
+    void flatten(std::vector<float>& nodes, std::vector<float>& positions, float pad = 1e-4f) const;
+    // The deepest stack occluded()'s traversal (and the GPU pass's) can reach on this tree.
+    int maxStack() const;
     std::size_t nodeCount() const { return nodes_.size(); }
 private:
     struct Node { AABB box; int first{0}, count{0}, right{0}; };   // count > 0: leaf of tris [first, first + count)

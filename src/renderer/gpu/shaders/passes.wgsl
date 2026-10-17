@@ -177,6 +177,10 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 @group(0) @binding(3) var<storage, read> normal: array<vec4f>;
 @group(0) @binding(4) var<storage, read> albedoMask: array<vec4f>;
 @group(0) @binding(5) var<storage, read_write> aoRT: array<f32>;
+// The BVH (raw/renderer/bvh.hpp, Bvh::flatten): 8 floats a node and the triangles' positions in
+// the tree's order, 9 floats each (evidence/m3-gpu-ao-bvh-bounds.json).
+@group(0) @binding(6) var<storage, read> nodes: array<f32>;
+@group(0) @binding(7) var<storage, read> btris: array<f32>;
 
 fn triVert(t: u32, k: u32) -> vec3f {
     let b: u32 = t * TRI_STRIDE + 3u * k;
@@ -198,6 +202,74 @@ fn hit(o: vec3f, d: vec3f, t: u32, maxDist: f32) -> bool {
     if (v < 0.0 || u + v > 1.0) { return false; }
     let dist: f32 = vdot(e2, q) * inv;
     return dist > 1e-4 && dist < maxDist;
+}
+// hit() on the tree's copy of the triangle: the same arithmetic on the same positions.
+fn bvert(t: u32, k: u32) -> vec3f {
+    let b: u32 = t * 9u + 3u * k;
+    return vec3f(btris[b], btris[b + 1u], btris[b + 2u]);
+}
+fn bhit(o: vec3f, d: vec3f, t: u32, maxDist: f32) -> bool {
+    let a: vec3f = bvert(t, 0u);
+    let e1: vec3f = bvert(t, 1u) - a;
+    let e2: vec3f = bvert(t, 2u) - a;
+    let p: vec3f = vcross(d, e2);
+    let det: f32 = vdot(e1, p);
+    if (det > -1e-7 && det < 1e-7) { return false; }
+    let inv: f32 = 1.0 / det;
+    let tv: vec3f = o - a;
+    let u: f32 = vdot(tv, p) * inv;
+    if (u < 0.0 || u > 1.0) { return false; }
+    let q: vec3f = vcross(tv, e1);
+    let v: f32 = vdot(d, q) * inv;
+    if (v < 0.0 || u + v > 1.0) { return false; }
+    let dist: f32 = vdot(e2, q) * inv;
+    return dist > 1e-4 && dist < maxDist;
+}
+fn invDir(x: f32) -> f32 {
+    if (x != 0.0) { return 1.0 / x; }
+    return select(-1e30, 1e30, x >= 0.0);
+}
+fn scanBlocked(o: vec3f, d: vec3f, maxDist: f32) -> bool {
+    for (var t: u32 = 0u; t < P.ntri; t++) {
+        if (hit(o, d, t, maxDist)) { return true; }
+    }
+    return false;
+}
+// Any hit through the tree; a ray whose stack would overflow is answered by the scan.
+fn bvhBlocked(o: vec3f, d: vec3f, maxDist: f32) -> bool {
+    let ix: f32 = invDir(d.x);
+    let iy: f32 = invDir(d.y);
+    let iz: f32 = invDir(d.z);
+    var stack: array<u32, 64>;
+    var sp: u32 = 1u;
+    stack[0] = 0u;
+    for (var guard: u32 = 0u; guard < 4000000u; guard++) {
+        if (sp == 0u) { return false; }
+        sp = sp - 1u;
+        let n: u32 = stack[sp];
+        let a0: f32 = (nodes[n * 8u] - o.x) * ix;
+        let b0: f32 = (nodes[n * 8u + 4u] - o.x) * ix;
+        let a1: f32 = (nodes[n * 8u + 1u] - o.y) * iy;
+        let b1: f32 = (nodes[n * 8u + 5u] - o.y) * iy;
+        let a2: f32 = (nodes[n * 8u + 2u] - o.z) * iz;
+        let b2: f32 = (nodes[n * 8u + 6u] - o.z) * iz;
+        let t0: f32 = max(max(max(0.0, min(a0, b0)), min(a1, b1)), min(a2, b2));
+        let t1: f32 = min(min(min(maxDist, max(a0, b0)), max(a1, b1)), max(a2, b2));
+        if (!(t0 <= t1)) { continue; }
+        let first: u32 = u32(nodes[n * 8u + 3u]);
+        let count: u32 = u32(nodes[n * 8u + 7u]);
+        if (count > 0u) {
+            for (var k: u32 = 0u; k < count; k++) {
+                if (bhit(o, d, first + k, maxDist)) { return true; }
+            }
+            continue;
+        }
+        if (sp + 2u > 64u) { return scanBlocked(o, d, maxDist); }
+        stack[sp] = first + 1u;
+        stack[sp + 1u] = first;
+        sp = sp + 2u;
+    }
+    return scanBlocked(o, d, maxDist);
 }
 
 @compute @workgroup_size(8, 8)
@@ -223,8 +295,10 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
         let lz: f32 = sqrt(max(0.0, 1.0 - u1));
         let dir: vec3f = vnorm(tb * lx + bb * ly + n * lz);
         var blocked: bool = false;
-        for (var t: u32 = 0u; t < P.ntri; t++) {
-            if (hit(origin, dir, t, P.misc.x)) { blocked = true; break; }
+        if (P.rt_bvh == 1u) {
+            blocked = bvhBlocked(origin, dir, select(P.misc.x, P.misc.x * 0.99, P.rt_skew == 1u));
+        } else {
+            blocked = scanBlocked(origin, dir, P.misc.x);
         }
         if (!blocked) { open++; }
     }

@@ -14,7 +14,7 @@ struct Params {
     light: vec4f,             // xyz direction, w intensity
     misc: vec4f,              // x AO radius (world), y SSAO pixel radius
     w: u32, h: u32, ntri: u32, rt_samples: u32,
-    ss_samples: u32, rtao: u32, pad0: u32, pad1: u32,
+    ss_samples: u32, rtao: u32, rt_bvh: u32, rt_skew: u32,   // rt_bvh 0: scan every triangle (the oracle); rt_skew 1: the control
 }
 
 // Triangle input: 24 floats each. 0..8 world positions a,b,c; 9..17 normals; 18..20 albedo.
