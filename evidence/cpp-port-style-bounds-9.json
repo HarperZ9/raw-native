@@ -1,0 +1,18 @@
+{
+  "schema": "raw-native.evidence/1",
+  "what": "The one-ray area-light visibility estimator of the RT dither-lighting study (web/shaders/ditherlight/rtvis.mjs, PR #152) and its analytic scene (web/shaders/fixtures/penumbra.mjs) in the C++ core (ADR 0019). CPU code with no shader of its own (rule 6, like look keys): the CPU link only. Written before the C++ reference and its first run.",
+  "author_decisions": "2026-10-15: \"No, renderer first\"; \"One C++ core\".",
+  "written": "2026-10-17",
+  "fixtures": "The (0, 6, 3)-net points for ranks 0 to 63; the concentric map on a 64 x 64 grid of cell centres; and the Penumbra Yard at 256 x 256 for each blocker (wall-x, wall-z, sphere) and each estimator the study compares at one or 64 samples (net1, rank1, white1 at frame 0, ref64): per pixel the visibility and the tone, from the JavaScript visibility() and yardTone(). The 4096-sample truth estimator is not exported (268 million occlusion tests a blocker).",
+  "cpu_link": {
+    "net_equal": "bitrev6 and pascal6 equal for every rank",
+    "concentric_max_abs": 1e-15,
+    "visibility": "equal on every pixel, except where some sample's occlusion decision lies within 1e-9 of flipping in the C++ (the slab test's t0 against t1, or the sphere's discriminant and interval ends); at most 1e-4 of pixels a case",
+    "tone_max_abs": 1e-12,
+    "why": "Integer bit arithmetic for the net; one sqrt, cos and sin a sample for the light point; exact intersection tests with comparisons that can tie only on a measure-zero set."
+  },
+  "controls": {
+    "built_in": "The C++ estimator with the light radius multiplied by 1.05: at least one visibility differs on every case of a blocker that casts a penumbra in the frame.",
+    "source_edit": "C++: pascal6's binomial parity replaced by the identity (digit i from digit i alone). Prediction: the net check fails, and net1 visibility differs on every blocker; rank1, white1 and ref64 do not change."
+  }
+}

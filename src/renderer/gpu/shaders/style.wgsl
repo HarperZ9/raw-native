@@ -181,6 +181,36 @@ struct LensGpuParams {
     phi: vec4f,
 }
 
+// Scan-causal EHT sag. a: S, alpha, focus, sigma0; b: bright, gamma, initial sag.
+struct SagGpuParams {
+    width: u32, height: u32, blank: u32, settle: u32,
+    radius: u32, pad0: u32, pad1: u32, pad2: u32,
+    a: vec4f,
+    b: vec4f,
+}
+// Salience caricature. a: lambda cap, gain, display gain; w0..w2: the salience weight of each
+// material id 0 to 9.
+struct CariGpuParams {
+    width: u32, height: u32, radius: u32, steps: u32,
+    dir: u32, pad0: u32, pad1: u32, pad2: u32,
+    a: vec4f,
+    w0: vec4f,
+    w1: vec4f,
+    w2: vec4f,
+}
+
+// Perspective-stable pixel art. origin: the probe origin and the posterise bands; a: outline,
+// crease, quad expansion, crossfade blend; eye and tan(fovy / 2); the camera's forward, right, up.
+struct PixelGpuParams {
+    width: u32, height: u32, n: u32, has_prev: u32,
+    origin: vec4f,
+    a: vec4f,
+    eye: vec4f,
+    f: vec4f,
+    r: vec4f,
+    u: vec4f,
+}
+
 fn sat1(x: f32) -> f32 {
     return clamp(x, 0.0, 1.0);
 }
@@ -232,6 +262,128 @@ fn gauss3(a: u32, b: u32, c: u32) -> f32 {
     let u1: f32 = max(1.0e-7, hash3(a, b, c));
     let u2: f32 = hash3(a, b, c + 7919u);
     return sqrt(-2.0 * log(u1)) * cos(6.283185307179586 * u2);
+}
+
+// The pixel-art diorama (web/shaders/pixel/scene.mjs) and its OKLab styling, shared by the pixel
+// passes: distance, material and object; the march (t < 0 for a miss); normal; shading; sky.
+fn px_box(p: vec3f, c: vec3f, b: vec3f) -> f32 {
+    let q: vec3f = abs(p - c) - b;
+    return length(max(q, vec3f(0.0))) + min(max(q.x, max(q.y, q.z)), 0.0);
+}
+fn px_sph(p: vec3f, c: vec3f, r: f32) -> f32 {
+    return length(p - c) - r;
+}
+fn px_cyl(p: vec3f, cx: f32, cz: f32, y0: f32, y1: f32, r: f32) -> f32 {
+    return max(length(vec2f(p.x - cx, p.z - cz)) - r, abs(p.y - (y0 + y1) / 2.0) - (y1 - y0) / 2.0);
+}
+fn px_map(p: vec3f) -> vec3f {
+    var r: vec3f = vec3f(p.y, 0.0, 0.0);
+    let pond: f32 = max(length(vec2f(p.x - 2.2, (p.z - 1.6) * 1.4)) - 0.9, abs(p.y + 0.02) - 0.03);
+    if (pond < r.x) { r = vec3f(pond, 1.0, 1.0); }
+    let walls: f32 = px_box(p, vec3f(-1.0, 0.8, -0.6), vec3f(1.2, 0.8, 0.9));
+    if (walls < r.x) { r = vec3f(walls, 2.0, 2.0); }
+    let rx: f32 = (p.x + 1.0) * 0.7071 + (p.y - 1.6) * 0.7071;
+    let ry: f32 = -(p.x + 1.0) * 0.7071 + (p.y - 1.6) * 0.7071;
+    let roof: f32 = max(px_box(vec3f(rx, ry, p.z), vec3f(0.0, 0.0, -0.6), vec3f(0.95, 0.95, 1.05)), -p.y + 1.6);
+    if (roof < r.x) { r = vec3f(roof, 3.0, 3.0); }
+    let door: f32 = px_box(p, vec3f(-0.5, 0.45, 0.32), vec3f(0.22, 0.45, 0.04));
+    if (door < r.x) { r = vec3f(door, 4.0, 4.0); }
+    let win: f32 = px_box(p, vec3f(-1.45, 0.95, 0.32), vec3f(0.25, 0.2, 0.03));
+    if (win < r.x) { r = vec3f(win, 5.0, 5.0); }
+    let trunk: f32 = px_cyl(p, 1.9, -1.2, 0.0, 1.1, 0.13);
+    if (trunk < r.x) { r = vec3f(trunk, 6.0, 6.0); }
+    let leaves: f32 = min(px_sph(p, vec3f(1.9, 1.5, -1.2), 0.62), px_sph(p, vec3f(2.25, 1.15, -0.95), 0.42));
+    if (leaves < r.x) { r = vec3f(leaves, 7.0, 7.0); }
+    let body: f32 = px_cyl(p, 0.6, 1.0, 0.0, 0.62, 0.16);
+    if (body < r.x) { r = vec3f(body, 8.0, 8.0); }
+    let head: f32 = px_sph(p, vec3f(0.6, 0.78, 1.0), 0.13);
+    if (head < r.x) { r = vec3f(head, 9.0, 9.0); }
+    let post: f32 = px_cyl(p, 0.2, 1.75, 0.0, 0.9, 0.035);
+    if (post < r.x) { r = vec3f(post, 10.0, 10.0); }
+    let lamp: f32 = px_box(p, vec3f(0.2, 0.98, 1.75), vec3f(0.08, 0.09, 0.08));
+    if (lamp < r.x) { r = vec3f(lamp, 11.0, 11.0); }
+    let rock: f32 = px_sph(p, vec3f(-2.3, 0.15, 1.4), 0.38) + 0.04 * sin(p.x * 9.0) * sin(p.z * 7.0);
+    if (rock < r.x) { r = vec3f(rock, 12.0, 12.0); }
+    return r;
+}
+fn px_albedo(m: i32) -> vec3f {
+    if (m == 0) { return vec3f(0.17, 0.32, 0.1); }
+    if (m == 1) { return vec3f(0.08, 0.2, 0.32); }
+    if (m == 2) { return vec3f(0.62, 0.5, 0.36); }
+    if (m == 3) { return vec3f(0.45, 0.13, 0.09); }
+    if (m == 4) { return vec3f(0.28, 0.16, 0.08); }
+    if (m == 5) { return vec3f(1.0, 0.8, 0.4); }
+    if (m == 6) { return vec3f(0.25, 0.15, 0.08); }
+    if (m == 7) { return vec3f(0.1, 0.3, 0.09); }
+    if (m == 8) { return vec3f(0.15, 0.22, 0.45); }
+    if (m == 9) { return vec3f(0.75, 0.55, 0.42); }
+    if (m == 10) { return vec3f(0.1, 0.1, 0.1); }
+    if (m == 11) { return vec3f(1.0, 0.75, 0.35); }
+    return vec3f(0.4, 0.4, 0.42);
+}
+fn px_normal(p: vec3f) -> vec3f {
+    let e: f32 = 1.0e-3;
+    let nx: f32 = px_map(p + vec3f(e, 0.0, 0.0)).x - px_map(p - vec3f(e, 0.0, 0.0)).x;
+    let ny: f32 = px_map(p + vec3f(0.0, e, 0.0)).x - px_map(p - vec3f(0.0, e, 0.0)).x;
+    let nz: f32 = px_map(p + vec3f(0.0, 0.0, e)).x - px_map(p - vec3f(0.0, 0.0, e)).x;
+    return normalize(vec3f(nx, ny, nz));
+}
+fn px_march(o: vec3f, r: vec3f, tmax: f32) -> vec3f {
+    var t: f32 = 0.0;
+    for (var i: i32 = 0; i < 160 && t < tmax; i++) {
+        let h: vec3f = px_map(o + r * t);
+        if (h.x < 1.0e-3 * (1.0 + t)) { return vec3f(t, h.y, h.z); }
+        t = t + h.x * 0.9;
+    }
+    return vec3f(-1.0, -1.0, -1.0);
+}
+fn px_sky(r: vec3f) -> vec3f {
+    let k: f32 = max(0.0, r.y);
+    return vec3f(0.85 - 0.6 * k, 0.82 - 0.4 * k, 0.78 + 0.1 * k);
+}
+fn px_shade(p: vec3f, n: vec3f, m: i32) -> vec3f {
+    if (m == 5) { return px_albedo(5) * 1.6; }
+    if (m == 11) { return px_albedo(11) * 4.0; }
+    var alb: vec3f = px_albedo(m);
+    if (m == 0) {
+        if (((i32(floor(p.x * 2.0)) + i32(floor(p.z * 2.0))) & 1) == 0) { alb = alb * 0.86; }
+    }
+    let L: vec3f = normalize(vec3f(-0.45, 0.8, 0.4));
+    let sh: vec3f = px_march(p + L * 0.02, L, 12.0);
+    let sun: f32 = max(0.0, dot(n, L)) * select(0.0, 1.0, sh.x < 0.0) * 2.6;
+    let skyf: f32 = (0.55 + 0.45 * n.y) * 0.55;
+    let lv: vec3f = vec3f(0.2, 0.98, 1.75) - p;
+    let ld: f32 = length(lv);
+    let lan: f32 = max(0.0, dot(n, lv) / ld) * 1.2 / (ld * ld + 0.2);
+    return alb * (sun * vec3f(1.0, 0.93, 0.8) + skyf * vec3f(0.6, 0.75, 1.0) + lan * vec3f(1.0, 0.7, 0.35));
+}
+fn px_stylise(rgb: vec3f, bands: f32, dL: f32) -> vec3f {
+    let c: vec3f = max(rgb, vec3f(0.0));
+    let l: f32 = pow(0.4122214708 * c.x + 0.5363325363 * c.y + 0.0514459929 * c.z, 1.0 / 3.0);
+    let m: f32 = pow(0.2119034982 * c.x + 0.6806995451 * c.y + 0.1073969566 * c.z, 1.0 / 3.0);
+    let s: f32 = pow(0.0883024619 * c.x + 0.2817188376 * c.y + 0.6299787005 * c.z, 1.0 / 3.0);
+    let L: f32 = 0.2104542553 * l + 0.7936177850 * m - 0.0040720468 * s;
+    let a: f32 = 1.9779984951 * l - 2.4285922050 * m + 0.4505937099 * s;
+    let b: f32 = 0.0259040371 * l + 0.7827717662 * m - 0.8086757660 * s;
+    let Lq: f32 = clamp(floor((L + dL) * bands + 0.5) / bands, 0.0, 1.0);
+    let l2: f32 = Lq + 0.3963377774 * a + 0.2158037573 * b;
+    let m2: f32 = Lq - 0.1055613458 * a - 0.0638541728 * b;
+    let s2: f32 = Lq - 0.0894841775 * a - 1.2914855480 * b;
+    let l3: f32 = l2 * l2 * l2;
+    let m3: f32 = m2 * m2 * m2;
+    let s3: f32 = s2 * s2 * s2;
+    return max(vec3f(4.0767416621 * l3 - 3.3077115913 * m3 + 0.2309699292 * s3, -1.2684380046 * l3 + 2.6097574011 * m3 - 0.3413193965 * s3, -0.0041960863 * l3 - 0.7034186147 * m3 + 1.7076147010 * s3), vec3f(0.0));
+}
+fn px_face_dir(f: u32, u: f32, v: f32) -> vec3f {
+    if (f == 0u) { return vec3f(1.0, -v, -u); }
+    if (f == 1u) { return vec3f(-1.0, -v, u); }
+    if (f == 2u) { return vec3f(u, 1.0, v); }
+    if (f == 3u) { return vec3f(u, -1.0, -v); }
+    if (f == 4u) { return vec3f(u, -v, 1.0); }
+    return vec3f(-u, -v, -1.0);
+}
+fn px_cheb(r: vec3f) -> f32 {
+    return max(abs(r.x), max(abs(r.y), abs(r.z)));
 }
 
 //@pass style_ditherlight
@@ -2608,4 +2760,552 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
         }
     }
     out8[i] = lab_pack(o, U.c.w);
+}
+
+//@pass style_sag_current
+// Scan-causal EHT sag (raw/renderer/style_sag.hpp): the beam current of one line, one workgroup a
+// line, summed by a tree in workgroup memory.
+@group(0) @binding(0) var<uniform> U: SagGpuParams;
+@group(0) @binding(1) var<storage, read> src: array<vec4f>;
+@group(0) @binding(2) var<storage, read_write> I: array<f32>;
+var<workgroup> part: array<f32, 64>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(local_invocation_id) lid: vec3u, @builtin(workgroup_id) wid: vec3u) {
+    let w: i32 = i32(U.width);
+    let y: i32 = i32(wid.x);
+    let g: f32 = U.b.y;
+    var s: f32 = 0.0;
+    for (var x: i32 = i32(lid.x); x < w; x += 64) {
+        let c: vec3f = max(src[u32(y * w + x)].xyz, vec3f(0.0));
+        s = s + (pow(c.x, g) + pow(c.y, g) + pow(c.z, g)) / 3.0;
+    }
+    part[lid.x] = s;
+    workgroupBarrier();
+    for (var st: u32 = 32u; st > 0u; st = st >> 1u) {
+        if (lid.x < st) { part[lid.x] = part[lid.x] + part[lid.x + st]; }
+        workgroupBarrier();
+    }
+    if (lid.x == 0u) { I[u32(y)] = part[0] / f32(w); }
+}
+
+//@pass style_sag_scan
+// Scan-causal EHT sag: one invocation walks the lines in order (the recurrence is causal), twice
+// with settle; L holds sag, gain, drawn height and spot sigma per line.
+@group(0) @binding(0) var<uniform> U: SagGpuParams;
+@group(0) @binding(1) var<storage, read> I: array<f32>;
+@group(0) @binding(2) var<storage, read_write> L: array<vec4f>;
+
+@compute @workgroup_size(1)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    if (gid.x > 0u) { return; }
+    let h: i32 = i32(U.height);
+    let a: f32 = U.a.y;
+    let S: f32 = U.a.x;
+    var s: f32 = U.b.z;
+    let cy: f32 = f32(h) / 2.0;
+    for (var y: i32 = 0; y < h; y++) {
+        s = s + a * (S * I[u32(y)] - s);
+        L[u32(y)] = vec4f(s, 0.0, 0.0, 0.0);
+    }
+    if (U.settle != 0u) {
+        s = s * pow(1.0 - a, f32(U.blank));
+        for (var y2: i32 = 0; y2 < h; y2++) {
+            s = s + a * (S * I[u32(y2)] - s);
+            L[u32(y2)] = vec4f(s, 0.0, 0.0, 0.0);
+        }
+    }
+    for (var y3: i32 = 0; y3 < h; y3++) {
+        let v: f32 = L[u32(y3)].x;
+        let k: f32 = 1.0 / sqrt(1.0 - v);
+        L[u32(y3)] = vec4f(v, k, cy + (f32(y3) + 0.5 - cy) * k, U.a.w + U.a.z * v);
+    }
+}
+
+//@pass style_sag_resample
+// Scan-causal EHT sag: each output line read from the two drawn lines around it, each sampled at
+// its own gain with a gaussian spot (in linear light), dimmed with the sag; signal8 to RGBA8.
+@group(0) @binding(0) var<uniform> U: SagGpuParams;
+@group(0) @binding(1) var<storage, read> src: array<vec4f>;
+@group(0) @binding(2) var<storage, read> L: array<vec4f>;
+@group(0) @binding(3) var<storage, read_write> out8: array<u32>;
+
+fn sample_line(y: i32, xs: f32, sigma: f32) -> vec3f {
+    let w: i32 = i32(U.width);
+    let R: i32 = i32(U.radius);
+    let g: f32 = U.b.y;
+    let x0: i32 = i32(floor(xs));
+    var ws: f32 = 0.0;
+    var acc: vec3f = vec3f(0.0);
+    for (var j: i32 = x0 - R; j <= x0 + R; j++) {
+        if (j < 0 || j >= w) { continue; }
+        let d: f32 = (f32(j) + 0.5 - xs) / sigma;
+        let wt: f32 = exp(-0.5 * d * d);
+        let c: vec3f = max(src[u32(y * w + j)].xyz, vec3f(0.0));
+        ws = ws + wt;
+        acc = acc + wt * vec3f(pow(c.x, g), pow(c.y, g), pow(c.z, g));
+    }
+    if (ws > 0.0) { acc = acc / ws; }
+    return acc;
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    let w: i32 = i32(U.width);
+    let h: i32 = i32(U.height);
+    let x: i32 = i32(i % U.width);
+    let yo: i32 = i32(i / U.width);
+    let yc: f32 = f32(yo) + 0.5;
+    let cx: f32 = f32(w) / 2.0;
+    if (yc < L[0].z || yc > L[u32(h - 1)].z) {
+        out8[i] = 255u << 24u;
+        return;
+    }
+    var lo: i32 = 0;
+    var hi: i32 = h - 1;
+    while (hi - lo > 1) {
+        let m: i32 = (lo + hi) / 2;
+        if (L[u32(m)].z <= yc) { lo = m; } else { hi = m; }
+    }
+    let y1: i32 = min(h - 1, lo + 1);
+    let A: vec4f = L[u32(lo)];
+    let Bq: vec4f = L[u32(y1)];
+    var f: f32 = 0.0;
+    if (y1 != lo) { f = (yc - A.z) / (Bq.z - A.z); }
+    let xc: f32 = f32(x) + 0.5;
+    let a: vec3f = sample_line(lo, cx + (xc - cx) / A.y, A.w) * pow(1.0 - A.x, U.b.x);
+    let b: vec3f = sample_line(y1, cx + (xc - cx) / Bq.y, Bq.w) * pow(1.0 - Bq.x, U.b.x);
+    let m3: vec3f = a * (1.0 - f) + b * f;
+    let ig: f32 = 1.0 / U.b.y;
+    let q: vec3f = clamp(vec3f(pow(m3.x, ig), pow(m3.y, ig), pow(m3.z, ig)), vec3f(0.0), vec3f(1.0));
+    out8[i] = u32(floor(q.x * 255.0 + 0.5)) | (u32(floor(q.y * 255.0 + 0.5)) << 8u) | (u32(floor(q.z * 255.0 + 0.5)) << 16u) | (255u << 24u);
+}
+
+//@pass style_cari_sal
+// Salience caricature (raw/renderer/style_sag.hpp): salience from the material ids.
+@group(0) @binding(0) var<uniform> U: CariGpuParams;
+@group(0) @binding(1) var<storage, read> mat: array<i32>;
+@group(0) @binding(2) var<storage, read_write> s: array<f32>;
+
+fn weight(m: i32) -> f32 {
+    if (m < 0 || m > 9) { return 0.0; }
+    if (m < 4) { return U.w0[m]; }
+    if (m < 8) { return U.w1[m - 4]; }
+    return U.w2[m - 8];
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    s[i] = weight(mat[i]);
+}
+
+//@pass style_cari_blur
+// Salience caricature: one pass of the separable gaussian (dir 0 along x, 1 along y), clamped ends.
+@group(0) @binding(0) var<uniform> U: CariGpuParams;
+@group(0) @binding(1) var<storage, read> taps: array<f32>;
+@group(0) @binding(2) var<storage, read> a: array<f32>;
+@group(0) @binding(3) var<storage, read_write> b: array<f32>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    let w: i32 = i32(U.width);
+    let h: i32 = i32(U.height);
+    let x: i32 = i32(i % U.width);
+    let y: i32 = i32(i / U.width);
+    let R: i32 = i32(U.radius);
+    var v: f32 = 0.0;
+    for (var k: i32 = -R; k <= R; k++) {
+        var j: i32 = y * w + clamp(x + k, 0, w - 1);
+        if (U.dir != 0u) { j = clamp(y + k, 0, h - 1) * w + x; }
+        v = v + taps[u32(k + R)] * a[u32(j)];
+    }
+    b[i] = v;
+}
+
+//@pass style_cari_grad
+// Salience caricature: the central-difference gradient of the smoothed salience.
+@group(0) @binding(0) var<uniform> U: CariGpuParams;
+@group(0) @binding(1) var<storage, read> S: array<f32>;
+@group(0) @binding(2) var<storage, read_write> g: array<vec2f>;
+
+fn cl(x: i32, y: i32) -> u32 {
+    return u32(clamp(y, 0, i32(U.height) - 1) * i32(U.width) + clamp(x, 0, i32(U.width) - 1));
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    let x: i32 = i32(i % U.width);
+    let y: i32 = i32(i / U.width);
+    g[i] = vec2f(0.5 * (S[cl(x + 1, y)] - S[cl(x - 1, y)]), 0.5 * (S[cl(x, y + 1)] - S[cl(x, y - 1)]));
+}
+
+//@pass style_cari_lambda
+// Salience caricature: one workgroup finds the largest Frobenius norm of the gradient's derivative
+// (a max tree in workgroup memory), then lambda, clamped so the composed map keeps det J >= 0.04.
+@group(0) @binding(0) var<uniform> U: CariGpuParams;
+@group(0) @binding(1) var<storage, read> g: array<vec2f>;
+@group(0) @binding(2) var<storage, read_write> L: array<f32>;
+var<workgroup> part: array<f32, 256>;
+
+fn cl(x: i32, y: i32) -> u32 {
+    return u32(clamp(y, 0, i32(U.height) - 1) * i32(U.width) + clamp(x, 0, i32(U.width) - 1));
+}
+
+@compute @workgroup_size(256)
+fn main(@builtin(local_invocation_id) lid: vec3u) {
+    let w: i32 = i32(U.width);
+    let h: i32 = i32(U.height);
+    var m: f32 = 0.0;
+    for (var i: i32 = i32(lid.x); i < w * h; i += 256) {
+        let x: i32 = i % w;
+        let y: i32 = i / w;
+        let dx: vec2f = 0.5 * (g[cl(x + 1, y)] - g[cl(x - 1, y)]);
+        let dy: vec2f = 0.5 * (g[cl(x, y + 1)] - g[cl(x, y - 1)]);
+        m = max(m, sqrt(dx.x * dx.x + dy.x * dy.x + dx.y * dx.y + dy.y * dy.y));
+    }
+    part[lid.x] = m;
+    workgroupBarrier();
+    for (var st: u32 = 128u; st > 0u; st = st >> 1u) {
+        if (lid.x < st) { part[lid.x] = max(part[lid.x], part[lid.x + st]); }
+        workgroupBarrier();
+    }
+    if (lid.x == 0u) {
+        let c: f32 = 1.0 - pow(0.04, 1.0 / (2.0 * f32(U.steps)));
+        var lam: f32 = 0.0;
+        if (part[0] > 0.0) { lam = min(U.a.x, (c * U.a.y) / part[0]); }
+        L[0] = lam;
+    }
+}
+
+//@pass style_cari_warp
+// Salience caricature: each output pixel reads the source at y + lambda grad S (composed over the
+// steps, the gradient read bilinearly at the moving point), lab-encoded to RGBA8.
+@group(0) @binding(0) var<uniform> U: CariGpuParams;
+@group(0) @binding(1) var<storage, read> src: array<vec4f>;
+@group(0) @binding(2) var<storage, read> g: array<vec2f>;
+@group(0) @binding(3) var<storage, read> L: array<f32>;
+@group(0) @binding(4) var<storage, read_write> out8: array<u32>;
+
+fn grad_at(fx: f32, fy: f32) -> vec2f {
+    let w: i32 = i32(U.width);
+    let h: i32 = i32(U.height);
+    let u: f32 = fx - 0.5;
+    let v: f32 = fy - 0.5;
+    let x0: i32 = clamp(i32(floor(u)), 0, w - 1);
+    let y0: i32 = clamp(i32(floor(v)), 0, h - 1);
+    let x1: i32 = min(w - 1, x0 + 1);
+    let y1: i32 = min(h - 1, y0 + 1);
+    let tx: f32 = clamp(u - f32(x0), 0.0, 1.0);
+    let ty: f32 = clamp(v - f32(y0), 0.0, 1.0);
+    return (g[u32(y0 * w + x0)] * (1.0 - tx) + g[u32(y0 * w + x1)] * tx) * (1.0 - ty) + (g[u32(y1 * w + x0)] * (1.0 - tx) + g[u32(y1 * w + x1)] * tx) * ty;
+}
+fn sample_src(fx: f32, fy: f32) -> vec3f {
+    let w: i32 = i32(U.width);
+    let h: i32 = i32(U.height);
+    let u: f32 = fx - 0.5;
+    let v: f32 = fy - 0.5;
+    let x0: i32 = clamp(i32(floor(u)), 0, w - 1);
+    let y0: i32 = clamp(i32(floor(v)), 0, h - 1);
+    let x1: i32 = min(w - 1, x0 + 1);
+    let y1: i32 = min(h - 1, y0 + 1);
+    let tx: f32 = clamp(u - f32(x0), 0.0, 1.0);
+    let ty: f32 = clamp(v - f32(y0), 0.0, 1.0);
+    return (src[u32(y0 * w + x0)].xyz * (1.0 - tx) + src[u32(y0 * w + x1)].xyz * tx) * (1.0 - ty) + (src[u32(y1 * w + x0)].xyz * (1.0 - tx) + src[u32(y1 * w + x1)].xyz * tx) * ty;
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    let x: f32 = f32(i % U.width);
+    let y: f32 = f32(i / U.width);
+    let lam: f32 = L[0];
+    var f: vec2f = vec2f(x + 0.5, y + 0.5) + lam * g[i];
+    for (var k: i32 = 1; k < i32(U.steps); k++) { f = f + lam * grad_at(f.x, f.y); }
+    out8[i] = lab_pack(sample_src(f.x, f.y), U.a.z);
+}
+
+//@pass style_pixel_capture
+// Perspective-stable pixel art (raw/renderer/style_pixel.hpp): the probe, one ray a texel from the
+// snapped origin; geo holds the hit's Chebyshev distance (-1 for sky), material and object.
+@group(0) @binding(0) var<uniform> U: PixelGpuParams;
+@group(0) @binding(1) var<storage, read_write> geo: array<vec4f>;
+@group(0) @binding(2) var<storage, read_write> nrm: array<vec4f>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let N: u32 = U.n;
+    let k: u32 = gid.x;
+    if (k >= 6u * N * N) { return; }
+    let f: u32 = k / (N * N);
+    let j: u32 = (k % (N * N)) / N;
+    let i: u32 = k % N;
+    let r: vec3f = px_face_dir(f, 2.0 * (f32(i) + 0.5) / f32(N) - 1.0, 2.0 * (f32(j) + 0.5) / f32(N) - 1.0);
+    let d: vec3f = normalize(r);
+    let o: vec3f = U.origin.xyz;
+    let hit: vec3f = px_march(o, d, 40.0);
+    if (hit.x < 0.0) {
+        geo[k] = vec4f(-1.0, -1.0, -1.0, 0.0);
+        nrm[k] = vec4f(0.0);
+        return;
+    }
+    let p: vec3f = o + d * hit.x;
+    geo[k] = vec4f(px_cheb(p - o), hit.y, hit.z, 0.0);
+    nrm[k] = vec4f(px_normal(p), 0.0);
+}
+
+//@pass style_pixel_shade
+// Pixel art: the camera-independent colour of every texel, posterised, with outlines where a
+// texel borders a farther object and creases where the normal turns.
+@group(0) @binding(0) var<uniform> U: PixelGpuParams;
+@group(0) @binding(1) var<storage, read> geo: array<vec4f>;
+@group(0) @binding(2) var<storage, read> nrm: array<vec4f>;
+@group(0) @binding(3) var<storage, read_write> col: array<vec4f>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let N: u32 = U.n;
+    let k: u32 = gid.x;
+    if (k >= 6u * N * N) { return; }
+    let f: u32 = k / (N * N);
+    let j: i32 = i32((k % (N * N)) / N);
+    let i: i32 = i32(k % N);
+    let u: f32 = 2.0 * (f32(i) + 0.5) / f32(N) - 1.0;
+    let v: f32 = 2.0 * (f32(j) + 0.5) / f32(N) - 1.0;
+    let bands: f32 = U.origin.w;
+    let g: vec4f = geo[k];
+    let r: vec3f = px_face_dir(f, u, v);
+    if (g.x < 0.0) {
+        col[k] = vec4f(px_stylise(px_sky(normalize(r)), bands, 0.0), 1.0);
+        return;
+    }
+    let p: vec3f = U.origin.xyz + (g.x / px_cheb(r)) * r;
+    let n: vec3f = nrm[k].xyz;
+    var dL: f32 = 0.0;
+    for (var s: i32 = 0; s < 4; s++) {
+        var di: i32 = 0;
+        var dj: i32 = 0;
+        if (s == 0) { di = 1; }
+        if (s == 1) { di = -1; }
+        if (s == 2) { dj = 1; }
+        if (s == 3) { dj = -1; }
+        let ii: i32 = i + di;
+        let jj: i32 = j + dj;
+        if (ii < 0 || jj < 0 || ii >= i32(N) || jj >= i32(N)) { continue; }
+        let q: u32 = (f * N + u32(jj)) * N + u32(ii);
+        let gq: vec4f = geo[q];
+        if (gq.z != g.z && (gq.x < 0.0 || gq.x > g.x * 1.03)) {
+            dL = -U.a.x;
+        } else if (dL == 0.0 && gq.z == g.z && (di > 0 || dj > 0) && dot(n, nrm[q].xyz) < 0.6) {
+            dL = -U.a.y;
+        }
+    }
+    col[k] = vec4f(px_stylise(px_shade(p, n, i32(g.y)), bands, dL), 1.0);
+}
+
+//@pass style_pixel_clear
+// Pixel art: a splat buffer filled with 0xffffffff (no texel).
+@group(0) @binding(0) var<uniform> U: PixelGpuParams;
+@group(0) @binding(1) var<storage, read_write> a: array<u32>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    if (gid.x >= U.width * U.height) { return; }
+    a[gid.x] = 0xffffffffu;
+}
+
+//@pass style_pixel_splatz
+// Pixel art: each texel's world-space quad projected into the view; the nearest depth key (view
+// depth quantised to 1/4096) per pixel by atomicMin.
+@group(0) @binding(0) var<uniform> U: PixelGpuParams;
+@group(0) @binding(1) var<storage, read> geo: array<vec4f>;
+@group(0) @binding(2) var<storage, read_write> zb: array<atomic<u32>>;
+
+fn cam_project(p: vec3f) -> vec3f {
+    let v: vec3f = p - U.eye.xyz;
+    let z: f32 = dot(v, U.f.xyz);
+    let W: f32 = f32(U.width);
+    let H: f32 = f32(U.height);
+    let x: f32 = dot(v, U.r.xyz) / (z * U.eye.w * (W / H));
+    let y: f32 = dot(v, U.u.xyz) / (z * U.eye.w);
+    return vec3f((x + 1.0) / 2.0 * W, (1.0 - y) / 2.0 * H, z);
+}
+fn edgef(a: vec2f, b: vec2f, x: f32, y: f32) -> f32 {
+    return (b.x - a.x) * (y - a.y) - (b.y - a.y) * (x - a.x);
+}
+fn in_tri(a: vec2f, b: vec2f, c: vec2f, x: f32, y: f32) -> bool {
+    let e0: f32 = edgef(a, b, x, y);
+    let e1: f32 = edgef(b, c, x, y);
+    let e2: f32 = edgef(c, a, x, y);
+    return (e0 >= 0.0 && e1 >= 0.0 && e2 >= 0.0) || (e0 <= 0.0 && e1 <= 0.0 && e2 <= 0.0);
+}
+fn corner(f: u32, u: f32, v: f32, d: f32) -> vec3f {
+    let r: vec3f = px_face_dir(f, u, v);
+    return cam_project(U.origin.xyz + (d / px_cheb(r)) * r);
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let N: u32 = U.n;
+    let k: u32 = gid.x;
+    if (k >= 6u * N * N) { return; }
+    let d: f32 = geo[k].x;
+    if (d < 0.0) { return; }
+    let f: u32 = k / (N * N);
+    let j: u32 = (k % (N * N)) / N;
+    let i: u32 = k % N;
+    let u: f32 = 2.0 * (f32(i) + 0.5) / f32(N) - 1.0;
+    let v: f32 = 2.0 * (f32(j) + 0.5) / f32(N) - 1.0;
+    let h: f32 = U.a.z / f32(N);
+    let c0: vec3f = corner(f, u - h, v - h, d);
+    let c1: vec3f = corner(f, u + h, v - h, d);
+    let c2: vec3f = corner(f, u + h, v + h, d);
+    let c3: vec3f = corner(f, u - h, v + h, d);
+    let cc: vec3f = corner(f, u, v, d);
+    if (c0.z < 0.05 || c1.z < 0.05 || c2.z < 0.05 || c3.z < 0.05 || cc.z < 0.05) { return; }
+    let W: i32 = i32(U.width);
+    let H: i32 = i32(U.height);
+    let x0: i32 = max(0, i32(floor(min(min(c0.x, c1.x), min(c2.x, c3.x)))));
+    let x1: i32 = min(W - 1, i32(ceil(max(max(c0.x, c1.x), max(c2.x, c3.x)))));
+    let y0: i32 = max(0, i32(floor(min(min(c0.y, c1.y), min(c2.y, c3.y)))));
+    let y1: i32 = min(H - 1, i32(ceil(max(max(c0.y, c1.y), max(c2.y, c3.y)))));
+    if (x1 - x0 > 63 || y1 - y0 > 63) { return; }
+    let z: u32 = u32(floor(cc.z * 4096.0));
+    for (var y: i32 = y0; y <= y1; y++) {
+        for (var x: i32 = x0; x <= x1; x++) {
+            let px: f32 = f32(x) + 0.5;
+            let py: f32 = f32(y) + 0.5;
+            if (!in_tri(c0.xy, c1.xy, c2.xy, px, py) && !in_tri(c0.xy, c2.xy, c3.xy, px, py)) { continue; }
+            atomicMin(&zb[u32(y * W + x)], z);
+        }
+    }
+}
+
+//@pass style_pixel_splatid
+// Pixel art: the lowest texel index among the quads at each pixel's nearest depth key (atomicMin);
+// the depth keys are read plainly, written by the previous pass.
+@group(0) @binding(0) var<uniform> U: PixelGpuParams;
+@group(0) @binding(1) var<storage, read> geo: array<vec4f>;
+@group(0) @binding(2) var<storage, read> zb: array<u32>;
+@group(0) @binding(3) var<storage, read_write> idb: array<atomic<u32>>;
+
+fn cam_project(p: vec3f) -> vec3f {
+    let v: vec3f = p - U.eye.xyz;
+    let z: f32 = dot(v, U.f.xyz);
+    let W: f32 = f32(U.width);
+    let H: f32 = f32(U.height);
+    let x: f32 = dot(v, U.r.xyz) / (z * U.eye.w * (W / H));
+    let y: f32 = dot(v, U.u.xyz) / (z * U.eye.w);
+    return vec3f((x + 1.0) / 2.0 * W, (1.0 - y) / 2.0 * H, z);
+}
+fn edgef(a: vec2f, b: vec2f, x: f32, y: f32) -> f32 {
+    return (b.x - a.x) * (y - a.y) - (b.y - a.y) * (x - a.x);
+}
+fn in_tri(a: vec2f, b: vec2f, c: vec2f, x: f32, y: f32) -> bool {
+    let e0: f32 = edgef(a, b, x, y);
+    let e1: f32 = edgef(b, c, x, y);
+    let e2: f32 = edgef(c, a, x, y);
+    return (e0 >= 0.0 && e1 >= 0.0 && e2 >= 0.0) || (e0 <= 0.0 && e1 <= 0.0 && e2 <= 0.0);
+}
+fn corner(f: u32, u: f32, v: f32, d: f32) -> vec3f {
+    let r: vec3f = px_face_dir(f, u, v);
+    return cam_project(U.origin.xyz + (d / px_cheb(r)) * r);
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let N: u32 = U.n;
+    let k: u32 = gid.x;
+    if (k >= 6u * N * N) { return; }
+    let d: f32 = geo[k].x;
+    if (d < 0.0) { return; }
+    let f: u32 = k / (N * N);
+    let j: u32 = (k % (N * N)) / N;
+    let i: u32 = k % N;
+    let u: f32 = 2.0 * (f32(i) + 0.5) / f32(N) - 1.0;
+    let v: f32 = 2.0 * (f32(j) + 0.5) / f32(N) - 1.0;
+    let h: f32 = U.a.z / f32(N);
+    let c0: vec3f = corner(f, u - h, v - h, d);
+    let c1: vec3f = corner(f, u + h, v - h, d);
+    let c2: vec3f = corner(f, u + h, v + h, d);
+    let c3: vec3f = corner(f, u - h, v + h, d);
+    let cc: vec3f = corner(f, u, v, d);
+    if (c0.z < 0.05 || c1.z < 0.05 || c2.z < 0.05 || c3.z < 0.05 || cc.z < 0.05) { return; }
+    let W: i32 = i32(U.width);
+    let H: i32 = i32(U.height);
+    let x0: i32 = max(0, i32(floor(min(min(c0.x, c1.x), min(c2.x, c3.x)))));
+    let x1: i32 = min(W - 1, i32(ceil(max(max(c0.x, c1.x), max(c2.x, c3.x)))));
+    let y0: i32 = max(0, i32(floor(min(min(c0.y, c1.y), min(c2.y, c3.y)))));
+    let y1: i32 = min(H - 1, i32(ceil(max(max(c0.y, c1.y), max(c2.y, c3.y)))));
+    if (x1 - x0 > 63 || y1 - y0 > 63) { return; }
+    let z: u32 = u32(floor(cc.z * 4096.0));
+    for (var y: i32 = y0; y <= y1; y++) {
+        for (var x: i32 = x0; x <= x1; x++) {
+            let px: f32 = f32(x) + 0.5;
+            let py: f32 = f32(y) + 0.5;
+            if (!in_tri(c0.xy, c1.xy, c2.xy, px, py) && !in_tri(c0.xy, c2.xy, c3.xy, px, py)) { continue; }
+            let p: u32 = u32(y * W + x);
+            if (zb[p] == z) { atomicMin(&idb[p], k); }
+        }
+    }
+}
+
+//@pass style_pixel_resolve
+// Pixel art: each pixel's texel colour, or an eye-ray fill where no texel reaches; during a cell
+// change a 4 x 4 Bayer threshold picks the previous probe. sRGB to RGBA8.
+@group(0) @binding(0) var<uniform> U: PixelGpuParams;
+@group(0) @binding(1) var<storage, read> col0: array<vec4f>;
+@group(0) @binding(2) var<storage, read> col1: array<vec4f>;
+@group(0) @binding(3) var<storage, read> idb0: array<u32>;
+@group(0) @binding(4) var<storage, read> idb1: array<u32>;
+@group(0) @binding(5) var<storage, read_write> out8: array<u32>;
+
+fn bayer4(x: u32, y: u32) -> f32 {
+    let i: u32 = (y & 3u) * 4u + (x & 3u);
+    let a: vec4f = vec4f(0.0, 8.0, 2.0, 10.0);
+    let b: vec4f = vec4f(12.0, 4.0, 14.0, 6.0);
+    let c: vec4f = vec4f(3.0, 11.0, 1.0, 9.0);
+    let d: vec4f = vec4f(15.0, 7.0, 13.0, 5.0);
+    if (i < 4u) { return a[i]; }
+    if (i < 8u) { return b[i - 4u]; }
+    if (i < 12u) { return c[i - 8u]; }
+    return d[i - 12u];
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let p: u32 = gid.x;
+    if (p >= U.width * U.height) { return; }
+    let x: u32 = p % U.width;
+    let y: u32 = p / U.width;
+    let use_prev: bool = U.has_prev != 0u && (bayer4(x, y) + 0.5) / 16.0 >= U.a.w;
+    var t: u32 = idb0[p];
+    if (use_prev) { t = idb1[p]; }
+    var c: vec3f = vec3f(0.0);
+    if (t != 0xffffffffu) {
+        if (use_prev) { c = col1[t].xyz; } else { c = col0[t].xyz; }
+    } else {
+        let W: f32 = f32(U.width);
+        let H: f32 = f32(U.height);
+        let sx: f32 = (2.0 * (f32(x) + 0.5) / W - 1.0) * U.eye.w * (W / H);
+        let sy: f32 = (1.0 - 2.0 * (f32(y) + 0.5) / H) * U.eye.w;
+        let d: vec3f = normalize(U.f.xyz + sx * U.r.xyz + sy * U.u.xyz);
+        let e: vec3f = U.eye.xyz;
+        let hit: vec3f = px_march(e, d, 40.0);
+        if (hit.x < 0.0) {
+            c = px_stylise(px_sky(d), U.origin.w, 0.0);
+        } else {
+            let q: vec3f = e + d * hit.x;
+            c = px_stylise(px_shade(q, px_normal(q), i32(hit.y)), U.origin.w, 0.0);
+        }
+    }
+    out8[p] = pack_rgb8(c);
 }

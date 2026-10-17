@@ -56,7 +56,7 @@ def items(text):
         if depth == 0 and stripped and not stripped.startswith("@compute") and stripped.endswith(("}", ";")):
             first = next(split_comment(l)[0].strip() for l in cur if split_comment(l)[0].strip())
             kind = ("struct" if first.startswith("struct") else "const" if first.startswith("const")
-                    else "binding" if first.startswith("@group") else "fn")
+                    else "binding" if first.startswith("@group") else "shared" if first.startswith("var<workgroup>") else "fn")
             out.append((kind, cur))
             cur = []
     if any(split_comment(l)[0].strip() for l in cur):
@@ -153,6 +153,15 @@ def translate_item(kind, lines, binds, raster=False):
             if not m:
                 raise TranslateError(f"unsupported const {s!r}")
             code = f"{m.group(1)}static const {htype(m.group(3))[0]} {m.group(2)} = {literals(m.group(4))};"
+        elif kind == "shared":
+            # Workgroup memory (step 6 of the style-pass port): a fixed array shared by one
+            # workgroup, HLSL groupshared. Only arrays of a scalar or vector type are accepted.
+            if raster:
+                raise TranslateError(f"workgroup memory in a raster pass: {s!r}")
+            m = re.fullmatch(r"(\s*)var<workgroup>\s+(\w+)\s*:\s*array<\s*(\w+)\s*,\s*(\d+)\s*>\s*;\s*", code)
+            if not m:
+                raise TranslateError(f"workgroup memory must be var<workgroup> name: array<T, N>;: {s!r}")
+            code = f"{m.group(1)}groupshared {htype(m.group(3))[0]} {m.group(2)}[{m.group(4)}];"
         elif kind == "binding" and raster:
             code = raster_binding(code, s, binds)
         elif kind == "binding":
@@ -207,11 +216,11 @@ def translate(common, passes, layout=LAYOUT, ns="gpu_passes", header=HEADER):
     for name, body in zip(sections[1::2], sections[2::2]):
         src = common + "\n" + body
         check_identifiers(src)
-        groups = {"struct": [], "const": [], "binding": [], "fn": []}
+        groups = {"struct": [], "const": [], "binding": [], "shared": [], "fn": []}
         for kind, lines in items(src):
             groups[kind].append((kind, lines))
         binds, out = [], []
-        for kind in ("struct", "const", "binding", "fn"):   # HLSL needs declaration before use
+        for kind in ("struct", "const", "binding", "shared", "fn"):   # HLSL needs declaration before use
             for k, lines in groups[kind]:
                 out += translate_item(k, lines, binds)
         text = "\n".join(out)
@@ -249,13 +258,13 @@ def translate_raster(text):
     files, manifest = {}, []
     for name, body in zip(sections[1::2], sections[2::2]):
         check_identifiers(body)
-        groups = {"struct": [], "const": [], "binding": [], "fn": []}
+        groups = {"struct": [], "const": [], "binding": [], "shared": [], "fn": []}
         for kind, lines in items(body):
             groups[kind].append((kind, lines))
         if [n for _, ls in groups["fn"] for n in re.findall(r"^\s*fn\s+(\w+)", "\n".join(ls), flags=re.M)][-2:] != ["vs", "fs"]:
             raise TranslateError(f"raster pass {name} must end with the entry points vs then fs")
         binds, out = [], []
-        for kind in ("struct", "const", "binding", "fn"):
+        for kind in ("struct", "const", "binding", "shared", "fn"):
             for k, lines in groups[kind]:
                 out += translate_item(k, lines, binds, raster=True)
         text_out = re.sub(r"\n{3,}", "\n\n", "\n".join(out)).strip("\n") + "\n"
@@ -381,12 +390,17 @@ def selftest():
     if "InterlockedAdd(acc[P.w], uint(lerp(0.0f, frac(2.5f), 0.5f)));" not in out or "RWStructuredBuffer<uint> acc" not in out:
         print("selftest: atomics, mix or fract translated wrong:\n" + out, file=sys.stderr)
         return 1
+    out = translate(head, "//@pass t\n" + bind + store + body % "if (P.w > 0u) { atomicMin(&acc[P.w], 7u); }")["t.hlsl"]
+    if "{ InterlockedMin(acc[P.w], 7u); }" not in out:
+        print("selftest: atomicMin translated wrong:\n" + out, file=sys.stderr)
+        return 1
     out = translate(head, "//@pass t\n" + bind + body % "let v: vec2f = vec2f(2.0 * select(1.0, 2.0, P.w >= 2u), 3.0);")["t.hlsl"]
     if "float2(2.0f * ((P.w >= 2u) ? (2.0f) : (1.0f)), 3.0f)" not in out:
         print("selftest: a comparison inside a constructor hid its comma:\n" + out, file=sys.stderr)
         return 1
     for what, stmt in {"pack4x8unorm": "let v: u32 = pack4x8unorm(vec4f(1.0));",
                        "atomicAdd as a value": "let v: u32 = atomicAdd(&acc[0u], 1u);",
+                       "atomicMin as a value": "let v: u32 = atomicMin(&acc[0u], 1u);",
                        "round (WGSL rounds half to even)": "let v: f32 = round(0.5);"}.items():
         try:
             translate(head, "//@pass t\n" + bind + store + body % stmt)
@@ -434,6 +448,24 @@ def selftest():
         if want not in out:
             print(f"selftest: RHI v3 raster translation lacks {want!r}:\n" + out, file=sys.stderr)
             return 1
+    # Step 6 of the style-pass port: workgroup memory, the barrier and the group builtins.
+    wg = ("//@pass t\n" + bind + "var<workgroup> part: array<f32, 64>;\n@compute @workgroup_size(64)\n"
+          "fn main(@builtin(local_invocation_id) lid: vec3u, @builtin(workgroup_id) wid: vec3u) {\n"
+          "    part[lid.x] = f32(wid.x);\n    workgroupBarrier();\n    if (lid.x == 0u) { workgroupBarrier(); }\n}\n")
+    out = translate(head, wg)["t.hlsl"]
+    for want in ("groupshared float part[64];", "void main(uint3 lid : SV_GroupThreadID, uint3 wid : SV_GroupID) {",
+                 "    GroupMemoryBarrierWithGroupSync();", "{ GroupMemoryBarrierWithGroupSync(); }"):
+        if want not in out:
+            print(f"selftest: workgroup translation lacks {want!r}:\n" + out, file=sys.stderr)
+            return 1
+    for what, src in {"workgroup scalar": wg.replace("array<f32, 64>", "f32"),
+                      "barrier as a value": wg.replace("    workgroupBarrier();\n", "    let b: f32 = workgroupBarrier();\n")}.items():
+        try:
+            translate(head, src)
+        except TranslateError:
+            continue
+        print(f"selftest: accepted {what}", file=sys.stderr)
+        return 1
     # R1 method note 3: scalar bitcasts map to asuint, asint and asfloat; a vector bitcast is refused.
     out = translate(head, "//@pass t\n" + bind + body % "let u: u32 = bitcast<u32>(bitcast<f32>(P.w));")["t.hlsl"]
     if "const uint u = asuint(asfloat(P.w));" not in out:

@@ -1,0 +1,12 @@
+{
+  "schema": "raw-native.evidence/1",
+  "bounds": "evidence/cpp-port-style-bounds-9.json",
+  "machine": "the author's Windows 11 workstation; CPU only (the estimator has no shader). Builds and runs at Idle priority with at most 4 build jobs.",
+  "order": "Bounds committed (29472a7) before the C++ reference was built or run; then code, first CPU run, the C++ source edit, revert.",
+  "first_cpu_run": {"cases": 12, "net_equal": true, "concentric_max_abs": 0, "visibility_mismatch": 0, "excused_ties": 0, "tone_max_abs": 0, "controls_fail_every_case": true,
+    "note": "Every pixel's visibility equals the JavaScript's for every blocker and estimator; no decision needed the tie excuse."},
+  "source_edit_controls": {
+    "cpp": {"edit": "pascal6's binomial parity replaced by the identity", "result": "The net check failed (so every case fails its CPU link), and visibility differed only in the net1 cases: wall-x 382, wall-z 2066, sphere 788 pixels; rank1, white1 and ref64 were unchanged.", "against_prediction": "Held exactly."}
+  },
+  "gpu": "none: CPU code (ADR 0019 rule 6); the full style-parity run reports these cases with the CPU link only."
+}

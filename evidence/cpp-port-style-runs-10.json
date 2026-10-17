@@ -1,0 +1,17 @@
+{
+  "schema": "raw-native.evidence/1",
+  "bounds": "evidence/cpp-port-style-bounds-10.json",
+  "machine": "the author's Windows 11 workstation; WARP (Microsoft Basic Render Driver) through RAW_NATIVE_D3D12_WARP=1 on every D3D12 command, software only. The GPU lock was held by MMBU training and not taken; nvidia-smi sampled once a second during every WARP run never listed raw_native_cli. Builds and runs at Idle priority with at most 4 build jobs.",
+  "order": "Translator growth committed first (atomicMin as a statement; selftests pass, the 112 existing generated files unchanged), then the bounds (before any pixel code), then code, first CPU run, first WARP run, the C++ source edit, the WGSL source edit, revert, and one post-hoc WGSL edit after a miss.",
+  "first_cpu_run": {"cases": 5, "probe_texels_differing": 0, "visibility_pixels_differing": 0, "codes_differing": 0, "blend_equal": true, "controls_fail_every_case": true,
+    "note": "The bounds allowed decision flips from last-bit differences in sqrt, sin and cbrt; none happened. The C++ probe, splat and image equal the JavaScript's on every texel, pixel and code of all five cases, the 82-frame crossfade included."},
+  "first_warp_attempt": {"result": "error, no verdict", "cause": "The GPU runner bound the current probe's colour buffer twice in the resolve pass when there was no previous probe, which the frame graph refuses. Fixed by binding the second slot's buffers (the resolve reads them only with has_prev). Not a parity result."},
+  "first_warp_run": {"cases": 5, "over2_fraction": {"orbit-front": 0, "orbit-back": 0, "turned-and-close": 5.3e-04, "cell-crossfade": 0, "slow-crossfade": 0}, "mean_abs_code_max": 0.0215, "controls_fail_every_case": true, "pass": true,
+    "note": "Four cases are bit-identical on WARP. In turned-and-close one grazing probe ray differs between f32 and float64, moving a block of pixels (max 45 codes), within the web bound."},
+  "source_edit_controls": {
+    "cpp": {"edit": "outline depth ratio 1.03 -> 1.10", "cpu_failing_cases": ["orbit-front", "orbit-back", "turned-and-close", "cell-crossfade", "slow-crossfade"], "against_prediction": "Held: every case failed (2,481 to 3,156 channel codes over 2)."},
+    "wgsl": {"edit": "crease threshold 0.6 -> 0.4 (style_pixel_shade)", "warp_failing_cases": [], "against_prediction": "MISSED. Every case passed WARP: over2 at most 0.0023 and mean at most 0.11 against the web bound 0.03 and 2.0. The web bound is loose by design (a disagreeing texel moves about a hundred pixels at this size), and creases are a small share of the frame. Recorded in bounds-10 Addendum A."},
+    "wgsl_second_post_hoc": {"edit": "posterise floor(... + 0.5) -> floor(... + 0.3) (px_stylise)", "written_after": "the miss above, so it is not a prediction made in advance", "warp_failing_cases": ["orbit-front", "orbit-back", "turned-and-close", "cell-crossfade", "slow-crossfade"], "result": "every case failed (mean 2.4 to 4.7 codes, over2 0.056 to 0.096)."}
+  },
+  "record": "evidence/cpp-port-style-d3d12-warp.json: a full WARP run of every style pass in the core after the reverts."
+}

@@ -17,6 +17,8 @@ struct Passes {
     // Adds pass `name` over `count` invocations, 64 a group; false (with err) when the build has
     // no such pass or its pipeline fails.
     bool add(const char* name, const std::vector<graph::Resource>& binds, std::uint32_t count, std::string& err);
+    // Adds pass `name` dispatched as gx x gy x gz workgroups (passes with workgroup memory).
+    bool addGroups(const char* name, const std::vector<graph::Resource>& binds, std::uint32_t gx, std::uint32_t gy, std::uint32_t gz, std::string& err);
 };
 // Reads `words` 32-bit words of a buffer after the graph ran (the buffer must be MapRead).
 bool readWords(rhi::Device& dev, rhi::BufferHandle rb, std::size_t words, std::vector<std::uint32_t>& out, std::string& err);

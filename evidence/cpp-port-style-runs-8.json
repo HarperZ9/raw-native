@@ -1,0 +1,26 @@
+{
+  "schema": "raw-native.evidence/1",
+  "bounds": "evidence/cpp-port-style-bounds-8.json",
+  "machine": "the author's Windows 11 workstation; WARP (Microsoft Basic Render Driver) through RAW_NATIVE_D3D12_WARP=1 on every D3D12 command, software only. The GPU lock was held by MMBU training and not taken; nvidia-smi sampled once a second during every WARP run never listed raw_native_cli. Builds and runs at Idle priority with at most 4 build jobs.",
+  "order": "Translator growth committed first (var<workgroup> as groupshared, workgroupBarrier as a statement, the group builtins; selftests pass and the 104 existing generated files are unchanged), then the bounds (before any sag or caricature code), then code, first CPU run, first WARP run, the C++ source edits (one build), the WGSL source edits (one build), revert.",
+  "sag": {
+    "first_cpu_run": {"cases": 4, "plan_equal": true, "scan_equal": true, "signal_max_abs": 0, "code_mismatch": 0, "controls_fail_every_case": true},
+    "first_warp_run": {"cases": 4, "max_abs_code": {"street-consumer": 1, "street-thriller": 1, "game-consumer": 1, "box-thriller": 0}, "mean_abs_code_max": 1.74e-05, "controls_fail_every_case": true, "pass": true,
+      "note": "The line currents are summed by a tree in workgroup memory on the GPU, the first style pass in the core to use it."},
+    "source_edit_controls": {
+      "cpp": {"edit": "blanking decay (1 - alpha)^blank -> (1 - alpha)^(blank + 1)", "cpu_failing_cases": ["street-consumer", "street-thriller", "game-consumer", "box-thriller"], "against_prediction": "Held: every case failed (the scan's v, k, Y and sigma differ; box-thriller's codes stayed equal and its signal moved by 3.7e-5)."},
+      "wgsl": {"edit": "spot gaussian exp(-0.5 d^2) -> exp(-0.4 d^2) (style_sag_resample)", "warp_failing_cases": ["street-consumer", "street-thriller", "game-consumer", "box-thriller"], "against_prediction": "Held: street-thriller and box-thriller failed, and the other two as well (max 6 to 20 codes)."}
+    }
+  },
+  "caricature": {
+    "first_cpu_run": {"cases": 3, "plan_equal": true, "fields_equal": true, "value_max_rel": 0, "code_mismatch": 0, "controls_fail_every_case": true},
+    "first_warp_run": {"cases": 3, "max_abs_code": {"street-grotesque": 1, "street-subtle": 1, "day-grotesque": 0}, "mean_abs_code_max": 2.6e-05, "controls_fail_every_case": true, "pass": true,
+      "note": "Lambda's global maximum is a max tree in workgroup memory (one workgroup of 256)."},
+    "source_edit_controls": {
+      "cpp": {"edit": "step clamp's determinant floor 0.04 -> 0.05", "cpu_failing_cases": ["street-grotesque", "street-subtle", "day-grotesque"], "against_prediction": "Held: every case failed (lambda differs)."},
+      "wgsl": {"edit": "the warp's first displacement lambda g -> 1.1 lambda g (style_cari_warp)", "warp_failing_cases": ["street-grotesque", "street-subtle", "day-grotesque"], "against_prediction": "Held: both grotesque cases failed, and street-subtle too (max 16 to 42 codes)."}
+    }
+  },
+  "summary": "Four source edits, four held as predicted. All reverted; style.wgsl and the generated HLSL match again.",
+  "record": "evidence/cpp-port-style-d3d12-warp.json: a full WARP run of every style pass in the core after the reverts."
+}
