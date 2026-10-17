@@ -33,7 +33,7 @@ import { crtClassic, vhs, fibre, film, lens } from "./fixtures_signal.mjs";
 import { sag, caricature } from "./fixtures_workgroup.mjs";
 import { rtvis } from "./fixtures_rtvis.mjs";
 import { pixel } from "./fixtures_pixel.mjs";
-import { paint } from "./fixtures_paint.mjs";
+import { paint as painterly } from "./fixtures_paint.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..", "..");
 const readJson = (p) => JSON.parse(readFileSync(join(ROOT, p), "utf8"));
@@ -137,7 +137,7 @@ if (!out) { console.error("usage: node tools/port/export_style_fixtures.mjs <out
 mkdirSync(out, { recursive: true });
 const t0 = Date.now(), counts = { ditherlight: ditherlight(out), paintover: paintover(out), lookkeys: lookkeys(out), poststack: postStack(out),
   purity: purity(out), lightpaint: lightpaint(out), glaze: glaze(out), hatch: hatch(out), hysteresis: hysteresis(out), palettelight: palettelight(out),
-  dither: dither(out), adjacency: adjacency(out), crtclassic: crtClassic(out), vhs: vhs(out), fibre: fibre(out), film: film(out), lens: lens(out), sag: sag(out), caricature: caricature(out), rtvis: rtvis(out), pixel: pixel(out), paint: paint(out) };
+  dither: dither(out), adjacency: adjacency(out), crtclassic: crtClassic(out), vhs: vhs(out), fibre: fibre(out), film: film(out), lens: lens(out), sag: sag(out), caricature: caricature(out), rtvis: rtvis(out), pixel: pixel(out), paint: painterly(out) };
 // The file list, for hosts that copy the fixtures by name (web/test/texture-identity.html).
 writeFileSync(join(out, "files.json"), JSON.stringify(readdirSync(out).filter((f) => f.endsWith(".rnfx") || f === "lookkeys.json").sort()));
 console.log(JSON.stringify({ out, cases: counts, seconds: (Date.now() - t0) / 1000 }));
