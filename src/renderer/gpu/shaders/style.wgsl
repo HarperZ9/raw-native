@@ -181,6 +181,24 @@ struct LensGpuParams {
     phi: vec4f,
 }
 
+// Scan-causal EHT sag. a: S, alpha, focus, sigma0; b: bright, gamma, initial sag.
+struct SagGpuParams {
+    width: u32, height: u32, blank: u32, settle: u32,
+    radius: u32, pad0: u32, pad1: u32, pad2: u32,
+    a: vec4f,
+    b: vec4f,
+}
+// Salience caricature. a: lambda cap, gain, display gain; w0..w2: the salience weight of each
+// material id 0 to 9.
+struct CariGpuParams {
+    width: u32, height: u32, radius: u32, steps: u32,
+    dir: u32, pad0: u32, pad1: u32, pad2: u32,
+    a: vec4f,
+    w0: vec4f,
+    w1: vec4f,
+    w2: vec4f,
+}
+
 fn sat1(x: f32) -> f32 {
     return clamp(x, 0.0, 1.0);
 }
@@ -2608,4 +2626,275 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
         }
     }
     out8[i] = lab_pack(o, U.c.w);
+}
+
+//@pass style_sag_current
+// Scan-causal EHT sag (raw/renderer/style_sag.hpp): the beam current of one line, one workgroup a
+// line, summed by a tree in workgroup memory.
+@group(0) @binding(0) var<uniform> U: SagGpuParams;
+@group(0) @binding(1) var<storage, read> src: array<vec4f>;
+@group(0) @binding(2) var<storage, read_write> I: array<f32>;
+var<workgroup> part: array<f32, 64>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(local_invocation_id) lid: vec3u, @builtin(workgroup_id) wid: vec3u) {
+    let w: i32 = i32(U.width);
+    let y: i32 = i32(wid.x);
+    let g: f32 = U.b.y;
+    var s: f32 = 0.0;
+    for (var x: i32 = i32(lid.x); x < w; x += 64) {
+        let c: vec3f = max(src[u32(y * w + x)].xyz, vec3f(0.0));
+        s = s + (pow(c.x, g) + pow(c.y, g) + pow(c.z, g)) / 3.0;
+    }
+    part[lid.x] = s;
+    workgroupBarrier();
+    for (var st: u32 = 32u; st > 0u; st = st >> 1u) {
+        if (lid.x < st) { part[lid.x] = part[lid.x] + part[lid.x + st]; }
+        workgroupBarrier();
+    }
+    if (lid.x == 0u) { I[u32(y)] = part[0] / f32(w); }
+}
+
+//@pass style_sag_scan
+// Scan-causal EHT sag: one invocation walks the lines in order (the recurrence is causal), twice
+// with settle; L holds sag, gain, drawn height and spot sigma per line.
+@group(0) @binding(0) var<uniform> U: SagGpuParams;
+@group(0) @binding(1) var<storage, read> I: array<f32>;
+@group(0) @binding(2) var<storage, read_write> L: array<vec4f>;
+
+@compute @workgroup_size(1)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    if (gid.x > 0u) { return; }
+    let h: i32 = i32(U.height);
+    let a: f32 = U.a.y;
+    let S: f32 = U.a.x;
+    var s: f32 = U.b.z;
+    let cy: f32 = f32(h) / 2.0;
+    for (var y: i32 = 0; y < h; y++) {
+        s = s + a * (S * I[u32(y)] - s);
+        L[u32(y)] = vec4f(s, 0.0, 0.0, 0.0);
+    }
+    if (U.settle != 0u) {
+        s = s * pow(1.0 - a, f32(U.blank));
+        for (var y2: i32 = 0; y2 < h; y2++) {
+            s = s + a * (S * I[u32(y2)] - s);
+            L[u32(y2)] = vec4f(s, 0.0, 0.0, 0.0);
+        }
+    }
+    for (var y3: i32 = 0; y3 < h; y3++) {
+        let v: f32 = L[u32(y3)].x;
+        let k: f32 = 1.0 / sqrt(1.0 - v);
+        L[u32(y3)] = vec4f(v, k, cy + (f32(y3) + 0.5 - cy) * k, U.a.w + U.a.z * v);
+    }
+}
+
+//@pass style_sag_resample
+// Scan-causal EHT sag: each output line read from the two drawn lines around it, each sampled at
+// its own gain with a gaussian spot (in linear light), dimmed with the sag; signal8 to RGBA8.
+@group(0) @binding(0) var<uniform> U: SagGpuParams;
+@group(0) @binding(1) var<storage, read> src: array<vec4f>;
+@group(0) @binding(2) var<storage, read> L: array<vec4f>;
+@group(0) @binding(3) var<storage, read_write> out8: array<u32>;
+
+fn sample_line(y: i32, xs: f32, sigma: f32) -> vec3f {
+    let w: i32 = i32(U.width);
+    let R: i32 = i32(U.radius);
+    let g: f32 = U.b.y;
+    let x0: i32 = i32(floor(xs));
+    var ws: f32 = 0.0;
+    var acc: vec3f = vec3f(0.0);
+    for (var j: i32 = x0 - R; j <= x0 + R; j++) {
+        if (j < 0 || j >= w) { continue; }
+        let d: f32 = (f32(j) + 0.5 - xs) / sigma;
+        let wt: f32 = exp(-0.5 * d * d);
+        let c: vec3f = max(src[u32(y * w + j)].xyz, vec3f(0.0));
+        ws = ws + wt;
+        acc = acc + wt * vec3f(pow(c.x, g), pow(c.y, g), pow(c.z, g));
+    }
+    if (ws > 0.0) { acc = acc / ws; }
+    return acc;
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    let w: i32 = i32(U.width);
+    let h: i32 = i32(U.height);
+    let x: i32 = i32(i % U.width);
+    let yo: i32 = i32(i / U.width);
+    let yc: f32 = f32(yo) + 0.5;
+    let cx: f32 = f32(w) / 2.0;
+    if (yc < L[0].z || yc > L[u32(h - 1)].z) {
+        out8[i] = 255u << 24u;
+        return;
+    }
+    var lo: i32 = 0;
+    var hi: i32 = h - 1;
+    while (hi - lo > 1) {
+        let m: i32 = (lo + hi) / 2;
+        if (L[u32(m)].z <= yc) { lo = m; } else { hi = m; }
+    }
+    let y1: i32 = min(h - 1, lo + 1);
+    let A: vec4f = L[u32(lo)];
+    let Bq: vec4f = L[u32(y1)];
+    var f: f32 = 0.0;
+    if (y1 != lo) { f = (yc - A.z) / (Bq.z - A.z); }
+    let xc: f32 = f32(x) + 0.5;
+    let a: vec3f = sample_line(lo, cx + (xc - cx) / A.y, A.w) * pow(1.0 - A.x, U.b.x);
+    let b: vec3f = sample_line(y1, cx + (xc - cx) / Bq.y, Bq.w) * pow(1.0 - Bq.x, U.b.x);
+    let m3: vec3f = a * (1.0 - f) + b * f;
+    let ig: f32 = 1.0 / U.b.y;
+    let q: vec3f = clamp(vec3f(pow(m3.x, ig), pow(m3.y, ig), pow(m3.z, ig)), vec3f(0.0), vec3f(1.0));
+    out8[i] = u32(floor(q.x * 255.0 + 0.5)) | (u32(floor(q.y * 255.0 + 0.5)) << 8u) | (u32(floor(q.z * 255.0 + 0.5)) << 16u) | (255u << 24u);
+}
+
+//@pass style_cari_sal
+// Salience caricature (raw/renderer/style_sag.hpp): salience from the material ids.
+@group(0) @binding(0) var<uniform> U: CariGpuParams;
+@group(0) @binding(1) var<storage, read> mat: array<i32>;
+@group(0) @binding(2) var<storage, read_write> s: array<f32>;
+
+fn weight(m: i32) -> f32 {
+    if (m < 0 || m > 9) { return 0.0; }
+    if (m < 4) { return U.w0[m]; }
+    if (m < 8) { return U.w1[m - 4]; }
+    return U.w2[m - 8];
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    s[i] = weight(mat[i]);
+}
+
+//@pass style_cari_blur
+// Salience caricature: one pass of the separable gaussian (dir 0 along x, 1 along y), clamped ends.
+@group(0) @binding(0) var<uniform> U: CariGpuParams;
+@group(0) @binding(1) var<storage, read> taps: array<f32>;
+@group(0) @binding(2) var<storage, read> a: array<f32>;
+@group(0) @binding(3) var<storage, read_write> b: array<f32>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    let w: i32 = i32(U.width);
+    let h: i32 = i32(U.height);
+    let x: i32 = i32(i % U.width);
+    let y: i32 = i32(i / U.width);
+    let R: i32 = i32(U.radius);
+    var v: f32 = 0.0;
+    for (var k: i32 = -R; k <= R; k++) {
+        var j: i32 = y * w + clamp(x + k, 0, w - 1);
+        if (U.dir != 0u) { j = clamp(y + k, 0, h - 1) * w + x; }
+        v = v + taps[u32(k + R)] * a[u32(j)];
+    }
+    b[i] = v;
+}
+
+//@pass style_cari_grad
+// Salience caricature: the central-difference gradient of the smoothed salience.
+@group(0) @binding(0) var<uniform> U: CariGpuParams;
+@group(0) @binding(1) var<storage, read> S: array<f32>;
+@group(0) @binding(2) var<storage, read_write> g: array<vec2f>;
+
+fn cl(x: i32, y: i32) -> u32 {
+    return u32(clamp(y, 0, i32(U.height) - 1) * i32(U.width) + clamp(x, 0, i32(U.width) - 1));
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    let x: i32 = i32(i % U.width);
+    let y: i32 = i32(i / U.width);
+    g[i] = vec2f(0.5 * (S[cl(x + 1, y)] - S[cl(x - 1, y)]), 0.5 * (S[cl(x, y + 1)] - S[cl(x, y - 1)]));
+}
+
+//@pass style_cari_lambda
+// Salience caricature: one workgroup finds the largest Frobenius norm of the gradient's derivative
+// (a max tree in workgroup memory), then lambda, clamped so the composed map keeps det J >= 0.04.
+@group(0) @binding(0) var<uniform> U: CariGpuParams;
+@group(0) @binding(1) var<storage, read> g: array<vec2f>;
+@group(0) @binding(2) var<storage, read_write> L: array<f32>;
+var<workgroup> part: array<f32, 256>;
+
+fn cl(x: i32, y: i32) -> u32 {
+    return u32(clamp(y, 0, i32(U.height) - 1) * i32(U.width) + clamp(x, 0, i32(U.width) - 1));
+}
+
+@compute @workgroup_size(256)
+fn main(@builtin(local_invocation_id) lid: vec3u) {
+    let w: i32 = i32(U.width);
+    let h: i32 = i32(U.height);
+    var m: f32 = 0.0;
+    for (var i: i32 = i32(lid.x); i < w * h; i += 256) {
+        let x: i32 = i % w;
+        let y: i32 = i / w;
+        let dx: vec2f = 0.5 * (g[cl(x + 1, y)] - g[cl(x - 1, y)]);
+        let dy: vec2f = 0.5 * (g[cl(x, y + 1)] - g[cl(x, y - 1)]);
+        m = max(m, sqrt(dx.x * dx.x + dy.x * dy.x + dx.y * dx.y + dy.y * dy.y));
+    }
+    part[lid.x] = m;
+    workgroupBarrier();
+    for (var st: u32 = 128u; st > 0u; st = st >> 1u) {
+        if (lid.x < st) { part[lid.x] = max(part[lid.x], part[lid.x + st]); }
+        workgroupBarrier();
+    }
+    if (lid.x == 0u) {
+        let c: f32 = 1.0 - pow(0.04, 1.0 / (2.0 * f32(U.steps)));
+        var lam: f32 = 0.0;
+        if (part[0] > 0.0) { lam = min(U.a.x, (c * U.a.y) / part[0]); }
+        L[0] = lam;
+    }
+}
+
+//@pass style_cari_warp
+// Salience caricature: each output pixel reads the source at y + lambda grad S (composed over the
+// steps, the gradient read bilinearly at the moving point), lab-encoded to RGBA8.
+@group(0) @binding(0) var<uniform> U: CariGpuParams;
+@group(0) @binding(1) var<storage, read> src: array<vec4f>;
+@group(0) @binding(2) var<storage, read> g: array<vec2f>;
+@group(0) @binding(3) var<storage, read> L: array<f32>;
+@group(0) @binding(4) var<storage, read_write> out8: array<u32>;
+
+fn grad_at(fx: f32, fy: f32) -> vec2f {
+    let w: i32 = i32(U.width);
+    let h: i32 = i32(U.height);
+    let u: f32 = fx - 0.5;
+    let v: f32 = fy - 0.5;
+    let x0: i32 = clamp(i32(floor(u)), 0, w - 1);
+    let y0: i32 = clamp(i32(floor(v)), 0, h - 1);
+    let x1: i32 = min(w - 1, x0 + 1);
+    let y1: i32 = min(h - 1, y0 + 1);
+    let tx: f32 = clamp(u - f32(x0), 0.0, 1.0);
+    let ty: f32 = clamp(v - f32(y0), 0.0, 1.0);
+    return (g[u32(y0 * w + x0)] * (1.0 - tx) + g[u32(y0 * w + x1)] * tx) * (1.0 - ty) + (g[u32(y1 * w + x0)] * (1.0 - tx) + g[u32(y1 * w + x1)] * tx) * ty;
+}
+fn sample_src(fx: f32, fy: f32) -> vec3f {
+    let w: i32 = i32(U.width);
+    let h: i32 = i32(U.height);
+    let u: f32 = fx - 0.5;
+    let v: f32 = fy - 0.5;
+    let x0: i32 = clamp(i32(floor(u)), 0, w - 1);
+    let y0: i32 = clamp(i32(floor(v)), 0, h - 1);
+    let x1: i32 = min(w - 1, x0 + 1);
+    let y1: i32 = min(h - 1, y0 + 1);
+    let tx: f32 = clamp(u - f32(x0), 0.0, 1.0);
+    let ty: f32 = clamp(v - f32(y0), 0.0, 1.0);
+    return (src[u32(y0 * w + x0)].xyz * (1.0 - tx) + src[u32(y0 * w + x1)].xyz * tx) * (1.0 - ty) + (src[u32(y1 * w + x0)].xyz * (1.0 - tx) + src[u32(y1 * w + x1)].xyz * tx) * ty;
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    let x: f32 = f32(i % U.width);
+    let y: f32 = f32(i / U.width);
+    let lam: f32 = L[0];
+    var f: vec2f = vec2f(x + 0.5, y + 0.5) + lam * g[i];
+    for (var k: i32 = 1; k < i32(U.steps); k++) { f = f + lam * grad_at(f.x, f.y); }
+    out8[i] = lab_pack(sample_src(f.x, f.y), U.a.z);
 }

@@ -8,6 +8,10 @@ namespace raw::gpu_check::style_graph {
 using rhi::Access;
 
 bool Passes::add(const char* name, const std::vector<graph::Resource>& binds, std::uint32_t count, std::string& err) {
+    return addGroups(name, binds, (count + 63) / 64, 1, 1, err);
+}
+
+bool Passes::addGroups(const char* name, const std::vector<graph::Resource>& binds, std::uint32_t gx, std::uint32_t gy, std::uint32_t gz, std::string& err) {
     const int pi = style_gpu::passIndex(name);
     if (pi < 0) { err = std::string("no style pass ") + name; return false; }
     const auto& L = style_passes::kPasses[pi];
@@ -22,10 +26,10 @@ bool Passes::add(const char* name, const std::vector<graph::Resource>& binds, st
     std::vector<graph::Use> uses;
     for (int k = 0; k < L.bindCount; ++k)
         uses.push_back({binds[std::size_t(k)], L.binds[k] == rhi::Binding::Uniform ? Access::Uniform : L.binds[k] == rhi::Binding::StorageRead ? Access::StorageRead : Access::StorageWrite});
-    g.addPass(name, uses, [pipe, binds, count](graph::PassContext& c) {
+    g.addPass(name, uses, [pipe, binds, gx, gy, gz](graph::PassContext& c) {
         std::vector<rhi::BufferHandle> h;
         for (graph::Resource r : binds) h.push_back(c.buffer(r));
-        c.cmd->dispatch(pipe, h, (count + 63) / 64, 1, 1);
+        c.cmd->dispatch(pipe, h, gx, gy, gz);
     });
     return true;
 }
