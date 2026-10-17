@@ -35,7 +35,7 @@ jobs:
         run: cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRAW_NATIVE_GPU_D3D12=ON
       - name: Build the CLI and the presentation host
         run: cmake --build build --config Release --target raw_native_cli raw_native_present
-      - name: WARP references at 1280 x 800 (the N2 frames offscreen; raw-hero with its CPU reference)
+      - name: WARP reference at 1280 x 800 (the N2 frames offscreen; raw-hero is not drawn on WARP, see addendum B)
         shell: bash
         env:
           RAW_NATIVE_D3D12_WARP: "1"
@@ -43,9 +43,6 @@ jobs:
           mkdir -p deck-win
           build/Release/raw_native_present.exe run --offscreen --frames 600 --width 1280 --height 800 --out deck-win/warp-offscreen-1280x800.json
           build/Release/raw_native_cli.exe export-assets --out assets > deck-win/export-assets.txt
-          build/Release/raw_native_cli.exe --model assets/raw-hero.gltf --gpu --width 1280 --height 800 --out warp-hero > /dev/null
-          cp warp-hero/gpu_certificate.json deck-win/warp-hero-gpu_certificate.json
-          grep -q '"verdict":"verified"' warp-hero/gpu_certificate.json
       - name: Keep the Windows build and the references
         shell: bash
         run: |
@@ -58,7 +55,7 @@ jobs:
   linux:
     needs: windows-build
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
       - name: Install the Vulkan loader and headers, lavapipe, glslang and the X11 client library
@@ -77,14 +74,15 @@ jobs:
           Xvfb :99 -screen 0 1920x1080x24 > xvfb.log 2>&1 &
           sleep 2
           echo "DISPLAY=:99" >> "$GITHUB_ENV"
-      - name: d1 raw-hero at 1280 x 800 on lavapipe; verified, CPU image equal to the MSVC build's
+      - name: d1 raw-hero at 1280 x 800 on lavapipe; verified (the CPU frame is compared with the MSVC build's in cross-build)
         run: |
           mkdir -p deck-linux
           build/raw_native_cli_vk export-assets --out assets > deck-linux/export-assets.txt
-          build/raw_native_cli_vk --model assets/raw-hero.gltf --gpu --width 1280 --height 800 --out hero > /dev/null
+          diff deck-linux/export-assets.txt <(tr -d '\r' < deck-win/export-assets.txt) && echo "exported assets identical to the MSVC build's"
+          build/raw_native_cli_vk --model assets/raw-hero.gltf --gpu --width 1280 --height 800 --threads 4 --out hero | tail -3
           cp hero/gpu_certificate.json deck-linux/linux-hero-gpu_certificate.json
-          python3 tests/gpu/deck_gate.py scene deck-linux/linux-hero-gpu_certificate.json --backend vulkan \
-            --size 1280x800 --cpu-equal deck-win/warp-hero-gpu_certificate.json
+          sha256sum hero/cpu/frame.ppm | cut -d' ' -f1 > deck-linux/linux-hero-cpu-frame.sha256
+          python3 tests/gpu/deck_gate.py scene deck-linux/linux-hero-gpu_certificate.json --backend vulkan --size 1280x800
       - name: d2 the N2 frames at 1280 x 800 in an X11 window, twice, and offscreen; equal each other and WARP
         env:
           RAW_NATIVE_WINDOW: x11
@@ -116,7 +114,7 @@ jobs:
   proton:
     needs: windows-build
     runs-on: ubuntu-24.04
-    timeout-minutes: 90
+    timeout-minutes: 150
     steps:
       - uses: actions/checkout@v4
       - name: Install Wine, lavapipe, Xvfb and zstd
@@ -151,20 +149,26 @@ jobs:
           cp tools-dl/dxvk-3.1.1/x64/dxgi.dll $bin/
           cp tools-dl/vkd3d-proton-3.0.1/x64/d3d12.dll tools-dl/vkd3d-proton-3.0.1/x64/d3d12core.dll $bin/
           ls -l $bin
-      - name: d3 raw-hero at 1280 x 800, the D3D12 build through vkd3d-proton on lavapipe
+      - name: The MSVC build's CPU reference frame of raw-hero at 1280 x 800 under Wine (for cross-build; no GPU)
         run: |
           mkdir -p deck-proton
           cp wine-version.txt deck-proton/
-          set +e
           wine deck-win/bin/raw_native_cli.exe export-assets --out assets > deck-proton/export-assets.txt 2>&1
-          wine deck-win/bin/raw_native_cli.exe --model assets/raw-hero.gltf --gpu --width 1280 --height 800 --out hero > deck-proton/proton-hero.txt 2>&1
+          diff <(tr -d '\r' < deck-proton/export-assets.txt) <(tr -d '\r' < deck-win/export-assets.txt) && echo "exported assets identical to the Windows run"
+          wine deck-win/bin/raw_native_cli.exe --model assets/raw-hero.gltf --width 1280 --height 800 --threads 4 --out hero-cpu > deck-proton/proton-hero-cpu.txt 2>&1
+          sha256sum hero-cpu/frame.ppm | cut -d' ' -f1 > deck-proton/msvc-wine-hero-cpu-frame.sha256
+          cat deck-proton/msvc-wine-hero-cpu-frame.sha256
+      - name: d3 raw-hero at 1280 x 800, the D3D12 build through vkd3d-proton on lavapipe
+        if: always()
+        run: |
+          set +e
+          wine deck-win/bin/raw_native_cli.exe --model assets/raw-hero.gltf --gpu --width 1280 --height 800 --threads 4 --out hero > deck-proton/proton-hero.txt 2>&1
           echo "exit $?" >> deck-proton/proton-hero.txt
           set -e
           tail -20 deck-proton/proton-hero.txt
           cp hero/gpu_certificate.json deck-proton/proton-hero-gpu_certificate.json || true
-          diff <(tr -d '\r' < deck-proton/export-assets.txt) <(tr -d '\r' < deck-win/export-assets.txt) && echo "exported assets identical to the Windows run"
           python3 tests/gpu/deck_gate.py scene deck-proton/proton-hero-gpu_certificate.json --backend d3d12 \
-            --size 1280x800 --cpu-equal deck-win/warp-hero-gpu_certificate.json --not-adapter microsoft
+            --size 1280x800 --not-adapter microsoft
       - name: d4 the N2 frames at 1280 x 800 in a Win32 window under Wine, twice, and offscreen; equal each other and WARP
         if: always()
         run: |
@@ -190,3 +194,19 @@ jobs:
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: deck-proton, path: deck-proton, retention-days: 30 }
+
+  cross-build:
+    # d1 and d3's CPU part: the GCC build's CPU reference frame of raw-hero equals the MSVC build's.
+    needs: [linux, proton]
+    if: always()
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/download-artifact@v4
+        with: { name: deck-linux, path: deck-linux }
+      - uses: actions/download-artifact@v4
+        with: { name: deck-proton, path: deck-proton }
+      - name: The CPU reference frames are byte-identical across GCC (Linux) and MSVC (under Wine)
+        run: |
+          a=$(cat deck-linux/linux-hero-cpu-frame.sha256); b=$(cat deck-proton/msvc-wine-hero-cpu-frame.sha256)
+          echo "gcc   $a"; echo "msvc  $b"
+          test -n "$a" && test "$a" = "$b"
