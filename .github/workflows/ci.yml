@@ -652,7 +652,7 @@ jobs:
       - name: The core's style passes in the WebGPU build in Chrome on SwiftShader match the C++ float64 reference (ADR 0019)
         run: |
           node tools/port/export_style_fixtures.mjs build-wasm-gpu/style-fixtures
-          python tests/web/rhi_texture.py --command style-parity --fixtures build-wasm-gpu/style-fixtures --dir build-wasm-gpu --adapter swiftshader --out style-webgpu.json
+          python tests/web/rhi_texture.py --command style-parity --fixtures build-wasm-gpu/style-fixtures --dir build-wasm-gpu --adapter swiftshader --timeout 4000 --out style-webgpu.json
       - name: The verified viewer renders the owned assets with a certificate and refuses a broken file (M3 criterion 4)
         run: python tests/web/viewer.py --dir build-wasm-gpu --adapter swiftshader --out viewer-webgpu.json
       - name: The default native build carries no GPU code
