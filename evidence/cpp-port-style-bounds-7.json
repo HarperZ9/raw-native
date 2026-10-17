@@ -11,10 +11,19 @@
       "value_max_rel": 1e-09,
       "rule": "|cpp - js| <= 1e-9 max(1, |js|) on every output value; lab codes equal except at a rounding edge within 1e-9 (at most 2 a case)"
     },
-    "gpu_link": { "max_abs_code": 3, "p999_abs_code": 1, "mean_abs_code": 0.03, "why": "The web bounds: every term is continuous in its inputs (ghost edges are a one-pixel ramp, tables are sampled bilinearly), so f32 against f64 moves values by rounding only." },
+    "gpu_link": {
+      "max_abs_code": 3,
+      "p999_abs_code": 1,
+      "mean_abs_code": 0.03,
+      "why": "The web bounds: every term is continuous in its inputs (ghost edges are a one-pixel ramp, tables are sampled bilinearly), so f32 against f64 moves values by rounding only."
+    },
     "controls": {
       "built_in": "The C++ reference with the ghost gain multiplied by 1.25 (the prepared ghost factors and phi recomputed): it must exceed value_max_rel on the CPU link and the GPU bounds, on every case.",
       "source_edit": "C++: the streak's gaussian normaliser 2.5066282746310002 (sqrt(2 pi)) to 2.6. Prediction: the CPU link fails on every case. WGSL: the halation term's 2 pi (TAU) in the gather pass to 6.0. Prediction: WARP fails on at least the cases with extracted sources (three-lights, street, squeeze-7-blades-ca)."
     }
+  },
+  "addendum_a": {
+    "written": "2026-10-17, after the lens WGSL source edit and before any change to code or bounds",
+    "what": "The WGSL source edit (halation 2 pi -> 6.0) passed WARP on every case: a miss against the prediction. The bounds are unchanged. A second WGSL edit (the ghost edge ramp + 0.5 -> + 1.5) was run afterwards and failed every case; it is recorded as post hoc in evidence/cpp-port-style-runs-7.json, not as a prediction made in advance."
   }
 }
