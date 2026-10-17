@@ -168,23 +168,69 @@ jobs:
         run: |
           bash tests/gpu/deck_wine_route.sh proton deck-proton deck-win/bin deck-win/warp-offscreen-1280x800.json
           python3 tests/gpu/deck_gate.py route deck-proton proton --known-miss khrLoadStoreOpNone
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: deck-proton, path: deck-proton, retention-days: 30 }
+
+  wine-explore:
+    # Explorations x1 and x2 of addendum D: recorded whatever they show, never a gate.
+    continue-on-error: true
+    needs: windows-build
+    runs-on: ubuntu-24.04
+    timeout-minutes: 75
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Wine, lavapipe, Xvfb and zstd
+        run: |
+          sudo dpkg --add-architecture i386
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends wine wine64 mesa-vulkan-drivers libvulkan1 xvfb zstd
+          wine --version | tee wine-version.txt
+      - uses: actions/download-artifact@v4
+        with: { name: deck-windows, path: deck-win }
+      - name: Fetch DXVK and vkd3d-proton and check them against the release digests
+        run: |
+          mkdir -p tools-dl && cd tools-dl
+          curl -sSfL -o dxvk.tar.gz "$DXVK_URL"
+          curl -sSfL -o vkd3d.tar.zst "$VKD3D_URL"
+          echo "$DXVK_SHA256  dxvk.tar.gz" | sha256sum -c -
+          echo "$VKD3D_SHA256  vkd3d.tar.zst" | sha256sum -c -
+          tar -xzf dxvk.tar.gz
+          tar --zstd -xf vkd3d.tar.zst
+          ls
+      - name: Start Xvfb and a Wine prefix; place the Proton D3D12 layers beside the executables
+        run: |
+          Xvfb :99 -screen 0 1920x1080x24 > xvfb.log 2>&1 &
+          sleep 2
+          echo "DISPLAY=:99" >> "$GITHUB_ENV"
+          echo "WINEPREFIX=$PWD/wineprefix" >> "$GITHUB_ENV"
+          echo "WINEDEBUG=-all" >> "$GITHUB_ENV"
+          echo "WINEDLLOVERRIDES=dxgi,d3d12,d3d12core=n;winemenubuilder.exe=d" >> "$GITHUB_ENV"
+          export DISPLAY=:99 WINEPREFIX=$PWD/wineprefix WINEDEBUG=-all
+          wineboot -u
+          bin=deck-win/bin
+          cp tools-dl/dxvk-3.1.1/x64/dxgi.dll $bin/
+          cp tools-dl/vkd3d-proton-3.0.1/x64/d3d12.dll tools-dl/vkd3d-proton-3.0.1/x64/d3d12core.dll $bin/
+          ls -l $bin
+      - name: Export the owned assets
+        run: wine deck-win/bin/raw_native_cli.exe export-assets --out assets > /dev/null 2>&1
       - name: Exploration x1, Wine's dxgi with vkd3d-proton's d3d12 (not a criterion check; addendum D)
         if: always()
         continue-on-error: true
         run: |
           export WINEDLLOVERRIDES="d3d12,d3d12core=n;dxgi=b;winemenubuilder.exe=d"
-          bash tests/gpu/deck_wine_route.sh x1 deck-proton deck-win/bin deck-win/warp-offscreen-1280x800.json
-          python3 tests/gpu/deck_gate.py route deck-proton x1
+          bash tests/gpu/deck_wine_route.sh x1 deck-explore deck-win/bin deck-win/warp-offscreen-1280x800.json
+          python3 tests/gpu/deck_gate.py route deck-explore x1
       - name: Exploration x2, Wine's own d3d12 and dxgi (upstream vkd3d; not Proton's path; addendum D)
         if: always()
         continue-on-error: true
         run: |
           export WINEDLLOVERRIDES="d3d12,d3d12core,dxgi=b;winemenubuilder.exe=d"
-          bash tests/gpu/deck_wine_route.sh x2 deck-proton deck-win/bin deck-win/warp-offscreen-1280x800.json
-          python3 tests/gpu/deck_gate.py route deck-proton x2
+          bash tests/gpu/deck_wine_route.sh x2 deck-explore deck-win/bin deck-win/warp-offscreen-1280x800.json
+          python3 tests/gpu/deck_gate.py route deck-explore x2
       - uses: actions/upload-artifact@v4
         if: always()
-        with: { name: deck-proton, path: deck-proton, retention-days: 30 }
+        with: { name: deck-wine-explore, path: deck-explore, retention-days: 30 }
 
   cross-build:
     # d1 and d3's CPU part: the GCC build's CPU reference frame of raw-hero equals the MSVC build's.

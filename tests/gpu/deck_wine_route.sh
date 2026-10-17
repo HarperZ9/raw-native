@@ -9,7 +9,8 @@ set -u
 label=$1; out=$2; bin=$3; warp=$4
 g=tests/gpu/present_gate.py; d=tests/gpu/deck_gate.py
 mkdir -p "$out"
-cli="wine $bin/raw_native_cli.exe"; pres="wine $bin/raw_native_present.exe"
+# Each Wine run is capped at 15 minutes: an exploration once hung for two hours with no output.
+cli="timeout 900 wine $bin/raw_native_cli.exe"; pres="timeout 900 wine $bin/raw_native_present.exe"
 declare -A holds
 check(){ # name, command...: run, keep the log, record whether it exited 0
     local name=$1; shift
@@ -32,8 +33,9 @@ run_frames(){
     python3 $g same "$out/$label-run1.json" "$out/$label-run2.json" "$out/$label-offscreen.json" "$warp" --size 1280x800
 }
 run_controls(){
-    test -f "$out/$label-offscreen.json" || { echo "no reference list"; return 1; }
+    # The 1280 x 720 run goes first so that, when no device opens, this log names the cause too.
     $pres run --frames 600 --width 1280 --height 720 --out "$out/$label-control-720.json" || return 1
+    test -f "$out/$label-offscreen.json" || { echo "no reference list"; return 1; }
     if python3 $g same "$out/$label-control-720.json" "$out/$label-offscreen.json" --size 1280x800; then echo "size control passed: the gate is blind"; return 1; fi
     $pres run --frames 600 --width 1280 --height 800 --control --out "$out/$label-control-offset.json" &&
     python3 $g control "$out/$label-offscreen.json" "$out/$label-control-offset.json"
