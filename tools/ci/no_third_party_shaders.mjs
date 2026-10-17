@@ -1,6 +1,12 @@
 // Fails when a third-party shader source, licence header or package import appears under
 // web/shaders (author rule, 2026-10-15: all effect code is original, no shader libraries).
 //   node tools/ci/no_third_party_shaders.mjs [--root web/shaders] [--allow tools/ci/third_party_allowlist.json]
+//                                            [--cpp --prefix style_]
+// --cpp also reads C++ sources and headers (the style passes' references, ADR 0019, N1 criterion
+// 4): there an #include may name a standard header (<cmath>, no directory and no extension) or a
+// project header ("raw/...", "data/...", "shaders/...", a relative path, or a file beside it); anything
+// else is an import finding.
+// --prefix limits the scan to files whose name starts with it.
 // A finding is one of:
 //   licence   a licence or ownership line: GPL family, MPL, Apache, BSD, Creative Commons,
 //             "Permission is hereby granted", SPDX-License-Identifier, "All rights reserved",
@@ -33,13 +39,23 @@ export function importSpecifier(line) {
   return m ? m[1] : null;
 }
 
-export function scan(root, allow = []) {
+// A C++ #include the rule accepts: a standard header or a project header.
+export function cppIncludeOk(line) {
+  const m = /^\s*#include\s*([<"])([^>"]+)[>"]/.exec(line);
+  if (!m) return true;
+  if (m[1] === "<") return /^[a-z_]+$/.test(m[2]);
+  return /^(raw|data|shaders|\.{1,2})\//.test(m[2]) || !m[2].includes("/");
+}
+
+export function scan(root, allow = [], { cpp = false, prefix = "" } = {}) {
   const found = [], allowed = new Map(allow.map((a) => [a.path, a.reason]));
   const walk = (dir) => {
     for (const name of readdirSync(dir)) {
       const p = join(dir, name), st = statSync(p);
       if (st.isDirectory()) { walk(p); continue; }
-      if (!EXT.has(extname(name))) continue;
+      const isCpp = cpp && (extname(name) === ".cpp" || extname(name) === ".hpp");
+      if (!EXT.has(extname(name)) && !isCpp) continue;
+      if (prefix && !name.startsWith(prefix)) continue;
       const rel = relative(root, p).split("\\").join("/");
       if (allowed.has(rel)) continue;
       const lines = readFileSync(p, "utf8").split(/\r?\n/);
@@ -48,8 +64,11 @@ export function scan(root, allow = []) {
         const at = (kind, text) => found.push({ file: rel, line: i + 1, kind, text: text.trim().slice(0, 120) });
         if (LICENCE.some((r) => r.test(line))) at("licence", line);
         else if (/Copyright\b/i.test(line) && !OWN.test(line)) at("licence", line);
-        const spec = importSpecifier(line);
-        if (spec !== null && !/^(\.{1,2}\/|node:)/.test(spec)) at("import", line);
+        if (isCpp) { if (!cppIncludeOk(line)) at("import", line); }
+        else {
+          const spec = importSpecifier(line);
+          if (spec !== null && !/^(\.{1,2}\/|node:)/.test(spec)) at("import", line);
+        }
         if ((i < 40 || /#include|@import|^\s*import\b/.test(line)) && ORIGIN.test(line)) at("origin", line);
       });
     }
@@ -63,7 +82,7 @@ if ((process.argv[1] || "").replace(/\\/g, "/").endsWith("tools/ci/no_third_part
   const root = opt("--root", "web/shaders"), allowPath = opt("--allow", "tools/ci/third_party_allowlist.json");
   const allow = existsSync(allowPath) ? JSON.parse(readFileSync(allowPath, "utf8")) : [];
   for (const a of allow) if (!a.path || !a.reason) { console.error(`allowlist entry needs path and reason: ${JSON.stringify(a)}`); process.exit(2); }
-  const found = scan(root, allow);
+  const found = scan(root, allow, { cpp: args.includes("--cpp"), prefix: opt("--prefix", "") });
   for (const f of found) console.error(`${f.kind}: ${root}/${f.file}:${f.line}: ${f.text}`);
   console.log(`no_third_party_shaders: ${found.length} finding(s) under ${root}, ${allow.length} allowlisted file(s)`);
   process.exit(found.length ? 1 : 0);

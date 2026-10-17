@@ -105,6 +105,8 @@ jobs:
         run: |
           node tools/ci/no_third_party_shaders.mjs
           node tools/ci/no_third_party_shaders.mjs --root src/renderer/gpu/shaders
+          node tools/ci/no_third_party_shaders.mjs --root src/renderer --cpp --prefix style_
+          node tools/ci/no_third_party_shaders.mjs --root raw/renderer --cpp --prefix style_
       - name: The C++ core's style references match the JavaScript references on the same fixtures (ADR 0019, CPU link)
         shell: bash
         run: |

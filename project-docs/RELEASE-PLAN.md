@@ -169,6 +169,23 @@ native and WebAssembly builds draw the same looks.
 5. Order inside N1: dither lighting, paint-over and the look curves first (Low Water uses them),
    then film and CRT, then the rest.
 
+Status (2026-10-17). **N1 is closed: every criterion passes**, on software adapters. Criterion 1:
+the 18 pass modules and the look curves have C++ references that match their JavaScript references
+on committed fixtures, within bounds committed before each first run
+(`evidence/cpp-port-style-bounds.json` to `-bounds-12.json`, results in the matching `-runs` files;
+status and per-pass results in [CORE-PORT.md](CORE-PORT.md)). Criterion 2: the one WGSL source
+(`src/renderer/gpu/shaders/style.wgsl`, HLSL generated from it) runs on D3D12 with WARP in the
+`d3d12` job and in the WebAssembly build on SwiftShader in the `wasm` job, within each pass's web
+parity bound, with every control failing (record: `evidence/cpp-port-style-d3d12-warp.json`).
+Criterion 3: the `build-test` jobs export the fixtures from the JavaScript modules and run the C++
+CPU link on them. Criterion 4: `tools/ci/no_third_party_shaders.mjs` reads `web/shaders`, the core's
+shaders and, with `--cpp`, the C++ references. Criterion 5: dither lighting, paint-over and the look
+curves came first, then film and classic CRT; the physical CRT came last, after the painterly
+shader, at the author's direction of 2026-10-17. Limits: no hardware GPU was used for these
+checks; two WGSL source-edit controls missed and are recorded with post-hoc edits (lens halation,
+bounds-7 Addendum A; pixel crease, bounds-10 Addendum A); the web passes keep their own WGSL text
+(ADR 0019, rule 7).
+
 ### N2: Native presentation
 
 A native window and swapchain, as renderer infrastructure. No game loop or gameplay input; those
