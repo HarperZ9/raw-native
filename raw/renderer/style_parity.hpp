@@ -66,10 +66,13 @@ struct LookKeysResult {
 };
 struct StyleParity {
     std::string error, backend, adapter;
+    std::string only;                      // a development run of one group (--only); never a full verdict
     bool gpuWanted{true};
     int expectDither{0}, expectPaint{0};   // cases in the fixture bundles
     int expectImage{0};                    // round 2 image cases in their bundles
     int expectQuant{0};                    // hysteresis and palettelight cases (bounds-3)
+    int expectPaletteDither{0};            // palette dither cases (bounds-4)
+    int expectAdjacency{0};                // development adjacency cases (bounds-4)
     std::vector<StyleCase> cases;
     LookKeysResult lookkeys;
     PostStackResult poststack;
@@ -80,7 +83,9 @@ struct StyleParity {
 };
 // fixtureDir holds ditherlight.rnfx, paintover.rnfx, lookkeys.json and, from round 2,
 // poststack.rnfx, purity.rnfx, lightpaint.rnfx, glaze.rnfx, hatch.rnfx, hysteresis.rnfx and
-// palettelight.rnfx. dev may be null (CPU only).
-StyleParity styleParity(rhi::Device* dev, const std::string& fixtureDir);
+// palettelight.rnfx, dither.rnfx, adjacency.rnfx. dev may be null (CPU only).
+// only: empty for the full check, or one group (poststack, image, quantise, dither, adjacency) for a
+// development run, which the JSON marks and which is not the check of record.
+StyleParity styleParity(rhi::Device* dev, const std::string& fixtureDir, const std::string& only = "");
 
 }  // namespace raw::gpu_check

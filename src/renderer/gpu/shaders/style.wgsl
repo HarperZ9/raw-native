@@ -89,6 +89,23 @@ struct PalettelightParams {
     g1b: vec4f,
 }
 
+// Palette dither: n palette entries; mode 0 none, 1 to 3 Bayer 2/4/8, 4 IGN, 5 blue noise, 6 to 8
+// the mix modes over Bayer 4, Bayer 8 and blue noise.
+struct DitherGpuParams {
+    width: u32, height: u32, n: u32, mode: u32,
+}
+
+// Development adjacency. a: Dc, Db, dt, k; b: eta, r, beta, etaB; c: rB, gamma, H0, exposure;
+// d: decay, the display gain.
+struct AdjParams {
+    width: u32, height: u32, s: u32, cw: u32,
+    ch: u32, pad0: u32, pad1: u32, pad2: u32,
+    a: vec4f,
+    b: vec4f,
+    c: vec4f,
+    d: vec4f,
+}
+
 fn sat1(x: f32) -> f32 {
     return clamp(x, 0.0, 1.0);
 }
@@ -1048,4 +1065,421 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     }
     outIdx[i] = idx;
     out8[i] = ent[idx];
+}
+
+//@pass style_dither
+// Palette quantisation and dither (raw/renderer/style_dither.hpp) in double-single arithmetic: a
+// value is a vec2f (hi, lo), and the error-free transforms (Knuth two-sum, Dekker split and
+// two-product) are written without fma, so the decisions can equal the float64 reference's.
+// K: the constants as (hi, lo) pairs: the sRGB byte to linear table (256), the two OKLab matrices
+// (9 each), epsilon, the pair penalty, the three IGN constants, brightness, strength. pal: the
+// palette's OKLab as pairs, 3 an entry; palrgb: its RGBA8. bn: blue-noise ranks. src: the RGBA8
+// plate. Writes a palette index and the entry's RGBA8 a pixel.
+@group(0) @binding(0) var<uniform> U: DitherGpuParams;
+@group(0) @binding(1) var<storage, read> K: array<vec2f>;
+@group(0) @binding(2) var<storage, read> pal: array<vec2f>;
+@group(0) @binding(3) var<storage, read> palrgb: array<u32>;
+@group(0) @binding(4) var<storage, read> bn: array<u32>;
+@group(0) @binding(5) var<storage, read> src: array<u32>;
+@group(0) @binding(6) var<storage, read_write> idx: array<u32>;
+@group(0) @binding(7) var<storage, read_write> out8: array<u32>;
+
+fn two_sum(a: f32, b: f32) -> vec2f {
+    let s: f32 = a + b;
+    let bb: f32 = s - a;
+    return vec2f(s, (a - (s - bb)) + (b - bb));
+}
+fn quick_two_sum(a: f32, b: f32) -> vec2f {
+    let s: f32 = a + b;
+    return vec2f(s, b - (s - a));
+}
+fn split_f(a: f32) -> vec2f {
+    let c: f32 = 4097.0 * a;
+    let big: f32 = c - a;
+    let hi: f32 = c - big;
+    return vec2f(hi, a - hi);
+}
+fn two_prod(a: f32, b: f32) -> vec2f {
+    let p: f32 = a * b;
+    let sa: vec2f = split_f(a);
+    let sb: vec2f = split_f(b);
+    let e: f32 = ((sa.x * sb.x - p) + sa.x * sb.y + sa.y * sb.x) + sa.y * sb.y;
+    return vec2f(p, e);
+}
+fn ds(a: f32) -> vec2f {
+    return vec2f(a, 0.0);
+}
+fn ds_add(a: vec2f, b: vec2f) -> vec2f {
+    var s: vec2f = two_sum(a.x, b.x);
+    let t: vec2f = two_sum(a.y, b.y);
+    s.y = s.y + t.x;
+    s = quick_two_sum(s.x, s.y);
+    s.y = s.y + t.y;
+    return quick_two_sum(s.x, s.y);
+}
+fn ds_sub(a: vec2f, b: vec2f) -> vec2f {
+    return ds_add(a, -b);
+}
+fn ds_mul(a: vec2f, b: vec2f) -> vec2f {
+    var p: vec2f = two_prod(a.x, b.x);
+    p.y = p.y + (a.x * b.y + a.y * b.x);
+    return quick_two_sum(p.x, p.y);
+}
+fn ds_div(a: vec2f, b: vec2f) -> vec2f {
+    let q1: f32 = a.x / b.x;
+    var r: vec2f = ds_sub(a, ds_mul(b, ds(q1)));
+    let q2: f32 = r.x / b.x;
+    r = ds_sub(r, ds_mul(b, ds(q2)));
+    let q3: f32 = r.x / b.x;
+    return ds_add(quick_two_sum(q1, q2), ds(q3));
+}
+fn ds_lt(a: vec2f, b: vec2f) -> bool {
+    return a.x < b.x || (a.x == b.x && a.y < b.y);
+}
+fn ds_gt(a: vec2f, b: vec2f) -> bool {
+    return ds_lt(b, a);
+}
+fn ds_le(a: vec2f, b: vec2f) -> bool {
+    return !ds_lt(b, a);
+}
+fn ds_abs(a: vec2f) -> vec2f {
+    if (a.x < 0.0 || (a.x == 0.0 && a.y < 0.0)) { return -a; }
+    return a;
+}
+fn ds_min(a: vec2f, b: vec2f) -> vec2f {
+    if (ds_lt(b, a)) { return b; }
+    return a;
+}
+fn ds_clamp01(a: vec2f) -> vec2f {
+    if (ds_lt(a, ds(0.0))) { return ds(0.0); }
+    if (ds_gt(a, ds(1.0))) { return ds(1.0); }
+    return a;
+}
+fn ds_floor(a: vec2f) -> vec2f {
+    let f: f32 = floor(a.x);
+    if (f == a.x) { return quick_two_sum(f, floor(a.y)); }
+    return ds(f);
+}
+// Cube root: an f32 estimate, then one Newton step in double-single.
+fn ds_cbrt(x: vec2f) -> vec2f {
+    if (x.x == 0.0) { return ds(0.0); }
+    let y0: f32 = sign(x.x) * pow(abs(x.x), 1.0 / 3.0);
+    let yy: vec2f = ds_mul(ds(y0), ds(y0));
+    let y3: vec2f = ds_mul(yy, ds(y0));
+    return ds_add(ds(y0), ds_div(ds_sub(x, y3), ds_mul(ds(3.0), yy)));
+}
+fn palc(i: u32, c: u32) -> vec2f {
+    return pal[3u * i + c];
+}
+fn mat3ds(m: u32, x: vec2f, y: vec2f, z: vec2f, row: u32) -> vec2f {
+    return ds_add(ds_add(ds_mul(K[m + 3u * row], x), ds_mul(K[m + 3u * row + 1u], y)), ds_mul(K[m + 3u * row + 2u], z));
+}
+fn lab3(r: vec2f, g: vec2f, b: vec2f, L: ptr<function, vec2f>, A: ptr<function, vec2f>, B: ptr<function, vec2f>) {
+    let l: vec2f = ds_cbrt(mat3ds(256u, r, g, b, 0u));
+    let m: vec2f = ds_cbrt(mat3ds(256u, r, g, b, 1u));
+    let s: vec2f = ds_cbrt(mat3ds(256u, r, g, b, 2u));
+    *L = mat3ds(265u, l, m, s, 0u);
+    *A = mat3ds(265u, l, m, s, 1u);
+    *B = mat3ds(265u, l, m, s, 2u);
+}
+fn dist2(L: vec2f, a: vec2f, b: vec2f, i: u32) -> vec2f {
+    let dL: vec2f = ds_sub(L, palc(i, 0u));
+    let da: vec2f = ds_sub(a, palc(i, 1u));
+    let db: vec2f = ds_sub(b, palc(i, 2u));
+    return ds_add(ds_add(ds_mul(dL, dL), ds_mul(da, da)), ds_mul(db, db));
+}
+fn nearest(L: vec2f, a: vec2f, b: vec2f) -> u32 {
+    var best: u32 = 0u;
+    var bestD: vec2f = dist2(L, a, b, 0u);
+    for (var i: u32 = 1u; i < U.n; i++) {
+        let d: vec2f = dist2(L, a, b, i);
+        if (ds_lt(d, bestD)) {
+            bestD = d;
+            best = i;
+        }
+    }
+    return best;
+}
+fn far_side(L: vec2f, a: vec2f, b: vec2f, i: u32) -> i32 {
+    let dL: vec2f = ds_sub(L, palc(i, 0u));
+    let da: vec2f = ds_sub(a, palc(i, 1u));
+    let db: vec2f = ds_sub(b, palc(i, 2u));
+    let d2: vec2f = ds_add(ds_add(ds_mul(dL, dL), ds_mul(da, da)), ds_mul(db, db));
+    var best: i32 = -1;
+    var bestS: vec2f = vec2f(0.0);
+    var have: bool = false;
+    for (var j: u32 = 0u; j < U.n; j++) {
+        if (j == i) { continue; }
+        let sL: vec2f = ds_sub(palc(j, 0u), palc(i, 0u));
+        let sa: vec2f = ds_sub(palc(j, 1u), palc(i, 1u));
+        let sb: vec2f = ds_sub(palc(j, 2u), palc(i, 2u));
+        let len2: vec2f = ds_add(ds_add(ds_mul(sL, sL), ds_mul(sa, sa)), ds_mul(sb, sb));
+        if (ds_lt(len2, K[274u])) { continue; }
+        let u: vec2f = ds_div(ds_add(ds_add(ds_mul(dL, sL), ds_mul(da, sa)), ds_mul(db, sb)), len2);
+        if (ds_le(u, ds(0.0))) { continue; }
+        let uc: vec2f = ds_min(u, ds(1.0));
+        let pen: vec2f = ds_mul(ds_mul(K[275u], len2), ds_add(ds_abs(ds_sub(uc, ds(0.5))), ds(0.5)));
+        let score: vec2f = ds_add(ds_sub(d2, ds_mul(ds_mul(uc, uc), len2)), pen);
+        if (!have || ds_lt(score, bestS)) {
+            bestS = score;
+            best = i32(j);
+            have = true;
+        }
+    }
+    return best;
+}
+fn bayer_rank(x: u32, y: u32, n: u32) -> u32 {
+    if (n == 2u) { return (((x ^ y) & 1u) << 1u) | (y & 1u); }
+    if (n == 4u) {
+        let z: u32 = (x ^ y) & 3u;
+        return ((z & 1u) << 3u) | ((y & 1u) << 2u) | (z & 2u) | ((y & 2u) >> 1u);
+    }
+    let xx: u32 = x & 7u;
+    let yy: u32 = y & 7u;
+    let v: u32 = xx ^ yy;
+    return ((v & 1u) << 5u) | ((yy & 1u) << 4u) | ((v & 2u) << 2u) | ((yy & 2u) << 1u) | ((v & 4u) >> 1u) | ((yy & 4u) >> 2u);
+}
+// The threshold of a pixel: mode 1, 2, 3 Bayer 2, 4, 8; 4 IGN; 5 blue noise.
+fn threshold(x: u32, y: u32, mode: u32) -> vec2f {
+    if (mode == 1u) { return ds((f32(bayer_rank(x, y, 2u)) + 0.5) / 4.0); }
+    if (mode == 2u) { return ds((f32(bayer_rank(x, y, 4u)) + 0.5) / 16.0); }
+    if (mode == 3u) { return ds((f32(bayer_rank(x, y, 8u)) + 0.5) / 64.0); }
+    if (mode == 4u) {
+        let f: vec2f = ds_add(ds_mul(K[276u], ds(f32(x))), ds_mul(K[277u], ds(f32(y))));
+        let v: vec2f = ds_mul(K[278u], ds_sub(f, ds_floor(f)));
+        return ds_sub(v, ds_floor(v));
+    }
+    return ds((f32(bn[(y % 64u) * 64u + x % 64u]) + 0.5) / 4096.0);
+}
+fn pal_lin(k: u32, c: u32) -> vec2f {
+    return K[(palrgb[k] >> (8u * c)) & 255u];
+}
+fn before(a: u32, b: u32) -> bool {
+    let La: vec2f = palc(a, 0u);
+    let Lb: vec2f = palc(b, 0u);
+    if (ds_lt(La, Lb)) { return true; }
+    if (ds_lt(Lb, La)) { return false; }
+    return a < b;
+}
+fn mix_pick(r: vec2f, g: vec2f, b: vec2f, th: vec2f) -> u32 {
+    var plan: array<u32, 16>;
+    var sr: vec2f = ds(0.0);
+    var sg: vec2f = ds(0.0);
+    var sb: vec2f = ds(0.0);
+    var TL: vec2f = vec2f(0.0);
+    var TA: vec2f = vec2f(0.0);
+    var TB: vec2f = vec2f(0.0);
+    var CL: vec2f = vec2f(0.0);
+    var CA: vec2f = vec2f(0.0);
+    var CB: vec2f = vec2f(0.0);
+    for (var i: u32 = 0u; i < 16u; i++) {
+        let w: vec2f = ds(f32(i + 1u));
+        lab3(ds_mul(w, r), ds_mul(w, g), ds_mul(w, b), &TL, &TA, &TB);
+        var k: u32 = 0u;
+        var bd: vec2f = vec2f(0.0);
+        var have: bool = false;
+        for (var j: u32 = 0u; j < U.n; j++) {
+            lab3(ds_add(sr, pal_lin(j, 0u)), ds_add(sg, pal_lin(j, 1u)), ds_add(sb, pal_lin(j, 2u)), &CL, &CA, &CB);
+            let dL: vec2f = ds_sub(CL, TL);
+            let dA: vec2f = ds_sub(CA, TA);
+            let dB: vec2f = ds_sub(CB, TB);
+            let d: vec2f = ds_add(ds_add(ds_mul(dL, dL), ds_mul(dA, dA)), ds_mul(dB, dB));
+            if (!have || ds_lt(d, bd)) {
+                bd = d;
+                k = j;
+                have = true;
+            }
+        }
+        var q: u32 = i;
+        for (var st: u32 = 0u; st < 16u; st++) {
+            if (q == 0u || !before(k, plan[q - 1u])) { break; }
+            plan[q] = plan[q - 1u];
+            q = q - 1u;
+        }
+        plan[q] = k;
+        sr = ds_add(sr, pal_lin(k, 0u));
+        sg = ds_add(sg, pal_lin(k, 1u));
+        sb = ds_add(sb, pal_lin(k, 2u));
+    }
+    let f: vec2f = ds_floor(ds_mul(th, ds(16.0)));
+    let pi: i32 = min(15, i32(f.x) + i32(f.y));
+    return plan[u32(max(pi, 0))];
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let p: u32 = gid.x;
+    if (p >= U.width * U.height) { return; }
+    let x: u32 = p % U.width;
+    let y: u32 = p / U.width;
+    let mode: u32 = U.mode;
+    let c: u32 = src[p];
+    let r: vec2f = K[c & 255u];
+    let g: vec2f = K[(c >> 8u) & 255u];
+    let b: vec2f = K[(c >> 16u) & 255u];
+    var L0: vec2f = vec2f(0.0);
+    var A: vec2f = vec2f(0.0);
+    var Bv: vec2f = vec2f(0.0);
+    lab3(r, g, b, &L0, &A, &Bv);
+    let L: vec2f = ds_clamp01(ds_add(L0, K[279u]));
+    var i: u32 = nearest(L, A, Bv);
+    let strength: vec2f = K[280u];
+    if (mode >= 6u) {
+        if (U.n >= 2u && ds_gt(strength, ds(0.0))) {
+            var srcMode: u32 = 5u;
+            if (mode == 6u) { srcMode = 2u; }
+            if (mode == 7u) { srcMode = 3u; }
+            let th: vec2f = ds_add(ds(0.5), ds_mul(ds_sub(threshold(x, y, srcMode), ds(0.5)), strength));
+            i = mix_pick(r, g, b, th);
+        }
+        idx[p] = i;
+        out8[p] = palrgb[i];
+        return;
+    }
+    if (mode != 0u && U.n >= 2u && ds_gt(strength, ds(0.0))) {
+        let j: i32 = far_side(L, A, Bv, i);
+        if (j >= 0) {
+            let ju: u32 = u32(j);
+            let sL: vec2f = ds_sub(palc(ju, 0u), palc(i, 0u));
+            let sa: vec2f = ds_sub(palc(ju, 1u), palc(i, 1u));
+            let sb: vec2f = ds_sub(palc(ju, 2u), palc(i, 2u));
+            let len2: vec2f = ds_add(ds_add(ds_mul(sL, sL), ds_mul(sa, sa)), ds_mul(sb, sb));
+            if (!ds_lt(len2, K[274u])) {
+                let num: vec2f = ds_add(ds_add(ds_mul(ds_sub(L, palc(i, 0u)), sL), ds_mul(ds_sub(A, palc(i, 1u)), sa)), ds_mul(ds_sub(Bv, palc(i, 2u)), sb));
+                let f: vec2f = ds_clamp01(ds_div(num, len2));
+                let th: vec2f = ds_add(ds(0.5), ds_mul(ds_sub(threshold(x, y, mode), ds(0.5)), strength));
+                if (ds_gt(f, th)) { i = ju; }
+            }
+        }
+    }
+    idx[p] = i;
+    out8[p] = palrgb[i];
+}
+
+//@pass style_adj_prep
+// Development adjacency (raw/renderer/style_adjacency.hpp), first pass: the developable fraction
+// a_k of each layer from the exposure, and D = 0.
+@group(0) @binding(0) var<uniform> U: AdjParams;
+@group(0) @binding(1) var<storage, read> scene: array<vec4f>;
+@group(0) @binding(2) var<storage, read_write> A: array<vec4f>;
+@group(0) @binding(3) var<storage, read_write> D: array<vec4f>;
+
+fn developable(H: f32) -> f32 {
+    if (H <= 0.0) { return 0.0; }
+    let q: f32 = pow(U.c.z / H, U.c.y);
+    return 1.0 / (1.0 + q);
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    let c: vec3f = scene[i].xyz * U.c.w;
+    A[i] = vec4f(developable(c.x), developable(c.y), developable(c.z), 0.0);
+    D[i] = vec4f(0.0);
+}
+
+//@pass style_adj_develop
+// One Euler step of development at full resolution, reading the developer and bromide fields F
+// (coarse, bilinear). D.w receives the step's development summed over the layers.
+@group(0) @binding(0) var<uniform> U: AdjParams;
+@group(0) @binding(1) var<storage, read> A: array<vec4f>;
+@group(0) @binding(2) var<storage, read> F: array<vec4f>;
+@group(0) @binding(3) var<storage, read_write> D: array<vec4f>;
+
+fn coarse_at(x: i32, y: i32) -> vec2f {
+    let s: f32 = f32(U.s);
+    let cw: i32 = i32(U.cw);
+    let ch: i32 = i32(U.ch);
+    let u: f32 = (f32(x) + 0.5) / s - 0.5;
+    let v: f32 = (f32(y) + 0.5) / s - 0.5;
+    let x0: i32 = clamp(i32(floor(u)), 0, cw - 1);
+    let y0: i32 = clamp(i32(floor(v)), 0, ch - 1);
+    let x1: i32 = min(cw - 1, x0 + 1);
+    let y1: i32 = min(ch - 1, y0 + 1);
+    let fx: f32 = clamp(u - f32(x0), 0.0, 1.0);
+    let fy: f32 = clamp(v - f32(y0), 0.0, 1.0);
+    let a: vec2f = F[u32(y0 * cw + x0)].xy;
+    let b: vec2f = F[u32(y0 * cw + x1)].xy;
+    let c: vec2f = F[u32(y1 * cw + x0)].xy;
+    let d: vec2f = F[u32(y1 * cw + x1)].xy;
+    return (a * (1.0 - fx) + b * fx) * (1.0 - fy) + (c * (1.0 - fx) + d * fx) * fy;
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    let x: i32 = i32(i % U.width);
+    let y: i32 = i32(i / U.width);
+    let cb: vec2f = coarse_at(x, y);
+    let rate: f32 = (U.a.w * cb.x) / (1.0 + U.b.z * cb.y);
+    var d: vec4f = D[i];
+    let a: vec4f = A[i];
+    let dt: f32 = U.a.z;
+    let dr: f32 = rate * (a.x - d.x) * dt;
+    d.x = d.x + dr;
+    let dg: f32 = rate * (a.y - d.y) * dt;
+    d.y = d.y + dg;
+    let db: f32 = rate * (a.z - d.z) * dt;
+    d.z = d.z + db;
+    d.w = dr + dg + db;
+    D[i] = d;
+}
+
+//@pass style_adj_chem
+// One Euler step of the chemistry on the coarse grid: diffusion with reflecting borders, use by
+// development, replenishment by the bath. Reads F, writes G.
+@group(0) @binding(0) var<uniform> U: AdjParams;
+@group(0) @binding(1) var<storage, read> D: array<vec4f>;
+@group(0) @binding(2) var<storage, read> F: array<vec4f>;
+@group(0) @binding(3) var<storage, read_write> G: array<vec4f>;
+
+fn at(i: i32, j: i32) -> vec2f {
+    let cw: i32 = i32(U.cw);
+    let ch: i32 = i32(U.ch);
+    return F[u32(clamp(j, 0, ch - 1) * cw + clamp(i, 0, cw - 1))].xy;
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    if (gid.x >= U.cw * U.ch) { return; }
+    let i: i32 = i32(gid.x % U.cw);
+    let j: i32 = i32(gid.x / U.cw);
+    let w: i32 = i32(U.width);
+    let h: i32 = i32(U.height);
+    let s: i32 = i32(U.s);
+    var used: f32 = 0.0;
+    var cnt: f32 = 0.0;
+    for (var yy: i32 = j * s; yy < min(h, j * s + s); yy++) {
+        for (var xx: i32 = i * s; xx < min(w, i * s + s); xx++) {
+            used = used + D[u32(yy * w + xx)].w;
+            cnt = cnt + 1.0;
+        }
+    }
+    used = used / cnt;
+    let f0: vec2f = at(i, j);
+    let dt: f32 = U.a.z;
+    let l: vec2f = at(i - 1, j) + at(i + 1, j) + at(i, j - 1) + at(i, j + 1) - 4.0 * f0;
+    let c: f32 = f0.x + U.a.x * l.x * dt - U.b.x * used + U.b.y * (1.0 - f0.x) * dt;
+    let b: f32 = f0.y + U.a.y * l.y * dt + U.b.w * used - U.c.x * f0.y * dt;
+    G[gid.x] = vec4f(c, b, 0.0, 0.0);
+}
+
+//@pass style_adj_out
+// The output: scene colour times (D + eps) / (A (1 - decay) + eps), lab-encoded to RGBA8.
+@group(0) @binding(0) var<uniform> U: AdjParams;
+@group(0) @binding(1) var<storage, read> scene: array<vec4f>;
+@group(0) @binding(2) var<storage, read> A: array<vec4f>;
+@group(0) @binding(3) var<storage, read> D: array<vec4f>;
+@group(0) @binding(4) var<storage, read_write> out8: array<u32>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    let free: f32 = 1.0 - U.d.x;
+    let eps: f32 = 1.0e-6;
+    let o: vec3f = scene[i].xyz * ((D[i].xyz + vec3f(eps)) / (A[i].xyz * free + vec3f(eps)));
+    out8[i] = lab_pack(o, U.d.y);
 }

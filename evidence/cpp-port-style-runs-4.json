@@ -1,0 +1,287 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/cpp-port-style-bounds-4.json",
+ "machine": "the author's Windows 11 workstation; WARP (Microsoft Basic Render Driver) through RAW_NATIVE_D3D12_WARP=1 on every D3D12 command, software only; adjacency's first WARP run with the D3D12 debug layer on. The GPU lock was held by MMBU training and not taken; nvidia-smi samples during WARP runs never listed raw_native_cli. From the coordinator's note of 2026-10-16, later runs and builds ran at Idle priority with at most 4 build jobs.",
+ "dither": {
+  "first_cpu_run": {
+   "cases": 114,
+   "index_mismatch": 0,
+   "excused_ties": 0,
+   "controls_fail_every_case": true
+  },
+  "first_warp_run": {
+   "cases": 114,
+   "gpu_index_mismatch": 0,
+   "controls_fail_every_case": true,
+   "pass": true,
+   "note": "Double-single arithmetic gives the float64 reference's palette index on every pixel of every case on WARP, mix modes included (their bound allowed 1e-5)."
+  },
+  "source_edit_controls": {
+   "cpp": {
+    "edit": "pairPenalty 0.12 -> 0.13",
+    "cpu_failing_cases": [
+     "cga-bayer2-gradient-s1-b0",
+     "cga-bayer2-random-s1-b0",
+     "cga-bayer4-gradient-s1-b0",
+     "cga-bayer4-random-s1-b0",
+     "cga-bayer8-gradient-s1-b0",
+     "cga-bayer8-random-s1-b0",
+     "cga-noise-gradient-s1-b0",
+     "cga-noise-random-s1-b0",
+     "cga-blue-gradient-s1-b0",
+     "cga-blue-random-s1-b0",
+     "ega-bayer2-gradient-s1-b0",
+     "ega-bayer2-random-s1-b0",
+     "ega-bayer4-gradient-s1-b0",
+     "ega-bayer4-random-s1-b0",
+     "ega-bayer8-gradient-s1-b0",
+     "ega-bayer8-random-s1-b0",
+     "ega-noise-gradient-s1-b0",
+     "ega-noise-random-s1-b0",
+     "ega-blue-gradient-s1-b0",
+     "ega-blue-random-s1-b0",
+     "pico8-bayer2-gradient-s1-b0",
+     "pico8-bayer2-random-s1-b0",
+     "pico8-bayer4-gradient-s1-b0",
+     "pico8-bayer4-random-s1-b0",
+     "pico8-bayer8-gradient-s1-b0",
+     "pico8-bayer8-random-s1-b0",
+     "pico8-noise-gradient-s1-b0",
+     "pico8-noise-random-s1-b0",
+     "pico8-blue-gradient-s1-b0",
+     "pico8-blue-random-s1-b0",
+     "nes-bayer2-gradient-s1-b0",
+     "nes-bayer2-random-s1-b0",
+     "nes-bayer4-gradient-s1-b0",
+     "nes-bayer4-random-s1-b0",
+     "nes-bayer8-gradient-s1-b0",
+     "nes-bayer8-random-s1-b0",
+     "nes-noise-gradient-s1-b0",
+     "nes-noise-random-s1-b0",
+     "nes-blue-gradient-s1-b0",
+     "nes-blue-random-s1-b0",
+     "pico8-bayer8-gradient-s0.7-b0.05",
+     "pico8-bayer8-random-s0.7-b0.05",
+     "pico8-noise-gradient-s0.7-b0.05",
+     "pico8-noise-random-s0.7-b0.05"
+    ],
+    "against_prediction": "Held: the 44 failing cases are the patterned pair modes (bayer2/4/8, noise, blue) of cga, ega, pico8 and nes, including the ega and pico8 bayer4 cases; no none or mix case failed. gameboy and mono1 failed no case; the cause was not examined (mono1 has two entries, so its far-side pick has no rival; gameboy's four entries were not analysed)."
+   },
+   "wgsl": {
+    "edit": "blue-noise divisor 4096 -> 4095",
+    "warp_failing_cases": [
+     "gameboy-blue-gradient-s1-b0",
+     "gameboy-blue-random-s1-b0",
+     "cga-blue-gradient-s1-b0",
+     "cga-blue-random-s1-b0",
+     "ega-blue-gradient-s1-b0",
+     "ega-blue-random-s1-b0",
+     "pico8-blue-gradient-s1-b0",
+     "pico8-blue-random-s1-b0",
+     "nes-blue-gradient-s1-b0",
+     "nes-blue-random-s1-b0",
+     "mono1-blue-gradient-s1-b0",
+     "mono1-blue-random-s1-b0",
+     "gameboy-mix-blue-gradient-s1-b0",
+     "gameboy-mix-blue-random-s1-b0",
+     "cga-mix-blue-gradient-s1-b0",
+     "cga-mix-blue-random-s1-b0",
+     "ega-mix-blue-gradient-s1-b0",
+     "ega-mix-blue-random-s1-b0",
+     "pico8-mix-blue-gradient-s1-b0",
+     "pico8-mix-blue-random-s1-b0",
+     "nes-mix-blue-gradient-s1-b0",
+     "nes-mix-blue-random-s1-b0",
+     "mono1-mix-blue-gradient-s1-b0",
+     "mono1-mix-blue-random-s1-b0"
+    ],
+    "against_prediction": "Held: exactly the 24 blue and mix-blue cases failed; no bayer, noise or none case."
+   }
+  }
+ },
+ "adjacency": {
+  "first_cpu_run": [
+   {
+    "id": "street-eberhard",
+    "cpu": {
+     "max_abs": 2.77556e-17,
+     "mismatch": 0,
+     "excused_ties": 0,
+     "secondary_mismatch": 0,
+     "preset_equal": true,
+     "control_fails": true,
+     "pass": true
+    }
+   },
+   {
+    "id": "street-mackie",
+    "cpu": {
+     "max_abs": 2.77556e-17,
+     "mismatch": 0,
+     "excused_ties": 0,
+     "secondary_mismatch": 0,
+     "preset_equal": true,
+     "control_fails": true,
+     "pass": true
+    }
+   },
+   {
+    "id": "street-exhausted",
+    "cpu": {
+     "max_abs": 5.55112e-17,
+     "mismatch": 0,
+     "excused_ties": 0,
+     "secondary_mismatch": 0,
+     "preset_equal": true,
+     "control_fails": true,
+     "pass": true
+    }
+   },
+   {
+    "id": "edges-eberhard",
+    "cpu": {
+     "max_abs": 0,
+     "mismatch": 0,
+     "excused_ties": 0,
+     "secondary_mismatch": 0,
+     "preset_equal": true,
+     "control_fails": true,
+     "pass": true
+    }
+   }
+  ],
+  "first_warp_run": [
+   {
+    "id": "street-eberhard",
+    "cpu": {
+     "max_abs": 2.77556e-17,
+     "mismatch": 0,
+     "excused_ties": 0,
+     "secondary_mismatch": 0,
+     "preset_equal": true,
+     "control_fails": true,
+     "pass": true
+    },
+    "gpu": {
+     "mismatch": 0,
+     "mismatch_fraction": 0,
+     "over2_fraction": 0,
+     "mean": 5.20833e-06,
+     "max": 1,
+     "p999": 0,
+     "control_fails": true,
+     "pass": true
+    }
+   },
+   {
+    "id": "street-mackie",
+    "cpu": {
+     "max_abs": 2.77556e-17,
+     "mismatch": 0,
+     "excused_ties": 0,
+     "secondary_mismatch": 0,
+     "preset_equal": true,
+     "control_fails": true,
+     "pass": true
+    },
+    "gpu": {
+     "mismatch": 0,
+     "mismatch_fraction": 0,
+     "over2_fraction": 0,
+     "mean": 5.20833e-06,
+     "max": 1,
+     "p999": 0,
+     "control_fails": true,
+     "pass": true
+    }
+   },
+   {
+    "id": "street-exhausted",
+    "cpu": {
+     "max_abs": 5.55112e-17,
+     "mismatch": 0,
+     "excused_ties": 0,
+     "secondary_mismatch": 0,
+     "preset_equal": true,
+     "control_fails": true,
+     "pass": true
+    },
+    "gpu": {
+     "mismatch": 0,
+     "mismatch_fraction": 0,
+     "over2_fraction": 0,
+     "mean": 5.20833e-06,
+     "max": 1,
+     "p999": 0,
+     "control_fails": true,
+     "pass": true
+    }
+   },
+   {
+    "id": "edges-eberhard",
+    "cpu": {
+     "max_abs": 0,
+     "mismatch": 0,
+     "excused_ties": 0,
+     "secondary_mismatch": 0,
+     "preset_equal": true,
+     "control_fails": true,
+     "pass": true
+    },
+    "gpu": {
+     "mismatch": 0,
+     "mismatch_fraction": 0,
+     "over2_fraction": 0,
+     "mean": 0,
+     "max": 0,
+     "p999": 0,
+     "control_fails": true,
+     "pass": true
+    }
+   }
+  ],
+  "source_edit_controls": {
+   "cpp": {
+    "edit": "lapCentre 4 -> 3.9",
+    "cpu_failing_cases": [
+     "street-eberhard",
+     "street-mackie",
+     "street-exhausted",
+     "edges-eberhard"
+    ]
+   },
+   "wgsl": {
+    "edit": "chemistry Laplacian - 4.0 f0 -> - 3.9 f0",
+    "warp_failing_cases": [
+     "street-eberhard",
+     "street-mackie",
+     "street-exhausted",
+     "edges-eberhard"
+    ],
+    "gpu": [
+     {
+      "id": "street-eberhard",
+      "max": 5,
+      "mean": 2.92422
+     },
+     {
+      "id": "street-mackie",
+      "max": 3,
+      "mean": 0.935198
+     },
+     {
+      "id": "street-exhausted",
+      "max": 8,
+      "mean": 4.12587
+     },
+     {
+      "id": "edges-eberhard",
+      "max": 6,
+      "mean": 2.81282
+     }
+    ]
+   },
+   "against_prediction": "Held: both edits failed every case."
+  }
+ }
+}
