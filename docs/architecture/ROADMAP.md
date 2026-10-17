@@ -187,6 +187,13 @@ Exit criteria:
 4. One million particles at a frame time recorded on the reference machine, with seed-determinism across runs.
 5. Frames per joule are published for the M1 scenes and the M4 scene.
 
+Dated note (2026-10-17) on the scope's HDR output. Through the D3D12 swapchain, the HDR10 signal read back
+before present is within one 10-bit code of the C++ PQ encode on WARP (RELEASE-PLAN N2,
+`evidence/n2-presentation-runs.json`). Through a Vulkan swapchain it is untestable on available hardware:
+the workstation's only display is an SDR panel, so the surface offers no HDR10 colour space
+(`evidence/n3-vulkan-timing-runs.json`). The software Vulkan drivers in CI offer only sRGB. The check
+needs an HDR-capable display.
+
 ## M5: Light transport and breadth
 
 Scope: global illumination, screen-space reflections, an own temporal upscaler, Metal (A1), USD import if asked, packaging and crash reporting (sentry-native, MIT), and runtime stage G3 (the `world` layer, physics behind an interface, save and load; the entity model chosen by an ADR at M4).

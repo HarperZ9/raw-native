@@ -218,8 +218,9 @@ Win32 display configuration, the Wayland output mode), so the N2 pacing bound ca
 one monitor the Vulkan and D3D12 hosts report the same rate. On the RTX 4090 through Vulkan
 (2026-10-17, `evidence/n3-vk-rtx4090/`), frame pacing holds the N2 bound: median 16.666 ms at 60 Hz,
 99th percentile 1.098 of the refresh period, and no interval above 1.5 periods. The presented frames
-equal the offscreen frames and D3D12 WARP's, hash for hash. HDR10 through the Vulkan swapchain is still
-unchecked: the surface offered no HDR10 colour space on that run.
+equal the offscreen frames and D3D12 WARP's, hash for hash. HDR10 through the Vulkan swapchain is
+untestable on available hardware: the workstation's only display is an SDR panel, so its surface offers
+no HDR10 colour space. The check needs an HDR-capable display.
 
 Criterion 5, Steam Deck class (2026-10-17, `evidence/n3-deck-class-runs.json`, bounds written before
 the first run). The Linux build passes on lavapipe in CI. raw-hero at 1280 x 800 is verified, and its

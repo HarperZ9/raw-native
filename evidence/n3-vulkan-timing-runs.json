@@ -22,18 +22,19 @@
    ]
   },
   "t3_rtx_vulkan_queued": {
-   "result": "(a) holds, (b) holds, (c) open",
+   "result": "(a) holds, (b) holds, (c) untestable on available hardware",
    "run": "2026-10-17 06:31:45Z to 06:35:01Z, on the author's approval for this one run (relayed by the coordinator, quoted in the PR). The GPU lock was taken with its own token after the previous holder released it, and released when the last step ended. Binary pinned: evidence/n3-vk-rtx4090/BINARY.txt.",
    "a_pacing": "NVIDIA GeForce RTX 4090, Vulkan 1.4.341, borderless fullscreen 1920 x 1080 at 60 Hz (refresh from the window: NVIDIA's driver offers no VK_GOOGLE_display_timing here). 9,999 intervals: median 16.6663 ms, p95 17.771 ms, p99 18.303 ms (1.098 T), max 20.61 ms, 0 above 1.5 T, no occluded presents. Every bound holds. D3D12 on the same card (N2): median 16.663 ms, p99 1.088 T, 4 above 1.5 T.",
    "b_hashes": "600 presented frames twice and offscreen on the RTX 4090 through Vulkan: 600 of 600 equal, and equal to the committed D3D12 WARP offscreen list (evidence/n2-warp/offscreen.json).",
-   "c_hdr10": "Not checked: the surface offered 5 format and colour-space pairs and none was A2B10G10R10 with HDR10_ST2084, so the host skipped (exit 77). The prediction (NVIDIA offers HDR10_ST2084 whether or not Windows HDR is on) was wrong on this machine. The likely cause, not checked, is that Windows HDR was off on the monitor. The host does not yet print the offered pairs; that is a small follow-up so the next run says what was offered.",
+   "c_hdr10": "Untestable on available hardware. The workstation's only monitor is an SDR panel (the author, 2026-10-17), so the Vulkan surface offers no HDR10 colour space: on the run it offered 5 format and colour-space pairs, none of them A2B10G10R10 with HDR10_ST2084, and the host skipped (exit 77). The check needs an HDR-capable display. Since fix/vk-offered-formats the host names the offered pairs when it refuses a request, which documents an SDR-only surface.",
    "files": [
     "evidence/n3-vk-rtx4090/n3-vk-pacing-rtx4090.json",
     "evidence/n3-vk-rtx4090/n3-vk-pacing-rtx4090-gate.txt",
     "evidence/n3-vk-rtx4090/n3-vk-same-gate.txt",
     "evidence/n3-vk-rtx4090/n3-vk-hdr-rtx4090.txt",
     "evidence/n3-vk-rtx4090/gpu-snapshots.txt"
-   ]
+   ],
+   "correction": "2026-10-17: an earlier version of this entry suggested Windows HDR was switched off. That was a guess and it was wrong: the panel has no HDR. Corrected on the author's information."
   }
  },
  "does_not_prove": "Pacing on Vulkan hardware or on a Steam Deck; HDR10 through a Vulkan swapchain; that any compositor presents at the reported rate. A refresh value is what the system reports, not a measurement of presents."
