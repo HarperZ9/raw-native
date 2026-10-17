@@ -1,0 +1,3 @@
+n3-vk-run1-rtx4090.json vs n3-vk-run2-rtx4090.json: 600 and 600 frames, 0 differ
+n3-vk-run1-rtx4090.json vs n3-vk-offscreen-rtx4090.json: 600 and 600 frames, 0 differ
+PASS

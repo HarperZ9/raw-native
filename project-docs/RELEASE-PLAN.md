@@ -215,9 +215,11 @@ identity's depth bound on two scenes. Criterion 5 (Steam Deck) is open.
 Frame timing on Vulkan (2026-10-17, `evidence/n3-vulkan-timing-runs.json`): the Vulkan swapchain
 reports the output's refresh rate from `VK_GOOGLE_display_timing`, or the host asks the window (the
 Win32 display configuration, the Wayland output mode), so the N2 pacing bound can be read on Vulkan. On
-one monitor the Vulkan and D3D12 hosts report the same rate. The RTX 4090 Vulkan run (pacing, HDR10
-through the Vulkan swapchain, presented hashes) is prepared but not run: it needs the GPU lock and a
-fullscreen window on the machine in use.
+one monitor the Vulkan and D3D12 hosts report the same rate. On the RTX 4090 through Vulkan
+(2026-10-17, `evidence/n3-vk-rtx4090/`), frame pacing holds the N2 bound: median 16.666 ms at 60 Hz,
+99th percentile 1.098 of the refresh period, and no interval above 1.5 periods. The presented frames
+equal the offscreen frames and D3D12 WARP's, hash for hash. HDR10 through the Vulkan swapchain is still
+unchecked: the surface offered no HDR10 colour space on that run.
 
 Criterion 5, Steam Deck class (2026-10-17, `evidence/n3-deck-class-runs.json`, bounds written before
 the first run). The Linux build passes on lavapipe in CI. raw-hero at 1280 x 800 is verified, and its

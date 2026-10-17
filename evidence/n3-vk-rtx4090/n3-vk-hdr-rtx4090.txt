@@ -1,0 +1,1 @@
+SKIP: HDR10 swapchain: vulkan: the surface offers no format and colour space for this swapchain request (5 offered)
