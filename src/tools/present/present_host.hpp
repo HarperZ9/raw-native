@@ -34,7 +34,8 @@ struct FrameRecord { uint32_t frame, width, height; std::string hash; };
 struct RunResult {
     std::vector<FrameRecord> frames;
     std::vector<std::string> events;   // what happened, in order, for the record
-    std::string adapter, graph, error, backend, windowSystem;
+    std::string adapter, graph, error, backend, windowSystem, refreshSource{"none"};
+    double refreshHz{0};
     uint32_t recoveries{0}, drawnWhileMinimised{0}, zeroResizes{0}, sizeMismatches{0};
     bool tearing{false}, fullscreenChecked{false}, fullscreenOk{false};
 };
@@ -53,6 +54,9 @@ bool openSession(Session& s, platform::Window* w, rhi::TextureFormat format, rhi
 void closeSession(Session& s);
 // Resize the swapchain and the targets together (the device is idle between frames).
 bool resizeSession(Session& s, uint32_t w, uint32_t h, std::string& err);
+// The output's refresh rate: the swapchain's when the backend knows it (DXGI's display
+// configuration, VK_GOOGLE_display_timing), else the window's; `source` says which ("none": 0).
+double outputRefreshHz(Session& s, const platform::Window& w, std::string& source);
 
 int runPresented(const RunOptions& o, RunResult& r);
 int runOffscreen(const RunOptions& o, RunResult& r);

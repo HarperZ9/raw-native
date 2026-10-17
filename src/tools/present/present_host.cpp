@@ -76,6 +76,7 @@ int runPresented(const RunOptions& o, RunResult& r){
     if (!openSession(s, win.get(), rhi::TextureFormat::RGBA8Unorm, rhi::ColourSpace::SrgbNonlinear, o.syncInterval, false, r.error, &noDevice))
         return noDevice ? kSkip : kRuntime;
     r.adapter = s.adapter; r.tearing = s.sc->tearingAllowed();
+    r.refreshHz = outputRefreshHz(s, *win, r.refreshSource);
     if (s.sc->width() != o.width || s.sc->height() != o.height)
         r.events.push_back("the window's client area is " + size(s.sc->width(), s.sc->height()) + ", not " + size(o.width, o.height));
     const Schedule& sch = o.schedule;

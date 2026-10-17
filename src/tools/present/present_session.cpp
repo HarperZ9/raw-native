@@ -71,4 +71,11 @@ int runOffscreen(const RunOptions& o, RunResult& r){
     closeSession(s);
     return kOk;
 }
+double outputRefreshHz(Session& s, const platform::Window& w, std::string& source){
+    const double sc = s.sc ? s.sc->refreshHz() : 0;
+    if (sc > 0){ source = "swapchain"; return sc; }
+    const double win = w.refreshHz();
+    source = win > 0 ? "window" : "none";
+    return win > 0 ? win : 0;
+}
 }  // namespace raw::present

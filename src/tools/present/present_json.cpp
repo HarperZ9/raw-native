@@ -30,6 +30,7 @@ std::string runJson(const RunOptions& o, const RunResult& r){
     j += " \"adapter\": " + jstr(r.adapter) + ",\n";
     j += " \"backend\": " + jstr(r.backend) + ", \"window_system\": " + jstr(r.windowSystem) + ",\n";
     j += " \"width\": " + std::to_string(o.width) + ", \"height\": " + std::to_string(o.height) + ",\n";
+    j += " \"refresh_hz\": " + jnum(r.refreshHz) + ", \"refresh_source\": " + jstr(r.refreshSource) + ",\n";
     j += " \"sync_interval\": " + std::to_string(o.syncInterval) + ", \"tearing\": " + (r.tearing ? "true" : "false") + ",\n";
     j += " \"control_blit_offset_x\": " + std::to_string(o.control ? 1 : 0) + ",\n";
     j += " \"lifecycle\": " + std::string(o.schedule.on ? "true" : "false") + ",\n";

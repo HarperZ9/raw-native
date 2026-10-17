@@ -1,0 +1,28 @@
+{
+ "schema": "raw-native.present-run/1",
+ "mode": "presented",
+ "adapter": "Microsoft Basic Render Driver (d3d12, vendor microsoft, driver 10.0.26100.9587)",
+ "backend": "d3d12", "window_system": "win32",
+ "width": 320, "height": 180,
+ "refresh_hz": 60, "refresh_source": "swapchain",
+ "sync_interval": 1, "tearing": false,
+ "control_blit_offset_x": 0,
+ "lifecycle": false,
+ "recoveries": 0, "drawn_while_minimised": 0, "zero_resizes": 0, "size_mismatches": 0,
+ "fullscreen_checked": false, "fullscreen_ok": false,
+ "error": "",
+ "graph_first_frame": "pass scene kept: offscreen=storage-write\npass blit kept: offscreen=storage-read swapchain=storage-write\npass readback kept: swapchain=storage-read readback=copy-dst | readback undefined->copy-dst\npresent sync 1\n",
+ "events": [],
+ "frames": [
+  {"i": 0, "w": 320, "h": 180, "sha256": "a87939ba0ff926772e2b4a4def59b03db3760f803faa9b20ddcf21e4c3f86165"},
+  {"i": 1, "w": 320, "h": 180, "sha256": "f70102a35ca46c04a2765af061cc9b422d542d1b6804609ed49085eb5e46320d"},
+  {"i": 2, "w": 320, "h": 180, "sha256": "3841d97172a04a392a93a875d75116b2949f74977d6e5581eb215500d51de4d8"},
+  {"i": 3, "w": 320, "h": 180, "sha256": "f350e70ad03083f466b9d61ee1df883b4e1ad6893e72744d056a0f862ba6aef6"},
+  {"i": 4, "w": 320, "h": 180, "sha256": "4456e8aec5dd62ac2ab1990319f8cb5153ec14212a96740e034c2a8e60922750"},
+  {"i": 5, "w": 320, "h": 180, "sha256": "628d56d10214c927d3c7b9b2fbc59278bb3e29e6aad9c8b27aabff2d8157fd7b"},
+  {"i": 6, "w": 320, "h": 180, "sha256": "3f1bc9baa07a92f23e8ce1e26467d27407014e839e6c6a540a3c7ce31e04a581"},
+  {"i": 7, "w": 320, "h": 180, "sha256": "cb2636534a55a0b55fd9879ee1623daab5df53f34676ed5f315b5c8ab2fed9db"},
+  {"i": 8, "w": 320, "h": 180, "sha256": "d71653e4bd195ca04ddd631fdafe7345519ee1bb0f91df297e7ef7e969d753aa"},
+  {"i": 9, "w": 320, "h": 180, "sha256": "22e5503312c9ca09211b4974398b130d37d73df97bd40f199ca432bed39b25eb"}
+ ]
+}
