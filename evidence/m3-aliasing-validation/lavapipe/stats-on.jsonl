@@ -1,0 +1,62 @@
+{"graph":"upload..readback","passes":8,"aliasing":true,"transients":14,"slots":10,"unaliased_bytes":14158432,"aliased_bytes":14155968}
+{"graph":"upload..readback","passes":8,"aliasing":true,"transients":14,"slots":10,"unaliased_bytes":14158432,"aliased_bytes":14155968}
+{"graph":"upload..readback","passes":7,"aliasing":true,"transients":13,"slots":9,"unaliased_bytes":13634144,"aliased_bytes":13631680}
+{"graph":"upload..readback","passes":8,"aliasing":true,"transients":14,"slots":10,"unaliased_bytes":14158432,"aliased_bytes":14155968}
+{"graph":"upload..readback","passes":7,"aliasing":true,"transients":13,"slots":9,"unaliased_bytes":3410528,"aliased_bytes":3408064}
+{"graph":"upload..readback","passes":7,"aliasing":true,"transients":13,"slots":9,"unaliased_bytes":3410528,"aliased_bytes":3408064}
+{"graph":"upload..readback","passes":7,"aliasing":true,"transients":13,"slots":9,"unaliased_bytes":4101152,"aliased_bytes":3710464}
+{"graph":"upload..readback","passes":7,"aliasing":true,"transients":13,"slots":9,"unaliased_bytes":7519424,"aliased_bytes":6929600}
+{"graph":"upload..readback","passes":7,"aliasing":true,"transients":13,"slots":9,"unaliased_bytes":3528448,"aliased_bytes":3408064}
+{"graph":"upload..readback","passes":7,"aliasing":true,"transients":13,"slots":9,"unaliased_bytes":4202176,"aliased_bytes":3612352}
+{"graph":"upload..readback","passes":7,"aliasing":true,"transients":13,"slots":9,"unaliased_bytes":4357760,"aliased_bytes":3767936}
+{"graph":"upload..readback","passes":7,"aliasing":true,"transients":13,"slots":9,"unaliased_bytes":3509792,"aliased_bytes":3408064}
+{"graph":"upload..readback","passes":7,"aliasing":true,"transients":13,"slots":9,"unaliased_bytes":4088480,"aliased_bytes":3698944}
+{"graph":"upload..readback","passes":7,"aliasing":true,"transients":13,"slots":9,"unaliased_bytes":22581152,"aliased_bytes":21991328}
+{"graph":"post upload..post readback","passes":3,"aliasing":true,"transients":1,"slots":1,"unaliased_bytes":256000,"aliased_bytes":256000}
+{"graph":"post upload..post readback","passes":3,"aliasing":true,"transients":1,"slots":1,"unaliased_bytes":256000,"aliased_bytes":256000}
+{"graph":"post upload..post readback","passes":3,"aliasing":true,"transients":1,"slots":1,"unaliased_bytes":256000,"aliased_bytes":256000}
+{"graph":"post upload..post readback","passes":5,"aliasing":true,"transients":2,"slots":2,"unaliased_bytes":512000,"aliased_bytes":512000}
+{"graph":"post upload..post readback","passes":5,"aliasing":true,"transients":2,"slots":2,"unaliased_bytes":512000,"aliased_bytes":512000}
+{"graph":"post upload..post readback","passes":5,"aliasing":true,"transients":2,"slots":2,"unaliased_bytes":512000,"aliased_bytes":512000}
+{"graph":"post upload..post readback","passes":4,"aliasing":true,"transients":2,"slots":2,"unaliased_bytes":512000,"aliased_bytes":512000}
+{"graph":"post upload..post readback","passes":4,"aliasing":true,"transients":2,"slots":2,"unaliased_bytes":512000,"aliased_bytes":512000}
+{"graph":"post upload..post readback","passes":4,"aliasing":true,"transients":2,"slots":2,"unaliased_bytes":512000,"aliased_bytes":512000}
+{"graph":"adj upload..adj readback","passes":88,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"adj upload..adj readback","passes":94,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"adj upload..adj readback","passes":72,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"adj upload..adj readback","passes":88,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"classic upload..classic readback","passes":18,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"classic upload..classic readback","passes":5,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"classic upload..classic readback","passes":5,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"classic upload..classic readback","passes":18,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"classic upload..classic readback","passes":5,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"classic upload..classic readback","passes":5,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"classic upload..classic readback","passes":5,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"vhs upload..vhs readback","passes":6,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"vhs upload..vhs readback","passes":6,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"vhs upload..vhs readback","passes":6,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"fibre upload..fibre readback","passes":46,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"fibre upload..fibre readback","passes":38,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"fibre upload..fibre readback","passes":62,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"film upload..film readback","passes":7,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"film upload..film readback","passes":7,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"film upload..film readback","passes":7,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"film upload..film readback","passes":7,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"film upload..film readback","passes":7,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"film upload..film readback","passes":9,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"lens upload..lens readback","passes":4,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"lens upload..lens readback","passes":4,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"lens upload..lens readback","passes":4,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"lens upload..lens readback","passes":4,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"sag upload..sag readback","passes":5,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"sag upload..sag readback","passes":5,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"sag upload..sag readback","passes":5,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"sag upload..sag readback","passes":5,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"cari upload..cari readback","passes":8,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"cari upload..cari readback","passes":8,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"cari upload..cari readback","passes":8,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"pixel upload..pixel readback","passes":9,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"pixel upload..pixel readback","passes":9,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"pixel upload..pixel readback","passes":9,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"pixel upload..pixel readback","passes":9,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}
+{"graph":"pixel upload..pixel readback","passes":15,"aliasing":true,"transients":0,"slots":0,"unaliased_bytes":0,"aliased_bytes":0}

@@ -1,0 +1,39 @@
+{
+ "criterion": "ROADMAP.md M3 criterion 3: transient aliasing lowers peak GPU memory on the corpus by a recorded amount with byte-identical output; the validation layer catches every injected error in its negative-control suite.",
+ "written": "2026-10-17, before any code for either part and before any run",
+ "scope": "No hardware GPU. The unit suites run on the CPU with a recording device (the default build's ctest). The corpus runs on D3D12 WARP and on lavapipe in CI; local runs are small, offscreen, at Idle priority with at most four threads.",
+ "aliasing": {
+  "design": "The frame graph already records each resource's first and last kept use. With aliasing on, transient buffers whose kept lifetimes do not overlap share one RHI buffer (a slot). Assignment is greedy in first-use order, best fit by size among free slots; a slot's size is the largest of its members and its usage the union of theirs. A MapRead buffer never shares (read-back memory cannot hold storage). A resource that takes over a slot another resource used earlier in the same execute is zero-filled before its first use, with barriers around the fill, so every pass sees what an unaliased buffer holds: zeros at creation. Off by default (FrameGraph::setAliasing, or RAW_NATIVE_GRAPH_ALIAS=1 for a whole process); the default build and every existing check are unchanged.",
+  "measure": "Per execute: the bytes of transient buffers the graph creates without aliasing (the sum of member sizes) and with it (the sum of slot sizes). RAW_NATIVE_GRAPH_STATS=FILE appends one JSON line per execute. This is memory the graph asks the RHI for, not a driver's or the OS's count.",
+  "checks": {
+   "a1_unit": {"what": "test_frame_graph: lifetimes that overlap never share; disjoint ones do; MapRead never shares; a slot's size and usage are the largest and the union; the zero fill and its barriers appear where a slot changes hands and nowhere else; aliasing off gives the exact command log of today", "bound": "every assertion holds", "prediction": "holds"},
+   "a2_identity": {"what": "the corpus with aliasing off and on, in the same build and adapter: the GPU renderer through the quick identity matrix and the ten glTF models (--gpu), the post stack (post-parity), and every style pass (style-parity) on WARP and on lavapipe", "bound": "every output file byte-identical between off and on (certificates compared without their timing fields)", "prediction": "holds"},
+   "a3_peak": {"what": "peak transient bytes, off against on, per graph of the corpus, from the stats file", "bound": "aliased never above unaliased on any graph; strictly lower on the corpus as a whole, with the amount recorded per graph", "prediction": "the GPU renderer's graph saves at most the triangle setup buffers (80 bytes a triangle, dead after the raster pass) because every G-buffer channel lives to the read-back; the style graphs, whose intermediates die pass by pass, save the most. No percentage is predicted."},
+   "a4_control": {"what": "false-success control: a build switch (RAW_NATIVE_GRAPH_ALIAS_NOFILL=1) that skips the zero fill", "bound": "at least one corpus output differs from the unaliased run, or, if none does, the record says the corpus cannot tell (no pass there reads memory it did not write) and a unit test that reads before writing must differ", "prediction": "the corpus may not tell; the unit test differs"}
+  }
+ },
+ "validation": {
+  "design": "rhi::makeValidatingDevice wraps any Device and its CommandList. It tracks every buffer, texture, pipeline (with its layout) and sampler it creates, the state each buffer is in after the barriers recorded so far, and whether a list and a render pass are open. A call that breaks a rule is reported with a code and not forwarded to the backend; submitAndWait then fails with the reports. On with RAW_NATIVE_RHI_VALIDATE=1 for the process's device.",
+  "rules": {
+   "V01": "a handle that was never issued, or is stale (destroyed)",
+   "V02": "upload or copy outside a buffer's size",
+   "V03": "a buffer used without the usage the call needs (CopyDst for upload and copy destination, CopySrc for copy source, MapRead for mapRead, Uniform or Storage for a dispatch slot)",
+   "V04": "a dispatch whose bindings do not match the pipeline's layout in count",
+   "V05": "a dispatch with a zero workgroup count or more than 65,535 in a dimension",
+   "V06": "a barrier whose before-state is not the buffer's tracked state",
+   "V07": "a buffer used in a state other than the one the call needs (no barrier into it): upload and copy destination need CopyDst, copy source CopySrc, a uniform slot Uniform, a read-only storage slot StorageRead, a read-write slot StorageWrite",
+   "V08": "a command with no open list, a second begin, or a submit with nothing begun",
+   "V09": "a draw outside a render pass, a render pass begun inside another, or ended with none open",
+   "V10": "a render pass target without RenderTarget usage, or whose format or count differs from the drawing pipeline's targets",
+   "V11": "uploadTexture of a size other than the texture's, or into a texture without CopyDst",
+   "V12": "copyTextureToBuffer into a buffer smaller than rowPitch x height, or from a texture without CopySrc",
+   "V13": "mapRead larger than the buffer, or of a buffer a still-open list writes"
+  },
+  "checks": {
+   "v1_negative_controls": {"what": "test_rhi_validate: one or more injected errors per rule, each in an otherwise valid sequence on a recording device", "bound": "every injected error reported with its rule code, and the bad call not forwarded; 13 of 13 rules covered", "prediction": "holds"},
+   "v2_positive_control": {"what": "the same suite's valid sequences", "bound": "zero reports", "prediction": "holds"},
+   "v3_clean_corpus": {"what": "the corpus of a2 with RAW_NATIVE_RHI_VALIDATE=1 on WARP and lavapipe", "bound": "zero reports, outputs byte-identical to runs without the layer", "prediction": "uncertain for V07: code that records copies or uploads without the graph (direct CommandList use in some parity commands) may never barrier into CopyDst; any report found is either a real missing barrier, fixed in the caller, or a rule that is wrong for an API, narrowed with a dated note. Neither is hidden."}
+  }
+ },
+ "does_not_prove": "Peak memory as a driver or the OS counts it (placed resources and heaps are not used; slots are ordinary buffers); aliasing of textures; that the layer catches errors outside its 13 rules, or replaces an API's own debug layer; anything on a hardware GPU."
+}

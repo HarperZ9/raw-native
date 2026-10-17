@@ -1,0 +1,1 @@
+rhi validation V07: draw binding: buffer 'identity map' is used as uniform while in copy-dst, with no barrier between

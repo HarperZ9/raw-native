@@ -17,9 +17,13 @@
 // certificate unchanged.
 //
 // A device graph may end at a swapchain (presentTo): the present is the frame's last step.
-// Not yet here: transient memory aliasing, async compute, split barriers,
-// textures and cross-frame resources. The plan records every resource's first
-// and last use, which is what aliasing will need.
+//
+// Transient aliasing (ROADMAP M3 criterion 3, evidence/m3-aliasing-validation-bounds.json), off
+// by default: transient buffers whose kept lifetimes do not overlap share one RHI buffer, a slot,
+// sized to its largest member with the union of their usages. MapRead buffers never share. A
+// buffer that takes over a slot is zero-filled before its first use, so its passes see zeros, as
+// in a buffer just created. setAliasing(true), or RAW_NATIVE_GRAPH_ALIAS=1 for every graph.
+// Not yet here: async compute, split barriers, textures and cross-frame resources.
 #include "raw/rhi/rhi.hpp"
 #include <cstdint>
 #include <functional>
@@ -31,6 +35,9 @@ struct Resource {
     bool valid() const { return index != UINT32_MAX; }
 };
 struct Use { Resource resource; rhi::Access access; };
+// Transient memory one execute asks the RHI for: without aliasing every created transient is
+// its own buffer (unaliased bytes); with it, each slot is one buffer (aliased bytes).
+struct MemoryStats { uint64_t unaliasedBytes{0}, aliasedBytes{0}; uint32_t transients{0}, slots{0}; bool aliasing{false}; };
 
 class FrameGraph;
 struct PassContext {
@@ -42,7 +49,7 @@ using PassFn = std::function<void(PassContext&)>;
 
 class FrameGraph {
 public:
-    explicit FrameGraph(rhi::Device* device = nullptr) : device_(device) {}
+    explicit FrameGraph(rhi::Device* device = nullptr);
     ~FrameGraph();
     FrameGraph(const FrameGraph&) = delete;
     FrameGraph& operator=(const FrameGraph&) = delete;
@@ -68,13 +75,21 @@ public:
     // found the device lost.
     rhi::PresentStatus presentStatus() const { return presentStatus_; }
 
+    // Turn transient aliasing on or off before compile (the default reads RAW_NATIVE_GRAPH_ALIAS).
+    void setAliasing(bool on){ aliasing_ = on; compiled_ = false; }
+    bool aliasing() const { return aliasing_; }
+    MemoryStats memoryStats() const;
+
     bool compile(std::string& err);
     bool execute(std::string& err);   // compiles first when needed
 
     rhi::BufferHandle buffer(Resource r) const;
 
     struct Barrier { Resource resource; rhi::Access before, after; };
-    struct Step { uint32_t pass; std::vector<Barrier> barriers; };
+    // fills: transients that take over a slot at this step; each is zero-filled after a barrier
+    // from the slot's previous state to CopyDst, before the step's own barriers.
+    struct Fill { Resource resource; rhi::Access slotBefore; };
+    struct Step { uint32_t pass; std::vector<Barrier> barriers; std::vector<Fill> fills; };
     // The compiled frame: kept passes in order, each with its barriers.
     const std::vector<Step>& plan() const { return plan_; }
     bool culled(uint32_t pass) const { return pass < passes_.size() && !passes_[pass].kept; }
@@ -88,12 +103,17 @@ private:
     struct Res {
         std::string name; Kind kind; rhi::BufferDesc desc; rhi::BufferHandle buffer;
         bool output{false}; int firstUse{-1}, lastUse{-1};
+        rhi::Access firstAccess{rhi::Access::Undefined}, lastAccess{rhi::Access::Undefined};
+        int slot{-1};
     };
+    struct Slot { rhi::BufferDesc desc; rhi::BufferHandle buffer; int end{-1}; };
     struct Pass { std::string name; std::vector<Use> uses; PassFn fn; bool kept{false}; };
     bool validate(std::string& err) const;
     void cull();
     void planBarriers();
     bool createBuffers(std::string& err);
+    void assignSlots();
+    void writeStats() const;
 
     bool finishPresent(std::string& err);
     rhi::Device* device_;
@@ -104,7 +124,9 @@ private:
     std::vector<Res> resources_;
     std::vector<Pass> passes_;
     std::vector<Step> plan_;
-    bool compiled_{false};
+    std::vector<Slot> slots_;
+    std::vector<unsigned char> zeros_;
+    bool compiled_{false}, aliasing_{false}, noFill_{false};
 };
 const char* accessName(rhi::Access a);
 }

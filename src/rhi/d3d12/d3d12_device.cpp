@@ -1,5 +1,6 @@
 // The D3D12 device: adapter choice, buffers, pipelines and submission.
 #include "d3d12_device.hpp"
+#include "raw/rhi/validate.hpp"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -248,7 +249,7 @@ Device* device(std::string& err){
         if (d->init(once.error)) once.dev = std::move(d);
     }
     if (!once.dev) err = once.error;
-    return once.dev.get();
+    return validatedIfRequested(once.dev.get());   // RAW_NATIVE_RHI_VALIDATE=1 (raw/rhi/validate.hpp)
 }
 std::unique_ptr<Device> createDevice(std::string& err){
     auto d = std::make_unique<d3d12::D3d12Device>();

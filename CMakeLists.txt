@@ -17,6 +17,8 @@ foreach(layer ${RAW_NATIVE_LIB_LAYERS})
     file(GLOB layer_srcs CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/${layer}/*.cpp")
     list(APPEND LIB_SRCS ${layer_srcs})
 endforeach()
+# The RHI validation layer wraps any backend (raw/rhi/validate.hpp, M3 criterion 3).
+list(APPEND LIB_SRCS src/rhi/validate/validate_device.cpp src/rhi/validate/validate_commands.cpp)
 # The GPU renderer is backend-neutral: it records a frame graph on the RHI.
 list(APPEND LIB_SRCS src/renderer/gpu/gpu_renderer.cpp src/renderer/gpu/frame_pack.cpp src/renderer/gpu/texture_identity.cpp src/renderer/gpu/pbr_parity.cpp
     src/renderer/gpu/lighting_parity.cpp src/renderer/gpu/lighting_parity_pack.cpp

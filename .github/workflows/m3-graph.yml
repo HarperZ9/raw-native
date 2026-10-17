@@ -1,0 +1,104 @@
+name: m3-graph
+# ROADMAP M3 criterion 3, bounds in evidence/m3-aliasing-validation-bounds.json. The corpus
+# (tests/gpu/m3_graph_corpus.sh) runs four ways on each software adapter: plain, with transient
+# aliasing, with the RHI validation layer, and with aliasing but no zero fill (the control).
+# Aliasing and the layer must leave every output identical; the layer must report nothing on the
+# corpus; aliasing must lower the transient bytes. Software adapters only: WARP and lavapipe.
+on:
+  pull_request:
+    paths:
+      - 'src/graph/**'
+      - 'raw/graph/**'
+      - 'src/rhi/**'
+      - 'raw/rhi/**'
+      - 'src/renderer/gpu/**'
+      - 'tests/gpu/m3_graph_*'
+      - 'evidence/m3-aliasing-validation-*'
+      - '.github/workflows/m3-graph.yml'
+permissions:
+  contents: read
+jobs:
+  warp:
+    runs-on: windows-latest
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - name: Configure and build the D3D12 CLI
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRAW_NATIVE_GPU_D3D12=ON
+          cmake --build build --config Release --target raw_native_cli
+      - name: Fixtures and models
+        shell: bash
+        run: |
+          node tools/port/export_style_fixtures.mjs style-fixtures
+          python tools/assets/fetch_gltf.py gltf-models
+      - name: The corpus four ways on WARP
+        shell: bash
+        env:
+          RAW_NATIVE_D3D12_WARP: "1"
+        run: |
+          c=build/Release/raw_native_cli.exe; s=tests/gpu/m3_graph_corpus.sh
+          bash $s $c m3/off gltf-models style-fixtures
+          RAW_NATIVE_GRAPH_ALIAS=1 RAW_NATIVE_GRAPH_STATS=$PWD/m3/stats-on.jsonl bash $s $c m3/alias gltf-models style-fixtures
+          RAW_NATIVE_RHI_VALIDATE=1 bash $s $c m3/validate gltf-models style-fixtures
+          RAW_NATIVE_GRAPH_ALIAS=1 RAW_NATIVE_GRAPH_ALIAS_NOFILL=1 bash $s $c m3/nofill gltf-models style-fixtures
+      - name: a2 aliasing leaves every output identical
+        shell: bash
+        run: bash tests/gpu/m3_graph_compare.sh m3/off m3/alias
+      - name: a3 aliasing lowers the transient bytes
+        shell: bash
+        run: python tests/gpu/m3_graph_gate.py stats m3/stats-on.jsonl --out m3/stats-summary.json
+      - name: v3 the validation layer reports nothing and changes nothing
+        shell: bash
+        run: |
+          cat m3/validate/validation-reports.txt
+          test ! -s m3/validate/validation-reports.txt
+          bash tests/gpu/m3_graph_compare.sh m3/off m3/validate
+      - name: a4 the no-fill control, recorded (the corpus may not tell)
+        if: always()
+        shell: bash
+        run: bash tests/gpu/m3_graph_compare.sh m3/off m3/nofill > m3/nofill-compare.txt 2>&1; echo "exit $?" >> m3/nofill-compare.txt; tail -5 m3/nofill-compare.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: m3-graph-warp, path: "m3/*.json*\nm3/*.txt\nm3/*/validation-reports.txt\nm3/*/*.json", retention-days: 30 }
+
+  lavapipe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install the Vulkan loader and headers, lavapipe, glslang and the window systems' client libraries
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libvulkan-dev glslang-tools mesa-vulkan-drivers \
+            libxcb1-dev libwayland-dev wayland-protocols
+      - name: Configure and build the Vulkan CLI
+        run: |
+          cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRAW_NATIVE_VULKAN_RHI=ON
+          cmake --build build -j 4 --target raw_native_cli_vk
+      - name: Fixtures and models
+        run: |
+          node tools/port/export_style_fixtures.mjs style-fixtures
+          python3 tools/assets/fetch_gltf.py gltf-models
+      - name: The corpus four ways on lavapipe
+        run: |
+          c=build/raw_native_cli_vk; s=tests/gpu/m3_graph_corpus.sh
+          bash $s $c m3/off gltf-models style-fixtures
+          RAW_NATIVE_GRAPH_ALIAS=1 RAW_NATIVE_GRAPH_STATS=$PWD/m3/stats-on.jsonl bash $s $c m3/alias gltf-models style-fixtures
+          RAW_NATIVE_RHI_VALIDATE=1 bash $s $c m3/validate gltf-models style-fixtures
+          RAW_NATIVE_GRAPH_ALIAS=1 RAW_NATIVE_GRAPH_ALIAS_NOFILL=1 bash $s $c m3/nofill gltf-models style-fixtures
+      - name: a2 aliasing leaves every output identical
+        run: bash tests/gpu/m3_graph_compare.sh m3/off m3/alias
+      - name: a3 aliasing lowers the transient bytes
+        run: python3 tests/gpu/m3_graph_gate.py stats m3/stats-on.jsonl --out m3/stats-summary.json
+      - name: v3 the validation layer reports nothing and changes nothing
+        run: |
+          cat m3/validate/validation-reports.txt
+          test ! -s m3/validate/validation-reports.txt
+          bash tests/gpu/m3_graph_compare.sh m3/off m3/validate
+      - name: a4 the no-fill control, recorded (the corpus may not tell)
+        if: always()
+        run: bash tests/gpu/m3_graph_compare.sh m3/off m3/nofill > m3/nofill-compare.txt 2>&1; echo "exit $?" >> m3/nofill-compare.txt; tail -5 m3/nofill-compare.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: m3-graph-lavapipe, path: "m3/*.json*\nm3/*.txt\nm3/*/validation-reports.txt\nm3/*/*.json", retention-days: 30 }
