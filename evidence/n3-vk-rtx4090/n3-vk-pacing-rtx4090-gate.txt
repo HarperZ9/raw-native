@@ -1,0 +1,6 @@
+pacing: 9999 intervals, refresh 60 Hz, median 16.6663 ms, p99 18.302904 ms, above 1.5T 0, missed refreshes 0
+  holds: median within 1% of T
+  holds: p99 at most 1.25 T
+  holds: at most 0.2% above 1.5 T
+  holds: intervals finite and positive
+PASS
