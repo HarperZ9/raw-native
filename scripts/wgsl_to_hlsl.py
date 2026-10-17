@@ -390,12 +390,17 @@ def selftest():
     if "InterlockedAdd(acc[P.w], uint(lerp(0.0f, frac(2.5f), 0.5f)));" not in out or "RWStructuredBuffer<uint> acc" not in out:
         print("selftest: atomics, mix or fract translated wrong:\n" + out, file=sys.stderr)
         return 1
+    out = translate(head, "//@pass t\n" + bind + store + body % "if (P.w > 0u) { atomicMin(&acc[P.w], 7u); }")["t.hlsl"]
+    if "{ InterlockedMin(acc[P.w], 7u); }" not in out:
+        print("selftest: atomicMin translated wrong:\n" + out, file=sys.stderr)
+        return 1
     out = translate(head, "//@pass t\n" + bind + body % "let v: vec2f = vec2f(2.0 * select(1.0, 2.0, P.w >= 2u), 3.0);")["t.hlsl"]
     if "float2(2.0f * ((P.w >= 2u) ? (2.0f) : (1.0f)), 3.0f)" not in out:
         print("selftest: a comparison inside a constructor hid its comma:\n" + out, file=sys.stderr)
         return 1
     for what, stmt in {"pack4x8unorm": "let v: u32 = pack4x8unorm(vec4f(1.0));",
                        "atomicAdd as a value": "let v: u32 = atomicAdd(&acc[0u], 1u);",
+                       "atomicMin as a value": "let v: u32 = atomicMin(&acc[0u], 1u);",
                        "round (WGSL rounds half to even)": "let v: f32 = round(0.5);"}.items():
         try:
             translate(head, "//@pass t\n" + bind + store + body % stmt)

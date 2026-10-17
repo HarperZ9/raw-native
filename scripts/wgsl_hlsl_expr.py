@@ -22,7 +22,7 @@ RENAMED = {"fract": "frac", "mix": "lerp"}
 REFUSED = {"inverseSqrt", "fma", "modf", "frexp", "quantizeToF16", "bitcast", "arrayLength", "countOneBits",
            "reverseBits", "extractBits", "insertBits", "pack4x8unorm", "unpack4x8unorm", "pack2x16float",
            "unpack2x16float", "dpdx", "dpdy", "fwidth", "storageBarrier", "atomicLoad",
-           "atomicStore", "atomicSub", "atomicMax", "atomicMin", "atomicAnd", "atomicOr", "atomicXor",
+           "atomicStore", "atomicSub", "atomicMax", "atomicAnd", "atomicOr", "atomicXor",
            "atomicExchange", "atomicCompareExchangeWeak", "textureSample", "textureLoad", "round"}
 
 
@@ -151,6 +151,11 @@ def statement(code, ptr_params):
     code = re.sub(r"^(\s*)atomicAdd\(\s*&", r"\1InterlockedAdd(", code)
     if "atomicAdd" in code:
         raise TranslateError(f"atomicAdd is translated only as a statement: {code.strip()!r}")
+    # atomicMin(&a[i], v) as a statement, likewise (InterlockedMin): the pixel-art splat passes.
+    code = re.sub(r"^(\s*)atomicMin\(\s*&", r"\1InterlockedMin(", code)
+    code = re.sub(r"([;{]\s*)atomicMin\(\s*&", r"\1InterlockedMin(", code)
+    if "atomicMin" in code:
+        raise TranslateError(f"atomicMin is translated only as a statement: {code.strip()!r}")
     for w, h in RENAMED.items():
         code = re.sub(r"\b" + w + r"\(", h + "(", code)
     for p in ptr_params:
