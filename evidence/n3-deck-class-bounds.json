@@ -64,5 +64,16 @@
    "The cross-build CPU check compares raw-hero's CPU frame from the --no-rt runs (GCC) with a CPU-only --no-rt run of the MSVC executable under Wine. Bound unchanged: byte-identical.",
    "Predictions are unchanged."
   ]
+ },
+ "addendum_d": {
+  "written": "2026-10-17 01:40Z, after the third run's results (recorded in the runs file) and before any run of what follows",
+  "observed_so_far": "The proton route did not open a device: DXVK 3.1.1's dxgi.dll skips llvmpipe (Mesa 25.2.8 on ubuntu-24.04) because it lacks VK_KHR_load_store_op_none, so CreateDXGIFactory2 fails before vkd3d-proton is reached. d3, d4, d5 and d6 on that route are misses with that cause.",
+  "ci_treatment": "The proton steps stay in CI as a recorded miss: each passes when its check holds, passes with a warning when it fails for exactly the recorded cause (DXVK's log names khrLoadStoreOpNone), and fails for any other outcome, so a change in Mesa, DXVK or the engine shows up.",
+  "exploration": {
+   "x1_wine_dxgi_vkd3d_proton": "Exploration, not a criterion check: the same D3D12 executable with vkd3d-proton's d3d12.dll and d3d12core.dll but Wine's builtin dxgi.dll in place of DXVK's. It asks whether the engine's D3D12 path runs on vkd3d-proton, Proton's D3D12 layer, when DXVK's requirement is taken out. Prediction: uncertain, about even odds (Wine's dxgi may not create a swapchain on vkd3d-proton's queue; the offscreen certificate does not need a swapchain).",
+   "x2_wine_builtin_d3d12": "Exploration: Wine's own d3d12 and dxgi (upstream vkd3d), which is not Proton's path. Prediction: uncertain.",
+   "what_each_runs": "the built-in scene at 1280 x 800 with --gpu (rt on), and 600 N2 frames presented and offscreen at 1280 x 800 compared with the WARP list",
+   "ci_treatment": "continue-on-error; outcomes recorded in the runs file whatever they are"
+  }
  }
 }
