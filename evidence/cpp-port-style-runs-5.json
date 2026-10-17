@@ -1,0 +1,35 @@
+{
+  "schema": "raw-native.evidence/1",
+  "bounds": "evidence/cpp-port-style-bounds-5.json",
+  "machine": "the author's Windows 11 workstation; WARP (Microsoft Basic Render Driver) through RAW_NATIVE_D3D12_WARP=1 on every D3D12 command, software only. The GPU lock was held by MMBU training and not taken; nvidia-smi sampled once a second during every WARP run never listed raw_native_cli. Builds and runs at Idle priority with at most 4 build jobs.",
+  "order": "Bounds committed (c8073d2) before any C++, WGSL or exporter code of the three passes; then code, first CPU run, first WARP run, the C++ source edits (one build), the WGSL source edits (one build), revert.",
+  "first_cpu_run": {
+    "crt_classic": {"cases": 7, "tables_equal": true, "bytes_differing": 0, "controls_fail_every_case": true},
+    "vhs": {"cases": 3, "plan_equal": true, "signal_max_abs": 0, "display_mismatch": 0, "excused": 0, "controls_fail_every_case": true,
+      "note": "The C++ signal equals the JavaScript Float32Array signal on every value; the log, cos and sin of the noise draws did not differ in any bit that survives the f32 stores."},
+    "fibre": {"cases": 3, "plan_equal": true, "value_max_rel": [2.498e-16, 2.220e-16, 2.776e-16], "code_mismatch": 0, "controls_fail_every_case": true}
+  },
+  "first_warp_run": {
+    "crt_classic": {"max_abs_code": {"studio-defaults": 1, "slot-strong": 0, "dot-cell3": 0, "glow-strong": 1, "tube-strong": 1, "flat-cell1": 0, "vignette-only": 0},
+      "note": "Four of the seven cases are bit-identical to the reference on WARP (no glow and no warp); the cases with a glow or a warp differ by at most 1 code, the bound.", "controls_fail_every_case": true, "pass": true},
+    "vhs": {"max_abs_code": 1, "p999_abs_code": 0, "mean_abs_code_max": 3.95e-05, "controls_fail_every_case": true, "pass": true},
+    "fibre": {"max_abs_code": 1, "p999_abs_code": 0, "mean_abs_code_max": 7.81e-05, "controls_fail_every_case": true, "pass": true}
+  },
+  "source_edit_controls": {
+    "crt_classic": {
+      "cpp": {"edit": "bloom weight 0.9 -> 0.95 (glowField)", "cpu_failing_cases": ["studio-defaults", "glow-strong"], "against_prediction": "Held exactly: the two cases with bloom failed (max 3 and 4 codes) and no other case."},
+      "wgsl": {"edit": "halation weight 0.3 -> 0.33 (style_crt_add)", "warp_failing_cases": ["studio-defaults", "glow-strong"], "against_prediction": "Held: glow-strong failed (max 5 codes, mean 1.04); none of the five cases without halation failed; studio-defaults (halation 0.2) failed too, which the prediction left open."}
+    },
+    "vhs": {
+      "cpp": {"edit": "chroma-noise knot spacing 24 -> 25 samples", "cpu_failing_cases": ["sp-fresh", "thriller", "ep-rental-tracking"], "against_prediction": "Held: every case failed (signal max 0.021 to 0.10)."},
+      "wgsl": {"edit": "dropout segment length 64 -> 63 (style_vhs_play)", "warp_failing_cases": ["thriller", "ep-rental-tracking"], "against_prediction": "Held: ep-rental-tracking failed (max 57 codes); thriller failed too (max 30); sp-fresh, with the fewest dropouts, passed, which the prediction allowed."}
+    },
+    "fibre": {
+      "cpp": {"edit": "tensor smoothing radius 3 -> 2", "cpu_failing_cases": ["street-cold-press", "street-hot-press", "edges-rough"], "against_prediction": "Held: every case failed (value max 0.0098 to 0.029)."},
+      "wgsl": {"edit": "initial wetness floor 0.05 -> 0.2 (style_fibre_init)", "warp_failing_cases": ["street-cold-press", "street-hot-press", "edges-rough"], "against_prediction": "Held: edges-rough failed (max 47 codes, mean 0.88), and both street cases failed too."}
+    },
+    "summary": "Six source edits, six held as predicted. All reverted; style.wgsl and the generated HLSL match again (wgsl_to_hlsl.py --check)."
+  },
+  "unit_test_note": "tests/test_style_signal.cpp first asserted that a uniform wash on fibred paper stays uniform. It failed: deposition rises with the crossing density, so suspended pigment becomes uneven and moves. The assertion was wrong, not the reference; the test now uses paper with no fibres, as the web bounds' uniform_wash_no_fibres test does.",
+  "record": "evidence/cpp-port-style-d3d12-warp.json: a full WARP run of every style pass in the core after the revert."
+}

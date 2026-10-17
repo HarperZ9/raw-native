@@ -6,8 +6,9 @@ first" and "One C++ core". Design: [ADR 0019](../docs/architecture/adr/0019-styl
 Bounds, written before the first run: `evidence/cpp-port-style-bounds.json` (round 1, with
 Addenda A and B) and `evidence/cpp-port-style-bounds-2.json` (round 2, with Addendum A) and
 `evidence/cpp-port-style-bounds-3.json` (hysteresis and palettelight, with Addenda A and B) and
-`evidence/cpp-port-style-bounds-4.json` (palette dither and development adjacency). Runs:
-`evidence/cpp-port-style-runs.json`, `-runs-2.json`, `-runs-3.json` and `-runs-4.json`; the records are
+`evidence/cpp-port-style-bounds-4.json` (palette dither and development adjacency) and
+`evidence/cpp-port-style-bounds-5.json` (crt-classic, VHS and fibre). Runs:
+`evidence/cpp-port-style-runs.json`, `-runs-2.json`, `-runs-3.json`, `-runs-4.json` and `-runs-5.json`; the records are
 `evidence/cpp-port-style-d3d12-warp.json` and `evidence/cpp-port-style-webgpu-swiftshader.json` (CI).
 
 ## How a pass is ported
@@ -27,7 +28,7 @@ Run it locally:
 ```
 node tools/port/gen_pigments.mjs --check
 node tools/port/export_style_fixtures.mjs style-fixtures
-# one group while developing (not the check of record): --only poststack | image | quantise | dither | adjacency
+# one group while developing (not the check of record): --only poststack | image | quantise | dither | adjacency | signal
 build/Release/raw_native_cli.exe style-parity --fixtures style-fixtures --cpu-only
 RAW_NATIVE_D3D12_WARP=1 build/Release/raw_native_cli.exe style-parity --fixtures style-fixtures
 ```
@@ -48,6 +49,9 @@ RAW_NATIVE_D3D12_WARP=1 build/Release/raw_native_cli.exe style-parity --fixtures
 | Palette-locked lighting, 5 cases | 0 indices differ; the C++-built palette equals the JavaScript one | 0 indices differ; 0 codes | CI |
 | Palette dither, 114 cases (6 palettes, 9 modes, 2 plates) | 0 indices differ, 0 ties | 0 indices differ, mix modes included (double-single arithmetic) | CI |
 | Development adjacency, 4 cases | value max 5.6e-17; 0 codes differ | max 1 code, mean at most 5.2e-6 | CI |
+| crt-classic, 7 cases (960 x 600) | 0 bytes differ; transfer, beam and mask tables equal | max 1 code; 4 cases bit-identical | CI |
+| VHS, 3 cases | signal max 0 (every f32 value equal); 0 display codes differ | max 1 code, mean at most 4.0e-5 | CI |
+| Fibre-network watercolour, 3 cases | value max 2.8e-16; 0 codes differ | max 1 code, mean at most 7.9e-5 | CI |
 
 Bounds: tone and colour 1e-9; GPU decision flips 5e-4 of pixels, mean 0.12 (dither) and 0.05
 (paint-over) codes. Round 2: values 1e-9 and 0 unexcused code flips on the CPU link; the web bounds
@@ -62,6 +66,12 @@ same edit in the C++ failed the CPU link on every case. Nine of the ten round 2 
 as predicted. For hysteresis, two controls could not fail on the flicker sequence (a wider margin
 and a narrower keep interval change no held decision there); the built-in control became margin 0
 before any GPU run (bounds-3 Addendum A), and the source-edit miss is recorded (Addendum B).
+
+crt-classic, VHS and fibre (bounds-5) run as frame graphs of `style.wgsl` passes through a small
+helper (`src/renderer/gpu/style_graph.hpp`). crt-classic's reference is the author's integer and
+Float32Array tube stage, so its CPU link is exact: every byte of the seven 960 x 600 cases, and the
+transfer, beam and mask tables entry by entry. VHS's C++ signal equals the JavaScript signal on
+every f32 value. All six source edits of bounds-5 failed as predicted.
 
 Round 2 adds the post stack's driver (`raw/renderer/post_stack.hpp`): the registry, the encoding
 contract and stage split of `web/motion/post.mjs` and `renderer.mjs`, and the run order of
@@ -82,9 +92,6 @@ WGSL can be generated.
 
 | Pass (`web/shaders/`) | JavaScript lines | Entry points | Subset work | Estimate |
 |---|---|---|---|---|
-| `crt-classic` | 216 | 5 | none | 3 h |
-| `vhs` | 245 | 4 | none | 3 h |
-| `fibre` | 230 | 5 | none | 3 h |
 | `lens` (lens suite, PR #153) | 706 | 2 | none found | 6 h |
 | `ditherlight/rtvis.mjs` (one-ray visibility estimator, PR #152) | 63 | none (CPU) | none | 2 h |
 | `caricature` | 195 | 5 | workgroup memory and barriers (`var<workgroup>`, `workgroupBarrier`) | 4 h, plus 1 h of translator work shared with `sag` |
@@ -94,6 +101,6 @@ WGSL can be generated.
 | `paint` (painterly, Kubelka-Munk) | 1,073 | 11 | atomics, `unpack4x8unorm` | 10 h |
 | `crt` (physical) | 1,231 | 8 | none found | 10 h |
 
-Total left about 58 hours (round 2 took the driver and eight passes, estimated at 22 hours). Order by need: the R1 slice needs paint-over and look keys (done), then
+Total left about 49 hours (round 2 took the driver and eleven passes; crt-classic, VHS and fibre were estimated at 9 hours). Order by need: the R1 slice needs paint-over and look keys (done), then
 `dither`, `hysteresis` and `film` for the templates, with the translator growth done once before
 `caricature`, `sag` and `pixel`.

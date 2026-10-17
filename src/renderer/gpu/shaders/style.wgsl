@@ -106,6 +106,42 @@ struct AdjParams {
     d: vec4f,
 }
 
+// crt-classic (the Studio's tube stage). a: bloom, halation, curvature, aberration; b: vignette.
+// dir and radius are the box pass's axis (0 x, 1 y) and radius.
+struct ClassicParams {
+    width: u32, height: u32, cell: u32, phosphor: u32,
+    flat_cell: u32, flat_even: u32, flat_odd: u32, q: u32,
+    lw: u32, lh: u32, dir: u32, radius: u32,
+    a: vec4f,
+    b: vec4f,
+}
+// VHS. lh, ph, chh: half-widths of the luma, peaking and chroma taps (packed in that order).
+// a: jitter, headSwitchLines, headSkew, tracking; b: lumaNoise, chromaNoise, peaking, delay;
+// c: phaseNoise, dropouts x generations; the YIQ matrix and its inverse as rows.
+struct VhsParams {
+    n: u32, lines: u32, src_w: u32, src_h: u32,
+    out_w: u32, out_h: u32, frame: u32, seed: u32,
+    lh: u32, ph: u32, chh: u32, pad0: u32,
+    a: vec4f,
+    b: vec4f,
+    c: vec4f,
+    yiq0: vec4f,
+    yiq1: vec4f,
+    yiq2: vec4f,
+    inv0: vec4f,
+    inv1: vec4f,
+    inv2: vec4f,
+}
+// Fibre-network watercolour. a: C, L, fibre width, md; b: spread, k0, k1, rate; c: floc, evap,
+// dt, strength; paper: the paper colour and edgeDry.
+struct FibreParams {
+    width: u32, height: u32, per_cell: u32, pad0: u32,
+    a: vec4f,
+    b: vec4f,
+    c: vec4f,
+    paper: vec4f,
+}
+
 fn sat1(x: f32) -> f32 {
     return clamp(x, 0.0, 1.0);
 }
@@ -143,6 +179,20 @@ fn lab_pack(c: vec3f, gain: f32) -> u32 {
     let g: u32 = u32(floor(linear_to_srgb(1.0 - exp(-max(0.0, c.y) * gain)) * 255.0 + 0.5));
     let b: u32 = u32(floor(linear_to_srgb(1.0 - exp(-max(0.0, c.z) * gain)) * 255.0 + 0.5));
     return r | (g << 8u) | (b << 16u) | (255u << 24u);
+}
+
+// RGBA8 words: one channel as an integer, and three channels packed with alpha 255.
+fn ch8(v: u32, c: u32) -> i32 {
+    return i32((v >> (8u * c)) & 255u);
+}
+fn pack8(r: i32, g: i32, b: i32) -> u32 {
+    return u32(clamp(r, 0, 255)) | (u32(clamp(g, 0, 255)) << 8u) | (u32(clamp(b, 0, 255)) << 16u) | (255u << 24u);
+}
+// A Box-Muller normal from three integer hashes (gauss of web/shaders/vhs/vhs.mjs).
+fn gauss3(a: u32, b: u32, c: u32) -> f32 {
+    let u1: f32 = max(1.0e-7, hash3(a, b, c));
+    let u2: f32 = hash3(a, b, c + 7919u);
+    return sqrt(-2.0 * log(u1)) * cos(6.283185307179586 * u2);
 }
 
 //@pass style_ditherlight
@@ -1482,4 +1532,591 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     let eps: f32 = 1.0e-6;
     let o: vec3f = scene[i].xyz * ((D[i].xyz + vec3f(eps)) / (A[i].xyz * free + vec3f(eps)));
     out8[i] = lab_pack(o, U.d.y);
+}
+
+//@pass style_crt_phosphor
+// crt-classic (raw/renderer/style_crt_classic.hpp), first pass: beam scanlines and the phosphor
+// mask in 8.8 fixed point, with the reference's own tables.
+@group(0) @binding(0) var<uniform> U: ClassicParams;
+@group(0) @binding(1) var<storage, read> beam: array<i32>;
+@group(0) @binding(2) var<storage, read> mt: array<i32>;
+@group(0) @binding(3) var<storage, read> src: array<u32>;
+@group(0) @binding(4) var<storage, read_write> dst: array<u32>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    let v: u32 = src[i];
+    if (U.phosphor == 0u) {
+        dst[i] = v;
+        return;
+    }
+    let x: i32 = i32(i % U.width);
+    let y: i32 = i32(i / U.width);
+    let cell: i32 = i32(U.cell);
+    let row: i32 = y % cell;
+    let ry: i32 = (y % 6) * 3;
+    var flatf: i32 = 0;
+    if (U.flat_cell != 0u) {
+        flatf = select(i32(U.flat_odd), i32(U.flat_even), (y & 1) == 0);
+    }
+    let r: i32 = ch8(v, 0u);
+    let g: i32 = ch8(v, 1u);
+    let b: i32 = ch8(v, 2u);
+    let p: u32 = u32((ry + x % 3) * 3);
+    let k: i32 = max(max(r, g), b) >> 4u;
+    var f: i32 = beam[u32(k * cell + row)];
+    if (flatf > 0) { f = flatf; }
+    dst[i] = pack8((r * f * mt[p] + 32768) >> 16u, (g * f * mt[p + 1u] + 32768) >> 16u, (b * f * mt[p + 2u] + 32768) >> 16u);
+}
+
+//@pass style_crt_down
+// crt-classic: box-downsample into linear light at 1/q (f32 sums in the reference's order), then
+// the thresholded bright field.
+@group(0) @binding(0) var<uniform> U: ClassicParams;
+@group(0) @binding(1) var<storage, read> toLin: array<f32>;
+@group(0) @binding(2) var<storage, read> src: array<u32>;
+@group(0) @binding(3) var<storage, read_write> lin: array<f32>;
+@group(0) @binding(4) var<storage, read_write> bright: array<f32>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.lw * U.lh) { return; }
+    let lx: i32 = i32(i % U.lw);
+    let ly: i32 = i32(i / U.lw);
+    let q: i32 = i32(U.q);
+    let w: i32 = i32(U.width);
+    let h: i32 = i32(U.height);
+    var s: vec3f = vec3f(0.0);
+    for (var y: i32 = ly * q; y < min(h, ly * q + q); y++) {
+        for (var x: i32 = lx * q; x < min(w, lx * q + q); x++) {
+            let v: u32 = src[u32(y * w + x)];
+            s = s + vec3f(toLin[u32(ch8(v, 0u))], toLin[u32(ch8(v, 1u))], toLin[u32(ch8(v, 2u))]);
+        }
+    }
+    let n: f32 = 1.0 / f32(min(q, h - ly * q) * min(q, w - lx * q));
+    let c: vec3f = s * n;
+    let t: f32 = clamp((0.2126 * c.x + 0.7152 * c.y + 0.0722 * c.z - 0.18) / 0.3, 0.0, 1.0);
+    let kk: f32 = t * t * (3.0 - 2.0 * t);
+    let o: u32 = i * 3u;
+    lin[o] = c.x;
+    lin[o + 1u] = c.y;
+    lin[o + 2u] = c.z;
+    bright[o] = c.x * kk;
+    bright[o + 1u] = c.y * kk;
+    bright[o + 2u] = c.z * kk;
+}
+
+//@pass style_crt_box
+// crt-classic: one box pass along x (dir 0) or y (dir 1) with clamped ends, as boxLine.
+@group(0) @binding(0) var<uniform> U: ClassicParams;
+@group(0) @binding(1) var<storage, read> a: array<f32>;
+@group(0) @binding(2) var<storage, read_write> o: array<f32>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.lw * U.lh) { return; }
+    let lw: i32 = i32(U.lw);
+    let lh: i32 = i32(U.lh);
+    let x: i32 = i32(i % U.lw);
+    let y: i32 = i32(i / U.lw);
+    let r: i32 = i32(U.radius);
+    let inv: f32 = 1.0 / f32(2 * r + 1);
+    for (var c: i32 = 0; c < 3; c++) {
+        var s: f32 = 0.0;
+        for (var k: i32 = -r; k <= r; k++) {
+            var xx: i32 = x;
+            var yy: i32 = y;
+            if (U.dir != 0u) { yy = clamp(y + k, 0, lh - 1); } else { xx = clamp(x + k, 0, lw - 1); }
+            s = s + a[u32((yy * lw + xx) * 3 + c)];
+        }
+        o[u32((y * lw + x) * 3 + c)] = s * inv;
+    }
+}
+
+//@pass style_crt_add
+// crt-classic: glow = bright bloom 0.9 + lin halation 0.3, added back in linear light through a
+// bilinear upsample.
+@group(0) @binding(0) var<uniform> U: ClassicParams;
+@group(0) @binding(1) var<storage, read> toLin: array<f32>;
+@group(0) @binding(2) var<storage, read> toSrgb: array<u32>;
+@group(0) @binding(3) var<storage, read> bl: array<f32>;
+@group(0) @binding(4) var<storage, read> ha: array<f32>;
+@group(0) @binding(5) var<storage, read> src: array<u32>;
+@group(0) @binding(6) var<storage, read_write> dst: array<u32>;
+
+fn glow(i: i32) -> vec3f {
+    let o: u32 = u32(i * 3);
+    var g: vec3f = vec3f(0.0);
+    if (U.a.x > 0.0) { g = g + vec3f(bl[o], bl[o + 1u], bl[o + 2u]) * U.a.x * 0.9; }
+    if (U.a.y > 0.0) { g = g + vec3f(ha[o], ha[o + 1u], ha[o + 2u]) * U.a.y * 0.3; }
+    return g;
+}
+fn to_srgb(l: f32) -> i32 {
+    if (l >= 1.0) { return i32(toSrgb[4096]); }
+    if (l <= 0.0) { return i32(toSrgb[0]); }
+    return i32(toSrgb[u32(l * 4096.0 + 0.5)]);
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    let v: u32 = src[i];
+    if (U.a.x <= 0.0 && U.a.y <= 0.0) {
+        dst[i] = v;
+        return;
+    }
+    let x: i32 = i32(i % U.width);
+    let y: i32 = i32(i / U.width);
+    let q: f32 = f32(U.q);
+    let lw: i32 = i32(U.lw);
+    let lh: i32 = i32(U.lh);
+    let fx: f32 = clamp((f32(x) + 0.5) / q - 0.5, 0.0, f32(lw - 1));
+    let x0: i32 = i32(fx);
+    let x1: i32 = min(lw - 1, x0 + 1);
+    let tx: f32 = fx - f32(x0);
+    let fy: f32 = clamp((f32(y) + 0.5) / q - 0.5, 0.0, f32(lh - 1));
+    let y0: i32 = i32(fy);
+    let y1: i32 = min(lh - 1, y0 + 1);
+    let ty: f32 = fy - f32(y0);
+    let g: vec3f = glow(y0 * lw + x0) * (1.0 - tx) * (1.0 - ty) + glow(y0 * lw + x1) * tx * (1.0 - ty) + glow(y1 * lw + x0) * (1.0 - tx) * ty + glow(y1 * lw + x1) * tx * ty;
+    if (g.x + g.y + g.z < 0.0015) {
+        dst[i] = v;
+        return;
+    }
+    dst[i] = pack8(to_srgb(toLin[u32(ch8(v, 0u))] + g.x), to_srgb(toLin[u32(ch8(v, 1u))] + g.y), to_srgb(toLin[u32(ch8(v, 2u))] + g.z));
+}
+
+//@pass style_crt_tube
+// crt-classic: barrel warp with bilinear 8.8 taps, a feathered rounded bezel, radial colour
+// separation and the vignette.
+@group(0) @binding(0) var<uniform> U: ClassicParams;
+@group(0) @binding(1) var<storage, read> src: array<u32>;
+@group(0) @binding(2) var<storage, read_write> dst: array<u32>;
+
+fn tap(su: f32, sv: f32, c: u32) -> i32 {
+    let w: i32 = i32(U.width);
+    let h: i32 = i32(U.height);
+    let sx: f32 = clamp((su + 1.0) * f32(w - 1) * 0.5, 0.0, f32(w - 1));
+    let sy: f32 = clamp((sv + 1.0) * f32(h - 1) * 0.5, 0.0, f32(h - 1));
+    let x0: i32 = i32(sx);
+    let y0: i32 = i32(sy);
+    let tx: i32 = i32((sx - f32(x0)) * 256.0);
+    let ty: i32 = i32((sy - f32(y0)) * 256.0);
+    let dx: i32 = select(0, 1, x0 + 1 < w);
+    let dy: i32 = select(0, w, y0 + 1 < h);
+    let p: i32 = y0 * w + x0;
+    let top: i32 = ch8(src[u32(p)], c) * (256 - tx) + ch8(src[u32(p + dx)], c) * tx;
+    let bot: i32 = ch8(src[u32(p + dy)], c) * (256 - tx) + ch8(src[u32(p + dy + dx)], c) * tx;
+    return (top * (256 - ty) + bot * ty) >> 16u;
+}
+fn bezel_alpha(asu: f32, asv: f32, rc: f32, feather: f32) -> f32 {
+    if (rc <= 0.0) { return select(0.0, 1.0, asu <= 1.0 && asv <= 1.0); }
+    let qx: f32 = asu - (1.0 - rc);
+    let qy: f32 = asv - (1.0 - rc);
+    let d: f32 = length(vec2f(max(qx, 0.0), max(qy, 0.0))) + min(max(qx, qy), 0.0) - rc;
+    return clamp(-d / feather, 0.0, 1.0);
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    let w: i32 = i32(U.width);
+    let h: i32 = i32(U.height);
+    let x: i32 = i32(i % U.width);
+    let y: i32 = i32(i / U.width);
+    let curv: f32 = U.a.z;
+    let ab: f32 = U.a.w;
+    let vig: f32 = U.b.x;
+    let W2: f32 = f32((w - 1) * (w - 1));
+    let H2: f32 = f32((h - 1) * (h - 1));
+    let nv: f32 = 1.0 / (W2 + H2);
+    let u: f32 = (f32(x) / f32(w - 1)) * 2.0 - 1.0;
+    let v: f32 = (f32(y) / f32(h - 1)) * 2.0 - 1.0;
+    let VX: f32 = u * u * W2 * nv;
+    let vy: f32 = v * v * H2 * nv;
+    let vg: f32 = vig * 256.0;
+    if (curv <= 0.0 && ab <= 0.0) {
+        if (vig <= 0.0) {
+            dst[i] = src[i];
+            return;
+        }
+        let f: i32 = i32(256.0 - vg * (VX + vy));
+        let s: u32 = src[i];
+        dst[i] = pack8((ch8(s, 0u) * f) >> 8u, (ch8(s, 1u) * f) >> 8u, (ch8(s, 2u) * f) >> 8u);
+        return;
+    }
+    let k: f32 = curv * 0.35;
+    let dab: f32 = ab * 0.012;
+    var rc: f32 = 0.0;
+    if (curv > 0.0) { rc = 0.02 + 0.08 * min(1.0, curv); }
+    let feather: f32 = 1.5 / (f32(w + h) / 4.0);
+    let safe: f32 = 1.0 - rc - feather * 2.0;
+    let fr: f32 = 1.0 - dab;
+    let fb: f32 = 1.0 + dab;
+    let ff: f32 = 1.0 + k * (u * u + v * v);
+    let su: f32 = u * ff;
+    let sv: f32 = v * ff;
+    var alpha: f32 = 1.0;
+    if (!(abs(su) <= safe && abs(sv) <= safe)) { alpha = bezel_alpha(abs(su), abs(sv), rc, feather); }
+    if (alpha <= 0.0) {
+        dst[i] = pack8(0, 0, 0);
+        return;
+    }
+    let vf: i32 = i32(alpha * (256.0 - vg * (VX + vy)));
+    dst[i] = pack8((tap(su * fr, sv * fr, 0u) * vf) >> 8u, (tap(su, sv, 1u) * vf) >> 8u, (tap(su * fb, sv * fb, 2u) * vf) >> 8u);
+}
+
+//@pass style_vhs_sample
+// VHS (raw/renderer/style_vhs.hpp), pass 1, the transport: each line sampled at 4 fsc with its
+// time-base displacement, as Y'IQ.
+@group(0) @binding(0) var<uniform> U: VhsParams;
+@group(0) @binding(1) var<storage, read> src: array<vec4f>;
+@group(0) @binding(2) var<storage, read_write> sm: array<vec4f>;
+
+fn tracking_band(y: i32, f: f32) -> f32 {
+    let nl: f32 = f32(U.lines);
+    let c: f32 = ((f * 3.7) % (nl + 40.0)) - 20.0;
+    let d: f32 = abs(f32(y) - c) / 6.0;
+    return U.a.w * max(0.0, 1.0 - d * d);
+}
+fn line_shift(y: i32, f: u32) -> f32 {
+    let s: u32 = U.seed;
+    var d: f32 = U.a.x * (0.6 * sin(f32(y) * 0.031 + f32(f) * 0.7 + f32(s)) + 0.4 * gauss3(u32(y), f, 11u + s));
+    let from_bottom: i32 = i32(U.lines) - 1 - y;
+    let hs: f32 = U.a.y;
+    if (f32(from_bottom) < hs) {
+        let t: f32 = (hs - f32(from_bottom)) / hs;
+        d = d + U.a.z * t * t;
+    }
+    if (U.a.w > 0.0) { d = d + tracking_band(y, f32(f)) * 12.0 * gauss3(u32(y), f, 23u + s); }
+    return d;
+}
+fn held(y: i32, k: i32) -> vec3f {
+    let n: i32 = i32(U.n);
+    let kk: i32 = clamp(k, 0, n - 1);
+    let sw: i32 = i32(U.src_w);
+    let x: i32 = clamp(i32(floor((f32(kk) + 0.5) * f32(sw) / f32(n))), 0, sw - 1);
+    let c: vec3f = src[u32(y * sw + x)].xyz;
+    return vec3f(dot(U.yiq0.xyz, c), dot(U.yiq1.xyz, c), dot(U.yiq2.xyz, c));
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.n * U.lines) { return; }
+    let k: i32 = i32(i % U.n);
+    let y: i32 = i32(i / U.n);
+    let kf: f32 = f32(k) - line_shift(y, U.frame);
+    let k0: f32 = floor(kf);
+    let t: f32 = kf - k0;
+    sm[i] = vec4f(held(y, i32(k0)) * (1.0 - t) + held(y, i32(k0) + 1) * t, 0.0);
+}
+
+//@pass style_vhs_tape
+// VHS, pass 2, the tape: luma through the FM channel (bandwidth, emphasis ringing, rising noise),
+// chroma through colour-under (narrow bandwidth, delay, streaky noise, phase wobble).
+@group(0) @binding(0) var<uniform> U: VhsParams;
+@group(0) @binding(1) var<storage, read> taps: array<f32>;
+@group(0) @binding(2) var<storage, read> sm: array<vec4f>;
+@group(0) @binding(3) var<storage, read_write> tp: array<vec4f>;
+
+fn tracking_band(y: i32, f: f32) -> f32 {
+    let nl: f32 = f32(U.lines);
+    let c: f32 = ((f * 3.7) % (nl + 40.0)) - 20.0;
+    let d: f32 = abs(f32(y) - c) / 6.0;
+    return U.a.w * max(0.0, 1.0 - d * d);
+}
+fn at(y: i32, k: f32) -> vec3f {
+    let n: i32 = i32(U.n);
+    let kf: f32 = clamp(k, 0.0, f32(n - 1));
+    let k0: i32 = i32(floor(kf));
+    let t: f32 = kf - f32(k0);
+    let k1: i32 = min(n - 1, k0 + 1);
+    return sm[u32(y * n + k0)].xyz * (1.0 - t) + sm[u32(y * n + k1)].xyz * t;
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.n * U.lines) { return; }
+    let k: i32 = i32(i % U.n);
+    let y: i32 = i32(i / U.n);
+    let f: u32 = U.frame;
+    let s: u32 = U.seed;
+    let rot: f32 = U.c.x * gauss3(u32(y), f, 31u + s);
+    let cr: f32 = cos(rot);
+    let sr: f32 = sin(rot);
+    let lh: i32 = i32(U.lh);
+    let ph: i32 = i32(U.ph);
+    let chh: i32 = i32(U.chh);
+    let po: i32 = 2 * lh + 1;
+    let co: i32 = po + 2 * ph + 1;
+    var Y: f32 = 0.0;
+    for (var j: i32 = -lh; j <= lh; j++) { Y = Y + taps[u32(j + lh)] * at(y, f32(k + j)).x; }
+    var Yl: f32 = 0.0;
+    for (var j2: i32 = -ph; j2 <= ph; j2++) { Yl = Yl + taps[u32(po + j2 + ph)] * at(y, f32(k + j2)).x; }
+    let gk: u32 = u32(y) * 4096u + u32(k);
+    let nz: f32 = U.b.x * (gauss3(gk, f, 41u + s) - 0.5 * (gauss3(gk - 1u, f, 41u + s) + gauss3(gk + 1u, f, 41u + s)));
+    let Yo: f32 = Y + U.b.z * (Y - Yl) + nz;
+    let kd: f32 = f32(k) - U.b.w;
+    var I: f32 = 0.0;
+    var Q: f32 = 0.0;
+    for (var j3: i32 = -chh; j3 <= chh; j3++) {
+        let v: vec3f = at(y, kd + f32(j3));
+        I = I + taps[u32(co + j3 + chh)] * v.y;
+        Q = Q + taps[u32(co + j3 + chh)] * v.z;
+    }
+    let m: f32 = f32(k) / 24.0;
+    let m0: f32 = floor(m);
+    let t: f32 = m - m0;
+    let mu: u32 = u32(m0);
+    let cn0: f32 = U.b.y * ((1.0 - t) * gauss3(u32(y), mu, 53u + s) + t * gauss3(u32(y), mu + 1u, 53u + s));
+    let cn1: f32 = U.b.y * ((1.0 - t) * gauss3(u32(y), mu, 54u + s) + t * gauss3(u32(y), mu + 1u, 54u + s));
+    var tn: f32 = 0.0;
+    if (U.a.w > 0.0) { tn = tracking_band(y, f32(f)) * 0.5 * gauss3(gk, f, 61u + s); }
+    tp[i] = vec4f(Yo + tn, I * cr - Q * sr + cn0, I * sr + Q * cr + cn1, 0.0);
+}
+
+//@pass style_vhs_play
+// VHS, pass 3, playback: dropouts filled from the line above (the deck's compensator), then
+// Y'IQ to R'G'B'. w is the dropout flag.
+@group(0) @binding(0) var<uniform> U: VhsParams;
+@group(0) @binding(1) var<storage, read> tp: array<vec4f>;
+@group(0) @binding(2) var<storage, read_write> sig: array<vec4f>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.n * U.lines) { return; }
+    let n: i32 = i32(U.n);
+    let k: i32 = i32(i % U.n);
+    let y: i32 = i32(i / U.n);
+    let f: u32 = U.frame;
+    let seg: u32 = u32(k / 64);
+    let hit: bool = hash3(u32(y), seg, f * 131u + 71u) < U.c.y;
+    let run: f32 = hash3(u32(y), seg, f * 131u + 73u) * 64.0;
+    let dropped: bool = hit && f32(k - i32(seg) * 64) < run && y > 0;
+    var yy: i32 = y;
+    if (dropped) { yy = y - 1; }
+    let c: vec3f = tp[u32(yy * n + k)].xyz;
+    sig[i] = vec4f(dot(U.inv0.xyz, c), dot(U.inv1.xyz, c), dot(U.inv2.xyz, c), select(0.0, 1.0, dropped));
+}
+
+//@pass style_vhs_show
+// VHS, display: the signal lines resampled to the output size (linear across, each line held
+// down), clamped and rounded to RGBA8.
+@group(0) @binding(0) var<uniform> U: VhsParams;
+@group(0) @binding(1) var<storage, read> sig: array<vec4f>;
+@group(0) @binding(2) var<storage, read_write> out8: array<u32>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.out_w * U.out_h) { return; }
+    let w: i32 = i32(U.out_w);
+    let h: i32 = i32(U.out_h);
+    let x: i32 = i32(i % U.out_w);
+    let y: i32 = i32(i / U.out_w);
+    let n: i32 = i32(U.n);
+    let nl: i32 = i32(U.lines);
+    let ly: i32 = min(nl - 1, (y * nl) / h);
+    let kf: f32 = (f32(x) + 0.5) * f32(n) / f32(w) - 0.5;
+    let k0: i32 = clamp(i32(floor(kf)), 0, n - 1);
+    let k1: i32 = min(n - 1, k0 + 1);
+    let t: f32 = clamp(kf - f32(k0), 0.0, 1.0);
+    let v: vec3f = clamp(sig[u32(ly * n + k0)].xyz * (1.0 - t) + sig[u32(ly * n + k1)].xyz * t, vec3f(0.0), vec3f(1.0));
+    let q: vec3u = vec3u(floor(v * 255.0 + 0.5));
+    out8[i] = q.x | (q.y << 8u) | (q.z << 16u) | (255u << 24u);
+}
+
+//@pass style_fibre_field
+// Fibre-network watercolour (raw/renderer/style_fibre.hpp): the paper, rasterised per pixel from
+// the fibres of the 3 x 3 cells around it: coverage and the coverage-weighted orientation tensor
+// in F, the crossing density in X.
+@group(0) @binding(0) var<uniform> U: FibreParams;
+@group(0) @binding(1) var<storage, read_write> F: array<vec4f>;
+@group(0) @binding(2) var<storage, read_write> X: array<f32>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    let x: i32 = i32(i % U.width);
+    let y: i32 = i32(i / U.width);
+    let C: f32 = U.a.x;
+    let qx: f32 = f32(x) + 0.5;
+    let qy: f32 = f32(y) + 0.5;
+    let cx: i32 = i32(floor(qx / C));
+    let cy: i32 = i32(floor(qy / C));
+    var cov: f32 = 0.0;
+    var cov2: f32 = 0.0;
+    var t: vec3f = vec3f(0.0);
+    for (var j: i32 = cy - 1; j <= cy + 1; j++) {
+        for (var ii: i32 = cx - 1; ii <= cx + 1; ii++) {
+            for (var k: i32 = 0; k < i32(U.per_cell); k++) {
+                let a: u32 = u32(ii + 8192);
+                let b: u32 = u32(j + 8192);
+                let s: u32 = u32(k * 97 + 13);
+                let fx: f32 = (f32(ii) + hash3(a, b, s)) * C;
+                let fy: f32 = (f32(j) + hash3(a, b, s + 1u)) * C;
+                let th: f32 = 3.141592653589793 * (U.a.w + U.b.x * (hash3(a, b, s + 2u) - 0.5));
+                let dx: f32 = cos(th);
+                let dy: f32 = sin(th);
+                let hl: f32 = U.a.y * (0.6 + 0.8 * hash3(a, b, s + 3u)) / 2.0;
+                let rx: f32 = qx - fx;
+                let ry: f32 = qy - fy;
+                let tt: f32 = clamp(rx * dx + ry * dy, -hl, hl);
+                let ex: f32 = rx - tt * dx;
+                let ey: f32 = ry - tt * dy;
+                let c: f32 = clamp(0.5 * U.a.z + 0.5 - sqrt(ex * ex + ey * ey), 0.0, 1.0);
+                if (c > 0.0) {
+                    cov = cov + c;
+                    cov2 = cov2 + c * c;
+                    t = t + c * vec3f(dx * dx, dx * dy, dy * dy);
+                }
+            }
+        }
+    }
+    F[i] = vec4f(cov, t);
+    X[i] = 0.5 * (cov * cov - cov2);
+}
+
+//@pass style_fibre_tensor
+// Fibre-network watercolour: the conductivity tensor (Kxx, Kxy, Kyy) from the field smoothed over
+// a 7 x 7 box.
+@group(0) @binding(0) var<uniform> U: FibreParams;
+@group(0) @binding(1) var<storage, read> F: array<vec4f>;
+@group(0) @binding(2) var<storage, read_write> K: array<vec4f>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    let w: i32 = i32(U.width);
+    let h: i32 = i32(U.height);
+    let x: i32 = i32(i % U.width);
+    let y: i32 = i32(i / U.width);
+    var acc: vec4f = vec4f(0.0);
+    var n: f32 = 0.0;
+    for (var yy: i32 = max(0, y - 3); yy <= min(h - 1, y + 3); yy++) {
+        for (var xx: i32 = max(0, x - 3); xx <= min(w - 1, x + 3); xx++) {
+            acc = acc + F[u32(yy * w + xx)];
+            n = n + 1.0;
+        }
+    }
+    let cm: f32 = acc.x / n;
+    var s: f32 = 0.0;
+    if (acc.x > 1.0e-12) { s = 1.0 / acc.x; }
+    let g: f32 = U.b.z * min(1.0, cm);
+    K[i] = vec4f(U.b.y + g * acc.y * s, g * acc.z * s, U.b.y + g * acc.w * s, 0.0);
+}
+
+//@pass style_fibre_init
+// Fibre-network watercolour: the wash's pigment (absorbance against the paper) and its starting
+// water, dry across strong edges; the deposit starts at zero.
+@group(0) @binding(0) var<uniform> U: FibreParams;
+@group(0) @binding(1) var<storage, read> src: array<vec4f>;
+@group(0) @binding(2) var<storage, read_write> S: array<vec4f>;
+@group(0) @binding(3) var<storage, read_write> D: array<vec4f>;
+
+fn lum_at(x: i32, y: i32) -> f32 {
+    let w: i32 = i32(U.width);
+    let h: i32 = i32(U.height);
+    let c: vec3f = src[u32(clamp(y, 0, h - 1) * w + clamp(x, 0, w - 1))].xyz;
+    return 0.2126 * c.x + 0.7152 * c.y + 0.0722 * c.z;
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    let x: i32 = i32(i % U.width);
+    let y: i32 = i32(i / U.width);
+    let c: vec3f = src[i].xyz;
+    let a: vec3f = -log(max(vec3f(0.02), min(vec3f(1.0), c / U.paper.xyz))) * U.c.w;
+    let gx: f32 = 0.5 * (lum_at(x + 1, y) - lum_at(x - 1, y));
+    let gy: f32 = 0.5 * (lum_at(x, y + 1) - lum_at(x, y - 1));
+    S[i] = vec4f(a, clamp(1.0 - U.paper.w * sqrt(gx * gx + gy * gy), 0.05, 1.0));
+    D[i] = vec4f(0.0);
+}
+
+//@pass style_fibre_step
+// Fibre-network watercolour: one explicit step of pigment flux along the eight links (the
+// monotone stencil of the tensor), deposition raised at crossings, evaporation. Reads S, writes Sn.
+@group(0) @binding(0) var<uniform> U: FibreParams;
+@group(0) @binding(1) var<storage, read> K: array<vec4f>;
+@group(0) @binding(2) var<storage, read> X: array<f32>;
+@group(0) @binding(3) var<storage, read> S: array<vec4f>;
+@group(0) @binding(4) var<storage, read_write> Sn: array<vec4f>;
+@group(0) @binding(5) var<storage, read_write> D: array<vec4f>;
+
+fn link_g(k: vec4f, l: i32) -> f32 {
+    let ax: f32 = max(0.0, k.x - abs(k.y));
+    let ay: f32 = max(0.0, k.z - abs(k.y));
+    let dg: f32 = abs(k.y) / 2.0;
+    let pos: bool = k.y >= 0.0;
+    if (l < 2) { return ax; }
+    if (l < 4) { return ay; }
+    if (l < 6) { return select(0.0, dg, pos); }
+    return select(dg, 0.0, pos);
+}
+fn link_d(l: i32) -> vec2i {
+    if (l == 0) { return vec2i(1, 0); }
+    if (l == 1) { return vec2i(-1, 0); }
+    if (l == 2) { return vec2i(0, 1); }
+    if (l == 3) { return vec2i(0, -1); }
+    if (l == 4) { return vec2i(1, 1); }
+    if (l == 5) { return vec2i(-1, -1); }
+    if (l == 6) { return vec2i(1, -1); }
+    return vec2i(-1, 1);
+}
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    let w: i32 = i32(U.width);
+    let h: i32 = i32(U.height);
+    let x: i32 = i32(i % U.width);
+    let y: i32 = i32(i / U.width);
+    let si: vec4f = S[i];
+    let ki: vec4f = K[i];
+    let dt: f32 = U.c.z;
+    var flux: vec3f = vec3f(0.0);
+    for (var l: i32 = 0; l < 8; l++) {
+        let d: vec2i = link_d(l);
+        let xx: i32 = x + d.x;
+        let yy: i32 = y + d.y;
+        if (xx < 0 || yy < 0 || xx >= w || yy >= h) { continue; }
+        let j: u32 = u32(yy * w + xx);
+        let sj: vec4f = S[j];
+        let g: f32 = 0.5 * (link_g(ki, l) + link_g(K[j], l ^ 1)) * min(si.w, sj.w) * dt;
+        flux = flux + g * (sj.xyz - si.xyz);
+    }
+    let dep: f32 = U.b.w * (1.0 + U.c.x * X[i]) * dt;
+    let pc: vec3f = si.xyz + flux;
+    let dd: vec3f = min(pc, dep * pc);
+    Sn[i] = vec4f(pc - dd, max(0.0, si.w - U.c.y));
+    D[i] = vec4f(D[i].xyz + dd, 0.0);
+}
+
+//@pass style_fibre_out
+// Fibre-network watercolour: the dried wash, paper exp(-(suspended + deposited)), sRGB to RGBA8.
+@group(0) @binding(0) var<uniform> U: FibreParams;
+@group(0) @binding(1) var<storage, read> S: array<vec4f>;
+@group(0) @binding(2) var<storage, read> D: array<vec4f>;
+@group(0) @binding(3) var<storage, read_write> out8: array<u32>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let i: u32 = gid.x;
+    if (i >= U.width * U.height) { return; }
+    let o: vec3f = U.paper.xyz * exp(-(S[i].xyz + D[i].xyz));
+    out8[i] = pack_rgb8(o);
 }

@@ -109,7 +109,10 @@ function(raw_native_d3d12_shaders gen out_header)
         pt_trace pt_finish pt_hybrid
         sdf_march sdf_terms sdf_fog sdf_god sdf_composite
         style_ditherlight style_paintover style_exposure style_srgb_decode style_purity style_lightpaint style_glaze style_hatch style_hysteresis style_palettelight style_dither
-        style_adj_prep style_adj_develop style_adj_chem style_adj_out)
+        style_adj_prep style_adj_develop style_adj_chem style_adj_out
+        style_crt_phosphor style_crt_down style_crt_box style_crt_add style_crt_tube
+        style_vhs_sample style_vhs_tape style_vhs_play style_vhs_show
+        style_fibre_field style_fibre_tensor style_fibre_init style_fibre_step style_fibre_out)
     set(headers "")
     set(includes "")
     set(table "")

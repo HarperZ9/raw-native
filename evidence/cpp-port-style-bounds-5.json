@@ -1,0 +1,49 @@
+{
+  "schema": "raw-native.evidence/1",
+  "what": "Three signal-domain and paper passes in the C++ core (ADR 0019): crt-classic (the Studio's tube stage, web/shaders/crt-classic with its CPU reference web/shaders/reference/retro-crt.mjs), VHS (web/shaders/vhs) and fibre-network watercolour (web/shaders/fibre). Same links as the earlier bounds files: JavaScript reference against the C++ reference (CPU link), and the C++ reference against the one WGSL source on D3D12 (WARP), WebGPU (SwiftShader) and Vulkan (lavapipe). Written before the C++ references, the WGSL rewrites and the first run of any of the three.",
+  "author_decisions": "2026-10-15: \"No, renderer first\"; \"One C++ core\".",
+  "written": "2026-10-16",
+  "controls": "Every link carries a built-in control that must fail on every case of every run; a run whose control passes fails as a whole. Separately, one constant in the C++ reference and one in style.wgsl are edited by hand for each pass, rebuilt and run, the result recorded in evidence/cpp-port-style-runs-5.json with the prediction below, and the edit reverted.",
+  "crt_classic": {
+    "fixtures": "The seven cases of evidence/shaders-crt-classic-parity-bounds.json, frames built as web/test/shaders-classic.html builds them: testCard(240, 150) nearest-upscaled x4 (960 x 600), testCard(320, 200) x3 (960 x 600), gradientPlate(960, 600). The JavaScript reference is crtStage of retro-crt.mjs (classicRef), RGBA8 in and out. Its transfer tables (TO_LIN as f32, TO_SRGB as u8), and for each case the 8.8 fixed beam and mask tables, are exported too.",
+    "reference_arithmetic": "The JavaScript reference is integer and Float32Array arithmetic (8.8 fixed point, f32 tables, f32 glow buffers with float64 running sums). The C++ reference keeps each f32 store and each integer truncation where the JavaScript has one.",
+    "cpu_link": {
+      "tables_equal": "the C++ TO_LIN, TO_SRGB, beam and mask tables equal the exported ones, every entry",
+      "bytes_differing": 0,
+      "why": "Integer and f32-store arithmetic with the transcendental functions only in the tables, which are compared entry by entry; a faithful port reproduces every byte."
+    },
+    "gpu_link": { "max_abs_code": 1, "why": "The web bound (M1 criterion 9: within 1/255 at 8 bits). The GPU blurs with direct sums where the reference keeps a running sum, so a glow value can round differently." },
+    "controls": {
+      "built_in": "The C++ reference with every option of the case that is above zero among scanStrength, beam, maskStrength, bloom, halation, curvature, aberration and vignette multiplied by 1.1: at least one byte differs on the CPU link, and the GPU's maximum difference from it exceeds 1 code, on every case.",
+      "source_edit": "C++: the bloom weight 0.9 to 0.95 in the glow field. Prediction: the CPU link fails on studio-defaults and glow-strong (the cases with bloom) and on no other case. WGSL: the halation weight 0.3 to 0.33 in the glow add pass. Prediction: WARP fails on glow-strong and on no case without halation (slot-strong, dot-cell3, tube-strong, flat-cell1, vignette-only)."
+    }
+  },
+  "vhs": {
+    "fixtures": "The three cases of evidence/shaders-vhs-parity-bounds.json, source built as web/test/shaders-vhs.html builds it: streetScene(176, 120, 0), each value 1 - exp(-2.4 v) sRGB-encoded, alpha 1. The JavaScript createVhs frame (sample, tape, playback) gives the signal (Float32Array, lines x N x 4) and toDisplay gives the 352 x 240 RGBA8 display; both are exported, with the plan (N, the three tap sets, delay, the generation-scaled noise and phase values, the YIQ inverse).",
+    "reference_arithmetic": "The JavaScript stores each pass's output in a Float32Array and computes in float64 between. The C++ reference keeps those f32 stores.",
+    "cpu_link": {
+      "plan_equal": "N and the tap counts equal; every tap, the delay, the noise and phase scales and the YIQ inverse within 1e-12 relative",
+      "signal_max_abs": 1e-05,
+      "display_mismatch": "codes equal except where the JavaScript signal value lies within 255e-5 codes of a rounding edge (x.5); at most 1e-4 of the display's channel values a case",
+      "why": "The noise draws use log, cos and sin, whose last bit may differ between V8 and the C++ library; each pass rounds to f32, so a last-bit difference stays near one f32 rounding."
+    },
+    "gpu_link": { "max_abs_code": 6, "p999_abs_code": 2, "mean_abs_code": 0.1, "why": "The web bounds: the same integer hashes on both sides; f32 against float64 in the filters, the Box-Muller transform and the line shifts, and a dropout run boundary moving a sample on a half step." },
+    "controls": {
+      "built_in": "The C++ reference with the luma noise multiplied by 1.5: it must exceed signal_max_abs on the CPU link and the GPU bounds, on every case.",
+      "source_edit": "C++: the chroma-noise knot spacing 24 to 25 samples. Prediction: the CPU link fails on every case. WGSL: the dropout segment length 64 to 63 in the playback pass. Prediction: WARP fails on ep-rental-tracking (the most dropouts); the other cases may pass."
+    }
+  },
+  "fibre": {
+    "fixtures": "The three cases of evidence/shaders-fibre-parity-bounds.json at 320 x 200: displayLinear('street') with cold-press and hot-press, displayLinear('edges') with rough. The exporter takes the suspended and deposited pigment (float64, runFibre keep) and forms the float64 output paper exp(-(P + D)), checking that Math.fround of each value equals runFibre's own frame.",
+    "cpu_link": {
+      "plan_equal": "L, C and dt equal",
+      "value_max_rel": 1e-09,
+      "rule": "|cpp - js| <= 1e-9 max(1, |js|) on every output value; displayEncode8 codes equal except at a rounding edge within 1e-9 (at most 2 a case)"
+    },
+    "gpu_link": { "max_abs_code": 3, "p999_abs_code": 1, "mean_abs_code": 0.05, "why": "The web bounds: explicit diffusion steps on both sides, contractive; the fibre network is rasterised from integer hashes identically." },
+    "controls": {
+      "built_in": "The C++ reference with the wash strength multiplied by 1.1: it must exceed value_max_rel on the CPU link and the GPU bound, on every case.",
+      "source_edit": "C++: the tensor smoothing radius 3 to 2. Prediction: the CPU link fails on every case. WGSL: the initial wetness floor 0.05 to 0.2 in the init pass. Prediction: WARP fails on at least edges-rough."
+    }
+  }
+}
