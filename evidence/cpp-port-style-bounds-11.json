@@ -8,19 +8,35 @@
   "reference_arithmetic": "The JavaScript stores every pass's output (prep, tensor, blurs, Kuwahara, stroke, relief, image, canvas coordinates) as f32 and computes in float64 between; the C++ keeps those f32 stores.",
   "cpu_link": {
     "plan_equal": "the tensor blur weights equal (f32)",
-    "image_max_abs": 1e-04,
+    "image_max_abs": 0.0001,
     "codes": "at most 1e-4 of channel values differ, none by more than 1 code, on every case of every set",
     "canvas": "motion sets: the layer state (ages, seeds, mean distortions) equal after the last frame",
     "why": "exp, log, pow, tanh, sinh and cosh may differ in the last bit between V8 and the C++ library; a stroke follows the flow for up to 16 steps, and its sign and fade decisions are made continuous by design, so such a difference stays near one f32 rounding."
   },
   "gpu_link": {
-    "stills": {"max_abs_code": 8, "p999_abs_code": 2, "mean_abs_code": 0.1},
-    "motion": {"max_abs_code": 8, "p999_abs_code": 3, "mean_abs_code": 0.2},
-    "postframes": {"max_abs_code": 4, "over2_count": 0, "mean_abs_code": 0.05},
+    "stills": {
+      "max_abs_code": 8,
+      "p999_abs_code": 2,
+      "mean_abs_code": 0.1
+    },
+    "motion": {
+      "max_abs_code": 8,
+      "p999_abs_code": 3,
+      "mean_abs_code": 0.2
+    },
+    "postframes": {
+      "max_abs_code": 4,
+      "over2_count": 0,
+      "mean_abs_code": 0.05
+    },
     "why": "The web bounds of each set: an f32 rounding can send one stroke down a different path; advected canvas coordinates drift by a fraction of a pixel between f32 and f64."
   },
   "controls_detail": {
     "built_in": "The C++ reference with the exposure multiplied by 1.1: it must exceed the CPU link bounds and the set's GPU bounds, on every case.",
     "source_edit": "C++: the XDoG difference weight 0.985 to 0.99. Prediction: the CPU link fails on every case (every preset draws lines). WGSL: the oil canvas weave period 3.2 to 3.0 in the canvas height. Prediction: WARP fails on the still cases with impasto (oil-grotesque, oil, gouache, grotesque-panned) and passes the two watercolour cases, whose compose does not read the relief's shading."
+  },
+  "addendum_a": {
+    "written": "2026-10-17, after the first fixture export and before the C++ reference was built or run",
+    "what": "The first export was 112 MB, most of it the six 960 x 600 post-frame images as f32 (55 MB). The post-frame cases now export their encodePaint8 codes only, so their CPU link is the codes rule alone (at most 1e-4 of channel values differ, none by more than 1 code); image_max_abs applies to the still and motion cases. Nothing else changes."
   }
 }
