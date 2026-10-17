@@ -1,0 +1,49 @@
+# GPU state before and after each step (nvidia-smi). Other processes' names are left out; raw-native processes are kept.
+== vk_pacing_vsync_on-before 2026-10-17T06:31:45Z
+name, driver_version, utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+NVIDIA GeForce RTX 4090, 610.88, 6 %, 210 MHz, 8.85 W, 34, 2109 MiB
+== vk_pacing_vsync_on-after 2026-10-17T06:34:36Z
+name, driver_version, utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+NVIDIA GeForce RTX 4090, 610.88, 18 %, 210 MHz, 9.61 W, 33, 1995 MiB
+== vk_gate_pacing-before 2026-10-17T06:34:36Z
+name, driver_version, utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+NVIDIA GeForce RTX 4090, 610.88, 6 %, 210 MHz, 9.85 W, 33, 1999 MiB
+== vk_gate_pacing-after 2026-10-17T06:34:36Z
+name, driver_version, utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+NVIDIA GeForce RTX 4090, 610.88, 6 %, 210 MHz, 9.85 W, 33, 2007 MiB
+== vk_run1-before 2026-10-17T06:34:36Z
+name, driver_version, utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+NVIDIA GeForce RTX 4090, 610.88, 3 %, 2610 MHz, 16.92 W, 34, 1999 MiB
+== vk_run1-after 2026-10-17T06:34:47Z
+name, driver_version, utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+NVIDIA GeForce RTX 4090, 610.88, 18 %, 210 MHz, 8.84 W, 33, 2000 MiB
+== vk_run2-before 2026-10-17T06:34:47Z
+name, driver_version, utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+NVIDIA GeForce RTX 4090, 610.88, 21 %, 210 MHz, 9.37 W, 34, 1992 MiB
+== vk_run2-after 2026-10-17T06:34:58Z
+name, driver_version, utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+NVIDIA GeForce RTX 4090, 610.88, 20 %, 210 MHz, 8.98 W, 34, 2000 MiB
+== vk_offscreen-before 2026-10-17T06:34:58Z
+name, driver_version, utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+NVIDIA GeForce RTX 4090, 610.88, 20 %, 210 MHz, 8.98 W, 34, 1993 MiB
+== vk_offscreen-after 2026-10-17T06:34:59Z
+name, driver_version, utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+NVIDIA GeForce RTX 4090, 610.88, 3 %, 2610 MHz, 47.65 W, 35, 2003 MiB
+== vk_gate_same-before 2026-10-17T06:35:00Z
+name, driver_version, utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+NVIDIA GeForce RTX 4090, 610.88, 3 %, 2610 MHz, 47.65 W, 35, 1995 MiB
+== vk_gate_same-after 2026-10-17T06:35:00Z
+name, driver_version, utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+NVIDIA GeForce RTX 4090, 610.88, 1 %, 2610 MHz, 55.72 W, 35, 1995 MiB
+== vk_hdr-before 2026-10-17T06:35:00Z
+name, driver_version, utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+NVIDIA GeForce RTX 4090, 610.88, 1 %, 2610 MHz, 55.72 W, 35, 1995 MiB
+== vk_hdr-after 2026-10-17T06:35:01Z
+name, driver_version, utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+NVIDIA GeForce RTX 4090, 610.88, 3 %, 2610 MHz, 56.28 W, 35, 2000 MiB
+== vk_gate_hdr-before 2026-10-17T06:35:01Z
+name, driver_version, utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+NVIDIA GeForce RTX 4090, 610.88, 3 %, 2610 MHz, 56.28 W, 35, 1995 MiB
+== vk_gate_hdr-after 2026-10-17T06:35:01Z
+name, driver_version, utilization.gpu [%], clocks.current.sm [MHz], power.draw [W], temperature.gpu, memory.used [MiB]
+NVIDIA GeForce RTX 4090, 610.88, 0 %, 2610 MHz, 57.40 W, 36, 2003 MiB
