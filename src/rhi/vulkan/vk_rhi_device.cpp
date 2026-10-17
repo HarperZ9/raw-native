@@ -1,5 +1,6 @@
 // The Vulkan RHI device: instance, device choice, buffers, submission and read-back (see vk_rhi.hpp).
 #include "vk_rhi.hpp"
+#include "raw/rhi/validate.hpp"
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
@@ -232,7 +233,7 @@ Device* device(std::string& err){
         if (d->init(once.error)) once.dev = std::move(d);
     }
     if (!once.dev) err = once.error;
-    return once.dev.get();
+    return validatedIfRequested(once.dev.get());   // RAW_NATIVE_RHI_VALIDATE=1 (raw/rhi/validate.hpp)
 }
 std::unique_ptr<Device> createDevice(std::string& err){
     auto d = std::make_unique<vkr::VkrDevice>();
