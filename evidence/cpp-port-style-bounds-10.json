@@ -14,10 +14,18 @@
       "codes_mean_max": 0.05,
       "blend_equal": "the crossfade blend equals the JavaScript's to 1e-12"
     },
-    "gpu_link": { "over2_fraction": 0.03, "mean_abs_code": 2.0, "why": "The web bounds: the probe marches rays in f32 on the GPU, and a ray that grazes a silhouette can hit on one side and miss on the other; at this size one texel covers about a hundred output pixels." },
+    "gpu_link": {
+      "over2_fraction": 0.03,
+      "mean_abs_code": 2.0,
+      "why": "The web bounds: the probe marches rays in f32 on the GPU, and a ray that grazes a silhouette can hit on one side and miss on the other; at this size one texel covers about a hundred output pixels."
+    },
     "controls": {
       "built_in": "The C++ reference with bands 6 to 5 (the posterise step): it must exceed the CPU link's code bounds and the GPU bounds, on every case.",
       "source_edit": "C++: the outline's depth ratio 1.03 to 1.10. Prediction: the CPU link fails on at least orbit-front and orbit-back. WGSL: the crease threshold 0.6 to 0.4 in the texel shading pass. Prediction: WARP fails on at least one case."
     }
+  },
+  "addendum_a": {
+    "written": "2026-10-17, after the pixel WGSL source edit and before any change to code or bounds",
+    "what": "The WGSL source edit (crease 0.6 -> 0.4) passed WARP on every case: a miss against the prediction. The bounds are unchanged. A second WGSL edit (the posterise offset + 0.5 -> + 0.3) was run afterwards and failed every case; it is recorded as post hoc in evidence/cpp-port-style-runs-10.json."
   }
 }

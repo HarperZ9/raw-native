@@ -8,9 +8,9 @@ Addenda A and B) and `evidence/cpp-port-style-bounds-2.json` (round 2, with Adde
 `evidence/cpp-port-style-bounds-3.json` (hysteresis and palettelight, with Addenda A and B) and
 `evidence/cpp-port-style-bounds-4.json` (palette dither and development adjacency) and
 `evidence/cpp-port-style-bounds-5.json` (crt-classic, VHS and fibre), `-bounds-6.json` (film) and `-bounds-7.json`
-(lens suite, with Addendum A) `-bounds-8.json` (sag and caricature) and `-bounds-9.json`
-(the one-ray visibility estimator). Runs:
-`evidence/cpp-port-style-runs.json`, `-runs-2.json`, `-runs-3.json`, `-runs-4.json`, `-runs-5.json`, `-runs-6.json`, `-runs-7.json`, `-runs-8.json` and `-runs-9.json`; the records are
+(lens suite, with Addendum A) `-bounds-8.json` (sag and caricature) `-bounds-9.json`
+(the one-ray visibility estimator) and `-bounds-10.json` (pixel art, with Addendum A). Runs:
+`evidence/cpp-port-style-runs.json`, `-runs-2.json`, `-runs-3.json`, `-runs-4.json`, `-runs-5.json`, `-runs-6.json`, `-runs-7.json`, `-runs-8.json`, `-runs-9.json` and `-runs-10.json`; the records are
 `evidence/cpp-port-style-d3d12-warp.json` and `evidence/cpp-port-style-webgpu-swiftshader.json` (CI).
 
 ## How a pass is ported
@@ -30,7 +30,7 @@ Run it locally:
 ```
 node tools/port/gen_pigments.mjs --check
 node tools/port/export_style_fixtures.mjs style-fixtures
-# one group while developing (not the check of record): --only poststack | image | quantise | dither | adjacency | signal | film | lens | workgroup | rtvis
+# one group while developing (not the check of record): --only poststack | image | quantise | dither | adjacency | signal | film | lens | workgroup | rtvis | pixel
 build/Release/raw_native_cli.exe style-parity --fixtures style-fixtures --cpu-only
 RAW_NATIVE_D3D12_WARP=1 build/Release/raw_native_cli.exe style-parity --fixtures style-fixtures
 ```
@@ -59,6 +59,7 @@ RAW_NATIVE_D3D12_WARP=1 build/Release/raw_native_cli.exe style-parity --fixtures
 | Scan-causal EHT sag, 4 cases | signal max 0 (every f32 value equal); scan equal | max 1 code; one case bit-identical | CI |
 | Salience caricature, 3 cases | value max 0 (every f32 value equal); salience, gradient and lambda equal | max 1 code; one case bit-identical | CI |
 | One-ray visibility (RT dither study), 12 cases | visibility equal on every pixel of the 256 x 256 yard, 0 ties; tone max 0; net points equal | no GPU link (CPU code) | no GPU link |
+| Perspective-stable pixel art, 5 cases (240 x 150) | 0 probe texels, 0 visibility pixels and 0 codes differ; blend equal | 4 cases bit-identical; one grazing ray in turned-and-close (over2 5.3e-4) | CI |
 
 Bounds: tone and colour 1e-9; GPU decision flips 5e-4 of pixels, mean 0.12 (dither) and 0.05
 (paint-over) codes. Round 2: values 1e-9 and 0 unexcused code flips on the CPU link; the web bounds
@@ -100,6 +101,12 @@ within 1 code on WARP; all four source edits failed as predicted. The one-ray vi
 of the RT dither study (`raw/renderer/style_rtvis.hpp`) is CPU code with the CPU link only (rule 6,
 like look keys); `StyleParity::gpuPass` does not ask it for a GPU link.
 
+Pixel art needed only `atomicMin` from the translator (as a statement, HLSL `InterlockedMin`): the
+texel-index pass reads the depth keys through a plain read-only binding, written by the previous
+pass, so `atomicLoad` is not needed, and buffer lengths come from the uniform, so `arrayLength` is not
+either. Its C++ reference equals the JavaScript on every texel, pixel and code. One WGSL source edit
+(the crease threshold) stayed inside the loose web bound and is recorded as a miss (Addendum A).
+
 Round 2 adds the post stack's driver (`raw/renderer/post_stack.hpp`): the registry, the encoding
 contract and stage split of `web/motion/post.mjs` and `renderer.mjs`, and the run order of
 `post_run.mjs` (ping-pong frames, history frames), run as a host frame graph on the CPU references
@@ -119,10 +126,9 @@ WGSL can be generated.
 
 | Pass (`web/shaders/`) | JavaScript lines | Entry points | Subset work | Estimate |
 |---|---|---|---|---|
-| `pixel` | 621 | 7 | `atomicMin`, `atomicLoad`, `atomicStore`, `arrayLength` | 6 h, plus 1.5 h of translator work |
 | `paint` (painterly, Kubelka-Munk) | 1,073 | 11 | atomics, `unpack4x8unorm` | 10 h |
 | `crt` (physical) | 1,231 | 8 | none found | 10 h |
 
-Total left about 27 hours: `pixel`, `paint` and the physical `crt` (round 2 took the driver, fifteen passes and the visibility estimator). Order by need: the R1 slice needs paint-over and look keys (done), then
+Total left about 20 hours: `paint` and the physical `crt` (round 2 took the driver, sixteen passes and the visibility estimator). Order by need: the R1 slice needs paint-over and look keys (done), then
 `dither`, `hysteresis` and `film` for the templates, with the translator growth done once before
 `caricature`, `sag` and `pixel`.
