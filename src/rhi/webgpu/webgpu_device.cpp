@@ -7,6 +7,7 @@
 // dispatch is its own compute pass. Pipelines use the layout WebGPU derives
 // from the WGSL, and the RHI's layout is checked against each dispatch.
 #include "webgpu_device.hpp"
+#include "raw/rhi/validate.hpp"
 namespace raw::rhi::webgpu {
 bool WebGpuDevice::init(std::string& err){
     WGPUInstanceFeatureName feat = WGPUInstanceFeatureName_TimedWaitAny;
@@ -98,6 +99,6 @@ Device* device(std::string& err){
         if (d->init(once.error)) once.dev = std::move(d);
     }
     if (!once.dev) err = once.error;
-    return once.dev.get();
+    return validatedIfRequested(once.dev.get());   // RAW_NATIVE_RHI_VALIDATE=1 (raw/rhi/validate.hpp)
 }
 }
