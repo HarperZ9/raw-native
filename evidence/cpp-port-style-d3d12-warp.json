@@ -1,6 +1,6 @@
 {
  "check": "style passes in the C++ core (ADR 0019)",
- "bounds": "evidence/cpp-port-style-bounds.json, evidence/cpp-port-style-bounds-2.json, -3.json, -4.json, -5.json, -6.json, -7.json, -8.json, -9.json",
+ "bounds": "evidence/cpp-port-style-bounds.json, evidence/cpp-port-style-bounds-2.json, -3.json, -4.json, -5.json, -6.json, -7.json, -8.json, -9.json, -10.json",
  "backend": "d3d12",
  "adapter": "Microsoft Basic Render Driver",
  "error": "",
@@ -575,7 +575,22 @@
   {"pass": "rtvis", "id": "sphere-white1", "decisions": 65536,
    "cpu": {"max_abs": 0, "mismatch": 0, "excused_ties": 0, "secondary_mismatch": 0, "preset_equal": true, "control_fails": true, "pass": true}},
   {"pass": "rtvis", "id": "sphere-ref64", "decisions": 65536,
-   "cpu": {"max_abs": 0, "mismatch": 0, "excused_ties": 0, "secondary_mismatch": 0, "preset_equal": true, "control_fails": true, "pass": true}}
+   "cpu": {"max_abs": 0, "mismatch": 0, "excused_ties": 0, "secondary_mismatch": 0, "preset_equal": true, "control_fails": true, "pass": true}},
+  {"pass": "pixel", "id": "orbit-front", "decisions": 108000,
+   "cpu": {"max_abs": 0, "mismatch": 0, "excused_ties": 0, "secondary_mismatch": 0, "preset_equal": true, "control_fails": true, "pass": true},
+   "gpu": {"mismatch": 0, "mismatch_fraction": 0, "over2_fraction": 0, "mean": 0, "max": 0, "p999": 0, "control_fails": true, "pass": true}},
+  {"pass": "pixel", "id": "orbit-back", "decisions": 108000,
+   "cpu": {"max_abs": 0, "mismatch": 0, "excused_ties": 0, "secondary_mismatch": 0, "preset_equal": true, "control_fails": true, "pass": true},
+   "gpu": {"mismatch": 0, "mismatch_fraction": 0, "over2_fraction": 0, "mean": 0, "max": 0, "p999": 0, "control_fails": true, "pass": true}},
+  {"pass": "pixel", "id": "turned-and-close", "decisions": 108000,
+   "cpu": {"max_abs": 0, "mismatch": 0, "excused_ties": 0, "secondary_mismatch": 0, "preset_equal": true, "control_fails": true, "pass": true},
+   "gpu": {"mismatch": 0, "mismatch_fraction": 0, "over2_fraction": 0.000527778, "mean": 0.021463, "max": 45, "p999": 0, "control_fails": true, "pass": true}},
+  {"pass": "pixel", "id": "cell-crossfade", "decisions": 108000,
+   "cpu": {"max_abs": 0, "mismatch": 0, "excused_ties": 0, "secondary_mismatch": 0, "preset_equal": true, "control_fails": true, "pass": true},
+   "gpu": {"mismatch": 0, "mismatch_fraction": 0, "over2_fraction": 0, "mean": 0, "max": 0, "p999": 0, "control_fails": true, "pass": true}},
+  {"pass": "pixel", "id": "slow-crossfade", "decisions": 108000,
+   "cpu": {"max_abs": 0, "mismatch": 0, "excused_ties": 0, "secondary_mismatch": 0, "preset_equal": true, "control_fails": true, "pass": true},
+   "gpu": {"mismatch": 0, "mismatch_fraction": 0, "over2_fraction": 0, "mean": 0, "max": 0, "p999": 0, "control_fails": true, "pass": true}}
  ],
  "lookkeys": {"series": 6, "samples": 19607, "max_abs": 0, "keys_exact": true, "refusals_match": true, "unknown_refused": true, "control_fails": true, "pass": true},
  "poststack": {"lists": 12, "plan_mismatch": 0, "plan_control_differs": true, "chains": [
