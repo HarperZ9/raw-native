@@ -183,11 +183,11 @@ are G1 at M3.
 4. Frame pacing is recorded: present-to-present intervals over 10,000 frames on the RTX 4090
    when the GPU lock is free, with the bound stated before the run.
 
-Status (2026-10-16). Criteria 1 to 3 pass on WARP, in CI and locally, against bounds committed
-before the first run (`evidence/n2-presentation-bounds.json`, results in
-`evidence/n2-presentation-runs.json`). The host is `raw_native_present`. Criterion 4 has its
-harness, proved on WARP; the RTX 4090 run is queued behind the GPU lock. N2 closes when that record
-is committed.
+Status (2026-10-16). **N2 is closed: every criterion passes.** Criteria 1 to 3 pass on WARP, in CI
+and locally, against bounds committed before the first run (`evidence/n2-presentation-bounds.json`,
+results in `evidence/n2-presentation-runs.json`). Criterion 4 passes on the RTX 4090: over 10,000
+frames at 60 Hz the median interval is 16.663 ms and the 99th percentile 1.088 T, with 4 intervals
+above 1.5 T (`evidence/n2-rtx4090/`). The host is `raw_native_present`.
 
 ### N3: Vulkan raster for Linux and Steam Deck
 
@@ -211,6 +211,13 @@ identity matrix verifies 4 of 4 with a committed golden for the device class, th
 verify, the M2 and M3 checks pass their WARP gates, and the style passes pass their ADR 0019 bounds.
 Two misses are recorded: lighting shading (3 of 4,096 samples over the bound) and the shadow-map
 identity's depth bound on two scenes. Criterion 5 (Steam Deck) is open.
+
+Frame timing on Vulkan (2026-10-17, `evidence/n3-vulkan-timing-runs.json`): the Vulkan swapchain
+reports the output's refresh rate from `VK_GOOGLE_display_timing`, or the host asks the window (the
+Win32 display configuration, the Wayland output mode), so the N2 pacing bound can be read on Vulkan. On
+one monitor the Vulkan and D3D12 hosts report the same rate. The RTX 4090 Vulkan run (pacing, HDR10
+through the Vulkan swapchain, presented hashes) is prepared but not run: it needs the GPU lock and a
+fullscreen window on the machine in use.
 
 ### ROADMAP M3 to M6
 

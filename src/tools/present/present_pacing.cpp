@@ -57,7 +57,8 @@ int pacingCommand(int argc, char** argv){
             std::this_thread::sleep_for(std::chrono::milliseconds(10));
         }
     }
-    const double hz = s.sc->refreshHz();
+    std::string refreshSource;
+    const double hz = outputRefreshHz(s, *win, refreshSource);
     std::vector<int64_t> t; t.reserve(frames);
     std::vector<rhi::PresentStats> st; st.reserve(frames);
     uint32_t occluded = 0, timeouts = 0;
@@ -84,7 +85,7 @@ int pacingCommand(int argc, char** argv){
     double mean = 0; for (double v : ms) mean += v; mean /= double(ms.size());
     const double period = hz > 0 ? 1e3 / hz : 0;
     uint64_t above = 0; for (double v : ms) above += period > 0 && v > 1.5 * period;
-    std::string j = "{\n \"schema\": \"raw-native.present-pacing/1\",\n \"adapter\": " + jstr(s.adapter) + ",\n \"refresh_hz\": " + jnum(hz)
+    std::string j = "{\n \"schema\": \"raw-native.present-pacing/1\",\n \"adapter\": " + jstr(s.adapter) + ",\n \"refresh_hz\": " + jnum(hz) + ", \"refresh_source\": " + jstr(refreshSource)
         + ",\n \"period_ms\": " + jnum(period)
         + ",\n \"clock\": \"std::chrono::steady_clock (QueryPerformanceCounter on MSVC), read when Present returns\""
         + ",\n \"frames\": " + std::to_string(frames) + ", \"warmup\": " + std::to_string(warmup)

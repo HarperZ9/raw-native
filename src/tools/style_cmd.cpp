@@ -8,17 +8,18 @@
 #include <string>
 namespace raw {
 int styleParityCommand(int argc, char** argv) {
-    std::string out, dir = "style-fixtures";
+    std::string out, dir = "style-fixtures", only;
     bool cpuOnly = false;
     for (int i = 1; i < argc; ++i) {
         if (!std::strcmp(argv[i], "--out") && i + 1 < argc) out = argv[++i];
         else if (!std::strcmp(argv[i], "--fixtures") && i + 1 < argc) dir = argv[++i];
         else if (!std::strcmp(argv[i], "--cpu-only")) cpuOnly = true;
-        else { std::printf("usage: raw_native_cli style-parity [--fixtures DIR] [--cpu-only] [--out FILE]\n"); return 2; }
+        else if (!std::strcmp(argv[i], "--only") && i + 1 < argc) only = argv[++i];
+        else { std::printf("usage: raw_native_cli style-parity [--fixtures DIR] [--cpu-only] [--only GROUP] [--out FILE]\n"); return 2; }
     }
     std::string why;
     rhi::Device* dev = cpuOnly ? nullptr : rhi::device(why);
-    const gpu_check::StyleParity r = gpu_check::styleParity(dev, dir);
+    const gpu_check::StyleParity r = gpu_check::styleParity(dev, dir, only);
     const std::string j = r.json();
     std::fputs(j.c_str(), stdout);
     if (!out.empty()) std::ofstream(out, std::ios::binary) << j;

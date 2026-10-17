@@ -45,6 +45,7 @@ public:
     void setFullscreen(bool on) override;
     bool fullscreen() const override { return fullscreen_; }
     Rect monitorRect() const override { return {0, 0, outW_, outH_}; }
+    double refreshHz() const override { return refreshMhz_ > 0 ? double(refreshMhz_) / 1000.0 : 0; }
 
     // Listener callbacks.
     static void global(void* data, wl_registry* r, uint32_t name, const char* iface, uint32_t version);
@@ -57,9 +58,9 @@ public:
         if (!self->closed_){ self->closed_ = true; self->events_.push_back({WindowEvent::Kind::CloseRequested, self->w_, self->h_}); }
     }
     static void outGeometry(void*, wl_output*, int32_t, int32_t, int32_t, int32_t, int32_t, const char*, const char*, int32_t){}
-    static void outMode(void* data, wl_output*, uint32_t flags, int32_t w, int32_t h, int32_t){
+    static void outMode(void* data, wl_output*, uint32_t flags, int32_t w, int32_t h, int32_t refreshMhz){
         auto* self = (WaylandWindow*)data;
-        if (flags & WL_OUTPUT_MODE_CURRENT){ self->outW_ = (uint32_t)w; self->outH_ = (uint32_t)h; }
+        if (flags & WL_OUTPUT_MODE_CURRENT){ self->outW_ = (uint32_t)w; self->outH_ = (uint32_t)h; self->refreshMhz_ = refreshMhz; }
     }
     static void outDone(void*, wl_output*){}
     static void outScale(void*, wl_output*, int32_t){}
@@ -75,7 +76,7 @@ private:
     xdg_toplevel* top_{nullptr};
     std::vector<WindowEvent> events_;
     uint32_t w_{0}, h_{0}, savedW_{0}, savedH_{0}, outW_{0}, outH_{0};
-    int32_t pendingW_{0}, pendingH_{0};
+    int32_t pendingW_{0}, pendingH_{0}, refreshMhz_{0};
     bool configured_{false}, closed_{false}, fullscreen_{false};
 };
 

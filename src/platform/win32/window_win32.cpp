@@ -10,6 +10,8 @@
 #endif
 #include <windows.h>
 #include "raw/platform/window.hpp"
+#include <cwchar>
+#include <vector>
 namespace raw::platform {
 namespace {
 constexpr const wchar_t* kClass = L"raw-native-present";
@@ -53,6 +55,7 @@ public:
         GetMonitorInfoW(MonitorFromWindow(hwnd_, MONITOR_DEFAULTTONEAREST), &mi);
         return {mi.rcMonitor.left, mi.rcMonitor.top, uint32_t(mi.rcMonitor.right - mi.rcMonitor.left), uint32_t(mi.rcMonitor.bottom - mi.rcMonitor.top)};
     }
+    double refreshHz() const override;
     LRESULT handle(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp);
 
 private:
@@ -106,6 +109,27 @@ LRESULT Win32Window::handle(HWND hwnd, UINT msg, WPARAM wp, LPARAM lp){
     return DefWindowProcW(hwnd, msg, wp, lp);
 }
 
+// Kept equal to monitorRefreshHz in src/rhi/d3d12/d3d12_swapchain.cpp (the layer rules keep a
+// backend from including a platform file); evidence/n3-vulkan-timing-bounds.json t1 checks the two
+// agree on the same monitor.
+double Win32Window::refreshHz() const {
+    MONITORINFOEXW mi{}; mi.cbSize = sizeof mi;
+    if (!GetMonitorInfoW(MonitorFromWindow(hwnd_, MONITOR_DEFAULTTONEAREST), &mi)) return 0;
+    UINT32 np = 0, nm = 0;
+    if (GetDisplayConfigBufferSizes(QDC_ONLY_ACTIVE_PATHS, &np, &nm) != ERROR_SUCCESS) return 0;
+    std::vector<DISPLAYCONFIG_PATH_INFO> paths(np); std::vector<DISPLAYCONFIG_MODE_INFO> modes(nm);
+    if (QueryDisplayConfig(QDC_ONLY_ACTIVE_PATHS, &np, paths.data(), &nm, modes.data(), nullptr) != ERROR_SUCCESS) return 0;
+    for (UINT32 i = 0; i < np; ++i){
+        DISPLAYCONFIG_SOURCE_DEVICE_NAME src{};
+        src.header.type = DISPLAYCONFIG_DEVICE_INFO_GET_SOURCE_NAME; src.header.size = sizeof src;
+        src.header.adapterId = paths[i].sourceInfo.adapterId; src.header.id = paths[i].sourceInfo.id;
+        if (DisplayConfigGetDeviceInfo(&src.header) != ERROR_SUCCESS) continue;
+        if (std::wcscmp(src.viewGdiDeviceName, mi.szDevice) != 0) continue;
+        const DISPLAYCONFIG_RATIONAL r = paths[i].targetInfo.refreshRate;
+        return r.Denominator ? double(r.Numerator) / double(r.Denominator) : 0;
+    }
+    return 0;
+}
 void Win32Window::setFullscreen(bool on){
     if (on == fullscreen_) return;
     if (on){

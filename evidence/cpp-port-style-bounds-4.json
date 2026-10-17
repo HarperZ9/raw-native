@@ -1,0 +1,32 @@
+{
+  "schema": "raw-native.evidence/1",
+  "what": "The palette dither (web/shaders/dither: ordered pair dither after the author's retro-dither.js, interleaved gradient noise, blue noise, and the mix modes) in the C++ core (ADR 0019). Same links as the earlier bounds files: JavaScript float64 against C++ float64 (CPU link), and C++ float64 against the one WGSL source on D3D12 (WARP) and WebGPU (SwiftShader). Written before the C++ reference, the WGSL rewrite and the first run.",
+  "author_decisions": "2026-10-15: \"No, renderer first\"; \"One C++ core\".",
+  "written": "2026-10-16",
+  "fixtures": "The 114 cases of web/test/shaders-dither.html: every palette in [gameboy, cga, ega, pico8, nes, mono1] x every mode in [none, bayer2, bayer4, bayer8, noise, blue] x both plates (fixtures/plates.mjs gradientPlate(320, 180) and randomPlate(512, 512, 7)) at strength 1; pico8 bayer8 and noise at strength 0.7, brightness 0.05, both plates; the mix modes (mix-bayer4, mix-bayer8, mix-blue) for the six palettes and both plates; pico8 mix-bayer4 at strength 0.7, both plates. The JavaScript ditherRef runs each case on the RGBA8 plates; its palette indices are exported.",
+  "gpu_arithmetic": "The WGSL keeps the web pass's double-single arithmetic (pairs of f32, error-free transforms without fma) so that its decisions can equal the float64 reference; constants are packed by the host as (hi, lo) pairs, as web/shaders/dither/dither.mjs packConstants does.",
+  "cpu_link": {
+    "index_mismatch_unexcused": 0,
+    "tie_excuse": "An index mismatch is excused only where a C++ decision quantity (a nearest-colour distance against the runner-up, a far-side score against the runner-up, the mix fraction against its threshold, a mix-plan distance against the runner-up) is within 1e-9 of its rival; at most 2 a case.",
+    "coverage": "every pixel of every case"
+  },
+  "gpu_link": {
+    "ordered_modes": {"mismatched_pixels": 0},
+    "mix_modes": {"mismatched_fraction_max": 1e-05},
+    "why": "The web bounds (evidence/shaders-dither-parity-bounds.json, M1 criterion 10: ordered modes bit-equal; evidence/shaders-dither-mix-bounds.json: at most 0.001% of pixels for the mix modes)."
+  },
+  "controls": {
+    "built_in": "Ordered modes: the C++ reference with palette entry 0's OKLab L raised by 0.01. Mix modes: the C++ reference with palette entry 0's linear red raised by 0.01. Each must give at least one index mismatch on the CPU link, and on the GPU link at least one (ordered) or more than 1e-5 of pixels (mix), on every case.",
+    "source_edit": "C++: the pair penalty 0.12 to 0.13. Prediction: the CPU link fails on at least the bayer4 cases of ega and pico8, and on no none or mix case. WGSL: the blue-noise divisor 4096 to 4095. Prediction: WARP fails on at least one blue and one mix-blue case, and on no bayer or none case."
+  },
+  "adjacency": {
+    "written": "2026-10-16, before the C++ reference, the WGSL rewrite and the first run of development adjacency",
+    "fixtures": "The four cases of evidence/shaders-adjacency-parity-bounds.json at 320 x 200: the street fixture (presets eberhard, mackie, exhausted) and the edges plate (eberhard), scene-linear f32. The exporter takes D and A (float64) from the JavaScript develop() and forms the float64 output scene (D + eps) / (A free + eps), checking that Math.fround of each value equals develop()'s own frame.",
+    "cpu_link": { "value_max_rel": 1e-09, "rule": "|cpp - js| <= 1e-9 max(1, |js|) on every output value; 8-bit lab codes equal except at a rounding edge within 1e-9 (at most 2 a case)" },
+    "gpu_link": { "max_abs_code": 3, "p999_abs_code": 1, "mean_abs_code": 0.05, "why": "The web parity bounds: the same explicit Euler steps on both sides; the diffusion is contractive, so f32 error stays near one rounding a step." },
+    "controls": {
+      "built_in": "the C++ reference with the development rate k multiplied by 1.1: must exceed value_max_rel on the CPU link and the GPU bound, on every case",
+      "source_edit": "C++ and WGSL: the 4 of the chemistry Laplacian (- 4 f0) to 3.9. Prediction: the CPU link fails on every case; WARP fails on at least one case."
+    }
+  }
+}

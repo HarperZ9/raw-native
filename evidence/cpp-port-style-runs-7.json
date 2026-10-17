@@ -1,0 +1,62 @@
+{
+  "schema": "raw-native.evidence/1",
+  "bounds": "evidence/cpp-port-style-bounds-7.json",
+  "machine": "the author's Windows 11 workstation; WARP (Microsoft Basic Render Driver) through RAW_NATIVE_D3D12_WARP=1 on every D3D12 command, software only. The GPU lock was held by MMBU training and not taken; nvidia-smi sampled once a second during every WARP run never listed raw_native_cli. Builds and runs at Idle priority with at most 4 build jobs.",
+  "order": "Lens bounds committed (c5540a9) before any lens code; then code, first CPU run, first WARP run, the C++ source edit, the WGSL source edit, revert, and one post-hoc WGSL edit after the miss.",
+  "lens": {
+    "first_cpu_run": {
+      "cases": 4,
+      "plan_equal": true,
+      "sources_equal": true,
+      "value_max_rel": [
+        2.22e-16,
+        5.71e-16,
+        5.74e-16,
+        1.78e-16
+      ],
+      "code_mismatch": 0,
+      "controls_fail_every_case": true
+    },
+    "first_warp_run": {
+      "cases": 4,
+      "max_abs_code": {
+        "three-lights": 1,
+        "street": 1,
+        "squeeze-7-blades-ca": 0,
+        "list-mode-corner": 1
+      },
+      "mean_abs_code_max": 9.65e-05,
+      "controls_fail_every_case": true,
+      "pass": true
+    },
+    "source_edit_controls": {
+      "cpp": {
+        "edit": "streak gaussian normaliser 2.5066282746310002 -> 2.6",
+        "cpu_failing_cases": [
+          "three-lights",
+          "street",
+          "squeeze-7-blades-ca",
+          "list-mode-corner"
+        ],
+        "against_prediction": "Held: every case failed."
+      },
+      "wgsl": {
+        "edit": "halation 2 pi -> 6.0 (style_lens_gather)",
+        "warp_failing_cases": [],
+        "against_prediction": "MISSED. Every case passed WARP: max 2 codes, p999 1, mean at most 2.2e-3 against the bound 3 / 1 / 0.03. At 192 x 108 the halation radius is half a pixel and its gain 0.04, so a 4.5% change of that term moves a few pixels by a code. The edit was visible (mean 30 to 70 times the unedited run's) and stayed inside the web bound. Recorded in bounds-7 Addendum A."
+      },
+      "wgsl_second_post_hoc": {
+        "edit": "ghost edge ramp + 0.5 -> + 1.5 (style_lens_gather)",
+        "written_after": "the miss above, so it is not a prediction made in advance",
+        "warp_failing_cases": [
+          "three-lights",
+          "street",
+          "squeeze-7-blades-ca",
+          "list-mode-corner"
+        ],
+        "result": "every case failed (max 4 to 18 codes): the GPU link reads the gather pass's ghost term."
+      }
+    }
+  },
+  "record": "evidence/cpp-port-style-d3d12-warp.json: a full WARP run of every style pass in the core after the reverts."
+}

@@ -54,3 +54,31 @@ export function palettelight(out) {
   B.write(join(out, "palettelight.rnfx"));
   return B.head.cases.length;
 }
+
+// The palette dither (evidence/cpp-port-style-bounds-4.json): the 114 cases of
+// web/test/shaders-dither.html, run through ditherRef on the two plates.
+import { ditherRef, resolvePalette } from "../../web/shaders/dither/dither.mjs";
+import { gradientPlate, randomPlate } from "../../web/shaders/fixtures/plates.mjs";
+export function ditherCases() {
+  const cases = [];
+  for (const palette of ["gameboy", "cga", "ega", "pico8", "nes", "mono1"]) for (const mode of ["none", "bayer2", "bayer4", "bayer8", "noise", "blue"]) for (const plate of ["gradient", "random"])
+    cases.push({ palette, mode, plate, strength: 1, brightness: 0 });
+  for (const mode of ["bayer8", "noise"]) for (const plate of ["gradient", "random"]) cases.push({ palette: "pico8", mode, plate, strength: 0.7, brightness: 0.05 });
+  for (const palette of ["gameboy", "cga", "ega", "pico8", "nes", "mono1"]) for (const mode of ["mix-bayer4", "mix-bayer8", "mix-blue"]) for (const plate of ["gradient", "random"])
+    cases.push({ palette, mode, plate, strength: 1, brightness: 0 });
+  for (const plate of ["gradient", "random"]) cases.push({ palette: "pico8", mode: "mix-bayer4", plate, strength: 0.7, brightness: 0 });
+  return cases.map((c) => ({ ...c, id: `${c.palette}-${c.mode}-${c.plate}-s${c.strength}-b${c.brightness}` }));
+}
+export function dither(out) {
+  const plates = { gradient: gradientPlate(320, 180), random: randomPlate(512, 512, 7) }, B = new Bundle("dither");
+  for (const [k, p] of Object.entries(plates)) B.add(`plate.${k}`, "u8", p.data);
+  B.head.plates = Object.fromEntries(Object.entries(plates).map(([k, p]) => [k, { width: p.width, height: p.height }]));
+  B.head.cases = [];
+  for (const c of ditherCases()) {
+    const pl = plates[c.plate], idx = ditherRef(pl.data, pl.width, pl.height, { palette: c.palette, mode: c.mode, strength: c.strength, brightness: c.brightness });
+    B.add(`${c.id}.js_idx`, "u8", Uint8Array.from(idx));
+    B.head.cases.push({ ...c, lab: resolvePalette(c.palette).map((e) => e.lab) });
+  }
+  B.write(join(out, "dither.rnfx"));
+  return B.head.cases.length;
+}

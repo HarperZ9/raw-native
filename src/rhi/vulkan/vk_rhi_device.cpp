@@ -134,6 +134,10 @@ bool VkrDevice::createLogical(std::string& err){
     vkEnumerateDeviceExtensionProperties(phys_, nullptr, &n, avail.data());
     std::vector<const char*> ext;
     for (const auto& a : avail) if (std::strcmp(a.extensionName, VK_KHR_SWAPCHAIN_EXTENSION_NAME) == 0) ext.push_back(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+    // The output's refresh cycle for frame pacing, where the driver offers it (needs the swapchain).
+    if (!ext.empty())
+        for (const auto& a : avail)
+            if (std::strcmp(a.extensionName, VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME) == 0){ ext.push_back(VK_GOOGLE_DISPLAY_TIMING_EXTENSION_NAME); displayTiming_ = true; }
     VkPhysicalDeviceFeatures have{};
     vkGetPhysicalDeviceFeatures(phys_, &have);
     VkPhysicalDeviceVulkan13Features f13{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};

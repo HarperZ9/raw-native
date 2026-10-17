@@ -10,7 +10,8 @@ const char* tf(bool b) { return b ? "true" : "false"; }
 }  // namespace
 
 std::string styleParityJson(const StyleParity& r) {
-    std::string s = "{\n \"check\": \"style passes in the C++ core (ADR 0019)\",\n \"bounds\": \"evidence/cpp-port-style-bounds.json, evidence/cpp-port-style-bounds-2.json\",\n";
+    std::string s = "{\n \"check\": \"style passes in the C++ core (ADR 0019)\",\n \"bounds\": \"evidence/cpp-port-style-bounds.json, evidence/cpp-port-style-bounds-2.json, -3.json, -4.json, -5.json, -6.json, -7.json\",\n";
+    if (!r.only.empty()) s += " \"only\": \"" + jsonText(r.only) + "\", \"note\": \"a development run of one group, not the check of record\",\n";
     s += " \"backend\": \"" + jsonText(r.backend) + "\",\n \"adapter\": \"" + jsonText(r.adapter) + "\",\n";
     s += " \"error\": \"" + jsonText(r.error) + "\",\n \"gpu\": \"" + std::string(r.gpuWanted ? "run" : "skipped: no GPU backend or adapter") + "\",\n";
     s += " \"cases\": [\n";

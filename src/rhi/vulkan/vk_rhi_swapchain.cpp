@@ -86,8 +86,16 @@ public:
     PresentStatus present(uint32_t syncInterval, std::string& err) override;
     bool resize(uint32_t w, uint32_t h, std::string& err) override { dev_.waitIdle(); return build(w, h, err); }
     bool waitForFrame(uint32_t) override { return true; }
-    PresentStats stats() override { return {}; }   // no frame statistics without VK_GOOGLE_display_timing
-    double refreshHz() override { return 0; }
+    PresentStats stats() override { return {}; }   // past presentation timing is not read
+    // VK_GOOGLE_display_timing's refresh cycle of the output; 0 where the driver does not offer it
+    // (the host then asks the window, raw/platform/window.hpp).
+    double refreshHz() override {
+        if (!dev_.hasDisplayTiming() || !sc_) return 0;
+        auto get = (PFN_vkGetRefreshCycleDurationGOOGLE)vkGetDeviceProcAddr(dev_.vk(), "vkGetRefreshCycleDurationGOOGLE");
+        VkRefreshCycleDurationGOOGLE d{};
+        if (!get || get(dev_.vk(), sc_, &d) != VK_SUCCESS || d.refreshDuration == 0) return 0;
+        return 1e9 / double(d.refreshDuration);
+    }
 
 private:
     bool build(uint32_t w, uint32_t h, std::string& err);
