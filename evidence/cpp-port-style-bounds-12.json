@@ -1,0 +1,27 @@
+{
+ "schema": "raw-native.evidence/1",
+ "what": "The physical CRT (web/shaders/crt: the plan of params.mjs with the phosphor screen matrix and decay table of phosphors.mjs and the faceplate halo kernel of halo.mjs; the signal passes encode, separate and demod of signal.mjs; the beam and phosphor pass of beam.mjs with the tube geometry and mask of geometry.mjs and the persistence history; the halo down, halo convolution, compose and display encode of glass.mjs), in the C++ core (ADR 0019). Same links as the earlier bounds files: JavaScript reference against the C++ reference (CPU link), and the C++ reference against the one WGSL source on D3D12 (WARP), WebGPU (SwiftShader) and Vulkan (lavapipe). Written before the C++ reference, the WGSL rewrite and the first run.",
+ "author_decisions": "2026-10-15: \"No, renderer first\"; \"One C++ core\". Coordinator, 2026-10-17: paint first, then the physical crt; update RELEASE-PLAN.md when N1 closes.",
+ "written": "2026-10-17",
+ "controls": "Every link carries a built-in control that must fail on every case of every run; a run whose control passes fails as a whole. Separately, one constant in the C++ reference and one in style.wgsl are edited by hand, rebuilt and run, the result recorded in evidence/cpp-port-style-runs-12.json with the prediction below, and the edit reverted.",
+ "fixtures": "The eleven cases of evidence/shaders-crt-parity-bounds.json, as web/test/shaders-crt.html runs them: testCard(256, 224) of web/shaders/fixtures/testcard.mjs, output 640 x 480, frames 0 to frames - 1 through one createCrt (so the persistence history and the interlaced field carry over), compared on the last frame. Exported per case: the packed parameter block (packParams, frame 0), the packed filter taps, the halo kernel weights, the last frame's signal, emission, history and image (Float32Array), and the encode8 codes at exposure 1.",
+ "reference_arithmetic": "The JavaScript stores each pass's output (encode, separate, demod, emission, history, halo grids, image) as f32 and computes in float64 between; the plan (taps, screen matrix, decay table, halo kernel) is float64 except the halo weights, which it stores as f32. The C++ keeps the same stores.",
+ "cpu_link": {
+  "plan": "every field of the packed parameter block within 1e-12 relative (or 1e-15 absolute), the packed taps within 1e-12 relative, the halo weights equal as f32 except for at most 1 ulp on any weight",
+  "signal_max_abs": 1e-6,
+  "emission_and_history_max_rel": 1e-5,
+  "image_max_abs": 1e-5,
+  "codes": "at most 1e-4 of channel values differ, none by more than 1 code, on every case",
+  "why": "sin, cos, exp, pow, tan, asin and acos may differ in the last bit between V8 and the C++ library; the halo kernel integrates 40,000 angle steps and the screen matrix sums 401 wavelengths, so the plan stays near float64 rounding, and an f32 store can move by one ulp."
+ },
+ "gpu_link": {
+  "max_abs_code": 3,
+  "p999_abs_code": 1,
+  "mean_abs_code": 0.05,
+  "why": "The web bound of evidence/shaders-crt-parity-bounds.json, set 2026-10-10 before its first run: the GPU computes in f32 and the reference in float64; erf, exp and pow differ in the last bits, and a pixel whose footprint edge lands on a stripe or slot boundary can round differently."
+ },
+ "controls_detail": {
+  "built_in": "The C++ reference with the tube contrast multiplied by 1.05: it must exceed the CPU link bounds and the GPU bounds, on every case.",
+  "source_edit": "C++: the room light's ambient term in roomEnv 0.04 to 0.045. Prediction: the CPU link fails on every case (every case has glass, and the reflected room adds about 1e-4 of light everywhere on the face, ten times the image bound). WGSL: the slot stagger of the face-locked stripe mask, (k & 1) * Py * 0.5 to (k & 1) * Py * 0.4. Prediction: WARP fails slot-composite-notch and slot-pal (face-locked slot masks) and passes the other nine cases, slot-pixel-mask included (the pixel-locked mask has its own stagger)."
+ }
+}
