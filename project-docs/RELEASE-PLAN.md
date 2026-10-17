@@ -212,6 +212,13 @@ verify, the M2 and M3 checks pass their WARP gates, and the style passes pass th
 Two misses are recorded: lighting shading (3 of 4,096 samples over the bound) and the shadow-map
 identity's depth bound on two scenes. Criterion 5 (Steam Deck) is open.
 
+Frame timing on Vulkan (2026-10-17, `evidence/n3-vulkan-timing-runs.json`): the Vulkan swapchain
+reports the output's refresh rate from `VK_GOOGLE_display_timing`, or the host asks the window (the
+Win32 display configuration, the Wayland output mode), so the N2 pacing bound can be read on Vulkan. On
+one monitor the Vulkan and D3D12 hosts report the same rate. The RTX 4090 Vulkan run (pacing, HDR10
+through the Vulkan swapchain, presented hashes) is prepared but not run: it needs the GPU lock and a
+fullscreen window on the machine in use.
+
 ### ROADMAP M3 to M6
 
 Unchanged (`docs/architecture/ROADMAP.md`). M3 carries G1 (loop, input, camera controllers,

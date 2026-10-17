@@ -1,0 +1,30 @@
+{
+ "schema": "raw-native.runs/1",
+ "bounds": "evidence/n3-vulkan-timing-bounds.json (written 394285a, addendum A bdce706, both before any run)",
+ "code": "feat/n3-vulkan-timing at bdce706: Window::refreshHz (Win32 display configuration, Wayland wl_output.mode), the Vulkan swapchain's VK_GOOGLE_display_timing refresh, refresh_hz and refresh_source in the run and pacing records",
+ "date": "2026-10-16 to 2026-10-17 (UTC)",
+ "results": {
+  "t1_refresh_windows": {
+   "result": "holds",
+   "observed": "D3D12 on WARP: refresh_hz 60, source swapchain. Vulkan on SwiftShader (Win32 surface): refresh_hz 60, source window. Equal on the same monitor. Hidden windows, Idle priority, 10 frames each.",
+   "files": [
+    "evidence/n3-vulkan-timing/t1-d3d12-warp.json",
+    "evidence/n3-vulkan-timing/t1-vk-swiftshader.json"
+   ],
+   "note": "SwiftShader does not offer VK_GOOGLE_display_timing, so the Vulkan value came from the window's copy of the display-configuration function; the two copies agree."
+  },
+  "t2_refresh_linux_ci": {
+   "result": "as revised in addendum A",
+   "observed": "lavapipe in the vulkan-linux CI job (run 38981280448): X11 on Xvfb refresh_hz 0, source none; Wayland on headless Weston refresh_hz 60, source window. Neither surface got a value from the swapchain, so lavapipe does not offer display timing there.",
+   "files": [
+    "evidence/n3-vulkan-timing/ci-lavapipe-x11-run1.json",
+    "evidence/n3-vulkan-timing/ci-lavapipe-wayland-run1.json"
+   ]
+  },
+  "t3_rtx_vulkan_queued": {
+   "result": "not run",
+   "why": "It needs the GPU lock (held by MMBU FT8) and the author's agreement to a borderless fullscreen window for about three minutes on the machine in use. The job script is prepared (mission-control, not in the repository) and not launched."
+  }
+ },
+ "does_not_prove": "Pacing on Vulkan hardware or on a Steam Deck; HDR10 through a Vulkan swapchain; that any compositor presents at the reported rate. A refresh value is what the system reports, not a measurement of presents."
+}
