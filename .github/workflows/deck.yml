@@ -163,49 +163,25 @@ jobs:
           wine deck-win/bin/raw_native_cli.exe --model assets/raw-hero.gltf --no-rt --width 1280 --height 800 --threads 4 --out hero-cpu > deck-proton/proton-hero-cpu.txt 2>&1
           sha256sum hero-cpu/frame.ppm | cut -d' ' -f1 > deck-proton/msvc-wine-hero-cpu-frame.sha256
           cat deck-proton/msvc-wine-hero-cpu-frame.sha256
-      - name: d3 raw-hero at 1280 x 800, the D3D12 build through vkd3d-proton on lavapipe
+      - name: d3 to d6 on the proton route (DXVK dxgi, vkd3d-proton d3d12); a recorded miss passes only for its recorded cause (addendum D)
         if: always()
         run: |
-          set +e
-          wine deck-win/bin/raw_native_cli.exe --model assets/raw-hero.gltf --gpu --no-rt --width 1280 --height 800 --threads 4 --out hero > deck-proton/proton-hero.txt 2>&1
-          echo "exit $?" >> deck-proton/proton-hero.txt
-          set -e
-          tail -20 deck-proton/proton-hero.txt
-          cp hero/gpu_certificate.json deck-proton/proton-hero-gpu_certificate.json || true
-          python3 tests/gpu/deck_gate.py scene deck-proton/proton-hero-gpu_certificate.json --backend d3d12 \
-            --size 1280x800 --rt no --not-adapter microsoft
-      - name: d3b the built-in test scene at 1280 x 800 through vkd3d-proton with the ray-traced AO reference on (addendum C)
+          bash tests/gpu/deck_wine_route.sh proton deck-proton deck-win/bin deck-win/warp-offscreen-1280x800.json
+          python3 tests/gpu/deck_gate.py route deck-proton proton --known-miss khrLoadStoreOpNone
+      - name: Exploration x1, Wine's dxgi with vkd3d-proton's d3d12 (not a criterion check; addendum D)
         if: always()
+        continue-on-error: true
         run: |
-          set +e
-          wine deck-win/bin/raw_native_cli.exe --gpu --width 1280 --height 800 --threads 4 --out testscene > deck-proton/proton-testscene.txt 2>&1
-          echo "exit $?" >> deck-proton/proton-testscene.txt
-          set -e
-          tail -5 deck-proton/proton-testscene.txt
-          cp testscene/gpu_certificate.json deck-proton/proton-testscene-gpu_certificate.json || true
-          python3 tests/gpu/deck_gate.py scene deck-proton/proton-testscene-gpu_certificate.json --backend d3d12             --size 1280x800 --rt yes --not-adapter microsoft
-      - name: d4 the N2 frames at 1280 x 800 in a Win32 window under Wine, twice, and offscreen; equal each other and WARP
+          export WINEDLLOVERRIDES="d3d12,d3d12core=n;dxgi=b;winemenubuilder.exe=d"
+          bash tests/gpu/deck_wine_route.sh x1 deck-proton deck-win/bin deck-win/warp-offscreen-1280x800.json
+          python3 tests/gpu/deck_gate.py route deck-proton x1
+      - name: Exploration x2, Wine's own d3d12 and dxgi (upstream vkd3d; not Proton's path; addendum D)
         if: always()
+        continue-on-error: true
         run: |
-          p="wine deck-win/bin/raw_native_present.exe"; g=tests/gpu/present_gate.py; o=deck-proton
-          $p run --frames 600 --width 1280 --height 800 --out $o/proton-run1.json > $o/proton-run1.txt 2>&1 || { cat $o/proton-run1.txt; exit 1; }
-          $p run --frames 600 --width 1280 --height 800 --out $o/proton-run2.json > /dev/null 2>&1
-          $p run --frames 600 --width 1280 --height 800 --offscreen --out $o/proton-offscreen.json > /dev/null 2>&1
-          python3 $g same $o/proton-run1.json $o/proton-run2.json $o/proton-offscreen.json deck-win/warp-offscreen-1280x800.json --size 1280x800
-      - name: d5 controls on the proton route; a 1280 x 720 run and the blit offset control must fail
-        if: always()
-        run: |
-          p="wine deck-win/bin/raw_native_present.exe"; g=tests/gpu/present_gate.py; o=deck-proton
-          test -f $o/proton-offscreen.json || { echo "no proton reference list: d4 did not run"; exit 1; }
-          $p run --frames 600 --width 1280 --height 720 --out $o/proton-control-720.json > /dev/null 2>&1
-          if python3 $g same $o/proton-control-720.json $o/proton-offscreen.json --size 1280x800; then echo "size control passed: the gate is blind"; exit 1; fi
-          $p run --frames 600 --width 1280 --height 800 --control --out $o/proton-control-offset.json > /dev/null 2>&1
-          python3 $g control $o/proton-offscreen.json $o/proton-control-offset.json
-      - name: d6 pacing harness at 1280 x 800 under Wine (no pacing claim)
-        if: always()
-        run: |
-          wine deck-win/bin/raw_native_present.exe pacing --frames 600 --warmup 30 --width 1280 --height 800 --out deck-proton/proton-pacing.json > deck-proton/proton-pacing.txt 2>&1 || { cat deck-proton/proton-pacing.txt; exit 1; }
-          python3 tests/gpu/present_gate.py pacing deck-proton/proton-pacing.json --harness
+          export WINEDLLOVERRIDES="d3d12,d3d12core,dxgi=b;winemenubuilder.exe=d"
+          bash tests/gpu/deck_wine_route.sh x2 deck-proton deck-win/bin deck-win/warp-offscreen-1280x800.json
+          python3 tests/gpu/deck_gate.py route deck-proton x2
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: deck-proton, path: deck-proton, retention-days: 30 }

@@ -6,6 +6,10 @@
       --cpu-equal: its CPU reference frame (frame_rgb8_sha256.cpu) equals the other certificate's;
       --rt: the certificate records the ray-traced AO reference as on (yes) or skipped (no);
       --not-adapter: the adapter's vendor is not VENDOR (case-insensitive), e.g. microsoft for WARP.
+  deck_gate.py route OUT LABEL [--known-miss TEXT]
+      the summary tests/gpu/deck_wine_route.sh wrote (OUT/LABEL-summary.json): every check holds; or, with
+      --known-miss, a check that does not hold passes with a warning when its log (OUT/LABEL-NAME.log)
+      contains TEXT, the recorded cause of the miss, and fails otherwise.
 Exit 0 when the check holds, 1 when it does not, 2 on usage.
 """
 import json
@@ -49,7 +53,36 @@ def scene(cert_path, backend, size, cpu_equal=None, not_adapter=None, rt=None):
     return all(checks.values())
 
 
+def route(out, label, known=None):
+    try:
+        summ = load(f"{out}/{label}-summary.json")
+    except (OSError, ValueError) as e:
+        print(f"no summary: {e}")
+        return False
+    ok = True
+    for name, c in summ["checks"].items():
+        if c["holds"]:
+            print(f"  holds: {name}")
+            continue
+        try:
+            log = open(f"{out}/{label}-{name}.log", encoding="utf-8", errors="replace").read()
+        except OSError:
+            log = ""
+        if known and known in log:
+            print(f"::warning title=deck {label} {name}::recorded miss, the log names {known}")
+            print(f"  recorded miss: {name} ({known})")
+        else:
+            print(f"  FAILS: {name}, not the recorded cause; log tail: {c['log_tail'][-3:]}")
+            ok = False
+    return ok
+
+
 def main(a):
+    if len(a) >= 3 and a[0] == "route":
+        known = a[a.index("--known-miss") + 1] if "--known-miss" in a[:-1] else None
+        ok = route(a[1], a[2], known)
+        print("PASS" if ok else "FAIL")
+        return 0 if ok else 1
     if len(a) < 2 or a[0] != "scene":
         print(__doc__)
         return 2
