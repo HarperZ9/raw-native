@@ -79,10 +79,15 @@ jobs:
           mkdir -p deck-linux
           build/raw_native_cli_vk export-assets --out assets > deck-linux/export-assets.txt
           diff deck-linux/export-assets.txt <(tr -d '\r' < deck-win/export-assets.txt) && echo "exported assets identical to the MSVC build's"
-          build/raw_native_cli_vk --model assets/raw-hero.gltf --gpu --width 1280 --height 800 --threads 4 --out hero | tail -3
+          build/raw_native_cli_vk --model assets/raw-hero.gltf --gpu --no-rt --width 1280 --height 800 --threads 4 --out hero | tail -3
           cp hero/gpu_certificate.json deck-linux/linux-hero-gpu_certificate.json
           sha256sum hero/cpu/frame.ppm | cut -d' ' -f1 > deck-linux/linux-hero-cpu-frame.sha256
-          python3 tests/gpu/deck_gate.py scene deck-linux/linux-hero-gpu_certificate.json --backend vulkan --size 1280x800
+          python3 tests/gpu/deck_gate.py scene deck-linux/linux-hero-gpu_certificate.json --backend vulkan --size 1280x800 --rt no
+      - name: d1b the built-in test scene at 1280 x 800 on lavapipe with the ray-traced AO reference on (addendum C)
+        run: |
+          build/raw_native_cli_vk --gpu --width 1280 --height 800 --threads 4 --out testscene | tail -3
+          cp testscene/gpu_certificate.json deck-linux/linux-testscene-gpu_certificate.json
+          python3 tests/gpu/deck_gate.py scene deck-linux/linux-testscene-gpu_certificate.json --backend vulkan --size 1280x800 --rt yes
       - name: d2 the N2 frames at 1280 x 800 in an X11 window, twice, and offscreen; equal each other and WARP
         env:
           RAW_NATIVE_WINDOW: x11
@@ -155,20 +160,30 @@ jobs:
           cp wine-version.txt deck-proton/
           wine deck-win/bin/raw_native_cli.exe export-assets --out assets > deck-proton/export-assets.txt 2>&1
           diff <(tr -d '\r' < deck-proton/export-assets.txt) <(tr -d '\r' < deck-win/export-assets.txt) && echo "exported assets identical to the Windows run"
-          wine deck-win/bin/raw_native_cli.exe --model assets/raw-hero.gltf --width 1280 --height 800 --threads 4 --out hero-cpu > deck-proton/proton-hero-cpu.txt 2>&1
+          wine deck-win/bin/raw_native_cli.exe --model assets/raw-hero.gltf --no-rt --width 1280 --height 800 --threads 4 --out hero-cpu > deck-proton/proton-hero-cpu.txt 2>&1
           sha256sum hero-cpu/frame.ppm | cut -d' ' -f1 > deck-proton/msvc-wine-hero-cpu-frame.sha256
           cat deck-proton/msvc-wine-hero-cpu-frame.sha256
       - name: d3 raw-hero at 1280 x 800, the D3D12 build through vkd3d-proton on lavapipe
         if: always()
         run: |
           set +e
-          wine deck-win/bin/raw_native_cli.exe --model assets/raw-hero.gltf --gpu --width 1280 --height 800 --threads 4 --out hero > deck-proton/proton-hero.txt 2>&1
+          wine deck-win/bin/raw_native_cli.exe --model assets/raw-hero.gltf --gpu --no-rt --width 1280 --height 800 --threads 4 --out hero > deck-proton/proton-hero.txt 2>&1
           echo "exit $?" >> deck-proton/proton-hero.txt
           set -e
           tail -20 deck-proton/proton-hero.txt
           cp hero/gpu_certificate.json deck-proton/proton-hero-gpu_certificate.json || true
           python3 tests/gpu/deck_gate.py scene deck-proton/proton-hero-gpu_certificate.json --backend d3d12 \
-            --size 1280x800 --not-adapter microsoft
+            --size 1280x800 --rt no --not-adapter microsoft
+      - name: d3b the built-in test scene at 1280 x 800 through vkd3d-proton with the ray-traced AO reference on (addendum C)
+        if: always()
+        run: |
+          set +e
+          wine deck-win/bin/raw_native_cli.exe --gpu --width 1280 --height 800 --threads 4 --out testscene > deck-proton/proton-testscene.txt 2>&1
+          echo "exit $?" >> deck-proton/proton-testscene.txt
+          set -e
+          tail -5 deck-proton/proton-testscene.txt
+          cp testscene/gpu_certificate.json deck-proton/proton-testscene-gpu_certificate.json || true
+          python3 tests/gpu/deck_gate.py scene deck-proton/proton-testscene-gpu_certificate.json --backend d3d12             --size 1280x800 --rt yes --not-adapter microsoft
       - name: d4 the N2 frames at 1280 x 800 in a Win32 window under Wine, twice, and offscreen; equal each other and WARP
         if: always()
         run: |

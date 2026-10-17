@@ -54,5 +54,15 @@
    "Every raw-hero run passes --threads 4. The CPU reference's output is identical for any thread count (raw/renderer/render.hpp); only the time changes.",
    "The cross-build CPU check (part of d1 and d3) compares the SHA-256 of the CPU reference frame (cpu/frame.ppm of the linux --gpu run) with the frame of a CPU-only run of the MSVC executable under Wine (`raw_native_cli.exe --model raw-hero.gltf --width 1280 --height 800 --threads 4`), in a final job that reads both. It no longer depends on the proton route opening a GPU device. Its bound is unchanged: byte-identical."
   ]
+ },
+ "addendum_c": {
+  "written": "2026-10-17 01:25Z, after the second CI attempt was cancelled with no check result",
+  "what_happened": "The second run spent 45 minutes in raw-hero's CPU reference on four threads, on both routes, without finishing. Reading the code explains it: the ray-traced AO reference (src/renderer/render.cpp, rtao pass) uses LinearAccel, a scan of every triangle for every ray. At 1280 x 800 with 64 rays a pixel against raw-hero's triangles that is on the order of 10^12 to 10^13 ray-triangle tests, hours of CPU on a four-core runner, and the GPU pass is the same scan. The cost model was not read before addendum B; that was my mistake.",
+  "changes": [
+   "raw-hero runs pass --no-rt. The GPU certificate's verdict still requires coverage, depth, position, normal, motion, screen-space AO and the frame within the committed tolerances (src/renderer/gpu_reconcile.cpp: only the ray-traced AO channel and its AO verdict depend on rt). The certificate records rt false, and the gate requires it to say so.",
+   "The ray-traced AO channel is still checked at Deck resolution, on the built-in test scene: `raw_native_cli --gpu --width 1280 --height 800 --threads 4` with rt on, a scene of few triangles, on both routes (d1b, d3b), bound: verdict verified with rt true.",
+   "The cross-build CPU check compares raw-hero's CPU frame from the --no-rt runs (GCC) with a CPU-only --no-rt run of the MSVC executable under Wine. Bound unchanged: byte-identical.",
+   "Predictions are unchanged."
+  ]
  }
 }

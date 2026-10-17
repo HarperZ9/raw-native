@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Gate for N3 criterion 5, Steam Deck class (evidence/n3-deck-class-bounds.json). Standard library only.
 
-  deck_gate.py scene CERT.json --backend B --size WxH [--cpu-equal OTHER.json] [--not-adapter VENDOR]
+  deck_gate.py scene CERT.json --backend B --size WxH [--rt yes|no] [--cpu-equal OTHER.json] [--not-adapter VENDOR]
       a GPU certificate from `raw_native_cli --gpu`: verdict verified, written by backend B, at W x H;
       --cpu-equal: its CPU reference frame (frame_rgb8_sha256.cpu) equals the other certificate's;
+      --rt: the certificate records the ray-traced AO reference as on (yes) or skipped (no);
       --not-adapter: the adapter's vendor is not VENDOR (case-insensitive), e.g. microsoft for WARP.
 Exit 0 when the check holds, 1 when it does not, 2 on usage.
 """
@@ -16,7 +17,7 @@ def load(p):
         return json.load(f)
 
 
-def scene(cert_path, backend, size, cpu_equal=None, not_adapter=None):
+def scene(cert_path, backend, size, cpu_equal=None, not_adapter=None, rt=None):
     try:
         c = load(cert_path)
     except (OSError, ValueError) as e:
@@ -29,6 +30,8 @@ def scene(cert_path, backend, size, cpu_equal=None, not_adapter=None):
         f"backend {backend}": p.get("backend") == backend,
         f"size {w}x{h}": (p.get("width"), p.get("height")) == (w, h),
     }
+    if rt in ("yes", "no"):
+        checks[f"rt {rt}"] = p.get("rt") is (rt == "yes")
     if not_adapter:
         checks[f"adapter vendor not {not_adapter}"] = str(a.get("vendor", "")).lower() != not_adapter.lower()
     if cpu_equal:
@@ -61,7 +64,7 @@ def main(a):
     if len(pos) != 1 or "backend" not in opts or "x" not in opts.get("size", ""):
         print(__doc__)
         return 2
-    ok = scene(pos[0], opts["backend"], opts["size"], opts.get("cpu-equal"), opts.get("not-adapter"))
+    ok = scene(pos[0], opts["backend"], opts["size"], opts.get("cpu-equal"), opts.get("not-adapter"), opts.get("rt"))
     print("PASS" if ok else "FAIL")
     return 0 if ok else 1
 
