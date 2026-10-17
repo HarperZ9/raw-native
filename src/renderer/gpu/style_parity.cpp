@@ -223,6 +223,7 @@ int filmParity(rhi::Device* dev, const std::string& dir, StyleParity& r);       
 int lensParity(rhi::Device* dev, const std::string& dir, StyleParity& r);                       // style_parity_lens.cpp
 int sagParity(rhi::Device* dev, const std::string& dir, StyleParity& r);                        // style_parity_sag.cpp
 int caricatureParity(rhi::Device* dev, const std::string& dir, StyleParity& r);                 // style_parity_sag.cpp
+int pixelParity(rhi::Device* dev, const std::string& dir, StyleParity& r);                      // style_parity_pixel.cpp
 int rtvisParity(const std::string& dir, StyleParity& r);                                        // style_parity_rtvis.cpp (CPU link only)
 // The workgroup group (bounds-8): sag and caricature.
 static int workgroupParity(rhi::Device* dev, const std::string& dir, StyleParity& r) {
@@ -247,7 +248,7 @@ bool StyleParity::cpuPass() const {
         return ok;
     }
     bool ok = error.empty() && !cases.empty() && lookkeys.pass() && poststack.cpuPass();
-    int dither = 0, paint = 0, image = 0, quant = 0, pdither = 0, adj = 0, sig = 0, film = 0, lens = 0, wg = 0, rtvis = 0;
+    int dither = 0, paint = 0, image = 0, quant = 0, pdither = 0, adj = 0, sig = 0, film = 0, lens = 0, wg = 0, rtvis = 0, pix = 0;
     for (const StyleCase& c : cases) {
         ok = ok && c.cpuPass; dither += c.pass == "ditherlight"; paint += c.pass == "paintover";
         image += c.pass == "purity" || c.pass == "lightpaint" || c.pass == "glaze" || c.pass == "hatch";
@@ -259,9 +260,10 @@ bool StyleParity::cpuPass() const {
         lens += c.pass == "lens";
         wg += c.pass == "sag" || c.pass == "caricature";
         rtvis += c.pass == "rtvis";
+        pix += c.pass == "pixel";
     }
     return ok && dither == expectDither && dither >= 5 && paint == expectPaint && paint >= 4 && image == expectImage && image >= 15 && quant == expectQuant && quant >= 8 && pdither == expectPaletteDither && pdither >= 114 &&
-           adj == expectAdjacency && adj >= 4 && sig == expectSignal && sig >= 13 && film == expectFilm && film >= 6 && lens == expectLens && lens >= 4 && wg == expectWorkgroup && wg >= 7 && rtvis == expectRtvis && rtvis >= 12;
+           adj == expectAdjacency && adj >= 4 && sig == expectSignal && sig >= 13 && film == expectFilm && film >= 6 && lens == expectLens && lens >= 4 && wg == expectWorkgroup && wg >= 7 && rtvis == expectRtvis && rtvis >= 12 && pix == expectPixel && pix >= 5;
 }
 bool StyleParity::gpuPass() const {
     if (only == "poststack") return error.empty() && poststack.gpuPass();
@@ -288,7 +290,8 @@ static StyleParity onlyGroup(rhi::Device* dev, const std::string& dir, const std
         else if (only == "lens") r.expectLens = lensParity(dev, dir, r);
         else if (only == "workgroup") r.expectWorkgroup = workgroupParity(dev, dir, r);
         else if (only == "rtvis") r.expectRtvis = rtvisParity(dir, r);
-        else r.error = "style-parity --only takes poststack, image, quantise, dither, adjacency, signal, film, lens, workgroup or rtvis";
+        else if (only == "pixel") r.expectPixel = pixelParity(dev, dir, r);
+        else r.error = "style-parity --only takes poststack, image, quantise, dither, adjacency, signal, film, lens, workgroup, rtvis or pixel";
     } catch (const std::exception& e) {
         r.error = std::string("fixture: ") + e.what();
     }
@@ -317,6 +320,7 @@ StyleParity styleParity(rhi::Device* dev, const std::string& dir, const std::str
         if (r.error.empty()) r.expectLens = lensParity(dev, dir, r);
         if (r.error.empty()) r.expectWorkgroup = workgroupParity(dev, dir, r);
         if (r.error.empty()) r.expectRtvis = rtvisParity(dir, r);
+        if (r.error.empty()) r.expectPixel = pixelParity(dev, dir, r);
     } catch (const std::exception& e) {
         r.error = std::string("fixture: ") + e.what();
     }
