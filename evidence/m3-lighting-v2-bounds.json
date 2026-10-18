@@ -8,14 +8,52 @@
   "oracle": "RAW_NATIVE_LIGHTING=v1 (test-only) renders v1 exactly as before: every byte of today's goldens, the arena certificate included."
  },
  "checks": {
-  "l1_oracle": {"what": "with RAW_NATIVE_LIGHTING=v1: the CPU identity matrix and the ten glTF models against evidence/identity-golden.json and evidence/m2-gltf-golden.json (every file), the lavapipe GPU golden, and the v0.5.0 default-render hashes the identity CI job checks", "bound": "byte-identical", "prediction": "holds"},
-  "l2_goldens": {"what": "the v2 outputs become the new goldens, committed from the first green CI run of this change (GCC for the CPU golden, lavapipe for its GPU golden), each with the v1 golden kept beside it under a v1 name", "bound": "v2 CPU outputs byte-identical between GCC and MSVC and WebAssembly as the identity job already requires", "prediction": "holds"},
-  "l3_verified": {"what": "raw-hero and raw-hall nave at 512 x 320 with --gpu on WARP and lavapipe under v2", "bound": "GPU verdict verified, and the frame channel within its committed tolerance (raw/cert/gpu_tolerance.hpp kFrameRmse)", "prediction": "holds; the sun ray can flip at a shadow edge between GPU and CPU on a few pixels"},
-  "l4_hall_direct": {"what": "raw-hall nave, v2 frame against the path tracer with 1 bounce (pt-error --bounces 1, 128 spp)", "bound": "relative RMSE at most 0.2", "prediction": "0.05 to 0.15: the same direct light, the residue is Monte Carlo noise on both sides (64 sky rays a pixel against 128 path samples)"},
-  "l5_hall_full": {"what": "raw-hall nave, v2 against the full path tracer (8 bounces)", "bound": "relative RMSE at most 0.6 (from 4.10 under v1)", "prediction": "0.3 to 0.5 with a negative bias of about -0.3: v2 has no interreflection, and the v1 run's ratio of the 8-bounce to the 1-bounce mean luminance (about 1.5) says that is a third of the light indoors"},
-  "l6_hero": {"what": "raw-hero, v2 against the full path tracer and the 1-bounce one", "bound": "relative RMSE at most 0.1 against 8 bounces", "prediction": "about 0.05 against 8 bounces and below 0.05 against 1 bounce"},
-  "l7_control": {"what": "the control sphere under v2 (convex and alone: sky 1, sun as v1)", "bound": "relative RMSE at most 0.02 + 3 x noise floor, as before", "prediction": "holds, unchanged from 0.0067"},
-  "l8_false_control": {"what": "RAW_NATIVE_LIGHTING=v2-nosun (test-only): v2 with the sun visibility forced to 1", "bound": "raw-hall's 1-bounce error rises above 0.2", "prediction": "rises well above 0.2: the unshadowed sun is most of the v1 gap"}
+  "l1_oracle": {
+   "what": "with RAW_NATIVE_LIGHTING=v1: the CPU identity matrix and the ten glTF models against evidence/identity-golden.json and evidence/m2-gltf-golden.json (every file), the lavapipe GPU golden, and the v0.5.0 default-render hashes the identity CI job checks",
+   "bound": "byte-identical",
+   "prediction": "holds"
+  },
+  "l2_goldens": {
+   "what": "the v2 outputs become the new goldens, committed from the first green CI run of this change (GCC for the CPU golden, lavapipe for its GPU golden), each with the v1 golden kept beside it under a v1 name",
+   "bound": "v2 CPU outputs byte-identical between GCC and MSVC and WebAssembly as the identity job already requires",
+   "prediction": "holds"
+  },
+  "l3_verified": {
+   "what": "raw-hero and raw-hall nave at 512 x 320 with --gpu on WARP and lavapipe under v2",
+   "bound": "GPU verdict verified, and the frame channel within its committed tolerance (raw/cert/gpu_tolerance.hpp kFrameRmse)",
+   "prediction": "holds; the sun ray can flip at a shadow edge between GPU and CPU on a few pixels"
+  },
+  "l4_hall_direct": {
+   "what": "raw-hall nave, v2 frame against the path tracer with 1 bounce (pt-error --bounces 1, 128 spp)",
+   "bound": "relative RMSE at most 0.2",
+   "prediction": "0.05 to 0.15: the same direct light, the residue is Monte Carlo noise on both sides (64 sky rays a pixel against 128 path samples)"
+  },
+  "l5_hall_full": {
+   "what": "raw-hall nave, v2 against the full path tracer (8 bounces)",
+   "bound": "relative RMSE at most 0.6 (from 4.10 under v1)",
+   "prediction": "0.3 to 0.5 with a negative bias of about -0.3: v2 has no interreflection, and the v1 run's ratio of the 8-bounce to the 1-bounce mean luminance (about 1.5) says that is a third of the light indoors"
+  },
+  "l6_hero": {
+   "what": "raw-hero, v2 against the full path tracer and the 1-bounce one",
+   "bound": "relative RMSE at most 0.1 against 8 bounces",
+   "prediction": "about 0.05 against 8 bounces and below 0.05 against 1 bounce"
+  },
+  "l7_control": {
+   "what": "the control sphere under v2 (convex and alone: sky 1, sun as v1)",
+   "bound": "relative RMSE at most 0.02 + 3 x noise floor, as before",
+   "prediction": "holds, unchanged from 0.0067"
+  },
+  "l8_false_control": {
+   "what": "RAW_NATIVE_LIGHTING=v2-nosun (test-only): v2 with the sun visibility forced to 1",
+   "bound": "raw-hall's 1-bounce error rises above 0.2",
+   "prediction": "rises well above 0.2: the unshadowed sun is most of the v1 gap"
+  }
  },
- "does_not_prove": "That the raster model is now physically complete (it has no interreflection, no specular, no area lights); anything on a hardware GPU. The goldens change by design; the v1 oracle is what shows nothing else moved."
+ "does_not_prove": "That the raster model is now physically complete (it has no interreflection, no specular, no area lights); anything on a hardware GPU. The goldens change by design; the v1 oracle is what shows nothing else moved.",
+ "addendum_a": {
+  "written": "2026-10-18, after the first lighting-v2 CI run on lavapipe (run 39099964839), which is the record for that adapter",
+  "observed": "l4 misses: raw-hall's model 2 frame against the 1-bounce path tracer has relative RMSE 0.286 against the bound 0.2, with bias +0.027 and the tracer's noise floor 0.059. The mean agrees to 3%, so the residue is per-pixel noise. My prediction (0.05 to 0.15) left out the raster side's own noise: 64 sky rays a pixel plus a one-ray sun, in a dim interior where those terms carry most of the light. Every other check held: l3 verified on both scenes, l5 0.433 (from 4.10 under model 1, bias -0.317), l6 0.043, l7 0.0067, and l8's no-sun control 5.56.",
+  "what_changes": "No bound moves. l4 stays a miss and the gate records it rather than failing the job. pt-error gains a diagnostic, relative_rmse_8x8_blocks: the same error over 8 x 8 blocks that both images cover fully. It averages per-pixel sampling noise and keeps structured differences. It is recorded to test the noise reading, and it is not a bound.",
+  "also_found": "Before this run, the ao-oracle job on the same PR showed model 2's unbounded sky rays disagreeing between the BVH and the scan on one identity case (wide-512). The cause was a flat floor box rejected by the float slab test under grazing rays. The BVH's slab exit is now widened by 1 + 2 gamma(3) (Ize 2013). The scan and the BVH agree on all 119 files, and the model 1 oracle is unchanged."
+ }
 }

@@ -102,15 +102,31 @@ int ptErrorCommand(int argc, char** argv){
     }
     const double n = both ? double(both) : 1.0, meanP = sp / n;
     const double rel = meanP > 0 ? std::sqrt(sd2 / n) / meanP : 0, bias = meanP > 0 ? (sd / n) / meanP : 0;
+    // A diagnostic, not a bound: the same error over 8 x 8 blocks that both cover fully, which averages
+    // per-pixel sampling noise (64 sky rays a pixel on the raster side, the path samples on the other)
+    // and keeps structured differences such as a misplaced shadow.
+    double bd2 = 0; long blocks = 0;
+    for (int by = 0; by + 8 <= h; by += 8) for (int bx = 0; bx + 8 <= w; bx += 8){
+        double br = 0, bp = 0; bool full = true;
+        for (int y = by; y < by + 8 && full; ++y) for (int x = bx; x < bx + 8; ++x){
+            const std::size_t i = std::size_t(y) * w + x;
+            if (!mask[i] || o.triangle[i] < 0){ full = false; break; }
+            br += lum(hdr.data() + 3 * i); bp += lum(o.radiance.data() + 3 * i);
+        }
+        if (!full) continue;
+        ++blocks; bd2 += (br - bp) * (br - bp) / (64.0 * 64.0);
+    }
+    const double relBlocks = (meanP > 0 && blocks) ? std::sqrt(bd2 / double(blocks)) / meanP : 0;
     const double noise = meanP > 0 ? std::sqrt(sv / n) / meanP : 0, agreeFrac = double(agree) / double(w * h);
-    char buf[1024];
+    char buf[1400];
     std::snprintf(buf, sizeof buf,
         "{\n \"schema\": \"raw-native.pt-error/1\",\n \"scene\": \"%s\",\n \"width\": %d, \"height\": %d,\n"
         " \"spp\": %d, \"bounces\": %d, \"sun_pi\": %s, \"ambient\": 0.2,\n \"pixels_both_cover\": %ld,\n"
         " \"coverage_agreement\": %.6f,\n \"mean_luminance_raster\": %.6g, \"mean_luminance_pt\": %.6g,\n"
-        " \"relative_rmse\": %.6g, \"bias\": %.6g, \"noise_floor\": %.6g,\n \"pt_ms\": %.1f\n}\n",
+        " \"relative_rmse\": %.6g, \"bias\": %.6g, \"noise_floor\": %.6g,\n"
+        " \"relative_rmse_8x8_blocks\": %.6g, \"blocks\": %ld,\n \"pt_ms\": %.1f\n}\n",
         p->ownedScene.empty() ? (p->model.empty() ? "test-scene" : p->model.substr(p->model.find_last_of("/\\") + 1).c_str()) : p->ownedScene.c_str(),
-        w, h, spp, bounces, sunPi ? "true" : "false", both, agreeFrac, sr / n, meanP, rel, bias, noise, ms);
+        w, h, spp, bounces, sunPi ? "true" : "false", both, agreeFrac, sr / n, meanP, rel, bias, noise, relBlocks, blocks, ms);
     if (!json.empty()) std::ofstream(json, std::ios::binary) << buf;
     std::printf("%s", buf);
     return 0;
