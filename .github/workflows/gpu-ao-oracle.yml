@@ -1,0 +1,77 @@
+name: gpu-ao-oracle
+# The GPU rtao pass on the BVH against its scan oracle (evidence/m3-gpu-ao-bvh-bounds.json), on
+# WARP and lavapipe: the quick identity matrix and the ten glTF models with --gpu, three ways (BVH,
+# RAW_NATIVE_AO_ORACLE=scan, =skew), and raw-hero at 320 x 200 BVH against scan for the cost.
+on:
+  pull_request:
+    paths:
+      - 'src/renderer/gpu/gpu_renderer.cpp'
+      - 'src/renderer/gpu/shaders/passes.wgsl'
+      - 'src/renderer/gpu/shaders/common.wgsl'
+      - 'src/renderer/bvh.cpp'
+      - 'raw/renderer/bvh.hpp'
+      - 'evidence/m3-gpu-ao-bvh-*'
+      - '.github/workflows/gpu-ao-oracle.yml'
+permissions:
+  contents: read
+jobs:
+  oracle:
+    strategy:
+      fail-fast: false
+      matrix:
+        adapter: [warp, lavapipe]
+    runs-on: ${{ matrix.adapter == 'warp' && 'windows-latest' || 'ubuntu-24.04' }}
+    timeout-minutes: 150
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install lavapipe and the Vulkan build tools
+        if: matrix.adapter == 'lavapipe'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libvulkan-dev glslang-tools mesa-vulkan-drivers libxcb1-dev libwayland-dev wayland-protocols
+      - name: Build the GPU CLI
+        shell: bash
+        run: |
+          if [ "${{ matrix.adapter }}" = warp ]; then
+            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRAW_NATIVE_GPU_D3D12=ON
+            cmake --build build --config Release --target raw_native_cli
+            echo "CLI=build/Release/raw_native_cli.exe" >> "$GITHUB_ENV"; echo "RAW_NATIVE_D3D12_WARP=1" >> "$GITHUB_ENV"; echo "PY=python" >> "$GITHUB_ENV"
+          else
+            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRAW_NATIVE_VULKAN_RHI=ON
+            cmake --build build -j 4 --target raw_native_cli_vk
+            echo "CLI=build/raw_native_cli_vk" >> "$GITHUB_ENV"; echo "PY=python3" >> "$GITHUB_ENV"
+          fi
+      - name: The quick identity matrix and the glTF models, three ways
+        shell: bash
+        run: |
+          $PY tools/assets/fetch_gltf.py gltf-models
+          m=scripts/identity_matrix.py
+          for mode in bvh scan skew; do
+            o=""; [ "$mode" != bvh ] && o=$mode
+            RAW_NATIVE_AO_ORACLE=$o $PY $m run $CLI q-$mode.json q-$mode --gpu --quick > q-$mode.log 2>&1 || true
+            RAW_NATIVE_AO_ORACLE=$o $PY $m run $CLI g-$mode.json g-$mode --gpu --models gltf-models > g-$mode.log 2>&1 || true
+          done
+          echo "verified (bvh): $(grep -l '"verdict":"verified"' q-bvh/*/gpu_certificate.json g-bvh/*/gpu_certificate.json | wc -l) of 14"
+      - name: s1 the BVH equals the scan on the GPU, every file
+        shell: bash
+        run: |
+          $PY scripts/identity_matrix.py compare q-scan.json q-bvh.json
+          $PY scripts/identity_matrix.py compare g-scan.json g-bvh.json
+      - name: s2 the lavapipe GPU golden is unchanged
+        if: matrix.adapter == 'lavapipe'
+        run: python3 scripts/identity_matrix.py compare evidence/n3-identity-golden-vulkan-lavapipe.json q-bvh.json --except arena_certificate.json
+      - name: s3 the skew control differs
+        shell: bash
+        run: if $PY scripts/identity_matrix.py compare q-scan.json q-skew.json; then echo "skew did not differ"; exit 1; fi
+      - name: s5 raw-hero at 320 x 200 with rt on, BVH against scan (recorded)
+        shell: bash
+        run: |
+          $CLI export-assets --out assets > /dev/null
+          for mode in bvh scan; do
+            o=""; [ "$mode" != bvh ] && o=$mode
+            RAW_NATIVE_AO_ORACLE=$o $CLI --model assets/raw-hero.gltf --gpu --width 320 --height 200 --threads 4 --out hero-$mode | grep "^gpu:" | tee hero-$mode.txt
+          done
+          cmp hero-bvh/ao_rt.pfm hero-scan/ao_rt.pfm && echo "raw-hero GPU AO identical (BVH and scan)"
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: "gpu-ao-${{ matrix.adapter }}", path: "q-*.json\ng-*.json\nhero-*.txt\nhero-*/gpu_certificate.json", retention-days: 30 }
