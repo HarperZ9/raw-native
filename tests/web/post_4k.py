@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """The post stack at 3840 x 2160 in a real browser (web/test/post-4k.html).
 
-    python tests/web/post_4k.py [--adapter swiftshader|gpu] [--out result.json]
+    python tests/web/post_4k.py [--adapter swiftshader|gpu] [--page post-4k.html|pixel-4k.html] [--out result.json]
 
 A 4K frame has 8,294,400 pixels. A pass that dispatches one 64-wide workgroup per 64 pixels in
 one dimension asks for 129,600 groups, over WebGPU's limit of 65,535 a dimension, so the
 dispatch is refused and the frame comes out black while the render still reports success.
 Each case (the dither byte plate, the film and crt encoders) draws a gradient at 4K. Passes when
 every frame carries the image (8-bit luma standard deviation of at least 2) and the device
-reports no validation error. Exit 0 pass, 1 fail.
+reports no validation error. --page pixel-4k.html runs the same check on the pixel-art frame loop,
+whose splat-buffer clear has the same one-dimensional dispatch. Exit 0 pass, 1 fail.
 """
 
 from __future__ import annotations
@@ -35,7 +36,7 @@ class Handler(http.server.SimpleHTTPRequestHandler):
         pass
 
 
-def run(adapter: str) -> dict:
+def run(adapter: str, test_page: str = "post-4k.html") -> dict:
     from playwright.sync_api import sync_playwright
     srv = http.server.ThreadingHTTPServer(("127.0.0.1", 0), functools.partial(Handler, directory=str(ROOT)))
     threading.Thread(target=srv.serve_forever, daemon=True).start()
@@ -46,7 +47,7 @@ def run(adapter: str) -> dict:
         with sync_playwright() as p:
             b = p.chromium.launch(channel="chrome", headless=True, args=args)
             page = b.new_page()
-            page.goto(f"http://localhost:{srv.server_address[1]}/web/test/post-4k.html")
+            page.goto(f"http://localhost:{srv.server_address[1]}/web/test/{test_page}")
             page.wait_for_function("window.__result !== undefined", timeout=1800000)
             res = page.evaluate("window.__result")
             b.close()
@@ -59,9 +60,10 @@ def run(adapter: str) -> dict:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--adapter", default="swiftshader", choices=["swiftshader", "gpu"])
+    ap.add_argument("--page", default="post-4k.html", choices=["post-4k.html", "pixel-4k.html"])
     ap.add_argument("--out")
     a = ap.parse_args(argv)
-    res = run(a.adapter)
+    res = run(a.adapter, a.page)
     if a.out:
         Path(a.out).write_text(json.dumps(res, indent=1), encoding="utf-8")
     if res.get("error"):

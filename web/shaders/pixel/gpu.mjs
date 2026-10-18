@@ -9,6 +9,9 @@ import { snapOrigin } from "./probe.mjs";
 import { camera } from "./splat.mjs";
 
 const head = COMMON_WGSL + "\n" + SCENE_WGSL + "\n" + PIXEL_HEAD + "\n";
+// A pass over n items in 64-wide workgroups, folded into two dimensions as web/shaders/post.mjs
+// groups64 does: one dimension tops out at 65,535 groups, and a 4K clear needs 129,600.
+export const groups64 = (n) => { const g = Math.ceil(n / 64); return [Math.min(g, 32768), Math.ceil(g / 32768)]; };
 export const PIXEL_PASSES = { capture: CAPTURE_WGSL, shade: SHADE_WGSL, splatz: SPLATZ_WGSL, splatid: SPLATID_WGSL, clear: CLEAR_WGSL, resolve: RESOLVE_WGSL };
 
 export async function createGpuPixel(host, options, size) {
@@ -39,7 +42,7 @@ export async function createGpuPixel(host, options, size) {
       let cp = enc.beginComputePass();
       if (fresh) { const n8 = Math.ceil(o.N / 8); run(cp, pipes.capture, [S[0].P, S[0].geo, S[0].nrm], n8, n8, 6); run(cp, pipes.shade, [S[0].P, S[0].geo, S[0].nrm, S[0].col], n8, n8, 6); }
       for (const s of live) {
-        run(cp, pipes.clear, [s.P, s.zb], Math.ceil((w * h) / 64)); run(cp, pipes.clear, [s.P, s.idb], Math.ceil((w * h) / 64));
+        run(cp, pipes.clear, [s.P, s.zb], ...groups64(w * h)); run(cp, pipes.clear, [s.P, s.idb], ...groups64(w * h));
         run(cp, pipes.splatz, [s.P, s.geo, s.zb], Math.ceil(T / 64)); run(cp, pipes.splatid, [s.P, s.geo, s.zb, s.idb], Math.ceil(T / 64));
       }
       const other = live[1] || S[0];
