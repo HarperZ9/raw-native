@@ -9,4 +9,8 @@
 // is reported).
 namespace raw {
 int styleParityCommand(int argc, char** argv);
+// raw_native_cli style-4k [--width W] [--height H] [--out FILE]: style passes over a W x H frame
+// (default 3840 x 2160) through the dispatch every style pass uses. Exit 0 pass, 1 fail, 2 bad
+// arguments, 4 no GPU backend or adapter.
+int styleDispatchCommand(int argc, char** argv);
 }

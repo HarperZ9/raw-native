@@ -3,6 +3,7 @@
 #include "gpu_util.hpp"
 #include "style_gpu.hpp"
 #include "shaders/style_layout.hpp"
+#include "style_graph.hpp"
 #include <cstring>
 #include <stdexcept>
 namespace raw::gpu_check::post_gpu {
@@ -88,7 +89,7 @@ bool DeviceStack::run(const std::vector<Spec>& specs, post_stack::Stage stage, c
         const graph::Resource u = ures[k];
         g.addPass(std::string("post ") + specs[st.spec].pass, uses, [pipe, u, s, pv, d, n](graph::PassContext& c) {
             const rhi::BufferHandle b[4] = {c.buffer(u), c.buffer(s), c.buffer(pv), c.buffer(d)};
-            c.cmd->dispatch(pipe, b, (n + 63) / 64, 1, 1);
+            c.cmd->dispatch(pipe, b, style_graph::groupsX(std::uint32_t(n)), style_graph::groupsY(std::uint32_t(n)), 1);
         });
     }
     const rhi::BufferHandle rb = gpu.make(bytes, BufferUsage::MapRead | BufferUsage::CopyDst, "post readback");

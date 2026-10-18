@@ -67,6 +67,7 @@ void WebGpuCommandList::dispatch(PipelineHandle pipeline, std::span<const Buffer
     PipeRec* p = dev.pipes.get(pipeline.index, pipeline.gen);
     if (!p){ fail("webgpu: dispatch with an unknown pipeline"); return; }
     if (binds.size() != p->bindCount){ fail("webgpu: dispatch binding count differs from the pipeline layout"); return; }
+    if (x > kMaxDispatchGroups || y > kMaxDispatchGroups || z > kMaxDispatchGroups){ fail(dispatchLimitError("webgpu", x, y, z)); return; }
     std::vector<WGPUBindGroupEntry> e(binds.size());
     for (size_t i = 0; i < e.size(); ++i){
         WGPUBuffer* b = dev.buffer(binds[i]);

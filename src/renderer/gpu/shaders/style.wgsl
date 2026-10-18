@@ -671,7 +671,9 @@ fn level_lin(k: f32, n: f32, gamma: f32) -> f32 {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= D.width * D.height) { return; }
     let x: u32 = i % D.width;
     let y: u32 = i / D.width;
@@ -793,7 +795,9 @@ fn sample_rgb(off: u32, w: u32, h: u32, x: f32, y: f32) -> vec3f {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= Q.width * Q.height) { return; }
     let g0: vec4f = gb[i * 2u];
     let g1: vec4f = gb[i * 2u + 1u];
@@ -849,7 +853,9 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= u32(S.size.x) * u32(S.size.y)) { return; }
     // prev is read only behind a guard that never holds (p3.w is 0), so every backend keeps the
     // binding in the pass's layout: WebGPU's derived layout drops a binding the shader never uses.
@@ -878,7 +884,9 @@ fn dec(v: f32) -> f32 {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= u32(S.size.x) * u32(S.size.y)) { return; }
     // prev is read only behind a guard that never holds (p3.w is 0), so every backend keeps the
     // binding in the pass's layout: WebGPU's derived layout drops a binding the shader never uses.
@@ -929,7 +937,9 @@ fn landing_f(k: i32, j: i32, ek: f32) -> f32 {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let x: i32 = i32(i % U.width);
     let y: i32 = i32(i / U.width);
@@ -1040,7 +1050,9 @@ fn shade(a: vec3f, E: vec3f) -> vec3f {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let E: vec3f = light[i].xyz;
     let k: vec4f = aux[i];
@@ -1139,7 +1151,9 @@ fn glaze_colour(a: vec3f, cos_air: f32, d: f32) -> vec3f {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let x: u32 = i % U.width;
     let y: u32 = i / U.width;
@@ -1261,7 +1275,9 @@ fn hatch_lines(s: f32, freq: f32, px: f32, half_w: f32) -> f32 {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let x: f32 = f32(i % U.width);
     let y: f32 = f32(i / U.width);
@@ -1372,7 +1388,9 @@ fn keep(lab: vec3f, p: i32, pl: i32) -> bool {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let w: i32 = i32(U.width);
     let h: i32 = i32(U.height);
@@ -1457,7 +1475,9 @@ fn radial(la: vec4f, lb: vec4f, p: vec3f, n: vec3f, vis: f32) -> f32 {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let ix: i32 = i32(i % U.width);
     let iy: i32 = i32(i / U.width);
@@ -1764,7 +1784,9 @@ fn mix_pick(r: vec2f, g: vec2f, b: vec2f, th: vec2f) -> u32 {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let p: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let p: u32 = gidx;
     if (p >= U.width * U.height) { return; }
     let x: u32 = p % U.width;
     let y: u32 = p / U.width;
@@ -1828,7 +1850,9 @@ fn developable(H: f32) -> f32 {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let c: vec3f = scene[i].xyz * U.c.w;
     A[i] = vec4f(developable(c.x), developable(c.y), developable(c.z), 0.0);
@@ -1864,7 +1888,9 @@ fn coarse_at(x: i32, y: i32) -> vec2f {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let x: i32 = i32(i % U.width);
     let y: i32 = i32(i / U.width);
@@ -1899,9 +1925,11 @@ fn at(i: i32, j: i32) -> vec2f {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    if (gid.x >= U.cw * U.ch) { return; }
-    let i: i32 = i32(gid.x % U.cw);
-    let j: i32 = i32(gid.x / U.cw);
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    if (gidx >= U.cw * U.ch) { return; }
+    let i: i32 = i32(gidx % U.cw);
+    let j: i32 = i32(gidx / U.cw);
     let w: i32 = i32(U.width);
     let h: i32 = i32(U.height);
     let s: i32 = i32(U.s);
@@ -1919,7 +1947,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     let l: vec2f = at(i - 1, j) + at(i + 1, j) + at(i, j - 1) + at(i, j + 1) - 4.0 * f0;
     let c: f32 = f0.x + U.a.x * l.x * dt - U.b.x * used + U.b.y * (1.0 - f0.x) * dt;
     let b: f32 = f0.y + U.a.y * l.y * dt + U.b.w * used - U.c.x * f0.y * dt;
-    G[gid.x] = vec4f(c, b, 0.0, 0.0);
+    G[gidx] = vec4f(c, b, 0.0, 0.0);
 }
 
 //@pass style_adj_out
@@ -1932,7 +1960,9 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let free: f32 = 1.0 - U.d.x;
     let eps: f32 = 1.0e-6;
@@ -1951,7 +1981,9 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let v: u32 = src[i];
     if (U.phosphor == 0u) {
@@ -1988,7 +2020,9 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.lw * U.lh) { return; }
     let lx: i32 = i32(i % U.lw);
     let ly: i32 = i32(i / U.lw);
@@ -2023,7 +2057,9 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.lw * U.lh) { return; }
     let lw: i32 = i32(U.lw);
     let lh: i32 = i32(U.lh);
@@ -2069,7 +2105,9 @@ fn to_srgb(l: f32) -> i32 {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let v: u32 = src[i];
     if (U.a.x <= 0.0 && U.a.y <= 0.0) {
@@ -2130,7 +2168,9 @@ fn bezel_alpha(asu: f32, asv: f32, rc: f32, feather: f32) -> f32 {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let w: i32 = i32(U.width);
     let h: i32 = i32(U.height);
@@ -2214,7 +2254,9 @@ fn held(y: i32, k: i32) -> vec3f {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.n * U.lines) { return; }
     let k: i32 = i32(i % U.n);
     let y: i32 = i32(i / U.n);
@@ -2249,7 +2291,9 @@ fn at(y: i32, k: f32) -> vec3f {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.n * U.lines) { return; }
     let k: i32 = i32(i % U.n);
     let y: i32 = i32(i / U.n);
@@ -2298,7 +2342,9 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.n * U.lines) { return; }
     let n: i32 = i32(U.n);
     let k: i32 = i32(i % U.n);
@@ -2323,7 +2369,9 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.out_w * U.out_h) { return; }
     let w: i32 = i32(U.out_w);
     let h: i32 = i32(U.out_h);
@@ -2351,7 +2399,9 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let x: i32 = i32(i % U.width);
     let y: i32 = i32(i / U.width);
@@ -2402,7 +2452,9 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let w: i32 = i32(U.width);
     let h: i32 = i32(U.height);
@@ -2440,7 +2492,9 @@ fn lum_at(x: i32, y: i32) -> f32 {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let x: i32 = i32(i % U.width);
     let y: i32 = i32(i / U.width);
@@ -2485,7 +2539,9 @@ fn link_d(l: i32) -> vec2i {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let w: i32 = i32(U.width);
     let h: i32 = i32(U.height);
@@ -2521,7 +2577,9 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let o: vec3f = U.paper.xyz * exp(-(S[i].xyz + D[i].xyz));
     out8[i] = pack_rgb8(o);
@@ -2554,7 +2612,9 @@ fn scene_at(x: f32, y: f32) -> vec3f {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.out_w * U.out_h) { return; }
     let x: f32 = f32(i % U.out_w);
     let y: f32 = f32(i / U.out_w);
@@ -2574,7 +2634,9 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.out_w * U.out_h) { return; }
     let W: i32 = i32(U.out_w);
     let Hh: i32 = i32(U.out_h);
@@ -2599,7 +2661,9 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.gw * U.gh) { return; }
     let gx: u32 = i % U.gw;
     let gy: u32 = i / U.gw;
@@ -2625,7 +2689,9 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.gw * U.gh) { return; }
     let gw: i32 = i32(U.gw);
     let gh: i32 = i32(U.gh);
@@ -2681,7 +2747,9 @@ fn halo_up(x: u32, y: u32) -> vec3f {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.out_w * U.out_h) { return; }
     let hl: vec3f = halo_up(i % U.out_w, i / U.out_w);
     let h: vec3f = max(vec3f(1.0e-6), H[i].xyz + U.halo_s.xyz * hl);
@@ -2813,7 +2881,9 @@ fn neg_density(px: u32, py: u32, l: u32) -> f32 {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.out_w * U.out_h) { return; }
     let px: u32 = i % U.out_w;
     let py: u32 = i / U.out_w;
@@ -2848,7 +2918,9 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let x: u32 = i % U.width;
     let y: u32 = i / U.width;
@@ -2919,7 +2991,9 @@ fn edge_rot(phi: f32, n: f32, rnd: f32, rot: f32) -> f32 {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let qx: f32 = f32(i % U.width) + 0.5;
     let qy: f32 = f32(i / U.width) + 0.5;
@@ -3013,7 +3087,9 @@ fn main(@builtin(local_invocation_id) lid: vec3u, @builtin(workgroup_id) wid: ve
 
 @compute @workgroup_size(1)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    if (gid.x > 0u) { return; }
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    if (gidx > 0u) { return; }
     let h: i32 = i32(U.height);
     let a: f32 = U.a.y;
     let S: f32 = U.a.x;
@@ -3066,7 +3142,9 @@ fn sample_line(y: i32, xs: f32, sigma: f32) -> vec3f {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let w: i32 = i32(U.width);
     let h: i32 = i32(U.height);
@@ -3113,7 +3191,9 @@ fn weight(m: i32) -> f32 {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     s[i] = weight(mat[i]);
 }
@@ -3127,7 +3207,9 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let w: i32 = i32(U.width);
     let h: i32 = i32(U.height);
@@ -3155,7 +3237,9 @@ fn cl(x: i32, y: i32) -> u32 {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let x: i32 = i32(i % U.width);
     let y: i32 = i32(i / U.width);
@@ -3238,7 +3322,9 @@ fn sample_src(fx: f32, fy: f32) -> vec3f {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let x: f32 = f32(i % U.width);
     let y: f32 = f32(i / U.width);
@@ -3257,8 +3343,10 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
     let N: u32 = U.n;
-    let k: u32 = gid.x;
+    let k: u32 = gidx;
     if (k >= 6u * N * N) { return; }
     let f: u32 = k / (N * N);
     let j: u32 = (k % (N * N)) / N;
@@ -3287,8 +3375,10 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
     let N: u32 = U.n;
-    let k: u32 = gid.x;
+    let k: u32 = gidx;
     if (k >= 6u * N * N) { return; }
     let f: u32 = k / (N * N);
     let j: i32 = i32((k % (N * N)) / N);
@@ -3333,8 +3423,10 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    if (gid.x >= U.width * U.height) { return; }
-    a[gid.x] = 0xffffffffu;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    if (gidx >= U.width * U.height) { return; }
+    a[gidx] = 0xffffffffu;
 }
 
 //@pass style_pixel_splatz
@@ -3369,8 +3461,10 @@ fn corner(f: u32, u: f32, v: f32, d: f32) -> vec3f {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
     let N: u32 = U.n;
-    let k: u32 = gid.x;
+    let k: u32 = gidx;
     if (k >= 6u * N * N) { return; }
     let d: f32 = geo[k].x;
     if (d < 0.0) { return; }
@@ -3437,8 +3531,10 @@ fn corner(f: u32, u: f32, v: f32, d: f32) -> vec3f {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
     let N: u32 = U.n;
-    let k: u32 = gid.x;
+    let k: u32 = gidx;
     if (k >= 6u * N * N) { return; }
     let d: f32 = geo[k].x;
     if (d < 0.0) { return; }
@@ -3497,7 +3593,9 @@ fn bayer4(x: u32, y: u32) -> f32 {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let p: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let p: u32 = gidx;
     if (p >= U.width * U.height) { return; }
     let x: u32 = p % U.width;
     let y: u32 = p / U.width;
@@ -3565,7 +3663,9 @@ fn lut_conc(s: vec3f) -> vec4f {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let k: f32 = U.a.x;
     let sc: vec3f = max(scene[i].xyz, vec3f(0.0));
@@ -3594,7 +3694,9 @@ fn at(x: i32, y: i32) -> vec3f {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let x: i32 = i32(i % U.width);
     let y: i32 = i32(i / U.width);
@@ -3612,7 +3714,9 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let w: i32 = i32(U.width);
     let h: i32 = i32(U.height);
@@ -3641,7 +3745,9 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let p: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let p: u32 = gidx;
     if (p >= U.width * U.height) { return; }
     let w: i32 = i32(U.width);
     let h: i32 = i32(U.height);
@@ -3774,7 +3880,9 @@ fn dir_at(px: f32, py: f32) -> vec3f {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let x: f32 = f32(i % U.width);
     let y: f32 = f32(i / U.width);
@@ -3883,7 +3991,9 @@ fn hs(x: i32, y: i32) -> f32 {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let x: i32 = i32(i % U.width);
     let y: i32 = i32(i / U.width);
@@ -4011,7 +4121,9 @@ fn wpow(v: f32, e: f32) -> f32 {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let i: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let i: u32 = gidx;
     if (i >= U.width * U.height) { return; }
     let x: f32 = f32(i % U.width);
     let y: f32 = f32(i / U.width);
@@ -4077,7 +4189,9 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 
 @compute @workgroup_size(1)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    if (gid.x > 0u || U.width == 0u) { return; }
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    if (gidx > 0u || U.width == 0u) { return; }
     let frame: f32 = K[10];
     for (var k: u32 = 0u; k < 2u; k++) {
         let n: u32 = S[2u + k];
@@ -4137,7 +4251,9 @@ fn cprev(x: f32, y: f32) -> vec4f {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let p: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let p: u32 = gidx;
     if (p >= U.width * U.height) { return; }
     let w: i32 = i32(U.width);
     let h: i32 = i32(U.height);
@@ -4180,7 +4296,9 @@ fn departure(a: f32, b: f32, c: f32, d: f32) -> f32 {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
-    let p: u32 = gid.x;
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
+    let p: u32 = gidx;
     if (p >= U.width * U.height) { return; }
     let w: u32 = U.width;
     let x: u32 = p % w;
@@ -4238,9 +4356,11 @@ fn held(y: i32, k: i32, c: u32) -> f32 {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
     let n: i32 = cp_i(CP_N);
     let nl: i32 = cp_i(CP_lines);
-    let idx: i32 = i32(gid.x);
+    let idx: i32 = i32(gidx);
     if (idx >= n * nl) { return; }
     let k: i32 = idx % n;
     let y: i32 = idx / n;
@@ -4297,9 +4417,11 @@ fn comp(y: i32, k: i32) -> f32 {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
     let n: i32 = cp_i(CP_N);
     let nl: i32 = cp_i(CP_lines);
-    let idx: i32 = i32(gid.x);
+    let idx: i32 = i32(gidx);
     if (idx >= n * nl || U.pad0 == 7u) { return; }
     let k: i32 = idx % n;
     let y: i32 = idx / n;
@@ -4365,9 +4487,11 @@ fn demod_line(y: i32, k: i32) -> vec2f {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
     let n: i32 = cp_i(CP_N);
     let nl: i32 = cp_i(CP_lines);
-    let idx: i32 = i32(gid.x);
+    let idx: i32 = i32(gidx);
     if (idx >= n * nl) { return; }
     let k: i32 = idx % n;
     let y: i32 = idx / n;
@@ -4586,9 +4710,11 @@ fn energy(c: u32, lit: bool, mono: bool, mono_e: f32, cov: f32, sx: f32, sy: f32
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
     let ww: u32 = u32(cp_i(CP_outW));
     let hh: u32 = u32(cp_i(CP_outH));
-    let pix: u32 = gid.x;
+    let pix: u32 = gidx;
     if (pix >= ww * hh) { return; }
     let px: f32 = f32(pix % ww);
     let py: f32 = f32(pix / ww);
@@ -4623,14 +4749,16 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
     let gw: u32 = u32(floor(P[CP_gw] + 0.5));
     let gh: u32 = u32(floor(P[CP_gh] + 0.5));
     let q: u32 = u32(floor(P[CP_haloQ] + 0.5));
     let ww: u32 = u32(floor(P[CP_outW] + 0.5));
     let hh: u32 = u32(floor(P[CP_outH] + 0.5));
-    if (gid.x >= gw * gh || U.pad0 == 7u) { return; }
-    let gx: u32 = gid.x % gw;
-    let gy: u32 = gid.x / gw;
+    if (gidx >= gw * gh || U.pad0 == 7u) { return; }
+    let gx: u32 = gidx % gw;
+    let gy: u32 = gidx / gw;
     var s: vec3f = vec3f(0.0);
     var n: f32 = 0.0;
     for (var y: u32 = gy * q; y < min(hh, gy * q + q); y++) {
@@ -4639,7 +4767,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
             n = n + 1.0;
         }
     }
-    hd[gid.x] = vec4f(s / n, 0.0);
+    hd[gidx] = vec4f(s / n, 0.0);
 }
 
 //@pass style_crtp_halo_conv
@@ -4652,11 +4780,13 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
     let gw: i32 = i32(floor(P[CP_gw] + 0.5));
     let gh: i32 = i32(floor(P[CP_gh] + 0.5));
     let r: i32 = i32(floor(P[CP_haloR] + 0.5));
     let sz: i32 = 2 * r + 1;
-    let idx: i32 = i32(gid.x);
+    let idx: i32 = i32(gidx);
     if (idx >= gw * gh || U.pad0 == 7u) { return; }
     let x: i32 = idx % gw;
     let y: i32 = idx / gw;
@@ -4728,9 +4858,11 @@ fn gamut_fit(rgb: vec3f) -> vec3f {
 
 @compute @workgroup_size(64)
 fn main(@builtin(global_invocation_id) gid: vec3u) {
+    // Groups fold into two dimensions (style_graph::Passes::add): 32,768 64-wide groups a row.
+    let gidx: u32 = gid.x + gid.y * 2097152u;
     let ww: u32 = u32(floor(P[CP_outW] + 0.5));
     let hh: u32 = u32(floor(P[CP_outH] + 0.5));
-    let pix: u32 = gid.x;
+    let pix: u32 = gidx;
     if (pix >= ww * hh || U.pad0 == 7u) { return; }
     let px: f32 = f32(pix % ww);
     let py: f32 = f32(pix / ww);

@@ -123,6 +123,7 @@ void VkrCommandList::dispatch(PipelineHandle pipeline, std::span<const BufferHan
     if (!p){ fail("vulkan: dispatch with an unknown pipeline"); return; }
     if (rendering){ fail("vulkan: a dispatch inside a render pass"); return; }
     if (binds.size() != p->types.size()){ fail("vulkan: dispatch binding count differs from the pipeline layout"); return; }
+    if (x > kMaxDispatchGroups || y > kMaxDispatchGroups || z > kMaxDispatchGroups){ fail(dispatchLimitError("vulkan", x, y, z)); return; }
     const VkDescriptorSet set = descriptors(*p, {}, binds);
     if (!error.empty()) return;
     vkCmdBindPipeline(cb, VK_PIPELINE_BIND_POINT_COMPUTE, p->pipe);

@@ -270,6 +270,8 @@ jobs:
         run: |
           node tools/port/export_style_fixtures.mjs style-fixtures
           build/Release/raw_native_cli.exe style-parity --fixtures style-fixtures --out style-warp.json
+          # A 4K frame through the style passes' dispatch (129,600 groups, folded into two dimensions).
+          build/Release/raw_native_cli.exe style-4k --out style-4k-warp.json
       - name: Clusters, the environment prefilter and lit shading on WARP match the float64 reference (M3 lighting)
         shell: bash
         env:
@@ -515,6 +517,7 @@ jobs:
           python3 tests/gpu/sdf_gate.py n3c-sdf.json
           node tools/port/export_style_fixtures.mjs style-fixtures
           $c style-parity --fixtures style-fixtures --out n3c-style.json
+          $c style-4k --out n3c-style-4k.json
       - name: The ten glTF models on the Vulkan build; CPU outputs byte-identical to the M2 golden and GPU certificates verified on lavapipe (N3 criterion 2, M2 criterion 1)
         run: |
           python3 tools/assets/fetch_gltf.py gltf-models
