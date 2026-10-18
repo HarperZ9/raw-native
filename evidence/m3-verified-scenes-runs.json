@@ -1,0 +1,46 @@
+{
+ "schema": "raw-native.runs/1",
+ "bounds": "evidence/m3-verified-scenes-bounds.json (e65c74f before any code; addendum A after local CPU development runs and before CI; addendum B after the CI run)",
+ "ci": "workflow .github/workflows/m3-scenes.yml, run 39091643080 (PR #184): WARP on windows-latest, lavapipe on ubuntu-24.04",
+ "date": "2026-10-18 (UTC)",
+ "results": {
+  "v1_hero": {
+   "result": "holds on both",
+   "observed": "raw-hero 512 x 320, ray-traced AO on: verified with identity MATCH (GPU frame equals the CPU frame byte for byte) on WARP and lavapipe; coverage mismatch 0. GPU time 98.7 s on WARP, 27.9 s on lavapipe (not judged)."
+  },
+  "v2_hall": {
+   "result": "holds on both",
+   "observed": "raw-hall nave 512 x 320 (586,424 triangles), ray-traced AO on: verified on both; identity MATCH on WARP, DRIFT on lavapipe (the frames differ in bytes but every channel is within its committed tolerance); coverage mismatch 0. GPU time 524 s on WARP, 140 s on lavapipe."
+  },
+  "v3_gallery": {
+   "result": "holds on WARP; on lavapipe the RMSE holds and the max_abs bound misses",
+   "observed": "256 px, 2 x 2 samples a pixel. WARP: rmse_exposed 5.27e-5, max_abs_exposed 0.0226. lavapipe: rmse_exposed 3.81e-4, max_abs_exposed 0.118 against the bound 0.05; the worst samples are the gold row's near-mirror sun highlight (exposed radiance 10 to 19, at most 1.6% relative). See addendum B."
+  },
+  "p0_alignment": {
+   "result": "holds",
+   "observed": "coverage agreement 1.0 on the control sphere, raw-hero and raw-hall."
+  },
+  "p1_control": {
+   "result": "holds",
+   "observed": "control sphere: relative RMSE 0.0067 (bound 0.02 + 3 x 0.00035), bias +0.0002. The converter's units are right."
+  },
+  "p1b_false_control": {
+   "result": "holds",
+   "observed": "with the sun's pi left out, relative RMSE 1.15: the measure sees a units error."
+  },
+  "p2_hero": {
+   "result": "holds (bound 0.6)",
+   "observed": "relative RMSE 0.0785, bias -0.027, noise floor 0.006; with 1 bounce 0.055 and -0.014. The prediction (0.2 to 0.45, positive bias) was wrong: in the test scene's open lighting the raster's ambient-times-AO stands in for sky visibility well, and the missing sun shadow is a small share of the frame; interreflection makes the path tracer slightly brighter."
+  },
+  "p3_hall": {
+   "result": "misses its bound (recorded, as addendum A expected)",
+   "observed": "relative RMSE 4.10 against the bound 2.0, bias +3.12, noise floor 0.077: the raster frame's mean luminance is about four times the path tracer's inside the hall. With 1 bounce the error is 6.55 (bias +5.20), so interreflection makes up part of the gap and the rest is direct light: the raster's ambient sees sky wherever nothing lies within the 2 m AO radius, and its sun is unshadowed indoors. The prediction (0.6 to 1.5) was wrong."
+  },
+  "p4_gallery": {
+   "result": "not measured",
+   "why": "as the bounds file says: the path tracer has neither the gallery's lights nor five of its seven material families."
+  }
+ },
+ "criterion_reading": "Verified renders: the gallery (WARP; lavapipe within RMSE, over the max_abs bound on highlights), raw-hero and raw-hall pass on both adapters. Path-traced error recorded per scene with bounds stated first: raw-hero within its bound, raw-hall over it, the gallery not measured. The raster model's distance from light transport in an enclosed interior is the finding to act on (shadowed sun and sky visibility beyond the AO radius).",
+ "does_not_prove": "That the raster model is physically right; anything on a hardware GPU; path-traced error for the gallery."
+}

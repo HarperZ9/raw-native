@@ -1,0 +1,11 @@
+{
+ "what": "raw-native material gallery (M3)",
+ "size": 256,
+ "spp": 4,
+ "samples": 162908,
+ "ev100": 11,
+ "display": "agx/srgb",
+ "rows": ["gold, roughness", "red plastic, roughness", "car paint, clearcoat roughness", "velvet, sheen roughness", "brushed steel, anisotropy", "thin film, iridescence thickness", "glass, roughness (thin, then volume)"],
+ "cpu_wall_ms": 4369.4,
+ "gpu": {"backend": "d3d12", "adapter": "Microsoft Basic Render Driver", "wall_ms": 8371.1, "rmse_exposed": 5.267e-05, "max_abs_exposed": 2.259e-02}
+}

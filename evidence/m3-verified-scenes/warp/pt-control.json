@@ -1,0 +1,11 @@
+{
+ "schema": "raw-native.pt-error/1",
+ "scene": "control-sphere",
+ "width": 256, "height": 160,
+ "spp": 128, "bounces": 8, "sun_pi": true, "ambient": 0.2,
+ "pixels_both_cover": 5812,
+ "coverage_agreement": 1.000000,
+ "mean_luminance_raster": 0.459792, "mean_luminance_pt": 0.459701,
+ "relative_rmse": 0.00666156, "bias": 0.000198584, "noise_floor": 0.00034872,
+ "pt_ms": 420.1
+}

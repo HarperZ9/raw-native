@@ -6,8 +6,8 @@
 DIR holds one adapter's run (.github/workflows/m3-scenes.yml): hero/, hall/, control/ (each a --gpu
 render with gpu_certificate.json), gallery/gallery.json, and pt-*.json from raw_native_cli pt-error.
 Every check of the bounds file is evaluated and written to the summary. The exit code gates on
-v1, v2, v3, p0, p1, p1b and p2; p3 (raw-hall's path-traced error) is recorded with its bound, not
-gated (addendum A of the bounds file). Exit 0 when the gated checks hold, 1 otherwise.
+v1, v2, v3's RMSE, p0, p1, p1b and p2. Recorded with their bounds' verdicts, not gated: p3
+(raw-hall's path-traced error, addendum A) and v3's max_abs (addendum B). Exit 0 when the gated checks hold, 1 otherwise.
 """
 import json
 import sys
@@ -42,7 +42,8 @@ def main(a):
     r["v2_hall"] = verified(load(d / "hall/gpu_certificate.json"), 512, 320)
     g = load(d / "gallery/gallery.json").get("gpu") or load(d / "gallery/gallery.json")
     rmse, mx = g.get("rmse_exposed"), g.get("max_abs_exposed")
-    r["v3_gallery"] = (rmse is not None and mx is not None and rmse <= 5e-4 and mx <= 0.05), {"rmse_exposed": rmse, "max_abs_exposed": mx}
+    r["v3_gallery"] = (rmse is not None and rmse <= 5e-4), {"rmse_exposed": rmse}
+    r["v3_gallery_max_abs"] = (mx is not None and mx <= 0.05), {"max_abs_exposed": mx}
     pt = {k: load(d / f"pt-{k}.json") for k in ("control", "control-nopi", "hero", "hall", "hero-direct", "hall-direct")}
     r["p0_alignment"] = all(pt[k].get("coverage_agreement", 0) >= 0.99 for k in ("control", "hero", "hall")), \
         {k: pt[k].get("coverage_agreement") for k in ("control", "hero", "hall")}

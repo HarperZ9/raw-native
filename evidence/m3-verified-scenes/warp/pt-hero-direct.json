@@ -1,0 +1,11 @@
+{
+ "schema": "raw-native.pt-error/1",
+ "scene": "raw-hero.gltf",
+ "width": 512, "height": 320,
+ "spp": 128, "bounces": 1, "sun_pi": true, "ambient": 0.2,
+ "pixels_both_cover": 83126,
+ "coverage_agreement": 1.000000,
+ "mean_luminance_raster": 0.734808, "mean_luminance_pt": 0.745613,
+ "relative_rmse": 0.0545683, "bias": -0.0144906, "noise_floor": 0.00282952,
+ "pt_ms": 1670.9
+}
