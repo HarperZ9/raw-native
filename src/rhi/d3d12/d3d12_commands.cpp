@@ -74,6 +74,7 @@ void D3d12CommandList::dispatch(PipelineHandle pipeline, std::span<const BufferH
     PipeRec* p = dev_.pipeline(pipeline);
     if (!p){ fail("d3d12: dispatch with an unknown pipeline"); return; }
     if (binds.size() != p->layout.size()){ fail("d3d12: dispatch binding count differs from the pipeline layout"); return; }
+    if (x > kMaxDispatchGroups || y > kMaxDispatchGroups || z > kMaxDispatchGroups){ fail(dispatchLimitError("d3d12", x, y, z)); return; }
     ID3D12GraphicsCommandList* cl = dev_.list();
     cl->SetComputeRootSignature(p->rs.Get());
     cl->SetPipelineState(p->pso.Get());

@@ -10,6 +10,11 @@
 #include <vector>
 namespace raw::gpu_check::style_graph {
 
+// The workgroup counts (x, y) of a 64-wide pass over n invocations: rows of 32,768 groups, so no
+// dimension passes rhi::kMaxDispatchGroups. The pass indexes gid.x + gid.y * 2,097,152.
+inline std::uint32_t groupsX(std::uint32_t n) { const std::uint32_t g = (n + 63) / 64; return g < 32768u ? g : 32768u; }
+inline std::uint32_t groupsY(std::uint32_t n) { return ((n + 63) / 64 + 32767u) / 32768u; }
+
 struct Passes {
     rhi::Device& dev;
     graph::FrameGraph& g;

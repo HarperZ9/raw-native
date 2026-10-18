@@ -8,6 +8,7 @@
 #include "shaders/style_layout.hpp"
 #include "style_fixture.hpp"
 #include "style_gpu.hpp"
+#include "style_graph.hpp"
 #include <algorithm>
 #include <cmath>
 #include <cstring>
@@ -54,7 +55,7 @@ bool runAdjacency(rhi::Device& dev, const style::AdjPlan& plan, const std::vecto
         g.addPass(name, uses, [pipe, binds, count](graph::PassContext& c) {
             std::vector<rhi::BufferHandle> h;
             for (graph::Resource r : binds) h.push_back(c.buffer(r));
-            c.cmd->dispatch(pipe, h, (count + 63) / 64, 1, 1);
+            c.cmd->dispatch(pipe, h, style_graph::groupsX(std::uint32_t(count)), style_graph::groupsY(std::uint32_t(count)), 1);
         });
         return true;
     };

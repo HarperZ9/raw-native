@@ -7,8 +7,11 @@
 namespace raw::gpu_check::style_graph {
 using rhi::Access;
 
+// One 64-wide group per 64 invocations, folded into rows of 32,768 groups: a 4K frame needs 129,600
+// groups, over the 65,535 a dimension every backend allows (rhi::kMaxDispatchGroups). Every
+// 64-wide style.wgsl pass indexes gid.x + gid.y * 2,097,152 to match.
 bool Passes::add(const char* name, const std::vector<graph::Resource>& binds, std::uint32_t count, std::string& err) {
-    return addGroups(name, binds, (count + 63) / 64, 1, 1, err);
+    return addGroups(name, binds, groupsX(count), groupsY(count), 1, err);
 }
 
 bool Passes::addGroups(const char* name, const std::vector<graph::Resource>& binds, std::uint32_t gx, std::uint32_t gy, std::uint32_t gz, std::string& err) {

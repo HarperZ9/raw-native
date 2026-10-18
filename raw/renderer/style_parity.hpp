@@ -97,4 +97,19 @@ struct StyleParity {
 // development run, which the JSON marks and which is not the check of record.
 StyleParity styleParity(rhi::Device* dev, const std::string& fixtureDir, const std::string& only = "");
 
+// The style passes over a large frame (default 3840 x 2160): style_pixel_clear and
+// style_srgb_decode through style_graph::Passes::add, read back in full. More than 65,535 groups
+// in one dimension is refused by every backend, so Passes::add folds them into two dimensions
+// (src/renderer/gpu/style_dispatch_check.cpp). raw_native_cli style-4k runs it.
+struct StyleDispatchCheck {
+    int width{0}, height{0};
+    std::uint32_t groups{0};
+    bool ran{false};
+    std::string error;
+    long clearMissed{0}, firstClearMiss{-1}, decodeMissed{0}, firstDecodeMiss{-1};
+    bool pass() const { return ran && error.empty() && clearMissed == 0 && decodeMissed == 0; }
+    std::string json() const;
+};
+StyleDispatchCheck styleDispatchCheck(rhi::Device& dev, int w, int h);
+
 }  // namespace raw::gpu_check

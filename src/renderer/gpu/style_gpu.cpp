@@ -3,6 +3,7 @@
 #include "gpu_util.hpp"
 #include "shaders/style_layout.hpp"
 #include "../data/bluenoise64.hpp"
+#include "style_graph.hpp"
 #include <cstring>
 namespace raw::gpu_check::style_gpu {
 namespace {
@@ -33,7 +34,7 @@ bool dispatchAndReadEx(util::Gpu& gpu, int pass, const std::vector<rhi::BufferHa
     std::vector<rhi::BufferBarrier> in;
     for (std::size_t k = 0; k < binds.size(); ++k) in.push_back({binds[k], before[k], inAccess[k]});
     c->barrier(in);
-    c->dispatch(pipe, binds, (n + 63) / 64, 1, 1);
+    c->dispatch(pipe, binds, style_graph::groupsX(std::uint32_t(n)), style_graph::groupsY(std::uint32_t(n)), 1);
     std::vector<rhi::BufferBarrier> after;
     for (std::size_t k = 0; k < outs.size(); ++k) { after.push_back({outs[k], Access::StorageWrite, Access::CopySrc}); after.push_back({rb[k], Access::Undefined, Access::CopyDst}); }
     c->barrier(after);

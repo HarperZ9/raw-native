@@ -206,6 +206,15 @@ public:
     virtual double refreshHz() = 0;
 };
 
+// The largest workgroup count a dispatch may ask for in one dimension: D3D12's
+// D3D12_CS_DISPATCH_MAX_THREAD_GROUPS_PER_DIMENSION, WebGPU's maxComputeWorkgroupsPerDimension
+// default and the minimum Vulkan guarantees for maxComputeWorkGroupCount.
+inline constexpr uint32_t kMaxDispatchGroups = 65535;
+inline std::string dispatchLimitError(const char* backend, uint32_t x, uint32_t y, uint32_t z) {
+    return std::string(backend) + ": dispatch of " + std::to_string(x) + " x " + std::to_string(y) + " x " + std::to_string(z) +
+           " workgroups exceeds " + std::to_string(kMaxDispatchGroups) + " in a dimension";
+}
+
 // Records one submission. Errors are kept and reported by submitAndWait, so a
 // recording call never needs a return value. Uploads are ordered before the
 // list's other commands that follow them.
@@ -216,6 +225,8 @@ public:
     virtual void upload(BufferHandle dst, uint64_t offset, const void* data, uint64_t size) = 0;
     virtual void copyBuffer(BufferHandle src, uint64_t srcOffset, BufferHandle dst, uint64_t dstOffset,
                             uint64_t size) = 0;
+    // x, y and z are workgroup counts, each at most kMaxDispatchGroups; a larger count is
+    // refused as an error on every backend (WARP runs it, real hardware need not).
     virtual void dispatch(PipelineHandle pipeline, std::span<const BufferHandle> binds,
                           uint32_t x, uint32_t y, uint32_t z) = 0;
     // The whole texture from tight rows of bytesPerTexel(format) texels, top row first.
