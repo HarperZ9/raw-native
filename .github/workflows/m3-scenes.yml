@@ -1,0 +1,72 @@
+name: m3-scenes
+# ROADMAP M3 criterion 1 (evidence/m3-verified-scenes-bounds.json): raw-hero and raw-hall render
+# verified with ray-traced AO at 512 x 320, the gallery's GPU shading is within its committed limits,
+# and the rasterised frame's error against a path-traced reference is recorded per scene with its
+# controls. WARP and lavapipe; the path tracer runs on the CPU against each adapter's frame.
+on:
+  pull_request:
+    paths:
+      - 'src/renderer/rt_pt_convert.cpp'
+      - 'raw/renderer/rt_pt_convert.hpp'
+      - 'src/tools/pt_error_cmd.cpp'
+      - 'src/tools/model_scene.cpp'
+      - 'src/tools/cli_params.cpp'
+      - 'tests/gpu/m3_scenes_gate.py'
+      - 'evidence/m3-verified-scenes-*'
+      - '.github/workflows/m3-scenes.yml'
+permissions:
+  contents: read
+jobs:
+  scenes:
+    strategy:
+      fail-fast: false
+      matrix:
+        adapter: [warp, lavapipe]
+    runs-on: ${{ matrix.adapter == 'warp' && 'windows-latest' || 'ubuntu-24.04' }}
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install lavapipe and the Vulkan build tools
+        if: matrix.adapter == 'lavapipe'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libvulkan-dev glslang-tools mesa-vulkan-drivers libxcb1-dev libwayland-dev wayland-protocols
+      - name: Build the GPU CLI
+        shell: bash
+        run: |
+          if [ "${{ matrix.adapter }}" = warp ]; then
+            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRAW_NATIVE_GPU_D3D12=ON
+            cmake --build build --config Release --target raw_native_cli
+            echo "CLI=build/Release/raw_native_cli.exe" >> "$GITHUB_ENV"; echo "RAW_NATIVE_D3D12_WARP=1" >> "$GITHUB_ENV"; echo "PY=python" >> "$GITHUB_ENV"
+          else
+            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRAW_NATIVE_VULKAN_RHI=ON
+            cmake --build build -j 4 --target raw_native_cli_vk
+            echo "CLI=build/raw_native_cli_vk" >> "$GITHUB_ENV"; echo "PY=python3" >> "$GITHUB_ENV"
+          fi
+      - name: v1 v2 the verified renders at 512 x 320 with ray-traced AO; the control sphere
+        shell: bash
+        run: |
+          mkdir -p m3s
+          $CLI export-assets --out assets > /dev/null
+          $CLI --model assets/raw-hero.gltf --gpu --width 512 --height 320 --threads 4 --out m3s/hero | grep "^gpu:"
+          $CLI --owned-scene raw-hall-nave --gpu --width 512 --height 320 --threads 4 --out m3s/hall | grep "^gpu:"
+          $CLI --owned-scene control-sphere --gpu --width 256 --height 160 --threads 4 --out m3s/control | grep "^gpu:"
+      - name: v3 the material gallery, 256 px, 2 x 2 samples a pixel
+        shell: bash
+        run: $CLI material-gallery --out m3s/gallery --size 256 --spp 2
+      - name: p0 to p3 the path-traced error (CPU, 128 spp, 8 bounces; and 1 bounce, recorded)
+        shell: bash
+        run: |
+          pe() { $CLI pt-error --threads 4 --spp 128 "$@" | tail -4; }
+          pe --raster m3s/control --owned-scene control-sphere --width 256 --height 160 --json m3s/pt-control.json
+          pe --raster m3s/control --owned-scene control-sphere --width 256 --height 160 --no-sun-pi --json m3s/pt-control-nopi.json
+          pe --raster m3s/hero --model assets/raw-hero.gltf --width 512 --height 320 --json m3s/pt-hero.json
+          pe --raster m3s/hall --owned-scene raw-hall-nave --width 512 --height 320 --json m3s/pt-hall.json
+          pe --raster m3s/hero --model assets/raw-hero.gltf --width 512 --height 320 --bounces 1 --json m3s/pt-hero-direct.json
+          pe --raster m3s/hall --owned-scene raw-hall-nave --width 512 --height 320 --bounces 1 --json m3s/pt-hall-direct.json
+      - name: The gate (p3 recorded, the rest gated)
+        shell: bash
+        run: $PY tests/gpu/m3_scenes_gate.py m3s --out m3s/summary.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: "m3-scenes-${{ matrix.adapter }}", path: "m3s/*.json\nm3s/*/gpu_certificate.json\nm3s/gallery/gallery.json\nm3s/hero/frame.png\nm3s/hall/frame.png\nm3s/*/frame.ppm", retention-days: 30 }

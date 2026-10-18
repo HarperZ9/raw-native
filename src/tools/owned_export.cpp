@@ -79,11 +79,16 @@ Scene inTestScene(const Asset& a, int w, int h) {
     }
     return s;
 }
+Camera hallCamera(bool gallery) {
+    Camera c;
+    c.fovy = 1.1f; c.aspect = 1.0f;
+    if (gallery) { c.eye = {-12.0f, 9.0f, 6.6f}; c.center = {4.0f, 5.0f, -4.0f}; }
+    else { c.eye = {-15.5f, 2.0f, 0.0f}; c.center = {10.0f, 5.5f, 0.0f}; }
+    return c;
+}
 Scene hallScene(const Asset& hall, bool gallery) {
     Scene s = toScene(hall);
-    s.camera.fovy = 1.1f; s.camera.aspect = 1.0f;
-    if (gallery) { s.camera.eye = {-12.0f, 9.0f, 6.6f}; s.camera.center = {4.0f, 5.0f, -4.0f}; }
-    else { s.camera.eye = {-15.5f, 2.0f, 0.0f}; s.camera.center = {10.0f, 5.5f, 0.0f}; }
+    s.camera = hallCamera(gallery);
     return s;
 }
 

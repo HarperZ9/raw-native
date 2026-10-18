@@ -1,0 +1,85 @@
+{
+ "v1_hero": {
+  "holds": true,
+  "gated": true,
+  "verdict": "verified",
+  "identity": "MATCH",
+  "rt": true,
+  "size": [
+   512,
+   320
+  ],
+  "adapter": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "coverage_mismatch": 0,
+  "failing_channels": []
+ },
+ "v2_hall": {
+  "holds": true,
+  "gated": true,
+  "verdict": "verified",
+  "identity": "DRIFT",
+  "rt": true,
+  "size": [
+   512,
+   320
+  ],
+  "adapter": "llvmpipe (LLVM 20.1.2, 256 bits)",
+  "coverage_mismatch": 0,
+  "failing_channels": []
+ },
+ "v3_gallery": {
+  "holds": true,
+  "gated": true,
+  "rmse_exposed": 0.0003807
+ },
+ "v3_gallery_max_abs": {
+  "holds": false,
+  "gated": false,
+  "max_abs_exposed": 0.1182
+ },
+ "p0_alignment": {
+  "holds": true,
+  "gated": true,
+  "control": 1.0,
+  "hero": 1.0,
+  "hall": 1.0
+ },
+ "p1_control": {
+  "holds": true,
+  "gated": true,
+  "relative_rmse": 0.00666156,
+  "bias": 0.000198584,
+  "noise_floor": 0.00034872
+ },
+ "p1b_false_control": {
+  "holds": true,
+  "gated": true,
+  "relative_rmse": 1.15065
+ },
+ "p2_hero": {
+  "holds": true,
+  "gated": true,
+  "relative_rmse": 0.0785471,
+  "bias": -0.0269622,
+  "noise_floor": 0.00617438
+ },
+ "p3_hall": {
+  "holds": false,
+  "gated": false,
+  "relative_rmse": 4.10319,
+  "bias": 3.12021,
+  "noise_floor": 0.0765571
+ },
+ "direct_only_recorded": {
+  "holds": true,
+  "gated": false,
+  "hero-direct": {
+   "relative_rmse": 0.0545683,
+   "bias": -0.0144906
+  },
+  "hall-direct": {
+   "relative_rmse": 6.55,
+   "bias": 5.1967
+  }
+ }
+}

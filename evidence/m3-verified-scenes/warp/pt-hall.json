@@ -1,0 +1,11 @@
+{
+ "schema": "raw-native.pt-error/1",
+ "scene": "raw-hall-nave",
+ "width": 512, "height": 320,
+ "spp": 128, "bounces": 8, "sun_pi": true, "ambient": 0.2,
+ "pixels_both_cover": 152233,
+ "coverage_agreement": 1.000000,
+ "mean_luminance_raster": 0.273464, "mean_luminance_pt": 0.0663715,
+ "relative_rmse": 4.10319, "bias": 3.12021, "noise_floor": 0.0765575,
+ "pt_ms": 43658.8
+}

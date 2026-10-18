@@ -1,6 +1,7 @@
 // The scene a run renders: see raw/tools/model_scene.hpp.
 #include "raw/tools/model_scene.hpp"
 #include "raw/assets/gltf.hpp"
+#include "raw/tools/owned_assets.hpp"
 #include <algorithm>
 #include <fstream>
 #include <iterator>
@@ -15,7 +16,28 @@ bool readFile(const std::string& path, std::vector<std::uint8_t>& out) {
 }
 }  // namespace
 
+Scene controlSphereScene() {
+    Scene s = buildTestScene(64, 64);
+    s.meshes.clear();
+    Mesh m; m.material.albedo = {0.6f, 0.6f, 0.6f};
+    const int nu = 64, nv = 48;
+    for (int j = 0; j <= nv; ++j)
+        for (int i = 0; i <= nu; ++i){
+            const double th = 3.14159265358979 * j / nv, ph = 6.28318530717959 * i / nu;
+            const Vec3 n{float(owned::dsin(th) * owned::dcos(ph)), float(owned::dcos(th)), float(owned::dsin(th) * owned::dsin(ph))};
+            m.positions.push_back(n); m.normals.push_back(n);
+        }
+    for (int j = 0; j < nv; ++j)
+        for (int i = 0; i < nu; ++i){
+            const int a = j * (nu + 1) + i, b = a + 1, d = a + nu + 1, e = d + 1;
+            for (int k : {a, d, b, b, d, e}) m.indices.push_back(k);
+        }
+    s.meshes.push_back(std::move(m));
+    return s;
+}
 Scene sceneFromParams(const CliParams& p, Arena* arena) {
+    if (p.ownedScene == "raw-hall-nave" || p.ownedScene == "raw-hall-gallery") return owned::hallScene(owned::hall(), p.ownedScene == "raw-hall-gallery");
+    if (p.ownedScene == "control-sphere") return controlSphereScene();
     Scene s = buildTestScene(p.width, p.height, arena);
     if (p.model.empty()) return s;
     std::vector<std::uint8_t> file;

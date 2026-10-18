@@ -28,6 +28,10 @@ struct CliParams {
     // (raw/tools/model_scene.hpp). The certificate records its file name and SHA-256.
     std::string model;
     std::string modelSha256;     // filled in when --model is parsed
+    // An owned scene by name in place of the test scene (--owned-scene; M3 criterion 1,
+    // evidence/m3-verified-scenes-bounds.json): raw-hall-nave, raw-hall-gallery or
+    // control-sphere. Its camera becomes the run's unless --eye, --target or --fovy say otherwise.
+    std::string ownedScene;
     // Previous camera for motion reprojection. Absent -> static frame (the
     // previous view equals the current view, so motion is honestly all-zero).
     std::optional<Vec3> prevEye;
@@ -41,6 +45,8 @@ struct CliParams {
 // Build a Camera from the params (aspect derived from width/height). The arena
 // is unused here; the camera is a plain value.
 Camera cameraFromParams(const CliParams& p);
+// The names --owned-scene takes, and each one's camera (eye, target, up, vertical field of view).
+bool ownedSceneCamera(const std::string& name, Vec3& eye, Vec3& target, Vec3& up, float& fovy);
 
 // Build the previous-frame camera used for motion reprojection. Any previous
 // field the caller omitted falls back to the corresponding current field, so a

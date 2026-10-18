@@ -1,0 +1,11 @@
+{
+ "what": "raw-native material gallery (M3)",
+ "size": 256,
+ "spp": 4,
+ "samples": 162908,
+ "ev100": 11,
+ "display": "agx/srgb",
+ "rows": ["gold, roughness", "red plastic, roughness", "car paint, clearcoat roughness", "velvet, sheen roughness", "brushed steel, anisotropy", "thin film, iridescence thickness", "glass, roughness (thin, then volume)"],
+ "cpu_wall_ms": 6735,
+ "gpu": {"backend": "vulkan", "adapter": "llvmpipe (LLVM 20.1.2, 256 bits)", "wall_ms": 21746.4, "rmse_exposed": 3.807e-04, "max_abs_exposed": 1.182e-01}
+}

@@ -1,6 +1,7 @@
 #include "raw/tools/cli_params.hpp"
 #include "raw/core/sha256.hpp"
 #include "raw/tools/model_manifest.hpp"
+#include "raw/tools/owned_assets.hpp"
 #include <fstream>
 #include <sstream>
 #include <cstdlib>
@@ -14,6 +15,15 @@ Camera cameraFromParams(const CliParams& p){
     c.fovy = p.fovy;
     c.aspect = p.height > 0 ? (float)p.width / (float)p.height : 1.0f;
     return c;
+}
+bool ownedSceneCamera(const std::string& name, Vec3& eye, Vec3& target, Vec3& up, float& fovy){
+    up = {0, 1, 0};
+    if (name == "raw-hall-nave" || name == "raw-hall-gallery"){
+        const Camera c = owned::hallCamera(name == "raw-hall-gallery");
+        eye = c.eye; target = c.center; fovy = c.fovy; return true;
+    }
+    if (name == "control-sphere"){ eye = {2.2f, 1.4f, 3.0f}; target = {0, 0, 0}; fovy = 0.9f; return true; }
+    return false;
 }
 Camera prevCameraFromParams(const CliParams& p){
     Camera c = cameraFromParams(p);
@@ -64,6 +74,7 @@ std::optional<CliParams> parseArgs(int argc, const char* const* argv, std::strin
     int i = 1;
     if (argc > 1 && argv[1][0] != '-'){ p.out = argv[1]; i = 2; }
     std::string role, modelsDir, manifest = "evidence/m3-scene-models.json";
+    bool cameraGiven = false;
     // --params is applied first so explicit flags can override the file.
     for (int j = i; j + 1 < argc; ++j){
         if (std::strcmp(argv[j], "--params") == 0){
@@ -82,7 +93,7 @@ std::optional<CliParams> parseArgs(int argc, const char* const* argv, std::strin
             if (!parseInt(v, p.width)){ err = "bad --width"; return std::nullopt; } }
         else if (a == "--height"){ const char* v = need(i); if (!v) return std::nullopt;
             if (!parseInt(v, p.height)){ err = "bad --height"; return std::nullopt; } }
-        else if (a == "--fovy"){ const char* v = need(i); if (!v) return std::nullopt;
+        else if (a == "--fovy"){ const char* v = need(i); if (!v) return std::nullopt; cameraGiven = true;
             if (!parseFloat(v, p.fovy)){ err = "bad --fovy"; return std::nullopt; } }
         else if (a == "--tolerance"){ const char* v = need(i); if (!v) return std::nullopt;
             if (!parseFloat(v, p.tolerance) || !(p.tolerance >= 0.0f)){ err = "bad --tolerance"; return std::nullopt; } }
@@ -95,9 +106,9 @@ std::optional<CliParams> parseArgs(int argc, const char* const* argv, std::strin
         else if (a == "--model"){ const char* v = need(i); if (!v) return std::nullopt;
             p.model = v; p.modelSha256 = sha256File(v);
             if (p.modelSha256.empty()){ err = std::string("cannot read --model ") + v; return std::nullopt; } }
-        else if (a == "--eye"){ const char* v = need(i); if (!v) return std::nullopt;
+        else if (a == "--eye"){ const char* v = need(i); if (!v) return std::nullopt; cameraGiven = true;
             if (!parseVec3(v, p.eye)){ err = "bad --eye (want x,y,z)"; return std::nullopt; } }
-        else if (a == "--target"){ const char* v = need(i); if (!v) return std::nullopt;
+        else if (a == "--target"){ const char* v = need(i); if (!v) return std::nullopt; cameraGiven = true;
             if (!parseVec3(v, p.center)){ err = "bad --target (want x,y,z)"; return std::nullopt; } }
         else if (a == "--up"){ const char* v = need(i); if (!v) return std::nullopt;
             if (!parseVec3(v, p.up)){ err = "bad --up (want x,y,z)"; return std::nullopt; } }
@@ -110,6 +121,7 @@ std::optional<CliParams> parseArgs(int argc, const char* const* argv, std::strin
         // M3: a model by role from the model manifest (evidence/m3-scene-models.json), so one
         // field of the manifest swaps it; needs --models, the directory the files live in.
         else if (a == "--model-role"){ const char* v = need(i); if (!v) return std::nullopt; role = v; }
+        else if (a == "--owned-scene"){ const char* v = need(i); if (!v) return std::nullopt; p.ownedScene = v; }
         else if (a == "--models"){ const char* v = need(i); if (!v) return std::nullopt; modelsDir = v; }
         else if (a == "--model-manifest"){ const char* v = need(i); if (!v) return std::nullopt; manifest = v; }
         else { err = "unknown flag: " + a; return std::nullopt; }
@@ -120,6 +132,12 @@ std::optional<CliParams> parseArgs(int argc, const char* const* argv, std::strin
         if (p.model.empty()) return std::nullopt;
         p.modelSha256 = sha256File(p.model);
         if (p.modelSha256.empty()){ err = "cannot read " + p.model + " (fetch it: python tools/assets/fetch_gltf.py DIR --manifest " + manifest + ")"; return std::nullopt; }
+    }
+    if (!p.ownedScene.empty()){
+        if (!p.model.empty()){ err = "--owned-scene and --model exclude each other"; return std::nullopt; }
+        Vec3 e, t, u; float f = 0;
+        if (!ownedSceneCamera(p.ownedScene, e, t, u, f)){ err = "unknown --owned-scene " + p.ownedScene + " (raw-hall-nave, raw-hall-gallery, control-sphere)"; return std::nullopt; }
+        if (!cameraGiven){ p.eye = e; p.center = t; p.up = u; p.fovy = f; }
     }
     if (p.width <= 0 || p.height <= 0){ err = "width/height must be positive"; return std::nullopt; }
     return p;
@@ -204,6 +222,7 @@ std::string canonicalParamsJson(const CliParams& p){
         const size_t slash = p.model.find_last_of("/\\");
         o += ",\"model\":{\"file\":\"" + p.model.substr(slash == std::string::npos ? 0 : slash + 1) + "\",\"sha256\":\"" + p.modelSha256 + "\"}";
     }
+    if (!p.ownedScene.empty()) o += ",\"owned_scene\":\"" + p.ownedScene + "\"";
     o += ",\"prev_eye\":" + cov(p.prevEye);
     o += ",\"prev_target\":" + cov(p.prevCenter);
     o += ",\"prev_up\":" + cov(p.prevUp);
