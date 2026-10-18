@@ -1,0 +1,36 @@
+name: post-4k
+# The post stack at 3840 x 2160 (tests/web/post_4k.py): a one-dimensional dispatch of 129,600 groups
+# is refused by WebGPU and leaves the frame black while the render reports success. And the render
+# tool's guards against that: GPU validation errors fail a render, and so do blank frames
+# (tests/web/motion_blank_check.py, with its black-clip control).
+on:
+  pull_request:
+    paths:
+      - 'web/shaders/**'
+      - 'web/motion/**'
+      - 'web/raw-gpu.mjs'
+      - 'web/frame-graph.mjs'
+      - 'scripts/motion_render.py'
+      - 'tests/web/post_4k.py'
+      - 'tests/web/motion_blank_check.py'
+      - 'web/test/post-4k.html'
+      - '.github/workflows/post-4k.yml'
+permissions:
+  contents: read
+jobs:
+  post-4k:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Tools (Playwright drives the installed Chrome; ffmpeg from imageio-ffmpeg)
+        run: python -m pip install playwright==1.58.0 imageio-ffmpeg==0.6.0
+      - name: dither, film and crt at 4K carry the image with no validation error, on the CPU adapter
+        run: python tests/web/post_4k.py --adapter swiftshader --out post-4k.json
+      - name: The blank-frame check fails a black clip and passes a pattern
+        run: python tests/web/motion_blank_check.py
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with: { name: post-4k, path: post-4k.json, retention-days: 30, if-no-files-found: ignore }

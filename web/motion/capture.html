@@ -72,6 +72,10 @@ try {
   const eng = await createEngine({ canvas: document.getElementById("c"), sceneUrl: new URL(q.get("scene"), location.href).href,
     shaders: q.get("shaders") ? new URL(q.get("shaders"), location.href).href : undefined });
   eng.resize(W, H);
+  // A GPU validation error (a refused dispatch, an invalid submission) is fatal to a render: a refused
+  // pass leaves frames black while everything else reports success (scripts/motion_render.py).
+  const gpuErrors = [];
+  eng.host.device.addEventListener("uncapturederror", (e) => gpuErrors.push(String((e.error && e.error.message) || e.error)));
   const from = +(q.get("from") || 0), to = q.has("to") ? +q.get("to") : Math.ceil(eng.scene.duration * fps);
   status({ ready: true, from, to, width: eng.size[0], height: eng.size[1], transport });
   // History layers (Threads) need the frames before `from` to look the same as a full run.
@@ -131,7 +135,8 @@ try {
     gpu_ms: eng.motion.timings(), adapter: eng.host.info, last: eng.motion.stats, encoded,
     duration: eng.scene.duration, title: eng.scene.title, chapters: eng.scene.chapters || [],
     vtt: typeof eng.scene.captions === "function" ? eng.scene.captions(eng.ctx) : null,
-    encoder_probe: probe, user_agent: navigator.userAgent, frame_hashes: hashing ? hashes : null };
+    encoder_probe: probe, user_agent: navigator.userAgent, frame_hashes: hashing ? hashes : null,
+    gpu_errors: gpuErrors.slice(0, 20), gpu_error_count: gpuErrors.length };
   await post("/done", JSON.stringify(stats));
   status({ done: true, stats });
 } catch (e) {

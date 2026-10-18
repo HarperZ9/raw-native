@@ -163,6 +163,27 @@ def encoder(ffmpeg: str, w: int, h: int, fps: int, codec: str, quality: int, out
     return cmd + ["-color_primaries", "bt709", "-color_trc", "bt709", "-colorspace", "bt709", "-movflags", "+faststart", str(out)]
 
 
+def blank_check(ffmpeg: str, out: Path, seconds: float, min_sd: float = 2.0) -> dict:
+    """Read the finished file back at a quarter, half and three quarters of its length and measure
+    each frame's luma standard deviation (8-bit, at 480 pixels wide). A render whose GPU passes were
+    refused still writes a valid, all-black file, so this is what proves the frames carry an image."""
+    import math
+    probes = []
+    for frac in (0.25, 0.5, 0.75):
+        t = max(0.0, seconds * frac)
+        r = subprocess.run([ffmpeg, "-loglevel", "error", "-ss", f"{t:.3f}", "-i", str(out), "-frames:v", "1",
+                            "-vf", "scale=480:-2,format=gray", "-f", "rawvideo", "-"], capture_output=True)
+        px = r.stdout
+        if r.returncode or not px:
+            probes.append({"t": round(t, 3), "sd": None, "error": r.stderr.decode(errors="replace")[-200:]})
+            continue
+        mean = sum(px) / len(px)
+        sd = math.sqrt(max(0.0, sum(v * v for v in px) / len(px) - mean * mean))
+        probes.append({"t": round(t, 3), "mean": round(mean, 2), "sd": round(sd, 2)})
+    ok = all(p.get("sd") is not None and p["sd"] >= min_sd for p in probes)
+    return {"min_sd": min_sd, "probes": probes, "pass": ok}
+
+
 def mux(ffmpeg: str, video: Path, out: Path, audio: str | None, score: str | None, score_db: float, seconds: float) -> dict:
     """Mix the narration (and the score under it) sample-exactly with tools/media/audio_mix.py,
     to exactly the video's length, and lay the mix on the video as AAC. Returns the mix's
@@ -219,6 +240,8 @@ def main(argv=None) -> int:
     ap.add_argument("--codec", default="hevc_nvenc", help="ffmpeg encoder for --transport raw; png writes one lossless still (see scripts/motion_still.py)")
     ap.add_argument("--quality", type=int, default=19, help="cq for NVENC, crf for x264/x265 (--transport raw)")
     ap.add_argument("--ffmpeg")
+    ap.add_argument("--allow-blank", action="store_true",
+                    help="skip the blank-frame check (a scene that is meant to be one flat colour)")
     ap.add_argument("--channel", default="chrome")
     ap.add_argument("--adapter", choices=["gpu", "swiftshader"], default="gpu",
                     help="swiftshader: Chrome's CPU WebGPU adapter, for machines with no GPU (CI)")
@@ -282,6 +305,10 @@ def main(argv=None) -> int:
     if sink.error or sink.stats.get("error"):
         print("FAILED:", sink.error or sink.stats.get("error"), file=sys.stderr)
         return 1
+    if sink.stats.get("gpu_error_count"):
+        print(f"FAILED: the page reported {sink.stats['gpu_error_count']} GPU validation error(s), first: "
+              f"{(sink.stats.get('gpu_errors') or ['?'])[0]}", file=sys.stderr)
+        return 1
     if a.transport == "webcodecs":
         fmt = "h264" if a.wc_codec.startswith("avc1") else "hevc" if a.wc_codec.startswith(("hvc1", "hev1")) else None
         if not fmt:
@@ -299,7 +326,12 @@ def main(argv=None) -> int:
         sink.stats["frame_chain_sha256"] = hashlib.sha256("".join(hashes).encode()).hexdigest()
     stats = {**sink.stats, "wall_seconds": round(time.time() - t0, 1), "width": a.width, "height": a.height, "fps": a.fps,
              "transport": a.transport, "audio": audio_record}
+    if a.codec != "png" and frames:
+        stats["blank_check"] = blank_check(ffmpeg, out, frames / a.fps) if not a.allow_blank else {"skipped": "--allow-blank"}
     Path(str(out) + ".stats.json").write_text(json.dumps(stats, indent=1), encoding="utf-8")
+    if not stats.get("blank_check", {}).get("pass", True):
+        print("FAILED: blank frames:", json.dumps(stats["blank_check"]["probes"]), file=sys.stderr)
+        return 1
     print(json.dumps({k: stats[k] for k in ("frames", "frame_ms_median", "frame_ms_p95", "wall_seconds") if k in stats}))
     return 0
 
