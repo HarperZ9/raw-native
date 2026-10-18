@@ -13,6 +13,11 @@ Buffer<Vec3> shade(const GBuffer& g, const Buffer<float>& ao, const Scene& s, Ar
 // 8-bit frame. Background (unmasked) pixels are {0,0,0}.
 Buffer<Vec3> shadeHDR(const GBuffer& g, const Buffer<float>& ao, const Scene& s, Arena* arena = nullptr);
 
+// Lighting model 2 (evidence/m3-lighting-v2-bounds.json): albedo x (0.2 x sky + li max(0, n.l) x sun),
+// sky and sun from computeRTVisibility. shadeV2 clamps to [0,1]; shadeHDRV2 does not.
+Buffer<Vec3> shadeV2(const GBuffer& g, const Buffer<float>& sky, const Buffer<float>& sun, const Scene& s, Arena* arena = nullptr);
+Buffer<Vec3> shadeHDRV2(const GBuffer& g, const Buffer<float>& sky, const Buffer<float>& sun, const Scene& s, Arena* arena = nullptr);
+
 // Reinhard tonemap of a single linear radiance value: L_d = L / (1 + L).
 // Monotonic on [0, inf), maps 0 -> 0, and maps any finite L >= 0 into [0,1).
 float tonemapReinhard(float L);

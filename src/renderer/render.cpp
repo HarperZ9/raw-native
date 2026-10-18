@@ -12,6 +12,7 @@
 #include "raw/graph/frame_graph.hpp"
 #include <cstdio>
 #include <cstdlib>
+#include <cstring>
 #include <utility>
 namespace raw {
 namespace {
@@ -23,12 +24,18 @@ struct Res { graph::Resource G, RT, SS, REC, FR, HDR; };
 // scene and the options by reference (the caller owns them) and the arena
 // pointer by value.
 void addAoPasses(graph::FrameGraph& g, const Res& x, FrameResult& r, const Scene& scene, int w, int h,
-                 Arena* arena, const RenderOptions& opts){
+                 Arena* arena, const RenderOptions& opts, Buffer<float>& sky, Buffer<float>& sun){
     const Access R = Access::StorageRead, W = Access::StorageWrite;
     if (opts.rtao)
-        g.addPass("rtao", {{x.G, R}, {x.RT, W}}, [&r, &scene, &opts, arena](graph::PassContext&){
+        g.addPass("rtao", {{x.G, R}, {x.RT, W}}, [&r, &scene, &opts, arena, &sky, &sun](graph::PassContext&){
             LinearAccel accel; accel.build(scene, arena);
-            r.aoRT = computeRTAO(r.g, accel, kRtSamples, kAoRadius, arena, opts.threads);
+            if (lightingModel(opts) == 2){
+                const Vec3 toLight = (scene.lights.empty() ? Vec3{0,-1,0} : scene.lights[0].dir) * -1.0f;
+                r.aoRT = Buffer<float>(arena);
+                computeRTVisibility(r.g, accel, kRtSamples, kAoRadius, toLight, r.aoRT, sky, sun, opts.threads, lightingNoSun());
+            } else {
+                r.aoRT = computeRTAO(r.g, accel, kRtSamples, kAoRadius, arena, opts.threads);
+            }
         });
     g.addPass("ssao", {{x.G, R}, {x.SS, W}}, [&r, &opts, arena](graph::PassContext&){
         r.aoSS = computeSSAO(r.g, kSsSamples, kAoRadius, arena, opts.threads);
@@ -47,6 +54,17 @@ void addAoPasses(graph::FrameGraph& g, const Res& x, FrameResult& r, const Scene
 }
 }  // namespace
 
+int lightingModel(const RenderOptions& o){
+    if (!o.rtao) return 1;
+    const char* v = std::getenv("RAW_NATIVE_LIGHTING");
+    if (v && std::strcmp(v, "v1") == 0) return 1;
+    if (v && (std::strcmp(v, "v2") == 0 || std::strcmp(v, "v2-nosun") == 0)) return 2;
+    return o.lighting == 1 ? 1 : 2;
+}
+bool lightingNoSun(){
+    const char* v = std::getenv("RAW_NATIVE_LIGHTING");
+    return v && std::strcmp(v, "v2-nosun") == 0;
+}
 FrameResult renderWithParams(const Scene& scene, int w, int h,
                              const Mat4& prevViewProj, Arena* arena,
                              const RenderOptions& opts){
@@ -56,14 +74,16 @@ FrameResult renderWithParams(const Scene& scene, int w, int h,
                 g.createHost("reconcile"), g.createHost("frame"), g.createHost("hdr")};
     const Access R = Access::StorageRead, W = Access::StorageWrite;
     g.addPass("raster", {{x.G, W}}, [&](graph::PassContext&){ r.g = rasterize(scene, w, h, arena); });
-    addAoPasses(g, x, r, scene, w, h, arena, opts);
+    Buffer<float> sky(arena), sun(arena);   // lighting model 2's visibility, filled by the rtao pass
+    addAoPasses(g, x, r, scene, w, h, arena, opts, sky, sun);
     const graph::Resource lightRes = opts.rtao ? x.RT : x.SS;
     const Buffer<float>& lightAO = opts.rtao ? r.aoRT : r.aoSS;
+    const bool model2 = lightingModel(opts) == 2;
     g.addPass("shade", {{x.G, R}, {lightRes, R}, {x.FR, W}}, [&](graph::PassContext&){
-        r.frame = shade(r.g, lightAO, scene, arena);     // human view: clamped [0,1]
+        r.frame = model2 ? shadeV2(r.g, sky, sun, scene, arena) : shade(r.g, lightAO, scene, arena);     // human view: clamped [0,1]
     });
     g.addPass("shade_hdr", {{x.G, R}, {lightRes, R}, {x.HDR, W}}, [&](graph::PassContext&){
-        r.hdr = shadeHDR(r.g, lightAO, scene, arena);    // model view: unclamped HDR
+        r.hdr = model2 ? shadeHDRV2(r.g, sky, sun, scene, arena) : shadeHDR(r.g, lightAO, scene, arena);    // model view: unclamped HDR
     });
     // Motion vectors by reprojection against the previous view-projection; they
     // are written into the G-buffer's motion plane.

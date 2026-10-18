@@ -15,6 +15,32 @@ static Vec3 radianceAt(const GBuffer& g, const Buffer<float>& ao, int x, int y,
     Vec3 alb = g.albedo.at(x,y);
     return { alb.x*lit, alb.y*lit, alb.z*lit };
 }
+static Vec3 radianceV2(const GBuffer& g, const Buffer<float>& sky, const Buffer<float>& sun, int x, int y,
+                       Vec3 ldir, float li){
+    Vec3 n = g.normal.at(x,y);
+    float ndl = std::max(0.0f, dot(n, ldir*-1.0f)) * li;
+    float lit = 0.2f * sky.at(x,y) + ndl * sun.at(x,y);
+    Vec3 alb = g.albedo.at(x,y);
+    return { alb.x*lit, alb.y*lit, alb.z*lit };
+}
+static Buffer<Vec3> shadeModel2(const GBuffer& g, const Buffer<float>& sky, const Buffer<float>& sun, const Scene& s,
+                                Arena* arena, bool clamp){
+    Buffer<Vec3> img(arena); img.resize(g.w,g.h);
+    Vec3 ldir = s.lights.empty() ? Vec3{0,-1,0} : s.lights[0].dir;
+    float li = s.lights.empty() ? 1.0f : s.lights[0].intensity;
+    for (int y=0;y<g.h;++y) for (int x=0;x<g.w;++x){
+        if (!g.mask.at(x,y)){ img.at(x,y)={0,0,0}; continue; }
+        Vec3 r = radianceV2(g, sky, sun, x, y, ldir, li);
+        img.at(x,y) = clamp ? Vec3{std::clamp(r.x,0.0f,1.0f), std::clamp(r.y,0.0f,1.0f), std::clamp(r.z,0.0f,1.0f)} : r;
+    }
+    return img;
+}
+Buffer<Vec3> shadeV2(const GBuffer& g, const Buffer<float>& sky, const Buffer<float>& sun, const Scene& s, Arena* arena){
+    return shadeModel2(g, sky, sun, s, arena, true);
+}
+Buffer<Vec3> shadeHDRV2(const GBuffer& g, const Buffer<float>& sky, const Buffer<float>& sun, const Scene& s, Arena* arena){
+    return shadeModel2(g, sky, sun, s, arena, false);
+}
 Buffer<Vec3> shade(const GBuffer& g, const Buffer<float>& ao, const Scene& s, Arena* arena){
     Buffer<Vec3> img(arena); img.resize(g.w,g.h);
     Vec3 ldir = s.lights.empty() ? Vec3{0,-1,0} : s.lights[0].dir;

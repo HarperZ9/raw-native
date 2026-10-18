@@ -181,6 +181,9 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 // the tree's order, 9 floats each (evidence/m3-gpu-ao-bvh-bounds.json).
 @group(0) @binding(6) var<storage, read> nodes: array<f32>;
 @group(0) @binding(7) var<storage, read> btris: array<f32>;
+// Lighting model 2 (evidence/m3-lighting-v2-bounds.json), when P.misc.z is 2: aoRT holds three planes
+// of w x h floats, the AO, then the sky (the fraction of the samples with no hit at any distance),
+// then the sun (1 when the ray towards the light hits nothing). The read-back takes the first plane.
 
 fn triVert(t: u32, k: u32) -> vec3f {
     let b: u32 = t * TRI_STRIDE + 3u * k;
@@ -276,7 +279,12 @@ fn bvhBlocked(o: vec3f, d: vec3f, maxDist: f32) -> bool {
 fn main(@builtin(global_invocation_id) gid: vec3u) {
     if (gid.x >= P.w || gid.y >= P.h) { return; }
     let i: u32 = pix(gid.x, gid.y);
-    if (albedoMask[i].w == 0.0) { aoRT[i] = 1.0; return; }
+    let plane: u32 = P.w * P.h;
+    if (albedoMask[i].w == 0.0) {
+        aoRT[i] = 1.0;
+        if (P.misc.z == 2.0) { aoRT[plane + i] = 1.0; aoRT[2u * plane + i] = 1.0; }
+        return;
+    }
     let p: vec3f = position[i].xyz;
     let n: vec3f = normal[i].xyz;
     var ax: vec3f = vec3f(1.0, 0.0, 0.0);
@@ -285,6 +293,8 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     let bb: vec3f = vcross(n, tb);
     let origin: vec3f = p + n * 1e-3;
     var open: u32 = 0u;
+    var free: u32 = 0u;
+    let model2: bool = P.misc.z == 2.0;
     for (var s: u32 = 0u; s < P.rt_samples; s++) {
         let u1: f32 = hash01(gid.x, gid.y, 2u * s);
         let u2: f32 = hash01(gid.x, gid.y, 2u * s + 1u);
@@ -300,9 +310,26 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
         } else {
             blocked = scanBlocked(origin, dir, P.misc.x);
         }
-        if (!blocked) { open++; }
+        if (!blocked) {
+            open++;
+            if (model2) {
+                // Blocked within the AO radius is blocked for the sky too; only open rays go on.
+                var far: bool = false;
+                if (P.rt_bvh == 1u) { far = bvhBlocked(origin, dir, 1e30); } else { far = scanBlocked(origin, dir, 1e30); }
+                if (!far) { free++; }
+            }
+        }
     }
     aoRT[i] = f32(open) / f32(P.rt_samples);
+    if (model2) {
+        let toLight: vec3f = vnorm(P.light.xyz * -1.0);
+        var shadow: bool = false;
+        if (P.misc.w != 1.0) {
+            if (P.rt_bvh == 1u) { shadow = bvhBlocked(origin, toLight, 1e30); } else { shadow = scanBlocked(origin, toLight, 1e30); }
+        }
+        aoRT[plane + i] = f32(free) / f32(P.rt_samples);
+        aoRT[2u * plane + i] = select(1.0, 0.0, shadow);
+    }
 }
 
 //@pass shade
@@ -323,7 +350,12 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     let n: vec3f = normal[i].xyz;
     let ldir: vec3f = P.light.xyz;
     let ndl: f32 = max(0.0, vdot(n, ldir * -1.0)) * P.light.w;
-    let lit: f32 = (0.2 + ndl) * ao[i];
+    var lit: f32 = (0.2 + ndl) * ao[i];
+    if (P.misc.z == 2.0) {
+        // Lighting model 2: ao is the rtao pass's buffer, whose second and third planes are sky and sun.
+        let plane: u32 = P.w * P.h;
+        lit = 0.2 * ao[plane + i] + ndl * ao[2u * plane + i];
+    }
     let rgb: vec3f = vec3f(am.x * lit, am.y * lit, am.z * lit);
     hdr[i] = vec4f(rgb, 0.0);
     frame[i] = vec4f(clamp(rgb, vec3f(0.0), vec3f(1.0)), 0.0);
