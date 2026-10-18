@@ -14,6 +14,7 @@
 #include "raw/tools/hw_cmd.hpp"
 #include "raw/tools/swr_cmd.hpp"
 #include "raw/tools/pt_cmd.hpp"
+#include "raw/tools/model_scene.hpp"
 #include "raw/tools/sdf_cmd.hpp"
 #include "raw/tools/hw_rayquery_cmd.hpp"
 #include "raw/tools/rr_cmd.hpp"
@@ -107,6 +108,8 @@ static const char* kUsage =
     "         math, async compute, timestamps); --checks runs the functional checks behind it\n"
     "       raw_native_cli swr-render [--out DIR] [--cpu-only]\n"
     "         raw-native's own rasterizer on its owned scenes, modern and retro modes; PNG and JSON\n"
+    "       raw_native_cli pt-error --raster DIR [scene flags] [--spp N] [--bounces B] [--json FILE]\n"
+    "         the rasterised frame in DIR against a path-traced reference of the same scene (M3 criterion 1)\n"
     "       raw_native_cli rt-pathtrace [--scene S] [--width W] [--height H] [--spp N] [--seed S] [--out DIR] [--cpu]\n"
     "         path-traced radiance and AOVs (albedo, normal, depth, motion, variance, triangle) of an\n"
     "         owned scene, interface v1 (raw/renderer/rt_pathtrace.hpp); PFM, PNG and JSON\n"
@@ -176,6 +179,7 @@ int main(int argc, char** argv){
     if (argc >= 2 && std::strcmp(argv[1], "hw-probe") == 0) return hwProbeCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "swr-render") == 0) return swrRenderCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "rt-pathtrace") == 0) return ptCommand(argc - 1, argv + 1);
+    if (argc >= 2 && std::strcmp(argv[1], "pt-error") == 0) return ptErrorCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "sdf-render") == 0) return sdfRenderCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "hw-rayquery") == 0) return hwRayQueryCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "rr-render") == 0) return rrRenderCommand(argc - 1, argv + 1);
@@ -295,7 +299,7 @@ int main(int argc, char** argv){
         sizeof(float) + 3*sizeof(Vec3) + sizeof(std::uint8_t)   // gbuffer: depth+nrm/pos/alb+mask
         + sizeof(Vec2)                                          // gbuffer: motion plane
         + 3*sizeof(float) + 2*sizeof(Vec3);                     // aoRT + aoSS + errorMap + frame + hdr
-    // The per-pixel bound covers the built-in scene. A --model scene also holds the model's
+    // The per-pixel bound covers the built-in scene. A --model or --owned-scene scene also holds the model's
     // geometry and its acceleration structure, so the measure slab doubles until the
     // render fits (up to 4 GiB, 2 GiB on WebAssembly); pass 2 still runs in exactly the measured footprint.
     std::size_t slabUB = (std::size_t)W*H*PER_PIXEL_UPPER*2 + (1u<<20), Hbytes = 0;
@@ -306,7 +310,7 @@ int main(int argc, char** argv){
         catch (const std::bad_alloc&){
             // The cap: 4 GiB, or 2 GiB where size_t is 32 bits (WebAssembly), where 1 << 32 would wrap to 0.
             constexpr std::size_t CAP = sizeof(std::size_t) > 4 ? std::size_t(1) << (sizeof(std::size_t) > 4 ? 32 : 0) : std::size_t(1) << 31;
-            if (p.model.empty() || slabUB >= CAP / 2){
+            if ((p.model.empty() && p.ownedScene.empty()) || slabUB >= CAP / 2){
                 std::printf("measure pass overflowed slab - raise PER_PIXEL_UPPER\n"); return 2; }
             slabUB *= 2;
         }

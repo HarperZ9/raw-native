@@ -8,4 +8,10 @@
 #include "raw/tools/cli_params.hpp"
 namespace raw {
 Scene sceneFromParams(const CliParams& p, Arena* arena);
+// The control scene of evidence/m3-verified-scenes-bounds.json: one UV sphere (radius 1, 64 x 48
+// quads, albedo 0.6) alone under the test scene's light. Convex and alone, so the raster's
+// ambient-times-AO and unshadowed sun are exact there.
+Scene controlSphereScene();
+// raw_native_cli pt-error: the rasterised frame against a path-traced reference (src/tools/pt_error_cmd.cpp).
+int ptErrorCommand(int argc, char** argv);
 }

@@ -40,6 +40,8 @@ Scene inTestScene(const Asset& a, int w, int h);
 // raw-hall from inside: the nave camera at eye height looking down the arcade, lit by the sun
 // through the open atrium. near: the gallery camera, closer to columns, arches and drapery.
 Scene hallScene(const Asset& hall, bool gallery = false);
+// hallScene's camera alone (no geometry is built).
+Camera hallCamera(bool gallery);
 // glTF 2.0: the JSON text and its single binary buffer (written as <name>.bin beside it).
 std::string exportGltf(const Asset& a, std::vector<uint8_t>& bin);
 
