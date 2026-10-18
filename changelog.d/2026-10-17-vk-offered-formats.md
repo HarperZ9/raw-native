@@ -1,0 +1,1 @@
+- **Vulkan swapchain refusals name the offer.** When a surface offers no format and colour space for a swapchain request, the error lists every pair it does offer (for example `B8G8R8A8_UNORM/SRGB_NONLINEAR`), so a skipped HDR10 run records what the driver offered.
