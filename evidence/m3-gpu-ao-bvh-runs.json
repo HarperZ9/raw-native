@@ -1,0 +1,29 @@
+{
+ "schema": "raw-native.runs/1",
+ "bounds": "evidence/m3-gpu-ao-bvh-bounds.json (15c7210, before any code or run)",
+ "ci": "workflow .github/workflows/gpu-ao-oracle.yml, run 39078770453 (PR #182): WARP on windows-latest and lavapipe on ubuntu-24.04",
+ "date": "2026-10-17 (UTC)",
+ "results": {
+  "s1_oracle_gpu": {
+   "result": "holds",
+   "observed": "With --gpu, BVH against RAW_NATIVE_AO_ORACLE=scan, every output file identical on both adapters: quick identity matrix 90 of 90 files, the ten glTF models 180 of 180."
+  },
+  "s2_goldens": {
+   "result": "holds",
+   "observed": "The lavapipe GPU golden (evidence/n3-identity-golden-vulkan-lavapipe.json) compares equal. The main CI's GPU checks (d3d12 on WARP, vulkan-linux, the WebGPU module on SwiftShader in wasm) are green on the PR."
+  },
+  "s3_control": {
+   "result": "holds",
+   "observed": "The skew control changes 54 files of the quick identity matrix on each adapter. It changes none of the glTF models' files; the bound was on the identity matrix, and those models have no occluder between 99% and 100% of the AO radius at their pixels."
+  },
+  "s4_overflow": {
+   "result": "holds",
+   "observed": "tests/test_bvh_flatten.cpp: the deepest stack is 3 (test scene), 16 (raw-hero, 111,136 triangles) and 19 (raw-hall, 586,424 triangles), against the pass's 64; a CPU walk of the flattened arrays equals the scan on 23,400 rays."
+  },
+  "s5_cost": {
+   "result": "recorded",
+   "observed": "raw-hero at 320 x 200, rt on, total GPU time of the --gpu run: lavapipe 5.6 s (BVH) against 516 s (scan), about 93 times; WARP 78.8 s against 4,232 s, about 54 times. Both runs are verified with identity MATCH (the GPU frame equals the CPU frame byte for byte), and the BVH and scan AO files are identical."
+  }
+ },
+ "does_not_prove": "Anything on a hardware GPU; that the AO estimate is right; anything about the raster pass, which still tests every triangle per pixel."
+}
