@@ -1,0 +1,35 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Pixel art at 4K</title>
+<!-- Perspective-stable pixel art at 3840 x 2160 (tests/web/post_4k.py --page pixel-4k.html). The
+     splat buffers are cleared one u32 per pixel in 64-wide groups: 129,600 groups at 4K, over
+     WebGPU's 65,535 a dimension if dispatched in one dimension, so the clear is refused and the
+     frame comes out wrong while the frame loop reports success. The frame must carry the image
+     (8-bit standard deviation of at least 2) and the device must report no validation error. -->
+<script type="module">
+import { createHost } from "../raw-gpu.mjs";
+import { createGpuPixel } from "../shaders/pixel/gpu.mjs";
+
+const W = 3840, H = 2160;
+async function run() {
+  const host = await createHost({ timing: false }), errors = [];
+  host.device.addEventListener("uncapturederror", (e) => errors.push(String((e.error && e.error.message) || e.error)));
+  const res = { adapter: (host.adapter.info && host.adapter.info.description) || "", size: [W, H], cases: [] };
+  const px = await createGpuPixel(host, { N: 96 }, { w: W, h: H });
+  // Two frames from one probe cell, as the parity page's orbit views (pixel.mjs frame loop).
+  for (const a of [0.6, 0.603]) px.frame({ eye: [6.5 * Math.sin(a), 4.2, 6.5 * Math.cos(a)], target: [0, 0.6, 0], fovy: 0.75 });
+  await host.done();   // let the frame finish (or fail) before the readback; mapAsync can stall behind a refused submit
+  const got = (await px.read()).packed;
+  px.destroy();
+  let n = 0, sum = 0, sum2 = 0;
+  for (let y = 0; y < H; y += 16) for (let x = 0; x < W; x += 16) {
+    const o = 4 * (y * W + x), c = Math.round(0.2126 * got[o] + 0.7152 * got[o + 1] + 0.0722 * got[o + 2]);
+    n++; sum += c; sum2 += c * c;
+  }
+  const mean = sum / n, sd = Math.sqrt(Math.max(0, sum2 / n - mean * mean));
+  res.cases.push({ pass: "pixel", mean, sd, errors: errors.slice(0, 5) });
+  host.device.destroy();
+  return res;
+}
+run().then((r) => { window.__result = r; }, (e) => { window.__result = { error: String(e && e.stack || e) }; });
+</script>

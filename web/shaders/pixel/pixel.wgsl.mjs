@@ -96,9 +96,11 @@ export const SPLATID_WGSL = CAM + /* wgsl */ `
 @group(0) @binding(3) var<storage, read_write> idb: array<atomic<u32>>;
 @compute @workgroup_size(64) fn main(@builtin(global_invocation_id) id: vec3u) {` + SPLAT_BODY.replace("WRITE", "if (atomicLoad(&zb[p]) == z) { atomicMin(&idb[p], k); }") + "}";
 
+// One u32 a pixel, dispatched in rows of 32,768 groups (gpu.mjs groups64): a 4K frame needs 129,600
+// groups, over WebGPU's 65,535 a dimension (web/test/pixel-4k.html).
 export const CLEAR_WGSL = /* wgsl */ `
 @group(0) @binding(1) var<storage, read_write> a: array<u32>;
-@compute @workgroup_size(64) fn main(@builtin(global_invocation_id) id: vec3u) { _ = P[0]; if (id.x < arrayLength(&a)) { a[id.x] = 0xffffffffu; } }`;
+@compute @workgroup_size(64) fn main(@builtin(global_invocation_id) id: vec3u) { _ = P[0]; let i = id.x + id.y * 2097152u; if (i < arrayLength(&a)) { a[i] = 0xffffffffu; } }`;
 
 export const RESOLVE_WGSL = /* wgsl */ `
 @group(0) @binding(1) var<storage, read> col0: array<vec4f>;
