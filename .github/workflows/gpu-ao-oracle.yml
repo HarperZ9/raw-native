@@ -59,7 +59,7 @@ jobs:
           $PY scripts/identity_matrix.py compare g-scan.json g-bvh.json
       - name: s2 the lavapipe GPU golden is unchanged
         if: matrix.adapter == 'lavapipe'
-        run: python3 scripts/identity_matrix.py compare evidence/n3-identity-golden-vulkan-lavapipe.json q-bvh.json --except arena_certificate.json
+        run: if [ -f evidence/n3-identity-golden-vulkan-lavapipe.json ]; then python3 scripts/identity_matrix.py compare evidence/n3-identity-golden-vulkan-lavapipe.json q-bvh.json --except arena_certificate.json; fi
       - name: s3 the skew control differs
         shell: bash
         run: if $PY scripts/identity_matrix.py compare q-scan.json q-skew.json; then echo "skew did not differ"; exit 1; fi

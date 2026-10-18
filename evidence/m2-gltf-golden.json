@@ -3,7 +3,7 @@
   "model-Avocado": {
    "args": [
     "--model",
-    "<models>/Models/Avocado/glTF-Binary/Avocado.glb",
+    "/root/lv2-out/gltf-models/Models/Avocado/glTF-Binary/Avocado.glb",
     "--width",
     "128",
     "--height",
@@ -26,7 +26,7 @@
   "model-BarramundiFish": {
    "args": [
     "--model",
-    "<models>/Models/BarramundiFish/glTF-Binary/BarramundiFish.glb",
+    "/root/lv2-out/gltf-models/Models/BarramundiFish/glTF-Binary/BarramundiFish.glb",
     "--width",
     "128",
     "--height",
@@ -49,7 +49,7 @@
   "model-Box": {
    "args": [
     "--model",
-    "<models>/Models/Box/glTF-Embedded/Box.gltf",
+    "/root/lv2-out/gltf-models/Models/Box/glTF-Embedded/Box.gltf",
     "--width",
     "128",
     "--height",
@@ -72,7 +72,7 @@
   "model-BoxInterleaved": {
    "args": [
     "--model",
-    "<models>/Models/BoxInterleaved/glTF-Binary/BoxInterleaved.glb",
+    "/root/lv2-out/gltf-models/Models/BoxInterleaved/glTF-Binary/BoxInterleaved.glb",
     "--width",
     "128",
     "--height",
@@ -95,7 +95,7 @@
   "model-Fox": {
    "args": [
     "--model",
-    "<models>/Models/Fox/glTF-Binary/Fox.glb",
+    "/root/lv2-out/gltf-models/Models/Fox/glTF-Binary/Fox.glb",
     "--width",
     "128",
     "--height",
@@ -118,7 +118,7 @@
   "model-Lantern": {
    "args": [
     "--model",
-    "<models>/Models/Lantern/glTF-Binary/Lantern.glb",
+    "/root/lv2-out/gltf-models/Models/Lantern/glTF-Binary/Lantern.glb",
     "--width",
     "128",
     "--height",
@@ -141,7 +141,7 @@
   "model-SciFiHelmet": {
    "args": [
     "--model",
-    "<models>/Models/SciFiHelmet/glTF/SciFiHelmet.gltf",
+    "/root/lv2-out/gltf-models/Models/SciFiHelmet/glTF/SciFiHelmet.gltf",
     "--width",
     "128",
     "--height",
@@ -164,7 +164,7 @@
   "model-Suzanne": {
    "args": [
     "--model",
-    "<models>/Models/Suzanne/glTF/Suzanne.gltf",
+    "/root/lv2-out/gltf-models/Models/Suzanne/glTF/Suzanne.gltf",
     "--width",
     "128",
     "--height",
@@ -187,7 +187,7 @@
   "model-ToyCar": {
    "args": [
     "--model",
-    "<models>/Models/ToyCar/glTF-Binary/ToyCar.glb",
+    "/root/lv2-out/gltf-models/Models/ToyCar/glTF-Binary/ToyCar.glb",
     "--width",
     "128",
     "--height",
@@ -210,7 +210,7 @@
   "model-WaterBottle": {
    "args": [
     "--model",
-    "<models>/Models/WaterBottle/glTF-Binary/WaterBottle.glb",
+    "/root/lv2-out/gltf-models/Models/WaterBottle/glTF-Binary/WaterBottle.glb",
     "--width",
     "128",
     "--height",
@@ -231,6 +231,6 @@
    }
   }
  },
- "cli_version": "raw-native 0.7.0",
+ "cli_version": "raw-native 0.8.0",
  "gpu": false
 }
