@@ -13,14 +13,18 @@ float area(const AABB& b) {
 }
 AABB unite(AABB a, const AABB& b) { a.grow(b.mn); a.grow(b.mx); return a; }
 float axis(Vec3 v, int k) { return k == 0 ? v.x : k == 1 ? v.y : v.z; }
-// Slab test: the entry distance, or +inf when the ray misses the box before tMax.
+// Slab test: the entry distance, or +inf when the ray misses the box before tMax. The exit is
+// widened by 1 + 2 gamma(3) (Ize 2013, robust BVH traversal), so float rounding never rejects a box
+// the triangle test would hit in: a flat box (a floor quad) under a grazing ray far away is the case
+// that showed it (lighting model 2's sky rays, evidence/m3-lighting-v2-bounds.json). A wider exit only
+// adds visits; every answer is still the triangle test's.
 float entry(const AABB& b, Vec3 o, Vec3 inv, float tMax) {
     float t0 = 0.0f, t1 = tMax;
     for (int k = 0; k < 3; ++k) {
         const float i = axis(inv, k), a = (axis(b.mn, k) - axis(o, k)) * i, c = (axis(b.mx, k) - axis(o, k)) * i;
         t0 = std::max(t0, std::min(a, c)); t1 = std::min(t1, std::max(a, c));
     }
-    return t0 <= t1 ? t0 : std::numeric_limits<float>::infinity();
+    return t0 <= t1 * 1.0000008f ? t0 : std::numeric_limits<float>::infinity();
 }
 Vec3 inverse(Vec3 d) {
     const auto f = [](float x) { return x != 0.0f ? 1.0f / x : std::copysign(std::numeric_limits<float>::infinity(), x); };
