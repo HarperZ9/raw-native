@@ -1,0 +1,58 @@
+{
+ "criterion": "Path tracer interface v3 (docs/rt-interface-v3.md): punctual lights, an environment on escape and the full glTF material model in the CPU path tracer, so that M3 criterion 1's last piece, the material gallery's path-traced error, can be measured.",
+ "written": "2026-10-21, before any v3 code. The v2 hash test (c1) was written and run on main first to record the hashes it pins.",
+ "design": "docs/rt-interface-v3.md. CPU only; the GPU path tracer refuses a scene with any v3 field.",
+ "checks": {
+  "c1_v2_unchanged": {
+   "what": "tests/test_rt_pt_v2_hashes.cpp: the FNV-1a hash of every output of retro_room, iso_street, dense_block and the furnace (48 x 32, 4 spp, 4 bounces, seed 7) against the hashes recorded on main c819792 before v3, per compiler family (GCC, MSVC); and the same bytes at 1 and 3 threads. The existing test_rt_pt and the GPU path tracer parity checks also run unchanged",
+   "bound": "every hash equal",
+   "prediction": "holds: a v2 scene never enters a v3 branch"
+  },
+  "c2_punctual": {
+   "what": "a Lambert floor (v2 material, specular 0, albedo a) under one point light at height h, no sky, 1 bounce, the pixel looking straight down at the foot of the light; then a spot light and a directional light",
+   "bound": "radiance within 1e-4 relative of a / pi x E, with E from lighting::illuminance",
+   "prediction": "holds"
+  },
+  "c3_env_furnace": {
+   "what": "the furnace's closed box replaced by an open white Lambert sphere (albedo 1) inside a uniform environment of radiance 1, 64 bounces, no roulette",
+   "bound": "mean pixel radiance within 4 standard errors + 2e-3 of 1; the control envMisWeightOne must exceed 1.3",
+   "prediction": "holds; the control gives about 2"
+  },
+  "c4_env_mis_unbiased": {
+   "what": "a Lambert quad and a rough metal quad (roughness 0.5) under the procedural sky cube (with its 1e5-nit sun disk), 1 bounce: the MIS estimate against the escape-only estimate (control switch envNoNee, unbiased and noisier), one pixel, 2^16 samples each",
+   "bound": "the two means within 4 combined standard errors",
+   "prediction": "holds"
+  },
+  "c5_families_uniform": {
+   "what": "one quad per family at roughness at least 0.3 (dielectric, metal, clearcoat, sheen, anisotropy 0.8, iridescence, thin transmission, volume transmission with no attenuation), uniform environment of radiance 1, 1 bounce, a view at 40 degrees: the pixel against an independent quadrature of pbr::eval |cos| over the whole sphere (2^22 stratified uniform directions, its own standard error)",
+   "bound": "within 4 combined standard errors + 1e-3",
+   "prediction": "holds for every family"
+  },
+  "c5b_families_sky": {
+   "what": "the same quads (non-transmissive families) under the procedural sky cube against lighting::shadeIblReference at the quad's centre with 2^16 samples a strategy",
+   "bound": "within 3% relative",
+   "prediction": "holds; the reference's own noise is not known, so the bound is loose"
+  },
+  "c6_volume_beer": {
+   "what": "a glass box (volume, roughness 0.05, attenuation colour 0.5 over 1 m) seen at normal incidence through thicknesses 0.25 and 0.75 m against a uniform environment",
+   "bound": "the ratio of the two radiances within 2% of 0.5^0.5",
+   "prediction": "holds"
+  },
+  "c7_gpu_refuses": {
+   "what": "pathTraceGpu on a scene with lights, an environment or full materials",
+   "bound": "returns an error naming the v3 fields; v2 scenes on the GPU unchanged (rt_pt_parity in CI)",
+   "prediction": "holds"
+  },
+  "c8_gallery_pt_error": {
+   "what": "raw_native_cli material-gallery --pt: the gallery's CPU raster frame (exposed) against the path tracer v3 on the same scene (49 spheres tessellated 128 x 64, the three lights, the sky cube, the materials), 256 x 256, pixels fully covered by the raster and hit at the centre by the tracer, luminance",
+   "bound": "relative RMSE at most 0.6 (the bound raw-hero carries, p2 of evidence/m3-verified-scenes-bounds.json); coverage agreement at least 0.99; the control (environment scaled by pi in the tracer) must exceed 0.6",
+   "prediction": "relative RMSE 0.2 to 0.5, low confidence: the raster has no interreflection, no occlusion of the sky by neighbouring spheres and a one-interface model of the glass spheres, so the glass row is predicted to carry most of the error; per-row figures recorded, not gated"
+  }
+ },
+ "does_not_prove": "That the v3 tracer is correct for scenes unlike these checks (caustics through near-specular glass converge slowly and are not checked); anything on a GPU; that the split-sum raster is the right model (c8 measures how far it is from light transport).",
+ "addendum_A": {
+  "written": "2026-10-21, after development runs of c8 and before the recorded run; no bound changed",
+  "what_was_seen": "A first comparison traced jittered samples over each pixel. Three raster pixels dominated the error (raster 42.5, 19.7 and 15.5 against the tracer's 1.6, 1.7 and 0.3): sub-pixel highlights of the spot light on near-mirror lobes that the raster's 2 x 2 point samples catch and a pixel-area average spreads. Tessellation from 64 x 32 to 512 x 256 a sphere left the error unchanged (1.79 to 1.82), so it is not the mesh. Coverage, counted as 'any raster sub-sample' against 'the tracer's centre', agreed on 0.976 of pixels: edge pixels differ by definition.",
+  "what_changes": "The tracer renders at twice the size, unjittered, so each tracer pixel centre is one of the raster's sub-sample points, and 2 x 2 blocks are averaged: both sides sample the same points and the measure is shading, not the sample pattern. Coverage agreement counts a pixel as agreeing when both sides cover the same number of its sub-samples. A per-row diagnostic is added beside the measure (not gated): the split sum's own error, shadeIbl against shadeIblReference on every 32nd sample without occlusion or interreflection, for the non-transmissive rows (the reference integrates the upper hemisphere only)."
+ }
+}

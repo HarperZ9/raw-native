@@ -3,6 +3,7 @@
 #include "raw/renderer/rt_scenes.hpp"
 #include "raw/renderer/swr_scenes.hpp"
 #include "swr_builder.hpp"
+#include "rt_pt_v3.hpp"
 #include <cmath>
 namespace raw::rt {
 namespace {
@@ -35,12 +36,14 @@ void finishPtScene(PtScene& s) {
     s.tree = buildPloc(tris);
     s.emitters.clear(); s.emitterCdf.clear(); s.emitterArea = 0.0f;
     for (std::size_t t = 0; t < tris.size(); ++t) {
-        const Vec3 e = s.materials[s.geo.triTexture[t]].emission;
+        Vec3 e = s.materials[s.geo.triTexture[t]].emission;
+        if (!s.fullMaterials.empty()) e = v3::f3(pbr::emission(s.fullMaterials[s.geo.triTexture[t]]));   // v3
         if (e.x <= 0.0f && e.y <= 0.0f && e.z <= 0.0f) continue;
         s.emitterArea += 0.5f * length(cross(tris[t].b - tris[t].a, tris[t].c - tris[t].a));
         s.emitters.push_back(std::uint32_t(t));
         s.emitterCdf.push_back(s.emitterArea);
     }
+    v3::finish(s);
 }
 
 PtScene ptRetroRoom() {
