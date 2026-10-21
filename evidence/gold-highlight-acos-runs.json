@@ -1,0 +1,23 @@
+{
+ "bounds": "evidence/gold-highlight-acos-bounds.json",
+ "branch": "fix/gold-highlight-acos (PR #189)",
+ "runs": {
+  "diagnosis": "WSL Ubuntu 24.04, llvmpipe (LLVM 20.1.2, 256 bits), scratch tree at 32b214d with per-factor dump switches (not committed), nice 19, 2026-10-21",
+  "local_fix": "the same build with this branch's pbr_shade.hlsl and pbr_eval.hlsl dropped in (the gallery's files are identical between 32b214d and c819792)",
+  "ci": "m3-scenes run 39621490682 (warp and lavapipe jobs), CI run 39621490530"
+ },
+ "checks": {
+  "a1_gallery_lavapipe": {"result": "holds", "observed": "CI: rmse_exposed 3.983e-6, max_abs_exposed 0.001162 (bounds 5e-4 and 0.05). Before: 3.81e-4 and 0.118. Local: the same figures; samples more than 0.2% off the reference: 62 before, 0 after."},
+  "a2_gallery_warp": {"result": "holds", "observed": "CI: rmse_exposed 4.08e-6, max_abs_exposed 0.001162. Before (run 39091643080): 5.27e-5 and 0.0226. WARP's residual came from the same place: its acos is also less accurate than the polynomial. I predicted at or below 0.0226 with moderate confidence; it fell by a factor of 19."},
+  "a3_gate": {"result": "holds", "observed": "m3_scenes_gate.py gates v3_gallery_max_abs; both adapters pass it. The stock shader's lavapipe value (0.118, run 39091643080) is above the bound, so the gated check fails on main's shader."},
+  "a4_acos_unit": {"result": "holds", "observed": "test_acos_table: float64 worst 2.18e-8 (bound 3e-8), float32 worst 2.30e-7 (bound 1e-5), control 2.08e-4 (must exceed 1e-5). Against main's pbr.wgsl the test fails: no acos_table to read."},
+  "a5_parity": {"result": "see CI", "observed": "the material and lighting parity steps of ci.yml (d3d12 job on WARP, vulkan-linux on lavapipe) on this branch"},
+  "a6_rtx": {"result": "not run", "observed": "The session could not release D:/gpu.lock.d: a safety check refuses removing that directory, so it did not take the lock and ran nothing on the RTX 4090. The stock binary is staged for a later run."}
+ },
+ "diagnosis_figures": {
+  "per_factor": "spec weight worst relative 7.6e-6; lookup radiance 271 samples over 1e-3, worst 1.6%; dominant direction up to 1.56e-4; Dom table read GPU 1.26277 against CPU 1.26292 at n.v 0.303; division 0 ulp; Newton-refined division no change",
+  "acos_llvmpipe": "max 1.561e-4 rad at n.v 0.308, mean 6.0e-5",
+  "acos_polynomial_in_shader": "max 5.7e-6 rad at n.v 0.99997, mean 6.9e-8"
+ },
+ "does_not_prove": "That no other built-in transcendental matters elsewhere (post.wgsl GTAO, sdf.wgsl and style.wgsl still call acos); anything about the RTX 4090's acos."
+}

@@ -12,6 +12,7 @@ on:
       - 'src/tools/model_scene.cpp'
       - 'src/tools/cli_params.cpp'
       - 'tests/gpu/m3_scenes_gate.py'
+      - 'src/renderer/gpu/shaders/pbr.wgsl'
       - 'evidence/m3-verified-scenes-*'
       - '.github/workflows/m3-scenes.yml'
 permissions:

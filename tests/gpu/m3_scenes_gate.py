@@ -6,8 +6,10 @@
 DIR holds one adapter's run (.github/workflows/m3-scenes.yml): hero/, hall/, control/ (each a --gpu
 render with gpu_certificate.json), gallery/gallery.json, and pt-*.json from raw_native_cli pt-error.
 Every check of the bounds file is evaluated and written to the summary. The exit code gates on
-v1, v2, v3's RMSE, p0, p1, p1b and p2. Recorded with their bounds' verdicts, not gated: p3
-(raw-hall's path-traced error, addendum A) and v3's max_abs (addendum B). Exit 0 when the gated checks hold, 1 otherwise.
+v1, v2, v3's RMSE and max_abs, p0, p1, p1b and p2. Recorded with its bound's verdict, not gated: p3
+(raw-hall's path-traced error, addendum A). v3's max_abs was recorded only (addendum B) until its lavapipe
+miss was traced to llvmpipe's acos and fixed (evidence/gold-highlight-acos-bounds.json, 2026-10-21); it is gated
+again. Exit 0 when the gated checks hold, 1 otherwise.
 """
 import json
 import sys
@@ -54,7 +56,7 @@ def main(a):
     r["p2_hero"] = pt["hero"].get("relative_rmse", 9) <= 0.6, {k: pt["hero"].get(k) for k in ("relative_rmse", "bias", "noise_floor")}
     r["p3_hall"] = pt["hall"].get("relative_rmse", 99) <= 2.0, {k: pt["hall"].get(k) for k in ("relative_rmse", "bias", "noise_floor")}
     r["direct_only_recorded"] = True, {k: {m: pt[k].get(m) for m in ("relative_rmse", "bias")} for k in ("hero-direct", "hall-direct")}
-    gated = ("v1_hero", "v2_hall", "v3_gallery", "p0_alignment", "p1_control", "p1b_false_control", "p2_hero")
+    gated = ("v1_hero", "v2_hall", "v3_gallery", "v3_gallery_max_abs", "p0_alignment", "p1_control", "p1b_false_control", "p2_hero")
     summary = {k: {"holds": bool(v[0]), "gated": k in gated, **v[1]} for k, v in r.items()}
     for k, v in summary.items():
         print(f"  {'holds' if v['holds'] else 'MISSES'}{'' if v['gated'] else ' (recorded)'}: {k} {json.dumps({x: y for x, y in v.items() if x not in ('holds', 'gated')})}")

@@ -1,0 +1,29 @@
+{
+ "criterion": "ROADMAP.md M3 criterion 1, the gallery piece: v3's max_abs bound (evidence/m3-verified-scenes-bounds.json, 0.05 exposed) missed on lavapipe at 0.118 (addendum B). This step names the cause and fixes it.",
+ "written": "2026-10-21, after the diagnosis runs (scratch, WSL lavapipe) and before any repository code change",
+ "diagnosis": {
+  "how": "A scratch copy of 32b214d (WSL, not committed) wrote one factor of the GPU image-lighting term per gallery sample beside the float64 CPU value, with the CPU-prefiltered cube on both sides (RAW_NATIVE_GALLERY_CPUPRE). 162,908 samples, 256 px, 2 x 2 samples a pixel, llvmpipe (LLVM 20.1.2, 256 bits).",
+  "observed": {
+   "split_sum_scale": "spec weight (DFG scale): worst relative difference 7.6e-6 on every sample. Not the cause.",
+   "lookup_radiance": "env_rough along the dominant direction: 271 samples over 1e-3 relative, worst 1.6%. Carries the miss.",
+   "lookup_direction": "dominant direction differs by up to 1.56e-4 (vector norm); cube face u, v by up to 1.1e-4. On the 3-degree, 1e5-nit sun disk at roughness 0.05 that moves the bilinear tap enough to give 0.5% to 1% radiance.",
+   "dominant_angle": "Tables::Dom read: GPU 1.26277 against CPU 1.26292 at n.v 0.303 (difference 1.56e-4 rad); the worst difference over all samples matches the direction difference at every roughness bin.",
+   "division": "the GPU quotient of its own operands equals the float-rounded exact quotient on all 162,908 samples (0 ulp). Not the cause. A Newton-refined division in cube_face left the frame at max_abs 0.1182.",
+   "acos": "llvmpipe acos(n.v) against std::acos: max 1.561e-4 rad (at n.v 0.308), mean 6.0e-5. The table read's theta axis is acos(n.v), and the Dom table's slope carries that error into the elevation angle one for one.",
+   "acos_polynomial": "Abramowitz and Stegun 4.4.46 (sqrt(1 - x) times a degree-7 polynomial, |error| at most 2e-8 in exact arithmetic; 2.2e-8 checked in float64 over 200,001 points) evaluated in the shader: max 5.7e-6 rad (at n.v 0.99997, from float 1 - x), mean 6.9e-8.",
+   "frame_with_polynomial": "scratch shader with the polynomial in theta_x: max_abs_exposed 1.162e-3, rmse_exposed 3.98e-6 (CPU-prefiltered cube); 1.162e-3 and 3.98e-6 with the GPU prefilter. Stock on the same build: 0.1182 and 3.807e-4."
+  },
+  "earlier_rejections": "renderer-next steps 64 to 74: SPIR-V and translation (SwiftShader 0.033, WARP 0.023), vector width, LLVM optimisation, FMA contraction, the GPU prefilter and sin/cos in dominant() were each ruled out."
+ },
+ "cause": "llvmpipe's acos is accurate to about 1.6e-4 rad (the Vulkan and WGSL precision rules for acos are loose; llvmpipe meets them). theta_x() in src/renderer/gpu/shaders/pbr.wgsl reads every (theta, roughness) table through acos(n.v), so the dominant-direction elevation is off by up to 1.6e-4 rad, and the near-mirror gold highlight on the steep sun gradient turns that into the 1% miss.",
+ "change": "theta_x uses acos_table(): the A&S 4.4.46 polynomial, written out in WGSL, translated by scripts/wgsl_to_hlsl.py like every other function. The CPU reference keeps std::acos. No other acos in the shaders changes in this step (post.wgsl GTAO, sdf.wgsl, style.wgsl are separate passes; style.wgsl belongs to the port work).",
+ "checks": {
+  "a1_gallery_lavapipe": {"what": "raw_native_cli_vk material-gallery --size 256 --spp 2 on lavapipe (m3-scenes workflow v3)", "bound": "rmse_exposed at most 5e-4 and max_abs_exposed at most 0.05 (the v3 bound, unchanged)", "prediction": "holds: about 1.2e-3 and 4e-6 (from the scratch run), high confidence"},
+  "a2_gallery_warp": {"what": "the same on WARP (m3-scenes workflow v3)", "bound": "the same", "prediction": "holds; max_abs at or below 0.0226 (WARP's acos error, unknown, can only shrink), moderate confidence"},
+  "a3_gate": {"what": "tests/gpu/m3_scenes_gate.py gates v3_gallery_max_abs again (addendum B is withdrawn for this bound)", "bound": "the gate fails on the stock shader's lavapipe gallery.json (0.118) and passes on the fixed one", "prediction": "holds"},
+  "a4_acos_unit": {"what": "tests/test_acos_table.cpp: the polynomial's coefficients read from pbr.wgsl, evaluated in float32 and float64 over 100,001 points of [0, 1], against std::acos", "bound": "float64 evaluation within 3e-8; float32 evaluation within 1e-5; a control with one coefficient perturbed by 1e-3 exceeds 1e-5", "prediction": "holds"},
+  "a5_parity": {"what": "the existing material and lighting parity checks on WARP (ci.yml gpu_pbr_parity, gpu_lighting_parity) and lavapipe", "bound": "their committed verdicts unchanged", "prediction": "holds"},
+  "a6_rtx": {"what": "material-gallery --size 256 --spp 2 on the RTX 4090 (D3D12), stock main and the fix, under D:/gpu.lock.d", "bound": "recorded, not gated: the v3 bound's verdict both times", "prediction": "holds both times; hardware acos error unknown"}
+ },
+ "does_not_prove": "That no other llvmpipe transcendental matters elsewhere; that the split-sum model is accurate (the CPU reference uses the same model, so this check measures implementation agreement, not light transport); anything about acos on hardware other than the adapters run."
+}
