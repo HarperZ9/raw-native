@@ -1,0 +1,13 @@
+{
+ "what": "raw-native sphere-field",
+ "size": 256,
+ "width": 256, "height": 160,
+ "cpu_frame_fnv": "cc1e8139a6e5bbc9",
+ "spp": 4,
+ "samples": 144892,
+ "ev100": 11,
+ "display": "agx/srgb",
+ "rows": ["gold", "copper", "red plastic", "white ceramic", "car paint (clearcoat)", "velvet (sheen)", "brushed steel (anisotropy)", "thin film (iridescence)", "thin glass", "volume glass (absorbing)", "warm emissive", "mirror and black rubber", "ground"],
+ "cpu_wall_ms": 1491.93,
+ "gpu": null
+}

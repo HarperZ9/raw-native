@@ -1,0 +1,17 @@
+{
+ "criterion": "ROADMAP dated proposal P10 (2026-10-21): a sphere-field showcase and regression scene covering the material set, with a reference image, the raster frame's error against path tracer v3 stated against a bound written first, and frame times.",
+ "written": "2026-10-21, before any sphere-field code and before any run",
+ "design": {
+  "scene": "24 spheres (radius 0.55) on a ground plane (y = -1.6, a rough grey dielectric) in four rows at depths 6 to 13.5 m, seen by a level camera at the origin looking along -z (so world space is the lighting reference's view space). Twelve looks, each twice with a second parameter: gold, copper, red plastic, white ceramic, car paint (clearcoat), velvet (sheen), brushed steel (anisotropy), thin film (iridescence 300 and 700 nm), thin glass, volume glass with absorption, a warm emissive sphere, and a near-mirror / black rubber pair. Lit by the gallery's procedural sky cube and a low warm sun (directional light).",
+  "where": "gallery::buildField in src/renderer/gallery_field.cpp beside the material gallery (same Gallery type, so the float64 shading, the GPU pbr_shade pass and the path-traced comparison all apply); raw_native_cli material-gallery --field",
+  "thin_film_note": "Thin-film iridescence is already a material term (KHR_materials_iridescence, pbr.hpp, path tracer v3); the field exercises it at two thicknesses rather than adding a term."
+ },
+ "checks": {
+  "f1_coverage": {"what": "every one of the 12 looks and the ground appear in the frame at 256 x 160", "bound": "each covers at least 100 fully covered pixels", "prediction": "holds"},
+  "f2_regression": {"what": "tests/test_sphere_field.cpp: the CPU frame at 96 x 60, 1 sample a pixel, hashed (FNV-1a over the exposed floats) and pinned per compiler family (GCC, MSVC), recorded on this branch's first build", "bound": "the hash equals the pinned value", "prediction": "holds"},
+  "f3_gpu_parity": {"what": "the GPU pbr_shade pass against the float64 frame on WARP and lavapipe (CI), and the RTX 4090 (D3D12, under the shared GPU lock)", "bound": "the gallery's v3 bound: rmse_exposed at most 5e-4, max_abs_exposed at most 0.05", "prediction": "holds on all three now that the table read uses the polynomial acos"},
+  "f4_pt_error": {"what": "material-gallery --field --pt: the raster frame against path tracer v3 at the raster's own sample points, 256 x 160, 2 x 2 samples a pixel", "bound": "relative RMSE at most 0.6 (the hero's bound); coverage agreement at least 0.99; the control (environment x pi) must exceed 0.6", "prediction": "misses, moderate confidence: the raster has no shadows, so the spheres' contact shadows and the sun's cast shadows on the ground are pure error; I expect 0.6 to 0.9, carried by the ground"},
+  "f5_frame_times": {"what": "wall time of the float64 CPU frame, the GPU shading pass (RTX 4090 and WARP) and the path-traced reference, at 256 x 160", "bound": "recorded, not gated", "prediction": "GPU pass under 10 ms on the 4090 for the shading dispatch; the measured wall time includes table and environment upload"}
+ },
+ "does_not_prove": "That the raster is right where it differs from light transport (f4 measures how far it is); real-time frame rates of a full renderer (only the shading pass is timed); anything about a laptop GPU (none available)."
+}

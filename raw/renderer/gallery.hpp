@@ -32,8 +32,26 @@ struct Gallery {
     std::vector<Rgb> background;                    // exposed sky radiance per pixel (misses)
     std::vector<int> hits;                          // samples that landed in each pixel
     double exposure{1};
+    double fovy{kFovy};
+    std::string name{"material-gallery"};
+    // The geometry again, for the path-traced comparison (raw/tools/gallery_pt.hpp): the spheres,
+    // an optional ground plane, and each sample's group (the gallery: its row; the sphere field:
+    // its look; the ground is the last group).
+    struct Sphere { lighting::D3 centre; double radius{1}; pbr::Material m; int group{0}; };
+    std::vector<Sphere> spheres;
+    bool ground{false};
+    lighting::D3 groundQuad[4];                    // view space, counter-clockwise seen from its front
+    lighting::D3 groundNormal{0, 1, 0};
+    pbr::Material groundMaterial;
+    std::vector<int> group;                         // per sample
+    std::vector<std::string> groupLabels;
 };
 Gallery build(int width, int height, int spp);
+// The sphere field (ROADMAP P10, evidence/p10-sphere-field-bounds.json): 24 spheres in twelve looks
+// on a ground plane under the sky cube and a low sun, seen from above and in front. Everything a
+// sample carries (and the sky cube, the light, the spheres and the ground) is in view space, the
+// space lighting.hpp works in; the tangent rule is normalize(cross(n, +Y)) there, as in path tracer v3.
+Gallery buildField(int width, int height, int spp);
 // Material of the sphere at row, column (also what the media pages label).
 pbr::Material sphereMaterial(int row, int col, std::string* label = nullptr);
 // Exposed linear radiance per pixel from per-sample exposed radiance (sphere hits and the
