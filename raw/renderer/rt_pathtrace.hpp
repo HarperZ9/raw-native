@@ -1,9 +1,12 @@
 #pragma once
-// raw-native's path tracer, interface version 2 (RT stage R2, evidence/rt-r2-bounds.json).
+// raw-native's path tracer, interface version 3 (RT stage R2, evidence/rt-r2-bounds.json; v3,
+// docs/rt-interface-v3.md and evidence/rt-v3-bounds.json).
 //
 // Stable contract for its consumers: the hardware session (reference and training data for
 // learned ray reconstruction) and the shader lab (stylisation from its buffers). Any change
-// bumps kPathTraceVersion and is announced in the RT session's PROGRESS.md before it merges.
+// bumps kPathTraceVersion and is announced before it merges: in the RT session's PROGRESS.md
+// when one is running, otherwise in a dated design note under docs/ (v3: docs/rt-interface-v3.md).
+// Every v2 scene (no v3 field set) renders byte for byte as under v2.
 //
 // Determinism: the same scene, tree, seed, spp, sppBegin and size give the same bytes on one
 // backend. Random numbers are counter-based (PCG2D, Jarzynski and Olano, JCGT 2020) keyed by
@@ -36,14 +39,25 @@
 //   specularAlbedo  RGB, the mean over primary samples of F0 + (1 - F0)(1 - cos_o)^5 where the
 //             specular lobe exists, else 0: a demodulation estimate, not a directional albedo
 //   diffuseVariance, specularVariance  as variance, of each component's luminance
+//
+// Added in v3 (docs/rt-interface-v3.md; CPU only, the GPU tracer refuses a scene that sets any):
+//   lights        punctual lights in KHR_lights_punctual units, by next-event estimation with a
+//                 shadow ray (lighting::illuminance)
+//   environment   a radiance cube read on escape in place of sky, importance-sampled by luminance
+//                 and MIS-weighted (power heuristic) against BSDF sampling
+//   fullMaterials the glTF model of raw/renderer/pbr.hpp (clearcoat, sheen, anisotropy,
+//                 iridescence, transmission thin and volume), one per texture id, in float64;
+//                 tangent normalize(cross(n, +Y)); volumes traced with Beer-Lambert inside
+#include "raw/renderer/lighting.hpp"
 #include "raw/renderer/rt_bvh.hpp"
 #include "raw/renderer/swr.hpp"
 #include <cstdint>
+#include <memory>
 #include <string>
 #include <vector>
 namespace raw::rt {
 
-inline constexpr int kPathTraceVersion = 2;
+inline constexpr int kPathTraceVersion = 3;
 
 struct PtMaterial {
     float baseFactor{1.0f};   // base colour = texel / 255 * baseFactor
@@ -65,7 +79,17 @@ struct PtScene {
     std::vector<std::uint32_t> emitters;
     std::vector<float> emitterCdf;            // inclusive running area
     float emitterArea{0};
+    // v3 (all empty in a v2 scene).
+    std::vector<lighting::Light> lights;      // punctual, world space
+    lighting::Cube environment;               // level 0 used; empty rgb: none (sky as in v2)
+    std::vector<pbr::Material> fullMaterials; // one per texture id; empty: materials as in v2
+    // Made by finishPtScene: the environment's texel CDF (luminance x solid angle) and the tables.
+    std::vector<double> envCdf;
+    double envTotal{0};
+    std::shared_ptr<const pbr::Tables> tables;
 };
+// True when the scene sets any v3 field.
+bool usesV3(const PtScene& s);
 struct PtCamera { Vec3 eye{0, 0, 5}, target{0, 0, 0}, up{0, 1, 0}; float fovy{1.0f}; };
 
 // Debug and control switches; all false for a normal render.
@@ -74,6 +98,8 @@ struct PtControls {
     bool misWeightOne{false};        // P2 control: both strategies weighted 1 (double counting)
     bool aovDropSpecularIndirect{false};   // P5a and P5c control: specular loses its paths after the first hit
     bool aovEmissionToDiffuse{false};      // P5b control: primary emission and sky go to diffuse
+    bool envMisWeightOne{false};           // v3 c3 control: both environment strategies weighted 1
+    bool envNoNee{false};                  // v3 c4: the environment only on escape (unbiased, noisier)
 };
 
 struct PathTraceDesc {
@@ -102,7 +128,7 @@ struct PathTraceOutput {
     std::string error;
 };
 
-// Build the tree (CPU PLOC), the emitter list and its CDF.
+// Build the tree (CPU PLOC), the emitter list and its CDF; for v3, the environment CDF and tables.
 void finishPtScene(PtScene& s);
 // Owned scenes, lit: retro_room (a ceiling lamp and the sun through the open end), iso_street
 // (sun and sky), dense_block (sun and sky), and the furnace box (emission E and albedo a on

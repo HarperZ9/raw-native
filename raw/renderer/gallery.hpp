@@ -16,6 +16,10 @@ using lighting::Rgb;
 
 inline constexpr int kRows = 7, kCols = 7;
 inline constexpr double kEv100 = 11.0;
+// The layout: the camera at the origin looking along -z, +y up, vertical field of view kFovy;
+// sphere (row, col) of radius kRadius at sphereCentre (the path-traced comparison rebuilds it).
+inline constexpr double kRadius = 0.47, kSpacing = 1.05, kDepth = 11.0, kFovy = 0.66;
+inline lighting::D3 sphereCentre(int row, int col) { return {(col - 3) * kSpacing, (3 - row) * kSpacing, -kDepth}; }
 
 struct Gallery {
     int width{0}, height{0}, spp{1};               // spp: samples per pixel along each axis (spp x spp)

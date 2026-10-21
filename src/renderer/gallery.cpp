@@ -8,8 +8,7 @@ namespace raw::gallery {
 namespace {
 using lighting::D3;
 D3 unit(D3 a) { const double l = std::sqrt(a.x * a.x + a.y * a.y + a.z * a.z); return {a.x / l, a.y / l, a.z / l}; }
-constexpr double kRadius = 0.47, kSpacing = 1.05, kDepth = 11.0, kFovy = 0.66;
-D3 centre(int row, int col) { return {(col - 3) * kSpacing, (3 - row) * kSpacing, -kDepth}; }
+D3 centre(int row, int col) { return sphereCentre(row, col); }
 std::vector<lighting::Light> lights() {
     using lighting::Light; using lighting::LightType;
     const D3 mid = centre(3, 3);

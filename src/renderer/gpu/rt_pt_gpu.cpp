@@ -68,6 +68,10 @@ std::vector<std::uint32_t> params(const rt::PtScene& s, const rt::PathTraceDesc&
 rt::PathTraceOutput pathTraceGpu(rhi::Device& device, const rt::PtScene& s, const rt::PathTraceDesc& d, std::uint32_t slice) {
     rt::PathTraceOutput O;
     O.width = d.width; O.height = d.height; O.spp = d.spp;
+    if (rt::usesV3(s)) {   // docs/rt-interface-v3.md: v3 is CPU-only for now
+        O.error = "path tracer interface v3 fields (lights, environment, fullMaterials) are CPU-only; pathTraceGpu takes v2 scenes";
+        return O;
+    }
     Dev D{device, O.error, passTable(pt_passes::kPasses)};
     slice = std::max<std::uint32_t>(1, slice);
     const Packed p = pack(s);

@@ -4,6 +4,7 @@
 #include "raw/renderer/colour.hpp"
 #include "raw/renderer/lighting_parity.hpp"
 #include "raw/tools/image_out.hpp"
+#include "raw/tools/gallery_pt.hpp"
 #include <algorithm>
 #include <chrono>
 #include <cmath>
@@ -26,17 +27,24 @@ double msSince(Clock::time_point t) { return std::chrono::duration<double, std::
 int galleryCommand(int argc, char** argv) {
     std::string out = "gallery";
     int size = 512, spp = 2;
-    bool gpu = true;
+    bool gpu = true, pt = false;
+    gallery::PtErrorDesc ptd;
     for (int i = 1; i < argc; ++i) {
         if (!std::strcmp(argv[i], "--out") && i + 1 < argc) out = argv[++i];
         else if (!std::strcmp(argv[i], "--size") && i + 1 < argc) size = std::atoi(argv[++i]);
         else if (!std::strcmp(argv[i], "--spp") && i + 1 < argc) spp = std::atoi(argv[++i]);
         else if (!std::strcmp(argv[i], "--cpu-only")) gpu = false;
-        else { std::printf("usage: raw_native_cli material-gallery [--out DIR] [--size N] [--spp K] [--cpu-only]\n"); return 2; }
+        else if (!std::strcmp(argv[i], "--pt")) pt = true;
+        else if (!std::strcmp(argv[i], "--pt-spp") && i + 1 < argc) ptd.spp = std::atoi(argv[++i]);
+        else if (!std::strcmp(argv[i], "--pt-bounces") && i + 1 < argc) ptd.bounces = std::atoi(argv[++i]);
+        else if (!std::strcmp(argv[i], "--pt-tess") && i + 2 < argc) { ptd.nu = std::atoi(argv[++i]); ptd.nv = std::atoi(argv[++i]); }
+        else if (!std::strcmp(argv[i], "--pt-env-pi")) ptd.envScale = 3.14159265358979323846;
+        else if (!std::strcmp(argv[i], "--threads") && i + 1 < argc) ptd.threads = std::atoi(argv[++i]);
+        else { std::printf("usage: raw_native_cli material-gallery [--out DIR] [--size N] [--spp K] [--cpu-only] [--pt [--pt-spp N] [--pt-bounces B] [--pt-env-pi] [--pt-tess NU NV]] [--threads T]\n"); return 2; }
     }
-    if (size < 16 || size > 4096 || spp < 1 || spp > 8) { std::printf("material-gallery: --size 16..4096, --spp 1..8\n"); return 2; }
+    if (size < 16 || size > 4096 || spp < 1 || spp > 8 || ptd.spp < 1 || ptd.bounces < 1 || ptd.nu < 8 || ptd.nv < 4) { std::printf("material-gallery: --size 16..4096, --spp 1..8, --pt-spp and --pt-bounces at least 1\n"); return 2; }
     std::filesystem::create_directories(out);
-    const int threads = int(std::max(1u, std::thread::hardware_concurrency()));
+    const int threads = ptd.threads > 0 ? ptd.threads : int(std::max(1u, std::thread::hardware_concurrency()));
     const auto t0 = Clock::now();
     gallery::Gallery g = gallery::build(size, size, spp);
     if (std::getenv("RAW_NATIVE_GALLERY_NOLIGHTS")) g.lights.clear();   // diagnosis: image lighting alone
@@ -46,6 +54,13 @@ int galleryCommand(int argc, char** argv) {
     const std::vector<Rgb> cpu = gallery::shadeCpu(g, tables, pre, threads);
     const double cpuMs = msSince(t0);
     if (!writeImages(out + "/gallery-cpu", size, size, gallery::resolve(g, cpu))) { std::printf("material-gallery: cannot write %s\n", out.c_str()); return 2; }
+    if (pt) {   // the path-traced error (evidence/rt-v3-bounds.json c8)
+        std::vector<Rgb> img;
+        const std::string pj = gallery::ptError(g, cpu, tables, pre, ptd, img);
+        writeImages(out + "/gallery-pt", size, size, img);
+        std::ofstream(out + "/gallery-pt.json", std::ios::binary) << pj;
+        std::printf("%s", pj.c_str());
+    }
     std::string gpuJson = "null", why;
     if (gpu) {
         rhi::Device* dev = rhi::device(why);

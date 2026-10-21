@@ -47,7 +47,7 @@ struct Pinned { const char* family; const char* scene; std::uint64_t hash; };
 // Recorded on main c819792 before any v3 code (2026-10-21): GCC 13.3 (Ubuntu 24.04) and MSVC 19.5x (VS 18).
 constexpr Pinned kPinned[] = {
     {"gcc", "retro_room", 0x1dbddfac1787b0b7ull}, {"gcc", "iso_street", 0x5bf3adf36f36aa40ull}, {"gcc", "dense_block", 0xb1107bf96a6627beull}, {"gcc", "furnace", 0x6bdde867ecf6767dull},
-    {"msvc", "retro_room", 0x0ull}, {"msvc", "iso_street", 0x0ull}, {"msvc", "dense_block", 0x0ull}, {"msvc", "furnace", 0x0ull},
+    {"msvc", "retro_room", 0xd9c9429d9672e23aull}, {"msvc", "iso_street", 0x7dbc720e1d370686ull}, {"msvc", "dense_block", 0xedc6fa9d542b39f3ull}, {"msvc", "furnace", 0xa83cdb542c1ce2fdull},
 };
 }  // namespace
 
