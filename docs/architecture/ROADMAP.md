@@ -187,6 +187,12 @@ Exit criteria:
 4. One million particles at a frame time recorded on the reference machine, with seed-determinism across runs.
 5. Frames per joule are published for the M1 scenes and the M4 scene.
 
+Status of M4 criterion 3 (2026-10-21). Step 1, the C++ CPU skinning and morph reference
+(`raw/scene/skin.hpp`), passes: parity with the JavaScript oracle is exact (0 on positions and
+normals, bound 2e-7) on MSVC and GCC, and both false controls miss by 3.07 and 1.49
+(`evidence/m4-skinning-cpu-runs.json`). GPU skinning, the glTF skin and morph import and the RMSE
+against a skinned model are the next steps.
+
 Dated note (2026-10-17) on the scope's HDR output. Through the D3D12 swapchain, the HDR10 signal read back
 before present is within one 10-bit code of the C++ PQ encode on WARP (RELEASE-PLAN N2,
 `evidence/n2-presentation-runs.json`). Through a Vulkan swapchain it is untestable on available hardware:
@@ -212,3 +218,26 @@ Exit criteria (proposed; fixed before M6 starts):
 1. A script written against the C ABI drives a template's gameplay with no engine rebuild.
 2. The editor opens, edits and saves each M2 template, and the saved scene round-trips through `superstack.scene/1`.
 3. The template gallery in the Studio builds every template from a clean checkout.
+
+## Dated proposals (2026-10-21)
+
+From the research harvest of 21 October 2026 (items 2 to 8; item 1, the split-sum error table,
+was absorbed by the gold-highlight diagnosis, `evidence/gold-highlight-acos-bounds.json`). Each is a
+proposal, not a criterion: it joins a milestone only when its bounds file is committed before code.
+The targets are the ones a proposal must meet to be kept. Timings from the papers come from other
+GPUs; only a run on the reference machine sets raw-native's numbers.
+
+| # | Proposal | Milestone | Target (must meet) | Fails if | Depends on |
+|---|---|---|---|---|---|
+| P1 | ReSTIR DI on the compute path tracer (Lin, Kettunen, Wyman, I3D 2026) | M5 (light transport); stage 1 in M3's path tracer | Stage 1, CPU: at equal samples a pixel, direct-light RMSE against a converged reference at least 30% below uniform light sampling on a scene with at least 64 emitters, and the unbiased mode's mean within the reference's interval. Stage 2, RTX 4090 at 1080p: equal-time HDR FLIP at least 30% below uniform | the unbiased mode's long-run mean leaves the reference interval | path tracer interface v3 (punctual lights; `docs/rt-interface-v3.md`) |
+| P2 | H2 redesign: a pyramid of small gather kernels plus adaptive sampling (Balint et al. 2026) | M5 (own temporal reconstruction) | The existing H2 bounds (`evidence/rr-bounds*.json`): at most 2.0 ms at 1080p on the RTX 4090, FLIP below SVGF plus TAA with a bootstrap interval excluding zero, temporal instability no worse | the existing gate fails; measured tensor throughput below 30% of peak means the kernels, not the network, are the problem | the reference machine's GPU |
+| P3 | Agent surface with receipts (MCP: list, describe, call) | M6 (authoring) | render, verify and bounds-check exposed through three meta-tools; every changing call returns its output hashes and certificate verdict | a session changes a scene and leaves no hash diff, or a call writes outside its output folder | none |
+| P4 | Sprite normals for the 2D and dither-lit layers, written fresh from a description | M4 (reach) | on owned assets rendered as sprites from their meshes: mean angular error under 20 degrees, lit-sprite RMSE against the lit mesh at least 30% below a flat-normal baseline | error matches or exceeds the flat (0, 0, 1) baseline on more than one asset | none |
+| P5 | World-anchored strokes against the screen-space advected canvas | M5 (styles) | on a camera orbit, temporal instability (the rr-bounds warp metric) at least 40% below the advected canvas, at most 2 ms extra at 1080p | the bootstrap interval does not separate the two | none |
+| P6 | Split radiance cascades for diffuse GI (Freeman, Sannikov, Pitt-Francis 2026) | M5 criterion 1 | raw-hall diffuse indirect at 1080p on the RTX 4090 under 6 ms; RMSE against the 8-bounce path trace at least 30% below lighting model 2's 0.43; a thin-wall leak scene included | leak-scene RMSE exceeds the no-GI baseline | GPU BVH (landed), path tracer v3 for the reference |
+| P7 | Mesh and Gaussian-splat compositor with a CPU oracle (UniMGS, Xiao et al. 2026) | M5 (breadth; COMPARISON.md row 19) | a float64 CPU compositor and a WebGPU pass within the parity bounds; 1M Gaussians plus 100K triangles at 1080p under 8 ms on the RTX 4090 | any pixel of the straddle scene (a Gaussian crossing a triangle) differs from the CPU result above tolerance | none |
+
+Order. P1 goes first: it is the only one the current work can absorb, because M3 criterion 1's last
+piece (the gallery's path-traced error) already needs path tracer interface v3, and v3's punctual
+lights are what ReSTIR DI resamples. P1 stage 1 runs on the CPU; stage 2, P2, P6 and P7's timings
+need the reference machine. P2 waits for that; its gate is the one H2 failed (11.8 ms against 2 ms).
