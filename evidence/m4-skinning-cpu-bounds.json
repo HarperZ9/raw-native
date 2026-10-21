@@ -1,0 +1,23 @@
+{
+ "criterion": "ROADMAP M4 criterion 3, step 1: a C++ CPU skinning and morph reference that later GPU skinning and the glTF skin import are checked against. Skinned and morphed glTF models match a CPU skinning reference within a stated RMSE; this step builds that reference and ties it to the existing JavaScript oracle (web/anim/skeleton.mjs, 11 node tests).",
+ "written": "2026-10-20, before any C++ code and before any run",
+ "design": {
+  "where": "raw/scene/skin.hpp, src/scene/skin.cpp (scene layer: math and core only)",
+  "numbers": "float64 throughout, column-major 4 x 4 matrices as in web/world/scene.mjs, so the C++ code repeats the JavaScript operation order; outputs rounded to float32 as the JavaScript skin() does",
+  "skeleton": "joints in parent-before-child order; rest frame = parent x compose(t, r); a pose adds a local rotation after the rest rotation and a translation offset; bind = rest; inverse bind by the rigid inverse",
+  "skinning": "linear-blend skinning with four influences a vertex, weights renormalised, zero-weight vertices pass through; normals by the blended rotation part, renormalised",
+  "morph": "glTF 2.0 morph targets applied before skinning: p = base + sum w_i d_i for positions and normals (normals renormalised after skinning), the order glTF 2.0 section 3.7.2.2 gives",
+  "fixture": "web/anim/skin_fixture.mjs builds a deterministic case (LCG seed 20261020: a 12-joint two-branch skeleton, 3 poses, 400 vertices with four influences, weights unnormalised, 5 zero-weight vertices) and writes tests/data/skin-fixture.txt from the JavaScript oracle; a node test regenerates it and requires the committed file to be identical"
+ },
+ "checks": {
+  "k1_js_parity": {"what": "C++ skinned positions and normals against the JavaScript oracle on the fixture, every vertex of every pose", "bound": "max abs difference 2e-7 on positions (about 2 float32 ulps at magnitude 1) and 2e-7 on normals", "prediction": "0 or 1 float32 ulp on a few vertices: V8's Math.sin, cos and hypot need not be correctly rounded the same as the C runtime's"},
+  "k2_bind_identity": {"what": "skinning in the bind pose returns the mesh", "bound": "max abs 1e-6", "prediction": "holds"},
+  "k3_rigid": {"what": "a vertex with one influence equals that joint's skin matrix applied to it; a half-and-half vertex sits at the midpoint of the two rigid results", "bound": "1e-6", "prediction": "holds"},
+  "k4_bone_length": {"what": "joint-to-joint distances are invariant under every fixture pose (no translation offsets on child joints)", "bound": "1e-12", "prediction": "holds"},
+  "k5_morph": {"what": "morph weights 0 return the base; weight 1 on one target returns base + delta exactly before skinning; weights are linear (w = 0.5 is the midpoint)", "bound": "1e-6 after float32 rounding", "prediction": "holds"},
+  "k6_controls": {"what": "false controls that must fail k1: (a) weights not renormalised; (b) normals transformed by the full matrix including translation", "bound": "each exceeds the k1 bound", "prediction": "both fail k1 by orders of magnitude"},
+  "k7_errors": {"what": "a joint named before its parent, a duplicate name, and a joint index out of range are refused with a message", "bound": "refused", "prediction": "holds"}
+ },
+ "not_in_this_step": "GPU skinning (WGSL and the native backends), the glTF skin and morph import, clip sampling in C++, the RMSE against a skinned glTF model on the GPU. Those are later steps of criterion 3 and each gets its own bounds.",
+ "does_not_prove": "That GPU skinning matches; that glTF files import correctly; that dual-quaternion or other skinning models are right. The JavaScript oracle and this reference share a method, so their agreement shows the port is faithful, and the analytic checks (k2 to k5) are what tie both to the definition."
+}
