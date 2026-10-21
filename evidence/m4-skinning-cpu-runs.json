@@ -1,0 +1,22 @@
+{
+ "bounds": "evidence/m4-skinning-cpu-bounds.json",
+ "commit": "717ec5ff5d34e71de351fafe155fe5b62c09ccee (PR #188, merged as 4874dfd on 2026-10-20)",
+ "written": "2026-10-21. The local MSVC figures are from the PR body; the GCC figures were rerun on 2026-10-21 for this file; CI records pass or fail only (ctest does not print the test's output)",
+ "runs": {
+  "ci": "GitHub Actions run 39547741902: build-test (ubuntu-24.04, GCC) job 119049642672 and build-test (windows-latest, MSVC) job 119049642734 each report test_skin Passed; wasm job 119049642513 builds src/scene/skin.cpp. All 22 checks of the PR green",
+  "local_msvc": "MSVC Release, Windows, Idle priority, 2026-10-20",
+  "local_gcc": "g++ 13.3.0 (Ubuntu 24.04, WSL), -O2, tests/test_skin.cpp + src/scene/skin.cpp at 717ec5f's content (main c819792), 2026-10-21"
+ },
+ "checks": {
+  "k1_js_parity": {"result": "holds", "observed": "max abs difference 0 on positions and 0 on normals, on MSVC and GCC (bound 2e-7). My prediction (a few float32 ulps from V8's transcendental functions) was wrong: the fixture's rounding to float32 absorbs any difference in the last float64 bits."},
+  "k2_bind_identity": {"result": "holds", "observed": "test_skin passes on MSVC, GCC (local and CI)"},
+  "k3_rigid": {"result": "holds", "observed": "as k2"},
+  "k4_bone_length": {"result": "holds", "observed": "as k2"},
+  "k5_morph": {"result": "holds", "observed": "as k2"},
+  "k6_controls": {"result": "holds (both controls fail k1 as required)", "observed": "unnormalised weights: positions off by 3.07; normals transformed with translation: normals off by 1.49; bound 2e-7, on MSVC and GCC"},
+  "k7_errors": {"result": "holds", "observed": "as k2"},
+  "node_fixture": {"result": "holds", "observed": "web/anim node tests 12 of 12 locally; the fixture regenerated from the JavaScript oracle equals tests/data/skin-fixture.txt"}
+ },
+ "not_measured": "Clang (no clang++ in the local WSL image; CI builds with GCC, MSVC and Emscripten's clang for WebAssembly, where only the library is compiled). GPU skinning, the glTF skin and morph import and the RMSE against a skinned glTF model are later steps of M4 criterion 3.",
+ "does_not_prove": "That GPU skinning matches or that glTF files import correctly. The oracle and the port share a method, so k1 shows the port is faithful; k2 to k5 tie both to the definition."
+}
