@@ -32,7 +32,7 @@ Fixture readFixture(const std::string& path) {
     }
     in >> tag >> p;
     for (int k = 0; k < p; ++k) {
-        Pose pose(std::size_t(n));
+        Pose pose; pose.resize(std::size_t(n));
         for (int i = 0; i < n; ++i) {
             JointPose& e = pose[std::size_t(i)];
             int hr = 0, ht = 0;
