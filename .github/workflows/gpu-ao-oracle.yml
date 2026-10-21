@@ -21,7 +21,8 @@ jobs:
       matrix:
         adapter: [warp, lavapipe]
     runs-on: ${{ matrix.adapter == 'warp' && 'windows-latest' || 'ubuntu-24.04' }}
-    timeout-minutes: 150
+    # 330: s5's 300 plus the ~10 minutes of build and earlier steps, with room (GitHub's hosted limit is 360).
+    timeout-minutes: 330
     steps:
       - uses: actions/checkout@v4
       - name: Install lavapipe and the Vulkan build tools
@@ -63,8 +64,13 @@ jobs:
       - name: s3 the skew control differs
         shell: bash
         run: if $PY scripts/identity_matrix.py compare q-scan.json q-skew.json; then echo "skew did not differ"; exit 1; fi
+      # Lighting model 2's unbounded sky rays make the scan slow on WARP. Measured 2026-10-21 on the
+      # workstation's WARP (24 threads, Idle): BVH 13.6 s, scan 2,653 s GPU plus 721 s CPU reference.
+      # Scaled by the CI runner's measured BVH time (69.0 s, run 39101131454; factor 5.07) the scan
+      # takes about 224 + 13 = 237 minutes on the runner; 300 is that plus about 25%.
       - name: s5 raw-hero at 320 x 200 with rt on, BVH against scan (recorded)
         shell: bash
+        timeout-minutes: 300
         run: |
           $CLI export-assets --out assets > /dev/null
           for mode in bvh scan; do
