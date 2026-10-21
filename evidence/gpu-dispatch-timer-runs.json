@@ -1,0 +1,12 @@
+{
+ "bounds": "evidence/gpu-dispatch-timer-bounds.json",
+ "runs": "2026-10-21, MSVC D3D12 build of feat/gpu-dispatch-timer (binary sha256 3f2ceefa...), RTX 4090 and WARP, under the shared GPU lock (it waited behind three Low Water bench jobs); files in evidence/gpu-dispatch-timer/",
+ "checks": {
+  "t1_excludes_setup": {"result": "holds", "observed": "256 x 160: dispatch 0.464 ms against wall 1,530 ms"},
+  "t2_repeatable": {"result": "misses", "observed": "two runs of the same command: 0.464 ms and 0.806 ms, 74% apart (bound 20%). At this size the frame is three chunks of under 0.1 ms of work each, and the median submit-to-fence time is mostly driver submission and fence latency, which varies between runs. The timer is fit for frames of a few milliseconds and up, not for sub-millisecond ones."},
+  "t3_scales": {"result": "holds", "observed": "1080p 3.642 ms against 0.464 and 0.806 ms: ratios 7.8 and 4.5 (bound 4 to 30) for about 14 times the samples"},
+  "t4_recorded": {"result": "recorded", "observed": "sphere field shading pass at 1920 x 1080, 1 sample a pixel (2.07 M samples, 28 chunks): RTX 4090 3.64 ms, WARP 169 ms. Material gallery 256 x 256 x 4 on the RTX 4090: 0.53 ms."}
+ },
+ "next": "GPU timestamp queries in the general RHI (D3D12 query heaps, Vulkan query pools; the HW workstream's queue already has them) would remove the submission latency that makes t2 miss.",
+ "does_not_prove": "Pure GPU time; a whole renderer's frame time."
+}
