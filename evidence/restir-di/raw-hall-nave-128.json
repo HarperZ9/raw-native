@@ -1,0 +1,11 @@
+{
+ "schema": "raw-native.restir-di/1",
+ "scene": "raw-hall-nave",
+ "width": 320, "height": 200, "lights": 128, "frames": 64, "candidates": 32, "neighbours": 5, "radius": 16.000000,
+ "exact_mean": 0.172617, "exact_shadow_rays": 1132462,
+ "uniform": {"mean": 0.17367, "se": 0.00145, "z": 0.728, "relative_rmse_single_frame": 16.81, "ratio_to_uniform": 1.0000, "shadow_rays_per_frame": 8844.8},
+ "ris": {"mean": 0.172297, "se": 0.000287, "z": -1.114, "relative_rmse_single_frame": 3.009, "ratio_to_uniform": 0.1790, "shadow_rays_per_frame": 56812.1},
+ "restir": {"mean": 0.17221, "se": 0.000294, "z": -1.385, "relative_rmse_single_frame": 2.4328, "ratio_to_uniform": 0.1447, "shadow_rays_per_frame": 57345.2},
+ "restir_biased": {"mean": 0.171597, "se": 0.000294, "z": -3.468, "relative_rmse_single_frame": 2.4296, "ratio_to_uniform": 0.1445, "shadow_rays_per_frame": 57345.2},
+ "wall_ms": 13889.2
+}

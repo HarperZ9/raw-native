@@ -1,0 +1,22 @@
+{
+ "bounds": "evidence/restir-di-bounds.json",
+ "branch": "feat/restir-di (stacked on feat/rt-pt-v3)",
+ "runs": {
+  "test": "tests/test_restir_di.cpp, g++ 13.3 (WSL), retro_room 96 x 64 with 96 point lights; evidence/restir-di/retro-room-96.json",
+  "hall": "raw_native_cli restir-di --owned-scene raw-hall-nave --width 320 --height 200 --lights 128 --frames 64 --threads 4; evidence/restir-di/raw-hall-nave-128.json",
+  "date": "2026-10-21"
+ },
+ "checks": {
+  "r1_exact_matches_tracer": {"result": "holds", "observed": "worst relative difference 0 (bound 1e-5)"},
+  "r2_unbiased": {"result": "holds", "observed": "retro_room, 256 seeds: uniform -0.52 se, ris -0.98 se, restir -0.20 se from exact. raw-hall nave, 64 seeds: uniform +0.73, ris -1.11, restir -1.39 (bound 4)"},
+  "r2b_control": {"result": "holds (misses as required)", "observed": "ris without 1/M: image mean 123.5 against exact 3.82"},
+  "r3_quality": {"result": "holds", "observed": "single-frame relative RMSE against exact, mean of 16 seeds. retro_room: uniform 7.05, ris 2.35, restir 2.39, ratio restir/uniform 0.339 (bound 0.7). raw-hall nave: uniform 16.8, ris 3.01, restir 2.43, ratio 0.145. Every mode casts at most one shadow ray a pixel; uniform casts fewer (8,845 a frame in the hall against about 57,000) because most of its picks land on lights out of range and need no ray."},
+  "r4_bias_recorded": {"result": "recorded", "observed": "restir_biased: retro_room -1.03 se, raw-hall -3.47 se (0.6% dark), as predicted in sign"}
+ },
+ "findings": [
+  "Most of the gain is resampling (ris), not spatial reuse: in the hall restir is 19% below ris; in the 96 x 64 room the two are equal within noise. The prediction (restir lower again than ris) held weakly in the hall and not in the small room.",
+  "The first spatial pass had no depth test: restir's error rose to 5.72 in the room, worse than ris (2.35), from neighbours on other surfaces. Adding the depth (10%) and normal (25 degrees) tests of Bitterli et al. 2020 fixed it before the recorded runs; at radius 3, 6, 10 and 16 the ratio was then 0.20, 0.26, 0.30 and 0.34, and the committed default (16) is the one the bounds named."
+ ],
+ "not_in_this_step": "Temporal reuse; ReSTIR in the full path tracer (indirect bounces); stage 2 timing on the RTX 4090.",
+ "does_not_prove": "Equal-time gains on a GPU; that the reuse gain grows at 1080p (likely, untested); quality with area or environment lights."
+}
