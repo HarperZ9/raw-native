@@ -1,0 +1,23 @@
+{
+ "criterion": "ROADMAP dated proposal P1, stage 1 (2026-10-21): ReSTIR DI (Bitterli et al. 2020, spatiotemporal reservoir resampling; Lin, Kettunen and Wyman 2026 for the reuse refinements) on the CPU path tracer's v3 punctual lights. Stage 2, equal-time HDR FLIP on the RTX 4090 at 1080p, needs the GPU and is not in this step.",
+ "written": "2026-10-21, before any ReSTIR code and before any run",
+ "design": {
+  "where": "raw/renderer/rt_restir.hpp, src/renderer/rt_restir.cpp: direct light from PtScene::lights at each pixel's primary hit (pixel centre, unjittered), shaded by the v3 material evaluation, one shadow ray a pixel in every sampled mode",
+  "modes": {
+   "exact": "every light with its own shadow ray: the reference, deterministic",
+   "uniform": "one light chosen uniformly, weight N",
+   "ris": "resampled importance sampling: M candidates chosen uniformly, target p_hat = luminance of the unshadowed contribution f E |cos|, one survivor, W = (sum w_i / M) / p_hat(y)",
+   "restir": "ris reservoirs at every pixel, then one spatial pass: the pixel's own reservoir and k neighbours within r pixels, re-targeted at the pixel's own p_hat; unbiased normalisation 1/Z with Z the sum of M_i over reservoirs whose surface gives p_hat_i(y) > 0 (Bitterli et al. 2020, algorithm 6); visibility only in the final shading",
+   "restir_biased": "the same with 1/M normalisation (recorded, not gated)"
+  },
+  "scenes": "retro_room with 96 point lights (test), and raw-hall nave with 128 point lights at 320 x 200 (CLI restir-di, the evidence run); lights placed by a seeded LCG inside the scene's bounding box, intensities log-uniform over a factor 30, a range on each"
+ },
+ "checks": {
+  "r1_exact_matches_tracer": {"what": "exact against pathTraceCpu with maxBounces 1, no sky, no environment, on the same pixels", "bound": "relative difference at most 1e-5 per pixel", "prediction": "holds: the same sum by the same evaluation"},
+  "r2_unbiased": {"what": "the image mean over 256 seeds of uniform, ris and restir against exact", "bound": "each within 4 standard errors (from the spread of the 256 image means)", "prediction": "holds for all three"},
+  "r2b_control": {"what": "ris with its 1/M factor dropped", "bound": "must miss r2 by more than 10 standard errors", "prediction": "misses by orders of magnitude (it is off by a factor M)"},
+  "r3_quality": {"what": "single-frame relative RMSE against exact (luminance over covered pixels, mean of 16 seeds), equal shadow rays (one a pixel)", "bound": "restir at least 30% below uniform, on both scenes (the P1 stage 1 target)", "prediction": "holds; ris alone about 30 to 60% below uniform, restir lower again"},
+  "r4_bias_recorded": {"what": "restir_biased's image mean against exact", "bound": "recorded", "prediction": "a few percent dark at shadow edges"}
+ },
+ "does_not_prove": "Anything about time on a GPU (stage 2); temporal reuse (not in stage 1); quality with area or environment lights; that the 30% holds on scenes unlike these two."
+}
