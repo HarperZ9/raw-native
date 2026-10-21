@@ -139,8 +139,25 @@ fn locate(x: f32, n: u32, i0: ptr<function, u32>, f: ptr<function, f32>) {
     *i0 = min(u32(c), n - 2u);
     *f = c - f32(*i0);
 }
+// acos on [0, 1] for the tables' theta axis: Abramowitz and Stegun 4.4.46, sqrt(1 - x) times a
+// degree-7 polynomial, |error| at most 2e-8 in exact arithmetic. The built-in acos is not used here:
+// llvmpipe's is off by up to 1.6e-4 rad, which tilted the dominant direction enough to move the
+// gallery's near-mirror gold highlight by 1% (evidence/gold-highlight-acos-bounds.json).
+// tests/test_acos_table.cpp reads these coefficients from this file.
+fn acos_table(mu: f32) -> f32 {
+    let x: f32 = clamp(mu, 0.0, 1.0);
+    var q: f32 = -0.0012624911;
+    q = q * x + 0.0066700901;
+    q = q * x - 0.0170881256;
+    q = q * x + 0.0308918810;
+    q = q * x - 0.0501743046;
+    q = q * x + 0.0889789874;
+    q = q * x - 0.2145988016;
+    q = q * x + 1.5707963050;
+    return sqrt(1.0 - x) * q;
+}
 fn theta_x(mu: f32, n: u32) -> f32 {
-    let th: f32 = acos(clamp(mu, 0.0, 1.0));
+    let th: f32 = acos_table(mu);
     return (th + THETA_PAD) / (PI / 2.0 + THETA_PAD) * f32(n - 1u);
 }
 fn read2(off: u32, nt: u32, nr: u32, mu: f32, r: f32) -> f32 {
