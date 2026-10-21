@@ -1,0 +1,27 @@
+{
+ "schema": "raw-native.pt-error/1",
+ "scene": "sphere-field",
+ "width": 256, "height": 160, "raster_spp": 4,
+ "spp": 64, "bounces": 8, "tessellation": [128, 64], "env_scale": 3.14159,
+ "path_tracer_version": 3,
+ "pixels_both_cover": 36096,
+ "coverage_agreement": 1.000000,
+ "mean_luminance_raster": 0.329682, "mean_luminance_pt": 0.881971,
+ "relative_rmse": 0.765823, "bias": -0.626199, "noise_floor": 0.119441,
+ "groups": [
+  {"group": 0, "label": "gold", "pixels": 1358, "relative_rmse": 1.08123, "bias": -0.690329, "split_sum_relative_rmse": 0.232901, "split_sum_samples": 188},
+  {"group": 1, "label": "copper", "pixels": 1363, "relative_rmse": 0.810671, "bias": -0.679073, "split_sum_relative_rmse": 0.270811, "split_sum_samples": 166},
+  {"group": 2, "label": "red plastic", "pixels": 593, "relative_rmse": 0.876256, "bias": -0.674707, "split_sum_relative_rmse": 0.0744579, "split_sum_samples": 85},
+  {"group": 3, "label": "white ceramic", "pixels": 1368, "relative_rmse": 0.71649, "bias": -0.698821, "split_sum_relative_rmse": 0.0153218, "split_sum_samples": 174},
+  {"group": 4, "label": "car paint (clearcoat)", "pixels": 674, "relative_rmse": 0.721, "bias": -0.614808, "split_sum_relative_rmse": 0.367608, "split_sum_samples": 95},
+  {"group": 5, "label": "velvet (sheen)", "pixels": 1339, "relative_rmse": 0.765897, "bias": -0.690128, "split_sum_relative_rmse": 0.181328, "split_sum_samples": 178},
+  {"group": 6, "label": "brushed steel (anisotropy)", "pixels": 677, "relative_rmse": 0.736305, "bias": -0.690672, "split_sum_relative_rmse": 0.256549, "split_sum_samples": 93},
+  {"group": 7, "label": "thin film (iridescence)", "pixels": 746, "relative_rmse": 1.32739, "bias": -0.657516, "split_sum_relative_rmse": 0.287956, "split_sum_samples": 102},
+  {"group": 8, "label": "thin glass", "pixels": 1442, "relative_rmse": 0.89296, "bias": -0.80395, "split_sum_relative_rmse": 0, "split_sum_samples": 0},
+  {"group": 9, "label": "volume glass (absorbing)", "pixels": 557, "relative_rmse": 0.967924, "bias": -0.833031, "split_sum_relative_rmse": 0, "split_sum_samples": 0},
+  {"group": 10, "label": "warm emissive", "pixels": 1306, "relative_rmse": 0.266109, "bias": -0.258383, "split_sum_relative_rmse": 0.0291954, "split_sum_samples": 179},
+  {"group": 11, "label": "mirror and black rubber", "pixels": 774, "relative_rmse": 1.20907, "bias": -0.694721, "split_sum_relative_rmse": 0.179578, "split_sum_samples": 107},
+  {"group": 12, "label": "ground", "pixels": 22917, "relative_rmse": 0.649481, "bias": -0.615419, "split_sum_relative_rmse": 0.0295975, "split_sum_samples": 2900}
+ ],
+ "pt_ms": 27436.5
+}

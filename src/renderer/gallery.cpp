@@ -75,7 +75,7 @@ Gallery build(int width, int height, int spp) {
             if (!std::isfinite(s.t.x)) s.t = {1, 0, 0};
             s.v = {-dir.x, -dir.y, -dir.z};
             s.m = sphereMaterial(r, c);
-            g.samples.push_back(s); g.pixel.push_back(pix); ++g.hits[std::size_t(pix)];
+            g.samples.push_back(s); g.pixel.push_back(pix); ++g.hits[std::size_t(pix)]; g.group.push_back(r);
             hit = true;
         }
         if (!hit) {
@@ -83,6 +83,11 @@ Gallery build(int width, int height, int spp) {
             Rgb& bg = g.background[std::size_t(pix)];
             bg = {bg.r + L.r * g.exposure * inv, bg.g + L.g * g.exposure * inv, bg.b + L.b * g.exposure * inv};
         }
+    }
+    for (int r = 0; r < kRows; ++r) {
+        std::string label;
+        for (int c = 0; c < kCols; ++c) g.spheres.push_back({centre(r, c), kRadius, sphereMaterial(r, c, &label), r});
+        g.groupLabels.push_back(label);
     }
     return g;
 }

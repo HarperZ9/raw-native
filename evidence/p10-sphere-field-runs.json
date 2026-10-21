@@ -1,0 +1,18 @@
+{
+ "bounds": "evidence/p10-sphere-field-bounds.json",
+ "branch": "feat/p10-sphere-field",
+ "design_revision": "Written after a visual check of the first frames and before any recorded run; no bound changed. The bounds file describes a level camera at the origin with the ground at y = -1.6. The first frame from it was half sky, with the spheres in a band at the horizon, and the front row hid the rows behind it. The committed field puts the camera above and in front (eye (0, 2.4, 3) looking at (0, -0.5, -6.5)), with the ground at y = -1.0 and spheres of radius 0.6 in rows at 3.5 to 10.7 m. Everything is expressed in view space (spheres, ground quad, light, and the sky cube built from the procedural sky turned into view space), because lighting.hpp works in view space. Tangents follow path tracer v3's rule in view space.",
+ "runs": {
+  "gcc": "g++ 13.3 (WSL), Release, nice 19, 2026-10-21",
+  "msvc_rtx": "MSVC (VS 18) D3D12 build of this branch, Idle; RTX 4090 and local WARP under the shared GPU lock (D:/lw-gpu/lock.d), 2026-10-21",
+  "files": "evidence/p10-sphere-field/"
+ },
+ "checks": {
+  "f1_coverage": {"result": "holds", "observed": "fully covered pixels at 256 x 160: gold 1358, copper 1363, red plastic 593, white ceramic 1368, car paint 674, velvet 1339, brushed steel 677, thin film 746, thin glass 1442, volume glass 557, warm emissive 1306, mirror and rubber 774, ground 22917 (bound 100 each)"},
+  "f2_regression": {"result": "holds", "observed": "pinned: GCC 0x5eb27f10c75144ec, MSVC 0x89b2e8cef8c18189; the GCC test checks 1 of 1 after pinning"},
+  "f3_gpu_parity": {"result": "holds on the RTX 4090 and local WARP; lavapipe and CI WARP in the m3-scenes workflow", "observed": "RTX 4090 at 256 x 160: rmse_exposed 1.048e-6, max_abs_exposed 5.03e-4. RTX 4090 at 1920 x 1080 (1 sample a pixel): 9.24e-6 and 1.58e-2. Local WARP at 256 x 160: 5.16e-6 and 2.23e-3. Bounds 5e-4 and 0.05."},
+  "f4_pt_error": {"result": "holds", "observed": "relative RMSE 0.231 (bound 0.6), bias +0.024, noise floor 0.052, coverage agreement 1.000 over 36,096 pixels; control (environment x pi) 0.766, which fails the bound as required. By look: volume glass 0.72, thin film 0.62, thin glass 0.50 (all darker in the raster by 43 to 52% for glass), mirror and rubber 0.37, gold 0.33; warm emissive 0.021, car paint 0.115, white ceramic 0.130; ground 0.205 (the raster is 11% bright: it has no cast shadows).", "prediction_check": "I predicted a miss of 0.6 to 0.9 carried by the ground. That was wrong: under this sky the sun's cast shadows are soft and small next to the sky's light, so the ground's error is 0.2. Most of the error sits in the glass looks, where the raster's one-interface model meets a refracting sphere."},
+  "f5_frame_times": {"result": "recorded", "observed": "Wall times, not frame times: they include building the samples, the tables, pipeline creation, uploads and readback, and the shading dispatch is not timed on its own. CPU float64 frame (GCC, all threads) 1.49 s at 256 x 160 x 4; MSVC 1.24 s, and 2.32 s at 1920 x 1080. GPU shading command, RTX 4090: 3.98 s at 256 x 160, 10.66 s at 1080p; WARP 7.94 s at 256 x 160. Path-traced reference (GCC, 4 threads, 512 samples at each of 4 points a pixel, 8 bounces): 199 s. A dispatch-only GPU timer is an open item."}
+ },
+ "does_not_prove": "Real-time frame rates for a full renderer (there is no dispatch timer yet); anything on a laptop GPU (none available); that the raster is right for glass."
+}
