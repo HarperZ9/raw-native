@@ -415,10 +415,12 @@ with a SHA-256 seal over every field, and it reports two verdicts separately:
 
 It also records the scene in the contract's scene format, the hash of the
 frame's raw RGB8 bytes (`frame.rgb8`), the digest of every file written and
-four `does_not_prove` lines. For the default view, the scene hash and the
-frame hash equal the contract's published reference scene and pixel reference,
-and the ray-traced AO bytes equal the hash superstack's separate Python
-renderer produced.
+four `does_not_prove` lines. For the default view, the scene hash equals the
+contract's published reference scene, and the ray-traced AO bytes equal the
+hash superstack's separate Python renderer produced. The contract's pixel
+reference was drawn with lighting model 1; the default frame now uses model 2,
+and the model 1 oracle (`RAW_NATIVE_LIGHTING=v1`, test only) still renders the
+pixel reference byte for byte.
 
 A `--gpu` run adds `gpu_receipt.json`: the GPU frame's RGB8 bytes against the
 CPU frame's, with identity (`MATCH` when the GPU drew the same 8-bit frame) and

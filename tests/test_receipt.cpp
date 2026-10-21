@@ -8,11 +8,20 @@
 #include "raw/core/sha256.hpp"
 #include "superstack.hpp"
 #include "check.hpp"
+#include <cstdlib>
 #include <string>
 using namespace raw;
 namespace ss = superstack;
 static CliParams params(int w, int h, bool rt){
     CliParams p; p.width = w; p.height = h; p.rtao = rt; return p;
+}
+// RAW_NATIVE_LIGHTING for this process (nullptr clears it).
+static void setLighting(const char* v){
+#ifdef _WIN32
+    _putenv_s("RAW_NATIVE_LIGHTING", v ? v : "");
+#else
+    if (v) setenv("RAW_NATIVE_LIGHTING", v, 1); else unsetenv("RAW_NATIVE_LIGHTING");
+#endif
 }
 static std::string tol(const ss::Value& r, const char* key){ return r.at("reconcile").at("tolerance").at(key).str(); }
 int main(){
@@ -23,11 +32,20 @@ int main(){
     CHECK(sha256Hex(sceneJson(def)) == "84aa884f71fc47bf3fcc0a35eb795ac59cbf679f5f398263a27fc7dcca835b36");
     CHECK(sceneJson(params(256, 256, false)) != sceneJson(def));   // a different estimator is a different scene
 
+    // The contract's pixel reference was drawn with lighting model 1, so the
+    // test-only model 1 oracle still renders it byte for byte.
+    setLighting("v1");
+    const FrameResult o1 = renderFromParams(def, nullptr);
+    setLighting(nullptr);
+    CHECK(sha256Hex(rgb8Bytes(o1.frame)) == "0282ef9cc07a0012da9da3217c164f44d00a3e9f7704ff719770e832c9ca6d44");
+
     const FrameResult o = renderFromParams(def, nullptr);
-    // The frame's canonical RGB8 bytes equal the contract's pixel reference,
-    // and the ray-traced AO bytes equal the contract's AO reference.
-    CHECK(sha256Hex(rgb8Bytes(o.frame)) == "0282ef9cc07a0012da9da3217c164f44d00a3e9f7704ff719770e832c9ca6d44");
+    // The default frame is lighting model 2 (evidence/m3-lighting-v2-bounds.json),
+    // pinned here; the ray-traced AO bytes still equal the contract's AO reference.
+    CHECK(sha256Hex(rgb8Bytes(o.frame)) == "0e39bd0362fd51ebd63b208cd174a5ae1e3febc09d513a89ec44345b248587d4");
+    CHECK(sha256Hex(rgb8Bytes(o.frame)) != sha256Hex(rgb8Bytes(o1.frame)));
     CHECK(sha256Hex(f32Bytes(o.aoRT)) == "d6c34cbb66b64f7dbfe271a6dbc0f094a96657c18f239cdd63dc49a7ef1775a8");
+    CHECK(sha256Hex(f32Bytes(o1.aoRT)) == sha256Hex(f32Bytes(o.aoRT)));
 
     const std::string text = aoReceiptJson(o, def, "raw-native-cpu", {{"frame.ppm", std::string(64, 'a')}});
     CHECK(verifyReceiptText(text).empty());
