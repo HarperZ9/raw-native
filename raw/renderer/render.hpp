@@ -31,11 +31,21 @@ inline constexpr float kAoRadius  = 2.0f; // world-space occlusion radius for bo
 //              with the screen-space AO and the reconcile has no data, so the
 //              certificate verdict is "unverifiable". Used for raster-only timing.
 //   threads:   render threads for the AO passes. Output is identical for any count.
+//   lighting:  2 (default) lights the frame with a shadowed sun and the sky's visibility at any
+//              distance, both traced with the AO reference's rays, BVH and triangle test; 1 is the
+//              earlier model, (0.2 + sun) x AO. Without the ray-traced pass the frame is model 1 with
+//              SSAO. evidence/m3-lighting-v2-bounds.json. RAW_NATIVE_LIGHTING=v1 (test only) forces
+//              model 1, =v2-nosun model 2 with the sun's visibility forced to 1 (the false control).
 struct RenderOptions {
     float tolerance{0.12f};
     bool  rtao{true};
     int   threads{1};
+    int   lighting{2};
 };
+// The lighting model a render with `o` uses (1 or 2), after RAW_NATIVE_LIGHTING; and whether the
+// test-only no-sun control is on. Shared by the CPU reference and the GPU renderer.
+int lightingModel(const RenderOptions& o);
+bool lightingNoSun();
 // Render `scene` at w*h and fill every channel. `prevViewProj` is the previous
 // frame's view-projection for motion reprojection; pass the current view-projection
 // (the default produced when prevViewProj == identity is handled by the caller)

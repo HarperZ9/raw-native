@@ -66,3 +66,10 @@ them and the declarations added.
 2. Run `python scripts/api_dump.py --write N+1` and raise `kApiSnapshot` to N + 1.
 3. Write `snapshot-N+1/MIGRATION.md`: each removed or changed declaration and its replacement.
 4. Update `tests/test_api_snapshot.cpp` to the new API in the same change.
+
+Dated note (2026-10-18): `RenderOptions` gains `lighting` (2 by default), `ray_ao.hpp` gains
+`computeRTVisibility` and `composite.hpp` gains `shadeV2` and `shadeHDRV2`. All three are additions,
+so the snapshot number stays. One behaviour changes: with the ray-traced pass on, `renderWithParams`
+lights the frame with lighting model 2 (a shadowed sun and the sky's visibility,
+`evidence/m3-lighting-v2-bounds.json`). `RenderOptions::lighting = 1` gives the earlier frame, and
+`shade` and `shadeHDR` are unchanged.

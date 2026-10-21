@@ -1,0 +1,1 @@
+- **Lighting model 2 evidence and receipt test.** The receipt test checks the contract's pixel reference under the model 1 oracle and pins the model 2 default frame; the ray-traced AO bytes still equal the contract's AO reference. The lavapipe GPU golden for model 2 is `evidence/n3-identity-golden-vulkan-lavapipe.json`; the runs are in `evidence/m3-lighting-v2-runs.json`.

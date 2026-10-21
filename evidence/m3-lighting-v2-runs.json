@@ -1,0 +1,141 @@
+{
+ "bounds": "evidence/m3-lighting-v2-bounds.json",
+ "commit": "9106d538622b206718112585d0aa5dff09d11ff0",
+ "runs": {
+  "lighting-v2": "GitHub Actions run 39101131440 (warp job 117597453590, lavapipe job 117597453448), 2026-10-18",
+  "first lavapipe run (addendum A)": "39099964839",
+  "ci": "39101131439 (vulkan-linux: lavapipe GPU golden and model 1 GPU oracle)",
+  "gpu-ao-oracle": "39101131454"
+ },
+ "checks": {
+  "l1_oracle": {
+   "result": "partial",
+   "observed": "vulkan-linux (lavapipe) passed at 9106d53, including the model 1 GPU golden compare (evidence/n3-identity-golden-vulkan-lavapipe-v1.json). The CPU model 1 compare steps in build-test did not run at 9106d53 because ctest failed first on test_receipt (the default frame hash pinned to the contract's model 1 reference). Locally (step 66, GCC): 119 files byte-identical to the old goldens, arena included. The CI CPU record waits for the rerun after the test fix."
+  },
+  "l2_goldens": {
+   "result": "pending",
+   "observed": "The model 2 CPU goldens were generated with GCC and equal MSVC locally; the identity job (GCC, MSVC, WebAssembly) was skipped at 9106d53 because build-test failed. The lavapipe GPU golden for model 2 is committed from run 39101131439 (artifact n3-vulkan-lavapipe, n3c-quick.json) as evidence/n3-identity-golden-vulkan-lavapipe.json."
+  },
+  "l3_verified": {
+   "result": "holds",
+   "warp": {
+    "hero": {
+     "verdict": "verified",
+     "identity": "DRIFT",
+     "frame_rmse": 7.58692679e-06
+    },
+    "hall": {
+     "verdict": "verified",
+     "identity": "DRIFT",
+     "frame_rmse": 8.43213232e-06
+    },
+    "adapter": "Microsoft Basic Render Driver"
+   },
+   "lavapipe": {
+    "hero": {
+     "verdict": "verified",
+     "identity": "MATCH",
+     "frame_rmse": 1.57385009e-08
+    },
+    "hall": {
+     "verdict": "verified",
+     "identity": "DRIFT",
+     "frame_rmse": 4.7747884e-06
+    },
+    "adapter": "llvmpipe (LLVM 20.1.2, 256 bits)"
+   },
+   "frame_bound": 0.01
+  },
+  "l4_hall_direct": {
+   "result": "miss (recorded, addendum A)",
+   "bound": 0.2,
+   "warp": {
+    "relative_rmse": 0.286406,
+    "bias": 0.0271308,
+    "noise_floor": 0.0590416,
+    "relative_rmse_8x8_blocks": 0.237863
+   },
+   "lavapipe": {
+    "relative_rmse": 0.286406,
+    "bias": 0.0271303,
+    "noise_floor": 0.0590416,
+    "relative_rmse_8x8_blocks": 0.237863
+   },
+   "reading": "The 8 x 8 block error (0.238) is still above 0.2, so block averaging removes only part of the residue: per-pixel sampling noise does not explain the whole miss. A structured difference of about 0.2 remains; its cause is not identified."
+  },
+  "l5_hall_full": {
+   "result": "holds",
+   "bound": 0.6,
+   "warp": {
+    "relative_rmse": 0.432894,
+    "bias": -0.317057,
+    "noise_floor": 0.0765575,
+    "relative_rmse_8x8_blocks": 0.395687
+   },
+   "lavapipe": {
+    "relative_rmse": 0.432894,
+    "bias": -0.317056,
+    "noise_floor": 0.0765571,
+    "relative_rmse_8x8_blocks": 0.395688
+   },
+   "model_1": 4.1
+  },
+  "l6_hero": {
+   "result": "holds",
+   "bound": 0.1,
+   "full": {
+    "warp": {
+     "relative_rmse": 0.0431568,
+     "bias": -0.0152032,
+     "noise_floor": 0.00617438,
+     "relative_rmse_8x8_blocks": 0.0397397
+    },
+    "lavapipe": {
+     "relative_rmse": 0.0431568,
+     "bias": -0.0152032,
+     "noise_floor": 0.00617438,
+     "relative_rmse_8x8_blocks": 0.0397397
+    }
+   },
+   "direct": {
+    "warp": {
+     "relative_rmse": 0.0106213,
+     "bias": -0.00258095,
+     "noise_floor": 0.00282952,
+     "relative_rmse_8x8_blocks": 0.00371198
+    },
+    "lavapipe": {
+     "relative_rmse": 0.0106213,
+     "bias": -0.00258095,
+     "noise_floor": 0.00282952,
+     "relative_rmse_8x8_blocks": 0.00371198
+    }
+   }
+  },
+  "l7_control": {
+   "result": "holds",
+   "both": {
+    "relative_rmse": 0.00666156,
+    "bias": 0.000198584,
+    "noise_floor": 0.00034872,
+    "relative_rmse_8x8_blocks": 0.000142808
+   }
+  },
+  "l8_false_control": {
+   "result": "holds (fails as required)",
+   "both": {
+    "relative_rmse": 5.55715,
+    "bias": 3.84278,
+    "noise_floor": 0.0590416,
+    "relative_rmse_8x8_blocks": 5.19113
+   }
+  }
+ },
+ "adapters_agree": "Every pt-error number agrees between WARP and lavapipe to 6 significant figures; the CPU path tracer and the CPU raster reference produce them, and the GPU frames enter only through l3.",
+ "bvh_slab_finding": "The ao-oracle job on this PR found model 2's unbounded sky rays disagreeing between the BVH and the scan on the wide-512 identity case: a flat floor box rejected by the float slab test under grazing rays. The slab exit is widened by 1 + 2 gamma(3) (Ize 2013). Scan and BVH then agree on all 119 files locally, and gpu-ao-oracle s1 at 9106d53 compares 90 quick files and 180 glTF files identical on WARP and lavapipe.",
+ "open_ci_failures_at_9106d53": {
+  "test_receipt": "Fixed on the branch: the contract pixel reference is checked under the model 1 oracle; the model 2 default frame is pinned (0e39bd03...); AO bytes still equal the contract's AO reference.",
+  "gpu_ao_oracle_warp_s5": "Not fixed. s5 (raw-hero 320 x 200, BVH against scan, recorded) took 69.0 s for the BVH run on WARP; the scan run under model 2 did not finish before the 150-minute job timeout. lavapipe finished. A workflow change to this check needs the author's decision."
+ },
+ "does_not_prove": "Anything on a hardware GPU; that the raster model is physically complete (no interreflection, no specular, no area lights); the cause of the l4 residue."
+}

@@ -87,7 +87,7 @@ FrameBuffers declareBuffers(FrameGraph& g, uint64_t trisBytes, uint32_t ntri, ui
             b("triangles", trisBytes, BufferUsage::Storage | BufferUsage::CopyDst),
             b("setup_f", ntri * 64ull, BufferUsage::Storage), b("setup_i", ntri * 16ull, BufferUsage::Storage),
             b("depth", n4, S), b("position", n16, S), b("normal", n16, S), b("albedo_mask", n16, S),
-            b("motion", n16, S), b("ao_ss", n4, S), b("ao_rt", n4, S), b("frame", n16, S), b("hdr", n16, S),
+            b("motion", n16, S), b("ao_ss", n4, S), b("ao_rt", n4 * 3, S), b("frame", n16, S), b("hdr", n16, S),
             b("bvh_nodes", nodeBytes, BufferUsage::Storage | BufferUsage::CopyDst),
             b("bvh_triangles", btriBytes, BufferUsage::Storage | BufferUsage::CopyDst)};
 }
@@ -152,6 +152,8 @@ bool renderGpu(const Scene& scene, int w, int h, const Mat4& prevVP,
     }
     const uint32_t flags[2] = {opts.rtao && !scan && ntri ? 1u : 0u, skew ? 1u : 0u};
     std::memcpy(pf + 46, flags, sizeof flags);
+    // Lighting model (Params.misc.z) and the test-only no-sun control (misc.w); raw/renderer/render.hpp.
+    pf[38] = float(lightingModel(opts)); pf[39] = lightingNoSun() ? 1.0f : 0.0f;
 
     FrameGraph g(dev);
     const FrameBuffers b = declareBuffers(g, trisBytes, ntri, N, nodes.size() * 4ull, btris.size() * 4ull);

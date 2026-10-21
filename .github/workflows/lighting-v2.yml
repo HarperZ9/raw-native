@@ -1,0 +1,71 @@
+name: lighting-v2
+# Raster lighting model 2 (evidence/m3-lighting-v2-bounds.json): raw-hero and raw-hall render verified
+# under model 2 on WARP and lavapipe, and their error against the path tracer (1 and 8 bounces) is
+# measured against the bounds, with the control sphere and the no-sun false control.
+on:
+  pull_request:
+    paths:
+      - 'src/renderer/render.cpp'
+      - 'src/renderer/composite.cpp'
+      - 'src/renderer/ray_ao.cpp'
+      - 'src/renderer/gpu/shaders/passes.wgsl'
+      - 'src/renderer/gpu/gpu_renderer.cpp'
+      - 'tests/gpu/lighting_v2_gate.py'
+      - 'evidence/m3-lighting-v2-*'
+      - '.github/workflows/lighting-v2.yml'
+permissions:
+  contents: read
+jobs:
+  scenes:
+    strategy:
+      fail-fast: false
+      matrix:
+        adapter: [warp, lavapipe]
+    runs-on: ${{ matrix.adapter == 'warp' && 'windows-latest' || 'ubuntu-24.04' }}
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install lavapipe and the Vulkan build tools
+        if: matrix.adapter == 'lavapipe'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libvulkan-dev glslang-tools mesa-vulkan-drivers libxcb1-dev libwayland-dev wayland-protocols
+      - name: Build the GPU CLI
+        shell: bash
+        run: |
+          if [ "${{ matrix.adapter }}" = warp ]; then
+            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRAW_NATIVE_GPU_D3D12=ON
+            cmake --build build --config Release --target raw_native_cli
+            echo "CLI=build/Release/raw_native_cli.exe" >> "$GITHUB_ENV"; echo "RAW_NATIVE_D3D12_WARP=1" >> "$GITHUB_ENV"; echo "PY=python" >> "$GITHUB_ENV"
+          else
+            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRAW_NATIVE_VULKAN_RHI=ON
+            cmake --build build -j 4 --target raw_native_cli_vk
+            echo "CLI=build/raw_native_cli_vk" >> "$GITHUB_ENV"; echo "PY=python3" >> "$GITHUB_ENV"
+          fi
+      - name: l3 raw-hero and raw-hall at 512 x 320 under model 2; the control sphere; raw-hall with the no-sun control
+        shell: bash
+        run: |
+          mkdir -p m3s
+          $CLI export-assets --out assets > /dev/null
+          $CLI --model assets/raw-hero.gltf --gpu --width 512 --height 320 --threads 4 --out m3s/hero | grep "^gpu:"
+          $CLI --owned-scene raw-hall-nave --gpu --width 512 --height 320 --threads 4 --out m3s/hall | grep "^gpu:"
+          $CLI --owned-scene control-sphere --gpu --width 256 --height 160 --threads 4 --out m3s/control | grep "^gpu:"
+          RAW_NATIVE_LIGHTING=v2-nosun $CLI --owned-scene raw-hall-nave --width 512 --height 320 --threads 4 --out m3s/hall-nosun > /dev/null
+      - name: l4 to l8 the path-traced error (CPU, 128 spp; 1 and 8 bounces)
+        shell: bash
+        run: |
+          pe() { $CLI pt-error --threads 4 --spp 128 "$@" | tail -4; }
+          pe --raster m3s/control --owned-scene control-sphere --width 256 --height 160 --json m3s/pt-control.json
+          pe --raster m3s/hero --model assets/raw-hero.gltf --width 512 --height 320 --json m3s/pt-hero.json
+          pe --raster m3s/hero --model assets/raw-hero.gltf --width 512 --height 320 --bounces 1 --json m3s/pt-hero-direct.json
+          pe --raster m3s/hall --owned-scene raw-hall-nave --width 512 --height 320 --json m3s/pt-hall.json
+          pe --raster m3s/hall --owned-scene raw-hall-nave --width 512 --height 320 --bounces 1 --json m3s/pt-hall-direct.json
+          pe --raster m3s/hall-nosun --owned-scene raw-hall-nave --width 512 --height 320 --bounces 1 --json m3s/pt-hall-nosun-direct.json
+      - name: The gate
+        shell: bash
+        run: $PY tests/gpu/lighting_v2_gate.py m3s --out m3s/summary.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: "lighting-v2-${{ matrix.adapter }}", path: "m3s/*.json
+m3s/*/gpu_certificate.json
+m3s/*/frame.ppm", retention-days: 30 }

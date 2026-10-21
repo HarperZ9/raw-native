@@ -173,6 +173,29 @@ jobs:
           if command -v python3 >/dev/null && python3 --version >/dev/null 2>&1; then py=python3; else py=python; fi
           "$py" scripts/identity_matrix.py run "$cli" gltf.json gltf-out --models gltf-models
           "$py" scripts/identity_matrix.py compare evidence/m2-gltf-golden.json gltf.json --except arena_certificate.json
+      - name: Lighting model 1, the test-only oracle, renders every byte of the model 1 goldens (evidence/m3-lighting-v2-bounds.json l1)
+        shell: bash
+        env:
+          RAW_NATIVE_LIGHTING: v1
+        run: |
+          if [ -x build/raw_native_cli ]; then cli=build/raw_native_cli; else cli=build/Release/raw_native_cli.exe; fi
+          if command -v python3 >/dev/null && python3 --version >/dev/null 2>&1; then py=python3; else py=python; fi
+          "$py" scripts/identity_matrix.py run "$cli" identity-v1.json identity-v1-out --no-gpu-build
+          "$py" scripts/identity_matrix.py compare evidence/identity-golden-v1.json identity-v1.json --except arena_certificate.json
+          "$py" scripts/identity_matrix.py run "$cli" gltf-v1.json gltf-v1-out --models gltf-models
+          "$py" scripts/identity_matrix.py compare evidence/m2-gltf-golden-v1.json gltf-v1.json --except arena_certificate.json
+          mkdir -p out-v1 && "$cli" --out out-v1 > /dev/null
+      - name: Keep the model 1 default render for the v0.5.0 check
+        uses: actions/upload-artifact@v4
+        with:
+          name: default-render-v1-${{ matrix.os }}
+          path: |
+            out-v1/certificate.json
+            out-v1/receipt.json
+            out-v1/channels.json
+            out-v1/frame.ppm
+            out-v1/ao_rt.pfm
+            out-v1/ao_ss.pfm
   d3d12:
     # Builds the native D3D12 backend with the Windows SDK's DXC. The runner has
     # no GPU: the hardware runtime test must report itself skipped with its
@@ -495,6 +518,9 @@ jobs:
           if [ -f evidence/n3-identity-golden-vulkan-lavapipe.json ]; then
             python3 scripts/identity_matrix.py compare evidence/n3-identity-golden-vulkan-lavapipe.json n3c-quick.json --except arena_certificate.json
           fi
+          # Lighting model 1, the test-only oracle, against the model 1 GPU golden of this device class.
+          RAW_NATIVE_LIGHTING=v1 python3 scripts/identity_matrix.py run $c n3c-quick-v1.json n3c-quick-v1-out --gpu --quick
+          python3 scripts/identity_matrix.py compare evidence/n3-identity-golden-vulkan-lavapipe-v1.json n3c-quick-v1.json --except arena_certificate.json
           RAW_NATIVE_SPIRV_CONTROL=swap python3 scripts/identity_matrix.py run $c n3c-control.json n3c-control-out --gpu --quick
           n=$(grep -l '"verdict":"verified"' n3c-control-out/*/gpu_certificate.json | wc -l); echo "control verified: $n of 4 (must be fewer)"; test "$n" -lt 4
           $c texture-identity > n3c-texture.json; grep -q '"pass": true' n3c-texture.json
@@ -713,15 +739,19 @@ jobs:
           done
           # receipt.json is in the loop above: from superstack v0.2.0 the wasm
           # build writes one too, and it must be the native receipt's bytes.
+          # The scene is unchanged; the frame hash below is lighting model 1's, so it reads the model 1 render
+          # (RAW_NATIVE_LIGHTING=v1, evidence/m3-lighting-v2-bounds.json l1).
           grep -q '"scene_sha256":"84aa884f71fc47bf3fcc0a35eb795ac59cbf679f5f398263a27fc7dcca835b36"' default-render-ubuntu-24.04/receipt.json
-          grep -q '"frame.rgb8":"0282ef9cc07a0012da9da3217c164f44d00a3e9f7704ff719770e832c9ca6d44"' default-render-ubuntu-24.04/receipt.json
-      - name: Pixels, AO and certificate unchanged from v0.5.0
+          grep -q '"scene_sha256":"84aa884f71fc47bf3fcc0a35eb795ac59cbf679f5f398263a27fc7dcca835b36"' default-render-v1-ubuntu-24.04/receipt.json
+          grep -q '"frame.rgb8":"0282ef9cc07a0012da9da3217c164f44d00a3e9f7704ff719770e832c9ca6d44"' default-render-v1-ubuntu-24.04/receipt.json
+      - name: Pixels, AO and certificate unchanged from v0.5.0 (lighting model 1, the test-only oracle)
         # The hashes the v0.5.0 release wrote for the default render. The
         # certificate is compared with its renderer version string removed,
-        # because that string is the one field a version bump changes.
+        # because that string is the one field a version bump changes. Since
+        # lighting model 2 became the default, v0.5.0's bytes come from model 1.
         run: |
           set -e
-          d=default-render-ubuntu-24.04
+          d=default-render-v1-ubuntu-24.04
           cat > v050.sha256 <<'SUMS'
           e276f24f4a2a23e7b43b61d2e45147446468bf8d99a75809675f2cea91edb06d  frame.ppm
           3bd5cce0f7424363c04d17b7bf644b82a9f51338297b4666329d398e9fb886ee  ao_rt.pfm
