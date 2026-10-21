@@ -1,0 +1,10 @@
+{
+ "lights": 96, "size": [96, 64], "exact_mean": 3.820037,
+ "r1_worst_relative": 0.000000,
+ "uniform": {"mean": 3.801688, "se": 0.035308, "z": -0.519664, "relative_rmse_single_frame": 7.048787},
+ "ris": {"mean": 3.813434, "se": 0.006756, "z": -0.977424, "relative_rmse_single_frame": 2.350952},
+ "restir": {"mean": 3.818061, "se": 0.009917, "z": -0.199245, "relative_rmse_single_frame": 2.392526},
+ "restir_biased": {"mean": 3.809883, "se": 0.009897, "z": -1.025953, "relative_rmse_single_frame": 2.387191},
+ "r3_ratio": 0.339424,
+ "r2b_control_mean": 123.542685
+}
