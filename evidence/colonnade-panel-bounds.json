@@ -1,0 +1,12 @@
+{
+ "criterion": "ROADMAP P11 stage 2, the colonnade's live settings panel (coordinator round 3 item 2, 2026-10-21). The raster comparison of the colonnade is a separate later stage.",
+ "written": "2026-10-22, before any code and before any run",
+ "design": "web/colonnade/index.html and colonnade.mjs: sliders for sun elevation, sun azimuth, turbidity, exposure (EV100), samples, and an emission toggle; each change re-renders through the engine's own WebAssembly build (hash-checked by wasm/raw-loader.mjs) by running `colonnade` with those flags at 192 x 108, and shows the frame, the settings the engine echoed and its trace time. A first pass at 2 samples then a finer pass, so the panel answers quickly. The CPU module, single-threaded, on the path tracer v3 scene; no GPU and no third-party code or assets.",
+ "checks": {
+  "l1_renders": {"what": "tests/web/colonnade_panel.py in headless Chrome: the page loads the module, renders the default settings, then renders again after the test sets sunset (sun 2 degrees, turbidity 4.5)", "bound": "both runs exit 0 and produce a PNG", "prediction": "holds"},
+  "l2_echo": {"what": "colonnade.json of each run against the settings the page sent", "bound": "sun elevation, azimuth, turbidity, EV and emission equal", "prediction": "holds"},
+  "l3_changes": {"what": "the frame's mean luminance (8-bit) at noon against sunset at the same EV", "bound": "differs by at least 10%", "prediction": "holds; sunset is darker"},
+  "l4_time": {"what": "trace time of each pass in the browser", "bound": "recorded, not gated", "prediction": "under a second for the 2-sample pass"}
+ },
+ "does_not_prove": "Real-time rates; the GPU path (the panel uses the CPU module until the GPU tracer has v3)."
+}
