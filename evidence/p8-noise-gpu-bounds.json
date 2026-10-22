@@ -1,0 +1,12 @@
+{
+ "criterion": "ROADMAP P8 stage 2 (2026-10-22): the noise module on the GPU, with parity against the CPU module of stage 1 (evidence/p8-noise-dither-runs.json).",
+ "written": "2026-10-22, before any code and before any run",
+ "design": "src/renderer/gpu/shaders/noise.wgsl mirrors src/renderer/noise.cpp line for line (the same lowbias32 hash chain, the same float32 operations in the same order; if-chains where the C++ uses switch) with one pass, noise_eval, that writes one function over a w x h grid; scripts/wgsl_to_hlsl.py translates it for D3D12 and Vulkan, cmake/gpu.cmake embeds it for WebGPU. raw_native_cli noise-parity runs the pass for each of the sixteen functions of the stage 1 goldens (the four recipes stay CPU-only in this stage) and compares with the CPU images. The blue-noise mask goes up as a storage buffer.",
+ "checks": {
+  "g1_parity": {"what": "noise-parity: each function's GPU image against the CPU golden image, 128 x 128", "bound": "worst absolute difference at most 1e-5 for every function; the integer-only ones (white, blue) bit-equal", "prediction": "holds on WARP, lavapipe and the RTX 4090; fused multiply-add on a GPU may move the last bits of the octave sums"},
+  "g2_control": {"what": "the same comparison with the GPU's seed off by one", "bound": "every function except blue misses by more than 0.01", "prediction": "holds"},
+  "g3_hash": {"what": "the lowbias32 chain on the GPU against the CPU over the first 65,536 lattice points", "bound": "bit-equal", "prediction": "holds"}
+ },
+ "not_in_this_step": "the four recipes on the GPU, the dither module on the GPU (stage 2 of P8b), and moving the engine's private copies onto the module (stage 3)",
+ "does_not_prove": "that a shader using the module looks right; performance"
+}
