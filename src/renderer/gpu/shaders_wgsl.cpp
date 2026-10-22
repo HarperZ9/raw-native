@@ -2,7 +2,7 @@
 // Each pass is its "//@pass <name>" section of passes.wgsl with common.wgsl in
 // front of it.
 #include "shader_library.hpp"
-#include "raw_gpu_shaders.hpp"   // generated: kCommonWgsl, kPassesWgsl, kThreadsWgsl, kRasterWgsl, kPbrWgsl, kCubeWgsl, kLightWgsl, kShadowWgsl, kPostWgsl, kSwrWgsl, kRtWgsl, kPtWgsl, kSdfWgsl, kStyleWgsl
+#include "raw_gpu_shaders.hpp"   // generated: kCommonWgsl, kPassesWgsl, kThreadsWgsl, kRasterWgsl, kPbrWgsl, kCubeWgsl, kLightWgsl, kShadowWgsl, kPostWgsl, kSwrWgsl, kRtWgsl, kPtWgsl, kSdfWgsl, kStyleWgsl, kNoiseWgsl
 #include <map>
 #include <string>
 namespace raw::gpu_shaders {
@@ -36,6 +36,7 @@ std::string passSource(const std::string& name){
     if (name.rfind("pt_", 0) == 0) return moduleSource(kPtWgsl, name);
     if (name.rfind("sdf_", 0) == 0) return moduleSource(kSdfWgsl, name);
     if (name.rfind("style_", 0) == 0) return moduleSource(kStyleWgsl, name);
+    if (name.rfind("noise_", 0) == 0) return moduleSource(kNoiseWgsl, name);
     if (std::string s = moduleSource(kShadowWgsl, name); !s.empty()) return s;   // shadow_depth is a raster pass
     if (name.rfind("post_", 0) == 0) return moduleSource(kPostWgsl, name);
     if (std::string r = rasterSource(name); !r.empty()) return r;

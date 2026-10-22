@@ -1,0 +1,12 @@
+{
+ "bounds": "evidence/p8-noise-gpu-bounds.json",
+ "branch": "feat/p8-noise-gpu",
+ "runs": {"lavapipe": "WSL, llvmpipe (LLVM 20.1.2), 2026-10-22", "rtx_warp": "MSVC D3D12 build (sha256 8414f351...), RTX 4090 and local WARP, under the shared GPU lock, 2026-10-22", "ci": "m3-scenes noise-parity on WARP and lavapipe", "files": "evidence/p8-noise-gpu/"},
+ "checks": {
+  "g1_parity": {"result": "holds", "observed": "WARP: all sixteen functions bit-equal to the CPU. lavapipe: fifteen bit-equal, simplex2 within 6.0e-8. RTX 4090: white, value, Perlin, simplex, hybrid and blue bit-equal; Worley, fBm, ridged and billow within 1.8e-7; the domain-warped fBm within 2.9e-6 (bound 1e-5)"},
+  "g2_control": {"result": "holds", "observed": "seed off by one: every function except blue misses by 0.73 to 2.29"},
+  "g3_hash": {"result": "holds", "observed": "white noise over 65,536 lattice points: 0 points differ on all three"}
+ },
+ "found_on_the_way": "The HLSL translator zero-initialises a local array of vectors with one scalar a element, which glslang accepts and DXC rejects (array<vec3i, 4> in simplex3); the shader uses three scalar arrays instead. The translator itself is not changed here.",
+ "does_not_prove": "That a shader using the module looks right; performance."
+}

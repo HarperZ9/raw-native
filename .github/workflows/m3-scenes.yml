@@ -14,6 +14,9 @@ on:
       - 'tests/gpu/m3_scenes_gate.py'
       - 'src/renderer/gpu/shaders/pbr.wgsl'
       - 'src/renderer/gallery_field.cpp'
+      - 'src/renderer/gpu/shaders/noise.wgsl'
+      - 'src/renderer/gpu/noise_gpu.cpp'
+      - 'evidence/p8-noise-gpu-*'
       - 'src/renderer/gallery_occlusion.cpp'
       - 'evidence/gallery-occlusion-*'
       - 'evidence/p10-sphere-field-*'
@@ -72,6 +75,9 @@ jobs:
       - name: The gate (p3 recorded, the rest gated)
         shell: bash
         run: $PY tests/gpu/m3_scenes_gate.py m3s --out m3s/summary.json
+      - name: g1 to g3 the noise module on the GPU (evidence/p8-noise-gpu-bounds.json)
+        shell: bash
+        run: $CLI noise-parity | tee m3s/noise-parity.json
       - name: f3 the sphere field's GPU shading (evidence/p10-sphere-field-bounds.json), 256 x 160
         shell: bash
         run: |

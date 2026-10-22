@@ -14,4 +14,6 @@ GreyImage ditherRamp();
 GreyImage ditherCard();
 std::vector<GreyImage> ditherGoldens();
 int noiseGalleryCommand(int argc, char** argv);
+// raw_native_cli noise-parity (src/tools/noise_parity_cmd.cpp; evidence/p8-noise-gpu-bounds.json).
+int noiseParityCommand(int argc, char** argv);
 }
