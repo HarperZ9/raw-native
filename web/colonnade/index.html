@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>raw-native colonnade</title>
+<style>
+:root { --ink: #16181d; --ground: #f6f5f1; --muted: #5d6270; --rule: #d9d7cf; }
+@media (prefers-color-scheme: dark) { :root { --ink: #e9e7e1; --ground: #121418; --muted: #9aa0ab; --rule: #2a2e36; } }
+body { margin: 0; background: var(--ground); color: var(--ink); font: 15px/1.5 system-ui, sans-serif; }
+main { max-width: 1120px; margin: 0 auto; padding: 24px 16px 48px; }
+h1 { font-size: 22px; font-weight: 650; margin: 0 0 4px; }
+.lede { color: var(--muted); margin: 0 0 20px; max-width: 68ch; }
+.controls { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px 24px; padding: 12px 0; border-top: 1px solid var(--rule); border-bottom: 1px solid var(--rule); }
+.controls label { display: grid; gap: 2px; }
+.controls output, .mono, pre { font-family: ui-monospace, "SFMono-Regular", Consolas, monospace; font-size: 12.5px; }
+input[type=range] { width: 100%; }
+figure { margin: 20px 0; }
+img { width: 100%; max-width: 960px; image-rendering: pixelated; background: var(--rule); display: block; }
+figcaption { color: var(--muted); margin-top: 6px; font-family: ui-monospace, Consolas, monospace; font-size: 12.5px; }
+#status { color: var(--muted); }
+</style>
+<main>
+  <h1>Colonnade</h1>
+  <p class="lede">A sunlit colonnade path-traced by raw-native in your browser, from the engine's own
+    WebAssembly build. Move the sun and the haze; each change renders a quick pass, then a finer one.</p>
+  <div class="controls">
+    <label>Sun elevation <input id="elev" type="range" min="1" max="85" step="1" value="60"><output id="elev-v">60</output></label>
+    <label>Sun azimuth <input id="az" type="range" min="0" max="360" step="5" value="65"><output id="az-v">65</output></label>
+    <label>Turbidity <input id="turb" type="range" min="1.8" max="8" step="0.1" value="2.5"><output id="turb-v">2.5</output></label>
+    <label>Exposure (EV100) <input id="ev" type="range" min="8" max="16" step="0.5" value="15"><output id="ev-v">15</output></label>
+    <label>Samples (finer pass) <input id="spp" type="range" min="4" max="64" step="4" value="16"><output id="spp-v">16</output></label>
+    <label><span>Emissive sphere</span><input id="emission" type="checkbox" checked></label>
+  </div>
+  <figure><img id="frame" alt="the colonnade, path-traced"><figcaption id="caption">loading the engine</figcaption></figure>
+  <p id="status">loading</p>
+</main>
+<script type="module" src="colonnade.mjs"></script>

@@ -687,6 +687,16 @@ jobs:
           python tests/web/rhi_texture.py --command style-parity --fixtures build-wasm-gpu/style-fixtures --dir build-wasm-gpu --adapter swiftshader --timeout 4000 --out style-webgpu.json
       - name: The verified viewer renders the owned assets with a certificate and refuses a broken file (M3 criterion 4)
         run: python tests/web/viewer.py --dir build-wasm-gpu --adapter swiftshader --out viewer-webgpu.json
+      - name: The colonnade's live settings panel renders, echoes its settings and changes with the sun (P11 stage 2)
+        run: python tests/web/colonnade_panel.py --dir build-wasm --out colonnade-panel.json
+      - name: Keep the colonnade panel's record and screenshot
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: colonnade-panel
+          path: |
+            colonnade-panel.json
+            colonnade-panel.png
       - name: The default native build carries no GPU code
         run: |
           ! grep -q "emdawnwebgpu\|wgpu" build/raw_native_cli
