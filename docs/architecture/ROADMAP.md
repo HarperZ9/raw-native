@@ -255,6 +255,8 @@ copied from the sources). P8b, the dither module, was added the same day and ran
 consumers (terrain, weather, film grain, tile variation, and P9's ripples) wait on it. P9 ranks
 third: Low Water's rainy harbour makes it core for the game, and path tracer v3 already gives it a
 reference to be checked against.
+Status of P13 and P11's sky (2026-10-21): built without downloads, as the author decided. The sky model (Preetham, checked against the CIE clear sky) and our own baked environments (clear noon, overcast, golden hour, night, an interior probe) are in `evidence/envmaps.lock.json` with recipes and hashes; `relight` renders the gallery and the sphere field under each with their G-buffer channels (`evidence/sky-envmaps-runs.json`). The colonnade scene itself is next.
+
 Status of P8 and P8b (2026-10-21): stage 1 built. The CPU modules pass their goldens (the same hashes on GCC and MSVC) and their statistical checks (`evidence/p8-noise-dither-runs.json`). Stage 2 (WGSL passes and GPU parity) and stage 3 (moving the engine's private copies onto the modules) remain.
 
 Status of P10 (2026-10-21): built. The sphere field's raster frame is pinned per compiler, its GPU shading holds the gallery's bounds on the RTX 4090 and WARP, and its error against path tracer v3 is 0.23 (bound 0.6; `evidence/p10-sphere-field-runs.json`). A dispatch-only GPU timer is still open, so its frame times are wall times.
