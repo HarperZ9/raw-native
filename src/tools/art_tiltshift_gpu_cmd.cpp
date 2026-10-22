@@ -58,9 +58,12 @@ std::string cost(rhi::Device& dev, const Options& o, bool& pass) {
     const bool ok = g.chainMs <= 1.0;
     pass = pass && ok;
     std::printf("art tiltshift gpu: chain %.3f ms at 1080p\n", g.chainMs);
-    std::printf("art tiltshift gpu: passes coc %.3f weight %.3f prep %.3f tensor %.3f blur %.3f %.3f defocus %.3f bright %.3f glow %.3f finish %.3f\n", g.stepMs[0], g.stepMs[1],
-                g.stepMs[2], g.stepMs[3], g.stepMs[4], g.stepMs[5], g.stepMs[6], g.stepMs[7], g.stepMs[8], g.stepMs[9]);
-    return j.num("chain_ms", g.chainMs).nums("pass_ms_coc_weight_prep_tensor_blurx_blury_defocus_bright_glow_finish", g.stepMs).boolean("g3_pass", ok).done();
+    static const char* const names[] = {"coc", "weight", "half", "prep", "tensor", "blur_x", "blur_y", "defocus", "compose", "bright", "glow", "finish"};
+    std::string list = "art tiltshift gpu: passes";
+    Json per;
+    for (std::size_t k = 0; k < g.stepMs.size() && k < 12; ++k) { char b[64]; std::snprintf(b, sizeof b, " %s %.3f", names[k], g.stepMs[k]); list += b; per.num(names[k], g.stepMs[k]); }
+    std::printf("%s\n", list.c_str());
+    return j.num("chain_ms", g.chainMs).raw("pass_ms", per.done()).boolean("g3_pass", ok).done();
 }
 }  // namespace
 

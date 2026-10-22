@@ -21,13 +21,13 @@ struct TsParams {
     eye: vec4f,    // xyz, focal length in pixels
     fwd: vec4f,    // xyz, focal length in mm
     pn: vec4f,     // the plane of focus: normal xyz, d
-    lens: vec4f,   // mm a world unit, f-number, cMax
+    lens: vec4f,   // mm a world unit, f-number, cMax, defocus radius scale (0.5 at half resolution)
     dp: vec4f,     // c0, c1, q, rim
     fx0: vec4f,    // vignette, mechanical vignette, halation, star
     fx1: vec4f,    // chromatic aberration, grain, print, halftone
     fx2: vec4f,    // misregistration, weave x, weave y, halftone cell
     fx3: vec4f,    // halo radius, star step (quarter pixels), threshold, knee
-    fx4: vec4f,    // glow gain (0.5 under reduce bright flashes)
+    fx4: vec4f,    // glow gain (0.5 under reduce bright flashes), saturation, hue cos, hue sin
     sd0: vec4f,    // star directions 0 and 1 (cos, sin)
     sd1: vec4f,    // star directions 2 and 3
 }

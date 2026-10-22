@@ -154,7 +154,8 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 // The painted defocus: where the weight is above zero, an anisotropic Kuwahara of radius c / 2 along
 // the flow over a fixed 48-sample Vogel disc (sector weights from the table), averaging pigment
 // latents; a nearer sample counts only by its own reach (scatter as gather). Reference
-// raw::art::paintDefocus (DefocusMode::Paint). The sample table (48 (x, y), then 48 x 8 sector
+// raw::art::paintDefocus (DefocusMode::Paint), run at half resolution on the unlined colour
+// (U.lens.w = 0.5 scales the radius and reach); the compose mixes it in. The sample table (48 (x, y), then 48 x 8 sector
 // weights) follows the 19,993 pigment floats in the same buffer.
 @group(0) @binding(0) var<uniform> U: TsParams;
 @group(0) @binding(1) var<storage, read> pig: array<f32>;
@@ -202,7 +203,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     var ty: f32 = 0.0;
     var A: f32 = 0.0;
     if (m > 1.0e-12 && tr > 1.0e-12) { tx = -gy / m; ty = gx / m; A = (l1 - l2) / (l1 + l2); }
-    let rad: f32 = 0.5 * cw.x;
+    let rad: f32 = 0.5 * cw.x * U.lens.w;
     let a: f32 = rad * (1.0 + A);
     let b: f32 = rad / (1.0 + A);
     var qs: array<u32, 48>;
@@ -216,7 +217,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
         let q: u32 = ts_index(i32(floor(x + ox + 0.5)), i32(floor(y + oy + 0.5)), U.width, U.height);
         var o: f32 = 1.0;
         let cq: vec4f = CW[q];
-        if (cq.y < cw.y) { o = clamp(0.5 * cq.x - sqrt(ox * ox + oy * oy) + 1.0, 0.0, 1.0); }
+        if (cq.y < cw.y) { o = clamp(0.5 * cq.x * U.lens.w - sqrt(ox * ox + oy * oy) + 1.0, 0.0, 1.0); }
         qs[s] = q;
         wo[s] = o;
         let sv: vec3f = sb[q].xyz;
@@ -258,7 +259,70 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     }
     if (ws <= 0.0) { outc[p] = vec4f(src.xyz, 1.0); return; }
     let res: vec3f = km_decode(L0 / ws) + L1 / ws;
-    outc[p] = vec4f(src.xyz * (1.0 - cw.z) + res * cw.z, 1.0);
+    outc[p] = vec4f(res, 1.0);
+}
+
+//@pass art_ts_half
+// Addendum C: the half-resolution input of the painted defocus. The 2 x 2 mean of the unlined colour
+// (rgb / max(alpha, 0.05), alpha being the paint frame's line factor) and of the CoC and depth, and
+// the half-resolution weight smoothstep(c0, c1, c). U is the half-resolution parameters; U.qw and
+// U.qh carry the full frame's width and height. Reference raw::art::unlinedHalf.
+@group(0) @binding(0) var<uniform> U: TsParams;
+@group(0) @binding(1) var<storage, read> img: array<vec4f>;
+@group(0) @binding(2) var<storage, read> C: array<vec4f>;
+@group(0) @binding(3) var<storage, read_write> hu: array<vec4f>;
+@group(0) @binding(4) var<storage, read_write> hcw: array<vec4f>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let p: u32 = gid.x + gid.y * 2097152u;
+    if (p >= U.width * U.height) { return; }
+    let x: i32 = i32(p % U.width);
+    let y: i32 = i32(p / U.width);
+    var c: vec3f = vec3f(0.0);
+    var cz: vec2f = vec2f(0.0);
+    for (var j: i32 = 0; j < 2; j++) {
+        for (var i: i32 = 0; i < 2; i++) {
+            let q: u32 = ts_index(2 * x + i, 2 * y + j, U.qw, U.qh);
+            let v: vec4f = img[q];
+            c = c + v.xyz / max(v.w, 0.05) / 4.0;
+            cz = cz + C[q].xy / 4.0;
+        }
+    }
+    hu[p] = vec4f(c, 1.0);
+    hcw[p] = vec4f(cz.x, cz.y, smoothstep(U.dp.x, U.dp.y, cz.x), 0.0);
+}
+
+//@pass art_ts_compose
+// Addendum C: the full-resolution compose. The paint frame mixed with the bilinearly upsampled
+// half-resolution defocus by the full-resolution weight (with its rim guard), so in-focus pixels
+// stay exact and the ink fades as (1 - w). U is the full-resolution parameters; U.qw and U.qh are
+// unused here, the half frame's size is (width + 1) / 2 by (height + 1) / 2.
+@group(0) @binding(0) var<uniform> U: TsParams;
+@group(0) @binding(1) var<storage, read> img: array<vec4f>;
+@group(0) @binding(2) var<storage, read> hc: array<vec4f>;
+@group(0) @binding(3) var<storage, read> CW: array<vec4f>;
+@group(0) @binding(4) var<storage, read_write> outc: array<vec4f>;
+
+@compute @workgroup_size(64)
+fn main(@builtin(global_invocation_id) gid: vec3u) {
+    let p: u32 = gid.x + gid.y * 2097152u;
+    if (p >= U.width * U.height) { return; }
+    let src: vec4f = img[p];
+    let wi: f32 = CW[p].z;
+    if (wi <= 0.0) { outc[p] = src; return; }
+    let hw: u32 = (U.width + 1u) / 2u;
+    let hh: u32 = (U.height + 1u) / 2u;
+    let fx: f32 = clamp((f32(p % U.width) + 0.5) / 2.0 - 0.5, 0.0, f32(hw - 1u));
+    let fy: f32 = clamp((f32(p / U.width) + 0.5) / 2.0 - 0.5, 0.0, f32(hh - 1u));
+    let x0: u32 = min(u32(floor(fx)), hw - 1u);
+    let y0: u32 = min(u32(floor(fy)), hh - 1u);
+    let x1: u32 = min(x0 + 1u, hw - 1u);
+    let y1: u32 = min(y0 + 1u, hh - 1u);
+    let tx: f32 = fx - f32(x0);
+    let ty: f32 = fy - f32(y0);
+    let r: vec3f = (hc[y0 * hw + x0].xyz * (1.0 - tx) + hc[y0 * hw + x1].xyz * tx) * (1.0 - ty) + (hc[y1 * hw + x0].xyz * (1.0 - tx) + hc[y1 * hw + x1].xyz * tx) * ty;
+    outc[p] = vec4f(src.xyz * (1.0 - wi) + r * wi, src.w * (1.0 - wi) + wi);
 }
 
 //@pass art_ts_bright
@@ -402,6 +466,18 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     c = c + U.fx4.x * (U.fx0.z * bg(gx, gy, 0u) * vec3f(1.0, 0.55, 0.22) + U.fx0.w * bg(gx, gy, 1u) * vec3f(1.0, 0.82, 0.5));
     let lift: vec3f = vec3f(0.05, 0.04, 0.035);
     c = c + U.fx1.z * (lift + (vec3f(0.95, 0.90, 0.80) - lift) * c - c);
+    if (U.fx4.y != 1.0 || U.fx4.w != 0.0) {
+        let hc: f32 = U.fx4.z;
+        let hs: f32 = U.fx4.w;
+        let k1: f32 = (1.0 - hc) / 3.0;
+        let k2: f32 = hs / sqrt(3.0);
+        let r0: f32 = c.x * (hc + k1) + c.y * (k1 - k2) + c.z * (k1 + k2);
+        let r1: f32 = c.x * (k1 + k2) + c.y * (hc + k1) + c.z * (k1 - k2);
+        let r2: f32 = c.x * (k1 - k2) + c.y * (k1 + k2) + c.z * (hc + k1);
+        let r: vec3f = vec3f(r0, r1, r2);
+        let y0: f32 = ts_luma(r);
+        c = vec3f(y0) + U.fx4.y * (r - vec3f(y0));
+    }
     if (U.fx1.w > 0.0) {
         let cell: f32 = U.fx2.w;
         let u: f32 = (px + py) * 0.7071067811865476 / cell;
