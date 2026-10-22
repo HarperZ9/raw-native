@@ -1,0 +1,52 @@
+name: art
+# The stylised track (docs/architecture/ROADMAP.md P5, P16 to P21): each art pass's GPU parity on
+# WARP (D3D12, software) and lavapipe (Vulkan, software) against its float64 reference, within the
+# bounds in its evidence file. The orbit measurements and the RTX 4090 costs are recorded locally
+# under the shared GPU lock and committed under evidence/; the golden hashes run in ci.yml's tests.
+on:
+  pull_request:
+    paths:
+      - 'raw/renderer/art_*'
+      - 'src/renderer/art_*'
+      - 'src/renderer/gpu/art_*'
+      - 'src/renderer/gpu/shaders/art*'
+      - 'src/renderer/gpu/shaders/hlsl/art_*'
+      - 'src/tools/art_*'
+      - 'tests/test_art_*'
+      - 'evidence/p5-*'
+      - '.github/workflows/art.yml'
+permissions:
+  contents: read
+jobs:
+  parity:
+    strategy:
+      fail-fast: false
+      matrix:
+        adapter: [warp, lavapipe]
+    runs-on: ${{ matrix.adapter == 'warp' && 'windows-latest' || 'ubuntu-24.04' }}
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install lavapipe and the Vulkan build tools
+        if: matrix.adapter == 'lavapipe'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libvulkan-dev glslang-tools mesa-vulkan-drivers libxcb1-dev libwayland-dev wayland-protocols
+      - name: Build the GPU CLI
+        shell: bash
+        run: |
+          if [ "${{ matrix.adapter }}" = warp ]; then
+            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRAW_NATIVE_GPU_D3D12=ON
+            cmake --build build --config Release --target raw_native_cli
+            echo "CLI=build/Release/raw_native_cli.exe" >> "$GITHUB_ENV"; echo "RAW_NATIVE_D3D12_WARP=1" >> "$GITHUB_ENV"
+          else
+            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRAW_NATIVE_VULKAN_RHI=ON
+            cmake --build build -j 4 --target raw_native_cli_vk
+            echo "CLI=build/raw_native_cli_vk" >> "$GITHUB_ENV"
+          fi
+      - name: P5 world-anchored strokes, w3 (evidence/p5-world-strokes-bounds.json)
+        shell: bash
+        run: mkdir -p art && $CLI art strokes --no-orbit --gpu --threads 4 --out art/strokes > art/strokes.log || { tail -c 4000 art/strokes.log; exit 1; }
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: "art-${{ matrix.adapter }}", path: "art/**/*.json\nart/**/*.png", retention-days: 30 }
