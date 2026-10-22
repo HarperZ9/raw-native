@@ -54,6 +54,9 @@ Gallery build(int width, int height, int spp);
 Gallery buildField(int width, int height, int spp);
 // The material gallery with its spheres `spacing` apart (src/renderer/gallery_spaced.cpp), a diagnostic.
 Gallery buildSpaced(int size, int spp, double spacing);
+// The sphere field's view-to-world rotation (its environment is in view space; a caller that bakes
+// a world-space sky for it rotates directions with this).
+lighting::D3 fieldViewToWorld(lighting::D3 v);
 // Material of the sphere at row, column (also what the media pages label).
 pbr::Material sphereMaterial(int row, int col, std::string* label = nullptr);
 // Exposed linear radiance per pixel from per-sample exposed radiance (sphere hits and the

@@ -1,0 +1,86 @@
+{
+ "what": "raw-native's own environment maps: generated, never downloaded (evidence/sky-envmaps-bounds.json). Each entry's hash is the SHA-256 of the cube's level-0 float64 data as that compiler family produces it; the analytic skies that use only exact arithmetic agree across families, the ones through acos, exp, tan or the path tracer differ in the last bits.",
+ "written": "2026-10-21",
+ "maps": [
+  {
+   "name": "clear_noon",
+   "recipe": "Preetham turbidity 2.5, sun 70 deg up at azimuth 30; sun disk deposited (sky::sunIlluminance)",
+   "size": 64,
+   "generator": "raw_native_cli envmaps --size 64",
+   "sha256_level0_f64": "30d855dc2c2ef96184690b44d4e4f5b192fc16e22a43a103253576a4e5b18475",
+   "family": "gcc"
+  },
+  {
+   "name": "overcast",
+   "recipe": "CIE overcast, zenith 8000 nits, ground albedo 0.25",
+   "size": 64,
+   "generator": "raw_native_cli envmaps --size 64",
+   "sha256_level0_f64": "97a51b16ce998a6f474da89b275e0544d974850841ec3ce48b27021b6ea58d90",
+   "family": "gcc"
+  },
+  {
+   "name": "golden_hour",
+   "recipe": "Preetham turbidity 4, sun 4 deg up at azimuth 200; sun disk deposited",
+   "size": 64,
+   "generator": "raw_native_cli envmaps --size 64",
+   "sha256_level0_f64": "fd9cced2afe194df6b3c6099ab0e469ee2a9de3212610cdbb78c52b4bba818a9",
+   "family": "gcc"
+  },
+  {
+   "name": "night",
+   "recipe": "dim blue gradient, white-noise stars (seed 0x57a7), full moon 0.25 lux at 35 deg up, azimuth 120",
+   "size": 64,
+   "generator": "raw_native_cli envmaps --size 64",
+   "sha256_level0_f64": "18cfa38cb752031b9fd584577d215c735a4b463afa363ce30e91c012ea47b870",
+   "family": "gcc"
+  },
+  {
+   "name": "interior_probe",
+   "recipe": "path tracer v2, retro_room, eye (0, 1.6, -5), 64 spp a texel, seed 5, unjittered",
+   "size": 64,
+   "generator": "raw_native_cli envmaps --size 64",
+   "sha256_level0_f64": "feeb4ad14f24b768a8da6276008425223d7dea3af293801b03af31447a07b2aa",
+   "family": "gcc"
+  },
+  {
+   "name": "clear_noon",
+   "recipe": "Preetham turbidity 2.5, sun 70 deg up at azimuth 30; sun disk deposited (sky::sunIlluminance)",
+   "size": 64,
+   "generator": "raw_native_cli envmaps --size 64",
+   "sha256_level0_f64": "2deccf113c009c53515d6cefe1f8b74e4d148f83da3ff6d6d36d14b27ba81456",
+   "family": "msvc"
+  },
+  {
+   "name": "overcast",
+   "recipe": "CIE overcast, zenith 8000 nits, ground albedo 0.25",
+   "size": 64,
+   "generator": "raw_native_cli envmaps --size 64",
+   "sha256_level0_f64": "97a51b16ce998a6f474da89b275e0544d974850841ec3ce48b27021b6ea58d90",
+   "family": "msvc"
+  },
+  {
+   "name": "golden_hour",
+   "recipe": "Preetham turbidity 4, sun 4 deg up at azimuth 200; sun disk deposited",
+   "size": 64,
+   "generator": "raw_native_cli envmaps --size 64",
+   "sha256_level0_f64": "68b5ce2d09e7a815310269a6a33adf1d54cbd297731abfefb92d48f929502af1",
+   "family": "msvc"
+  },
+  {
+   "name": "night",
+   "recipe": "dim blue gradient, white-noise stars (seed 0x57a7), full moon 0.25 lux at 35 deg up, azimuth 120",
+   "size": 64,
+   "generator": "raw_native_cli envmaps --size 64",
+   "sha256_level0_f64": "18cfa38cb752031b9fd584577d215c735a4b463afa363ce30e91c012ea47b870",
+   "family": "msvc"
+  },
+  {
+   "name": "interior_probe",
+   "recipe": "path tracer v2, retro_room, eye (0, 1.6, -5), 64 spp a texel, seed 5, unjittered",
+   "size": 64,
+   "generator": "raw_native_cli envmaps --size 64",
+   "sha256_level0_f64": "c51efcd1161944fac15b80e6a92afa7cf9cae0c6b607ed3408989ea74ba4b141",
+   "family": "msvc"
+  }
+ ]
+}

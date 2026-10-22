@@ -51,6 +51,8 @@ D3 toWorld(const View& V, D3 v) { return {V.s.x * v.x + V.u.x * v.y + V.b.x * v.
 lighting::Rgb viewSky(D3 d) { return lighting::proceduralSky(toWorld(view(), d)); }
 }  // namespace
 
+lighting::D3 fieldViewToWorld(lighting::D3 v) { return toWorld(view(), v); }
+
 Gallery buildField(int width, int height, int spp) {
     Gallery g;
     g.width = width; g.height = height; g.spp = std::max(1, spp); g.fovy = kFieldFovy; g.name = "sphere-field";
