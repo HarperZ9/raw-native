@@ -44,5 +44,9 @@
    "prediction": "holds by a wide margin, about 0.1 ms; the advected canvas's three passes cost more than the anchor"
   }
  },
- "does_not_prove": "Stability on other scenes, under fast motion or with moving objects: the anchor uses world positions, so a moving object's strokes would slide on it; object-space charts are the fix and are not built here. That strokes look better: the PNGs are for review. The stroke shapes still follow the image's structure tensor, which is screen-space; only the noise that makes them is anchored. Triplanar seams show where the dominant axis changes on curved surfaces; they are fixed to the surface, so they do not move, and they are recorded by look."
+ "does_not_prove": "Stability on other scenes, under fast motion or with moving objects: the anchor uses world positions, so a moving object's strokes would slide on it; object-space charts are the fix and are not built here. That strokes look better: the PNGs are for review. The stroke shapes still follow the image's structure tensor, which is screen-space; only the noise that makes them is anchored. Triplanar seams show where the dominant axis changes on curved surfaces; they are fixed to the surface, so they do not move, and they are recorded by look.",
+ "addendum_a": {
+  "written": "2026-10-22, after the first cost run on the RTX 4090 and before the second; no bound changes",
+  "what": "w5's method. The first run timed each range with one copy of the work a submission, as the dispatch timer does (evidence/gpu-dispatch-timer-runs.json, whose t2 found its floor at about 0.5 ms of submission and fence latency). It gave the anchor pass 4.90 ms, the advected canvas 3.90 ms, and the same eight paint passes 21.3 ms after the anchor against 9.2 ms after the advected canvas: inconsistent for identical passes, so the numbers are latency and contention, not the passes. That run is kept in the runs file as recorded. From the second run, each range is recorded 10 times into one submission and the median submit-to-fence time is divided by 10; the single-submission anchor time is reported beside it. The bound stays: the anchor pass at most 2.0 ms."
+ }
 }
