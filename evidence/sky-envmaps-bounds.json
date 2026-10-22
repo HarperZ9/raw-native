@@ -1,0 +1,53 @@
+{
+ "criterion": "Coordinator round 2, items 2 (the sky part of the colonnade) and 3 (the relighting gallery without downloads, 2026-10-21): an analytic sky model, our own baked HDR environments (clear noon, overcast, golden hour, night with a moon) and one interior probe path-traced from our own scene, each recorded in a lockfile with its recipe and hash; and a relighting page that shows owned assets under each environment with their G-buffer channels.",
+ "written": "2026-10-21, before any code and before any run",
+ "design": {
+  "sky": "raw/renderer/sky.hpp, src/renderer/sky.cpp. Clear and hazy skies: the Preetham, Shirley and Smits model (SIGGRAPH 1999): the Perez luminance distribution with coefficients linear in turbidity, zenith luminance and chromaticity, xyY to linear Rec.709, in nits, transcribed from the paper's appendix (from memory; the checks below are what tie it down). Overcast: the CIE overcast sky, L = Lz (1 + 2 cos theta) / 3. The sun as a disk of 0.2667 degrees with an illuminance from a stated simple extinction; at night a moon disk of 0.26 degrees, a dim sky and stars placed by the noise module's white noise. All of it is ours; no measured HDRI.",
+  "bake": "lighting::Cube level 0 from any sky function (texel centres), the same layout the image-lighting path reads. Environments: clear noon (turbidity 2.5, sun 70 degrees up), overcast (zenith 8,000 nits), golden hour (turbidity 4, sun 4 degrees up), night (moon 35 degrees up, stars). Interior probe: path tracer v2 cube faces rendered from inside retro_room at a fixed point.",
+  "lockfile": "evidence/envmaps.lock.json: per map, the generator command, its parameters, the size and the SHA-256 of the cube's level-0 float64 data, with the compiler family that produced the hash",
+  "relight": "raw_native_cli relight --out DIR: the sphere field and the material gallery under every environment (the float64 shading of the gallery path), with albedo, normal, roughness and depth channels, as PNGs and an index.html page"
+ },
+ "checks": {
+  "k1_clear_vs_cie": {
+   "what": "Preetham's relative luminance (divided by its zenith value) at turbidity 2.5 against the CIE standard clear sky (ISO 15469 type 12: Perez a -1, b -0.32, c 10, d -3, e 0.45), an independent standardised form, at 400 directions of the upper hemisphere more than 5 degrees from the sun, sun at 30 and 60 degrees elevation",
+   "bound": "median relative difference at most 25%, worst at most 80%",
+   "prediction": "holds; both are Perez fits to clear skies, with different coefficients"
+  },
+  "k2_overcast": {
+   "what": "the overcast sky's horizon over zenith luminance",
+   "bound": "1/3 within 1e-12",
+   "prediction": "holds"
+  },
+  "k3_turbidity": {
+   "what": "luminance 10 degrees from the sun over zenith luminance, turbidity 2 against 6, sun 45 degrees up",
+   "bound": "larger at 6 (haze brightens the circumsolar region)",
+   "prediction": "holds"
+  },
+  "k4_colour": {
+   "what": "clear noon zenith in linear Rec.709",
+   "bound": "blue above red; overcast neutral within 1%",
+   "prediction": "holds"
+  },
+  "k5_bake": {
+   "what": "horizontal illuminance from each baked cube (texel solid angles) against direct integration of the sky function by 2^20 stratified directions, sun and moon disks excluded from both",
+   "bound": "within 2%",
+   "prediction": "holds at 64-texel faces"
+  },
+  "k6_lockfile": {
+   "what": "regenerating every map from its recipe reproduces the SHA-256 recorded for the compiler family",
+   "bound": "equal",
+   "prediction": "holds for the analytic skies on the recording compiler; the probe depends on the C runtime's sin and cos and is recorded per family"
+  },
+  "k7_relight": {
+   "what": "the relight page's frames, viewed",
+   "bound": "each environment visibly changes the lighting of every asset; reviewed by eye and recorded",
+   "prediction": "holds"
+  }
+ },
+ "does_not_prove": "That the sky matches a measured sky (no measured data is used; if validation against a measured HDRI ever becomes necessary, that is a question for the author before any download); physical accuracy of the moon and stars (artistic, stated as such).",
+ "addendum_A": {
+  "written": "2026-10-21, after the first test run, before any recorded run",
+  "what_was_seen": "k3 as written (circumsolar luminance divided by zenith luminance, larger at turbidity 6 than 2) fails: 4.705 at T 2, 2.271 at T 6. Working the Perez terms by hand shows why: the gradation term A exp(B / cos theta) darkens the zenith of a clear sky strongly at T 2 and barely at T 6, and the zenith luminance itself rises with turbidity, so the ratio to the zenith falls. The model follows the paper; my check measured the wrong quantity.",
+  "what_changes": "k3 becomes the absolute luminance 10 degrees from the sun, larger at T 6 than at T 2 (haze brightens the circumsolar region), and the failed form is kept in the runs file as a wrong prediction."
+ }
+}

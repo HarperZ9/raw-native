@@ -1,0 +1,16 @@
+{
+ "bounds": "evidence/sky-envmaps-bounds.json (addendum A for k3)",
+ "branch": "feat/sky-model-baked-envs",
+ "runs": {"gcc": "g++ 13.3 (WSL), Release, 2026-10-21", "msvc": "MSVC (VS 18), Release, Idle, 2026-10-21"},
+ "checks": {
+  "k1_clear_vs_cie": {"result": "holds", "observed": "sun 30 deg: median 0.054, worst 0.395 over 400 directions; sun 60 deg: median 0.108, worst 0.279 (bounds 0.25, 0.80). The Preetham transcription agrees with the independent CIE clear sky as two clear-sky fits should."},
+  "k2_overcast": {"result": "holds", "observed": "0.333333333333333"},
+  "k3_turbidity": {"result": "holds after addendum A", "observed": "absolute luminance 10 degrees from the sun rises from turbidity 2 to 6 (33,826 nits at 6). The first form, relative to the zenith, failed (4.705 at T 2, 2.271 at T 6): my check was wrong, the model was not; see addendum A."},
+  "k4_colour": {"result": "holds", "observed": "clear noon zenith (7709, 10610, 18230) nits; overcast (8000, 8000, 8000)"},
+  "k5_bake": {"result": "holds", "observed": "horizontal illuminance, cube against direct integration: clear noon 27,578 against 27,574 lux, overcast 19,550 against 19,548, golden hour 9,549 against 9,547 (all under 0.03%); night not integrated (artistic)"},
+  "k6_lockfile": {"result": "holds", "observed": "evidence/envmaps.lock.json holds both families; the test checks 4 of 4 analytic skies on GCC and on MSVC. Overcast and night hash the same on both; clear noon, golden hour and the probe differ (acos, exp, tan, and the path tracer's sin and cos)."},
+  "k7_relight": {"result": "holds (reviewed)", "observed": "evidence/envmaps/relight-sheet.png: the material gallery and the sphere field under clear noon, overcast, golden hour, night and the interior probe, with albedo, normal, roughness and depth. Every environment changes every asset; the night frames are auto-exposed to the sky's median, so they read bright, by choice of exposure. The first render kept the build-time sky in the background; fixed before this record."}
+ },
+ "files": "evidence/envmaps/ (each environment as six faces in a row; the relighting sheet); raw_native_cli relight writes the full page with index.html",
+ "does_not_prove": "Agreement with a measured sky; anything about the moon and stars beyond their stated recipe."
+}
