@@ -173,6 +173,7 @@ CommandList* D3d12Device::begin(std::string& err){
     if (SUCCEEDED(hr)) hr = list_->Reset(alloc_.Get(), nullptr);
     if (FAILED(hr)){ err = hrError("command list Reset", hr); return nullptr; }
     cmd_.error.clear();
+    cmd_.timestampsUsed = 0;
     cmd_.endRenderPass();   // no pass carries over between submissions
     srvGpu.next = 0; sampGpu.next = 0;   // the last submission finished (submitAndWait blocks)
     open_ = true;
@@ -187,6 +188,9 @@ void D3d12Device::drain(){
 bool D3d12Device::submitAndWait(std::string& err){
     if (!open_){ err = "d3d12: no command list is open"; return false; }
     open_ = false;
+    if (cmd_.timestampsUsed > 0 && tsHeap_)   // the slots into the readback buffer, read by timestampSeconds
+        list_->ResolveQueryData(tsHeap_.Get(), D3D12_QUERY_TYPE_TIMESTAMP, 0, cmd_.timestampsUsed, tsReadback_.Get(), 0);
+    tsResolved_ = cmd_.timestampsUsed;
     HRESULT hr = list_->Close();
     if (!cmd_.error.empty()){ err = cmd_.error; cmd_.staging.clear(); return false; }
     if (FAILED(hr)){ err = hrError("command list Close", hr); cmd_.staging.clear(); return false; }

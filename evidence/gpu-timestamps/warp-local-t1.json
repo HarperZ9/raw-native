@@ -1,0 +1,9 @@
+{
+ "check": "gpu timestamps (t1)",
+ "backend": "d3d12",
+ "adapter": "Microsoft Basic Render Driver",
+ "empty_interval_s": 3.00002284e-06, "empty_ok": true,
+ "dispatch_gpu_ms": 6.4151, "dispatch_wall_ms": 7.1012, "dispatch_ok": true,
+ "error": "",
+ "pass": true
+}

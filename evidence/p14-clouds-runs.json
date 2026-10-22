@@ -1,0 +1,18 @@
+{
+ "bounds": "evidence/p14-clouds-bounds.json (committed before the code, ee0df60)",
+ "date": "2026-10-22",
+ "machine": "GCC 13 in WSL Ubuntu and MSVC 19.50 on Windows 11, CPU only, float64",
+ "design_revision": {
+  "what": "The first goldens read as soft flat blobs when viewed: weak puffiness, undersides barely darker than tops, the towering cumulus a pale pillar. Before the recorded run the scenes were revised: each core lobe gains 3 to 6 smaller lobes on its upper surface (cauliflower), extinction rises (cumulus 18 per metre, deck 14), Worley erosion scale 2.4 and amount 0.3, and the ambient term is weighted more strongly by height (0.2 + 0.8 h instead of 0.35 + 0.65 h).",
+  "why_recorded": "The checks were run on both versions. The bounds did not change; the scenes did, so the v2, v4 and v5 numbers below are for the revised scenes.",
+  "review": "evidence/p14-clouds-sheet.png, viewed: the cumulus reads as heaped cauliflower lobes with darker bases; the deck reads as separate puffy cells; the noise blob control reads as fog with ragged satellites; the towering cumulus is still narrow for its height; the smoke plume at sunset is faint and soft, as intended for smoke."
+ },
+ "results": {
+  "v1_furnace": {"result": "mean 1.00004 (standard error 1.3e-5); control albedo 0.5: 0.9316", "verdict": "PASS"},
+  "v2_single_scattering": {"march_mean": 112.725, "path_traced_mean": 111.922, "difference": "0.72%", "block_rmse": 0.028, "coarse_control": {"difference": "62.49%", "block_rmse": 1.886, "misses": true}, "verdict": "PASS"},
+  "v3_goldens": {"gcc": "0xbdae2b4e79b64567", "msvc": "0xf8800d9132a6c34d", "verdict": "pinned"},
+  "v4_multiple": {"octaves_mean": 321.082, "path_traced_mean": 664.744, "difference": "-51.7%", "prediction": "within 25%", "verdict": "recorded, not gated; the prediction MISSED. On the first scenes the gap was -30.7%; the denser revised scenes scatter more often, and three octaves recover about half of the path-traced multiple scattering. Stage 2 should raise the octave count or fit the octave attenuation against this reference."},
+  "v5_blob_review": {"lobe_gradient": 0.2333, "noise_blob_gradient": 0.1063, "ratio": 2.19, "bound": 1.5, "eye_review": "holds: the noise blob reads as fog", "verdict": "PASS"}
+ },
+ "does_not_prove": "Real-time rates or GPU parity (stage 2); agreement with a measured cloud; that the powder and octave terms are physical."
+}

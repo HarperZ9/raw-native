@@ -17,6 +17,10 @@ on:
       - 'src/renderer/gpu/shaders/noise.wgsl'
       - 'src/renderer/gpu/noise_gpu.cpp'
       - 'evidence/p8-noise-gpu-*'
+      - 'src/tools/timestamps_cmd.cpp'
+      - 'src/rhi/d3d12/d3d12_timestamps.cpp'
+      - 'src/rhi/vulkan/vk_rhi_timestamps.cpp'
+      - 'evidence/gpu-timestamps-*'
       - 'src/renderer/gallery_occlusion.cpp'
       - 'evidence/gallery-occlusion-*'
       - 'evidence/p10-sphere-field-*'
@@ -78,6 +82,9 @@ jobs:
       - name: g1 to g3 the noise module on the GPU (evidence/p8-noise-gpu-bounds.json)
         shell: bash
         run: $CLI noise-parity | tee m3s/noise-parity.json
+      - name: t1 GPU timestamps (evidence/gpu-timestamps-bounds.json)
+        shell: bash
+        run: $CLI gpu-timestamps | tee m3s/timestamps.json
       - name: f3 the sphere field's GPU shading (evidence/p10-sphere-field-bounds.json), 256 x 160
         shell: bash
         run: |
@@ -90,4 +97,4 @@ jobs:
           $PY -c "import json,sys; g=json.load(open('m3s/occl/gallery.json'))['gpu']; print(g); sys.exit(0 if g.get('rmse_exposed',9) <= 5e-4 and g.get('max_abs_exposed',9) <= 0.05 else 1)"
       - uses: actions/upload-artifact@v4
         if: always()
-        with: { name: "m3-scenes-${{ matrix.adapter }}", path: "m3s/*.json\nm3s/*/gpu_certificate.json\nm3s/gallery/gallery.json\nm3s/field/gallery.json\nm3s/occl/gallery.json\nm3s/hero/frame.png\nm3s/hall/frame.png\nm3s/*/frame.ppm", retention-days: 30 }
+        with: { name: "m3-scenes-${{ matrix.adapter }}", path: "m3s/*.json\nm3s/*/gpu_certificate.json\nm3s/gallery/gallery.json\nm3s/field/gallery.json\nm3s/occl/gallery.json\nm3s/timestamps.json\nm3s/hero/frame.png\nm3s/hall/frame.png\nm3s/*/frame.ppm", retention-days: 30 }

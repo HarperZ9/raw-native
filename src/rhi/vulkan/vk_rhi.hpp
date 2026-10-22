@@ -78,6 +78,8 @@ public:
     void beginRenderPass(const RenderPassDesc& pass) override;
     void draw(RasterPipelineHandle pipeline, std::span<const RasterBind> binds, uint32_t vertexCount) override;
     void endRenderPass() override;
+    bool timestamp(uint32_t slot) override;
+    uint32_t timestampsUsed{0};
     // Move a texture to `to`, recording the barrier when it is not there already.
     void transition(TexRec& t, VkImageLayout to);
     void reset(){ error.clear(); staging.clear(); open = false; rendering = false; cleared_ = false; pass = {}; }
@@ -114,6 +116,11 @@ public:
     std::unique_ptr<Swapchain> createSwapchain(const SwapchainDesc& desc, std::string& err) override;
     bool lost() const override { return lost_; }
     bool loseForTest(std::string& err) override;
+    bool timestampSeconds(uint32_t count, std::vector<double>& out, std::string& err) override;
+    // The timestamp query pool (made on first use; null when the queue has no timestamp bits) and its reset.
+    VkQueryPool timestampPool(std::string& err);
+    bool hasTimestampPool() const { return tsPool_ != VK_NULL_HANDLE; }
+    void resetTimestamps(VkCommandBuffer cb);
 
     BufferRec* buffer(BufferHandle h){ return buffers_.get(h.index, h.gen); }
     TexRec* texture(TextureHandle h){ return textures_.get(h.index, h.gen); }
@@ -148,6 +155,10 @@ private:
     VkPhysicalDevice phys_{VK_NULL_HANDLE};
     VkDevice dev_{VK_NULL_HANDLE};
     VkQueue queue_{VK_NULL_HANDLE};
+    VkQueryPool tsPool_{VK_NULL_HANDLE};
+    bool tsChecked_{false};
+    double tsPeriodNs_{0.0};
+    uint32_t tsResolved_{0};
     uint32_t family_{0};
     VkCommandPool pool_{VK_NULL_HANDLE};
     VkFence fence_{VK_NULL_HANDLE};
