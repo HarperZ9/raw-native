@@ -24,7 +24,9 @@ struct PaintParams {
     double xdogWeight{0.985};   // a source-edit control changes it in the code
 };
 PaintParams paintPreset(const std::string& name);   // oil-grotesque, oil, gouache, watercolour
-struct PaintPlan { PaintParams p; int w{0}, h{0}; std::vector<float> tw; };
+// threads: rows painted at once; every pixel reads only earlier passes, so the output is the same
+// for any count.
+struct PaintPlan { PaintParams p; int w{0}, h{0}; std::vector<float> tw; int threads{1}; };
 PaintPlan resolvePaint(const PaintParams& p, int w, int h);
 std::vector<float> paintGaussWeights(double sigma);
 

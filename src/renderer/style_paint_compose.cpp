@@ -4,6 +4,7 @@
 #include "raw/renderer/style_image.hpp"
 #include "raw/renderer/style_paint.hpp"
 #include "data/pigments.hpp"
+#include "raw/core/parallel.hpp"
 #include <algorithm>
 #include <cmath>
 namespace raw::style {
@@ -66,7 +67,7 @@ std::vector<float> paintRelief(const PaintPlan& plan, const std::vector<float>& 
     const PaintParams& p = plan.p;
     std::vector<float> out(std::size_t(w) * h * 4, 0.0f);
     const double lc[3] = {-0.5, -0.6, 0.62}, ll = std::hypot(lc[0], lc[1], lc[2]), L[3] = {lc[0] / ll, lc[1] / ll, lc[2] / ll};
-    for (int y = 0; y < h; ++y) for (int x = 0; x < w; ++x) {
+    parallelRows(h, plan.threads, [&](int y) { for (int x = 0; x < w; ++x) {
         const std::size_t i = std::size_t(y) * w + std::size_t(x);
         const double line = p.lines > 0 ? xdog(plan, akS, x, y) : 1;
         auto hs = [&](int dx, int dy) {
@@ -79,7 +80,7 @@ std::vector<float> paintRelief(const PaintPlan& plan, const std::vector<float>& 
         out[i * 4] = float(line); out[i * 4 + 1] = float(1 + 0.9 * (ndl - L[2]));
         out[i * 4 + 2] = float(p.gloss * std::pow(std::max(0.0, rz), 24) * 0.35);
         out[i * 4 + 3] = float(smooth(0.012, 0.05, std::sqrt(double(T[i * 4]) + T[i * 4 + 2])));
-    }
+    } });
     return out;
 }
 
@@ -87,7 +88,7 @@ std::vector<float> paintCompose(const PaintPlan& plan, const std::vector<float>&
     const int w = plan.w, h = plan.h;
     const PaintParams& p = plan.p;
     std::vector<float> img(std::size_t(w) * h * 4, 0.0f);
-    for (int y = 0; y < h; ++y) for (int x = 0; x < w; ++x) {
+    parallelRows(h, plan.threads, [&](int y) { for (int x = 0; x < w; ++x) {
         double wx = 0, wy = 0;
         if (p.warp > 0) { wx = paintCanvasNoise(plan, cv, PaintNoise::WarpX, x, y, 0); wy = paintCanvasNoise(plan, cv, PaintNoise::WarpY, x, y, 0); }
         const double sx = x + wx * p.warp, sy = y + wy * p.warp;
@@ -138,7 +139,7 @@ std::vector<float> paintCompose(const PaintPlan& plan, const std::vector<float>&
         const std::size_t o = (std::size_t(y) * w + std::size_t(x)) * 4;
         for (int k = 0; k < 3; ++k) img[o + std::size_t(k)] = float(std::max(0.0, rgb[k] * t));
         img[o + 3] = float(t);   // the line factor, exported for P23's defocus (alpha is read by no colour check)
-    }
+    } });
     return img;
 }
 
