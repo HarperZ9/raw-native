@@ -8,7 +8,7 @@
 namespace raw {
 namespace {
 int usage() {
-    std::printf("usage: raw_native_cli art strokes [--out DIR] [--threads N] [--frames N] [--no-orbit] [--gpu] [--cost] [--repeats R]\n");
+    std::printf("usage: raw_native_cli art strokes|tiltshift [--out DIR] [--threads N] [--frames N] [--no-orbit] [--gpu] [--cost] [--repeats R]\n");
     return 2;
 }
 }  // namespace
@@ -32,6 +32,7 @@ int artCommand(int argc, char** argv) {
     std::filesystem::create_directories(o.out, ec);
     if (ec) { std::printf("art: cannot create %s\n", o.out.c_str()); return 2; }
     if (o.feature == "strokes") return art_cmd::strokes(o);
+    if (o.feature == "tiltshift") return art_cmd::tiltshift(o);
     return usage();
 }
 }  // namespace raw
