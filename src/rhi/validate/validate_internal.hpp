@@ -36,6 +36,7 @@ public:
     void beginRenderPass(const RenderPassDesc& pass) override;
     void draw(RasterPipelineHandle pipeline, std::span<const RasterBind> binds, uint32_t vertexCount) override;
     void endRenderPass() override;
+    bool timestamp(uint32_t slot) override { return inner->timestamp(slot); }
     CommandList* inner{nullptr};
     bool passOpen{false};
     RenderPassDesc pass;
@@ -67,6 +68,7 @@ public:
     std::unique_ptr<Swapchain> createSwapchain(const SwapchainDesc& desc, std::string& err) override;
     bool lost() const override { return inner_.lost(); }
     bool loseForTest(std::string& err) override { return inner_.loseForTest(err); }
+    bool timestampSeconds(uint32_t count, std::vector<double>& out, std::string& err) override { return inner_.timestampSeconds(count, out, err); }
 
     void report(const char* rule, const std::string& message);
     BufState* buffer(BufferHandle b){ auto it = buffers_.find(key(b)); return it == buffers_.end() ? nullptr : &it->second; }

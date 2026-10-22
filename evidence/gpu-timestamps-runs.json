@@ -1,0 +1,13 @@
+{
+ "bounds": "evidence/gpu-timestamps-bounds.json",
+ "branch": "feat/gpu-timestamps",
+ "runs": {"lavapipe": "WSL, llvmpipe (LLVM 20.1.2), 2026-10-21", "rtx_warp": "MSVC D3D12 build (sha256 71cfe4db...), RTX 4090 and local WARP, under the shared GPU lock, 2026-10-21", "ci": "m3-scenes t1 on WARP and lavapipe"},
+ "checks": {
+  "t1_test": {"result": "holds", "observed": "gpu-timestamps passes on lavapipe (empty 0.34 ms; dispatch 2.67 ms by timestamps against 3.54 ms submit-to-fence), the RTX 4090 (empty 0; dispatch 0.060 against 0.165 ms) and WARP (empty 3 us; dispatch 6.42 against 7.10 ms)"},
+  "t2_repeatable": {"result": "holds", "observed": "sphere field 256 x 160 on the RTX 4090, two runs: 0.1166 and 0.1168 ms by timestamps (0.2% apart, bound 20%); the submit-to-fence figure of the same runs: 0.469 and 0.484 ms"},
+  "t3_scales": {"result": "holds", "observed": "1080p 2.397 ms against 0.1167 ms: ratio 20.5 (bound 8 to 30) for about 14 times the samples"},
+  "t4_backends": {"result": "holds locally; CI records WARP and lavapipe", "observed": "both report timestamps"}
+ },
+ "consequence": "The sphere field's shading pass at 1080p takes 2.40 ms of GPU time on the RTX 4090. The earlier 3.64 ms (evidence/gpu-dispatch-timer-runs.json) included about 1.2 ms of submission latency across 28 chunks; the 14 to 18 ms readings under contention (evidence/gallery-occlusion-runs.json) were not GPU time.",
+ "does_not_prove": "A whole renderer's frame time; clocks under thermal limits."
+}

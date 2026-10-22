@@ -51,7 +51,9 @@ bool shadeOnGpu(rhi::Device& dev, const lighting::ClusterGrid& grid, const std::
 // `repeats` times; the result is the sum over chunks of each chunk's median submit-to-fence time
 // (milliseconds). It includes the driver's submission and fence latency, not uploads, pipeline
 // creation or readback. Set `dispatchMs` to receive it (null: not measured).
-struct DispatchTiming { double ms{0}; int chunks{0}, repeats{0}; };
+// gpuMs: the same dispatches timed by GPU timestamps (evidence/gpu-timestamps-bounds.json), median
+// per chunk, summed; negative when the backend records no timestamps (gpuError says why).
+struct DispatchTiming { double ms{0}, gpuMs{0}; int chunks{0}, repeats{0}; std::string gpuError; };
 bool shadeOnGpu(rhi::Device& dev, const lighting::ClusterGrid& grid, const std::vector<lighting::Sample>& samples,
                 const std::vector<lighting::Light>& lights, const lighting::Cube& env, const std::vector<lighting::Rgb>& sh,
                 double exposure, std::vector<float>& out, std::string& err, DispatchTiming* timing, int repeats = 21);
