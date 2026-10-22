@@ -52,6 +52,8 @@ Gallery build(int width, int height, int spp);
 // sample carries (and the sky cube, the light, the spheres and the ground) is in view space, the
 // space lighting.hpp works in; the tangent rule is normalize(cross(n, +Y)) there, as in path tracer v3.
 Gallery buildField(int width, int height, int spp);
+// The material gallery with its spheres `spacing` apart (src/renderer/gallery_spaced.cpp), a diagnostic.
+Gallery buildSpaced(int size, int spp, double spacing);
 // Material of the sphere at row, column (also what the media pages label).
 pbr::Material sphereMaterial(int row, int col, std::string* label = nullptr);
 // Exposed linear radiance per pixel from per-sample exposed radiance (sphere hits and the
