@@ -44,14 +44,15 @@ D3 transmitted(const Sample& s) {
 Rgb shadeIbl(const Sample& s, const pbr::Tables& t, const Cube& c, const std::vector<Rgb>& sh) {
     const pbr::IblResponse r = pbr::iblResponse(s.m, t, toLocal(s, s.v));
     const D3 refl = dominant(t, s.n, s.v, r.roughness);
-    Rgb out = madd({}, r.specular, c.sampleRough(r.roughness, refl));
-    out = madd(out, r.irradiance, shIrradiance(sh, s.n));
+    const Rgb so{s.so, s.so, s.so}, ao{s.ao, s.ao, s.ao}, sc{s.soCoat, s.soCoat, s.soCoat};
+    Rgb out = madd({}, r.specular, madd({}, so, c.sampleRough(r.roughness, refl)));
+    out = madd(out, r.irradiance, madd({}, ao, shIrradiance(sh, s.n)));
     if (r.transmission.max3() > 0.0) out = madd(out, r.transmission, c.sampleRough(r.roughness, transmitted(s)));
     if (r.coat.max3() > 0.0) {
         const D3 cn0 = toWorld(s, s.m.coatNormal);
         const double cl = std::sqrt(dot(cn0, cn0));
         const D3 cn{cn0.x / cl, cn0.y / cl, cn0.z / cl};
-        out = madd(out, r.coat, c.sampleRough(r.coatRoughness, dominant(t, cn, s.v, r.coatRoughness)));
+        out = madd(out, r.coat, madd({}, sc, c.sampleRough(r.coatRoughness, dominant(t, cn, s.v, r.coatRoughness))));
     }
     return out;
 }

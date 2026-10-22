@@ -36,6 +36,7 @@ void packSample(lighting::Sample& s, float* out) {
     s.m = c.m;
     std::copy(tmp, tmp + 36, out);
     put3(out + 36, s.p); put3(out + 39, s.n); put3(out + 42, s.t); put3(out + 45, s.v);
+    out[48] = f32(s.ao); out[49] = f32(s.so); out[50] = f32(s.soCoat);
 }
 
 std::vector<float> packEnvironment(const lighting::Cube& c, const std::vector<Rgb>& sh) {

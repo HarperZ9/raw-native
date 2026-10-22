@@ -10,7 +10,7 @@
 #include <vector>
 namespace raw::gpu_check {
 
-inline constexpr int kLightFloats = 16, kSampleFloats = 48;
+inline constexpr int kLightFloats = 16, kSampleFloats = 51;
 inline constexpr std::uint32_t kLightingSamples = 4096;
 inline constexpr std::uint64_t kLightingSeed = 20261010;
 inline constexpr double kLightingEv100 = 9.0;
