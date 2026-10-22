@@ -33,6 +33,7 @@ function(raw_native_embed_wgsl out)
     file(READ "${RAW_NATIVE_SHADERS}/pt.wgsl" pt)
     file(READ "${RAW_NATIVE_SHADERS}/sdf.wgsl" sdf)
     file(READ "${RAW_NATIVE_SHADERS}/style.wgsl" style)
+    file(READ "${RAW_NATIVE_SHADERS}/noise.wgsl" noise)
     # The art module: art.wgsl, then every art_*.wgsl in name order (as scripts/wgsl_to_hlsl.py reads it).
     file(READ "${RAW_NATIVE_SHADERS}/art.wgsl" art)
     file(GLOB art_parts "${RAW_NATIVE_SHADERS}/art_*.wgsl")
@@ -57,6 +58,7 @@ function(raw_native_embed_wgsl out)
         "inline constexpr const char* kPtWgsl = R\"WGSL(${pt})WGSL\";\n"
         "inline constexpr const char* kSdfWgsl = R\"WGSL(${sdf})WGSL\";\n"
         "inline constexpr const char* kStyleWgsl = R\"WGSL(${style})WGSL\";\n"
+        "inline constexpr const char* kNoiseWgsl = R\"WGSL(${noise})WGSL\";\n"
         "inline constexpr const char* kArtWgsl = R\"WGSL(${art})WGSL\";\n")
     configure_file("${out}.tmp" "${out}" COPYONLY)
 endfunction()
@@ -69,7 +71,7 @@ if(EMSCRIPTEN AND RAW_NATIVE_GPU)
         "${RAW_NATIVE_SHADERS}/threads.wgsl" "${RAW_NATIVE_SHADERS}/raster.wgsl" "${RAW_NATIVE_SHADERS}/pbr.wgsl"
         "${RAW_NATIVE_SHADERS}/cube.wgsl" "${RAW_NATIVE_SHADERS}/light.wgsl" "${RAW_NATIVE_SHADERS}/shadow.wgsl" "${RAW_NATIVE_SHADERS}/post.wgsl"
         "${RAW_NATIVE_SHADERS}/swr.wgsl" "${RAW_NATIVE_SHADERS}/rt.wgsl"
-        "${RAW_NATIVE_SHADERS}/pt.wgsl" "${RAW_NATIVE_SHADERS}/sdf.wgsl" "${RAW_NATIVE_SHADERS}/style.wgsl"
+        "${RAW_NATIVE_SHADERS}/pt.wgsl" "${RAW_NATIVE_SHADERS}/sdf.wgsl" "${RAW_NATIVE_SHADERS}/style.wgsl" "${RAW_NATIVE_SHADERS}/noise.wgsl"
         "${RAW_NATIVE_SHADERS}/art.wgsl")
     file(GLOB art_wgsl_parts "${RAW_NATIVE_SHADERS}/art_*.wgsl")
     set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${art_wgsl_parts})
@@ -118,7 +120,7 @@ function(raw_native_d3d12_shaders gen out_header)
         swr_setup swr_bin_count swr_bin_scan swr_bin_fill swr_tile swr_resolve swr_gbuffer
         rt_bounds_chunk rt_bounds_final rt_morton rt_sort_step rt_leaves rt_ploc_nn rt_ploc_flags
         rt_scan_chunk rt_scan_top rt_scan_add rt_ploc_merge rt_trace
-        pt_trace pt_finish pt_hybrid
+        pt_trace pt_finish pt_hybrid noise_eval
         sdf_march sdf_terms sdf_fog sdf_god sdf_composite
         style_ditherlight style_paintover style_exposure style_srgb_decode style_purity style_lightpaint style_glaze style_hatch style_hysteresis style_palettelight style_dither
         style_adj_prep style_adj_develop style_adj_chem style_adj_out

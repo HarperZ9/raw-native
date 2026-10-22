@@ -21,7 +21,7 @@ endforeach()
 list(APPEND LIB_SRCS src/rhi/validate/validate_device.cpp src/rhi/validate/validate_commands.cpp)
 # The GPU renderer is backend-neutral: it records a frame graph on the RHI.
 list(APPEND LIB_SRCS src/renderer/gpu/gpu_renderer.cpp src/renderer/gpu/frame_pack.cpp src/renderer/gpu/texture_identity.cpp src/renderer/gpu/pbr_parity.cpp
-    src/renderer/gpu/lighting_parity.cpp src/renderer/gpu/lighting_parity_pack.cpp
+    src/renderer/gpu/lighting_parity.cpp src/renderer/gpu/lighting_parity_pack.cpp src/renderer/gpu/noise_gpu.cpp
     src/renderer/gpu/raster_identity.cpp src/renderer/gpu/gbuffer_identity.cpp
     src/renderer/gpu/shadow_parity.cpp src/renderer/gpu/shadow_parity_gpu.cpp
     src/renderer/gpu/post_parity.cpp

@@ -1,0 +1,25 @@
+{
+ "check": "noise module gpu parity (P8 stage 2)",
+ "backend": "d3d12",
+ "adapter": "Microsoft Basic Render Driver",
+ "functions": [
+  {"name": "white", "worst_abs": 0.000e+00, "bit_equal": true, "g1": true, "control_worst_abs": 9.890e-01, "g2": true},
+  {"name": "value2", "worst_abs": 0.000e+00, "bit_equal": true, "g1": true, "control_worst_abs": 9.260e-01, "g2": true},
+  {"name": "value3", "worst_abs": 0.000e+00, "bit_equal": true, "g1": true, "control_worst_abs": 7.343e-01, "g2": true},
+  {"name": "perlin2", "worst_abs": 0.000e+00, "bit_equal": true, "g1": true, "control_worst_abs": 7.265e-01, "g2": true},
+  {"name": "perlin3", "worst_abs": 0.000e+00, "bit_equal": true, "g1": true, "control_worst_abs": 1.250e+00, "g2": true},
+  {"name": "simplex2", "worst_abs": 0.000e+00, "bit_equal": true, "g1": true, "control_worst_abs": 1.064e+00, "g2": true},
+  {"name": "simplex3", "worst_abs": 0.000e+00, "bit_equal": true, "g1": true, "control_worst_abs": 1.866e+00, "g2": true},
+  {"name": "worley2_f1", "worst_abs": 0.000e+00, "bit_equal": true, "g1": true, "control_worst_abs": 9.263e-01, "g2": true},
+  {"name": "worley2_f2_minus_f1", "worst_abs": 0.000e+00, "bit_equal": true, "g1": true, "control_worst_abs": 1.020e+00, "g2": true},
+  {"name": "worley3_f1", "worst_abs": 0.000e+00, "bit_equal": true, "g1": true, "control_worst_abs": 8.096e-01, "g2": true},
+  {"name": "fbm_perlin", "worst_abs": 0.000e+00, "bit_equal": true, "g1": true, "control_worst_abs": 7.922e-01, "g2": true},
+  {"name": "ridged_simplex", "worst_abs": 0.000e+00, "bit_equal": true, "g1": true, "control_worst_abs": 9.307e-01, "g2": true},
+  {"name": "billow_perlin", "worst_abs": 0.000e+00, "bit_equal": true, "g1": true, "control_worst_abs": 1.030e+00, "g2": true},
+  {"name": "hybrid_simplex", "worst_abs": 0.000e+00, "bit_equal": true, "g1": true, "control_worst_abs": 2.288e+00, "g2": true},
+  {"name": "warp_fbm", "worst_abs": 0.000e+00, "bit_equal": true, "g1": true, "control_worst_abs": 1.274e+00, "g2": true},
+  {"name": "blue", "worst_abs": 0.000e+00, "bit_equal": true, "g1": true, "control_worst_abs": 0.000e+00, "g2": true}
+ ],
+ "g3_white_points_differing": 0,
+ "pass": true
+}
