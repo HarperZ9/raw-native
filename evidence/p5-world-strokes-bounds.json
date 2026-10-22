@@ -1,0 +1,52 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "ROADMAP dated proposal P5 (2026-10-21): world-anchored strokes against the screen-space advected canvas. Target: on a camera orbit, temporal instability (the rr-bounds warp metric) at least 40% below the advected canvas, at most 2 ms extra at 1080p. Fails if the bootstrap interval does not separate the two.",
+ "written": "2026-10-22, before any P5 code and before any run",
+ "author_direction": "2026-10-22: \"Keep working on the engine, and rendering/shaders ~ lets really spend time supporting many visual features and techniques.\"",
+ "design": {
+  "what": "The painterly shader is unchanged (raw/renderer/style_paint.hpp; style_paint_* in style.wgsl). Its noise fields (bristle, stroke identity, canvas weave, paper, warp) are read at canvas coordinates. Today a moving camera gets them from the advected canvas (two layers carried along motion vectors, reset on disocclusion and crossfaded when they distort). P5 supplies them from the world instead: each pixel's canvas coordinates are its surface point's chart coordinates, written into the canvas buffer as one layer, with the second layer off. The paint passes read that buffer exactly as they read the advected one (canvas mode 1).",
+  "chart": "Triplanar by the dominant axis of the surface normal: |Ny| largest gives (Px, Pz), |Nx| gives (Pz, Py), |Nz| gives (Px, Py), each axis with its own fixed offset so the three charts do not repeat one another. World units become canvas pixels by s = f / R, where f is the focal length in pixels at the frame's height and R the orbit radius, so a stroke has its usual size in pixels at the orbit's distance. Sky pixels use the cube-map chart of the view direction (the two minor components over the dominant one, times f), so the sky's canvas is anchored to the dome. No trigonometry: the GPU pass mirrors the CPU arithmetic.",
+  "scene": "An owned analytic still life, ray cast in float64 (raw/renderer/art_scene.hpp, new): a ground plane, a back wall and a plinth (boxes), a large and a small sphere, and a column (capped cylinder), each with an object id and a material id; a shadowed sun, a sky gradient and a hemispherical ambient; the lit radiance at 2 x 2 samples a pixel, the G-buffer at the pixel centre. True motion vectors come from reprojecting each pixel's surface point (or, for sky, its direction) into the previous camera. History is valid where the reprojected pixel is inside the frame, shows the same object, and its distance agrees within 2%.",
+  "orbit": "Target (0, 1, 0), radius 8.5, eye height 4.2, azimuth from 20 degrees in steps of 1 degree a frame, vertical field of view 0.75 rad, 48 frames at 320 x 180, daylight.",
+  "presets": "oil and watercolour (paintPreset), each run twice over the same frames: with the advected canvas (paintDecide and paintAdvect every frame, as today) and with the world anchor.",
+  "names": "CPU reference raw/renderer/art_anchor.hpp; GPU pass art_anchor in src/renderer/gpu/shaders/art_strokes.wgsl (a new art module that the stylised passes share); command raw_native_cli art strokes"
+ },
+ "metric": {
+  "temporal_instability": "the rr-bounds definition (evidence/rr-bounds.json, metrics.temporal_instability): the mean over pixels and colour channels of |(out_t - warp(out_{t-1})) - (ref_t - warp(ref_{t-1}))|, warping by nearest pixel along the true motion vectors and skipping pixels whose history is not valid. out is the paint frame encoded to 8-bit sRGB and divided by 255; ref is the unstylised lit frame through the paint pass's own display transform (the shoulder at the preset's exposure, then sRGB), so a change the scene itself makes is not counted against the style.",
+  "frames": "frames 9 to 47 (39 values a run): the advected canvas ramps its first layer in over 8 frames, so the first 9 frames are left out of both runs.",
+  "bootstrap": "paired over frames, 10,000 resamples, a fixed seed recorded in the result; the 95% interval of mean(world - advected), and of the relative reduction 1 - mean(world) / mean(advected)."
+ },
+ "checks": {
+  "w1_temporal": {
+   "what": "relative reduction of temporal instability, world anchor against the advected canvas, per preset",
+   "bound": "the point estimate at least 0.40 for both presets",
+   "kill": "the paired 95% interval of mean(world - advected) contains zero for either preset: P5 is dropped",
+   "prediction": "holds for both, moderate confidence: the advected canvas resets on disocclusion and its layer crossfade swims, which the anchor does not do. The share both runs pay (the Kuwahara filter and stroke flow follow the image, which changes as the view turns) dilutes the reduction; I expect 0.45 to 0.7."
+  },
+  "w2_controls": {
+   "what": "(a) a false control that must fail: the world anchor computed from a shuffled frame (frame (7t mod 48)'s chart in place of frame t's); (b) recorded, not gated: the offset canvas (screen-anchored, the 'shower door')",
+   "bound": "(a) its relative reduction against the advected canvas is below 0.40 for both presets",
+   "prediction": "(a) fails as required, far below zero; (b) worse than the anchor, moderate confidence"
+  },
+  "w3_gpu_parity": {
+   "what": "the art_anchor pass and the paint passes fed by it, on D3D12 WARP and Vulkan lavapipe, against the float64 reference, at 256 x 144 on frame 0 of the orbit and on frame 6 (both presets)",
+   "bound": "anchor coordinates: max |gpu - cpu| at most 0.02 canvas pixels over every pixel. Paint frame: the advected-canvas motion bound of evidence/cpp-port-style-bounds-11.json (max 8 codes, 99.9th percentile at most 3, mean at most 0.2). Built-in control: the CPU reference at 1.1 x exposure must fail the paint bound on every case.",
+   "prediction": "holds on both; the coordinates are within 4e-3 (f32 rounding of values near 300)"
+  },
+  "w4_goldens": {
+   "what": "tests/test_art_strokes.cpp: the float64 anchor coordinates and the world-anchored oil and watercolour frames at 256 x 144, orbit frame 0, FNV-1a over the 8-bit codes (and over the coordinate floats), pinned per compiler family (GCC, MSVC); the PNGs committed under evidence/p5-world-strokes/ and looked at",
+   "bound": "every hash equals its pinned value",
+   "prediction": "holds; GCC and MSVC may differ in the paint frame (exp, pow, tanh, sinh), recorded either way"
+  },
+  "w5_cost": {
+   "what": "RTX 4090, D3D12, 1920 x 1080: the median of 50 warm submissions (submit to fence) of the art_anchor pass alone, of the advected canvas's three passes (decide, advect, distort), and of the whole paint frame with each canvas; under the shared GPU lock",
+   "bound": "the art_anchor pass at most 2.0 ms (the extra a world-anchored frame pays over the paint passes)",
+   "prediction": "holds by a wide margin, about 0.1 ms; the advected canvas's three passes cost more than the anchor"
+  }
+ },
+ "does_not_prove": "Stability on other scenes, under fast motion or with moving objects: the anchor uses world positions, so a moving object's strokes would slide on it; object-space charts are the fix and are not built here. That strokes look better: the PNGs are for review. The stroke shapes still follow the image's structure tensor, which is screen-space; only the noise that makes them is anchored. Triplanar seams show where the dominant axis changes on curved surfaces; they are fixed to the surface, so they do not move, and they are recorded by look.",
+ "addendum_a": {
+  "written": "2026-10-22, after the first cost run on the RTX 4090 and before the second; no bound changes",
+  "what": "w5's method. The first run timed each range with one copy of the work a submission, as the dispatch timer does (evidence/gpu-dispatch-timer-runs.json, whose t2 found its floor at about 0.5 ms of submission and fence latency). It gave the anchor pass 4.90 ms, the advected canvas 3.90 ms, and the same eight paint passes 21.3 ms after the anchor against 9.2 ms after the advected canvas: inconsistent for identical passes, so the numbers are latency and contention, not the passes. That run is kept in the runs file as recorded. From the second run, each range is recorded 10 times into one submission and the median submit-to-fence time is divided by 10; the single-submission anchor time is reported beside it. The bound stays: the anchor pass at most 2.0 ms."
+ }
+}
