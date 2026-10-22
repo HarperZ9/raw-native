@@ -47,7 +47,12 @@ const DefocusTables& defocusTables();
 // in-focus pixel).
 std::vector<float> defocusWeight(const std::vector<float>& coc, int w, int h, const DefocusParams& p);
 enum class DefocusMode { Paint, Gaussian };
-// img: display-linear RGBA f32. Returns display-linear RGBA f32.
+// The half-resolution input (addendum C): the 2 x 2 mean of the unlined colour (rgb / max(alpha,
+// 0.05), alpha being the paint frame's line factor) and of the CoC and depth.
+std::vector<float> unlinedHalf(const std::vector<float>& img, const std::vector<float>& coc, int w, int h, std::vector<float>& hcoc);
+// img: display-linear RGBA f32, alpha the line factor. The Kuwahara (or gaussian) runs at half
+// resolution on the unlined colour; the full-resolution compose mixes it in by the weight, so the
+// ink fades as (1 - w). Returns display-linear RGBA f32.
 std::vector<float> paintDefocus(const std::vector<float>& img, const std::vector<float>& coc, int w, int h, const DefocusParams& p,
                                 DefocusMode mode, int threads);
 
@@ -57,6 +62,7 @@ struct TiltLook {
     double K{1}, fNumber{2.8}, tiltDeg{90}, rollDeg{0};
     bool streetAxis{false};
     double vignette{0}, mech{0}, halation{0}, star{0}, starRotDeg{0}, ca{0}, grain{0}, weave{0}, print{0}, misreg{0}, halftone{0};
+    double sat{1}, hueDeg{0};   // saturation toward luminance and a hue rotation (the dream, 01-LOOKS L6)
 };
 TiltLook tiltLook(const std::string& name);   // daily, town_map, record, memory, dream, night
 TiltLook lerpLook(const TiltLook& a, const TiltLook& b, double t);

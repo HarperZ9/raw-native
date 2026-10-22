@@ -113,6 +113,14 @@ std::vector<float> fxFinish(const FxPlan& P, const std::vector<float>& img, cons
             c[i] += gain * (L.halation * halo[i] * th[i] + L.star * star[i] * ts[i]);
             c[i] = c[i] + L.print * (lift[i] + (paper[i] - lift[i]) * c[i] - c[i]);
         }
+        if (L.hueDeg != 0 || L.sat != 1) {
+            // hue rotation about the grey axis, then saturation toward luminance
+            const double hc = std::cos(L.hueDeg * kPi / 180), hs = std::sin(L.hueDeg * kPi / 180), k1 = (1 - hc) / 3, k2 = hs / std::sqrt(3.0);
+            const C3 r{c[0] * (hc + k1) + c[1] * (k1 - k2) + c[2] * (k1 + k2), c[0] * (k1 + k2) + c[1] * (hc + k1) + c[2] * (k1 - k2),
+                       c[0] * (k1 - k2) + c[1] * (k1 + k2) + c[2] * (hc + k1)};
+            const double y0 = luma(r);
+            for (int k = 0; k < 3; ++k) c[std::size_t(k)] = y0 + L.sat * (r[std::size_t(k)] - y0);
+        }
         if (L.halftone > 0) {
             const double u = (px + py) * 0.7071067811865476 / P.cell, v = (py - px) * 0.7071067811865476 / P.cell;
             const double fu = u - std::floor(u) - 0.5, fv = v - std::floor(v) - 0.5, d = std::sqrt(fu * fu + fv * fv);

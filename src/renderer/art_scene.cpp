@@ -45,7 +45,7 @@ D3 shade(const Lighting& L, const D3& o, const D3& d, const Hit& h, SceneKind k)
     for (int k = 0; k < 3; ++k) {
         const std::size_t i = std::size_t(k);
         const double amb = L.ground[i] + (L.skyTop[i] - L.ground[i]) * t.amb;
-        c[i] = h.albedo[i] * (L.sun.colour[i] * t.sun + L.lamp.colour[i] * t.lamp + amb) + h.emit[i];
+        c[i] = h.albedo[i] * (L.sun.colour[i] * t.sun + L.lamp.colour[i] * t.lamp + amb) + h.emit[i] * L.emitScale;
     }
     return c;
 }
@@ -90,6 +90,11 @@ Lighting night() {
 Lighting townDusk() {
     Lamp lamp{{0.0, 4.4, -4.6}, norm({0.0, -1.0, 0.75}), 0.62, 0.80, {9.0, 5.2, 1.6}, true};
     return {{norm({-0.8, 0.22, 0.35}), {1.5, 0.85, 0.45}}, lamp, {0.16, 0.20, 0.36}, {0.70, 0.48, 0.38}, {0.10, 0.08, 0.07}};
+}
+
+Lighting townNight() {
+    Lamp lamp{{0.0, 4.4, -4.6}, norm({0.0, -1.0, 0.75}), 0.62, 0.80, {14.0, 7.6, 2.2}, true};
+    return {{norm({0.3, 0.75, -0.5}), {0.05, 0.065, 0.11}}, lamp, {0.008, 0.012, 0.03}, {0.02, 0.025, 0.045}, {0.004, 0.004, 0.005}, 4.0};
 }
 
 View townView(int w, int h) {

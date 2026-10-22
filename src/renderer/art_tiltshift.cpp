@@ -109,7 +109,7 @@ TiltLook tiltLook(const std::string& name) {
     else if (name == "town_map") { L.K = 40; L.fNumber = 1.4; L.tiltDeg = 90; L.streetAxis = true; L.vignette = 0.45; L.mech = 0.3; L.grain = 0.015; }
     else if (name == "record") { L.K = 40; L.fNumber = 1.4; L.tiltDeg = 90; L.streetAxis = true; L.vignette = 0.3; L.misreg = 2; L.halftone = 0.55; L.grain = 0.03; L.print = 0.3; }
     else if (name == "memory") { L.K = 12; L.fNumber = 2.0; L.tiltDeg = 75; L.vignette = 0.5; L.mech = 0.4; L.print = 0.8; L.weave = 0.6; L.grain = 0.05; L.halation = 0.4; }
-    else if (name == "dream") { L.K = 30; L.fNumber = 1.4; L.tiltDeg = 35; L.rollDeg = 24; L.vignette = 0.5; L.ca = 2.5; L.grain = 0.03; }
+    else if (name == "dream") { L.K = 60; L.fNumber = 1.2; L.tiltDeg = 20; L.rollDeg = 35; L.vignette = 0.7; L.ca = 4; L.grain = 0.03; L.sat = 0.55; L.hueDeg = 20; }
     else if (name == "night") { L.K = 20; L.fNumber = 1.8; L.tiltDeg = 80; L.streetAxis = true; L.vignette = 0.4; L.mech = 0.3; L.halation = 1.0; L.star = 1.0; L.starRotDeg = 8; L.grain = 0.03; L.ca = 0.8; }
     return L;
 }
@@ -124,6 +124,7 @@ TiltLook lerpLook(const TiltLook& a, const TiltLook& b, double t) {
     o.vignette = m(a.vignette, b.vignette); o.mech = m(a.mech, b.mech); o.halation = m(a.halation, b.halation); o.star = m(a.star, b.star);
     o.starRotDeg = m(a.starRotDeg, b.starRotDeg); o.ca = m(a.ca, b.ca); o.grain = m(a.grain, b.grain); o.weave = m(a.weave, b.weave);
     o.print = m(a.print, b.print); o.misreg = m(a.misreg, b.misreg); o.halftone = m(a.halftone, b.halftone);
+    o.sat = m(a.sat, b.sat); o.hueDeg = m(a.hueDeg, b.hueDeg);
     return o;
 }
 

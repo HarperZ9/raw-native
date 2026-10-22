@@ -59,14 +59,16 @@ std::vector<float> defocusWeight(const std::vector<float>& coc, int w, int h, co
     return o;
 }
 
-std::vector<float> paintDefocus(const std::vector<float>& img, const std::vector<float>& coc, int w, int h, const DefocusParams& p,
-                                DefocusMode mode, int threads) {
+namespace {
+// The Kuwahara (or the gaussian control) over one frame of unlined colour u (RGBA) and its CoC
+// (c, z a pixel), radii and reach scaled by `scale` (0.5 at half resolution). Pixels with no weight
+// copy u. The GPU twin is art_ts_prep, art_ts_tensor, art_ts_blur and art_ts_defocus.
+std::vector<float> coarse(const std::vector<float>& u, const std::vector<float>& coc, int w, int h, const DefocusParams& p, DefocusMode mode,
+                          double scale, int threads) {
     const std::size_t n = std::size_t(w) * std::size_t(h);
-    const std::vector<float> wt = defocusWeight(coc, w, h, p);
-    // prep: sRGB, latent and residual (as the paint prep, on the display colour)
     std::vector<float> sb(n * 4, 0.0f), lat(n * 8, 0.0f);
     for (std::size_t i = 0; i < n; ++i) {
-        const style::V3 col{img[i * 4], img[i * 4 + 1], img[i * 4 + 2]};
+        const style::V3 col{u[i * 4], u[i * 4 + 1], u[i * 4 + 2]};
         const style::V3 e{style::linearToSrgb(col[0]), style::linearToSrgb(col[1]), style::linearToSrgb(col[2])};
         const style::V4 c = style::lutConc(e);
         const style::V3 dec = style::kmDecode(c);
@@ -74,7 +76,6 @@ std::vector<float> paintDefocus(const std::vector<float>& img, const std::vector
         for (int k = 0; k < 4; ++k) lat[i * 8 + std::size_t(k)] = float(c[std::size_t(k)]);
         for (int k = 0; k < 3; ++k) lat[i * 8 + 4 + std::size_t(k)] = float(col[std::size_t(k)] - dec[std::size_t(k)]);
     }
-    // tensor: Sobel on sRGB, then the separable gaussian of sigma 2
     std::vector<float> T(n * 4, 0.0f), T2(n * 4, 0.0f);
     auto at = [&](int x, int y, int c) { return double(sb[clampIdx(x, y, w, h) * 4 + std::size_t(c)]); };
     for (int y = 0; y < h; ++y) for (int x = 0; x < w; ++x) {
@@ -99,13 +100,12 @@ std::vector<float> paintDefocus(const std::vector<float>& img, const std::vector
         }
     }
     const DefocusTables& tb = defocusTables();
-    std::vector<float> out(img);
+    std::vector<float> out(u);
     parallelRows(h, threads, [&](int y) {
         for (int x = 0; x < w; ++x) {
             const std::size_t i = std::size_t(y) * std::size_t(w) + std::size_t(x);
-            const double wi = wt[i];
-            if (wi <= 0) continue;
-            const double c = coc[i * 2], zc = coc[i * 2 + 1], rad = 0.5 * c;
+            const double c = coc[i * 2], zc = coc[i * 2 + 1], rad = 0.5 * c * scale;
+            if (smooth(p.c0, p.c1, c) <= 0) continue;
             double res[3] = {0, 0, 0};
             if (mode == DefocusMode::Gaussian) {
                 const double sg = std::max(0.5 * rad, 1e-3);
@@ -115,9 +115,9 @@ std::vector<float> paintDefocus(const std::vector<float>& img, const std::vector
                     const std::size_t q = clampIdx(x + dx, y + dy, w, h);
                     const double d = std::sqrt(double(dx * dx + dy * dy));
                     double wq = std::exp(-0.5 * d * d / (sg * sg));
-                    if (coc[q * 2 + 1] < zc) wq *= std::clamp(0.5 * coc[q * 2] - d + 1, 0.0, 1.0);
+                    if (coc[q * 2 + 1] < zc) wq *= std::clamp(0.5 * coc[q * 2] * scale - d + 1, 0.0, 1.0);
                     ws += wq;
-                    for (int k = 0; k < 3; ++k) res[k] += wq * img[q * 4 + std::size_t(k)];
+                    for (int k = 0; k < 3; ++k) res[k] += wq * u[q * 4 + std::size_t(k)];
                 }
                 for (int k = 0; k < 3; ++k) res[k] /= ws;
             } else {
@@ -126,11 +126,11 @@ std::vector<float> paintDefocus(const std::vector<float>& img, const std::vector
                 std::size_t qs[kTsSamples];
                 double wo[kTsSamples], W[8] = {}, M[8][3] = {}, S2[8][3] = {};
                 for (int s = 0; s < kTsSamples; ++s) {
-                    const double u = tb.pos[std::size_t(2 * s)], v = tb.pos[std::size_t(2 * s + 1)];
-                    const double ox = tx * a * u - ty * b * v, oy = ty * a * u + tx * b * v;
+                    const double uu = tb.pos[std::size_t(2 * s)], vv = tb.pos[std::size_t(2 * s + 1)];
+                    const double ox = tx * a * uu - ty * b * vv, oy = ty * a * uu + tx * b * vv;
                     const std::size_t q = clampIdx(int(std::floor(x + ox + 0.5)), int(std::floor(y + oy + 0.5)), w, h);
                     double o = 1;
-                    if (coc[q * 2 + 1] < zc) o = std::clamp(0.5 * coc[q * 2] - std::sqrt(ox * ox + oy * oy) + 1, 0.0, 1.0);
+                    if (coc[q * 2 + 1] < zc) o = std::clamp(0.5 * coc[q * 2] * scale - std::sqrt(ox * ox + oy * oy) + 1, 0.0, 1.0);
                     qs[s] = q; wo[s] = o;
                     for (int k = 0; k < 8; ++k) {
                         const double g = double(tb.wk[std::size_t(s * 8 + k)]) * o;
@@ -158,9 +158,55 @@ std::vector<float> paintDefocus(const std::vector<float>& img, const std::vector
                 const style::V3 dec = style::kmDecode({L[0] / ws, L[1] / ws, L[2] / ws, L[3] / ws});
                 for (int k = 0; k < 3; ++k) res[k] = dec[std::size_t(k)] + L[4 + k] / ws;
             }
-            for (int k = 0; k < 3; ++k) out[i * 4 + std::size_t(k)] = float(img[i * 4 + std::size_t(k)] * (1 - wi) + res[k] * wi);
+            for (int k = 0; k < 3; ++k) out[i * 4 + std::size_t(k)] = float(res[k]);
         }
     });
+    return out;
+}
+}  // namespace
+
+std::vector<float> unlinedHalf(const std::vector<float>& img, const std::vector<float>& coc, int w, int h, std::vector<float>& hcoc) {
+    const int hw = (w + 1) / 2, hh = (h + 1) / 2;
+    std::vector<float> hu(std::size_t(hw) * std::size_t(hh) * 4, 1.0f);
+    hcoc.assign(std::size_t(hw) * std::size_t(hh) * 2, 0.0f);
+    for (int y = 0; y < hh; ++y) for (int x = 0; x < hw; ++x) {
+        double c[3] = {}, cc = 0, zz = 0;
+        for (int j = 0; j < 2; ++j) for (int i = 0; i < 2; ++i) {
+            const std::size_t q = clampIdx(2 * x + i, 2 * y + j, w, h);
+            const double t = std::max(double(img[q * 4 + 3]), 0.05);
+            for (int k = 0; k < 3; ++k) c[k] += img[q * 4 + std::size_t(k)] / t / 4;
+            cc += coc[q * 2] / 4; zz += coc[q * 2 + 1] / 4;
+        }
+        const std::size_t o = std::size_t(y) * std::size_t(hw) + std::size_t(x);
+        for (int k = 0; k < 3; ++k) hu[o * 4 + std::size_t(k)] = float(c[k]);
+        hcoc[o * 2] = float(cc); hcoc[o * 2 + 1] = float(zz);
+    }
+    return hu;
+}
+
+std::vector<float> paintDefocus(const std::vector<float>& img, const std::vector<float>& coc, int w, int h, const DefocusParams& p,
+                                DefocusMode mode, int threads) {
+    const int hw = (w + 1) / 2, hh = (h + 1) / 2;
+    std::vector<float> hcoc;
+    const std::vector<float> hu = unlinedHalf(img, coc, w, h, hcoc);
+    const std::vector<float> hc = coarse(hu, hcoc, hw, hh, p, mode, 0.5, threads);
+    const std::vector<float> wt = defocusWeight(coc, w, h, p);
+    std::vector<float> out(img);
+    for (int y = 0; y < h; ++y) for (int x = 0; x < w; ++x) {
+        const std::size_t i = std::size_t(y) * std::size_t(w) + std::size_t(x);
+        const double wi = wt[i];
+        if (wi <= 0) continue;
+        // bilinear in the half frame at this pixel's centre (art_ts_compose)
+        const double fx = std::clamp((x + 0.5) / 2 - 0.5, 0.0, double(hw - 1)), fy = std::clamp((y + 0.5) / 2 - 0.5, 0.0, double(hh - 1));
+        const int x0 = std::min(int(std::floor(fx)), hw - 1), y0 = std::min(int(std::floor(fy)), hh - 1), x1 = std::min(x0 + 1, hw - 1), y1 = std::min(y0 + 1, hh - 1);
+        const double tx = fx - x0, ty = fy - y0;
+        for (int k = 0; k < 3; ++k) {
+            auto v = [&](int xx, int yy) { return double(hc[(std::size_t(yy) * std::size_t(hw) + std::size_t(xx)) * 4 + std::size_t(k)]); };
+            const double r = (v(x0, y0) * (1 - tx) + v(x1, y0) * tx) * (1 - ty) + (v(x0, y1) * (1 - tx) + v(x1, y1) * tx) * ty;
+            out[i * 4 + std::size_t(k)] = float(img[i * 4 + std::size_t(k)] * (1 - wi) + r * wi);
+        }
+        out[i * 4 + 3] = float(img[i * 4 + 3] * (1 - wi) + wi);
+    }
     return out;
 }
 

@@ -4207,7 +4207,8 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
         rgb = rgb * rel.y + vec3f(rel.z);
     }
     let t: f32 = 1.0 - U.c.z * (1.0 - rel.x);
-    out8[i] = pack_rgb8(max(rgb * t, vec3f(0.0)));
+    // alpha carries the line factor for P23's defocus; colour checks skip alpha
+    out8[i] = (pack_rgb8(max(rgb * t, vec3f(0.0))) & 0x00ffffffu) | (u32(floor(clamp(t, 0.0, 1.0) * 255.0 + 0.5)) << 24u);
 }
 
 //@pass style_canvas_decide

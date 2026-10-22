@@ -114,7 +114,7 @@ long redPixels(const std::vector<float>& img) {
     return n;
 }
 
-TemporalRun runTiltOrbit(int w, int h, int frames, int first, int threads, std::uint64_t seed, bool rack) {
+TemporalRun runTiltOrbit(int w, int h, int frames, int first, int threads, std::uint64_t seed, bool rack, double damping) {
     StrokeOrbit o;
     o.w = w; o.h = h; o.frames = frames; o.threads = threads; o.step = rack ? 0.0 : 1.0;
     const style::PaintPlan plan = style::resolvePaint(style::paintPreset("oil"), w, h);
@@ -125,6 +125,7 @@ TemporalRun runTiltOrbit(int w, int h, int frames, int first, int threads, std::
     // The rack: walk on the small sphere, examine the column from frame 18, walk again from 34.
     std::vector<LensGeom> geoms;
     focus::Director dir(focus::Character::Naturalist, lensOf(look, {0, 1, 0}, {1, 0, 0}), s.views[0]);
+    dir.damping = damping;
     for (int t = 0; t < frames; ++t) {
         if (!rack) { geoms.push_back(resolveLens(lensOf(look, {0, 1, 0}, {1, 0, 0}), s.views[std::size_t(t)])); continue; }
         focus::Inputs in;

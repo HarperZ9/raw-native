@@ -18,7 +18,7 @@ struct Scene { Frame f; View v; LensGeom g; std::vector<float> lens, band, paint
 Scene town(int w, int h, const std::string& look, int threads, bool lines = true) {
     Scene s;
     s.v = townView(w, h);
-    s.f = renderFrame(s.v, townDusk(), threads, SceneKind::Town);
+    s.f = renderFrame(s.v, look == "night" ? townNight() : townDusk(), threads, SceneKind::Town);
     s.g = resolveLens(lensOf(tiltLook(look), kPlayer, kStreet), s.v);
     s.lens = cocMap(s.f, s.g);
     s.band = bandCoc(s.lens, s.g, s.v, kPlayer, kC0);
@@ -148,9 +148,10 @@ std::string director(bool& pass) {
 
 // c1 to c3: the night look's stack over a rack on the town (the camera held, the director moving
 // from the player to the lit window and back), 48 frames at 24 a second.
-std::string care(const Options& o, bool& pass) {
+std::string careOn(const Options& o, bool& pass, bool nightScene) {
     const int w = 480, h = 270, F = 48;
-    const Scene s = town(w, h, "night", o.threads);
+    Scene s = town(w, h, nightScene ? "night" : "town_map", o.threads);
+    if (!nightScene) { s.f = renderFrame(s.v, townDusk(), o.threads, SceneKind::Town); s.paint = style::runPaint(style::resolvePaint(style::paintPreset("oil"), w, h), s.f.lit, nullptr); }
     focus::Director d(focus::Character::Naturalist, lensOf(tiltLook("night"), kPlayer, kStreet), s.v);
     std::vector<std::vector<float>> in, out;
     int red = 0; long redPx = 0, redPxIn = 0;
@@ -174,22 +175,39 @@ std::string care(const Options& o, bool& pass) {
     Json j;
     j.integer("flashes_in", fin).integer("flashes_out", fout).boolean("c1_pass", fout <= fin).integer("red_windows_added_frames", red)
      .integer("red_pixels_max_out", redPx).integer("red_pixels_max_in", redPxIn).boolean("c2_pass", red == 0).boolean("grain_still", grainStill).boolean("c3_pass", c3);
-    std::printf("art tiltshift: care flashes in %d out %d, red %d, c3 %d\n", fin, fout, red, c3);
+    std::printf("art tiltshift: care (%s) flashes in %d out %d, red %d, c3 %d\n", nightScene ? "night" : "dusk", fin, fout, red, c3);
+    return j.done();
+}
+std::string care(const Options& o, bool& pass) {
+    Json j;
+    j.raw("dusk", careOn(o, pass, false)).raw("night", careOn(o, pass, true));
     return j.done();
 }
 
 std::string temporal(const Options& o, bool& pass) {
     Json j;
-    for (int rack = 0; rack < 2; ++rack) {
-        const TemporalRun r = runTiltOrbit(480, 270, o.frames, 9, o.threads, kSeed, rack == 1);
-        const double rel = r.oursVsBase.meanA / r.oursVsBase.meanB - 1;
-        const bool ok = rel <= 0.05 && !(r.oursVsBase.diffLo > 0);
-        pass = pass && ok;
+    const TemporalRun orbit = runTiltOrbit(480, 270, o.frames, 9, o.threads, kSeed, false);
+    const double rel = orbit.oursVsBase.meanA / orbit.oursVsBase.meanB - 1;
+    const bool t5 = rel <= 0.05 && !(orbit.oursVsBase.diffLo > 0);
+    {
         Json k;
-        k.raw("ours_vs_base", pairedJson(r.oursVsBase)).num("relative_change", rel).boolean("pass", ok).nums("ours", r.ours).nums("base", r.base);
-        j.raw(rack ? "t6_rack" : "t5_orbit", k.done());
-        std::printf("art tiltshift: %s ours %.5f base %.5f change %+.3f [%.5f, %.5f]\n", rack ? "rack" : "orbit", r.oursVsBase.meanA, r.oursVsBase.meanB, rel, r.oursVsBase.diffLo, r.oursVsBase.diffHi);
+        k.raw("ours_vs_base", pairedJson(orbit.oursVsBase)).num("relative_change", rel).boolean("pass", t5).nums("ours", orbit.ours).nums("base", orbit.base);
+        j.raw("t5_orbit", k.done());
     }
+    // t6b (addendum C): the rack against half the base paint's orbit instability; the underdamped
+    // rack recorded beside it. The first record's relative t6 stays on record in the runs file.
+    const TemporalRun rack = runTiltOrbit(480, 270, o.frames, 9, o.threads, kSeed, true), under = runTiltOrbit(480, 270, o.frames, 9, o.threads, kSeed, true, 0.5);
+    const double limit = 0.5 * orbit.oursVsBase.meanB;
+    const bool t6b = rack.oursVsBase.meanA <= limit;
+    {
+        Json k;
+        k.num("rack_mean", rack.oursVsBase.meanA).num("limit_half_base_orbit", limit).num("underdamped_rack_mean", under.oursVsBase.meanA).boolean("pass", t6b)
+         .nums("rack", rack.ours).nums("underdamped", under.ours);
+        j.raw("t6b_rack", k.done());
+    }
+    pass = pass && t5 && t6b;
+    std::printf("art tiltshift: orbit ours %.5f base %.5f change %+.3f; rack %.5f (limit %.5f), underdamped %.5f\n", orbit.oursVsBase.meanA, orbit.oursVsBase.meanB, rel,
+                rack.oursVsBase.meanA, limit, under.oursVsBase.meanA);
     return j.done();
 }
 }  // namespace

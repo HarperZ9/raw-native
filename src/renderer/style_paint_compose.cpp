@@ -137,7 +137,7 @@ std::vector<float> paintCompose(const PaintPlan& plan, const std::vector<float>&
         const double t = 1 - p.lines * (1 - rel[0]);
         const std::size_t o = (std::size_t(y) * w + std::size_t(x)) * 4;
         for (int k = 0; k < 3; ++k) img[o + std::size_t(k)] = float(std::max(0.0, rgb[k] * t));
-        img[o + 3] = 1;
+        img[o + 3] = float(t);   // the line factor, exported for P23's defocus (alpha is read by no colour check)
     }
     return img;
 }

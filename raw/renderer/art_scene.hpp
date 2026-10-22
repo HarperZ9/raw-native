@@ -14,13 +14,15 @@ using D3 = std::array<double, 3>;
 
 struct Sun { D3 dir{0, 1, 0}; D3 colour{0, 0, 0}; };   // dir points toward the light
 struct Lamp { D3 pos{0, 0, 0}, axis{0, -1, 0}; double cosOuter{0.8}, cosInner{0.9}; D3 colour{0, 0, 0}; bool on{false}; };
-struct Lighting { Sun sun; Lamp lamp; D3 skyTop, skyHorizon, ground; };
+struct Lighting { Sun sun; Lamp lamp; D3 skyTop, skyHorizon, ground; double emitScale{1}; };   // emitScale: emissive surfaces (P23's night)
 Lighting daylight();
 Lighting dusk();
 Lighting night();
 // P23's town at dusk (evidence/tiltshift-bounds.json): a low warm sun, a dusk sky and one sodium
 // spot over the street; the lamp globes are emissive.
 Lighting townDusk();
+// P23's town at night (addendum C): moonlight only, the sodium spot over the street.
+Lighting townNight();
 
 // Which scene the ray caster traces: P5's still life, or P23's three-quarter town.
 enum class SceneKind { StillLife, Town };

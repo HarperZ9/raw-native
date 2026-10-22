@@ -32,7 +32,7 @@ long redPixels(const std::vector<float>& img);
 // t5 and t6: the base paint frames against the lit reference, and the tilt-shifted frames against
 // the lit frame defocused optically by the same CoC.
 struct TemporalRun { std::vector<double> ours, base; Paired oursVsBase; };
-TemporalRun runTiltOrbit(int w, int h, int frames, int first, int threads, std::uint64_t seed, bool rack);
+TemporalRun runTiltOrbit(int w, int h, int frames, int first, int threads, std::uint64_t seed, bool rack, double damping = 1.0);
 
 // d1 to d5: the director over a scripted timeline on the town.
 struct DirectorReport {

@@ -48,7 +48,8 @@ void paintAdvect(PaintCanvas& st, const std::vector<float>& mv, const std::vecto
 std::array<double, 2> paintLayerWeights(const PaintCanvas& st);
 
 // One frame: scene is scene-linear RGBA f32 rows; canvas null for the offset canvas. Returns the
-// display-linear image, RGBA f32 rows.
+// display-linear image, RGBA f32 rows; alpha carries the line factor (1 where there is no ink), the
+// multiplier the lines applied, so a later pass can take the ink out (P23's defocus).
 std::vector<float> runPaint(const PaintPlan& plan, const std::vector<float>& scene, const PaintCanvas* canvas);
 std::uint8_t paintEncode8(double v);
 
