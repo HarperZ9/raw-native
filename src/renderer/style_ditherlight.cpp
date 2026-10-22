@@ -28,6 +28,18 @@ DitherPlan ditherPreset(const std::string& name, int height, double fov) {
     return p;
 }
 
+double fractalDefaultPx(const std::string& name) {
+    if (name == "ink") return 2.0;
+    if (name == "tones4") return 2.75;
+    throw std::invalid_argument("ditherlight: unknown preset " + name);
+}
+
+DitherPlan fractalPreset(const std::string& name, int height, double fov) {
+    DitherPlan p = ditherPreset(name, height, fov);
+    p.anchor = Anchor::Fractal; p.px = fractalDefaultPx(name);
+    return p;
+}
+
 DitherLight makeRadial(V3 pos, double radius, double core, double intensity, double wrap) {
     DitherLight L;
     L.kind = DitherLight::Kind::Radial; L.pos = pos; L.radius = radius; L.core = core; L.intensity = intensity; L.wrap = wrap;

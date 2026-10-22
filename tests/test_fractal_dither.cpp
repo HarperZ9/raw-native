@@ -6,6 +6,7 @@
 #include "raw/renderer/fractal_scene.hpp"
 #include "raw/tools/fractal_cmd.hpp"
 #include <cstdio>
+#include <stdexcept>
 using namespace raw;
 using namespace raw::style;
 
@@ -65,7 +66,17 @@ static void goldens() {
     CHECK(levelHash("ink", Anchor::Screen) == 0x31c2b5c49d02867dull);
 }
 
+static void presets() {
+    // The recorded default cells (evidence/fractal-dither/tones4-cell-test.json): ink 2 as pre-registered, tones4 2.75.
+    const DitherPlan ink = fractalPreset("ink", 144, 0.75), t4 = fractalPreset("tones4", 144, 0.75);
+    CHECK(ink.anchor == Anchor::Fractal && ink.px == 2.0 && ink.levels == 2);
+    CHECK(t4.anchor == Anchor::Fractal && t4.px == 2.75 && t4.levels == 4);
+    bool threw = false;
+    try { (void)fractalDefaultPx("nope"); } catch (const std::invalid_argument&) { threw = true; }
+    CHECK(threw);
+}
+
 int main() {
-    structure(); scale(); scene(); goldens();
+    structure(); scale(); scene(); goldens(); presets();
     return raw_test_summary();
 }
