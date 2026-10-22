@@ -1,0 +1,13 @@
+{
+ "what": "raw-native material-gallery",
+ "size": 256,
+ "width": 256, "height": 256,
+ "cpu_frame_fnv": "8a0afe8aaece5f61",
+ "spp": 4,
+ "samples": 162908,
+ "ev100": 11,
+ "display": "agx/srgb",
+ "rows": ["gold, roughness", "red plastic, roughness", "car paint, clearcoat roughness", "velvet, sheen roughness", "brushed steel, anisotropy", "thin film, iridescence thickness", "glass, roughness (thin, then volume)"],
+ "cpu_wall_ms": 1487.4,
+ "gpu": {"backend": "d3d12", "adapter": "NVIDIA GeForce RTX 4090", "wall_ms": 14328.1, "dispatch_ms": 14.238, "dispatch_chunks": 3, "dispatch_repeats": 21, "rmse_exposed": 2.364e-06, "max_abs_exposed": 1.033e-03}
+}

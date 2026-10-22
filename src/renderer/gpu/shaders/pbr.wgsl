@@ -593,7 +593,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 @group(0) @binding(6) var<storage, read_write> R: array<f32>;
 
 // A sample: the 36 material floats, then position, normal, tangent and the unit view vector.
-const SAMPLE: u32 = 48u;
+const SAMPLE: u32 = 51u;
 const NCLUSTERS: u32 = 3456u;
 const MAX_PER_CLUSTER: u32 = 256u;
 
@@ -748,7 +748,7 @@ fn ibl(b: u32, wo: vec3f, n: vec3f, t: vec3f, v: vec3f) -> vec3f {
             irr = irr + coat_dir(b, o, mu, rr, ak, ebar, f0d, f90, kd, km, es_avg);
         }
     }
-    var acc: vec3f = spec * env_rough(rr, dominant(n, v, rr)) + irr * sh_irr(n);
+    var acc: vec3f = spec * (env_rough(rr, dominant(n, v, rr)) * C[b + 49u]) + irr * (sh_irr(n) * C[b + 48u]);
     if (pmax3(trans) > 0.0) {
         var td: vec3f = -v;
         if (is_volume(b)) {
@@ -763,7 +763,7 @@ fn ibl(b: u32, wo: vec3f, n: vec3f, t: vec3f, v: vec3f) -> vec3f {
         let bt: vec3f = cross(n, t);
         let cl: vec3f = cv3(b, 12u);
         let cn: vec3f = pnorm(t * cl.x + bt * cl.y + n * cl.z);
-        acc = acc + vec3f(coat) * env_rough(rc, dominant(cn, v, rc));
+        acc = acc + vec3f(coat) * (env_rough(rc, dominant(cn, v, rc)) * C[b + 50u]);
     }
     return acc;
 }

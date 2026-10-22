@@ -34,7 +34,10 @@ double ev100(double aperture, double shutter, double iso);
 double exposure(double ev100);                 // 1 / (1.2 * 2^EV100)
 
 // A surface sample: view-space position, unit normal and tangent, unit direction to the eye.
-struct Sample { D3 p, n{0, 0, 1}, t{1, 0, 0}, v{0, 0, 1}; pbr::Material m; };
+// ao, so, soCoat: visibility of the diffuse hemisphere, the base specular lobe and the coat's lobe
+// (1 = unoccluded; a visibility pass sets them, evidence/gallery-occlusion-bounds.json); image
+// lighting multiplies its terms by them.
+struct Sample { D3 p, n{0, 0, 1}, t{1, 0, 0}, v{0, 0, 1}; pbr::Material m; double ao{1}, so{1}, soCoat{1}; };
 // Direct lighting from the listed lights (indices into `lights`), plus emission.
 Rgb shadePunctual(const Sample& s, const pbr::Tables& t, const std::vector<Light>& lights, const std::vector<int>& list);
 
