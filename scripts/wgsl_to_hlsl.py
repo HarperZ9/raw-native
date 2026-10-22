@@ -322,6 +322,9 @@ SDF_HEADER = RT_HEADER.replace("rt.wgsl", "sdf.wgsl")
 STYLE = "style.wgsl"        # the style passes ported from web/shaders (ADR 0019): its own shared code
 STYLE_LAYOUT = "style_layout.hpp"
 STYLE_HEADER = RT_HEADER.replace("rt.wgsl", "style.wgsl")
+NOISE = "noise.wgsl"        # the noise module (ROADMAP P8 stage 2): its own shared code, no prelude
+NOISE_LAYOUT = "noise_layout.hpp"
+NOISE_HEADER = RT_HEADER.replace("rt.wgsl", "noise.wgsl")
 ART = "art.wgsl"            # the stylised track's passes (P5, P16 to P21): art.wgsl is the shared code,
 ART_LAYOUT = "art_layout.hpp"   # then every art_*.wgsl in name order holds passes
 ART_HEADER = RT_HEADER.replace("rt.wgsl", "art.wgsl and art_*.wgsl")
@@ -363,6 +366,9 @@ def translate_all(read):
     text = read(GPU / STYLE)
     i = text.find("//@pass ")
     files.update(translate(text[:i], text[i:], STYLE_LAYOUT, "style_passes", STYLE_HEADER))
+    text = read(GPU / NOISE)
+    i = text.find("//@pass ")
+    files.update(translate(text[:i], text[i:], NOISE_LAYOUT, "noise_passes", NOISE_HEADER))
     parts = sorted(p.name for p in GPU.glob("art_*.wgsl"))
     files.update(translate(read(GPU / ART), "".join(read(GPU / n) for n in parts), ART_LAYOUT, "art_passes", ART_HEADER))
     files.update(translate_raster(read(GPU / RASTER)))
