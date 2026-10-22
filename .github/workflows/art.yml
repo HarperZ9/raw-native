@@ -46,7 +46,7 @@ jobs:
           fi
       - name: P5 world-anchored strokes, w3 (evidence/p5-world-strokes-bounds.json)
         shell: bash
-        run: $CLI art strokes --no-orbit --gpu --threads 4 --out art/strokes > art/strokes.log || { tail -c 4000 art/strokes.log; exit 1; }
+        run: mkdir -p art && $CLI art strokes --no-orbit --gpu --threads 4 --out art/strokes > art/strokes.log || { tail -c 4000 art/strokes.log; exit 1; }
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: "art-${{ matrix.adapter }}", path: "art/**/*.json\nart/**/*.png", retention-days: 30 }
