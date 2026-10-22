@@ -58,6 +58,8 @@ def main() -> int:
             page.wait_for_function("window.__colonnade && (window.__colonnade.ready || window.__colonnade.error)", timeout=600000)
             page.evaluate("window.__setSettings({elev: 2, az: 30, turbidity: 4.5, ev: 15})")
             state = page.evaluate("window.__colonnade")
+            if a.out:
+                page.screenshot(path=str(Path(a.out).with_suffix(".png")), full_page=True)   # for review
             b.close()
     finally:
         srv.shutdown()
