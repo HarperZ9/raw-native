@@ -112,7 +112,9 @@ std::string labelsLine(int frame, const View& v, const Key& k) {
         project(v, roomCentre(g), sx, sy);
         j.nums(name, {sx, sy});
     }
-    return j.done();
+    std::string line = j.done();   // one line a frame: the writer pretty-prints
+    line.erase(std::remove(line.begin(), line.end(), '\n'), line.end());
+    return line;
 }
 
 int renderShot(const Options& o, const Shot& s, int fps) {
