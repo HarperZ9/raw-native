@@ -110,5 +110,16 @@
   }
  },
  "captures": "For the art scene (orbit frame 0) and the town scene at 960 x 540: plain paint, the screen-band control, the gaussian control and ours, with each look's effect stack; a CoC false-colour map. Committed under evidence/tiltshift/ and looked at; what works and what does not is written in the runs file.",
- "does_not_prove": "That the look is good: the captures are for review. Moving objects (the CoC is per frame, no reprojection of its own; a figure crossing the plane changes c with its depth, which is the intended behaviour). That the director's timings feel right to a player: they are first guesses checked only for the stated properties. The game's browser renderer: it draws baked 2D plates and has no per-pixel depth yet; its port is separate work. Near-field blur over in-focus pixels: the gather uses the centre's own CoC, so a defocused foreground does not spill over an in-focus subject behind it (optics would). Real lens bokeh shape: there is none by design."
+ "does_not_prove": "That the look is good: the captures are for review. Moving objects (the CoC is per frame, no reprojection of its own; a figure crossing the plane changes c with its depth, which is the intended behaviour). That the director's timings feel right to a player: they are first guesses checked only for the stated properties. The game's browser renderer: it draws baked 2D plates and has no per-pixel depth yet; its port is separate work. Near-field blur over in-focus pixels: the gather uses the centre's own CoC, so a defocused foreground does not spill over an in-focus subject behind it (optics would). Real lens bokeh shape: there is none by design.",
+ "addendum_a": {
+  "written": "2026-10-22, after the bounds commit and before any P23 code or run",
+  "why": "cMax scales with the frame height (16 px at 1080 lines), so at the sizes first written the defocus radius r = 0.5 c tops out at 2.7 px (360 lines) and 1.3 px (180 lines), below the paint pass's own Kuwahara radius of 6 px; the checks would measure almost no defocus.",
+  "changes": [
+   "t1, t2, t3 and t4 run at 960 x 540 (cMax 8 px, r up to 4 px), the capture size.",
+   "t5 and t6 run the P5 orbit at 480 x 270 instead of 320 x 180 (cMax 4 px); everything else of the orbit is unchanged.",
+   "g1 runs at 480 x 270 instead of 256 x 144, so its K x 1.1 control has a defocus to disturb; g2's goldens stay at 256 x 144.",
+   "The town_map look's f-number is 1.4 (written here because the bounds named K = 40 without N; at f/2.8 a point 5 m behind the plane at K = 40 gets about 4 px at 1080 lines, too little for a model-town look)."
+  ],
+  "unchanged": "Every bound value and control."
+ }
 }
