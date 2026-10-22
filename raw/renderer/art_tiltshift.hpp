@@ -17,7 +17,7 @@ namespace raw::art {
 // a model at 1:K; unitMm is millimetres a world unit at 1:1.
 struct Lens {
     D3 focus{0, 0, 0}, axis{0, 0, 0};
-    double tiltDeg{90}, rollDeg{0}, K{1}, fNumber{2.8}, unitMm{1000}, cMax1080{16};
+    double tiltDeg{90}, rollDeg{0}, K{1}, fNumber{2.8}, unitMm{1000}, cMax1080{48};
 };
 struct LensGeom {
     D3 eye{0, 0, 0}, fwd{0, 0, 1}, n{0, 0, 1};

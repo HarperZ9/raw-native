@@ -121,5 +121,15 @@
    "The town_map look's f-number is 1.4 (written here because the bounds named K = 40 without N; at f/2.8 a point 5 m behind the plane at K = 40 gets about 4 px at 1080 lines, too little for a model-town look)."
   ],
   "unchanged": "Every bound value and control."
+ },
+ "addendum_b": {
+  "written": "2026-10-22, after the first CPU run (kept as run 1 in evidence/tiltshift-runs.json) and one disclosed exploratory probe, before the recorded run",
+  "changes": [
+   "cMax rises from 16 px to 48 px at 1080 lines (24 px at the 540-line checks). Run 1 at 8 px showed a defocus that was hard to see beside the paint pass's own radius of 6 px; a model-town look needs a stronger falloff. Every bound value stays.",
+   "The town's five street people stand within 0.2 m of the street's centreline (they were up to 0.6 m off it). Run 1 found only 2 people wholly inside the wedge, under t1's precondition of 3; the ink ratios of the people inside were exactly 1.0 in run 1, so the move changes how many are tested, not how they score.",
+   "d1 and d5 are measured in the lens's dioptres, K / axial distance in metres (the model's scale the lens focuses at), not in world dioptres. This was fixed in the code before run 1; it is recorded here because the bounds did not say which. In world dioptres the town's racks are about 1e-3, too small for either bound to mean anything."
+  ],
+  "exploratory_probe": "With these changes and before this addendum, one probe of the CPU checks without the orbit: t1 passes (5 in the wedge, all ratios 1.000, the band fails 4 of 5), t2 misses (1.32), t3 misses (art scene E 0.474; the town gaussian E 0.716 does not fail). Disclosed; no bound changes follow from it.",
+  "unchanged": "Every bound value and control."
  }
 }
