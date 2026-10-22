@@ -1,0 +1,50 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "Stylised track, port 1 (coordinator, 2026-10-22, relaying the author: \"We have a lot of retro shaders as well as more to draw from and use.\"): the author's ENB CRT and VHS addon as a fast CRT and VHS tier beside the heavier physical CRT (style_crtp_*), with a float64 CPU reference and GPU parity.",
+ "written": "2026-10-22, before any port code and before any run",
+ "source": {
+  "file": "C:/dev/shader-handoff/elder-enb/installed-enbseries/Addons/Effect_CRTShader.fxh (not in a repository; the shader-handoff snapshot), 720 lines, sha256 93d82676ec500faa53fe81249c01dce16fc4a76b2d05d17f6e961ca5cdfc1bc5",
+  "author": "Zain Dana Harper (header: \"CRT / VHS Display Simulation Addon v3.0, ENB of the Elders\"). shader-handoff/CREDITS-AND-PROVENANCE.md and HANDOFF.md section 5 credit no other author for this file; the EotE preset and its Addons are the author's own work. Nothing credited to someone else is ported.",
+  "licence": "ported into raw-native under the repository's licence by the author's direction (coordinator relay, 2026-10-22)"
+ },
+ "design": {
+  "passes": "art_enbcrt_down: the 128 x 128 area average the ENB host supplies as RenderTarget128 (the halation source). art_enbcrt: the addon's PS_CRTDisplay in one pass: the VHS pipeline (tracking, jitter, YIQ chroma blur, rightward chroma smear, head switching, dropouts and snow, generation loss) then the CRT pipeline (curvature, overscan, convergence, colour profile, brightness, contrast, saturation, the generalised-Gaussian scanline beam, aperture grille, slot or shadow mask, 8-tap phosphor bloom, halation, signal noise, corner shadow). Files: raw/renderer/art_enbcrt.hpp (reference), src/renderer/gpu/shaders/art_enbcrt.wgsl.",
+  "input": "display-encoded RGB in [0, 1] (the ENB postpass reads LDR), here the art scene through the display transform, and the output codes are round(saturate(c) * 255).",
+  "deviations": [
+   "Every sin-based hash (frac(sin(dot(...)) * 43758.5453)) and CRT_Hash's float hash become an integer hash (lowbias32, the noise module's hash) of integer inputs: the pixel, the line, and floor(time * rate) as the original quantises them. A large-argument sin cannot agree between f32 and f64, so without this no parity is possible; the noise statistics (uniform in [0, 1), independent per input) are kept, the exact patterns are not.",
+   "Derived values the original takes from one hash (frac(h * 7.13) and the like) take independent hash streams instead.",
+   "TextureColor.SampleLevel(smpLinear) and (smpPoint) become explicit bilinear and nearest reads of the buffer with clamped addressing; RenderTarget128 is the downsample pass above.",
+   "K_LUM is defined by the ENB host, not in the snapshot; Rec. 709 luma (0.2126, 0.7152, 0.0722) is used.",
+   "Timer.x is the time in seconds; the checks use frame / 30."
+  ],
+  "presets": "crt (CRT on, the addon's defaults, aperture grille), crt-slot (mask 1, P22 profile, convergence 1.5), crt-shadow (mask 2, Trinitron), vhs (VHS on, defaults), vhs-crt (both, VHS into CRT), vhs-ep (both, EP quality, third-generation copy, tracking 0.6)"
+ },
+ "checks": {
+  "e1_gpu_parity": {
+   "what": "each preset at 256 x 144 on art-scene orbit frames 0 and 6 (time 0 and 0.2 s), on WARP and lavapipe (CI) and the RTX 4090, against the float64 reference, codes compared over the colour channels",
+   "bound": "mean |diff| at most 0.1 codes, 99.9th percentile at most 2, at most 5e-4 of values off by more than 2 (a threshold flip of a dropout or tracking band edge between f32 and f64 moves a whole run of pixels). Built-in control: the reference with brightness x 1.05 must fail on every case.",
+   "prediction": "holds; most values equal, the misses at band and dropout edges"
+  },
+  "e2_goldens": {
+   "what": "tests/test_art_enbcrt.cpp: each preset's reference frame (orbit frame 0, 256 x 144) as codes, FNV-1a, pinned per compiler family (GCC, MSVC); the PNGs committed under evidence/art-enb-crt/ and looked at beside the input",
+   "bound": "every hash equals its pin",
+   "prediction": "holds; GCC and MSVC may differ through exp and pow (recorded)"
+  },
+  "e3_identity": {
+   "what": "both pipelines off returns the input exactly; CRT on with every term at zero (no curvature, overscan, scanline, mask, bloom, halation, noise, corner; brightness, contrast and saturation 1) returns the input",
+   "bound": "codes equal on every pixel",
+   "prediction": "holds"
+  },
+  "e4_temporal": {
+   "what": "the rr-bounds warp metric on the P5 orbit (48 frames at 320 x 180, frames 9 to 47) for crt, vhs and vhs-crt, and on a static camera (the same frame 48 times) for each; time advances 1/30 s a frame",
+   "bound": "static camera, crt: instability exactly 0 (nothing in it varies with time). The rest is recorded, not gated: VHS adds noise by design, and a screen-fixed mask over a moving scene is the look",
+   "prediction": "crt static 0; vhs static about 0.01 to 0.03 (snow and dropouts)"
+  },
+  "e5_cost": {
+   "what": "RTX 4090, 1920 x 1080, vhs-crt (both pipelines, every term on), the two passes batched 10 a submission, median of 50",
+   "bound": "at most 1.0 ms",
+   "prediction": "holds, about 0.2 ms"
+  }
+ },
+ "does_not_prove": "That the port reproduces the ENB original pixel for pixel: the original runs only inside the ENB host, so fidelity rests on a line-by-line transliteration, read against the source, plus the deviations listed above. That the look is right on a real CRT. Anything about the physical CRT tier, which is untouched."
+}
