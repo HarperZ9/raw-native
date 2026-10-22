@@ -91,8 +91,8 @@ int galleryCommand(int argc, char** argv) {
             }
             writeImages(out + "/gallery-gpu", g.width, g.height, gallery::resolve(g, per));
             char b[512];
-            std::snprintf(b, sizeof b, "{\"backend\": \"%s\", \"adapter\": \"%s\", \"wall_ms\": %.1f, \"dispatch_ms\": %.3f, \"dispatch_chunks\": %d, \"dispatch_repeats\": %d, \"rmse_exposed\": %.3e, \"max_abs_exposed\": %.3e}",
-                          dev->backendName(), dev->adapter().description.c_str(), gpuMs, timing.ms, timing.chunks, timing.repeats,
+            std::snprintf(b, sizeof b, "{\"backend\": \"%s\", \"adapter\": \"%s\", \"wall_ms\": %.1f, \"dispatch_ms\": %.3f, \"dispatch_gpu_ms\": %.4f, \"dispatch_chunks\": %d, \"dispatch_repeats\": %d, \"rmse_exposed\": %.3e, \"max_abs_exposed\": %.3e}",
+                          dev->backendName(), dev->adapter().description.c_str(), gpuMs, timing.ms, timing.gpuMs, timing.chunks, timing.repeats,
                           std::sqrt(se / (3.0 * double(per.size()) + 1e-300)), worst);
             gpuJson = b;
         } else {
