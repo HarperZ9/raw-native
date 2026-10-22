@@ -14,4 +14,6 @@ GreyImage ditherRamp();
 GreyImage ditherCard();
 std::vector<GreyImage> ditherGoldens();
 int noiseGalleryCommand(int argc, char** argv);
+// raw_native_cli clouds (src/tools/clouds_cmd.cpp; evidence/p14-clouds-bounds.json).
+int cloudsCommand(int argc, char** argv);
 }

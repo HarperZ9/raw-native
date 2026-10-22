@@ -36,6 +36,7 @@ VkrDevice::~VkrDevice(){
         rasters_.forEach([&](PipeRec& p){ release(p); });
         if (dpool_) vkDestroyDescriptorPool(dev_, dpool_, nullptr);
         if (fence_) vkDestroyFence(dev_, fence_, nullptr);
+        if (tsPool_) vkDestroyQueryPool(dev_, tsPool_, nullptr);
         if (pool_) vkDestroyCommandPool(dev_, pool_, nullptr);
         vkDestroyDevice(dev_, nullptr);
     }
@@ -186,6 +187,8 @@ CommandList* VkrDevice::begin(std::string& err){
     VkResult r = vkResetCommandBuffer(cmd_.cb, 0);
     if (r == VK_SUCCESS) r = vkBeginCommandBuffer(cmd_.cb, &bi);
     if (r != VK_SUCCESS){ err = vkError("vkBeginCommandBuffer", r); return nullptr; }
+    cmd_.timestampsUsed = 0;
+    resetTimestamps(cmd_.cb);
     return &cmd_;
 }
 bool VkrDevice::validationErrors(std::string& err){
@@ -213,6 +216,7 @@ bool VkrDevice::submitAndWait(std::string& err){
     if (r == VK_SUCCESS) r = vkWaitForFences(dev_, 1, &fence_, VK_TRUE, UINT64_MAX);
     if (r != VK_SUCCESS){ if (r == VK_ERROR_DEVICE_LOST) lost_ = true; err = vkError("vkQueueSubmit", r); return false; }   // keep staging alive
     release();
+    tsResolved_ = cmd_.timestampsUsed;
     return validationErrors(err);
 }
 bool VkrDevice::loseForTest(std::string& err){

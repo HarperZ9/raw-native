@@ -11,7 +11,7 @@ if(NOT RAW_NATIVE_VULKAN_RHI OR EMSCRIPTEN)
 endif()
 find_package(Vulkan REQUIRED COMPONENTS glslangValidator)
 include(cmake/present.cmake)
-add_library(raw_native_vulkan STATIC src/rhi/vulkan/vk_rhi_device.cpp src/rhi/vulkan/vk_rhi_buffers.cpp src/rhi/vulkan/vk_rhi_resources.cpp
+add_library(raw_native_vulkan STATIC src/rhi/vulkan/vk_rhi_device.cpp src/rhi/vulkan/vk_rhi_timestamps.cpp src/rhi/vulkan/vk_rhi_buffers.cpp src/rhi/vulkan/vk_rhi_resources.cpp
     src/rhi/vulkan/vk_rhi_commands.cpp src/rhi/vulkan/vk_rhi_swapchain.cpp src/rhi/vulkan/vk_rhi_spirv.cpp)
 target_link_libraries(raw_native_vulkan PUBLIC raw_native Vulkan::Vulkan)
 if(WIN32)

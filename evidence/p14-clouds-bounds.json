@@ -1,0 +1,17 @@
+{
+ "criterion": "ROADMAP P14 stage 1 (2026-10-22): the volumetric cloud and smoke module on the CPU, with its references, goldens and the review of the fuzzy-blob failure. Stage 2 is the GPU pass with parity, blue-noise jitter and temporal reprojection.",
+ "written": "2026-10-22, before any code and before any run",
+ "design": {
+  "density": "raw/renderer/volume.hpp: a union of soft-sphere lobes (each a smooth falloff to its radius), under a height gradient that makes a flat base and lets the lobes round the top, eroded by P8's Worley F1 (cauliflower edges) and billow noise (wisps); a density scale (extinction per metre) and a single-scattering albedo. One module: cumulus, towering cumulus, a deck seen from above, and a smoke plume (lobes rising and widening, lower albedo).",
+  "raymarcher": "the engine's look, float64: fixed steps along the camera ray, Beer transmittance to the sun by a secondary march, a dual-lobe Henyey-Greenstein phase (forward and back lobes mixed) for the silver lining, an optional Beer-powder term for darkened edges (an artistic term that does not conserve energy; off for the reference checks), ambient from the sky, and an optional multiple-scattering approximation by octaves (attenuated extinction, contrast and eccentricity per octave, after Wrenninge). The sky is sky::preetham (P11), the sun its directional light.",
+  "reference": "a brute-force volumetric path tracer of the same density: delta tracking against a majorant, next-event estimation to the sun with ratio tracking, phase-function sampling, in single-scattering and multiple-scattering modes, the environment on escape. Float64, independent of the raymarcher's steps."
+ },
+ "checks": {
+  "v1_furnace": {"what": "albedo 1, a uniform environment of radiance 1, no sun, the path tracer in multiple-scattering mode, pixels inside and outside a dense cloud", "bound": "mean radiance within 4 standard errors + 2e-3 of 1", "prediction": "holds; the control (albedo 0.5) falls well below 1"},
+  "v2_single_scattering": {"what": "the raymarcher (powder off, ambient off, one octave) against the path tracer in single-scattering mode (sun only), a single cumulus at 48 x 27", "bound": "image mean within 3% and relative RMSE of 8 x 8 blocks at most 0.1 at the path tracer's noise level", "prediction": "holds at a step of 1/16 of the lobe radius; a coarse-step control (1/2 of the radius) misses"},
+  "v3_goldens": {"what": "tests/test_clouds.cpp: single cumulus, towering cumulus, deck from above and smoke plume at sunset, 96 x 54, hashed per compiler family", "bound": "equal to the record", "prediction": "holds"},
+  "v4_multiple": {"what": "the raymarcher's octave approximation against the path tracer's multiple scattering on the single cumulus", "bound": "recorded, not gated (an approximation)", "prediction": "within 25% in image mean"},
+  "v5_blob_review": {"what": "the lobe-built cumulus against a control built from fBm alone with the same mean density: mean alpha-gradient magnitude in the band around the silhouette; and the two images side by side, viewed", "bound": "the lobe cloud's edge gradient at least 1.5 times the noise blob's; the review judged by eye and recorded", "prediction": "holds; the noise blob reads as fog"}
+ },
+ "does_not_prove": "Real-time rates or GPU parity (stage 2); agreement with a measured cloud; that the artistic terms (powder, octaves) are physical."
+}

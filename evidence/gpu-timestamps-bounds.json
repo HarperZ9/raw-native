@@ -1,0 +1,12 @@
+{
+ "criterion": "Coordinator round 3 (2026-10-21): GPU timestamp queries before any sub-millisecond timing is trusted. The submit-to-fence timer of evidence/gpu-dispatch-timer-runs.json missed its repeatability bound (0.46 and 0.81 ms) and later read 14 to 18 ms for a 0.5 ms pass while other processes used the GPU (evidence/gallery-occlusion-runs.json).",
+ "written": "2026-10-21, before any code and before any run",
+ "design": "rhi::CommandList::timestamp(slot) records the GPU clock after the commands before it complete; rhi::Device::timestampSeconds(count, out, err) returns the slots after submitAndWait. D3D12: a TIMESTAMP query heap resolved into a readback buffer at submit, GetTimestampFrequency. Vulkan: a TIMESTAMP query pool reset at begin, vkCmdWriteTimestamp at the bottom of the pipe, vkGetQueryPoolResults with timestampPeriod, refused when the queue's timestampValidBits is 0. WebGPU and the null device report no timestamps (the default). The validation layer forwards both. gpu_check::shadeOnGpu reports dispatch_gpu_ms (timestamps around each chunk's dispatch, median of 21, summed over chunks) beside the submit-to-fence figure.",
+ "checks": {
+  "t1_test": {"what": "tests/gpu/timestamps (CTest, any device the build has): two timestamps around an empty stretch and around a dispatch", "bound": "monotonic (t1 >= t0), each interval under one second, and the dispatch interval at most the submit-to-fence wall time of the same submission", "prediction": "holds on WARP, lavapipe and the RTX 4090"},
+  "t2_repeatable": {"what": "the sphere field at 256 x 160 on the RTX 4090, two runs", "bound": "dispatch_gpu_ms within 20% of each other", "prediction": "holds: GPU timestamps do not include submission latency"},
+  "t3_scales": {"what": "1920 x 1080 at 1 sample against 256 x 160 at 4 (14 times the samples)", "bound": "ratio of dispatch_gpu_ms between 8 and 30", "prediction": "about 12 to 14"},
+  "t4_backends": {"what": "WARP and lavapipe in CI", "bound": "each reports timestamps or an explicit 'no timestamps' error, never a silent zero", "prediction": "both report timestamps"}
+ },
+ "does_not_prove": "Frame time of a whole renderer; timing under heavy contention from other processes (the GPU clock counts only this queue's work, but clocks may still throttle)."
+}
