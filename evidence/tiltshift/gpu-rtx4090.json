@@ -1,0 +1,109 @@
+{
+ "g1_and_first_cost": {
+  "backend": "d3d12",
+  "adapter": "NVIDIA GeForce RTX 4090",
+  "g1_cases": [
+   {
+    "case": "town-map",
+    "look": "town_map",
+    "coc_max_abs": 7.62939453e-06,
+    "codes": {
+     "max": 8,
+     "p999": 1,
+     "mean": 0.00702674897,
+     "differ": 2369,
+     "over2": 79,
+     "values": 388800
+    },
+    "control_k_1_1": {
+     "max": 92,
+     "p999": 15,
+     "mean": 0.80163323,
+     "differ": 176260,
+     "over2": 29525,
+     "values": 388800
+    },
+    "control_fails": true,
+    "pass": true
+   },
+   {
+    "case": "town-night",
+    "look": "night",
+    "coc_max_abs": 2.86102295e-06,
+    "codes": {
+     "max": 3,
+     "p999": 1,
+     "mean": 0.00202932099,
+     "differ": 767,
+     "over2": 2,
+     "values": 388800
+    },
+    "control_k_1_1": {
+     "max": 32,
+     "p999": 6,
+     "mean": 0.327528292,
+     "differ": 85980,
+     "over2": 9322,
+     "values": 388800
+    },
+    "control_fails": true,
+    "pass": true
+   },
+   {
+    "case": "art-daily",
+    "look": "daily",
+    "coc_max_abs": 1.49011612e-06,
+    "codes": {
+     "max": 6,
+     "p999": 0,
+     "mean": 0.00104938272,
+     "differ": 379,
+     "over2": 6,
+     "values": 388800
+    },
+    "control_k_1_1": {
+     "max": 19,
+     "p999": 7,
+     "mean": 0.257273663,
+     "differ": 60911,
+     "over2": 9328,
+     "values": 388800
+    },
+    "control_fails": true,
+    "pass": true
+   }
+  ],
+  "g3_cost": {
+   "width": 1920,
+   "height": 1080,
+   "repeats": 50,
+   "look": "town_map, every effect on",
+   "chain_ms": 2.84981728,
+   "g3_pass": false
+  }
+ },
+ "g3_cost_with_pass_breakdown": {
+  "backend": "d3d12",
+  "adapter": "NVIDIA GeForce RTX 4090",
+  "g3_cost": {
+   "width": 1920,
+   "height": 1080,
+   "repeats": 50,
+   "look": "town_map, every effect on",
+   "chain_ms": 2.84671783,
+   "pass_ms_coc_weight_prep_tensor_blurx_blury_defocus_bright_glow_finish": [
+    0.02145767,
+    0.04506111,
+    0.1730919,
+    0.02980232,
+    0.0462532,
+    0.07486343,
+    2.122879,
+    0.01335144,
+    0.1003742,
+    0.03600121
+   ],
+   "g3_pass": false
+  }
+ }
+}

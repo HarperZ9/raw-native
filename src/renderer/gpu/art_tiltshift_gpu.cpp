@@ -50,6 +50,11 @@ bool tiltOnGpu(rhi::Device& dev, const art::Frame& f, const art::LensGeom& g, co
     out.coc.resize(n);
     for (std::size_t i = 0; i < n; ++i) std::memcpy(&out.coc[i], &cw[i * 4], 4);
     if (repeats > 0 && !R.timeStamps(repeats, out.chainMs)) { out.error = R.error(); return false; }
+    for (std::size_t s = 0; repeats > 0 && s < R.steps(); ++s) {
+        double ms = 0;
+        if (!R.timeStamps(repeats, ms, s, s + 1)) { out.error = R.error(); return false; }
+        out.stepMs.push_back(ms);
+    }
     return true;
 }
 

@@ -198,8 +198,8 @@ int tiltshift(const Options& o) {
     bool pass = true, ok = true;
     Json j;
     j.str("schema", "raw-native.evidence/1").str("bounds", "evidence/tiltshift-bounds.json (with addendum A)").raw("goldens", goldens(o, ok));
-    j.raw("director", director(pass)).raw("care", care(o, pass)).raw("ink_and_paint", inkAndPaint(o, pass, ok));
-    if (o.orbit) j.raw("temporal", temporal(o, pass));
+    if (o.cpu) j.raw("director", director(pass)).raw("care", care(o, pass)).raw("ink_and_paint", inkAndPaint(o, pass, ok));
+    if (o.cpu && o.orbit) j.raw("temporal", temporal(o, pass));
     if (o.gpu || o.cost) j.raw("gpu", tiltGpu(o, pass));
     j.boolean("pass", pass && ok);
     const std::string doc = j.done();

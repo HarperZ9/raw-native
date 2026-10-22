@@ -2,12 +2,13 @@
  "schema": "raw-native.evidence/1",
  "bounds": "evidence/tiltshift-bounds.json (with addenda A and B)",
  "branch": "feat/tiltshift",
- "verdict": "CPU stage recorded. Met: t1 (people in the wedge keep their ink exactly, the screen band fails as required), t5 (the orbit is 24% steadier than the base paint), d1 to d5 (no pumping; drift and events never take focus from a speaker or a fight, the lock-off control fails on 916 frames), c1 to c3 (no flash added, no red window, reduced motion stills weave and grain), g2 goldens (GCC and MSVC agree). Missed: t2 (the ink does not fall off out of focus: ratio 1.32 against at most 0.5), t3 (the art scene's E is 0.474 against at least 0.5, and the gaussian control does not fail E on the town, 0.716), t6 (ill-posed: with the camera held the base paint does not change, so its instability is 0 and any rack counts as infinitely worse). GPU parity (g1) and cost (g3) are not yet run.",
+ "verdict": "CPU stage recorded. Met: t1 (people in the wedge keep their ink exactly, the screen band fails as required), t5 (the orbit is 24% steadier than the base paint), d1 to d5 (no pumping; drift and events never take focus from a speaker or a fight, the lock-off control fails on 916 frames), c1 to c3 (no flash added, no red window, reduced motion stills weave and grain), g2 goldens (GCC and MSVC agree). Missed: t2 (the ink does not fall off out of focus: ratio 1.32 against at most 0.5), t3 (the art scene's E is 0.474 against at least 0.5, and the gaussian control does not fail E on the town, 0.716), t6 (ill-posed: with the camera held the base paint does not change, so its instability is 0 and any rack counts as infinitely worse). On the GPU: g1 parity holds on D3D12 WARP, Vulkan lavapipe and the RTX 4090 (CoC within 8e-6 px; codes max 8 (at the bound), p99.9 1, mean under 0.008; every K x 1.1 control fails). g3 cost misses: the chain takes 2.85 ms at 1080p against 1.0 ms, of which the painted defocus pass is 2.12 ms.",
  "runs": {
   "run1": "evidence/tiltshift/cpu-run1.json: the first CPU run (no orbit), MSVC, before addendum B: cMax 8 px at 540 lines; 2 people in the wedge; t2 1.35; t3 town gaussian E 0.88. Kept as recorded.",
   "exploratory": "One probe after run 1 with addendum B's changes and before it was written (disclosed in the addendum).",
   "record": "evidence/tiltshift/cpu-record.json: MSVC (VS 18) Release build of 33e8739, CPU float64, 20 threads, 2026-10-22, with the orbit and the rack.",
-  "goldens": "test_art_tiltshift on MSVC and GCC 13.3 (WSL Ubuntu 24.04): coc 0x2c4cd941314f50b5, codes 0xb2f84d054ae9ba92 on both."
+  "goldens": "test_art_tiltshift on MSVC and GCC 13.3 (WSL Ubuntu 24.04): coc 0x2c4cd941314f50b5, codes 0xb2f84d054ae9ba92 on both.",
+  "gpu": "D3D12: MSVC build of this branch on local WARP and the RTX 4090 (hardware, under the shared GPU lock D:/gpu.lock.d), 2026-10-22. Vulkan: GCC 13.3 (WSL Ubuntu 24.04) raw_native_cli_vk on lavapipe (VK_ICD_FILENAMES lvp_icd.json). Files evidence/tiltshift/gpu-{warp,lavapipe,rtx4090}.json."
  },
  "checks": {
   "t1_ink_in_wedge": {
@@ -352,6 +353,152 @@
   "g2_goldens": {
    "coc_fnv": "0x2c4cd941314f50b5",
    "tiltshift_fnv": "0xb2f84d054ae9ba92"
+  },
+  "g1_gpu_parity": {
+   "warp": {
+    "town-map": {
+     "coc_max_abs": 6.67572021e-06,
+     "codes": {
+      "max": 8,
+      "p999": 1,
+      "mean": 0.00742283951,
+      "differ": 2500,
+      "over2": 78,
+      "values": 388800
+     },
+     "control_fails": true,
+     "pass": true
+    },
+    "town-night": {
+     "coc_max_abs": 3.33786011e-06,
+     "codes": {
+      "max": 3,
+      "p999": 1,
+      "mean": 0.00247427984,
+      "differ": 939,
+      "over2": 2,
+      "values": 388800
+     },
+     "control_fails": true,
+     "pass": true
+    },
+    "art-daily": {
+     "coc_max_abs": 1.43051147e-06,
+     "codes": {
+      "max": 6,
+      "p999": 1,
+      "mean": 0.0012037037,
+      "differ": 429,
+      "over2": 7,
+      "values": 388800
+     },
+     "control_fails": true,
+     "pass": true
+    }
+   },
+   "lavapipe": {
+    "town-map": {
+     "coc_max_abs": 6.67572021e-06,
+     "codes": {
+      "max": 8,
+      "p999": 1,
+      "mean": 0.00764660494,
+      "differ": 2589,
+      "over2": 78,
+      "values": 388800
+     },
+     "control_fails": true,
+     "pass": true
+    },
+    "town-night": {
+     "coc_max_abs": 3.33786011e-06,
+     "codes": {
+      "max": 3,
+      "p999": 1,
+      "mean": 0.0027340535,
+      "differ": 1040,
+      "over2": 2,
+      "values": 388800
+     },
+     "control_fails": true,
+     "pass": true
+    },
+    "art-daily": {
+     "coc_max_abs": 1.43051147e-06,
+     "codes": {
+      "max": 6,
+      "p999": 1,
+      "mean": 0.00124485597,
+      "differ": 445,
+      "over2": 7,
+      "values": 388800
+     },
+     "control_fails": true,
+     "pass": true
+    }
+   },
+   "rtx4090": {
+    "town-map": {
+     "coc_max_abs": 7.62939453e-06,
+     "codes": {
+      "max": 8,
+      "p999": 1,
+      "mean": 0.00702674897,
+      "differ": 2369,
+      "over2": 79,
+      "values": 388800
+     },
+     "control_fails": true,
+     "pass": true
+    },
+    "town-night": {
+     "coc_max_abs": 2.86102295e-06,
+     "codes": {
+      "max": 3,
+      "p999": 1,
+      "mean": 0.00202932099,
+      "differ": 767,
+      "over2": 2,
+      "values": 388800
+     },
+     "control_fails": true,
+     "pass": true
+    },
+    "art-daily": {
+     "coc_max_abs": 1.49011612e-06,
+     "codes": {
+      "max": 6,
+      "p999": 0,
+      "mean": 0.00104938272,
+      "differ": 379,
+      "over2": 6,
+      "values": 388800
+     },
+     "control_fails": true,
+     "pass": true
+    }
+   },
+   "pass": true
+  },
+  "g3_cost": {
+   "chain_ms": 2.84671783,
+   "bound_ms": 1.0,
+   "pass": false,
+   "pass_ms": {
+    "coc": 0.02145767,
+    "weight": 0.04506111,
+    "prep": 0.1730919,
+    "tensor": 0.02980232,
+    "blur_x": 0.0462532,
+    "blur_y": 0.07486343,
+    "defocus": 2.122879,
+    "bright": 0.01335144,
+    "glow": 0.1003742,
+    "finish": 0.03600121
+   },
+   "first_run_chain_ms": 2.84981728,
+   "method": "GPU timestamps around the ten passes, one chain a submission, median of 50 warm submissions; each pass alone the same way.",
+   "diagnosis": "The defocus pass (48 samples, two loops, 8 sectors, a KM decode) over most of the frame at the town_map miniature is 2.12 ms; everything else is 0.54 ms. A half-resolution defocus (the defocused region carries no fine detail by design) or skipping tiles with no weight are the next steps, under an addendum before any rerun, as the bounds said."
   }
  },
  "captures": {
@@ -363,5 +510,5 @@
    "Looks: record shows the halftone dot screen; memory the warm print and vignette. Night shows no visible halation or star: the dusk scene is bright and the lamp globes are a few pixels, so the bright pass's 4 x 4 mean stays near the knee. Dream is hard to tell from daily at this framing. The effects need a darker night scene to be judged."
   ]
  },
- "does_not_prove": "That the look is good (the captures are for review). Anything on the GPU: parity and cost are not run yet. Moving figures (the CoC is per frame). The director's timings as a player feels them. The game's browser renderer."
+ "does_not_prove": "That the look is good (the captures are for review). Moving figures (the CoC is per frame). The director's timings as a player feels them. The game's browser renderer."
 }

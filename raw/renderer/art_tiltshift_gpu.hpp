@@ -13,6 +13,7 @@ struct TiltGpu {
     std::vector<float> coc;                 // the CoC a pixel
     std::vector<std::uint32_t> packed;      // RGBA8 a pixel
     double chainMs{0};                      // median GPU milliseconds of the ten passes
+    std::vector<double> stepMs;             // each pass alone (median GPU milliseconds), in chain order
 };
 bool tiltOnGpu(rhi::Device& dev, const art::Frame& f, const art::LensGeom& g, const art::FxPlan& P, const std::vector<float>& paint, TiltGpu& out, int repeats);
 }  // namespace raw::gpu_check

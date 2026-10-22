@@ -11,7 +11,7 @@ namespace raw::art_cmd {
 struct Options {
     std::string feature, out{"art-out"};
     int threads{8}, frames{48}, repeats{50};
-    bool orbit{true}, gpu{false}, cost{false};
+    bool orbit{true}, gpu{false}, cost{false}, cpu{true};
 };
 
 // Code differences between two RGBA code images over the colour channels.
