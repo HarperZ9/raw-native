@@ -1,0 +1,20 @@
+{
+ "bounds": "evidence/p8-noise-dither-bounds.json",
+ "branch": "feat/p8-noise-dither",
+ "runs": {"gcc": "g++ 13.3 (WSL), Release, 2026-10-21", "msvc": "MSVC (VS 18), Release, Idle, 2026-10-21 (the first build ran out of compiler heap at /m:4 while other jobs held memory; rebuilt at /m:2)"},
+ "checks": {
+  "n1_goldens": {"result": "holds", "observed": "19 images (15 functions, 4 recipes) hashed together: 0xbb69adfcaefa21bc on GCC and MSVC alike, as predicted possible (only correctly rounded operations); per-image hashes printed by the test"},
+  "n2_white": {"result": "holds", "observed": "chi-square 38.2 over 63 degrees of freedom (bound 63 +- 45)"},
+  "n3_blue_spectrum": {"result": "holds", "observed": "low-frequency power 4.9e-5 of white noise's (bound 0.10)"},
+  "n4_continuity": {"result": "holds", "observed": "worst slope: value2 1.83, value3 1.76, perlin2 1.89, perlin3 2.88, simplex2 4.56, simplex3 6.28 (bound 16); control (nearest lattice) 988 (must exceed 100)"},
+  "n5_range": {"result": "holds", "observed": "gradient noise [-0.977, 0.976] (bound 1.05); value and white in [0, 1); Worley F1 <= F2; fBm, ridged and billow within their ranges"},
+  "n6_fbm_identity": {"result": "holds", "observed": "bit-equal on 1,000 points"},
+  "d1_goldens": {"result": "holds", "observed": "18 images (9 methods on the ramp and the card): 0xb9ca7e2db4a440f7 on GCC and MSVC"},
+  "d2_mean": {"result": "holds", "observed": "two levels on the 256 x 64 ramp: Bayer 8 0.00000, Floyd-Steinberg +0.00061, Stucki +0.00067, blue noise +0.00061 (bound 0.00392). Recorded: Bayer 2 and 4 0.00000, Atkinson +0.00189, line fill 0.00000, contour fill +0.48 (it is line art on white paper at two levels)"},
+  "d3_bayer": {"result": "holds", "observed": "8 x 8 is a permutation of 0..63, every 2 x 2 block holds one rank from each quarter; the 2 x 2 matrix is [[0, 2], [3, 1]]"},
+  "d4_patterns": {"result": "holds", "observed": "blue-noise pattern on flat grey: 0.013 of white thresholding's low-frequency power (bound 0.10)"}
+ },
+ "review": "evidence/p8-noise-dither/contact-sheet.png: every golden, viewed. The first contour fill quantised whole bands to black or white (most of the card black); it now draws dark band edges on white at two levels, fixed before the hashes were pinned.",
+ "inventory_for_stage_3": "private noise copies to move onto the module: style.wgsl hash3, fade5, vnoise2, vnoise3; threads.wgsl hash2, hash1, vnoise, fbm (sin-based hashes); worlds.wgsl hash11, hash21, hash31, hash33, noise2, noise3, fbm2, fbm3 (sin-based); common.wgsl hash01; web/explainer/wgsl.mjs hash32; web/motion/shaders.mjs hash; dither: web/shaders/reference/retro-dither.mjs and the dither style passes",
+ "does_not_prove": "GPU behaviour (stage 2); that the sin-based hashes in the shaders are wrong on any device (they are a precision risk to measure in stage 3); that a pattern suits a scene."
+}

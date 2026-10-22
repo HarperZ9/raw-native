@@ -255,6 +255,8 @@ copied from the sources). P8b, the dither module, was added the same day and ran
 consumers (terrain, weather, film grain, tile variation, and P9's ripples) wait on it. P9 ranks
 third: Low Water's rainy harbour makes it core for the game, and path tracer v3 already gives it a
 reference to be checked against.
+Status of P8 and P8b (2026-10-21): stage 1 built. The CPU modules pass their goldens (the same hashes on GCC and MSVC) and their statistical checks (`evidence/p8-noise-dither-runs.json`). Stage 2 (WGSL passes and GPU parity) and stage 3 (moving the engine's private copies onto the modules) remain.
+
 Status of P10 (2026-10-21): built. The sphere field's raster frame is pinned per compiler, its GPU shading holds the gallery's bounds on the RTX 4090 and WARP, and its error against path tracer v3 is 0.23 (bound 0.6; `evidence/p10-sphere-field-runs.json`). A dispatch-only GPU timer is still open, so its frame times are wall times.
 
 P10 to P13 were added on 2026-10-21 from the author's path-tracing references, when the author made

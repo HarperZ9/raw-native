@@ -1,0 +1,24 @@
+{
+ "criterion": "ROADMAP dated proposals P8 (one tested noise module) and P8b (a dither module beside it), stage 1: the CPU modules, their golden images and statistical checks. Stage 2 (a WGSL pass per function with GPU parity on WARP and lavapipe) and stage 3 (moving the engine's private noise and dither copies onto the module, with a CI grep check) follow with their own bounds.",
+ "written": "2026-10-21, before any code and before any run",
+ "design": {
+  "noise": "raw/renderer/noise.hpp, src/renderer/noise.cpp. Float32 throughout with + - * / floor and sqrt only (no trigonometry), so a later WGSL pass can mirror it line for line. Integer hash: Wellons' lowbias32 chained over (x, y, z, seed). Functions: white, value 2D/3D, Perlin 2D/3D (quintic fade; 8 and 12 gradients), simplex 2D/3D (written from the skew and kernel definitions), Worley/Voronoi 2D/3D (F1 and F2), fBm, ridged (Musgrave), billow, domain warp, hybrid multifractal (Musgrave), and blue noise read from the engine's 64 x 64 void-and-cluster mask (src/renderer/data/bluenoise64.hpp).",
+  "dither": "raw/renderer/dither.hpp, src/renderer/dither.cpp: ordered Bayer (2, 4, 8), error diffusion (Floyd-Steinberg, Atkinson, Stucki; left to right), blue-noise thresholding, a line fill (hatching whose stroke width follows tone) and a contour fill (tone bands with dark band edges), on a grey image in [0, 1] to L levels.",
+  "recipes": "golden examples from the author's references (section 5, ideas only): fBm + ridged + blue-noise islands; 3D simplex + domain warp + ridged planet; warp + ridged + white; ridged + fBm + billow",
+  "images": "raw_native_cli noise-gallery --out DIR writes every golden as a PNG for review"
+ },
+ "checks": {
+  "n1_goldens": {"what": "tests/test_noise.cpp: 128 x 128 image per function and recipe, FNV-1a over the float bits, pinned per compiler family (GCC, MSVC)", "bound": "every hash equal to the record", "prediction": "holds; the hashes may even agree across compilers since only correctly rounded operations are used (recorded either way)"},
+  "n2_white": {"what": "chi-square of 2^20 white samples in 64 bins", "bound": "|chi2 - 63| at most 45 (4 standard deviations)", "prediction": "holds"},
+  "n3_blue_spectrum": {"what": "mean power of the 64 x 64 mask's DFT below 1/8 of Nyquist (DC excluded), against a white mask's", "bound": "at most 10% of white's", "prediction": "holds, a few percent"},
+  "n4_continuity": {"what": "the largest |f(x + h) - f(x)| / h, h = 1e-3, over 200,000 points including lattice-boundary straddles, for value, Perlin and simplex in 2D and 3D; control: nearest-lattice value noise (a step function)", "bound": "at most 16 for each; the control must exceed 100", "prediction": "holds; the control is about 1/h"},
+  "n5_range": {"what": "1e6 samples each: Perlin and simplex within [-1.05, 1.05]; value and white within [0, 1); Worley F1 <= F2; fBm, ridged, billow normalised to their stated ranges", "bound": "no sample outside", "prediction": "holds"},
+  "n6_fbm_identity": {"what": "fBm with one octave equals its base noise exactly", "bound": "bit-equal", "prediction": "holds"},
+  "d1_goldens": {"what": "tests/test_dither.cpp: each method on a 256 x 64 horizontal ramp and a 128 x 128 synthetic test card (gradients and discs, no photographs), FNV-1a pinned per compiler family", "bound": "every hash equal to the record", "prediction": "holds"},
+  "d2_mean": {"what": "the dithered ramp's mean against the input's, 2 levels", "bound": "within 1/255 for Floyd-Steinberg, Stucki, Bayer 8 and blue-noise thresholding; Atkinson recorded, not gated (it drops a quarter of the error by design); line and contour fills recorded", "prediction": "holds for the gated methods"},
+  "d3_bayer": {"what": "the 8 x 8 Bayer matrix is a permutation of 0..63 and each 2 x 2 quarter-step block holds one rank from each quarter", "bound": "exact", "prediction": "holds"},
+  "d4_patterns": {"what": "on flat 50% grey, low-frequency power of the blue-noise threshold pattern against white-noise thresholding", "bound": "at most 10% of white's", "prediction": "holds"}
+ },
+ "not_in_this_step": "GPU passes and parity (stage 2); moving the engine's existing copies (style.wgsl vnoise, threads.wgsl and worlds.wgsl sin-hash noise, common.wgsl hash01, web motion and explainer hashes, retro-dither.mjs) onto the module (stage 3); a C++ void-and-cluster generator that reproduces the committed mask.",
+ "does_not_prove": "That a pattern looks right to a viewer (the PNGs are for review); GPU behaviour; that the recipes suit any particular scene."
+}
