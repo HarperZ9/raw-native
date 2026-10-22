@@ -7,6 +7,7 @@
 #include "shaders/light_layout.hpp"
 #include "shaders/pbr_layout.hpp"
 #include <algorithm>
+#include <chrono>
 #include <cmath>
 #include <cstring>
 #include <functional>
@@ -188,7 +189,8 @@ void clusterChecks(rhi::Device& dev, rhi::PipelineHandle pipe, LightingParity& r
 }
 // Shading on the GPU from the given cluster buffer and environment buffer.
 bool gpuShade(rhi::Device& dev, rhi::PipelineHandle pipe, const PbrParamsGpu& p, const std::vector<float>& samples, const std::vector<float>& tables,
-              const std::vector<float>& lights, const std::vector<std::uint32_t>& k, const std::vector<float>& env, std::vector<float>& out, std::string& err) {
+              const std::vector<float>& lights, const std::vector<std::uint32_t>& k, const std::vector<float>& env, std::vector<float>& out, std::string& err,
+              double* medianMs = nullptr, int repeats = 0) {
     Gpu g{dev, {}, {}};
     std::vector<std::function<void(rhi::CommandList&)>> pre;
     const BufferHandle b[6] = {g.upload(&p, sizeof p, BufferUsage::Uniform, "shade params", pre),
@@ -208,7 +210,23 @@ bool gpuShade(rhi::Device& dev, rhi::PipelineHandle pipe, const PbrParamsGpu& p,
         c.dispatch(pipe, binds, (p.count + 63) / 64, 1, 1);
     }, o, std::uint64_t(p.count) * 12, out.data());
     err = g.err;
-    return ok;
+    if (!ok || !medianMs || repeats < 1) return ok;
+    // The dispatch alone, warm: every input already in its read state, the pipeline built.
+    const BufferHandle binds[7] = {b[0], b[1], b[2], b[3], b[4], b[5], o};
+    std::vector<double> t;
+    for (int r = 0; r < repeats; ++r) {
+        rhi::CommandList* c = dev.begin(err);
+        if (!c) return false;
+        const rhi::BufferBarrier back[1] = {{o, r == 0 ? Access::CopySrc : Access::StorageWrite, Access::StorageWrite}};
+        c->barrier(back);
+        c->dispatch(pipe, binds, (p.count + 63) / 64, 1, 1);
+        const auto t0 = std::chrono::steady_clock::now();
+        if (!dev.submitAndWait(err)) return false;
+        t.push_back(std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
+    }
+    std::sort(t.begin(), t.end());
+    *medianMs = t[t.size() / 2];
+    return true;
 }
 }  // namespace
 
@@ -275,6 +293,12 @@ LightingParity lightingParity(rhi::Device& dev) {
 }
 bool shadeOnGpu(rhi::Device& dev, const ClusterGrid& grid, const std::vector<Sample>& samples, const std::vector<Light>& lights,
                 const Cube& env, const std::vector<Rgb>& sh, double exposure, std::vector<float>& out, std::string& err) {
+    return shadeOnGpu(dev, grid, samples, lights, env, sh, exposure, out, err, nullptr, 0);
+}
+bool shadeOnGpu(rhi::Device& dev, const ClusterGrid& grid, const std::vector<Sample>& samples, const std::vector<Light>& lights,
+                const Cube& env, const std::vector<Rgb>& sh, double exposure, std::vector<float>& out, std::string& err,
+                DispatchTiming* timing, int repeats) {
+    if (timing) *timing = {0.0, 0, repeats};
     rhi::PipelineHandle pc, pp, ps;
     if (!pipelines(dev, pc, pp, ps, err)) return false;
     std::vector<float> envGpu;
@@ -291,7 +315,9 @@ bool shadeOnGpu(rhi::Device& dev, const ClusterGrid& grid, const std::vector<Sam
         const PbrParamsGpu p{std::uint32_t(n), 0, std::uint32_t(lights.size()), std::uint32_t(env.size), std::uint32_t(env.levels),
                              std::uint32_t(env.rgb.size()), 0, 0,
                              {float(std::tan(0.5 * grid.fovy)), float(grid.aspect), float(grid.nearZ), float(grid.farZ)}, {float(exposure), 0, 0, 0}};
-        if (!gpuShade(dev, ps, p, packed, tab, lv, k, envGpu, part, err)) return false;
+        double ms = 0.0;
+        if (!gpuShade(dev, ps, p, packed, tab, lv, k, envGpu, part, err, timing ? &ms : nullptr, timing ? repeats : 0)) return false;
+        if (timing) { timing->ms += ms; ++timing->chunks; }
         std::copy(part.begin(), part.end(), out.begin() + std::ptrdiff_t(first * 3));
     }
     return true;
