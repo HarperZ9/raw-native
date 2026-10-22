@@ -2,7 +2,7 @@
  "schema": "raw-native.evidence/1",
  "bounds": "evidence/tiltshift-bounds.json (with addenda A and B)",
  "branch": "feat/tiltshift",
- "verdict": "CPU stage recorded. Met: t1 (people in the wedge keep their ink exactly, the screen band fails as required), t5 (the orbit is 24% steadier than the base paint), d1 to d5 (no pumping; drift and events never take focus from a speaker or a fight, the lock-off control fails on 916 frames), c1 to c3 (no flash added, no red window, reduced motion stills weave and grain), g2 goldens (GCC and MSVC agree). Missed: t2 (the ink does not fall off out of focus: ratio 1.32 against at most 0.5), t3 (the art scene's E is 0.474 against at least 0.5, and the gaussian control does not fail E on the town, 0.716), t6 (ill-posed: with the camera held the base paint does not change, so its instability is 0 and any rack counts as infinitely worse). On the GPU: g1 parity holds on D3D12 WARP, Vulkan lavapipe and the RTX 4090 (CoC within 8e-6 px; codes max 8 (at the bound), p99.9 1, mean under 0.008; every K x 1.1 control fails). g3 cost misses: the chain takes 2.85 ms at 1080p against 1.0 ms, of which the painted defocus pass is 2.12 ms.",
+ "verdict": "CPU stage recorded. Met: t1 (people in the wedge keep their ink exactly, the screen band fails as required), t5 (the orbit is 24% steadier than the base paint), d1 to d5 (no pumping; drift and events never take focus from a speaker or a fight, the lock-off control fails on 916 frames), c1 to c3 (no flash added, no red window, reduced motion stills weave and grain), g2 goldens (GCC and MSVC agree). Missed: t2 (the ink does not fall off out of focus: ratio 1.32 against at most 0.5), t3 (the art scene's E is 0.474 against at least 0.5, and the gaussian control does not fail E on the town, 0.716), t6 (ill-posed: with the camera held the base paint does not change, so its instability is 0 and any rack counts as infinitely worse). On the GPU: g1 parity holds on D3D12 WARP, Vulkan lavapipe and the RTX 4090 (CoC within 8e-6 px; codes max 8 (at the bound), p99.9 1, mean under 0.008; every K x 1.1 control fails). g3 cost misses: the chain takes 2.85 ms at 1080p against 1.0 ms, of which the painted defocus pass is 2.12 ms. Second record (addendum C): t2 now holds, t5 improves to 55% steadier, t6b holds, the dream look is distinct; t3 still misses; g3 improves from 2.85 to 1.235 ms and still misses the 1.0 ms bound; halation and the star filter remain invisible on the night scene.",
  "runs": {
   "run1": "evidence/tiltshift/cpu-run1.json: the first CPU run (no orbit), MSVC, before addendum B: cMax 8 px at 540 lines; 2 people in the wedge; t2 1.35; t3 town gaussian E 0.88. Kept as recorded.",
   "exploratory": "One probe after run 1 with addendum B's changes and before it was written (disclosed in the addendum).",
@@ -510,5 +510,116 @@
    "Looks: record shows the halftone dot screen; memory the warm print and vignette. Night shows no visible halation or star: the dusk scene is bright and the lamp globes are a few pixels, so the bright pass's 4 x 4 mean stays near the knee. Dream is hard to tell from daily at this framing. The effects need a darker night scene to be judged."
   ]
  },
- "does_not_prove": "That the look is good (the captures are for review). Moving figures (the CoC is per frame). The director's timings as a player feels them. The game's browser renderer."
+ "does_not_prove": "That the look is good (the captures are for review). Moving figures (the CoC is per frame). The director's timings as a player feels them. The game's browser renderer.",
+ "record_c": {
+  "what": "The second record, after addendum C: MSVC build of db75f33, CPU float64 with WARP parity; lavapipe (GCC 13.3, raw_native_cli_vk); the RTX 4090 cost under the GPU lock. Files evidence/tiltshift/cpu-record-c.json, gpu-rtx4090-c.json, gpu-lavapipe-c.json. The captures in evidence/tiltshift/ are replaced by this record's (the first record's numbers stay in cpu-record.json).",
+  "t1": {
+   "in_wedge": 5,
+   "pass": true,
+   "band_people_failing": 5
+  },
+  "t2": {
+   "ratio": 4.34408204e-07,
+   "pass": true,
+   "note": "Holds: the defocus works on the unlined colour, so where w = 1 (c >= 2.5 px) the ink is gone; between c0 and c1 it fades as 1 - w."
+  },
+  "t3": {
+   "town_ours": {
+    "D": 0.463590659,
+    "E": 0.820249883,
+    "pixels": 450491
+   },
+   "town_gaussian": {
+    "D": 0.354217282,
+    "E": 0.692618696,
+    "pixels": 450491
+   },
+   "art_ours": {
+    "D": 0.312483046,
+    "E": 0.392696797,
+    "pixels": 492125
+   },
+   "art_gaussian": {
+    "D": 0.1672799,
+    "E": 0.270535307,
+    "pixels": 492125
+   },
+   "pass": false,
+   "gaussian_control_fails": false,
+   "note": "Still misses: the art scene's E falls to 0.39 (half resolution and the lines gone lower the patch edges' gradients), and the town's gaussian E 0.69 does not fail. The metric is unchanged, as addendum C says."
+  },
+  "t5": {
+   "ours_vs_base": {
+    "mean_a": 0.00592389547,
+    "mean_b": 0.0132228481,
+    "diff": -0.00729895266,
+    "diff_lo": -0.00776948871,
+    "diff_hi": -0.00692043265,
+    "reduction": 0.5519955,
+    "reduction_lo": 0.511384853,
+    "reduction_hi": 0.594221053,
+    "frames": 39,
+    "seed": "0x000000000135289e"
+   },
+   "relative_change": -0.5519955,
+   "pass": true
+  },
+  "t6_first_record": "Missed (relative bound over a zero baseline), kept on record in cpu-record.json.",
+  "t6b": {
+   "rack_mean": 0.00122265981,
+   "limit_half_base_orbit": 0.00661142407,
+   "underdamped_rack_mean": 0.00148938245,
+   "pass": true
+  },
+  "director": "unchanged: d1 to d5 hold",
+  "care": {
+   "dusk": {
+    "flashes_in": 0,
+    "flashes_out": 0,
+    "c1_pass": true,
+    "red_windows_added_frames": 0,
+    "red_pixels_max_out": 0,
+    "red_pixels_max_in": 0,
+    "c2_pass": true,
+    "grain_still": true,
+    "c3_pass": true
+   },
+   "night": {
+    "flashes_in": 0,
+    "flashes_out": 0,
+    "c1_pass": true,
+    "red_windows_added_frames": 0,
+    "red_pixels_max_out": 0,
+    "red_pixels_max_in": 0,
+    "c2_pass": true,
+    "grain_still": true,
+    "c3_pass": true
+   }
+  },
+  "g1": "holds on WARP, lavapipe and the RTX 4090: CoC within 8e-6 px; codes max 6 (town_map, RTX), p99.9 at most 1; every K x 1.1 control fails",
+  "g3": {
+   "chain_ms": 1.23476982,
+   "pass_ms": {
+    "coc": 0.0205039978,
+    "weight": 0.0450611115,
+    "half": 0.0705718994,
+    "prep": 0.0472068787,
+    "tensor": 0.0112056732,
+    "blur_x": 0.0152587891,
+    "blur_y": 0.0233650208,
+    "defocus": 0.528335571,
+    "compose": 0.112771988,
+    "bright": 0.0133514404,
+    "glow": 0.104427338,
+    "finish": 0.0369548798
+   },
+   "pass": false,
+   "note": "Misses by 0.24 ms: 1.235 ms against 1.0 (2.85 before). The half-resolution defocus is 0.53 ms; the full-resolution compose 0.11 ms and the glow 0.10 ms are next. Tile culling of zero-weight tiles and a 32-sample disc are the remaining levers, under an addendum."
+  },
+  "captures_seen": [
+   "Night (town-look-night.png): the town is dark and the lamps and the window read, but halation and the star filter are still invisible. The bright pass reads the paint frame, whose soft shoulder holds the globes near 1.0, so they barely clear the knee. Feeding the bright pass from the scene-linear light is the fix; not built.",
+   "Dream (town-look-dream.png): now distinct from daily: desaturated toward 55%, hue shifted, and the plane lies wrong so the near roofs and the far row soften while a diagonal band stays sharp.",
+   "Town ours: the defocused walls and roofs carry no ink; the people in the wedge keep theirs."
+  ]
+ }
 }
