@@ -1,0 +1,21 @@
+{
+ "schema": "raw-native.pt-error/1",
+ "scene": "material-gallery-spaced",
+ "width": 256, "height": 256, "raster_spp": 4,
+ "spp": 512, "bounces": 8, "tessellation": [128, 64], "env_scale": 1,
+ "path_tracer_version": 3,
+ "pixels_both_cover": 3372,
+ "coverage_agreement": 0.999878,
+ "mean_luminance_raster": 0.142331, "mean_luminance_pt": 0.138248,
+ "relative_rmse": 0.273299, "bias": 0.0295341, "noise_floor": 0.0406378,
+ "groups": [
+  {"group": 0, "label": "gold, roughness", "pixels": 564, "relative_rmse": 0.254822, "bias": -0.0146338, "split_sum_relative_rmse": 0.0642265, "split_sum_samples": 80},
+  {"group": 1, "label": "red plastic, roughness", "pixels": 488, "relative_rmse": 0.0580092, "bias": -0.000150443, "split_sum_relative_rmse": 0.0346115, "split_sum_samples": 68},
+  {"group": 2, "label": "car paint, clearcoat roughness", "pixels": 424, "relative_rmse": 0.248241, "bias": 0.0025511, "split_sum_relative_rmse": 0.475253, "split_sum_samples": 62},
+  {"group": 3, "label": "velvet, sheen roughness", "pixels": 420, "relative_rmse": 0.149973, "bias": 0.0439899, "split_sum_relative_rmse": 0.213097, "split_sum_samples": 58},
+  {"group": 4, "label": "brushed steel, anisotropy", "pixels": 424, "relative_rmse": 0.0865033, "bias": 0.0307466, "split_sum_relative_rmse": 0.0918079, "split_sum_samples": 61},
+  {"group": 5, "label": "thin film, iridescence thickness", "pixels": 488, "relative_rmse": 0.160891, "bias": 0.0410315, "split_sum_relative_rmse": 0.170678, "split_sum_samples": 69},
+  {"group": 6, "label": "glass, roughness (thin, then volume)", "pixels": 564, "relative_rmse": 0.522291, "bias": 0.160973, "split_sum_relative_rmse": 0, "split_sum_samples": 0}
+ ],
+ "pt_ms": 14147.8
+}

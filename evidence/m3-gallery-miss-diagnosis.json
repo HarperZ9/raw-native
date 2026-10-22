@@ -1,0 +1,19 @@
+{
+ "what": "Why the material gallery's raster frame misses its path-traced bound (relative RMSE 0.683 against 0.6, evidence/rt-v3-runs.json c8), coordinator round 2 item 5 (2026-10-21). The bound is unchanged.",
+ "written": "2026-10-21",
+ "experiments": {
+  "e1_split_sum_bias": {
+   "what": "per row, the mean of shadeIbl (the raster's image lighting) over the mean of shadeIblReference (the full material integrated against the sky), every third sample of a 128 px gallery, 4,096 samples a strategy (a scratch program against the library)",
+   "observed": "gold 1.00, red plastic 0.991, car paint 1.010, velvet 1.025, brushed steel 1.020, thin film 1.029; by column at most 14% either way",
+   "reading": "the raster's image-lighting model is close to unbiased on average for every opaque row, so the model is not what makes thin film 41% and car paint 21% too bright"
+  },
+  "e2_spacing": {
+   "what": "raw_native_cli material-gallery --cpu-only --pt --pt-spp 512 --size 256 --spp 2, at the gallery's spacing (1.05) and with --spacing 4 (the same spheres, materials, lights and sky, the field of view widened), path tracer v3",
+   "observed": "spacing 1.05: relative RMSE 0.683, bias +0.182 (reproduces the recorded miss exactly). Spacing 4: 0.273, bias +0.030, coverage 0.99988. By row, 1.05 then 4: thin film 1.963 then 0.161 (bias +0.411 then +0.041); car paint 1.409 then 0.248 (+0.209 then +0.003); brushed steel 0.639 then 0.087; velvet 0.405 then 0.150; red plastic 0.265 then 0.058; gold 0.331 then 0.255; glass 0.618 then 0.522",
+   "file": "evidence/m3-gallery-pt/gallery-pt-spacing4.json (the 1.05 run is evidence/m3-gallery-pt/gallery-pt.json)"
+  }
+ },
+ "cause": "Light transport between neighbouring spheres, which the per-sample raster has no term for: at a gap of 0.11 between spheres of radius 0.47, each sphere's sides see its neighbours instead of the sky, and the reflective rows (thin film, car paint's coat, brushed steel) show those darker neighbours where the raster shows sky. With the spheres far apart the opaque rows fall to 0.06 to 0.25. What remains is the glass row (the raster's one-interface model against refracting spheres, 0.52) and gold's sun highlights (0.25).",
+ "next": "An occlusion term in the gallery raster, from the scene's own spheres: analytic sphere occlusion for the diffuse term and a cone-based specular occlusion for the reflections, in the float64 reference and pbr_shade alike, with bounds stated first. The bound of 0.6 stays as it is.",
+ "does_not_prove": "That an occlusion term alone brings the gallery under 0.6 (the glass row also needs a better transmission model)."
+}

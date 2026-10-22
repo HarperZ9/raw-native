@@ -52,6 +52,8 @@ Gallery build(int width, int height, int spp);
 // sample carries (and the sky cube, the light, the spheres and the ground) is in view space, the
 // space lighting.hpp works in; the tangent rule is normalize(cross(n, +Y)) there, as in path tracer v3.
 Gallery buildField(int width, int height, int spp);
+// The material gallery with its spheres `spacing` apart (src/renderer/gallery_spaced.cpp), a diagnostic.
+Gallery buildSpaced(int size, int spp, double spacing);
 // The sphere field's view-to-world rotation (its environment is in view space; a caller that bakes
 // a world-space sky for it rotates directions with this).
 lighting::D3 fieldViewToWorld(lighting::D3 v);
