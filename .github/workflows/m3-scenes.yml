@@ -14,6 +14,10 @@ on:
       - 'tests/gpu/m3_scenes_gate.py'
       - 'src/renderer/gpu/shaders/pbr.wgsl'
       - 'src/renderer/gallery_field.cpp'
+      - 'src/tools/timestamps_cmd.cpp'
+      - 'src/rhi/d3d12/d3d12_timestamps.cpp'
+      - 'src/rhi/vulkan/vk_rhi_timestamps.cpp'
+      - 'evidence/gpu-timestamps-*'
       - 'evidence/p10-sphere-field-*'
       - 'evidence/m3-verified-scenes-*'
       - '.github/workflows/m3-scenes.yml'
@@ -70,6 +74,9 @@ jobs:
       - name: The gate (p3 recorded, the rest gated)
         shell: bash
         run: $PY tests/gpu/m3_scenes_gate.py m3s --out m3s/summary.json
+      - name: t1 GPU timestamps (evidence/gpu-timestamps-bounds.json)
+        shell: bash
+        run: $CLI gpu-timestamps | tee m3s/timestamps.json
       - name: f3 the sphere field's GPU shading (evidence/p10-sphere-field-bounds.json), 256 x 160
         shell: bash
         run: |
@@ -77,4 +84,4 @@ jobs:
           $PY -c "import json,sys; g=json.load(open('m3s/field/gallery.json'))['gpu']; print(g); sys.exit(0 if g.get('rmse_exposed',9) <= 5e-4 and g.get('max_abs_exposed',9) <= 0.05 else 1)"
       - uses: actions/upload-artifact@v4
         if: always()
-        with: { name: "m3-scenes-${{ matrix.adapter }}", path: "m3s/*.json\nm3s/*/gpu_certificate.json\nm3s/gallery/gallery.json\nm3s/field/gallery.json\nm3s/hero/frame.png\nm3s/hall/frame.png\nm3s/*/frame.ppm", retention-days: 30 }
+        with: { name: "m3-scenes-${{ matrix.adapter }}", path: "m3s/*.json\nm3s/*/gpu_certificate.json\nm3s/gallery/gallery.json\nm3s/field/gallery.json\nm3s/timestamps.json\nm3s/hero/frame.png\nm3s/hall/frame.png\nm3s/*/frame.ppm", retention-days: 30 }

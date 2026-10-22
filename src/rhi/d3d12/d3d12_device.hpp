@@ -65,6 +65,8 @@ public:
     void beginRenderPass(const RenderPassDesc& pass) override;
     void draw(RasterPipelineHandle pipeline, std::span<const RasterBind> binds, uint32_t vertexCount) override;
     void endRenderPass() override;
+    bool timestamp(uint32_t slot) override;
+    uint32_t timestampsUsed{0};   // one past the highest slot written in the open list
     // Move a texture to `to`, recording the transition when it is not there already.
     void transition(TexRec& t, D3D12_RESOURCE_STATES to);
     TextureHandle targets[kMaxColorTargets];   // the open render pass's colour targets
@@ -109,6 +111,9 @@ public:
     std::unique_ptr<Swapchain> createSwapchain(const SwapchainDesc& desc, std::string& err) override;
     bool lost() const override;
     bool loseForTest(std::string& err) override;
+    bool timestampSeconds(uint32_t count, std::vector<double>& out, std::string& err) override;
+    // The timestamp query heap and its readback buffer, made on first use.
+    ID3D12QueryHeap* timestampHeap(std::string& err);
     ID3D12CommandQueue* queue(){ return queue_.Get(); }
     // A texture record the device did not create (a swapchain backbuffer); destroyTexture drops it.
     TextureHandle adoptTexture(TexRec t){ auto id = textures_.insert(std::move(t)); return {id.index, id.gen}; }
@@ -138,6 +143,9 @@ private:
     ComPtr<ID3D12CommandQueue> queue_;
     ComPtr<ID3D12CommandAllocator> alloc_;
     ComPtr<ID3D12GraphicsCommandList> list_;
+    ComPtr<ID3D12QueryHeap> tsHeap_;
+    ComPtr<ID3D12Resource> tsReadback_;
+    uint32_t tsResolved_{0};
     ComPtr<ID3D12Fence> fence_;
     HANDLE event_{};
     uint64_t fenceValue_{0};

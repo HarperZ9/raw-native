@@ -29,6 +29,7 @@
 #include <memory>
 #include <span>
 #include <string>
+#include <vector>
 namespace raw::rhi {
 // Bumped when a backend or a caller must change to keep working.
 inline constexpr int kRhiVersion = 3;
@@ -237,6 +238,9 @@ public:
     virtual void beginRenderPass(const RenderPassDesc& pass) = 0;
     virtual void draw(RasterPipelineHandle pipeline, std::span<const RasterBind> binds, uint32_t vertexCount) = 0;
     virtual void endRenderPass() = 0;
+    // Record the GPU clock in `slot` (below kMaxTimestamps) once the commands before it finish;
+    // Device::timestampSeconds reads it after the submission. False where the backend has none.
+    virtual bool timestamp(uint32_t slot){ (void)slot; return false; }
 };
 
 class Device {
@@ -268,7 +272,12 @@ public:
     virtual bool lost() const { return false; }
     // Remove the device on purpose, to test recovery. False with the reason where unsupported.
     virtual bool loseForTest(std::string& err){ err = std::string(backendName()) + ": cannot remove the device"; return false; }
+    // Slots 0 .. count-1 of the last submission's timestamps, in seconds on the GPU clock (their
+    // differences are what count). False with the reason when the backend records none.
+    virtual bool timestampSeconds(uint32_t count, std::vector<double>& out, std::string& err){
+        (void)count; out.clear(); err = std::string(backendName()) + ": no GPU timestamps in this backend"; return false; }
 };
+inline constexpr uint32_t kMaxTimestamps = 64;
 
 // The backend linked into this build: "d3d12", "webgpu" or "none".
 const char* linkedBackend();

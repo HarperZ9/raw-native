@@ -190,7 +190,7 @@ void clusterChecks(rhi::Device& dev, rhi::PipelineHandle pipe, LightingParity& r
 // Shading on the GPU from the given cluster buffer and environment buffer.
 bool gpuShade(rhi::Device& dev, rhi::PipelineHandle pipe, const PbrParamsGpu& p, const std::vector<float>& samples, const std::vector<float>& tables,
               const std::vector<float>& lights, const std::vector<std::uint32_t>& k, const std::vector<float>& env, std::vector<float>& out, std::string& err,
-              double* medianMs = nullptr, int repeats = 0) {
+              double* medianMs = nullptr, int repeats = 0, double* gpuMedianMs = nullptr, std::string* gpuErr = nullptr) {
     Gpu g{dev, {}, {}};
     std::vector<std::function<void(rhi::CommandList&)>> pre;
     const BufferHandle b[6] = {g.upload(&p, sizeof p, BufferUsage::Uniform, "shade params", pre),
@@ -213,19 +213,26 @@ bool gpuShade(rhi::Device& dev, rhi::PipelineHandle pipe, const PbrParamsGpu& p,
     if (!ok || !medianMs || repeats < 1) return ok;
     // The dispatch alone, warm: every input already in its read state, the pipeline built.
     const BufferHandle binds[7] = {b[0], b[1], b[2], b[3], b[4], b[5], o};
-    std::vector<double> t;
+    std::vector<double> t, gt;
+    bool stamps = true;
     for (int r = 0; r < repeats; ++r) {
         rhi::CommandList* c = dev.begin(err);
         if (!c) return false;
         const rhi::BufferBarrier back[1] = {{o, r == 0 ? Access::CopySrc : Access::StorageWrite, Access::StorageWrite}};
         c->barrier(back);
+        stamps = stamps && c->timestamp(0);
         c->dispatch(pipe, binds, (p.count + 63) / 64, 1, 1);
+        stamps = stamps && c->timestamp(1);
         const auto t0 = std::chrono::steady_clock::now();
         if (!dev.submitAndWait(err)) return false;
         t.push_back(std::chrono::duration<double, std::milli>(std::chrono::steady_clock::now() - t0).count());
+        std::vector<double> s; std::string terr;
+        if (stamps && dev.timestampSeconds(2, s, terr)) gt.push_back((s[1] - s[0]) * 1000.0);
+        else { stamps = false; if (gpuErr && gpuErr->empty()) *gpuErr = terr.empty() ? std::string("no timestamps recorded") : terr; }
     }
     std::sort(t.begin(), t.end());
     *medianMs = t[t.size() / 2];
+    if (gpuMedianMs) { std::sort(gt.begin(), gt.end()); *gpuMedianMs = stamps && !gt.empty() ? gt[gt.size() / 2] : -1.0; }
     return true;
 }
 }  // namespace
@@ -315,9 +322,10 @@ bool shadeOnGpu(rhi::Device& dev, const ClusterGrid& grid, const std::vector<Sam
         const PbrParamsGpu p{std::uint32_t(n), 0, std::uint32_t(lights.size()), std::uint32_t(env.size), std::uint32_t(env.levels),
                              std::uint32_t(env.rgb.size()), 0, 0,
                              {float(std::tan(0.5 * grid.fovy)), float(grid.aspect), float(grid.nearZ), float(grid.farZ)}, {float(exposure), 0, 0, 0}};
-        double ms = 0.0;
-        if (!gpuShade(dev, ps, p, packed, tab, lv, k, envGpu, part, err, timing ? &ms : nullptr, timing ? repeats : 0)) return false;
-        if (timing) { timing->ms += ms; ++timing->chunks; }
+        double ms = 0.0, gms = 0.0;
+        if (!gpuShade(dev, ps, p, packed, tab, lv, k, envGpu, part, err, timing ? &ms : nullptr, timing ? repeats : 0,
+                      timing ? &gms : nullptr, timing ? &timing->gpuError : nullptr)) return false;
+        if (timing) { timing->ms += ms; timing->gpuMs = (timing->gpuMs < 0.0 || gms < 0.0) ? -1.0 : timing->gpuMs + gms; ++timing->chunks; }
         std::copy(part.begin(), part.end(), out.begin() + std::ptrdiff_t(first * 3));
     }
     return true;
