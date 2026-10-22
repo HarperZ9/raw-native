@@ -1,0 +1,46 @@
+{
+ "criterion": "ROADMAP P11 and coordinator round 2 item 2 (2026-10-21): a sunlit arched colonnade with the sky model, mirror and rough spheres and an emissive sphere, at noon, golden hour and sunset; a compact test of soft shadows, colour bleed and the sky. Stage 1 here: the path-traced scene, its reference images, checks and CPU frame times, and command-line settings. Stage 2: a live settings panel in the Studio (it needs a GPU path for the v3 scene) and a raster comparison.",
+ "written": "2026-10-21, before any colonnade code and before any run",
+ "design": {
+  "scene": "raw/renderer/rt_colonnade.hpp, src/renderer/rt_colonnade.cpp: a stone floor, a terracotta back wall, six marble columns carrying five semicircular arches and an entablature, a near-mirror sphere, a rough copper sphere and a small warm emissive sphere, all of our own geometry and path tracer v3 full materials. The sky is sky::preetham baked into the v3 environment (no disk); the sun is a v3 directional light along the sky's sun with sky::sunIlluminance.",
+  "command": "raw_native_cli colonnade [--out DIR] [--width W --height H] [--spp N] [--sun-elev DEG] [--sun-az DEG] [--turbidity T] [--ev EV100] [--no-emission] [--threads T]: the settings a stage-2 panel will expose"
+ },
+ "checks": {
+  "co1_sky": {
+   "what": "pixels whose camera ray escapes (no triangle) against the environment sampled along the same ray",
+   "bound": "relative difference at most 1e-5",
+   "prediction": "holds: an escaped camera ray takes the environment with weight 1"
+  },
+  "co2_colour_bleed": {
+   "what": "red over blue luminance of a floor patch beside the emissive sphere, emission on against off, sunset",
+   "bound": "rises by at least 10%",
+   "prediction": "holds"
+  },
+  "co3_shadow": {
+   "what": "luminance of a floor patch in a column's sun shadow over a sunlit patch nearby, golden hour",
+   "bound": "at most 0.5",
+   "prediction": "holds; the sky fills the shadow"
+  },
+  "co4_regression": {
+   "what": "tests/test_colonnade.cpp: the path tracer's frame of the scene at 64 x 36, 4 samples, hashed per compiler family (GCC, MSVC)",
+   "bound": "equal to the record",
+   "prediction": "holds"
+  },
+  "co5_frame_times": {
+   "what": "CPU path tracer wall time per sample per pixel at 480 x 270, 8 bounces, noon, golden hour and sunset",
+   "bound": "recorded, not gated",
+   "prediction": "a few microseconds a sample a pixel on 4 threads"
+  },
+  "co6_review": {
+   "what": "the three reference images, viewed",
+   "bound": "shadows soft at golden hour and sunset, the arches' shadows on the wall, the sphere's warm bleed on the floor, the sky's colour changing with the sun; recorded",
+   "prediction": "holds"
+  }
+ },
+ "does_not_prove": "Real-time rates (CPU only here); agreement with a raster (stage 2); that the sky matches a measured one.",
+ "addendum_A": {
+  "written": "2026-10-21, after the first test run, before any recorded run; no bound changed",
+  "what_was_seen": "co3 misses on the first run: golden-hour floor in a column's sun shadow 2,934 nits against 4,384 sunlit, ratio 0.669 (bound 0.5). With the sun 10 degrees up, its illuminance on a horizontal floor is about sin(10 deg) = 0.17 of its normal value, so the sky lights the floor more than the sun does and a shadow only removes a third of the light. My prediction ignored the cosine.",
+  "what_changes": "co3 stays as written and is recorded as a miss; the test prints it without failing on it. The shadow is right for the physics; the bound was wrong for this sun."
+ }
+}

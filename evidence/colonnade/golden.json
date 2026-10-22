@@ -1,0 +1,7 @@
+{
+ "scene": "colonnade",
+ "width": 480, "height": 270, "spp": 128, "bounces": 8,
+ "sun_elevation": 10.000, "sun_azimuth": 40.000, "turbidity": 3.500, "emission": true, "ev100": 13.00,
+ "path_tracer_version": 3, "threads": 4,
+ "build_ms": 1146.4, "trace_ms": 13301.3, "us_per_sample_pixel": 0.8018
+}
