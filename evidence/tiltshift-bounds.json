@@ -131,5 +131,17 @@
   ],
   "exploratory_probe": "With these changes and before this addendum, one probe of the CPU checks without the orbit: t1 passes (5 in the wedge, all ratios 1.000, the band fails 4 of 5), t2 misses (1.32), t3 misses (art scene E 0.474; the town gaussian E 0.716 does not fail). Disclosed; no bound changes follow from it.",
   "unchanged": "Every bound value and control."
+ },
+ "addendum_c": {
+  "written": "2026-10-22, after the recorded CPU and GPU runs (kept in evidence/tiltshift-runs.json as the first record) and before any code of this iteration",
+  "direction": "Coordinator, 2026-10-22, under the author's blanket approval: cost, ink falloff, a darker night scene, the t6 bound, a distinct dream look.",
+  "changes": {
+   "cost": "The painted defocus runs at half resolution: the unlined colour and the CoC are averaged over 2 x 2 blocks, prep, tensor, blur and the Kuwahara run on the half-resolution frame (radius 0.25 c in half pixels, the occlusion reach likewise halved), and a full-resolution compose mixes the paint with the bilinearly upsampled result by the full-resolution weight with its rim guard, so in-focus pixels stay exact. The gaussian control runs the same way. g3's bound stays 1.0 ms.",
+   "ink": "The painterly shader exports its line factor (t = 1 - lines (1 - relief)) in the paint frame's alpha (CPU float; GPU the alpha byte), which no golden or parity check reads today. The defocus works on the unlined colour (rgb / max(t, 0.05)), so in the defocused result the ink is gone and the composite's ink weight is (1 - w). t2's bound and measure are unchanged.",
+   "night": "A night lighting for the town (moonlight only, the sodium globes four times brighter, the window lit); the night look's captures and an extra run of c1 and c2 use it. The dusk c1 and c2 runs stay.",
+   "t6": "The first record's t6 miss stays on record: the relative bound divided by the base paint's instability, which is exactly 0 with the camera held. Replacement t6b, gated from this addendum: the critically damped rack's mean instability against its optical reference is at most 0.5 x the base paint's mean instability on the t5 orbit (a rack must disturb the frame less than the base pass's own motion noise), and an underdamped rack (damping ratio 0.5, the d1 control) is recorded beside it.",
+   "dream": "The dream look becomes distinct: K 60, f/1.2, the plane at 20 degrees from the ground and rolled 35 degrees, chromatic aberration 4, vignette 0.7, and two new finish terms from design/sensory/01-LOOKS.md L6: saturation toward luminance by 0.55 and a hue rotation of 20 degrees. Judged by the captures; no gate."
+  },
+  "unchanged": "Every other bound value, check and control, including t3's metric."
  }
 }
