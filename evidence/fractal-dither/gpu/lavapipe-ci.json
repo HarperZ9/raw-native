@@ -1,0 +1,13 @@
+{
+ "check": "fractal dither gpu (f5, f6)", "backend": "vulkan", "adapter": "llvmpipe (LLVM 20.1.2, 256 bits)",
+ "error": "",
+ "bound": {"mismatch_fraction": 0.0005, "over2_fraction": 0.0005, "mean_code": 0.12},
+ "cases": [
+  {"id": "ink-frame0", "decisions": 36864, "level_mismatch": 0, "mismatch_fraction": 0, "over2_fraction": 0, "mean_code": 0.00000, "control_fails": true, "pass": true},
+  {"id": "ink-frame24", "decisions": 36864, "level_mismatch": 0, "mismatch_fraction": 0, "over2_fraction": 0, "mean_code": 0.00000, "control_fails": true, "pass": true},
+  {"id": "tones4-frame0", "decisions": 36864, "level_mismatch": 0, "mismatch_fraction": 0, "over2_fraction": 0, "mean_code": 0.00000, "control_fails": true, "pass": true},
+  {"id": "tones4-frame24", "decisions": 36864, "level_mismatch": 0, "mismatch_fraction": 0, "over2_fraction": 0, "mean_code": 0.00000, "control_fails": true, "pass": true}
+ ],
+ "parity_pass": true,
+ "pass": true
+}

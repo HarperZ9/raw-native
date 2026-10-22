@@ -2,7 +2,7 @@
  "schema": "raw-native.evidence/1",
  "bounds": "evidence/fractal-dither-bounds.json (commit e18e744, before any code)",
  "recorded": "2026-10-22",
- "status": "CPU and GPU stages measured. f5 on WARP and the RTX 4090 locally; lavapipe runs in CI (art.yml, fractal-dither gpu step). f1 for tones4 at the pre-registered px 2 misses; a recorded amendment sets tones4's fractal default cell to px 2.75.",
+ "status": "CPU and GPU stages measured. f5 holds on WARP, the RTX 4090 and lavapipe (CI). f1 for tones4 at the pre-registered px 2 misses; a recorded amendment sets tones4's fractal default cell to px 2.75.",
  "machine": "the author's Windows 11 workstation. CPU results: g++ 13.2 (MinGW-w64, Release) for the orbit and scale runs and the GCC-family tests; MSVC (VS 2026, Release) for the second test run.",
  "runs": {
   "f1_temporal": {
@@ -77,7 +77,12 @@
     "cases": "same four cases: 0 mismatches, over-2 0, mean code 0; controls fail as required",
     "verdict": "HOLDS"
    },
-   "lavapipe": "not available on this machine. Added to .github/workflows/art.yml (fractal-dither gpu on WARP and lavapipe); the result is the art workflow's run on this PR.",
+   "lavapipe": {
+    "file": "evidence/fractal-dither/gpu/lavapipe-ci.json",
+    "adapter": "llvmpipe (LLVM 20.1.2, 256 bits), Vulkan, GitHub Actions ubuntu-24.04, art workflow run 39844438299 at commit 44bdc44",
+    "cases": "same four cases: 0 of 36,864 level mismatches each, over-2 0, mean code 0; controls fail as required",
+    "verdict": "HOLDS"
+   },
    "reading": "Exact agreement is better than the predicted 1e-4 cell-edge flips. The shifted-chart control shows the comparison can see a one-cell error, and the screen and fractal level planes differ (different pinned hashes in f7), so a zero is not a vacuous pass."
   },
   "f6_cost": {
@@ -138,8 +143,8 @@
   "reading": "reduction rises with cell size and so does tone error. At px 3 tones4 would pass the bound at A = 3.14 against the screen anchor's 0.67."
  },
  "images": "evidence/fractal-dither/images (frames 0 and 24; screen, world-octave, fractal), looked at: the fractal frame shows banded moire on the oblique ground, where the depth-only scale term ignores foreshortening. The scene's tones sit near mid grey, the hardest case for flip rate.",
- "overall": "Pre-registered: f1 holds for ink and misses for tones4 at px 2, so the bound as written (both presets) is NOT met at the pre-registered setting; kill criterion not hit. f2, f3, f4, f5 (WARP, RTX 4090), f6 and f7 hold. Amendment: at tones4's recorded default cell px 2.75, f1 holds for tones4 (0.518) at a 19% higher tone error than px 2.",
- "does_not_prove": "Perception. Other scenes, grazing angles, moving objects. That fractal beats world-octave on instability (it does not on this orbit). lavapipe parity until the CI run reports. GPU parity at tones4 px 2.75 (run at px 2).",
+ "overall": "Pre-registered: f1 holds for ink and misses for tones4 at px 2, so the bound as written (both presets) is NOT met at the pre-registered setting; kill criterion not hit. f2, f3, f4, f5 (WARP, RTX 4090, lavapipe), f6 and f7 hold. Amendment: at tones4's recorded default cell px 2.75, f1 holds for tones4 (0.518) at a 19% higher tone error than px 2.",
+ "does_not_prove": "Perception. Other scenes, grazing angles, moving objects. That fractal beats world-octave on instability (it does not on this orbit). GPU parity at tones4 px 2.75 (run at px 2).",
  "updated": "2026-10-22, after merging main (art_metrics from PR 209 now supplies the shared metric helpers)",
  "amendment_tones4_cell": {
   "file": "evidence/fractal-dither/tones4-cell-test.json",
