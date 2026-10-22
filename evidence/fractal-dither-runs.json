@@ -1,0 +1,154 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/fractal-dither-bounds.json (commit e18e744, before any code)",
+ "recorded": "2026-10-22",
+ "status": "CPU and GPU stages measured. f5 holds on WARP, the RTX 4090 and lavapipe (CI). f1 for tones4 at the pre-registered px 2 misses; a recorded amendment sets tones4's fractal default cell to px 2.75.",
+ "machine": "the author's Windows 11 workstation. CPU results: g++ 13.2 (MinGW-w64, Release) for the orbit and scale runs and the GCC-family tests; MSVC (VS 2026, Release) for the second test run.",
+ "runs": {
+  "f1_temporal": {
+   "file": "evidence/fractal-dither/orbit-px2.json",
+   "config": "pre-registered: px 2, cell 0.1, 48 frames at 320 x 180, frames 1 to 47, 10,000 paired bootstrap resamples, seed 20261022",
+   "ink": {
+    "reduction": 0.5271,
+    "interval": [
+     0.5244,
+     0.5297
+    ],
+    "diff_interval_excludes_zero": true,
+    "bound": 0.5,
+    "verdict": "HOLDS (by 0.027; prediction 0.6 to 0.85 was too high)",
+    "kill_fires": false
+   },
+   "tones4": {
+    "reduction": 0.3988,
+    "interval": [
+     0.3962,
+     0.4014
+    ],
+    "bound": 0.5,
+    "verdict": "MISSES (prediction 0.5 to 0.8)"
+   },
+   "note": "the intervals are narrow because they resample 47 correlated frames of one orbit of one scene; they do not cover other scenes or paths."
+  },
+  "f2_controls": {
+   "file": "evidence/fractal-dither/orbit-px2.json",
+   "ink": {
+    "screen_vs_screen": 0.0,
+    "shuffled_anchor": 0.0369,
+    "scale_term_broken": 0.4153
+   },
+   "tones4": {
+    "screen_vs_screen": 0.0,
+    "shuffled_anchor": -0.0553,
+    "scale_term_broken": 0.3488
+   },
+   "verdict": "screen and shuffled-anchor controls fail the 0.50 bound as required. The scale-term-broken control fails f1 (0.415 on ink) and fails f3 (below)."
+  },
+  "f3_scale_invariance": {
+   "file": "evidence/fractal-dither/scale.json",
+   "density_by_depth": [
+    0.38,
+    0.4984,
+    0.38,
+    0.4923,
+    0.38
+   ],
+   "ratio": 1.312,
+   "bound": 1.5,
+   "verdict": "HOLDS",
+   "control_scale_term_broken": {
+    "ratio": 2.958,
+    "verdict": "fails as required (prediction was 'well above 3'; 2.96 is a small miss of the stated size)"
+   }
+  },
+  "f4_structure": "tests/test_fractal_dither.cpp: rank_K at K = 3 equals bayer8Rank; blend equals coarse at m = 0 and fine at m = 1; marginal uniform within 3% at m = 0.25, 0.5, 0.75; every coarse-lit cell keeps its corner sub-cell lit. HOLDS on GCC and on MSVC.",
+  "f7_goldens": "level-plane FNV-1a of orbit frame 0 at 256 x 144 pinned in tests/test_fractal_dither.cpp (fractal ink 5ac361b7dfe0a6bb, fractal tones4 922c22c7c711d410, screen ink 31c2b5c49d02867d). HOLDS: the same hashes on GCC and MSVC.",
+  "f5_gpu_parity": {
+   "bound": "level mismatch fraction at most 0.0005, over-2-codes fraction at most 0.0005, mean absolute code at most 0.12; the chart-shifted reference must exceed the mismatch bound",
+   "warp": {
+    "file": "evidence/fractal-dither/gpu/warp.json",
+    "adapter": "Microsoft Basic Render Driver (D3D12 WARP, RAW_NATIVE_D3D12_WARP=1), MSVC Release build",
+    "cases": "ink and tones4, orbit frames 0 and 24, 256 x 144: 0 of 36,864 level mismatches in each case, over-2 fraction 0, mean code 0; shifted-chart control fails as required in every case",
+    "verdict": "HOLDS"
+   },
+   "rtx4090": {
+    "file": "evidence/fractal-dither/gpu/rtx4090-cost.json",
+    "adapter": "NVIDIA GeForce RTX 4090 (D3D12), run under the D:/gpu.lock.d lock",
+    "cases": "same four cases: 0 mismatches, over-2 0, mean code 0; controls fail as required",
+    "verdict": "HOLDS"
+   },
+   "lavapipe": {
+    "file": "evidence/fractal-dither/gpu/lavapipe-ci.json",
+    "adapter": "llvmpipe (LLVM 20.1.2, 256 bits), Vulkan, GitHub Actions ubuntu-24.04, art workflow run 39844438299 at commit 44bdc44",
+    "cases": "same four cases: 0 of 36,864 level mismatches each, over-2 0, mean code 0; controls fail as required",
+    "verdict": "HOLDS"
+   },
+   "reading": "Exact agreement is better than the predicted 1e-4 cell-edge flips. The shifted-chart control shows the comparison can see a one-cell error, and the screen and fractal level planes differ (different pinned hashes in f7), so a zero is not a vacuous pass."
+  },
+  "f6_cost": {
+   "file": "evidence/fractal-dither/gpu/rtx4090-cost.json",
+   "method": "RTX 4090, D3D12, 1920 x 1080, orbit frame 0, ink, px 2: timestamps around 10 back-to-back dispatches in one submission, median of 21 submissions per dispatch; anchor 3 and anchor 0 interleaved over 3 rounds, median of rounds; under the GPU lock",
+   "fractal_ms": 0.2303,
+   "screen_ms": 0.2304,
+   "extra_ms": -0.0001,
+   "bound_extra_ms": 0.3,
+   "verdict": "HOLDS. The extra time is below timer resolution (prediction: under 0.05 ms). The whole pass is 0.23 ms (prediction 0.2 to 0.4), so it is also under 0.3 ms in total."
+  },
+  "f8_accuracy": {
+   "file": "evidence/fractal-dither/orbit-px2.json",
+   "A_ink": {
+    "screen": 1.824,
+    "fractal": 7.962,
+    "world_octave": 13.074
+   },
+   "A_tones4": {
+    "screen": 0.671,
+    "fractal": 2.476,
+    "world_octave": 3.091
+   },
+   "reading": "recorded, not gated. The 2026-10-15 trade-off reappears: a surface-attached pattern gives up tone accuracy. Fractal costs about 4x the screen anchor's error on ink and about 40% less error than the world-octave snap."
+  }
+ },
+ "stability_against_accuracy": {
+  "ink_reduction_vs_screen": {
+   "fractal": 0.527,
+   "world_octave": 0.653
+  },
+  "tones4_reduction_vs_screen": {
+   "fractal": 0.399,
+   "world_octave": 0.542
+  },
+  "reading": "On this orbit the existing world-octave anchor is more stable than the fractal anchor on both presets and has the larger tone error. The fractal anchor's gain over world-octave is lower error and no octave seam, not lower instability. This work does not show the fractal anchor beats world-octave on the instability metric; it shows the reverse."
+ },
+ "exploratory": {
+  "what": "px sweep at 1, 1.5 and 3, run after seeing the px 2 result, files evidence/fractal-dither/orbit-px*-exploratory.json. They decide nothing and the pre-registered px 2 is not changed.",
+  "ink_reduction": {
+   "px1": 0.2978,
+   "px1.5": 0.44,
+   "px2_prereg": 0.5271,
+   "px3": 0.6501
+  },
+  "tones4_reduction": {
+   "px1": 0.159,
+   "px1.5": 0.2927,
+   "px2_prereg": 0.3988,
+   "px3": 0.5454
+  },
+  "ink_A_fractal": {
+   "px1": 6.344,
+   "px1.5": 6.601,
+   "px2": 7.962,
+   "px3": 12.251
+  },
+  "reading": "reduction rises with cell size and so does tone error. At px 3 tones4 would pass the bound at A = 3.14 against the screen anchor's 0.67."
+ },
+ "images": "evidence/fractal-dither/images (frames 0 and 24; screen, world-octave, fractal), looked at: the fractal frame shows banded moire on the oblique ground, where the depth-only scale term ignores foreshortening. The scene's tones sit near mid grey, the hardest case for flip rate.",
+ "overall": "Pre-registered: f1 holds for ink and misses for tones4 at px 2, so the bound as written (both presets) is NOT met at the pre-registered setting; kill criterion not hit. f2, f3, f4, f5 (WARP, RTX 4090, lavapipe), f6 and f7 hold. Amendment: at tones4's recorded default cell px 2.75, f1 holds for tones4 (0.518) at a 19% higher tone error than px 2.",
+ "does_not_prove": "Perception. Other scenes, grazing angles, moving objects. That fractal beats world-octave on instability (it does not on this orbit). GPU parity at tones4 px 2.75 (run at px 2).",
+ "updated": "2026-10-22, after merging main (art_metrics from PR 209 now supplies the shared metric helpers)",
+ "amendment_tones4_cell": {
+  "file": "evidence/fractal-dither/tones4-cell-test.json",
+  "summary": "Acceptance written before the px 2.25, 2.5, 2.75 runs: adopt the smallest px whose tones4 reduction is at least 0.50 (interval excluding zero) if its fractal A is at most 3.091 (world-octave tones4 A at px 2). px 2.75 gives 0.518 [0.515, 0.521] at A 2.944: ADOPTED as tones4's default cell for Anchor::Fractal (fractalPreset). px 2.5 gives 0.485 and misses.",
+  "bound_changed": false
+ }
+}

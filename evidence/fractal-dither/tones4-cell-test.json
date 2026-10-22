@@ -1,0 +1,67 @@
+{
+ "schema": "raw-native.evidence/1",
+ "question": "f1 misses for tones4 at the pre-registered px 2 (reduction 0.399 against the 0.50 bound). Does a larger default cell for tones4 meet the bound at an acceptable tone-accuracy cost? The 0.50 bound is not changed.",
+ "written": "2026-10-22, before the px 2.25, 2.5 and 2.75 runs below (the px 1, 1.5 and 3 exploratory runs already existed)",
+ "author_approval": "2026-10-22, verbatim: \"All actions and blockers approved\"; this test decides the tones4 question the PR left open",
+ "test": "raw_native_cli fractal-dither orbit --px P for P in 2.25, 2.5, 2.75 (and px 3 rerun), same scene, orbit, seed and bootstrap as orbit-px2.json. The tones4 numbers decide; ink is recorded.",
+ "acceptance": "A larger tones4 default cell is adopted as an amendment only if, at the smallest tested px whose tones4 reduction point estimate is at least 0.50 with the paired interval excluding zero, the fractal tones4 accuracy A is no higher than 3.091, the world-octave anchor's tones4 A at the pre-registered px 2. Reason: world-octave at px 2 already meets the stability bound on tones4 (0.542) at A 3.091, so a fractal setting with more tone error than that buys nothing on this metric pair and gives up the fractal anchor's one measured advantage (lower error than world-octave). If no tested px meets both, the miss stays recorded and the preset ships as it stands.",
+ "reproducibility_check": "px 2 rerun after folding the metric helpers into art_metrics must reproduce evidence/fractal-dither/orbit-px2.json exactly.",
+ "machine": "the author's Windows 11 workstation, g++ 13.2 (MinGW-w64, Release), the same build family as orbit-px2.json",
+ "reproducibility_result": "HOLDS: the px 2 rerun after the art_metrics fold is byte-identical to evidence/fractal-dither/orbit-px2.json, and the px 3 rerun is byte-identical to orbit-px3-exploratory.json.",
+ "results_tones4": {
+  "px2_prereg": {
+   "reduction": 0.3988,
+   "interval": [
+    0.3962,
+    0.4014
+   ],
+   "A_fractal": 2.476
+  },
+  "px2.25": {
+   "file": "evidence/fractal-dither/orbit-px2.25-amendment.json",
+   "reduction": 0.445,
+   "interval": [
+    0.4424,
+    0.4475
+   ],
+   "A_fractal": 2.612
+  },
+  "px2.5": {
+   "file": "evidence/fractal-dither/orbit-px2.5-amendment.json",
+   "reduction": 0.4846,
+   "interval": [
+    0.4818,
+    0.4875
+   ],
+   "A_fractal": 2.77
+  },
+  "px2.75": {
+   "file": "evidence/fractal-dither/orbit-px2.75-amendment.json",
+   "reduction": 0.518,
+   "interval": [
+    0.5151,
+    0.5209
+   ],
+   "A_fractal": 2.944
+  },
+  "px3": {
+   "file": "evidence/fractal-dither/orbit-px3-exploratory.json",
+   "reduction": 0.5454,
+   "interval": [
+    0.543,
+    0.5478
+   ],
+   "A_fractal": 3.141
+  }
+ },
+ "results_ink_recorded": {
+  "px2.25": 0.5602,
+  "px2.5": 0.5935,
+  "px2.75": 0.6249,
+  "px3": 0.6501
+ },
+ "screen_baseline_note": "the screen anchor's instability does not depend on px (tones4 mean 0.111896 at every px), so every reduction is against the same baseline",
+ "decision": "ADOPTED as an amendment: tones4's default cell for Anchor::Fractal is px 2.75. px 2.75 is the smallest tested px that meets the unchanged 0.50 bound on tones4 (0.518, interval [0.515, 0.521], paired diff interval excludes zero), and its tone error A 2.944 is below the 3.091 limit set before the run. px 2.5 misses the bound (0.485). Cost: A rises from 2.476 to 2.944 (19%); the screen anchor's A is 0.671.",
+ "scope": "fractalPreset() and fractalDefaultPx() in style_ditherlight carry the default (ink 2, tones4 2.75). The pre-registered f1 at px 2 is unchanged and still MISSES for tones4; this amendment does not rewrite it. The world-octave anchor and DitherPlan's px default of 2 are unchanged. The orbit command's default px stays 2.",
+ "does_not_prove": "That 2.75 is optimal (only 2.25, 2.5, 2.75 and 3 were tested). Margin over the bound is 0.018 on one orbit of one scene. The GPU parity run (f5) uses px 2 for both presets; the px 2.75 tones4 configuration runs the same shader with a different uniform and was not run separately on a GPU. Perception."
+}

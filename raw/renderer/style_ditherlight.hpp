@@ -21,7 +21,7 @@ namespace raw::style {
 using V3 = std::array<double, 3>;
 
 enum class Source : std::uint32_t { Bayer8 = 0, Blue64 = 1 };
-enum class Anchor : std::uint32_t { Screen = 0, WorldFixed = 1, WorldOctave = 2 };
+enum class Anchor : std::uint32_t { Screen = 0, WorldFixed = 1, WorldOctave = 2, Fractal = 3 };
 
 struct DitherPlan {
     int levels{2};
@@ -34,6 +34,7 @@ struct DitherPlan {
     double gamma{2.2};
     double dark{0.16}, hemi{0.5};
     double fogDist{38}, fogMax{1};
+    double fractalDepth{0};  // Fractal: > 0 fixes the depth in the scale term (a control only, breaks scale invariance)
     double hemiConst{0.5};   // the 0.5 in (0.5 + 0.5 n.y); a control changes it, nothing else does
 };
 // World size of one pixel at unit depth, for a vertical field of view in radians.
@@ -41,6 +42,11 @@ double pixelAngle(double fov, int height);
 // The presets "ink" (2 levels) and "tones4" (4 levels), sized for a frame `height` pixels high.
 // Throws std::invalid_argument for an unknown preset.
 DitherPlan ditherPreset(const std::string& name, int height, double fov);
+// A preset with Anchor::Fractal and its recorded default cell (px): 2 for ink as pre-registered, 2.75 for
+// tones4 by the amendment of 2026-10-22 (evidence/fractal-dither/tones4-cell-test.json: the smallest tested px
+// that meets the f1 bound on tones4 with tone error below world-octave's at px 2). Throws like ditherPreset.
+double fractalDefaultPx(const std::string& name);
+DitherPlan fractalPreset(const std::string& name, int height, double fov);
 
 struct DitherLight {
     enum class Kind : std::uint32_t { Radial = 0, Beam = 1 } kind{Kind::Radial};
@@ -76,6 +82,19 @@ double toneOf(const DitherPlan& p, const std::vector<DitherLight>& lights, const
 std::array<int, 2> anchorCell(const DitherPlan& p, const DitherPixel& px);
 // Tone to a level for threshold t. `fraction`, when given, receives f (for tie reports).
 int quantise(const DitherPlan& p, double Y, double t, double* fraction = nullptr);
+
+// Surface-stable fractal dithering (Anchor::Fractal; evidence/fractal-dither-bounds.json). The
+// threshold of a pixel is a Bayer hierarchy over the anchor chart at a continuous scale: with
+// lambda = log2(px pa depth / cell), the fine level cell * 2^floor(lambda) and the coarse level
+// twice that are blended with weight m = 1 - frac(lambda) and the blend is mapped through its own
+// CDF, so the threshold stays uniform, equals the coarse pattern at m = 0 and the fine one at m = 1.
+// Idea after Rune Skovbo Johansen's Dither3D, credited in project-docs/NOVELTY.md; written from the published description, no code taken.
+inline constexpr int kFractalDigits = 6;                 // rank_K: a 64 x 64 tile of 4096 ranks
+int fractalRank(int x, int y, int digits = kFractalDigits);   // digits = 3 is bayer8Rank
+double fractalBlend(double tc, double tf, double m);          // the CDF-mapped blend, m in [0, 1]
+struct FractalCell { double lambda{0}, m{0}; int i{0}, j{0}; };
+FractalCell fractalCell(const DitherPlan& p, const DitherPixel& px, int cellShift = 0);
+double fractalThreshold(const DitherPlan& p, const DitherPixel& px, int cellShift = 0);
 
 // A whole G-buffer (f32 storage, as a GPU pass reads it): 3 floats a pixel for the vectors,
 // 4 for vis.

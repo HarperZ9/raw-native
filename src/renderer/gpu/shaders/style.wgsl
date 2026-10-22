@@ -664,6 +664,34 @@ fn octave_of(cell: f32, px: f32, pa: f32, depth: f32) -> f32 {
     if (r <= 1.0) { return 0.0; }
     return ceil(log2(r));
 }
+fn fractal_rank(x: i32, y: i32) -> u32 {
+    var r: u32 = 0u;
+    for (var k: u32 = 0u; k < 6u; k++) {
+        let xb: u32 = u32((x >> k) & 1);
+        let yb: u32 = u32((y >> k) & 1);
+        r = (r << 2u) | (((xb ^ yb) << 1u) | yb);
+    }
+    return r;
+}
+// Surface-stable fractal threshold (raw/renderer/style_ditherlight.hpp, fractalThreshold): a Bayer hierarchy over the
+// chart at a continuous scale, the blend of two levels mapped through its own CDF. a: cell, px, pa.
+fn fractal_blend(tc: f32, tf: f32, m: f32) -> f32 {
+    let b: f32 = (1.0 - m) * tc + m * tf;
+    let den: f32 = 1.0 - 0.75 * m;
+    var s: f32 = 0.0;
+    for (var d: u32 = 0u; d < 4u; d++) { s += clamp((b - m * f32(d) * 0.25) / den, 0.0, 1.0); }
+    return s * 0.25;
+}
+fn fractal_threshold(u: f32, v: f32, depth: f32) -> f32 {
+    let lam: f32 = clamp(log2((D.a.y * D.a.z * max(depth, 1.0e-6)) / D.a.x), -16.0, 16.0);
+    let n0: f32 = floor(lam);
+    let size: f32 = D.a.x * exp2(n0);
+    let i: i32 = i32(floor(u / size));
+    let j: i32 = i32(floor(v / size));
+    let tf: f32 = (f32(fractal_rank(i, j)) + 0.5) / 4096.0;
+    let tc: f32 = (f32(fractal_rank(i >> 1u, j >> 1u)) + 0.5) / 4096.0;
+    return fractal_blend(tc, tf, 1.0 - (lam - n0));
+}
 fn level_lin(k: f32, n: f32, gamma: f32) -> f32 {
     if (k <= 0.0) { return 0.0; }
     return pow(k / (n - 1.0), gamma);
@@ -702,6 +730,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     if (hz > 0.0) { tone = 1.0 - (1.0 - tone) * (1.0 - hz); }
     var cx: i32 = i32(x);
     var cy: i32 = i32(y);
+    var ft: f32 = 0.0;
     if (D.anchor > 0u) {
         let ax: f32 = abs(an.x);
         let ay: f32 = abs(an.y);
@@ -716,11 +745,13 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
             w = ap.z;
         }
         var size: f32 = D.a.x;
-        if (D.anchor > 1u) { size = size * exp2(octave_of(D.a.x, D.a.y, D.a.z, g0.z)); }
+        if (D.anchor == 2u) { size = size * exp2(octave_of(D.a.x, D.a.y, D.a.z, g0.z)); }
+        if (D.anchor == 3u) { ft = fractal_threshold(u, w, g0.z); }
         cx = i32(floor(u / size));
         cy = i32(floor(w / size));
     }
-    let t: f32 = threshold_at(cx, cy);
+    var t: f32 = threshold_at(cx, cy);
+    if (D.anchor == 3u) { t = ft; }
     let n: f32 = f32(D.levels);
     let gamma: f32 = D.a.w;
     let yv: f32 = min(1.0, max(0.0, tone));

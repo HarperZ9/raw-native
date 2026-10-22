@@ -1,0 +1,7 @@
+{
+ "check": "fractal dither scale invariance (f3)", "depths": [4, 5.7, 8, 11.3, 16],
+ "density": [0.3800, 0.4984, 0.3800, 0.4923, 0.3800],
+ "ratio_max_over_min": 1.312, "bound": 1.5,
+ "control_scale_term_broken": {"density": [0.1886, 0.2703, 0.3800, 0.5376, 0.5579], "ratio": 2.958, "fails_as_required": true},
+ "pass": true
+}

@@ -37,9 +37,13 @@ int passIndex(const char* name);   // -1 when style.wgsl has no such pass
 inline constexpr int kMaxDitherLights = 8;
 inline constexpr int kMaxProjectors = 4;
 
+// GPU time of the ditherlight dispatch by timestamps: `repeats` back-to-back dispatches in one submission,
+// the median over `submissions` of the interval divided by repeats (milliseconds). ms is -1 and `error`
+// says why when the backend records no timestamps.
+struct DitherTiming { int repeats{10}, submissions{21}; std::uint32_t groupsX{0}, groupsY{1}; double ms{-1}; std::string error; };
 // Levels and packed RGBA8 words, one a pixel.
 bool runDither(rhi::Device& dev, const style::DitherPlan& p, const std::vector<style::DitherLight>& lights, const style::DitherGBuffer& g,
-               std::vector<std::uint32_t>& level, std::vector<std::uint32_t>& packed, std::string& err);
+               std::vector<std::uint32_t>& level, std::vector<std::uint32_t>& packed, std::string& err, DitherTiming* timing = nullptr);
 
 // The view G-buffer of a paint-over pass: position, normal (3 floats a pixel) and a hit flag.
 struct PaintView { int w{0}, h{0}; std::vector<float> P, N; std::vector<std::uint8_t> hit; };
