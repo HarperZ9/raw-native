@@ -1,0 +1,1 @@
+- Fractal dither: a new `fractal` anchor for the dither-lit layer, a Bayer hierarchy over the surface chart at a continuous scale, with the CPU reference, an orbit stability measure and `raw_native_cli fractal-dither`. The GPU pass is written and not yet run.
