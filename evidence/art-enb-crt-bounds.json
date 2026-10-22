@@ -46,5 +46,12 @@
    "prediction": "holds, about 0.2 ms"
   }
  },
- "does_not_prove": "That the port reproduces the ENB original pixel for pixel: the original runs only inside the ENB host, so fidelity rests on a line-by-line transliteration, read against the source, plus the deviations listed above. That the look is right on a real CRT. Anything about the physical CRT tier, which is untouched."
+ "does_not_prove": "That the port reproduces the ENB original pixel for pixel: the original runs only inside the ENB host, so fidelity rests on a line-by-line transliteration, read against the source, plus the deviations listed above. That the look is right on a real CRT. Anything about the physical CRT tier, which is untouched.",
+ "addendum_a": {
+  "written": "2026-10-22, while writing the reference and before any build or run",
+  "what": [
+   "Read in the source: with both pipelines on, PS_CRTDisplay's CRT stage samples TextureColor again (CRT_Convergence or the plain sample) instead of the VHS result, so the combined mode keeps only the VHS's tracking and jitter displacement and drops its chroma blur, smear, head switch, noise and generation loss. The port keeps that behaviour (vhs-crt and vhs-ep are the faithful single pass). A preset vhs-then-crt is added: the VHS pass's output fed to a CRT pass, the combined mode the header describes. It joins e2's goldens; it is not a GPU parity case of its own (its two passes are the vhs and crt cases).",
+   "e1's built-in control changes from brightness x 1.05 to the input brightened 5% (clamped), because the VHS-only presets have no brightness term."
+  ]
+ }
 }
