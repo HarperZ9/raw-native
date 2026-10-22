@@ -1,0 +1,75 @@
+{
+ "backend": "d3d12",
+ "adapter": "Microsoft Basic Render Driver",
+ "g1_cases": [
+  {
+   "case": "town-map",
+   "look": "town_map",
+   "coc_max_abs": 6.67572021e-06,
+   "codes": {
+    "max": 8,
+    "p999": 1,
+    "mean": 0.00742283951,
+    "differ": 2500,
+    "over2": 78,
+    "values": 388800
+   },
+   "control_k_1_1": {
+    "max": 92,
+    "p999": 15,
+    "mean": 0.801957305,
+    "differ": 176361,
+    "over2": 29529,
+    "values": 388800
+   },
+   "control_fails": true,
+   "pass": true
+  },
+  {
+   "case": "town-night",
+   "look": "night",
+   "coc_max_abs": 3.33786011e-06,
+   "codes": {
+    "max": 3,
+    "p999": 1,
+    "mean": 0.00247427984,
+    "differ": 939,
+    "over2": 2,
+    "values": 388800
+   },
+   "control_k_1_1": {
+    "max": 32,
+    "p999": 6,
+    "mean": 0.32747428,
+    "differ": 85970,
+    "over2": 9318,
+    "values": 388800
+   },
+   "control_fails": true,
+   "pass": true
+  },
+  {
+   "case": "art-daily",
+   "look": "daily",
+   "coc_max_abs": 1.43051147e-06,
+   "codes": {
+    "max": 6,
+    "p999": 1,
+    "mean": 0.0012037037,
+    "differ": 429,
+    "over2": 7,
+    "values": 388800
+   },
+   "control_k_1_1": {
+    "max": 19,
+    "p999": 7,
+    "mean": 0.257196502,
+    "differ": 60871,
+    "over2": 9331,
+    "values": 388800
+   },
+   "control_fails": true,
+   "pass": true
+  }
+ ]
+}
