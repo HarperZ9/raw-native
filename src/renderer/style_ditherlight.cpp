@@ -111,17 +111,53 @@ double toneOf(const DitherPlan& p, const std::vector<DitherLight>& lights, const
     return hz > 0 ? 1 - (1 - Y) * (1 - hz) : Y;
 }
 
-std::array<int, 2> anchorCell(const DitherPlan& p, const DitherPixel& px) {
-    if (p.anchor == Anchor::Screen) return {px.ix, px.iy};
+namespace {
+// The triplanar chart of an anchored pixel: the two coordinates of the dominant axis of its anchor normal.
+void chartUV(const DitherPixel& px, double& u, double& v) {
     const V3& n = px.anrm;
     const double ax = std::abs(n[0]), ay = std::abs(n[1]), az = std::abs(n[2]);
-    double u, v;
     if (ax >= ay && ax >= az) { u = px.apos[2]; v = px.apos[1]; }
     else if (ay >= az) { u = px.apos[0]; v = px.apos[2]; }
     else { u = px.apos[0]; v = px.apos[1]; }
+}
+}  // namespace
+
+std::array<int, 2> anchorCell(const DitherPlan& p, const DitherPixel& px) {
+    if (p.anchor == Anchor::Screen) return {px.ix, px.iy};
+    double u, v;
+    chartUV(px, u, v);
     double size = p.cell;
     if (p.anchor == Anchor::WorldOctave) size *= std::pow(2.0, octaveOf(p.cell, p.px, p.pa, px.depth));
     return {int(std::floor(u / size)), int(std::floor(v / size))};
+}
+
+int fractalRank(int x, int y, int digits) {
+    int r = 0;
+    for (int k = 0; k < digits; ++k) {
+        const int xb = (x >> k) & 1, yb = (y >> k) & 1;
+        r = (r << 2) | (((xb ^ yb) << 1) | yb);
+    }
+    return r;
+}
+double fractalBlend(double tc, double tf, double m) {
+    const double b = (1 - m) * tc + m * tf, den = 1 - 0.75 * m;
+    double s = 0;
+    for (int d = 0; d < 4; ++d) s += sat((b - m * d * 0.25) / den);
+    return s * 0.25;
+}
+FractalCell fractalCell(const DitherPlan& p, const DitherPixel& px, int cellShift) {
+    double u, v;
+    chartUV(px, u, v);
+    const double depth = p.fractalDepth > 0 ? p.fractalDepth : px.depth;
+    const double lambda = std::clamp(std::log2((p.px * p.pa * std::max(depth, 1e-6)) / p.cell), -16.0, 16.0);
+    const double n0 = std::floor(lambda), size = p.cell * std::exp2(n0);
+    return {lambda, 1 - (lambda - n0), int(std::floor(u / size)) + cellShift, int(std::floor(v / size))};
+}
+double fractalThreshold(const DitherPlan& p, const DitherPixel& px, int cellShift) {
+    const FractalCell c = fractalCell(p, px, cellShift);
+    const double scale = double(1 << (2 * kFractalDigits));
+    const double tf = (fractalRank(c.i, c.j) + 0.5) / scale, tc = (fractalRank(c.i >> 1, c.j >> 1) + 0.5) / scale;
+    return fractalBlend(tc, tf, c.m);
 }
 
 int quantise(const DitherPlan& p, double Y, double t, double* fraction) {
@@ -156,8 +192,9 @@ DitherFrame runDitherlight(const DitherPlan& p, const std::vector<DitherLight>& 
             const std::size_t i = std::size_t(y) * std::size_t(g.w) + std::size_t(x);
             const DitherPixel px = g.pixel(x, y);
             const double Y = toneOf(p, lights, px);
-            const std::array<int, 2> c = anchorCell(p, px);
-            const double t = thresholdAt(p.source, c[0] + cellShift, c[1]);
+            double t;
+            if (p.anchor == Anchor::Fractal) t = fractalThreshold(p, px, cellShift);
+            else { const std::array<int, 2> c = anchorCell(p, px); t = thresholdAt(p.source, c[0] + cellShift, c[1]); }
             const int k = quantise(p, Y, t, &f.fraction[i]);
             f.tone[i] = Y; f.threshold[i] = t; f.level[i] = std::uint8_t(k);
             for (std::size_t q = 0; q < 3; ++q) f.rgba[i * 4 + q] = table[std::size_t(k)][q];

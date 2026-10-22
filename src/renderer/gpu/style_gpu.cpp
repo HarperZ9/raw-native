@@ -4,6 +4,7 @@
 #include "shaders/style_layout.hpp"
 #include "../data/bluenoise64.hpp"
 #include "style_graph.hpp"
+#include <algorithm>
 #include <cstring>
 namespace raw::gpu_check::style_gpu {
 namespace {
@@ -62,8 +63,37 @@ int passIndex(const char* name) {
     return -1;
 }
 
+// The dither dispatch alone, warm: inputs in their read state, outputs written in place. Timestamps bracket
+// `repeats` dispatches; the interval over repeats is the dispatch's GPU time.
+void timeDither(Gpu& gpu, const std::vector<rhi::BufferHandle>& b, DitherTiming& t) {
+    const auto& L = style_passes::kPasses[0];
+    const rhi::PipelineHandle pipe = compute(gpu.dev, L.name, L.binds, L.bindCount, gpu.err);
+    if (!pipe.valid()) { t.error = gpu.err; return; }
+    std::vector<double> ms;
+    for (int s = 0; s < t.submissions; ++s) {
+        rhi::CommandList* c = gpu.dev.begin(gpu.err);
+        if (!c) { t.error = gpu.err; return; }
+        const rhi::BufferBarrier first[2] = {{b[4], s == 0 ? Access::CopySrc : Access::StorageWrite, Access::StorageWrite}, {b[5], s == 0 ? Access::CopySrc : Access::StorageWrite, Access::StorageWrite}};
+        c->barrier(first);
+        if (!c->timestamp(0)) { t.error = std::string(gpu.dev.backendName()) + ": no timestamps recorded"; gpu.dev.submitAndWait(gpu.err); return; }
+        for (int r = 0; r < t.repeats; ++r) {
+            c->dispatch(pipe, b, t.groupsX, t.groupsY, 1);
+            const rhi::BufferBarrier again[2] = {{b[4], Access::StorageWrite, Access::StorageWrite}, {b[5], Access::StorageWrite, Access::StorageWrite}};
+            c->barrier(again);
+        }
+        c->timestamp(1);
+        if (!gpu.dev.submitAndWait(gpu.err)) { t.error = gpu.err; return; }
+        std::vector<double> sec;
+        std::string terr;
+        if (!gpu.dev.timestampSeconds(2, sec, terr)) { t.error = terr; return; }
+        ms.push_back((sec[1] - sec[0]) * 1000.0 / t.repeats);
+    }
+    std::sort(ms.begin(), ms.end());
+    t.ms = ms[ms.size() / 2];
+}
+
 bool runDither(rhi::Device& dev, const style::DitherPlan& p, const std::vector<style::DitherLight>& lights, const style::DitherGBuffer& g,
-               std::vector<std::uint32_t>& level, std::vector<std::uint32_t>& packed, std::string& err) {
+               std::vector<std::uint32_t>& level, std::vector<std::uint32_t>& packed, std::string& err, DitherTiming* timing) {
     if (int(lights.size()) > kMaxDitherLights) { err = "ditherlight: at most 8 lights"; return false; }
     Gpu gpu(dev);
     const uint32_t n = uint32_t(g.w * g.h);
@@ -97,6 +127,7 @@ bool runDither(rhi::Device& dev, const style::DitherPlan& p, const std::vector<s
                                     {Access::Uniform, Access::StorageRead, Access::StorageRead, Access::StorageRead, Access::StorageWrite, Access::StorageWrite},
                                     {lv, o8}, n, {&level, &packed});
     if (!ok) err = gpu.err.empty() ? "ditherlight dispatch failed" : gpu.err;
+    if (ok && timing) { timing->groupsX = style_graph::groupsX(n); timing->groupsY = style_graph::groupsY(n); timeDither(gpu, {ub, gbb, lbb, bnb, lv, o8}, *timing); }
     return ok;
 }
 

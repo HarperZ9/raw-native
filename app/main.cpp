@@ -8,6 +8,7 @@
 #include "raw/renderer/rt_hybrid.hpp"
 #include "raw/renderer/sdf_gpu.hpp"
 #include "raw/tools/gallery_cmd.hpp"
+#include "raw/tools/fractal_cmd.hpp"
 #include "raw/tools/bake_cmd.hpp"
 #include "raw/tools/raster_cmd.hpp"
 #include "raw/tools/owned_assets.hpp"
@@ -196,6 +197,7 @@ int main(int argc, char** argv){
     if (argc >= 2 && std::strcmp(argv[1], "colonnade") == 0) return colonnadeCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "noise-gallery") == 0) return noiseGalleryCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "clouds") == 0) return cloudsCommand(argc - 1, argv + 1);
+    if (argc >= 2 && std::strcmp(argv[1], "fractal-dither") == 0) return fractalCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "restir-di") == 0) return restirCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "sdf-render") == 0) return sdfRenderCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "hw-rayquery") == 0) return hwRayQueryCommand(argc - 1, argv + 1);
