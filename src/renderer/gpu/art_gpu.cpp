@@ -124,4 +124,24 @@ bool Runner::time(int repeats, double& medianMs, std::size_t first, std::size_t 
     return true;
 }
 
+bool Runner::timeStamps(int repeats, double& medianMs, std::size_t first, std::size_t last) {
+    last = std::min(last, steps_.size());
+    std::vector<double> t;
+    for (int r = 0; r < repeats; ++r) {
+        rhi::CommandList* c = dev_.begin(err_);
+        if (!c) return false;
+        if (!c->timestamp(0)) { err_ = std::string(dev_.backendName()) + ": no GPU timestamps"; dev_.submitAndWait(err_); return false; }
+        for (std::size_t s = first; s < last; ++s) record(*c, steps_[s]);
+        c->timestamp(1);
+        if (!dev_.submitAndWait(err_)) return false;
+        std::vector<double> sec;
+        if (!dev_.timestampSeconds(2, sec, err_)) return false;
+        t.push_back((sec[1] - sec[0]) * 1000.0);
+    }
+    if (t.empty()) return false;
+    std::sort(t.begin(), t.end());
+    medianMs = t[t.size() / 2];
+    return true;
+}
+
 }  // namespace raw::gpu_check::art_gpu

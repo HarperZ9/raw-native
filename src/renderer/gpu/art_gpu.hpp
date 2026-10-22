@@ -33,6 +33,9 @@ public:
     // times; the median submit-to-fence milliseconds divided by `inner`. Batching amortises the
     // submission and fence latency (about 0.5 ms on the RTX 4090) over the inner repeats.
     bool time(int repeats, double& medianMs, std::size_t first = 0, std::size_t last = ~std::size_t(0), int inner = 1);
+    // The steps [first, last) between two GPU timestamps, one copy a submission, `repeats` times;
+    // the median GPU milliseconds. False where the backend records no timestamps.
+    bool timeStamps(int repeats, double& medianMs, std::size_t first = 0, std::size_t last = ~std::size_t(0));
     std::size_t steps() const { return steps_.size(); }
     const std::string& error() const { return err_; }
 private:
