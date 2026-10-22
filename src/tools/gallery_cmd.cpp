@@ -70,7 +70,8 @@ int galleryCommand(int argc, char** argv) {
         rhi::Device* dev = rhi::device(why);
         std::vector<float> gs;
         const auto t1 = Clock::now();
-        if (dev && gpu_check::shadeOnGpu(*dev, g.grid, g.samples, g.lights, g.env, g.sh, g.exposure, gs, why)) {
+        gpu_check::DispatchTiming timing;
+        if (dev && gpu_check::shadeOnGpu(*dev, g.grid, g.samples, g.lights, g.env, g.sh, g.exposure, gs, why, &timing, 21)) {
             const double gpuMs = msSince(t1);
             std::vector<Rgb> per(g.samples.size());
             double se = 0.0, worst = 0.0;
@@ -86,8 +87,9 @@ int galleryCommand(int argc, char** argv) {
             }
             writeImages(out + "/gallery-gpu", g.width, g.height, gallery::resolve(g, per));
             char b[512];
-            std::snprintf(b, sizeof b, "{\"backend\": \"%s\", \"adapter\": \"%s\", \"wall_ms\": %.1f, \"rmse_exposed\": %.3e, \"max_abs_exposed\": %.3e}",
-                          dev->backendName(), dev->adapter().description.c_str(), gpuMs, std::sqrt(se / (3.0 * double(per.size()) + 1e-300)), worst);
+            std::snprintf(b, sizeof b, "{\"backend\": \"%s\", \"adapter\": \"%s\", \"wall_ms\": %.1f, \"dispatch_ms\": %.3f, \"dispatch_chunks\": %d, \"dispatch_repeats\": %d, \"rmse_exposed\": %.3e, \"max_abs_exposed\": %.3e}",
+                          dev->backendName(), dev->adapter().description.c_str(), gpuMs, timing.ms, timing.chunks, timing.repeats,
+                          std::sqrt(se / (3.0 * double(per.size()) + 1e-300)), worst);
             gpuJson = b;
         } else {
             gpuJson = "{\"error\": \"" + why + "\"}";

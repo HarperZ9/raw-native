@@ -1,0 +1,13 @@
+{
+ "what": "raw-native sphere-field",
+ "size": 256,
+ "width": 256, "height": 160,
+ "cpu_frame_fnv": "52c9e7ef3cf1ac25",
+ "spp": 4,
+ "samples": 144892,
+ "ev100": 11,
+ "display": "agx/srgb",
+ "rows": ["gold", "copper", "red plastic", "white ceramic", "car paint (clearcoat)", "velvet (sheen)", "brushed steel (anisotropy)", "thin film (iridescence)", "thin glass", "volume glass (absorbing)", "warm emissive", "mirror and black rubber", "ground"],
+ "cpu_wall_ms": 1493.68,
+ "gpu": {"backend": "d3d12", "adapter": "NVIDIA GeForce RTX 4090", "wall_ms": 2325.3, "dispatch_ms": 0.806, "dispatch_chunks": 3, "dispatch_repeats": 21, "rmse_exposed": 1.048e-06, "max_abs_exposed": 5.033e-04}
+}

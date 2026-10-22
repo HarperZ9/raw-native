@@ -1,0 +1,12 @@
+{
+ "criterion": "Coordinator item 4 (2026-10-21): the showcase timings become the shading pass's own time, not wall times that include setup.",
+ "written": "2026-10-21, before any run of the timer",
+ "design": "gpu_check::shadeOnGpu with a DispatchTiming: after the end-to-end run (uploads, pipelines, readback), each chunk's dispatch is recorded alone, submitted and waited for 21 times; the frame's time is the sum over chunks of each chunk's median submit-to-fence time. This is a CPU clock around submit and fence, not GPU timestamp queries (the general RHI has none yet; the HW workstream's queue does), so it includes submission and fence latency.",
+ "checks": {
+  "t1_excludes_setup": {"what": "material-gallery --field on the RTX 4090 at 256 x 160", "bound": "dispatch_ms at most a fifth of wall_ms", "prediction": "holds by far: the earlier wall time was 3.98 s"},
+  "t2_repeatable": {"what": "two separate runs, same command", "bound": "dispatch_ms within 20% of each other", "prediction": "holds"},
+  "t3_scales": {"what": "1920 x 1080 at 1 sample a pixel against 256 x 160 at 4 (about 14 times the samples)", "bound": "the dispatch time ratio between 4 and 30", "prediction": "about 8 to 14: small frames carry fixed latency"},
+  "t4_recorded": {"what": "the sphere field's shading-pass frame time at 1080p on the RTX 4090 and on WARP", "bound": "recorded, not gated", "prediction": "a few ms on the 4090"}
+ },
+ "does_not_prove": "GPU time without submission latency (needs timestamp queries in the RHI); the frame time of a whole renderer (only the shading pass is timed)."
+}

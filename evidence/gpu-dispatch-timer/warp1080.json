@@ -1,0 +1,13 @@
+{
+ "what": "raw-native sphere-field",
+ "size": 1920,
+ "width": 1920, "height": 1080,
+ "cpu_frame_fnv": "fd83778a603fc436",
+ "spp": 1,
+ "samples": 1834396,
+ "ev100": 11,
+ "display": "agx/srgb",
+ "rows": ["gold", "copper", "red plastic", "white ceramic", "car paint (clearcoat)", "velvet (sheen)", "brushed steel (anisotropy)", "thin film (iridescence)", "thin glass", "volume glass (absorbing)", "warm emissive", "mirror and black rubber", "ground"],
+ "cpu_wall_ms": 1901.01,
+ "gpu": {"backend": "d3d12", "adapter": "Microsoft Basic Render Driver", "wall_ms": 9585.8, "dispatch_ms": 169.046, "dispatch_chunks": 28, "dispatch_repeats": 21, "rmse_exposed": 1.719e-05, "max_abs_exposed": 2.094e-02}
+}

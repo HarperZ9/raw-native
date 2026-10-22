@@ -46,5 +46,14 @@ LightingParity lightingParity(rhi::Device& dev);
 bool shadeOnGpu(rhi::Device& dev, const lighting::ClusterGrid& grid, const std::vector<lighting::Sample>& samples,
                 const std::vector<lighting::Light>& lights, const lighting::Cube& env, const std::vector<lighting::Rgb>& sh,
                 double exposure, std::vector<float>& out, std::string& err);
+// The shading pass's time alone: after the end-to-end run above has uploaded everything and
+// built the pipelines, each chunk's dispatch is recorded on its own, submitted and waited for
+// `repeats` times; the result is the sum over chunks of each chunk's median submit-to-fence time
+// (milliseconds). It includes the driver's submission and fence latency, not uploads, pipeline
+// creation or readback. Set `dispatchMs` to receive it (null: not measured).
+struct DispatchTiming { double ms{0}; int chunks{0}, repeats{0}; };
+bool shadeOnGpu(rhi::Device& dev, const lighting::ClusterGrid& grid, const std::vector<lighting::Sample>& samples,
+                const std::vector<lighting::Light>& lights, const lighting::Cube& env, const std::vector<lighting::Rgb>& sh,
+                double exposure, std::vector<float>& out, std::string& err, DispatchTiming* timing, int repeats = 21);
 
 }  // namespace raw::gpu_check
