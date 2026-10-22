@@ -268,6 +268,8 @@ Status of P8 and P8b (2026-10-21): stage 1 built. The CPU modules pass their gol
 
 Status of P10 (2026-10-21): built. The sphere field's raster frame is pinned per compiler, its GPU shading holds the gallery's bounds on the RTX 4090 and WARP, and its error against path tracer v3 is 0.23 (bound 0.6; `evidence/p10-sphere-field-runs.json`). A dispatch-only GPU timer is still open, so its frame times are wall times.
 
+Status of P5 (2026-10-22): measured and dropped by its kill criterion. World-anchored canvas coordinates fed to the painterly shader hold GPU parity on WARP, lavapipe and the RTX 4090 and cost 0.11 ms at 1080p, but on the 48-frame orbit the warp metric is no better than the advected canvas: oil 14% worse, watercolour 19% better, and neither paired interval excludes zero (`evidence/p5-world-strokes-runs.json`). The likely cause, untested, is aliasing of the anchored noise on foreshortened surfaces; a footprint-filtered anchor would be its own proposal. The art scene, the warp metric and the art module it built stay as the base of P16 to P21.
+
 P10 to P13 were added on 2026-10-21 from the author's path-tracing references, when the author made
 the engine and the game the priority. Revised order: P1 (stage 1 in review), then P10 (the scene,
 materials and tracer all exist, so it is mostly a scene and its records), then P8 and P8b, then P11

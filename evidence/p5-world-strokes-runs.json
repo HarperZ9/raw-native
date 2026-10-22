@@ -1,0 +1,38 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/p5-world-strokes-bounds.json (with addendum A)",
+ "branch": "feat/p5-world-strokes",
+ "verdict": "P5 is dropped by its own kill criterion: for both presets the paired 95% interval of mean(world - advected) contains zero, and neither preset reaches the 40% reduction (oil is 14% worse, watercolour 19% better within an interval from -19% to +42%). The world anchor does not beat the advected canvas on this orbit. Parity, goldens and cost pass; the art scene, the warp metric, the art module and its runner stay as the stylised track's base.",
+ "runs": {
+  "msvc_rtx": "MSVC (VS 18) D3D12 build of this branch (raw_native_cli.exe sha256 prefix 4e9601eeffdea7ca); RTX 4090 and local WARP under the shared GPU lock, 2026-10-22",
+  "gcc_lavapipe": "g++ 13.3 (WSL Ubuntu 24.04), Release, Vulkan build; lavapipe (llvmpipe, Mesa 25.2.8, LLVM 20.1.2) under the heavy-cpu lock, 2026-10-22",
+  "orbit": "MSVC build, CPU float64, 20 threads, under the heavy-cpu lock",
+  "files": "evidence/p5-world-strokes/"
+ },
+ "exploratory_before_record": "Before the recorded 48-frame orbit, one 12-frame probe of the same command (frames 9 to 11 measured) gave oil -0.244 and watercolour -0.231. It is disclosed here; nothing in the bounds or the code changed between it and the recorded run.",
+ "checks": {
+  "w1_temporal": {
+   "result": "misses; kill criterion hit for both presets",
+   "observed": "39 frames each, bootstrap seed 0x135289e. oil: world 0.01570, advected 0.01378, reduction -0.139 [-0.288, +0.004], mean(world - advected) +0.00192 [-0.00006, +0.00351]. watercolour: world 0.00216, advected 0.00266, reduction +0.189 [-0.187, +0.420], difference -0.00050 [-0.00157, +0.00034]. Per-frame series in orbit.json.",
+   "prediction_check": "I predicted 0.45 to 0.7 for both. Wrong in direction for oil and in size for watercolour.",
+   "why_inferred_not_tested": "Inferred, not tested: the anchored canvas compresses the bristle noise (period 1.3 canvas pixels) and the weave (3.2) wherever a surface is foreshortened, above the pixel rate on the grazing ground and the side faces, so pixel centres sliding over the surface sample aliased noise that flickers. The advected canvas keeps its coordinates near one canvas pixel a pixel by construction (it resets where they distort), so it never aliases. Oil, whose bristle noise and impasto relief carry most of the look, loses; watercolour, mostly paper and glaze at lower frequencies, gains but not significantly. A footprint-filtered anchor (fading each noise octave by the chart's derivative) would test this; it is a new proposal, not a revision of P5."
+  },
+  "w2_controls": {
+   "result": "holds",
+   "observed": "(a) shuffled anchor reduction: oil -1.206, watercolour -2.934 (bound below 0.40: fails as required). (b) offset canvas (screen-anchored), recorded: oil -0.876, watercolour -0.802, both worse than the advected canvas and than the anchor."
+  },
+  "w3_gpu_parity": {
+   "result": "holds on WARP, lavapipe and the RTX 4090",
+   "observed": "Anchor max |gpu - cpu|: 1.2e-4 canvas pixels on all three (bound 0.02). Paint frame codes, worst case over the four cases: RTX 4090 max 2, p99.9 1, mean 0.0014; WARP max 2, p99.9 1, mean 0.0014; lavapipe max 3, p99.9 1, mean 0.0014 (bound 8, 3, 0.2). The 1.1 x exposure control fails every case on every adapter (mean about 3 codes)."
+  },
+  "w4_goldens": {
+   "result": "holds",
+   "observed": "GCC 13.3 and MSVC agree on all four hashes: lit 0x8e70a9159d2007bf, anchor 0x364d778712fdc849, oil 0x3745369e1e2a4c6f, watercolour 0x89864af512059e7c; pinned in tests/test_art_strokes.cpp. PNGs looked at: lit.png, golden-oil.png, golden-watercolour.png and the RTX 4090's gpu-oil-rtx4090.png (indistinguishable from the CPU golden)."
+  },
+  "w5_cost": {
+   "result": "holds under addendum A's method; the first run's method is recorded as unusable",
+   "observed": "RTX 4090, 1920 x 1080, oil, 50 repeats of 10 copies a submission: art_anchor 0.113 ms (bound 2.0); advected canvas (decide, advect, distort) 0.271 ms; paint frame with the anchor 4.19 ms, with the advected canvas 4.32 ms. The anchor alone at one dispatch a submission: 4.35 ms in run 2 and 4.90 ms in run 1, which is submission and fence latency. Run 1 (one copy a submission) is in rtx4090-run1.json."
+  }
+ },
+ "does_not_prove": "That world anchoring cannot work: only that this anchor, feeding the painterly shader's unfiltered noise, does not beat the advected canvas on this orbit. GPU time without submission latency (the RHI has no timestamp queries; batching amortises it). Anything about moving objects."
+}

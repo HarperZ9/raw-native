@@ -17,6 +17,7 @@
 #include "raw/tools/pt_cmd.hpp"
 #include "raw/tools/model_scene.hpp"
 #include "raw/tools/noise_gallery.hpp"
+#include "raw/tools/art_cmd.hpp"
 #include "raw/tools/relight_cmd.hpp"
 #include "raw/tools/sdf_cmd.hpp"
 #include "raw/tools/hw_rayquery_cmd.hpp"
@@ -117,6 +118,8 @@ static const char* kUsage =
     "       raw_native_cli relight [--out DIR] [--size N]\n"
     "       raw_native_cli colonnade [--out DIR] [--sun-elev DEG] [--turbidity T] [--spp N] ...\n"
     "       raw_native_cli noise-gallery [--out DIR]\n"
+    "       raw_native_cli art strokes [--out DIR] [--threads N] [--frames N] [--no-orbit] [--gpu] [--cost]\n"
+    "         the stylised track's checks (P5 world-anchored strokes); JSON and golden PNGs\n"
     "       raw_native_cli clouds [--out DIR] [--width W] [--height H]\n"
     "       raw_native_cli restir-di [scene flags] [--lights N] [--frames F] [--json FILE]\n"
     "         the rasterised frame in DIR against a path-traced reference of the same scene (M3 criterion 1)\n"
@@ -196,6 +199,7 @@ int main(int argc, char** argv){
     if (argc >= 2 && std::strcmp(argv[1], "relight") == 0) return relightCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "colonnade") == 0) return colonnadeCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "noise-gallery") == 0) return noiseGalleryCommand(argc - 1, argv + 1);
+    if (argc >= 2 && std::strcmp(argv[1], "art") == 0) return artCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "clouds") == 0) return cloudsCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "fractal-dither") == 0) return fractalCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "restir-di") == 0) return restirCommand(argc - 1, argv + 1);
