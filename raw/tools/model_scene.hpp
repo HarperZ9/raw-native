@@ -12,6 +12,8 @@ Scene sceneFromParams(const CliParams& p, Arena* arena);
 // quads, albedo 0.6) alone under the test scene's light. Convex and alone, so the raster's
 // ambient-times-AO and unshadowed sun are exact there.
 Scene controlSphereScene();
+// The thin-wall leak scene of evidence/p6-radiance-cascades-bounds.json (src/tools/leak_room.cpp).
+Scene leakRoomScene();
 // raw_native_cli pt-error: the rasterised frame against a path-traced reference (src/tools/pt_error_cmd.cpp).
 int ptErrorCommand(int argc, char** argv);
 // raw_native_cli restir-di: ReSTIR DI stage 1 on a scene with scattered point lights (src/tools/restir_cmd.cpp).

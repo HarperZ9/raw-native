@@ -23,6 +23,7 @@ bool ownedSceneCamera(const std::string& name, Vec3& eye, Vec3& target, Vec3& up
         eye = c.eye; target = c.center; fovy = c.fovy; return true;
     }
     if (name == "control-sphere"){ eye = {2.2f, 1.4f, 3.0f}; target = {0, 0, 0}; fovy = 0.9f; return true; }
+    if (name == "leak-room"){ eye = {3.0f, 1.8f, -2.5f}; target = {0.0f, 1.0f, 2.0f}; fovy = 1.2f; return true; }
     return false;
 }
 Camera prevCameraFromParams(const CliParams& p){
@@ -136,7 +137,7 @@ std::optional<CliParams> parseArgs(int argc, const char* const* argv, std::strin
     if (!p.ownedScene.empty()){
         if (!p.model.empty()){ err = "--owned-scene and --model exclude each other"; return std::nullopt; }
         Vec3 e, t, u; float f = 0;
-        if (!ownedSceneCamera(p.ownedScene, e, t, u, f)){ err = "unknown --owned-scene " + p.ownedScene + " (raw-hall-nave, raw-hall-gallery, control-sphere)"; return std::nullopt; }
+        if (!ownedSceneCamera(p.ownedScene, e, t, u, f)){ err = "unknown --owned-scene " + p.ownedScene + " (raw-hall-nave, raw-hall-gallery, control-sphere, leak-room)"; return std::nullopt; }
         if (!cameraGiven){ p.eye = e; p.center = t; p.up = u; p.fovy = f; }
     }
     if (p.width <= 0 || p.height <= 0){ err = "width/height must be positive"; return std::nullopt; }

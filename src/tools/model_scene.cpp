@@ -38,6 +38,7 @@ Scene controlSphereScene() {
 Scene sceneFromParams(const CliParams& p, Arena* arena) {
     if (p.ownedScene == "raw-hall-nave" || p.ownedScene == "raw-hall-gallery") return owned::hallScene(owned::hall(), p.ownedScene == "raw-hall-gallery");
     if (p.ownedScene == "control-sphere") return controlSphereScene();
+    if (p.ownedScene == "leak-room") return leakRoomScene();
     Scene s = buildTestScene(p.width, p.height, arena);
     if (p.model.empty()) return s;
     std::vector<std::uint8_t> file;

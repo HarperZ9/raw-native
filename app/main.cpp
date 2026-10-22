@@ -25,6 +25,7 @@
 #include "raw/tools/hw_wave16_cmd.hpp"
 #include "raw/tools/hw_mesh_cmd.hpp"
 #include "raw/tools/style_cmd.hpp"
+#include "raw/tools/gi_cmd.hpp"
 #include "raw/rhi/rhi.hpp"
 #include "raw/renderer/raster.hpp"
 #include "raw/renderer/accel.hpp"
@@ -188,6 +189,7 @@ int main(int argc, char** argv){
     if (argc >= 2 && std::strcmp(argv[1], "swr-render") == 0) return swrRenderCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "rt-pathtrace") == 0) return ptCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "pt-error") == 0) return ptErrorCommand(argc - 1, argv + 1);
+    if (argc >= 2 && std::strcmp(argv[1], "gi") == 0) return giCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "envmaps") == 0) return envmapsCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "relight") == 0) return relightCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "colonnade") == 0) return colonnadeCommand(argc - 1, argv + 1);
