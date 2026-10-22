@@ -42,6 +42,11 @@ double pixelAngle(double fov, int height);
 // The presets "ink" (2 levels) and "tones4" (4 levels), sized for a frame `height` pixels high.
 // Throws std::invalid_argument for an unknown preset.
 DitherPlan ditherPreset(const std::string& name, int height, double fov);
+// A preset with Anchor::Fractal and its recorded default cell (px): 2 for ink as pre-registered, 2.75 for
+// tones4 by the amendment of 2026-10-22 (evidence/fractal-dither/tones4-cell-test.json: the smallest tested px
+// that meets the f1 bound on tones4 with tone error below world-octave's at px 2). Throws like ditherPreset.
+double fractalDefaultPx(const std::string& name);
+DitherPlan fractalPreset(const std::string& name, int height, double fov);
 
 struct DitherLight {
     enum class Kind : std::uint32_t { Radial = 0, Beam = 1 } kind{Kind::Radial};
@@ -83,7 +88,7 @@ int quantise(const DitherPlan& p, double Y, double t, double* fraction = nullptr
 // lambda = log2(px pa depth / cell), the fine level cell * 2^floor(lambda) and the coarse level
 // twice that are blended with weight m = 1 - frac(lambda) and the blend is mapped through its own
 // CDF, so the threshold stays uniform, equals the coarse pattern at m = 0 and the fine one at m = 1.
-// Idea after Rune Skovbo Johansen's Dither3D (MPL-2.0); written from the published description, no code taken.
+// Idea after Rune Skovbo Johansen's Dither3D, credited in project-docs/NOVELTY.md; written from the published description, no code taken.
 inline constexpr int kFractalDigits = 6;                 // rank_K: a 64 x 64 tile of 4096 ranks
 int fractalRank(int x, int y, int digits = kFractalDigits);   // digits = 3 is bayer8Rank
 double fractalBlend(double tc, double tf, double m);          // the CDF-mapped blend, m in [0, 1]
