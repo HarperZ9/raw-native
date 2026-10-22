@@ -7,4 +7,6 @@
 namespace raw {
 int envmapsCommand(int argc, char** argv);
 int relightCommand(int argc, char** argv);
+// raw_native_cli colonnade (src/tools/colonnade_cmd.cpp; evidence/colonnade-bounds.json).
+int colonnadeCommand(int argc, char** argv);
 }

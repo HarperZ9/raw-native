@@ -1,0 +1,15 @@
+{
+ "bounds": "evidence/colonnade-bounds.json (addendum A for co3)",
+ "branch": "feat/colonnade (stacked on feat/sky-model-baked-envs)",
+ "runs": {"gcc": "g++ 13.3 (WSL), Release, 2026-10-21", "msvc": "MSVC (VS 18), Release, Idle, 2026-10-21"},
+ "checks": {
+  "co1_sky": {"result": "holds", "observed": "716 escaped pixels, worst relative 4.9e-8 (bound 1e-5), GCC and MSVC"},
+  "co2_colour_bleed": {"result": "holds", "observed": "floor beside the emissive sphere at sunset: red/blue 2.777 with emission, 1.606 without, a 72.9% rise (bound 10%)"},
+  "co3_shadow": {"result": "misses (recorded)", "observed": "golden hour: shadow 2,941 nits, sunlit 4,402, ratio 0.668 (bound 0.5). The sun 10 degrees up lights a floor at about 0.17 of its normal illuminance, so the sky dominates; my prediction ignored that cosine (addendum A)."},
+  "co4_regression": {"result": "holds", "observed": "pinned: GCC 0xe4715df692d0642e, MSVC 0x21722eb16bd5dfa5"},
+  "co5_frame_times": {"result": "recorded", "observed": "480 x 270, 128 samples, 8 bounces, 4 threads (WSL, nice 19): noon 13.1 s (0.79 us a sample a pixel), golden hour 13.3 s (0.80), sunset 13.4 s (0.81); scene build 1.1 to 1.3 s. CPU only; the GPU tracer refuses v3 scenes until its v3 stage."},
+  "co6_review": {"result": "holds (reviewed)", "observed": "evidence/colonnade/noon-golden-sunset.png: the arches' shadow shapes on the terracotta wall at golden hour, the mirror sphere reflecting the colonnade, the copper sphere and the warm glow of the emissive sphere on the floor, the sky warming toward sunset. Before recording, the floor was extended from 20 to 200 m (it ended in a dark band at the horizon) and the exposures were raised one to one and a half stops (the first frames were washed out). Fireflies remain at 128 samples."}
+ },
+ "next": "Stage 2: a live settings panel in the Studio (needs the GPU tracer's v3 stage or a progressive CPU loop) and a raster comparison of the colonnade.",
+ "does_not_prove": "Real-time rates; agreement with a raster; a measured sky."
+}
