@@ -23,8 +23,8 @@ constexpr const char* kFamily = "gcc";
 constexpr const char* kFamily = "other";
 #endif
 struct Pinned { const char* family; std::uint64_t coc, codes; };
-// Recorded 2026-10-22 on MSVC (VS 18). GCC is not pinned yet (0 skips the comparison; printed).
-constexpr Pinned kPinned[] = {{"msvc", 0x2c4cd941314f50b5ull, 0xb2f84d054ae9ba92ull}, {"gcc", 0, 0}};
+// Recorded 2026-10-22 on MSVC (VS 18) and GCC 13.3; the two agree.
+constexpr Pinned kPinned[] = {{"msvc", 0x2c4cd941314f50b5ull, 0xb2f84d054ae9ba92ull}, {"gcc", 0x2c4cd941314f50b5ull, 0xb2f84d054ae9ba92ull}};
 
 void checkPinned(const char* what, std::uint64_t got, std::uint64_t Pinned::*field) {
     std::printf("g2 %s %s 0x%016llxull\n", kFamily, what, static_cast<unsigned long long>(got));
