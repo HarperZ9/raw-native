@@ -1,0 +1,18 @@
+{
+ "criterion": "Coordinator round 3, item 1 (2026-10-21): the gallery raster's missing term, found in evidence/m3-gallery-miss-diagnosis.json (light passing between neighbouring spheres). The path-traced bound of 0.6 (evidence/m3-verified-scenes-bounds.json p-scale, evidence/rt-v3-bounds.json c8) is not changed.",
+ "written": "2026-10-21, before any code and before any run",
+ "design": {
+  "visibility": "A sample-space visibility pass (src/renderer/gallery_occlusion.cpp), the role GTAO plays for the engine's frames: for every gallery sample, the fraction of its cosine-weighted hemisphere that sees past the scene's spheres (diffuse visibility, 256 stratified directions), and the fraction of its specular lobe that does (VNDF-sampled reflection directions, 64, for the base roughness and again for the coat roughness). Spheres only; the ground of the sphere field is not an occluder in this step. Computed on the CPU in float64 and handed to both shading paths as sample attributes.",
+  "shading": "lighting::Sample gains ao, so and soCoat (default 1). shadeIbl multiplies the irradiance term by ao, the base specular image term by so and the coat's by soCoat; pbr.wgsl's ibl() does the same from three new sample floats (SAMPLE 48 to 51). Punctual lights are unchanged (no shadows in this step). The occluded light is dropped, not replaced by the neighbours' radiance.",
+  "switch": "material-gallery --occlusion turns the pass on; without it every value stays 1 and every output is unchanged"
+ },
+ "checks": {
+  "o1_unchanged": {"what": "without --occlusion: the gallery's CPU frame hash, the sphere field's pinned hashes (tests/test_sphere_field.cpp), the lighting and material parity checks and the m3-scenes GPU checks", "bound": "byte-identical CPU frames; GPU checks within their existing bounds", "prediction": "holds: multiplying by 1 is exact"},
+  "o2_diffuse_accuracy": {"what": "the 256-direction diffuse visibility against a 16,384-direction estimate on 2,000 gallery samples", "bound": "mean absolute difference at most 0.01, worst at most 0.05", "prediction": "holds"},
+  "o3_specular_accuracy": {"what": "the 64-direction specular visibility against a 4,096-direction estimate on the same samples", "bound": "mean absolute difference at most 0.03, worst at most 0.15", "prediction": "holds; low roughness makes single samples decisive"},
+  "o4_gallery_pt_error": {"what": "material-gallery --occlusion --pt --pt-spp 512 at 256 px, against path tracer v3 (raster's sample points)", "bound": "relative RMSE at most 0.6", "prediction": "holds at about 0.45, moderate confidence: the occluded light is dropped, while the tracer sees the neighbours' own radiance, so the raster may now be too dark on the reflective rows"},
+  "o5_gpu_parity": {"what": "the gallery's GPU shading with --occlusion on WARP and lavapipe (m3-scenes) and the RTX 4090 (shared GPU lock)", "bound": "rmse_exposed at most 5e-4, max_abs_exposed at most 0.05", "prediction": "holds"},
+  "o6_field": {"what": "the sphere field with --occlusion against path tracer v3", "bound": "recorded", "prediction": "falls below 0.231"}
+ },
+ "does_not_prove": "That dropping occluded light is right (it is a visibility term, not interreflection); occlusion by the ground or by non-sphere geometry; a screen-space pass for the engine's frames."
+}

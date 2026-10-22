@@ -1,0 +1,16 @@
+{
+ "bounds": "evidence/gallery-occlusion-bounds.json",
+ "branch": "feat/gallery-occlusion",
+ "runs": {"cpu": "g++ 13.3 (WSL), Release, 4 threads, nice 19, 2026-10-21", "rtx": "MSVC D3D12 build (sha256 ea0f1ff0...), RTX 4090, under the shared GPU lock (it waited behind three Low Water bench jobs)", "ci": "m3-scenes o5 on WARP and lavapipe"},
+ "checks": {
+  "o1_unchanged": {"result": "holds", "observed": "without --occlusion the gallery's CPU frame hash is 543baeb81b57607f on this branch and on main; the sphere field's pinned hash still matches (test_sphere_field); the parity checks run in CI"},
+  "o2_diffuse_accuracy": {"result": "holds", "observed": "256 against 16,384 directions over 2,000 samples: mean 0.0055, worst 0.045 (bounds 0.01, 0.05)"},
+  "o3_specular_accuracy": {"result": "holds", "observed": "64 against 4,096 directions: mean 0.0156, worst 0.0949 (bounds 0.03, 0.15)"},
+  "o4_gallery_pt_error": {"result": "holds", "observed": "relative RMSE 0.566 (bound 0.6; 0.683 without occlusion), bias -0.053 (from +0.182), coverage 0.99878. By row: gold 0.394, red plastic 0.257, car paint 1.359, velvet 0.246, brushed steel 0.355, thin film 1.309, glass 0.594. The bias flipped sign: the pass drops the occluded light, while the tracer shows the neighbours' own radiance there, so the raster is now 5% dark, as the prediction warned. Car paint and thin film stay the largest per-row errors; their highlights reflect neighbours, which a visibility term cannot reproduce."},
+  "o5_gpu_parity": {"result": "holds on the RTX 4090; WARP and lavapipe in CI", "observed": "RTX 4090 with --occlusion: gallery rmse 2.36e-6, max_abs 1.03e-3; sphere field 1.05e-6, 5.03e-4 (bounds 5e-4, 0.05)"},
+  "o6_field": {"result": "recorded", "observed": "sphere field with --occlusion: 0.218 (0.231 without); its bias is now -0.086 (dark), the glass looks unchanged (0.52, 0.74)"}
+ },
+ "timer_note": "In these RTX runs the shading pass's dispatch time read 14 to 18 ms where the same pass read 0.5 ms before, with no change to the pass's work beyond three multiplies. The submit-to-fence timer is not trustworthy below tens of milliseconds while other processes use the GPU; GPU timestamp queries are the next item.",
+ "files": "evidence/gallery-occlusion/ (raster with occlusion beside the path-traced frame; JSON records)",
+ "does_not_prove": "That the term is right for interreflection (it only removes light); occlusion by the ground or other geometry."
+}

@@ -57,6 +57,12 @@ Gallery buildSpaced(int size, int spp, double spacing);
 // The sphere field's view-to-world rotation (its environment is in view space; a caller that bakes
 // a world-space sky for it rotates directions with this).
 lighting::D3 fieldViewToWorld(lighting::D3 v);
+// The visibility pass (evidence/gallery-occlusion-bounds.json): every sample's diffuse, specular and
+// coat visibility past the scene's spheres (its own excluded), by stratified cosine-weighted and
+// VNDF-reflected directions, into Sample::ao, so and soCoat. Spheres only.
+void occlusion(Gallery& g, int diffuseDirs = 256, int specularDirs = 64, int threads = 0);
+double diffuseVisibility(const Gallery& g, const lighting::Sample& s, int n);
+double specularVisibility(const Gallery& g, const lighting::Sample& s, double roughness, int n);
 // Material of the sphere at row, column (also what the media pages label).
 pbr::Material sphereMaterial(int row, int col, std::string* label = nullptr);
 // Exposed linear radiance per pixel from per-sample exposed radiance (sphere hits and the
