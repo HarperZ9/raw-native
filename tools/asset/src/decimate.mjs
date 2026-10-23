@@ -36,6 +36,11 @@ export function decimate(F, M, { target, tol, minDot = 0.1 }) {
     const m = project(F, [(P[a * 3] + P[b * 3]) / 2, (P[a * 3 + 1] + P[b * 3 + 1]) / 2, (P[a * 3 + 2] + P[b * 3 + 2]) / 2], 5, tol), around = new Set([...vf[a], ...vf[b]]), shared = [...vf[a]].filter((f) => vf[b].has(f));
     let ok = m[3] <= tol * 0.25;
     const oldP = [P[a * 3], P[a * 3 + 1], P[a * 3 + 2]];
+    const sag = (f, rm) => {   // field distance at the centroid and the three edge midpoints of face f, with vertex b read as a
+      const v = [0, 1, 2].map((k) => (rm && T[f * 3 + k] === b ? a : T[f * 3 + k])), at = (u, w, s) => Math.abs(F.d((P[u * 3] + P[w * 3] + (s ? P[s * 3] : 0)) / (s ? 3 : 2), (P[u * 3 + 1] + P[w * 3 + 1] + (s ? P[s * 3 + 1] : 0)) / (s ? 3 : 2), (P[u * 3 + 2] + P[w * 3 + 2] + (s ? P[s * 3 + 2] : 0)) / (s ? 3 : 2)));
+      return Math.max(at(v[0], v[1], v[2]), at(v[0], v[1]), at(v[1], v[2]), at(v[2], v[0]));
+    };
+    const oldSag = new Map(); if (ok) for (const f of around) if (!shared.includes(f)) oldSag.set(f, sag(f, false));
     if (ok) {
       P[a * 3] = m[0]; P[a * 3 + 1] = m[1]; P[a * 3 + 2] = m[2];
       for (const f of around) {
@@ -48,7 +53,7 @@ export function decimate(F, M, { target, tol, minDot = 0.1 }) {
         void pb;
       }
     }
-    if (ok) for (const f of around) { if (shared.includes(f)) continue; for (let e2 = 0; e2 < 3 && ok; e2++) { const u = T[f * 3 + e2] === b ? a : T[f * 3 + e2], w = T[f * 3 + (e2 + 1) % 3] === b ? a : T[f * 3 + (e2 + 1) % 3]; if (u !== a && w !== a) continue; if (Math.abs(F.d((P[u * 3] + P[w * 3]) / 2, (P[u * 3 + 1] + P[w * 3 + 1]) / 2, (P[u * 3 + 2] + P[w * 3 + 2]) / 2)) > tol) ok = false; } }
+    if (ok) for (const [f, was] of oldSag) { const now = sag(f, true); if (now > tol && now > was + 1e-4) { ok = false; break; } }   // a face may not sag past tol unless it already did, and then not further
     if (!ok) { P[a * 3] = oldP[0]; P[a * 3 + 1] = oldP[1]; P[a * 3 + 2] = oldP[2]; rejected++; continue; }
     for (const f of shared) { alive[f] = 0; tris--; for (let k = 0; k < 3; k++) vf[T[f * 3 + k]].delete(f); }
     for (const f of vf[b]) { for (let k = 0; k < 3; k++) if (T[f * 3 + k] === b) T[f * 3 + k] = a; vf[a].add(f); }
