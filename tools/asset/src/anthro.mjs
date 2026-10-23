@@ -8,6 +8,8 @@
 //          nose protrusion. Moderate confidence.
 //  [LOOMIS] Loomis, A., Drawing the Head and Hands, 1956: the eye line at the middle of the head and the three equal facial
 //          thirds. High confidence on the rule, which is a teaching rule and not a measurement.
+// Source check, 2026-10-23: the ANSUR II tables could not be reached (the Army Public Health Center page fails certificate verification here and
+// a web search returned no table), and no Farkas text was available. Every digit above keeps its confidence label; verify before relying on it.
 // Age: Farkas reports the nose lengthening and the lips thinning with age. The terms below are small linear ramps from 30 to
 // 60 years and are low confidence. Build scales the breadths.
 export const ANSUR_MALE = { headLength: 0.197, headBreadth: 0.153, bizygomatic: 0.143, bigonial: 0.108, biocular: 0.092, noseBreadth: 0.036, mouthBreadth: 0.05, menVertex: 0.232 };
@@ -34,6 +36,11 @@ export function landmarksFor({ frame, age = 35, build = 1, cast = {} }) {
   side("euryon", 0.5 * A.headBreadth * w, M + 0.62 * Hh, frame.rearZ + 0.45 * A.headLength, "widest skull");
   side("alare", 0.5 * A.noseBreadth * w, S + 0.08 * (G - S), zg + 0.006, "nostril wing");
   side("cheilion", 0.5 * A.mouthBreadth * w * (cast.lips ?? 1), stomY, zg - 0.016, "mouth corner");
+  if (cast.profileLandmarks !== false) {   // brow ridge and nose dorsum, constructed from the points above; see the note on confidence
+    const ny = G - 0.012, nz = zg - 0.006, py = S + 0.23 * (G - S), pz = zg + noseP;
+    for (const t of [0.33, 0.66]) mid("dorsum" + Math.round(t * 100), ny + (py - ny) * t, nz + (pz - nz) * t, "nose profile, straight dorsum between nasion and pronasale (constructed, low confidence)");
+    for (const x of [0.012, 0.03, 0.05]) side("brow" + Math.round(x * 1000), x * w, G + 0.004, zg - 0.004 - 20 * (x * w) * (x * w) * 0.4 * 0.5, "supraorbital ridge, falls back laterally (constructed from the Loomis brow plane, low confidence)");
+  }
   return L;
 }
 export const expandLandmarks = (L) => L.flatMap((l) => (l.mirror ? [{ ...l, id: l.id + ".r" }, { ...l, id: l.id + ".l", p: [-l.p[0], l.p[1], l.p[2]] }] : [l]));
