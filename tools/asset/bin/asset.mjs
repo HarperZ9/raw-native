@@ -17,7 +17,7 @@ const log = (m) => console.error(m);
 if (cmd === "fmt") { const f = args[0], S = parseSculpt(readFileSync(f, "utf8")); writeFileSync(f, stringifySculpt(S)); console.log(`${f}: ${S.strokes.length} strokes`); }
 else if (cmd === "build" || cmd === "review") {
   const [sf, pf, out] = args, sculpt = parseSculpt(readFileSync(sf, "utf8")), paint = parsePaint(readFileSync(pf, "utf8")), quick = cmd === "review" || flag("--quick", false);
-  const res = +flag("--res", quick ? 512 : 1024), built = buildAsset({ sculpt, paint, res, refCell: quick ? 0 : 0.0015, lods: quick ? LODS.slice(0, 2) : LODS, log });
+  const res = +flag("--res", quick ? 512 : 1024), built = buildAsset({ sculpt, paint, res, refCell: quick ? 0 : 0.0015, lods: LODS, log });
   if (cmd === "review") writeFileSync(out, savePng(reviewSheet(built)));
   else {
     mkdirSync(out, { recursive: true }); const name = basename(sf).replace(/\.sculpt\.json$/, "");

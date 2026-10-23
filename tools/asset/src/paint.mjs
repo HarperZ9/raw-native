@@ -16,7 +16,7 @@ function weight(s, S) {
   switch (s.kind) {
     case "fill": return 1;
     case "ramp": { const st = s.stops, v = s.axis === "z" ? z : s.axis === "x" ? ax : y; if (v <= st[0][0]) return { c: st[0][1] }; for (let i = 1; i < st.length; i++) if (v <= st[i][0]) return { c: mix(st[i - 1][1], st[i][1], sm(st[i - 1][0], st[i][0], v)) }; return { c: st[st.length - 1][1] }; }
-    case "dab": { const best = (s.mirror ? [s.c, [-s.c[0], s.c[1], s.c[2]]] : [s.c]).map((c) => Math.hypot(x - c[0], (y - c[1]) * (s.sy || 1), z - c[2])); const d = Math.min(...best); return 1 - sm(s.r * (s.hard ?? 0.3), s.r, d); }
+    case "dab": { const best = (s.mirror ? [s.c, [-s.c[0], s.c[1], s.c[2]]] : [s.c]).map((c) => Math.hypot(x - c[0], (y - c[1]) * (s.sy || 1), z - c[2])); const d = Math.min(...best); const w = 1 - sm(s.r * (s.hard ?? 0.3), s.r, d); return s.grain ? w * Math.max(0, Math.min(1, 0.35 + 1.5 * vnoise(x * s.grain, y * s.grain * 0.4, z * s.grain))) : w; }
     case "band": return sm(s.y0 - s.soft, s.y0, y) * (1 - sm(s.y1, s.y1 + s.soft, y)) * sm(s.zmin ?? -9, (s.zmin ?? -9) + 0.01, z);
     case "ink": { const v = s.src === "curv" ? -S.kappa / 60 : S.cav; return sm(s.lo, s.hi, v); }
     case "shade": return Math.pow(1 - S.ao, s.pow ?? 1) * (s.gain ?? 1);

@@ -17,7 +17,7 @@ const map8 = (a, W, H, ch = 1) => ({ w: W, h: H, c: ch, data: a });
 
 export function buildAsset({ sculpt, paint, res = 1024, lods = LODS, refCell = 0.0015, log = () => {} }) {
   const T = {}, tick = (k, t0) => { T[k] = Math.round(now() - t0); log(`${k}: ${T[k]} ms`); };
-  let t0 = now(); const F = new Field(sculpt.strokes), Fskin = new Field(sculpt.strokes, { exclude: new Set(["hair"]) }), B = F.bounds(0.004); tick("field", t0);
+  let t0 = now(); const F = new Field(sculpt.strokes), Fskin = new Field(sculpt.strokes, { exclude: new Set(["hair", "stache"]) }), B = F.bounds(0.004); tick("field", t0);
   const bounds = { sculpt: { strokes: sculpt.strokes.length, hash: sha256(stringifySculpt(sculpt)) }, lods: [], timingMs: T };
   if (refCell) { t0 = now(); const ref = extract(F, { lo: B.lo, hi: B.hi, cell: refCell }); bounds.reference = { cell: refCell, quads: ref.quads.length / 4, tris: ref.quads.length / 2, error: meshError(F, ref), quality: quadQuality(ref), gridEvals: ref.stats.evals, bricksSkipped: ref.stats.skipped, bricks: ref.stats.bricks }; tick("reference", t0); }
   t0 = now(); const vol = new Volume(F, B.lo, B.hi); const sampler = makeSampler(F, Fskin, vol); tick("volume", t0);
