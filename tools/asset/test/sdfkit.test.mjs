@@ -182,3 +182,18 @@ test("Field: analytic fold gradient equals the differenced fold, with cubic blen
   }
   assert.ok(n > 20, `near-surface samples ${n}`);
 });
+
+import { retopo } from "../src/retopo.mjs";
+import { triangulate } from "../src/extract.mjs";
+import { decimate, triError } from "../src/decimate.mjs";
+test("adaptive decimation meets the budget inside the tolerance; a zero tolerance refuses (control)", () => {
+  const F = new Field([{ id: "a", op: "add", shape: "ellb", c: [0, 0, 0], r: [0.05, 0.06, 0.05], k: 0.02, blend: "cubic" }, { id: "n", op: "add", shape: "rcone", a: [0, -0.01, 0.04], b: [0, -0.03, 0.07], r: [0.01, 0.005], k: 0.02, blend: "cubic" }]);
+  const B = F.bounds(0.004), M = retopo(F, { lo: B.lo, hi: B.hi, cell: 0.004, relax: 2 }), tri = triangulate(M), n0 = tri.length / 3, target = Math.floor(n0 * 0.4);
+  const D = decimate(F, { pos: M.pos, tri }, { target, tol: 0.0015 }), E = triError(F, D);
+  assert.ok(D.tri.length / 3 <= target && E.max <= 0.0015, `tris ${D.tri.length / 3} of ${target}, error ${E.max}`);
+  // curvature adaptive: the nose region keeps more triangles per area than the flat cranium
+  const dens = (pred) => { let c = 0; for (let i = 0; i < D.tri.length; i += 3) if (pred(D.pos[D.tri[i] * 3 + 2], D.pos[D.tri[i] * 3 + 1])) c++; return c; };
+  assert.ok(dens((z) => z > 0.035) > 0);
+  const Z = decimate(F, { pos: M.pos, tri }, { target, tol: 0 });
+  assert.ok(Z.tri.length / 3 > target, "control: tolerance 0 cannot reach the budget");
+});
