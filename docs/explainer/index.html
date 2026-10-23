@@ -189,10 +189,10 @@ svg .grow{transition:width .8s var(--ease)}
     <p>Real-time engines darken creases and corners with a cheap screen-space trick called ambient occlusion. raw-native renders a scene with that trick and with a slow ray-traced reference, measures how far apart the two are, and tells you whether the shortcut can be trusted for that view. You get the picture and the evidence in the same run.</p>
   </div>
   <ul class="uses">
-    <li><b>A verdict per view</b>A JSON certificate says <span class="v v-ok">verified</span> when the shortcut's error stays inside the tolerance and <span class="v v-drift">refuted</span> when it does not.</li>
-    <li><b>Recheck without trusting it</b><code>raw_native_cli verify</code> renders nothing. It re-hashes the files and recomputes the error from them.</li>
+    <li><b>A verdict per view</b>A JSON certificate says <span class="v v-ok">verified</span> when the shortcut's error stays inside the tolerance and <span class="v v-drift">refuted</span> when it goes over.</li>
+    <li><b>Recheck from the files</b><code>raw_native_cli verify</code> re-hashes the recorded files and recomputes the error from them, with the renderer left out of the loop.</li>
     <li><b>The same bytes everywhere</b>MSVC, GCC and the WebAssembly build write byte-identical files for the default render.</li>
-    <li><b>No dependencies</b>C++23 and the standard library. The optional GPU builds are checked frame by frame against this CPU path.</li>
+    <li><b>C++23 and the standard library</b>The CPU renderer builds from these two. The optional GPU builds are checked frame by frame against this CPU path.</li>
   </ul>
   <p class="src">Source: <a href="https://github.com/HarperZ9/raw-native/blob/f2cd6e9076bc0f86f5741e249365d4f5d9e3669a/README.md">README.md</a> at f2cd6e9 (release 0.5.1)</p>
 </section>
@@ -294,19 +294,19 @@ svg .grow{transition:width .8s var(--ease)}
       <li class="step" tabindex="-1" data-scene="raster" data-state="g"><div class="card">
         <span class="num">02</span><h3>Rasterize into a G-buffer</h3>
         <p>The scene is built in: a 10 by 10 ground plane and a box two units tall at the origin, under one directional light. The rasterizer finds the nearest surface for each pixel and stores five channels: depth, normal, world position, motion and a coverage mask.</p>
-        <p>Both occlusion estimators read this buffer. The mask matters later: only covered pixels are compared.</p>
+        <p>Both occlusion estimators read this buffer. The mask matters later: the comparison runs over covered pixels.</p>
         <p class="src">Source: <a href="https://github.com/HarperZ9/raw-native/blob/f2cd6e9076bc0f86f5741e249365d4f5d9e3669a/raw/renderer/gbuffer.hpp">raw/renderer/gbuffer.hpp</a>, <a href="https://github.com/HarperZ9/raw-native/blob/f2cd6e9076bc0f86f5741e249365d4f5d9e3669a/src/scene">src/scene</a>, <a href="https://github.com/HarperZ9/raw-native/blob/f2cd6e9076bc0f86f5741e249365d4f5d9e3669a/src/renderer/render.cpp">src/renderer/render.cpp</a></p>
       </div></li>
       <li class="step" tabindex="-1" data-scene="rt" data-state="fan"><div class="card">
         <span class="num">03</span><h3>The reference: shoot real rays</h3>
         <p>For each covered pixel the reference sends 64 rays over the hemisphere above the surface, weighted toward the normal. A ray that hits geometry within 2.0 world units is blocked. The pixel's occlusion value is the share of rays that got out.</p>
-        <p>The ray directions come from a hash of the pixel and the sample index, with no global random state. Run it twice and you get the same grain.</p>
+        <p>The ray directions come from a hash of the pixel and the sample index, so each pixel's samples are fixed. Run it twice and you get the same grain.</p>
         <p class="src">Source: <a href="https://github.com/HarperZ9/raw-native/blob/f2cd6e9076bc0f86f5741e249365d4f5d9e3669a/src/renderer/ray_ao.cpp">src/renderer/ray_ao.cpp</a>, constants in <a href="https://github.com/HarperZ9/raw-native/blob/f2cd6e9076bc0f86f5741e249365d4f5d9e3669a/raw/renderer/render.hpp">raw/renderer/render.hpp</a></p>
       </div></li>
       <li class="step" tabindex="-1" data-scene="ss" data-state="samples"><div class="card">
-        <span class="num">04</span><h3>The shortcut: look only at the screen</h3>
+        <span class="num">04</span><h3>The shortcut: look at the screen</h3>
         <p>The screen-space method takes 24 samples within 6 pixels of the pixel and reads their stored positions. A neighbour within 2.0 units that rises into the hemisphere (its direction scores above 0.15 against the normal) counts as blocking.</p>
-        <p>It can only see what the camera sees. A face turned away from the camera is not in the buffer, and anything more than 6 pixels away is never sampled. That is why the drawing's two numbers differ.</p>
+        <p>It sees what the camera sees: faces turned toward the camera, within 6 pixels. A face turned away and an occluder farther out are invisible to it, which is why the drawing's two numbers differ.</p>
         <p class="src">Source: <a href="https://github.com/HarperZ9/raw-native/blob/f2cd6e9076bc0f86f5741e249365d4f5d9e3669a/src/renderer/ssao.cpp">src/renderer/ssao.cpp</a></p>
       </div></li>
       <li class="step" tabindex="-1" data-scene="rec" data-state="rmse"><div class="card">
@@ -318,7 +318,7 @@ svg .grow{transition:width .8s var(--ease)}
       <li class="step" tabindex="-1" data-scene="views" data-state="bars"><div class="card">
         <span class="num">06</span><h3>The verdict depends on the view</h3>
         <p>Same scene, same tolerance, five cameras. Two views stay inside the bound: high, looking down from above, and wide. The default, low and close views fall outside it.</p>
-        <p>A pass on RMSE says nothing about the worst pixel: the high view passes at 0.0827 with a maximum error of 0.625.</p>
+        <p>RMSE measures the frame as a whole, so check the worst pixel separately: the high view passes at 0.0827 with a maximum error of 0.625.</p>
         <p class="src">Source: README.md, "The verdict depends on the view"; <a href="https://github.com/HarperZ9/raw-native/blob/f2cd6e9076bc0f86f5741e249365d4f5d9e3669a/evidence/wasm-vs-native-512.json">evidence/wasm-vs-native-512.json</a></p>
       </div></li>
       <li class="step" tabindex="-1" data-scene="cert" data-state="cert"><div class="card">
@@ -327,14 +327,14 @@ svg .grow{transition:width .8s var(--ease)}
         <p class="src">Source: README.md, "What one run writes" and "The superstack receipt"; <a href="https://github.com/HarperZ9/raw-native/blob/f2cd6e9076bc0f86f5741e249365d4f5d9e3669a/docs/examples/default-certificate.json">docs/examples/default-certificate.json</a></p>
       </div></li>
       <li class="step" tabindex="-1" data-scene="verify" data-state="clean"><div class="card">
-        <span class="num">08</span><h3>Check it without trusting the renderer</h3>
-        <p><code>raw_native_cli verify ./out</code> renders nothing. It re-hashes every listed file, recomputes the reconcile from the two float maps and the mask, and compares the pixel count, RMSE, maximum error and verdict with the recorded ones.</p>
-        <p>Exit 0 means every check matches, 3 means a mismatch, 2 means a file is missing. <code>scripts/recheck.py</code> does the same in Python and shares no code with the C++ verifier, so a bug in one shows up as a disagreement. Try each case in the panel.</p>
-        <p class="src">Source: README.md, "Check a certificate without trusting the renderer"; <a href="https://github.com/HarperZ9/raw-native/blob/f2cd6e9076bc0f86f5741e249365d4f5d9e3669a/src/tools/verify.cpp">src/tools/verify.cpp</a></p>
+        <span class="num">08</span><h3>Check it from the recorded files</h3>
+        <p><code>raw_native_cli verify ./out</code> reads the output folder. It re-hashes every listed file, recomputes the reconcile from the two float maps and the mask, and compares the pixel count, RMSE, maximum error and verdict with the recorded ones.</p>
+        <p>Exit 0 means every check matches, 3 means a mismatch, 2 means a file is missing. <code>scripts/recheck.py</code> does the same in Python from separate code, so a bug in either one shows up as a disagreement between them. Try each case in the panel.</p>
+        <p class="src">Source: README.md, the section on checking a certificate; <a href="https://github.com/HarperZ9/raw-native/blob/f2cd6e9076bc0f86f5741e249365d4f5d9e3669a/src/tools/verify.cpp">src/tools/verify.cpp</a></p>
       </div></li>
       <li class="step" tabindex="-1" data-scene="arena" data-state="arena"><div class="card">
         <span class="num">09</span><h3>Render twice to prove the memory bound</h3>
-        <p>The first pass renders inside a generous slab and records exactly how many bytes the frame needed. The second pass renders again inside a budget of exactly that many bytes, with an allocator that never grows. If anything asks for more the second time, the render stops and the memory certificate says refuted.</p>
+        <p>The first pass renders inside a generous slab and records exactly how many bytes the frame needed. The second pass renders again inside a budget of exactly that many bytes, with a fixed-size allocator. If anything asks for more the second time, the render stops and the memory certificate says refuted.</p>
         <p class="src">Source: README.md, "How the memory budget works"; <a href="https://github.com/HarperZ9/raw-native/blob/f2cd6e9076bc0f86f5741e249365d4f5d9e3669a/app/main.cpp">app/main.cpp</a></p>
       </div></li>
       <li class="step" tabindex="-1" data-scene="gpu" data-state="gpu"><div class="card">
@@ -365,7 +365,7 @@ svg .grow{transition:width .8s var(--ease)}
 $ cmake --build build --config Release
 $ ctest --test-dir build -C Release --output-on-failure</code></pre></li>
   </ol>
-  <p class="src">Without size flags the CLI renders 256 x 256, so its numbers differ from the 512 x 512 values above. Output lines are excerpts from raw_native_cli built from f2cd6e9 with MSVC on Windows.</p>
+  <p class="src">The CLI renders 256 x 256 by default, so its numbers differ from the 512 x 512 values above. Output lines are excerpts from raw_native_cli built from f2cd6e9 with MSVC on Windows.</p>
   <div class="live" id="live">
     <h3>Run it in this page</h3>
     <p class="measure" style="margin:0 0 .6rem">This loads raw-native 0.4.0's WebAssembly build from harperz9.github.io, checks both files against their SHA-256 before running them, and renders on your CPU. The CPU render code is unchanged from 0.3.0 through 0.5.1. Smaller frames give different numbers from the 512 x 512 table above. At 256 x 256 the default view matches the native CLI run shown above: rmse 0.1294 over 37,996 pixels.</p>
@@ -376,7 +376,7 @@ $ ctest --test-dir build -C Release --output-on-failure</code></pre></li>
       <select id="live-size"><option value="128">128 x 128</option><option value="256" selected>256 x 256</option></select>
       <button type="button" class="btn" id="live-go">Render</button>
     </div>
-    <div class="read" id="live-status" aria-live="polite">Not run yet. A 256 x 256 render took 622 ms in a desktop browser when this page was tested.</div>
+    <div class="read" id="live-status" aria-live="polite">Press Render to run it here. A 256 x 256 render took 622 ms in a desktop browser when this page was tested.</div>
     <div class="canv" id="live-canv" hidden>
       <div><canvas id="c-frame"></canvas><div class="cl">frame</div></div>
       <div><canvas id="c-rt"></canvas><div class="cl">ao_rt</div></div>
@@ -387,13 +387,13 @@ $ ctest --test-dir build -C Release --output-on-failure</code></pre></li>
 </section>
 
 <section class="block wrap" aria-labelledby="limits">
-  <h2 id="limits">What it does not do</h2>
+  <h2 id="limits">Scope</h2>
   <ul class="limits">
-    <li>There is one built-in test scene: a box on a ground plane under one light. There is no model loader yet.</li>
+    <li>The renderer draws one built-in test scene: a box on a ground plane under one light. Model loading is planned work.</li>
     <li>The reference is an estimate. 64 hemisphere samples per pixel give a repeatable answer with visible grain, and it is the bar the shortcut is held to.</li>
     <li>The screen-space method is a simple one. Most views come back refuted, which is the check reporting a weak shortcut.</li>
     <li>RMSE summarises the whole frame. A verified view can still have single pixels far off.</li>
-    <li>Byte-identical output was checked on x86-64 with two compilers and on WebAssembly. Other CPU architectures are untested.</li>
+    <li>Byte-identical output was checked on x86-64 with two compilers and on WebAssembly. Those are the architectures covered so far.</li>
     <li>The GPU timings and checks come from one machine, one GPU and one driver. Another adapter may differ.</li>
   </ul>
   <p class="src">Source: README.md, "Limits, stated plainly" and "Measured results", at f2cd6e9</p>
@@ -402,10 +402,10 @@ $ ctest --test-dir build -C Release --output-on-failure</code></pre></li>
 <section class="block wrap recall" aria-labelledby="recall">
   <h2 id="recall">Check what stuck</h2>
   <p class="measure">Answer each one in your head before you open it.</p>
-  <details><summary>Which of the two occlusion maps is the reference, and why?</summary><p>The ray-traced one. It tests real rays against the geometry within 2.0 units, so it sees occluders the camera cannot. The screen-space map only reads what is in the G-buffer.</p></details>
+  <details><summary>Which of the two occlusion maps is the reference, and why?</summary><p>The ray-traced one. It tests real rays against the geometry within 2.0 units, so it sees occluders hidden from the camera. The screen-space map reads what is in the G-buffer.</p></details>
   <details><summary>The default view reads refuted. What two numbers decide that?</summary><p>The RMSE over covered pixels, 0.1349, and the tolerance, 0.12. The RMSE is above the bound.</p></details>
-  <details><summary>Why can the high view be verified while one of its pixels is off by 0.625?</summary><p>The verdict is on RMSE across 239,854 pixels. A few large errors barely move a root mean square, so a pass says nothing about the worst pixel.</p></details>
-  <details><summary>What does <code>verify</code> do that a second render would not?</summary><p>It renders nothing. It re-hashes the recorded files and recomputes the reconcile from them, so it checks the evidence without trusting the renderer that made it.</p></details>
+  <details><summary>Why can the high view be verified while one of its pixels is off by 0.625?</summary><p>The verdict is on RMSE across 239,854 pixels. A few large errors barely move a root mean square, so the worst pixel needs its own check.</p></details>
+  <details><summary>How does <code>verify</code> differ from a second render?</summary><p>It reads the recorded files, re-hashes them and recomputes the reconcile from them, so it checks the evidence apart from the renderer that made it.</p></details>
 </section>
 </main>
 <footer class="foot wrap">
