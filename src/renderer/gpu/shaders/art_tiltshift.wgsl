@@ -206,10 +206,10 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     let rad: f32 = 0.5 * cw.x * U.lens.w;
     let a: f32 = rad * (1.0 + A);
     let b: f32 = rad / (1.0 + A);
-    var qs: array<u32, 48>;
-    var wo: array<f32, 48>;
+    var qs: array<u32, 32>;
+    var wo: array<f32, 32>;
     var acc: array<f32, 56>;   // per sector: weight, mean (3), mean square (3)
-    for (var s: i32 = 0; s < 48; s++) {
+    for (var s: i32 = 0; s < 32; s++) {
         let u: f32 = pig[19993 + 2 * s];
         let v: f32 = pig[19993 + 2 * s + 1];
         let ox: f32 = tx * a * u - ty * b * v;
@@ -222,7 +222,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
         wo[s] = o;
         let sv: vec3f = sb[q].xyz;
         for (var k: i32 = 0; k < 8; k++) {
-            let g: f32 = pig[20089 + s * 8 + k] * o;
+            let g: f32 = pig[20057 + s * 8 + k] * o;
             let j: i32 = k * 7;
             acc[j] = acc[j] + g;
             acc[j + 1] = acc[j + 1] + g * sv.x;
@@ -249,9 +249,9 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
     var L0: vec4f = vec4f(0.0);
     var L1: vec3f = vec3f(0.0);
     var ws: f32 = 0.0;
-    for (var s2: i32 = 0; s2 < 48; s2++) {
+    for (var s2: i32 = 0; s2 < 32; s2++) {
         var c: f32 = 0.0;
-        for (var kb: i32 = 0; kb < 8; kb++) { c = c + alpha[kb] * pig[20089 + s2 * 8 + kb]; }
+        for (var kb: i32 = 0; kb < 8; kb++) { c = c + alpha[kb] * pig[20057 + s2 * 8 + kb]; }
         c = c * wo[s2];
         ws = ws + c;
         L0 = L0 + c * lat[2u * qs[s2]];

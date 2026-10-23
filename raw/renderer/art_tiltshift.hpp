@@ -38,7 +38,7 @@ std::vector<float> bandCoc(const std::vector<float>& lens, const LensGeom& g, co
 
 // The painted defocus.
 struct DefocusParams { double c0{1}, c1{2.5}, q{8}, zeta{0.33}, rim{2}; };
-inline constexpr int kTsSamples = 48;
+inline constexpr int kTsSamples = 32;
 // The fixed 48-sample Vogel disc (x, y) and each sample's eight sector weights, as f32: the GPU
 // reads the same table, so both sides weigh identical numbers.
 struct DefocusTables { std::vector<float> pos, wk; };

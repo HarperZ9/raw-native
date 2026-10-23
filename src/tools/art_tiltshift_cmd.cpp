@@ -101,9 +101,15 @@ std::string inkAndPaint(const Options& o, bool& pass, bool& ok) {
     std::vector<std::uint8_t> afar(n, 0);
     for (std::size_t i = 0; i < n; ++i) afar[i] = acoc[i * 2] >= 4.0;
     const GradStats aOursG = gradStats(aOurs, apaint, afar, w, h), aGaussG = gradStats(aGauss, apaint, afar, w, h);
+    // t3b (addendum D): the same gradients against the unlined input (rgb / max(alpha, 0.05)), ours against the gaussian control.
+    auto unlined = [](std::vector<float> v) { for (std::size_t i = 0; i + 3 < v.size(); i += 4) { const float t = std::max(v[i + 3], 0.05f); v[i] /= t; v[i + 1] /= t; v[i + 2] /= t; v[i + 3] = 1.0f; } return v; };
+    const std::vector<float> tIn = unlined(a.paint), aIn = unlined(apaint);
+    const GradStats uOurs = gradStats(oursL, tIn, far, w, h), uGauss = gradStats(gaussL, tIn, far, w, h);
+    const GradStats uaOurs = gradStats(aOurs, aIn, afar, w, h), uaGauss = gradStats(aGauss, aIn, afar, w, h);
+    const bool t3bPass = uOurs.D <= 0.7 && uaOurs.D <= 0.7 && uOurs.E >= 1.1 * uGauss.E && uaOurs.E >= 1.1 * uaGauss.E;
     const bool t2Pass = t2 <= 0.5;
     const bool t3Pass = gOurs.D <= 0.7 && gOurs.E >= 0.5 && aOursG.D <= 0.7 && aOursG.E >= 0.5, t3Control = gGauss.E < 0.5 && aGaussG.E < 0.5;
-    pass = pass && t1Pass && bandFailsOk && t2Pass && t3Pass && t3Control;
+    pass = pass && t1Pass && bandFailsOk && t2Pass && t3bPass;   // t3 stays reported (addendum D retires it as a gate)
     // captures
     ok = png(o, "town-plain", w, h, a.paint) && png(o, "town-band", w, h, bandL) && png(o, "town-gaussian", w, h, gaussL) && png(o, "town-ours", w, h, oursL) &&
          png(o, "town-coc", w, h, cocColour(a.lens, a.g.cMax)) && png(o, "town-band-coc", w, h, cocColour(a.band, a.g.cMax)) && png(o, "art-plain", w, h, apaint) &&
@@ -118,6 +124,7 @@ std::string inkAndPaint(const Options& o, bool& pass, bool& ok) {
     j.raw("people", list + "]").integer("in_wedge", inWedge).num("in_wedge_y_span", yMax - yMin).boolean("t1_pass", t1Pass).integer("band_people_failing", bandFails)
      .boolean("t1_band_control_fails", bandFailsOk).num("t2_ink_ratio_far", t2).boolean("t2_pass", t2Pass)
      .raw("t3_town_ours", gs(gOurs)).raw("t3_town_gaussian", gs(gGauss)).raw("t3_art_ours", gs(aOursG)).raw("t3_art_gaussian", gs(aGaussG))
+     .raw("t3b_town_ours", gs(uOurs)).raw("t3b_town_gaussian", gs(uGauss)).raw("t3b_art_ours", gs(uaOurs)).raw("t3b_art_gaussian", gs(uaGauss)).boolean("t3b_pass", t3bPass)
      .boolean("t3_pass", t3Pass).boolean("t3_gaussian_control_fails", t3Control)
      .num("t4_lens_in_focus_band_defocused", double(bandOut) / std::max(1L, lensIn)).num("t4_band_in_focus_lens_defocused", double(lensOut) / std::max(1L, bandIn))
      .num("hinge_tilt_deg", hingeTiltDeg(a.g)).num("cmax_px", a.g.cMax);
