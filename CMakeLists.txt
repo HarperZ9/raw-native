@@ -159,3 +159,8 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/raw_nativeConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/raw_nativeConfigVersion.cmake"
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/raw_native)
 install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/doc/raw_native)
+
+# File bridge for script hosts (Windows): five synchronous calls over one root folder.
+if(WIN32)
+    target_sources(raw_native PRIVATE src/platform/win32/file_bridge_win32.cpp)
+endif()
