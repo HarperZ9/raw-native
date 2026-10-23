@@ -30,7 +30,7 @@ const planes = (rgb, n) => [0, 1, 2].map((c) => { const p = new Float32Array(n);
 
 // opt.mask (Uint8, optional): paint only where mask is set; every other pixel keeps src exactly
 // (hole filling: the secondary painting continues the primary's picture).
-export function paint(src, aux, { seed = 1, radii = [11, 6, 3.5, 2], ink = true, relief = 0.2, mask = null } = {}) {
+export function paint(src, aux, { seed = 1, radii = [11, 6, 3.5, 2], ink = true, relief = 0.2, mask = null, record = null, debug = null } = {}) {
   const { w, h } = src, n = w * h, ref0 = planes(src.rgb, n), lum = (P, i) => 0.3 * P[0][i] + 0.59 * P[1][i] + 0.11 * P[2][i];
   const on = (i) => !mask || mask[i] === 1;
   let canvas = ref0.map((p) => blurPlane(p, w, h, 9)), height = new Float32Array(n), layerNo = 0;
@@ -58,6 +58,7 @@ export function paint(src, aux, { seed = 1, radii = [11, 6, 3.5, 2], ink = true,
       const march = (sgn) => { let t = 0; for (; t < maxLen; t++) { const px = Math.round(bx + sgn * dx * (t + 1)), py = Math.round(by + sgn * dy * (t + 1)); if (px < 0 || py < 0 || px >= w || py >= h) break; const j = py * w + px; if (aux.id[j] !== sid || !on(j) || Math.abs(src.rgb[j * 3] - col[0]) + Math.abs(src.rgb[j * 3 + 1] - col[1]) + Math.abs(src.rgb[j * 3 + 2] - col[2]) > tolStroke) break; } return t; };
       const t1 = march(-1), t2 = march(1), ax = bx - dx * t1, ay = by - dy * t1, ex = bx + dx * t2, ey = by + dy * t2, sx = ex - ax, sy = ey - ay, sl = Math.max(1e-6, sx * sx + sy * sy);
       const halfW = r * 0.5 * (0.85 + 0.3 * hash2(bx, by, seed + 3)), pad = Math.ceil(halfW + 2), id0 = (hash2(bx, by, seed + 11) * 1000) | 0;
+      if (record) record.push({ layer: layerNo, r, ax, ay, ex, ey, dx, dy, halfW, col, id0, sid });   // stroke program capture (strokeprog.mjs); no effect on the picture
       for (let y = Math.max(0, Math.floor(Math.min(ay, ey)) - pad); y <= Math.min(h - 1, Math.ceil(Math.max(ay, ey)) + pad); y++) for (let x = Math.max(0, Math.floor(Math.min(ax, ex)) - pad); x <= Math.min(w - 1, Math.ceil(Math.max(ax, ex)) + pad); x++) {
         const i = y * w + x; if (aux.id[i] !== sid || !on(i)) continue;
         const tt = Math.min(1, Math.max(0, ((x - ax) * sx + (y - ay) * sy) / sl)), qx = ax + sx * tt - x, qy = ay + sy * tt - y, dist = Math.hypot(qx, qy);
@@ -71,6 +72,7 @@ export function paint(src, aux, { seed = 1, radii = [11, 6, 3.5, 2], ink = true,
     }
     layerNo++;
   }
+  if (debug) { debug.canvas = canvas; debug.height = height; }
   // impasto relief: light the stroke height from the upper left
   const rgb = new Float32Array(n * 3);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
