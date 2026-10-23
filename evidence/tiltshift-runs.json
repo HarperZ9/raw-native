@@ -621,5 +621,57 @@
    "Dream (town-look-dream.png): now distinct from daily: desaturated toward 55%, hue shifted, and the plane lies wrong so the near roofs and the far row soften while a diagonal band stays sharp.",
    "Town ours: the defocused walls and roofs carry no ink; the people in the wedge keep theirs."
   ]
+ },
+ "record_d": {
+  "written": "2026-10-22, after the rebase onto main and addendum D. The first two records stay as they are.",
+  "code": "32-sample defocus disc; t3b added; goldens re-pinned to codes 0x1a208990a1cda158 (CoC 0x2c4cd941314f50b5 unchanged), GCC 13.3 and MSVC agree.",
+  "baseline_rebased_48_samples": "D3D12 chain 1.205 ms; Vulkan 0.997 ms (RTX 4090, 1080p, town_map, every effect on). Defocus pass 0.535 ms on D3D12, 0.429 ms on Vulkan.",
+  "g3_cost_32_samples": {
+   "d3d12_chain_ms_runs": [
+    0.804,
+    0.889,
+    0.86,
+    1.076,
+    0.807,
+    0.915,
+    0.828
+   ],
+   "d3d12_median_ms": 0.86,
+   "d3d12_contended_outliers_ms": [
+    6.936,
+    15.858
+   ],
+   "d3d12_defocus_pass_ms": 0.268,
+   "vulkan_chain_ms_runs": [
+    0.948,
+    0.864,
+    0.709,
+    0.846,
+    0.798
+   ],
+   "vulkan_contended_outliers_ms": [
+    16.165
+   ],
+   "vulkan_defocus_pass_ms": 0.243,
+   "bound_ms": 1.0,
+   "verdict": "holds at the median on both backends; one of seven D3D12 runs (1.076) is over the bound. The GPU was shared with other sessions and no lock was available, so the spread is the honest number: 0.80 to 1.08 ms when not stalled, two runs stalled by other work at 7 to 16 ms and excluded from the median, both listed.",
+   "note": "glow is the next-largest pass on D3D12 (0.104 ms, against 0.062 on Vulkan); compose 0.113 ms on both. About 0.17 ms of the old chain was gaps between 12 passes; none was removed here."
+  },
+  "g1_parity": "D3D12 and Vulkan on the RTX 4090: town-map codes max 6, p99.9 1; town-night max 1; art-daily max 1; the K x 1.1 control fails in every case. WARP and lavapipe run in CI.",
+  "t3b": {
+   "town_ours_E": 0.8248,
+   "town_gaussian_E": 0.6958,
+   "town_ratio": 1.185,
+   "art_ours_E": 0.4007,
+   "art_gaussian_E": 0.2708,
+   "art_ratio": 1.48,
+   "D_town_ours": 0.48,
+   "D_art_ours": 0.332,
+   "pass": true
+  },
+  "t3": "still misses on the absolute form (art scene E 0.40); no longer gating. See addendum_d for the diagnosis and its correction.",
+  "cpu_rerun": "t1 5 in the wedge, ratios 1.000, band fails 5; t2 4.3e-7; orbit ours 0.00617 against base 0.01322 (-53%); rack 0.00133 against limit 0.00661, underdamped 0.00159; d1 to d5, c1 to c3 hold.",
+  "dream": "Still behind its flag; see addendum_d.",
+  "files": "evidence/tiltshift/cpu-record-d.json, gpu-rtx4090-d3d12-d.json, gpu-rtx4090-vulkan-d.json; captures replaced."
  }
 }
