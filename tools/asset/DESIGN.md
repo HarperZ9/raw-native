@@ -1,0 +1,168 @@
+<!-- writing-profile: research -->
+# Asset toolchain: design and bounds
+
+2026-10-22. First slice. Author direction, 2026-10-23, verbatim: Low Water's characters and bosses are "All
+hand-built" (D1), and "Ideally we should not need blender, and will build our own assets." The tool is
+reusable across games and the engine. Shipped tools carry no dependencies on outside code.
+
+## 1. Where it lives
+
+**Decision: `tools/asset` inside raw-native.** Plain Node ESM, standard library only, run with
+`node tools/asset/bin/asset.mjs`.
+
+Reasons, in order of weight:
+
+1. The engine already owns the formats the tool exports to (glTF through `src/assets/gltf.cpp`) and the
+   shading vocabulary the review renderer imitates. A tool beside them changes with them in one commit.
+2. Games consume the tool by path or release, and keep their own assets and adapters. Low Water holds
+   `characters/assets/heads/ned.sculpt.json` and its adapter. The tool holds nothing game specific.
+3. A new repository would need its own release, CI and versioning for about two thousand lines. That cost
+   buys nothing until a second engine wants the tool without the renderer.
+
+Revisit when a consumer outside raw-native exists. The modules have no imports outside `tools/asset`, so
+the move is a directory copy.
+
+## 2. Pipeline
+
+```
+ name.sculpt.json  (strokes: the source of truth, one a line, diffable)
+        |  sdf.mjs        ordered fold of strokes into a signed distance field
+        v
+   field  --> extract.mjs   surface nets on a sparse brick grid, vertices projected onto the zero set
+        |         |
+        |         +--> reference mesh (1.5 mm), used only to measure error
+        |  retopo.mjs     coarse quad net, tangential relaxation, re-projection (3 LODs)
+        v
+  game quad meshes --> uv.mjs     charts by direction, one texel density, shelf packing
+        |  bake.mjs      each texel: Newton to the sculpt surface, then normal, curvature, cavity,
+        |                ambient occlusion, thickness
+        v
+  name.paint.json --> paint.mjs   layers of zones, dabs, bands, shade, ink and grain, in 3D
+        v
+   albedo + maps + per-vertex colour --> render.mjs (review sheets) and export.mjs (glTF, OBJ, RNA1)
+```
+
+Every stage reads the field or its outputs. No stage reads a mesh from another tool.
+
+## 3. Choices
+
+**Sculpt representation.** An ordered list of brush strokes, each a primitive (ellipsoid, round cone,
+rounded box, torus) with an operation (add, subtract, intersect), a smoothing width `k` in metres and an
+optional mirror across x = 0. The field is a left fold over the list, so stroke order matters the way it does
+under a sculptor's hand. Strokes tagged `hair` fold in their own field and join the skin with a small smooth
+union, so a hair clip can never cut skin. Edits are inserts, moves and deletes of one line.
+
+Chosen over a multires mesh because the file is small, text, diffable and resolution independent, and because
+every later stage can ask the field for an exact distance. The cost is that organic detail has to be built
+from primitives; fine skin detail (pores, wrinkles) needs a displacement stroke kind, which is future work.
+
+**Mesh extraction.** Surface nets on a sparse grid of 8 by 8 by 8 bricks. A brick is skipped when no add
+stroke can reach it, or when its centre distance exceeds 2.5 times its half diagonal. Each cell vertex is then
+projected onto the zero set with Newton steps. Chosen over dual contouring because surface nets give quads
+directly and stay manifold on thin lids; the projection recovers most of what the quadratic error function
+would. Sharp creases round off at the cell size, which the error bound states.
+
+**Quad retopology, version 1.** The game mesh is the same extractor at a coarser cell, relaxed tangentially
+and re-projected. Output is all quads with valence 4 inside. It does not yet follow anatomical loops around
+the eyes and mouth. Guide curves are the next step (section 9). Until then the guarantee is the error bound and
+the quad quality numbers, both measured on every build.
+
+**UVs.** Six directional charts (front, back, left, right, top, bottom), small charts folded into the
+neighbour they touch most, planar projection at one global texel density, shelf packing with binary search on
+the density. Vertices split at seams. Stretch of every triangle against the ideal density is measured.
+
+**Baking.** There is no high poly mesh. Each texel takes its game surface point, walks to the sculpt surface
+by Newton steps, and reads the normal and curvature exactly from the field. Ambient occlusion (24 cosine
+distributed rays, rotated per texel by a hash) and thickness (march inward until the field turns positive)
+read a 2.5 mm distance volume. Normal maps are tangent space, X = +u, Y = +v with v down the image.
+
+**Painting, the Oil and Ink way.** A paint file is layers of strokes laid in the sculpt's frame: ramps (the
+forehead paler where a hat sits, the jaw cooler), dabs (cheek warmth, lips, brows), bands, a shadow lean that
+turns occlusion toward violet, a thin-skin warm term from thickness, ink from cavity and curvature, and a
+grain of noise stretched along a flow direction. The layer stack is a pure function of the surface sample, so
+it paints texels and mesh vertices with one code path and the two cannot drift.
+
+**Portrait render path.** `render.mjs` is an orthographic rasteriser with a warm key, a violet fill, light
+quantised to painted value steps and ink on silhouettes. It reads the baked textures, so a review sheet shows
+what the maps hold. The game's own figure pipeline remains the final check (section 7).
+
+**File formats.**
+
+| File | Content | Notes |
+|:--|:--|:--|
+| `*.sculpt.json` | header, eyes, strokes | numbers rounded to 1 micrometre, fixed key order, one stroke a line |
+| `*.paint.json` | layers of paint strokes | display colour values in 0..1 |
+| `*.rna` (RNA1) | LOD meshes, quads, per-vertex colour, curvature, cavity, region, UV mesh, eye parts | JSON header plus aligned typed arrays |
+| `*.gltf` | portrait LOD with albedo and normal textures embedded | the form raw-native's loader reads |
+| `*.obj` | portrait LOD with UVs | for any other tool |
+| `bounds.json` | measured values for the build | compared with section 5 |
+
+**Export.** raw-native reads the glTF directly. The Low Water browser mesh (`.lwmesh`, magic LWM1) is written
+by Low Water's own adapter from the RNA1 arrays, because material ids and joint weights belong to the game.
+
+**Authoring UI.** Not built in this slice. The planned UI is a browser page over the same modules (all pure
+ESM): orbit view with the field's mesh, a stroke list, handles that edit one stroke line, and live review
+renders. Until then strokes are authored in the file format and edited through `src/format.mjs` and the
+`Field` class, and `asset review` renders the four-panel sheet after each pass.
+
+## 4. Bounds, written before the Ned build was measured
+
+Units are metres unless stated. "Error" is the field's absolute distance at quad centres and edge midpoints,
+where a net sags most, so it is the largest honest deviation from the sculpt.
+
+| Quantity | Bound |
+|:--|:--|
+| Reference extraction at 1.5 mm | error p99 at most 0.15 mm, max at most 0.6 mm |
+| Portrait LOD, 3 mm cell | error p99 at most 0.5 mm, max at most 1.5 mm; at most 40 000 triangles |
+| Play LOD, 6 mm cell | error p99 at most 1.5 mm, max at most 4 mm; at most 9 000 triangles |
+| Far LOD, 10 mm cell | error p99 at most 3 mm; at most 3 000 triangles |
+| Quad quality, portrait | all quads; 5th percentile interior angle at least 55 degrees; aspect p95 at most 1.6 |
+| UV stretch, portrait | p95 at most 1.8 against the ideal density; p99 at most 4 |
+| Bake | no cage violation (a texel moving more than 10 mm), residual to the zero set at most 0.5 mm, normal map 8 bit round trip at most 1 degree |
+| Timing, Node 25 on the author's workstation | reference extraction at most 20 s, whole quick build (512 maps) at most 90 s, whole full build at most 180 s |
+| Determinism | two builds from the same files give identical RNA1 bytes and identical textures |
+| Play size | the head at 300 pixels a metre is at most 9 000 triangles and reads as a head with eyes, nose, mouth and hairline |
+
+The tests in `test/asset.test.mjs` assert the error, determinism, round trip and UV rows on synthetic
+sculpts. Controls that must fail are in the same file: a bad stroke file, a 6 mm skewed sphere, and a build with
+the sparse and cull paths turned off that must match the fast path.
+
+## 5. What a pass does not prove
+
+- The error bound is against the field. It says nothing about whether the field is a good face. Judging that is
+  what the review sheets and the side by side capture are for, and a person has to look.
+- Ellipsoid distances are first order. The brick skip uses a 2.5 times margin, and a test compares the sparse
+  path with a dense uncull path on a head-like sculpt. A sculpt with extreme ellipsoid ratios could still
+  defeat the margin.
+- Ambient occlusion reads a 2.5 mm volume, so creases finer than that come from the exact cavity term.
+
+## 6. Cost model
+
+Reference extraction at 1.5 mm evaluates about two million field points after brick skipping. Texel baking
+costs about fourteen exact field evaluations plus the ray marches. Builds are single threaded.
+
+## 7. Verification path in a game
+
+A game adapter loads the RNA1 file, places the head at its own joint, maps material names to its material
+ids and renders through its own figure pipeline. Low Water's adapter is `characters/forge/authored.mjs` and the
+comparison script is `characters/proto/head_compare.mjs`.
+
+## 8. Known gaps
+
+1. No anatomical edge flow in the game mesh.
+2. No displacement stroke kind for pores and wrinkles.
+3. Eyes are generated parts (sphere, cornea cap, pupil, catchlight) described in the sculpt header.
+4. Hair is solid geometry. Cards and strands are not authored.
+5. Skeleton weights and blend shapes (expressions) are not part of the format yet.
+6. The authoring UI is specified and not built.
+
+## 9. Toward a production toolchain
+
+1. Guide curves for edge loops (eyes, mouth, nasolabial), then a quad flow solver constrained by them.
+2. A displacement and a smoothing stroke kind, and stroke groups with names.
+3. Texture painting by brush in the UI, with the layer file as the saved form.
+4. Expression targets as stroke deltas, baked to blend shapes.
+5. A full body: same format, strokes in a body frame, with a skeleton binding file.
+6. A C++ RNA1 reader in raw-native so the engine loads the native format with the glTF as a fallback.
+7. GPU extraction in WGSL once the CPU reference bounds are stable (the field and the brick skip port
+   directly, and the CPU version is the reference).
