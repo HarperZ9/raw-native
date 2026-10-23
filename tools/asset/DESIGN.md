@@ -166,3 +166,51 @@ comparison script is `characters/proto/head_compare.mjs`.
 6. A C++ RNA1 reader in raw-native so the engine loads the native format with the glTF as a fallback.
 7. GPU extraction in WGSL once the CPU reference bounds are stable (the field and the brick skip port
    directly, and the CPU version is the reference).
+
+## 10. SDF kit: primitives and modifiers (bounds written before the code)
+
+Clean room. The kit takes the idea of exact signed distance geometry with a modifier stack from the
+Shadytracer post (ideas only, no code). Published distance functions are cited in the code at the line that uses
+them (Inigo Quilez, iquilezles.org/articles/distfunctions and /smin). Everything else is derived here.
+
+Contract for every stroke kind. `d(p)` is a signed distance (negative inside). "Exact" means equal to the true
+signed distance. "Bounded" means `|d| <= |d_true|` everywhere (safe for sphere tracing). The gradient is the unit
+outward normal on the surface; for exact kinds it is the true gradient everywhere.
+
+| Kind | Distance | Normal | Bound tested against a dense surface sample |
+|:--|:--|:--|:--|
+| `rbox` rounded box (half extents, round radius, rot) | exact | analytic | max error at most 1 sample spacing |
+| `rcone` round cone (a, b, radii r0 at a, r1 at b; r0 = r1 is a capsule) | exact | analytic | same |
+| `cone` frustum with flat caps (a, b, r0, r1) | exact (revolved convex polygon) | analytic | same |
+| `torx` torus (R, r) | exact | analytic | same |
+| `ext` extruded 2D profile (`rrect`, `circle`, `poly`; half length h) | exact | analytic | same |
+| `ellb` ellipsoid | first-order estimate clamped into [lower, upper] | analytic on the surface | lower <= true <= upper at every query |
+
+Ellipsoid bound. With k0 = |p / r|, the field `(k0 - 1) * min(r)` is a proven lower bound on the distance (the
+scaling map p / r is `1 / min(r)` Lipschitz). The radial hit gives the upper bound `|p| (1 - 1 / k0)` outside and
+`|p| (1 / k0 - 1)` inside. The kind returns the first-order estimate `k0 (k0 - 1) / k1` clamped into that
+interval (a guard: 60 000 sampled points never left it), and `ellipsoidLower` exports the lower bound for conservative marching.
+
+| Operation | Distance | Bound |
+|:--|:--|:--|
+| smooth union, quadratic (`blend: "quad"`, default) | `min(a, b) - h^2 k / 4`, h = max(k - abs(a - b), 0) / k | at most `k / 4` below `min(a, b)`; C1 |
+| smooth union, cubic (`blend: "cubic"`) | `min(a, b) - h^3 k / 6` | at most `k / 6` below; C2, which is what removes the shading creases at blends |
+| smooth subtraction | smooth max with the same k | same |
+| `round r` | `d - r` | exact outside a convex shape, bounded inside |
+| `shell t` | `abs(d) - t / 2` | bounded |
+| `mirror` (axis, offset) | field of `abs(x)` | exact when the shape lies on one side of the plane |
+| `repeat` (period, n each side) | clamped lattice | exact when the shape fits in half a period |
+| `twist` (k rad/m about y, radius R) | `d / s`, s = (a + sqrt(a^2 + 4)) / 2, a = k R | bounded; s is the largest singular value of the warp Jacobian within R of the axis |
+| `bend` (k rad/m of x, extent E) | `d / s`, a = k E | bounded, same s |
+| `displace` (noise, ridge or map source, amplitude A, optional mask) | `(d + A m h) / (1 + A (L_h + L_m))` | bounded; L_h is the source's stated Lipschitz constant, L_m the mask's |
+| `relief` (fbm of value noise) | displace with `L_h = sum a_i 6.5 f_i / sum a_i` | bounded; the 6.5 f bound on one octave is checked by sampling |
+
+Tests assert the exact kinds against a dense surface sample, the bound intervals, analytic normals against
+central differences, each modifier's bound by sampling, and controls that must fail (a deliberately wrong
+Lipschitz constant, and a lower bound built on max(r) leaving the interval).
+
+Extraction. Curvature-adaptive density is edge-collapse decimation of the fine surface net: collapses are ordered
+by quadric error (flat regions go first), each collapsed vertex is re-projected onto the zero set, a collapse is
+rejected if the field distance at the affected edge midpoints exceeds the LOD error bound, UV seams are locked, and
+the loop stops at the triangle budget. Budgets: portrait 40 000, play 9 000, far 3 000 triangles inside the
+section 4 error bounds. If a budget cannot be met inside the bound the build reports that and does not exceed the bound.

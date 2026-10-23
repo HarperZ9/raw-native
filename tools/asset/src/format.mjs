@@ -4,8 +4,8 @@
 import { createHash } from "node:crypto";
 
 export const SCULPT_FORMAT = "rnsculpt/1", ASSET_FORMAT = "rna/1";
-const KEYS = ["id", "op", "shape", "c", "a", "b", "r", "R", "rot", "round", "k", "mirror", "tag", "note"];
-const OPS = new Set(["add", "sub", "and"]), SHAPES = new Set(["ell", "cap", "box", "tor"]);
+const KEYS = ["id", "op", "shape", "c", "a", "b", "r", "R", "rot", "round", "h", "prof", "blend", "mods", "k", "mirror", "tag", "note"];
+const OPS = new Set(["add", "sub", "and"]), SHAPES = new Set(["ell", "cap", "box", "tor", "rbox", "ellb", "rcone", "cone", "torx", "ext"]);
 const r6 = (v) => Array.isArray(v) ? v.map(r6) : typeof v === "number" ? Math.round(v * 1e6) / 1e6 : v;
 const strokeLine = (s) => "{" + KEYS.filter((k) => s[k] !== undefined && s[k] !== false).map((k) => `${JSON.stringify(k)}:${JSON.stringify(r6(s[k]))}`).join(",") + "}";
 
@@ -27,7 +27,13 @@ export function validateSculpt(S) {
     if (!OPS.has(s.op)) err(`stroke ${s.id}: op "${s.op}"`);
     if (!SHAPES.has(s.shape)) err(`stroke ${s.id}: shape "${s.shape}"`);
     if (s.k !== undefined && !(Number.isFinite(s.k) && s.k >= 0)) err(`stroke ${s.id}: k must be a number >= 0`);
-    const need = s.shape === "cap" ? ["a", "b"] : ["c"];
+    if (s.blend !== undefined && s.blend !== "quad" && s.blend !== "cubic") err(`stroke ${s.id}: blend must be quad or cubic`);
+    if (s.mods !== undefined && !(Array.isArray(s.mods) && s.mods.every((m) => m && typeof m.kind === "string"))) err(`stroke ${s.id}: mods must be a list of { kind }`);
+    const need = ["cap", "rcone", "cone"].includes(s.shape) ? ["a", "b"] : ["c"];
+    if ((s.shape === "rbox" || s.shape === "ellb") && (!isVec(s.r) || s.r.some((v) => v <= 0))) err(`stroke ${s.id}: r must be 3 positive numbers`);
+    if (s.shape === "torx" && !(s.R > 0 && s.r > 0)) err(`stroke ${s.id}: R and r must be positive`);
+    if ((s.shape === "rcone" || s.shape === "cone") && !(Number.isFinite(s.r) || isVec(s.r, 2))) err(`stroke ${s.id}: r must be a number or two`);
+    if (s.shape === "ext" && !(s.h > 0 && s.prof && s.prof.kind)) err(`stroke ${s.id}: ext needs h > 0 and prof { kind }`);
     for (const key of need) if (!isVec(s[key])) err(`stroke ${s.id}: ${key} must be 3 numbers`);
     if (s.shape === "ell" || s.shape === "box") { if (!isVec(s.r) || s.r.some((v) => v <= 0)) err(`stroke ${s.id}: r must be 3 positive numbers`); }
     if (s.shape === "cap" && !(Number.isFinite(s.r) || isVec(s.r, 2))) err(`stroke ${s.id}: r must be a number or two`);
