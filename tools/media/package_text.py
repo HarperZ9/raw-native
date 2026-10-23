@@ -102,22 +102,42 @@ def draw_label(img, x: float, y: float, text: str, spec: dict, scale: float, hot
     d.text((tx, ty), text, font=f, fill=colour)
 
 
+def frame_ticks(d, W: int, H: int, spec: dict, scale: float, alpha: float) -> None:
+    """The site's corner registration ticks (harperz9.github.io), drawn in a quiet ink."""
+    m, L, w = int(0.03 * scale), int(0.03 * scale), max(1, int(0.0016 * scale))
+    c = rgb(spec["ink"]) + (int(110 * alpha),)
+    for x, y, sx, sy in ((m, m, 1, 1), (W - m, m, -1, 1), (m, H - m, 1, -1), (W - m, H - m, -1, -1)):
+        d.line([x, y, x + sx * L, y], fill=c, width=w)
+        d.line([x, y, x, y + sy * L], fill=c, width=w)
+
+
 def draw_card(img, lines: list[dict], spec: dict, scale: float, alpha: float = 1.0) -> None:
-    """A title card: ground colour, lines centred; each line {text, size, weight, mono, hot}."""
+    """A title card in the site's editorial layout: paper ground, corner ticks, a left-aligned
+    heading with a hairline rule under it, then the remaining lines. A card whose lines are all
+    mono is a terminal or file excerpt: one left edge, block centred. Each line is
+    {text, size, weight, mono, hot}."""
     W, H = img.size
     d = ImageDraw.Draw(img, "RGBA")
     d.rectangle([0, 0, W, H], fill=rgb(spec["ground"]) + (int(255 * alpha),))
+    frame_ticks(d, W, H, spec, scale, alpha)
+    code = all(l.get("mono") for l in lines)
+    room = W * (0.84 if not code else 0.92)
+
     def faces(k):
         return [font(spec["fonts"]["mono" if l.get("mono") else "sans"], max(12, int(l.get("size", 0.06) * scale * k)), None if l.get("mono") else l.get("weight", 700)) for l in lines]
     fonts = faces(1.0)
     widest = max(d.textlength(l["text"], font=f) for l, f in zip(lines, fonts))
-    if widest > W * 0.92:   # a narrow cut: shrink the whole card so its longest line fits
-        fonts = faces(W * 0.92 / widest)
-    gaps = [int(f.size * 1.35) for f in fonts]
-    y = (H - sum(gaps)) / 2
-    code = all(l.get("mono") for l in lines)   # a terminal or file excerpt: one left edge, block centred
-    left = (W - max(d.textlength(l["text"], font=f) for l, f in zip(lines, fonts))) / 2
-    for l, f, g in zip(lines, fonts, gaps):
-        tw = d.textlength(l["text"], font=f)
-        d.text((left if code else (W - tw) / 2, y), l["text"], font=f, fill=rgb(spec["hot"] if l.get("hot") else spec["ink"]) + (int(255 * alpha),))
+    if widest > room:   # a narrow cut: shrink the whole card so its longest line fits
+        fonts = faces(room / widest)
+        widest = room
+    gaps = [int(f.size * 1.3) for f in fonts]
+    rule_gap = int(fonts[0].size * 0.55) if not code and len(lines) > 1 and fonts[0].size > 1.2 * fonts[1].size else 0   # a title over smaller lines
+    y = (H - sum(gaps) - rule_gap) / 2
+    left = (W - widest) / 2 if code else W * 0.08
+    for i, (l, f, g) in enumerate(zip(lines, fonts, gaps)):
+        d.text((left, y), l["text"], font=f, fill=rgb(spec["hot"] if l.get("hot") else spec["ink"]) + (int(255 * alpha),))
         y += g
+        if i == 0 and rule_gap:
+            ry = y + rule_gap * 0.25
+            d.line([left, ry, W - W * 0.08, ry], fill=rgb(spec["ink"]) + (int(70 * alpha),), width=max(1, int(0.0016 * scale)))
+            y += rule_gap
