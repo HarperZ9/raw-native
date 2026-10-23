@@ -75,7 +75,7 @@ def draw_caption(img, cue_lines: list[str], spec: dict, scale: float, top: bool 
     else:
         y1 = H - int(spec.get("caption_bottom", 0.075) * scale)
         y0 = y1 - bh
-    d.rectangle([x0, y0, x0 + bw, y1], fill=rgb(spec["ground"]) + (232,))
+    d.rectangle([x0, y0, x0 + bw, y1], fill=rgb(spec["ground"]) + (246,))
     for i, l in enumerate(cue_lines):
         d.text(((W - widths[i]) / 2, y0 + pad_y + i * lh), l, font=f, fill=rgb(spec["ink"]))
 
