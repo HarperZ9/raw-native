@@ -22,13 +22,14 @@ struct Recorded : Host {
     void drain() override { while (pos < stream.size() && host_tagged(stream[pos]) && ks[pos] <= vmcount) { Json r = stream[pos++]; apply(r); } }
     bool pending(std::string& kind) override {
         drain();
-        if (pos >= stream.size() || stream[pos].str_or("t") != "h") return false;
+        if (tr->frozen || pos >= stream.size() || stream[pos].str_or("t") != "h") return false;
         std::string f = stream[pos].str_or("f");
         if (f == "runs.take" || f == "combat.take" || f == "sneaks.take") { kind = f; return true; }
         return false;
     }
     Json call(const std::string& f, const Json& args) override {
         calls++;
+        if (tr->frozen) return Json();
         while (pos < stream.size() && stream[pos].str_or("t") != "h") {
             Json r = stream[pos];
             if (r.str_or("t") == "rng") {
@@ -60,7 +61,7 @@ ReplayResult replay(const std::string& golden, const std::vector<Source>& source
     while (std::getline(in, line)) {
         if (line.empty()) continue;
         Json j = parse_json(line); std::string t = j.str_or("t");
-        if (t == "begin" || t == "talk" || t == "take" || t == "after" || t == "next") driver.push_back(j);
+        if (t == "begin" || t == "talk" || t == "take" || t == "after" || t == "next") { driver.push_back(j); vmseen++; }
         else if (t == "h" || t == "rng" || t == "ev" || j.str_or("s") == "h") { host.stream.push_back(j); host.ks.push_back(vmseen); }
         else if (t != "stop") vmseen++;
     }
@@ -74,22 +75,23 @@ ReplayResult replay(const std::string& golden, const std::vector<Source>& source
         std::set<std::string> exits; if (auto* e = b.get("exits")) for (auto& x : e->a) exits.insert(x.s);
         const Json* vars = b.get("vars"); const Json* ck = b.get("clock");
         vm.init(ck ? ck->n : 0, b.str_or("place"), vars ? *vars : Json::obj(), flags, exits);
-        tr.emit(b); host.drain();
-        for (size_t d = 1; d < driver.size() && host.error.empty(); d++) {
+        tr.emit(b); host.vm_record();
+        for (size_t d = 1; d < driver.size() && host.error.empty() && !tr.frozen; d++) {
             const Json& r = driver[d]; std::string t = r.str_or("t");
             host.drain();
-            if (t == "talk") { tr.emit(Json::obj().set("t", Json::str("talk")).set("node", Json::str(r.str_or("node"))).set("clock", Json::num(vm.clock()))); host.drain(); vm.start(r.str_or("node")); }
+            if (t == "talk") { tr.emit(Json::obj().set("t", Json::str("talk")).set("node", Json::str(r.str_or("node"))).set("clock", Json::num(vm.clock()))); host.vm_record(); vm.start(r.str_or("node")); }
             else if (t == "take") {
                 const Json* i = r.get("i"); int idx = i ? (int)i->n : 0;
                 std::string key = idx >= 0 && idx < (int)vm.beat().options.size() ? vm.beat().options[idx].key : "";
-                tr.emit(Json::obj().set("t", Json::str("take")).set("i", Json::num(idx)).set("key", Json::str(key))); host.drain(); vm.choose(idx);
+                tr.emit(Json::obj().set("t", Json::str("take")).set("i", Json::num(idx)).set("key", Json::str(key))); host.vm_record(); vm.choose(idx);
             }
-            else if (t == "after") { tr.emit(r); host.drain(); vm.after(r.str_or("k")); }
-            else if (t == "next") { tr.emit(r); host.drain(); vm.next_scene(); }
+            else if (t == "after") { tr.emit(r); host.vm_record(); vm.after(r.str_or("k")); }
+            else if (t == "next") { tr.emit(r); host.vm_record(); vm.next_scene(); }
         }
         host.drain();
     } catch (std::exception& e) { R.error = std::string("VM error: ") + e.what(); }
-    if (R.error.empty()) R.error = host.error;
+    if (R.error.empty() && !tr.frozen) R.error = host.error;
+    if (tr.frozen) R.error.clear();
     for (auto& l : tr.lines) { R.trace += l; R.trace += '\n'; }
     R.host_calls = host.calls; R.vm_records = tr.lines.size();
     return R;
