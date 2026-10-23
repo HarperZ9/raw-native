@@ -24,8 +24,9 @@ Lighting townDusk();
 // P23's town at night (addendum C): moonlight only, the sodium spot over the street.
 Lighting townNight();
 
-// Which scene the ray caster traces: P5's still life, or P23's three-quarter town.
-enum class SceneKind { StillLife, Town };
+// Which scene the ray caster traces: P5's still life, P23's three-quarter town, or the
+// conversation room (art_room.hpp).
+enum class SceneKind { StillLife, Town, Room };
 
 struct View {
     D3 eye{0, 0, 5}, target{0, 0, 0};
@@ -64,6 +65,7 @@ struct Hit { double t{-1}; D3 n{0, 0, 0}; int obj{0}, mat{0}; D3 albedo{0, 0, 0}
 Hit trace(const D3& o, const D3& d, SceneKind scene = SceneKind::StillLife);
 bool occluded(const D3& o, const D3& d, double tMax, SceneKind scene = SceneKind::StillLife);
 Hit traceTown(const D3& o, const D3& d);   // art_scene_town.cpp
+Hit traceRoom(const D3& o, const D3& d);   // art_scene_room.cpp
 
 // The town's people, lamps and living points of interest (P23's focus director and checks).
 struct TownPerson { D3 foot; int obj{0}; bool onStreet{false}; };

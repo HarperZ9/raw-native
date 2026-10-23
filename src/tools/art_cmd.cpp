@@ -26,14 +26,19 @@ int artCommand(int argc, char** argv) {
         else if (!std::strcmp(argv[i], "--no-cpu")) o.cpu = false;
         else if (!std::strcmp(argv[i], "--gpu")) o.gpu = true;
         else if (!std::strcmp(argv[i], "--cost")) o.cost = true;
+        else if (!std::strcmp(argv[i], "--width") && i + 1 < argc) o.width = std::atoi(argv[++i]);
+        else if (!std::strcmp(argv[i], "--height") && i + 1 < argc) o.height = std::atoi(argv[++i]);
+        else if (!std::strcmp(argv[i], "--fps") && i + 1 < argc) o.fps = std::atoi(argv[++i]);
+        else if (!std::strcmp(argv[i], "--shot") && i + 1 < argc) o.shot = argv[++i];
         else return usage();
     }
-    if (o.threads < 1 || o.frames < 12 || o.repeats < 1) return usage();
+    if (o.threads < 1 || o.frames < 12 || o.repeats < 1 || o.width < 16 || o.height < 16 || o.fps < 1) return usage();
     std::error_code ec;
     std::filesystem::create_directories(o.out, ec);
     if (ec) { std::printf("art: cannot create %s\n", o.out.c_str()); return 2; }
     if (o.feature == "strokes") return art_cmd::strokes(o);
     if (o.feature == "tiltshift") return art_cmd::tiltshift(o);
+    if (o.feature == "room") return art_cmd::room(o);
     return usage();
 }
 }  // namespace raw

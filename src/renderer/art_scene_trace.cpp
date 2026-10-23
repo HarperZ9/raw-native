@@ -24,6 +24,7 @@ void ground(const D3& o, const D3& d, Hit& best) {
 
 Hit trace(const D3& o, const D3& d, SceneKind scene) {
     if (scene == SceneKind::Town) return traceTown(o, d);
+    if (scene == SceneKind::Room) return traceRoom(o, d);
     Hit best;
     ground(o, d, best);
     box(kWall, o, d, best);
