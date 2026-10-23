@@ -107,7 +107,12 @@ def draw_card(img, lines: list[dict], spec: dict, scale: float, alpha: float = 1
     W, H = img.size
     d = ImageDraw.Draw(img, "RGBA")
     d.rectangle([0, 0, W, H], fill=rgb(spec["ground"]) + (int(255 * alpha),))
-    fonts = [font(spec["fonts"]["mono" if l.get("mono") else "sans"], max(12, int(l.get("size", 0.06) * scale)), None if l.get("mono") else l.get("weight", 700)) for l in lines]
+    def faces(k):
+        return [font(spec["fonts"]["mono" if l.get("mono") else "sans"], max(12, int(l.get("size", 0.06) * scale * k)), None if l.get("mono") else l.get("weight", 700)) for l in lines]
+    fonts = faces(1.0)
+    widest = max(d.textlength(l["text"], font=f) for l, f in zip(lines, fonts))
+    if widest > W * 0.92:   # a narrow cut: shrink the whole card so its longest line fits
+        fonts = faces(W * 0.92 / widest)
     gaps = [int(f.size * 1.35) for f in fonts]
     y = (H - sum(gaps)) / 2
     for l, f, g in zip(lines, fonts, gaps):
