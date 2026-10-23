@@ -10,7 +10,20 @@ on:
 permissions:
   contents: write
 jobs:
+  discover:
+    # Blocks the release when the repository is missing what search and
+    # registries read. Report and fixes: the job log. Tool: HarperZ9/discover.
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - uses: HarperZ9/discover@v0.1.1
+        with:
+          mode: repo
+
   media:
+    needs: discover
     uses: ./.github/workflows/media.yml
     with:
       tag: ${{ github.event.release.tag_name || inputs.tag }}
