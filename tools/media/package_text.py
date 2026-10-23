@@ -115,7 +115,9 @@ def draw_card(img, lines: list[dict], spec: dict, scale: float, alpha: float = 1
         fonts = faces(W * 0.92 / widest)
     gaps = [int(f.size * 1.35) for f in fonts]
     y = (H - sum(gaps)) / 2
+    code = all(l.get("mono") for l in lines)   # a terminal or file excerpt: one left edge, block centred
+    left = (W - max(d.textlength(l["text"], font=f) for l, f in zip(lines, fonts))) / 2
     for l, f, g in zip(lines, fonts, gaps):
         tw = d.textlength(l["text"], font=f)
-        d.text(((W - tw) / 2, y), l["text"], font=f, fill=rgb(spec["hot"] if l.get("hot") else spec["ink"]) + (int(255 * alpha),))
+        d.text((left if code else (W - tw) / 2, y), l["text"], font=f, fill=rgb(spec["hot"] if l.get("hot") else spec["ink"]) + (int(255 * alpha),))
         y += g
