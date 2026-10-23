@@ -11,7 +11,7 @@ option(RAW_NATIVE_BUILD_TESTS "Build the raw-native unit tests" ${PROJECT_IS_TOP
 # The library: every layer except the RHI backends and the shader libraries,
 # which a build picks in cmake/gpu.cmake (docs/architecture/ARCHITECTURE.md).
 # scripts/check_layers.py enforces which layer may include which.
-set(RAW_NATIVE_LIB_LAYERS core cert scene assets graph renderer tools)
+set(RAW_NATIVE_LIB_LAYERS core cert scene assets graph renderer story game tools)
 set(LIB_SRCS "")
 foreach(layer ${RAW_NATIVE_LIB_LAYERS})
     file(GLOB layer_srcs CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/${layer}/*.cpp")
@@ -90,6 +90,12 @@ set(RAW_NATIVE_NULL_BACKEND
     "${CMAKE_CURRENT_SOURCE_DIR}/src/rhi/null/null_device.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/renderer/gpu/shaders_none.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/rhi/null/hw_null.cpp")
+
+add_executable(lw_trace_replay app/lw_trace_replay.cpp)
+target_link_libraries(lw_trace_replay PRIVATE raw_native)
+if(MINGW)
+    target_link_options(lw_trace_replay PRIVATE -static)
+endif()
 
 if(RAW_NATIVE_BUILD_TESTS)
     enable_testing()
