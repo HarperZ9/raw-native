@@ -7,5 +7,5 @@
   A one-texel blit offset fails every frame. Resize, minimise (X11), fullscreen and a device loss
   injected at the RHI all recover. Vulkan has no call that removes a device, so recovery from a
   driver's own loss is not checked. Not in this change: HDR10 on Vulkan, the identity matrix and
-  the N1 passes on Vulkan, and Steam Deck. Bounds were committed before the first run:
+  the N1 passes on Vulkan, and Steam Deck. Bounds:
   `evidence/n3-vulkan-raster-bounds.json`.

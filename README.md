@@ -5,8 +5,9 @@
 
 # raw-native
 
-A C++23 renderer that checks fast real-time effects, and its own GPU output,
-against slower reference renders.
+A C++23 renderer that runs a fast real-time effect beside a slower reference
+version of it and tells you how far apart they are. It runs on Windows, Linux
+and WebAssembly, with optional D3D12 and WebGPU builds.
 
 ```bash
 raw_native_cli --out ./out
@@ -17,34 +18,30 @@ raw_native_cli --out ./out
 [![license](https://img.shields.io/badge/license-FSL--1.1--MIT-e6e1d6?style=flat-square&labelColor=1a1712)](LICENSE)
 ![C++23](https://img.shields.io/badge/language-C%2B%2B23-e6e1d6?style=flat-square&labelColor=1a1712)
 
-raw-native draws a 3D scene on the CPU using only the C++ standard library and
-its own code. Its first job is a test you can rerun. It computes ambient
-occlusion twice: once with the screen-space approximation real-time engines
-use, and once by ray tracing. It then measures how far the approximation is
-from the ray-traced result. Each run writes the shaded frame, both occlusion
-images, a per-pixel error map and a JSON certificate holding the error figures
-and a verdict, `verified` inside the tolerance or `refuted` outside it.
-`raw_native_cli verify` later re-hashes the files and recomputes the numbers.
+raw-native draws a 3D scene on the CPU with the C++ standard library and its
+own code. The default run computes ambient occlusion two ways: with the
+screen-space approximation real-time engines use, and by ray tracing. It
+writes the shaded frame, both occlusion images, a per-pixel error map and a
+JSON certificate with the error figures and a verdict. The verdict is
+`verified` when the approximation is inside the tolerance and `refuted` when
+it is outside. `raw_native_cli verify` re-hashes the files later and
+recomputes the numbers.
 
-The same code builds for Windows, Linux and WebAssembly, and the WebAssembly
-build writes byte-identical output files. Optional builds draw the frame on
-the GPU through D3D12 or WebGPU and compare every GPU frame with the CPU
-frame. The default build has no GPU code. The one file it vendors is
-`superstack.hpp`, a small FSL-1.1-MIT header for the receipt format, pinned by
-hash.
+Windows, Linux and WebAssembly builds write byte-identical output files. The
+optional GPU builds render the frame through D3D12 or WebGPU and compare each
+GPU frame with the CPU frame. The default build has no GPU code and vendors one
+header, `superstack.hpp`, for the receipt format.
 
-It is for graphics programmers who want a reference to test an occlusion,
-shading or colour implementation against, and for anyone who needs renders
-that come out the same on every machine.
+Use it as a reference to test an occlusion, shading or colour implementation
+against, or when you need renders that come out the same on every machine.
 
 | Shaded frame | Ray-traced AO (reference) | Screen-space AO (approximation) | Error map |
 |---|---|---|---|
 | ![frame](docs/images/default-frame.png) | ![ray-traced AO](docs/images/default-ao_rt.png) | ![screen-space AO](docs/images/default-ao_ss.png) | ![error](docs/images/default-ao_error.png) |
 
-The default view above, rendered at 512 x 512, comes back `refuted`: the
-approximation's error is 0.135 RMSE against a tolerance of 0.12. A top-down
-view of the same scene comes back `verified` at 0.083. Its certificate, with
-the output digests shortened here:
+The default view above, at 512 x 512, comes back `refuted`: an RMSE of 0.135
+against a tolerance of 0.12. A top-down view of the same scene comes back
+`verified` at 0.083. Its certificate, with the output digests shortened:
 
 ```json
 {"claim":"screen-space AO matches ray-traced ground truth within tolerance",
@@ -59,82 +56,9 @@ the output digests shortened here:
  "outputs":{"ao_rt.pfm":"eb60b22d4151...","ao_ss.pfm":"fddc169c7fca...","mask.pgm":"892aacd21cae...","...":"..."}}
 ```
 
-The first fields are the 0.2.0 certificate, unchanged. From `schema` on, the
-certificate records the renderer version, every parameter that changes the
-pixels, the sample counts, the measured values at full float precision and
-the SHA-256 of every file the verdict was judged from.
-
-## What else is in it
-
-Each item is a `raw_native_cli` subcommand or a module in this repository, and
-each is described further down this page or in its `--help` text.
-
-- **A software rasterizer** with a modern mode and a low-resolution retro mode,
-  on the repository's own scenes (`swr-render`).
-- **A path tracer** with albedo, normal, depth, motion and variance outputs
-  (`rt-pathtrace`), plus a CPU reference for each GPU path-tracing check.
-- **glTF and GLB models** on the CPU path (`--model`), and a browser viewer
-  that renders a model on WebGPU and on the CPU and shows the error map
-  between them (`web/viewer/`).
-- **Colour output**: eleven tone-mapping and display-encoding pipelines,
-  including the ACES 2.0 output transform, measured against OpenColorIO
-  (`colour`).
-- **Physically based materials** checked against a float64 reference
-  (`material-gallery`, `pbr-parity`).
-- **Stylised looks** such as ordered dithering, CRT simulation, pixel art and
-  painterly strokes, each with its own tests (`tests/test_style_*.cpp`).
-- **WebGPU modules** for particles, compositing and mathematical animation
-  (`web/`).
-
-## Limits
-
-- It renders on the CPU, so it is slow next to a GPU engine: the default
-  256 x 256 frame with both occlusion passes takes about a second. It has no
-  editor or asset pipeline; scenes come from code or glTF files.
-- The default view fails its own occlusion check. That is a measured result
-  about the screen-space method, and the page keeps it.
-- GPU paths are optional builds. Hardware results come from one RTX 4090; CI
-  runs the GPU checks on software adapters (WARP and SwiftShader) only.
-- Several research tracks in the [changelog](CHANGELOG.md) are recorded
-  failures, such as ray reconstruction v4, which does not beat SVGF on FLIP.
-- The C++ API is versioned by numbered snapshots, and a snapshot can change
-  between minor releases; each change ships a migration note under `api/`.
-- The licence is FSL-1.1-MIT: you can use and modify it for anything except a
-  competing commercial product, and each version becomes MIT two years after
-  release (see [License](#license)).
-
-## How it compares
-
-- **PBRT** and **Mitsuba 3** are research renderers with far broader light
-  transport. raw-native is much smaller and pairs one reference with the
-  real-time method it checks, then writes the comparison to a file.
-- **Filament** and **bgfx** are GPU renderers for shipping apps and games,
-  much faster and more complete. They do not compare their output with a
-  reference on every frame.
-- **NVIDIA FLIP** and image-diff tools measure the difference between two
-  images you supply. raw-native renders both images and the comparison in
-  one run, from parameters recorded beside them.
-
-## See it work, step by step
-
-The [animated explainer](https://harperz9.github.io/repo-explainers/raw-native.html)
-follows one render from the G-buffer through both occlusion estimators to the
-reconcile, the certificate and `verify`. It draws a 2D slice that runs the same
-rules as `ray_ao.cpp` and `ssao.cpp`, shows the five views against the
-tolerance, and can run the WebAssembly build in the page. Its source is
-[docs/explainer/index.html](docs/explainer/index.html).
-
-## Watch
-
-Rendered by this repository's v0.6.0 release from its own output, so every number on screen is one that release produced.
-
-[![Checking the light: a film rendered by the v0.6.0 release](https://harperz9.github.io/media/releases/raw-native/v0.6.0/ao-check/poster.jpg)](https://harperz9.github.io/media/releases/raw-native/v0.6.0/ao-check/index.html)
-
-**[Checking the light](https://harperz9.github.io/media/releases/raw-native/v0.6.0/ao-check/index.html)** (53 s). Rendered from values read at commit 158afa8: [facts.json](https://harperz9.github.io/media/releases/raw-native/v0.6.0/ao-check/facts.json). The narration is a synthesized version of the author's voice.
-
-[![raw-native: build, render, check: a film rendered by the v0.6.0 release](https://harperz9.github.io/media/releases/raw-native/v0.6.0/first-run/poster.jpg)](https://harperz9.github.io/media/releases/raw-native/v0.6.0/first-run/index.html)
-
-**[raw-native: build, render, check](https://harperz9.github.io/media/releases/raw-native/v0.6.0/first-run/index.html)** (37 s). Rendered from values read at commit 158afa8: [facts.json](https://harperz9.github.io/media/releases/raw-native/v0.6.0/first-run/facts.json). The narration is a synthesized version of the author's voice.
+`params` holds every setting that changes the pixels, so passing it back as a
+params file replays the render. `outputs` holds the SHA-256 of each file the
+verdict was computed from.
 
 ## Quick start
 
@@ -179,6 +103,73 @@ Rendered by this repository's v0.6.0 release from its own output, so every numbe
    ./build/raw_native_cli --out ./out        # on Windows: build\Release\raw_native_cli.exe
    ```
 
+## What else is in it
+
+Each item is a `raw_native_cli` subcommand or a module in this repository, and
+each is described further down this page or in its `--help` text.
+
+- **A software rasterizer** with a modern mode and a low-resolution retro mode,
+  on the repository's own scenes (`swr-render`).
+- **A path tracer** with albedo, normal, depth, motion and variance outputs
+  (`rt-pathtrace`), plus a CPU reference for each GPU path-tracing check.
+- **glTF and GLB models** on the CPU path (`--model`), and a browser viewer
+  that renders a model on WebGPU and on the CPU and shows the error map
+  between them (`web/viewer/`).
+- **Colour output**: eleven tone-mapping and display-encoding pipelines,
+  including the ACES 2.0 output transform, measured against OpenColorIO
+  (`colour`).
+- **Physically based materials** checked against a float64 reference
+  (`material-gallery`, `pbr-parity`).
+- **Stylised looks** such as ordered dithering, CRT simulation, pixel art and
+  painterly strokes, each with its own tests (`tests/test_style_*.cpp`).
+- **WebGPU modules** for particles, compositing and mathematical animation
+  (`web/`).
+
+## Before you use it
+
+- It renders on the CPU, so it is slow next to a GPU engine: the default
+  256 x 256 frame with both occlusion passes takes about a second. There is no
+  editor or asset pipeline; scenes come from code or glTF files.
+- The GPU paths are optional builds. Hardware timings come from one RTX 4090.
+- The C++ API is versioned by numbered snapshots, and a snapshot can change
+  between minor releases. Each change ships a migration note under `api/`.
+- The licence is FSL-1.1-MIT: use and modify it for anything except a
+  competing commercial product. Each version becomes MIT two years after
+  release (see [License](#license)).
+
+## How it compares
+
+- **PBRT** and **Mitsuba 3** are research renderers with far broader light
+  transport. raw-native is much smaller and pairs one reference with the
+  real-time method it checks, then writes the comparison to a file.
+- **Filament** and **bgfx** are GPU renderers for shipping apps and games,
+  much faster and more complete. They do not compare their output with a
+  reference on every frame.
+- **NVIDIA FLIP** and image-diff tools measure the difference between two
+  images you supply. raw-native renders both images and the comparison in
+  one run.
+
+## See it work, step by step
+
+The [animated explainer](https://harperz9.github.io/repo-explainers/raw-native.html)
+follows one render from the G-buffer through both occlusion estimators to the
+comparison, the certificate and `verify`. It draws a 2D slice that runs the
+same rules as `ray_ao.cpp` and `ssao.cpp`, shows the five views against the
+tolerance, and can run the WebAssembly build in the page. Its source is
+[docs/explainer/index.html](docs/explainer/index.html).
+
+## Watch
+
+Two short films rendered by the v0.6.0 release from its own output.
+
+[![Checking the light: a film rendered by the v0.6.0 release](https://harperz9.github.io/media/releases/raw-native/v0.6.0/ao-check/poster.jpg)](https://harperz9.github.io/media/releases/raw-native/v0.6.0/ao-check/index.html)
+
+**[Checking the light](https://harperz9.github.io/media/releases/raw-native/v0.6.0/ao-check/index.html)** (53 s). The narration is a synthesized version of the author's voice.
+
+[![raw-native: build, render, check: a film rendered by the v0.6.0 release](https://harperz9.github.io/media/releases/raw-native/v0.6.0/first-run/poster.jpg)](https://harperz9.github.io/media/releases/raw-native/v0.6.0/first-run/index.html)
+
+**[raw-native: build, render, check](https://harperz9.github.io/media/releases/raw-native/v0.6.0/first-run/index.html)** (37 s). The narration is a synthesized version of the author's voice.
+
 ## What one run writes
 
 | File | Contents |
@@ -214,8 +205,7 @@ python tests/web/colour_grid.py --cli build/Release/raw_native_cli.exe          
 python tools/colour/ocio_compare.py --cli build/Release/raw_native_cli.exe      # C++ vs OpenColorIO 2.6.0
 ```
 
-Measured on the 36,787-value grid fixed in `evidence/m1-colour-bounds.json`
-before the first run:
+Measured on the 36,787-value grid in `evidence/m1-colour-bounds.json`:
 - **WGSL against C++:** every channel within one 8-bit code in all eleven pipelines,
   on Chrome's CPU WebGPU adapter (`evidence/m1-colour-gpu-swiftshader.json`).
 - **C++ against OpenColorIO 2.6.0:** largest CIEDE2000 0.0027 for ACES 2.0 SDR
@@ -241,7 +231,7 @@ with 262,144 particles on an RTX 4090. The same WGSL runs natively:
 raw_native_cli threads --world 5 --frames 90 --width 960 --height 540 --out ./out   # D3D12 build
 ```
 
-Threads is creative media: it has no CPU reference and writes no certificate.
+Threads has no CPU reference and writes no certificate.
 Open `bench/threads.html` through `python bench/serve.py` to time it in a browser.
 
 ### Textures, compositing and one device
@@ -302,10 +292,9 @@ in extended tone-mapping mode. `host.hdr` says whether the browser granted it. T
 pipeline `aces2-hdr1000/srgb-extended` then carries light above SDR white to the
 screen: on the canvas, 1.0 is SDR white and brighter values use the display's
 headroom. `tests/web/hdr_output.py` checks this end to end against the C++
-reference. `tests/web/hdr_signal.py` checks the HDR signal itself: the PQ and
+reference. `tests/web/hdr_signal.py` checks the encoded HDR signal: the PQ and
 extended sRGB encodes and the HDR tone map against a float64 reference of the
-published formulas, and the GPU encode against the CPU. It checks the signal, not
-the light a panel emits.
+published formulas, and the GPU encode against the CPU.
 
 The shader library's looks are post passes too. `web/shaders/post.mjs` registers:
 - `crt-classic`, the Studio's tube: scanlines, masks, bloom, halation, curvature,
@@ -329,8 +318,8 @@ reference to within one 8-bit code of it, on a committed frame set
 (`tests/web/post_frames.mjs`).
 
 The vector pass is measured against a CPU reference (`web/motion/vector_ref.mjs`,
-16 x 16 samples a pixel) on twenty cases fixed in
-`evidence/m1-vector-corpus.json` before the first run:
+16 x 16 samples a pixel) on twenty cases in
+`evidence/m1-vector-corpus.json`:
 `python tests/web/vector_corpus.py --sheet sheet.png`. On Chrome's CPU adapter
 every case is inside its bounds: paint inside shapes within 0.0003, nothing drawn
 outside them, and edge pixels within 0.03 on average
@@ -361,9 +350,8 @@ things (walls, buildings) are sprites or vector items placed with `web/world/iso
 ## Media at every release
 
 `raw-native media render` turns a repo's `docs/media/media.json` into videos.
-It reads its numbers from the commit it runs at, so a video cannot describe a
-different build from the one it ships with. raw-native's own spec renders two
-pieces:
+It reads its numbers from the commit it runs at. raw-native's own spec renders
+two pieces:
 - **"Checking the light"**: the reference and fast ambient occlusion maps from
   the release's own render, their difference, and the certificate's verdict.
 - **A first-run walkthrough**: configure, build, test, render, verify,
@@ -398,8 +386,7 @@ machine and replaces them (ADR 0012).
   writes `frames.sha256`. `tools/media/determinism.py SCENE` renders twice and
   compares. CI does this for two seconds of a scene on every push. On Chrome's CPU
   adapter at 640 x 360, all 1,456 frames of "Checking the light" matched
-  (`evidence/m1-frame-determinism-swiftshader.json`). That shows identity on one
-  adapter and browser, not across GPUs or drivers.
+  (`evidence/m1-frame-determinism-swiftshader.json`).
 - **Budgets.** `budgets` in `media.json` sets limits; `tools/media/budget.py` fails
   a render that exceeds them. CI holds each four-second smoke render to 120 s.
 - **Energy.** `tools/media/energy.py SCENE` integrates the GPU's reported board
@@ -456,8 +443,7 @@ with a SHA-256 seal over every field, and it reports two verdicts separately:
   certificate's verdict, with the same RMSE, maximum error and bound.
 
 It also records the scene in the contract's scene format, the hash of the
-frame's raw RGB8 bytes (`frame.rgb8`), the digest of every file written and
-four `does_not_prove` lines. For the default view, the scene hash equals the
+frame's raw RGB8 bytes (`frame.rgb8`) and the digest of every file written. For the default view, the scene hash equals the
 contract's published reference scene, and the ray-traced AO bytes equal the
 hash superstack's separate Python renderer produced. The contract's pixel
 reference was drawn with lighting model 1; the default frame now uses model 2,
@@ -480,7 +466,7 @@ receipts from MSVC on Windows and GCC on Linux, and `raw_native_cli verify`
 passes on it. In 0.5.0 the wasm build wrote no receipt, because superstack
 0.1.0's header did not compile with libc++.
 
-## Check a certificate without trusting the renderer
+## Check a run's output
 
 `raw_native_cli verify <dir>` renders nothing. It re-hashes every file the
 certificate lists, recomputes the reconcile from `ao_rt.pfm`, `ao_ss.pfm` and
@@ -488,10 +474,9 @@ certificate lists, recomputes the reconcile from `ao_rt.pfm`, `ao_ss.pfm` and
 recorded values. Exit code 0 means every check matches, 3 means a mismatch and
 2 means a file is missing.
 
-`scripts/recheck.py <dir>` does the same in Python with the standard library
-only. It shares no code with the C++ verifier, so a bug in one shows up as a
-disagreement with the other. Both reproduce the recorded RMSE bit for bit,
-because the float buffers on disk are the ones the renderer measured.
+`scripts/recheck.py <dir>` runs the same check in Python, with the standard
+library only and no code shared with the C++ verifier. Both reproduce the
+recorded RMSE bit for bit.
 
 To replay a render, pass the certificate's `params` object back as a params
 file. The same build on the same platform gives the same output digests.
@@ -581,17 +566,15 @@ passes in `src/renderer/gpu/shaders/` into `src/renderer/gpu/shaders/hlsl/`
 and writes each pass's binding layout beside them. The generated files are
 committed, so the build needs no Python. The translator accepts a strict WGSL
 subset and stops on anything outside it. CI regenerates the HLSL on every push
-and fails when it differs from the committed files, so the two shader trees
-cannot drift apart without a red build. A hand-written HLSL copy with a parity
-test would need a GPU to catch drift, and CI runners have none.
+and fails when it differs from the committed files.
 
 On WARP the D3D12 path reproduces the CPU reference bit for bit: all 16 renders
 of the check matrix below give an RMSE of exactly 0 on every channel, and
 all 16 frames are byte-identical to the CPU frame
-(`evidence/d3d12-warp-checks.json`). WARP is software, so this is evidence that
-the translation is exact. It is not GPU evidence. CI runs the same WARP check
-on GitHub's Windows runner, and reports the hardware test as skipped, with the
-reason, because the runner has no GPU.
+(`evidence/d3d12-warp-checks.json`). WARP is a software rasterizer, so this
+checks the shader translation; the hardware results are under
+[Measured results](#measured-results). CI runs the same WARP check on GitHub's
+Windows runner and skips the hardware test, because the runner has no GPU.
 
 ### WebGPU in a browser
 
@@ -626,11 +609,10 @@ Over the pixels both sides cover:
 | Screen-space AO, ray-traced AO, frame (RMSE, 0..1) | 0.01 |
 | The frame's own AO verdict | must equal the CPU's; RMSE within 0.005 |
 
-The bounds and the reasoning behind them are in `raw/cert/gpu_tolerance.hpp`, which
-was committed before the first line of GPU code and before any GPU output was
-seen. Both GPU backends are judged against the same bounds. Maximum errors are
-reported and never bounded. The certificate also records the backend, the
-adapter and driver, both render times and five `does_not_prove` lines.
+The bounds and the reasoning behind them are in `raw/cert/gpu_tolerance.hpp`.
+Both GPU backends use the same bounds. Maximum errors are reported but not
+bounded. The certificate also records the backend, the adapter and driver, and
+both render times.
 
 ## Point the camera anywhere
 
@@ -673,8 +655,7 @@ were measured on 4 October 2026 with NVIDIA driver 610.88 (DXGI reports
   (ray-traced AO, low view) against a bound of 0.01, and the largest single
   pixel error is 1/64, one hemisphere ray. Each GPU frame's own AO verdict
   equals the CPU's. D3D12 and WebGPU report the same RMSE and maximum error on
-  all 104 compared channel values; that is equal summaries, not a per-pixel
-  comparison of the two GPU frames. The certificates also report byte
+  all 104 compared channel values. The certificates also report byte
   identity of the 8-bit frames: the GPU frame equals the CPU frame (`MATCH`) in
   13 of 16 renders on both backends. The other 3 (`DRIFT`, still `verified`)
   are the ray-traced renders at 512 x 512, 1440 x 900 and the low view, where
@@ -698,28 +679,25 @@ were measured on 4 October 2026 with NVIDIA driver 610.88 (DXGI reports
 | 1440 x 900 | No RT | 45.7 | 13.2 | 86.3 | 15.3 | 527 |
 
   The WebGPU times are measured inside the wasm module in headed Chrome 154,
-  so they include JavaScript promise turns and browser scheduling. They also
-  move between sessions: the v0.4.0 run on the same machine measured 6.8, 14.3
-  and 72.7 ms for the full frame with every channel, against 11.7, 34.5 and
-  94.9 here. Read the WebGPU columns as a range, not a point. The D3D12 times
-  are one run of 5 in one session, on one GPU, one driver and one OS build,
-  and another adapter or driver may differ in either direction. Small gaps
-  between neighbouring cells, such as 512 x 512 frame only with and without
-  RT, are within run-to-run noise. The CPU column
-  repeats the 0.3.0 table below. Evidence: `evidence/bench-d3d12-rtx4090.json`.
+  so they include JavaScript promise turns and browser scheduling, and they
+  vary between sessions: the v0.4.0 run on the same machine measured 6.8, 14.3
+  and 72.7 ms for the full frame with every channel. The D3D12 times are one
+  session on one GPU and driver. The CPU column repeats the 0.3.0 table below.
+  Evidence: `evidence/bench-d3d12-rtx4090.json`.
 - **Reproducible output:** the default render's `frame.ppm`,
   `certificate.json`, `channels.json` and both AO float files are
   byte-identical across MSVC, GCC 13.3 on Linux and the WebAssembly build, and
   from 0.5.1 so is `receipt.json`. CI compares the three builds' files on
   every push. It also checks the pixels, both AO files, `channels.json` and the
   certificate (apart from its version string) against the hashes 0.5.0 wrote.
-  `frame.ppm` is also unchanged from 0.2.0.
+  `frame.ppm` is also unchanged from 0.2.0. This was checked on x86-64 and
+  WebAssembly.
 - **WebAssembly matches native exactly.** For all five views below at
   512 x 512, the wasm build's eight output files hash the same as the native
   build's, so RMSE, maximum error, pixel count and verdict agree with zero
-  difference. The comparison tolerance (RMSE within 1e-4, maximum error within
-  1/64, identical pixels and verdict) was fixed before the first wasm run.
-  Evidence: `evidence/wasm-vs-native-512.json`.
+  difference, inside the comparison tolerance (RMSE within 1e-4, maximum error
+  within 1/64, identical pixels and verdict). Evidence:
+  `evidence/wasm-vs-native-512.json`.
 - **Thread count does not change output:** `--threads 1` and `--threads 8` give
   identical files.
 - **The verdict depends on the view.** Same scene, 512 x 512, tolerance 0.12:
@@ -731,6 +709,11 @@ were measured on 4 October 2026 with NVIDIA driver 610.88 (DXGI reports
 | Low | `--eye 6,1.5,2 --target 0,1,0` | 140,838 | 0.1659 | refuted |
 | Close | `--eye 2,2.5,3 --target 0,0.8,0 --fovy 0.7` | 214,043 | 0.2167 | refuted |
 | Wide | `--eye 5,5,8 --target 0,0.5,0 --fovy 1.2` | 88,869 | 0.0882 | verified |
+
+  The verdict uses RMSE only, so a passing view can still have bad pixels: the
+  high view passes with a 0.625 maximum error. The screen-space method takes 24
+  samples a pixel and misses much of the occlusion the 64-sample reference
+  finds, which is why most views come back `refuted`.
 
 - **Speed.** Median of 5 renders, in milliseconds: wall time for one full frame
   with no file output (`--bench 5`). "Full" includes the ray-traced reference.
@@ -751,30 +734,15 @@ were measured on 4 October 2026 with NVIDIA driver 610.88 (DXGI reports
   hot loops (per-pixel hashing and ray-triangle tests) do not auto-vectorize.
   The threaded wasm build is the fastest configuration measured. Native
   threading starts fresh threads for every pass, and that cost shows at small
-  frames; a persistent thread pool is the next step there. The machine was
-  running other work during these runs (about 60% total CPU load), which
-  affects the multi-threaded columns most. Raw runs: `evidence/bench-*.json`.
+  frames. The machine was running other work during these runs (about 60%
+  total CPU load), which affects the multi-threaded columns most. Raw runs:
+  `evidence/bench-*.json`.
 
 - **Serving the threaded build** needs `SharedArrayBuffer`, which browsers grant
   only to pages sent with `Cross-Origin-Opener-Policy: same-origin` and
   `Cross-Origin-Embedder-Policy: require-corp`. GitHub Pages cannot set those
   headers, so a Pages site can serve the single-threaded build and not the
   threaded one. `bench/serve.py` sets them for local runs.
-
-Limits, stated plainly:
-
-- The scene is one built-in test scene: a box on a ground plane under one
-  directional light. There is no model loader yet.
-- The ray-traced reference uses 64 hemisphere samples per pixel drawn from a
-  deterministic per-pixel hash. It is a repeatable estimate of the integral and
-  shows visible grain.
-- The screen-space method is a simple one with 24 samples per pixel. It misses
-  most of the occlusion the reference finds, so most views come back `refuted`.
-  The check is reporting a weak shortcut there.
-- A pass on RMSE says nothing about the worst pixel. The high view passes at
-  0.0827 RMSE with a 0.625 maximum error.
-- Byte-identical output was checked on x86-64 with two compilers and on
-  WebAssembly. Other CPU architectures are untested.
 
 ## How the memory budget works
 

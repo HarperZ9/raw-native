@@ -1,9 +1,9 @@
 # raw-native architecture
 
-raw-native is a renderer that proves its own output. It draws a frame, checks
-every fast path against a CPU reference, and writes the evidence beside the
-pixels. This document sets the architecture it grows into: a consumer renderer,
-and possibly a full engine, that keeps that property at every scale.
+raw-native draws a frame, checks each fast path against a CPU reference, and
+writes the comparison beside the pixels. This document describes the
+architecture it grows into: a consumer renderer, and possibly a full engine,
+that keeps that check at every scale.
 
 The decisions behind each part are recorded as ADRs in [adr/](adr/README.md).
 The comparison with mature engines is in [GAP-ANALYSIS.md](GAP-ANALYSIS.md) and
