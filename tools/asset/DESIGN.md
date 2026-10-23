@@ -214,3 +214,22 @@ by quadric error (flat regions go first), each collapsed vertex is re-projected 
 rejected if the field distance at the affected edge midpoints exceeds the LOD error bound, UV seams are locked, and
 the loop stops at the triangle budget. Budgets: portrait 40 000, play 9 000, far 3 000 triangles inside the
 section 4 error bounds. If a budget cannot be met inside the bound the build reports that and does not exceed the bound.
+
+## 11. Landmark fit and eye seats (bounds written before the code)
+
+A character gets a landmark set (front and profile) from anthropometric proportions, and `fit` optimises named stroke parameters
+until the skin surface passes through the landmarks. An art-direction pass then adds character on top. Proportion sources are
+cited in `src/anthro.mjs` (ANSUR II, Farkas, Loomis) with a confidence label on each; the digits are the place to correct.
+
+| Quantity | Bound |
+|:--|:--|
+| Landmark error after the fit (distance from the landmark to the skin surface, Newton projection) | at most 2 mm at every landmark |
+| Crease check | the p99 of the angle between neighbouring vertex normals of a 4 mm extraction rises by at most `creaseSlack` degrees (default 15) against the start; a failed check retries with a stronger trust weight, up to four attempts |
+| Parameter limits | radii stay within 0.6 to 1.6 times their start; one step moves a parameter at most 10 mm |
+| Result | the report states `tolMet` and the crease numbers whether or not the bound held; a missed landmark is listed, never hidden |
+
+Eye seats. An eye record may carry `seat: { stroke, gap, offset }`. The globe then takes the centre of that lid stroke and a
+radius `gap` short of its smallest radius, so moving the lid moves the eye.
+
+What a fit does not prove. It places the surface at the landmarks. It does not make a face. The first Ned fit met the bound
+at all but the jaw angle and still read worse than the generated head, because 22 landmarks leave most parameters free.
