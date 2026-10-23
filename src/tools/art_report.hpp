@@ -15,7 +15,7 @@ struct Options {
 };
 
 // Code differences between two RGBA code images over the colour channels.
-struct CodeStats { int max{0}, p999{0}; double mean{0}; long differ{0}, over2{0}, n{0}; };
+struct CodeStats { int max{0}, p999{0}; double mean{0}; long differ{0}, over2{0}, over8{0}, n{0}; };
 CodeStats codeStats(const std::vector<std::uint8_t>& want, const std::vector<std::uint8_t>& got);
 std::vector<std::uint8_t> unpack(const std::vector<std::uint32_t>& words);
 // Writes RGBA codes as an RGB PNG; false when the file cannot be written.

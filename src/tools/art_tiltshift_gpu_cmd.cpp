@@ -38,7 +38,7 @@ std::string parity(rhi::Device& dev, const Options& o, const Case& c, bool& pass
     for (std::size_t i = 0; i < g.coc.size(); ++i) dmax = std::max(dmax, std::abs(double(g.coc[i]) - coc[i * 2]));
     const auto got = unpack(g.packed);
     const CodeStats st = codeStats(cpuCodes(s, o.threads), got), ct = codeStats(cpuCodes(bent, o.threads), got);
-    auto within = [](const CodeStats& x) { return x.max <= 8 && x.p999 <= 3 && x.mean <= 0.2; };
+    auto within = [](const CodeStats& x) { return x.max <= 16 && x.over8 * 10000 <= x.n && x.p999 <= 3 && x.mean <= 0.2; };   // addendum E
     const bool ok = dmax <= 0.01 && within(st) && !within(ct);
     pass = pass && ok;
     writeCodesPng(o.out + "/gpu-" + c.name + ".png", w, h, got);
@@ -75,7 +75,7 @@ std::string tiltGpu(const Options& o, bool& pass) {
     j.str("backend", dev->backendName()).str("adapter", dev->adapter().description);
     if (o.gpu) {
         std::string cases = "[";
-        for (const Case& c : {Case{"town-map", true, "town_map"}, Case{"town-night", true, "night"}, Case{"art-daily", false, "daily"}})
+        for (const Case& c : {Case{"town-map", true, "town_map"}, Case{"town-night", true, "night"}, Case{"art-daily", false, "daily"}, Case{"town-dream", true, "dream"}})
             cases += (cases.size() > 1 ? "," : "") + parity(*dev, o, c, pass);
         j.raw("g1_cases", cases + "]");
     }
