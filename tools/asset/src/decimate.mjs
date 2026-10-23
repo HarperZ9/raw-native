@@ -4,6 +4,8 @@
 // a neighbouring face would flip, or when the vertex sits on an open boundary. Stops at the triangle budget or when no
 // collapse passes. Deterministic: ties break on vertex ids.
 import { project } from "./sdf.mjs";
+import { retopo } from "./retopo.mjs";
+import { triangulate } from "./extract.mjs";
 
 class Heap {
   constructor() { this.a = []; }
@@ -73,4 +75,12 @@ export function triError(F, M) {
   const p = M.pos, d = [], t = M.tri, at = (a, b, c) => d.push(Math.abs(F.d((p[a * 3] + p[b * 3] + p[c * 3]) / 3, (p[a * 3 + 1] + p[b * 3 + 1] + p[c * 3 + 1]) / 3, (p[a * 3 + 2] + p[b * 3 + 2] + p[c * 3 + 2]) / 3)));
   for (let i = 0; i < t.length; i += 3) { at(t[i], t[i + 1], t[i + 2]); for (let e = 0; e < 3; e++) { const a = t[i + e], b = t[i + (e + 1) % 3]; d.push(Math.abs(F.d((p[a * 3] + p[b * 3]) / 2, (p[a * 3 + 1] + p[b * 3 + 1]) / 2, (p[a * 3 + 2] + p[b * 3 + 2]) / 2))); } }
   d.sort((x, y) => x - y); return { n: d.length, p50: d[d.length >> 1], p99: d[Math.floor(0.99 * (d.length - 1))], max: d[d.length - 1] };
+}
+
+// An adaptive LOD: extract a base net at baseCell (never coarser than the LOD's own cell), then collapse it to the budget inside tol.
+// A coarse base can sag past tol before decimation starts, and a collapse never repairs that, so the base cell is part of the bound.
+export function adaptiveLod(F, B, { cell, baseCell, relax = 2, budget, tol, base = null }) {
+  const bc = Math.min(cell, baseCell ?? cell), M = base && bc >= cell ? base : retopo(F, { lo: B.lo, hi: B.hi, cell: bc, relax });
+  const tri = base && bc >= cell ? base.tri : triangulate(M), D = decimate(F, { pos: M.pos, tri }, { target: budget, tol });
+  return { ...D, baseCell: bc, baseTris: tri.length / 3 };
 }

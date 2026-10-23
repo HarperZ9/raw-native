@@ -7,7 +7,7 @@ import { landmarksFor, expandLandmarks } from "../src/anthro.mjs";
 import { fitLandmarks } from "../src/fit.mjs";
 
 const [sf, ff, out] = process.argv.slice(2), sculpt = parseSculpt(readFileSync(sf, "utf8")), spec = JSON.parse(readFileSync(ff, "utf8"));
-const L = expandLandmarks([...landmarksFor({ frame: spec.frame, age: spec.age, build: spec.build, cast: spec.cast }), ...(spec.extra || [])]);
+const keep = (l) => !spec.only || spec.only.some((p) => l.id.startsWith(p)), L = expandLandmarks([...landmarksFor({ frame: spec.frame, age: spec.age, build: spec.build, cast: spec.cast }), ...(spec.extra || [])].filter(keep));
 const R = fitLandmarks(sculpt.strokes, L, { free: spec.free || [], rigs: spec.rigs || [], tol: spec.tol ?? 0.002, lambda: spec.lambda ?? 1 });
 writeFileSync(out, stringifySculpt({ ...sculpt, strokes: R.strokes }));
 const mm = (v) => +(v * 1000).toFixed(2), rows = R.before.map((b, i) => ({ id: b.id, beforeMm: mm(b.err), afterMm: mm(R.after[i].err) }));

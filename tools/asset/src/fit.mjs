@@ -57,7 +57,8 @@ export function fitLandmarks(strokes0, landmarks, { free = [], rigs = [], tol = 
       const n = ps.length, A = Array.from({ length: n }, (_, a) => Array.from({ length: n }, (_, b) => J[a].reduce((s, v, i) => s + v * J[b][i], 0) + (a === b ? mu + w : 0)));
       const g = J.map((col, a) => col.reduce((s, v, i) => s + v * r[i], 0) + w * (x[a] - x0[a])), d = solve(A, g.map((v) => -v));
       const xn = x.map((v, j) => {
-        const p = ps[j], lo = p.k === "r" ? x0[j] * rMin : -Infinity, hi = p.k === "r" ? x0[j] * rMax : Infinity;
+        const p = ps[j]; if (p.rig) { const m = p.rig.max ?? 0.008; return Math.max(-m, Math.min(m, v + Math.max(-0.01, Math.min(0.01, d[j])))); }   // a rig scalar stays within +-max metres (default 8 mm)
+        const lo = p.k === "r" ? x0[j] * rMin : -Infinity, hi = p.k === "r" ? x0[j] * rMax : Infinity;
         return Math.min(hi, Math.max(lo, v + Math.max(-0.01, Math.min(0.01, d[j]))));
       });
       ps.forEach((p, j) => put(S, p, xn[j])); const rn = res(), cn = cost(rn, xn);
