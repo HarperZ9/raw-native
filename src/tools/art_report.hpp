@@ -11,11 +11,11 @@ namespace raw::art_cmd {
 struct Options {
     std::string feature, out{"art-out"};
     int threads{8}, frames{48}, repeats{50};
-    bool orbit{true}, gpu{false}, cost{false};
+    bool orbit{true}, gpu{false}, cost{false}, cpu{true};
 };
 
 // Code differences between two RGBA code images over the colour channels.
-struct CodeStats { int max{0}, p999{0}; double mean{0}; long differ{0}, over2{0}, n{0}; };
+struct CodeStats { int max{0}, p999{0}; double mean{0}; long differ{0}, over2{0}, over8{0}, n{0}; };
 CodeStats codeStats(const std::vector<std::uint8_t>& want, const std::vector<std::uint8_t>& got);
 std::vector<std::uint8_t> unpack(const std::vector<std::uint32_t>& words);
 // Writes RGBA codes as an RGB PNG; false when the file cannot be written.
@@ -42,5 +42,6 @@ std::string statsJson(const CodeStats& s);
 bool writeText(const std::string& path, const std::string& text);
 
 int strokes(const Options& o);
+int tiltshift(const Options& o);
 
 }  // namespace raw::art_cmd

@@ -8,7 +8,7 @@
 namespace raw {
 namespace {
 int usage() {
-    std::printf("usage: raw_native_cli art strokes [--out DIR] [--threads N] [--frames N] [--no-orbit] [--gpu] [--cost] [--repeats R]\n");
+    std::printf("usage: raw_native_cli art strokes|tiltshift [--out DIR] [--threads N] [--frames N] [--no-orbit] [--no-cpu] [--gpu] [--cost] [--repeats R]\n");
     return 2;
 }
 }  // namespace
@@ -23,6 +23,7 @@ int artCommand(int argc, char** argv) {
         else if (!std::strcmp(argv[i], "--frames") && i + 1 < argc) o.frames = std::atoi(argv[++i]);
         else if (!std::strcmp(argv[i], "--repeats") && i + 1 < argc) o.repeats = std::atoi(argv[++i]);
         else if (!std::strcmp(argv[i], "--no-orbit")) o.orbit = false;
+        else if (!std::strcmp(argv[i], "--no-cpu")) o.cpu = false;
         else if (!std::strcmp(argv[i], "--gpu")) o.gpu = true;
         else if (!std::strcmp(argv[i], "--cost")) o.cost = true;
         else return usage();
@@ -32,6 +33,7 @@ int artCommand(int argc, char** argv) {
     std::filesystem::create_directories(o.out, ec);
     if (ec) { std::printf("art: cannot create %s\n", o.out.c_str()); return 2; }
     if (o.feature == "strokes") return art_cmd::strokes(o);
+    if (o.feature == "tiltshift") return art_cmd::tiltshift(o);
     return usage();
 }
 }  // namespace raw

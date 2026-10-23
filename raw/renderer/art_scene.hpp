@@ -14,10 +14,18 @@ using D3 = std::array<double, 3>;
 
 struct Sun { D3 dir{0, 1, 0}; D3 colour{0, 0, 0}; };   // dir points toward the light
 struct Lamp { D3 pos{0, 0, 0}, axis{0, -1, 0}; double cosOuter{0.8}, cosInner{0.9}; D3 colour{0, 0, 0}; bool on{false}; };
-struct Lighting { Sun sun; Lamp lamp; D3 skyTop, skyHorizon, ground; };
+struct Lighting { Sun sun; Lamp lamp; D3 skyTop, skyHorizon, ground; double emitScale{1}; };   // emitScale: emissive surfaces (P23's night)
 Lighting daylight();
 Lighting dusk();
 Lighting night();
+// P23's town at dusk (evidence/tiltshift-bounds.json): a low warm sun, a dusk sky and one sodium
+// spot over the street; the lamp globes are emissive.
+Lighting townDusk();
+// P23's town at night (addendum C): moonlight only, the sodium spot over the street.
+Lighting townNight();
+
+// Which scene the ray caster traces: P5's still life, or P23's three-quarter town.
+enum class SceneKind { StillLife, Town };
 
 struct View {
     D3 eye{0, 0, 5}, target{0, 0, 0};
@@ -28,6 +36,9 @@ struct View {
 // Frame `frame` of the P5 orbit: target (0, 1, 0), radius 8.5, eye height 4.2, azimuth 20 degrees
 // plus `step` degrees a frame.
 View orbitView(int frame, int w, int h, double step = 1.0);
+// P23's three-quarter town camera: target (0, 0.8, 0), azimuth 45 degrees, 35 degrees down,
+// distance 46, vertical field of view 0.45 rad.
+View townView(int w, int h);
 inline constexpr double kOrbitRadius = 8.5;
 
 struct Frame {
@@ -38,7 +49,7 @@ struct Frame {
     std::vector<float> lit;                 // RGBA scene-linear radiance, 2 x 2 samples a pixel
     std::vector<std::uint8_t> obj, mat;     // 0 for sky
 };
-Frame renderFrame(const View& v, const Lighting& L, int threads);
+Frame renderFrame(const View& v, const Lighting& L, int threads, SceneKind scene = SceneKind::StillLife);
 
 // Motion to the previous view: 2 floats a pixel, current minus previous position in pixels (the
 // paint canvas's convention: the previous position of pixel x is x - mv). Surface points are
@@ -49,9 +60,18 @@ std::vector<float> motionTo(const Frame& cur, const View& prev);
 std::vector<std::uint8_t> historyValid(const Frame& cur, const Frame& prev, const View& prevView, const std::vector<float>& mv);
 
 // The ray caster's pieces, shared by the scene and its tests.
-struct Hit { double t{-1}; D3 n{0, 0, 0}; int obj{0}, mat{0}; D3 albedo{0, 0, 0}; };
-Hit trace(const D3& o, const D3& d);
-bool occluded(const D3& o, const D3& d, double tMax);
+struct Hit { double t{-1}; D3 n{0, 0, 0}; int obj{0}, mat{0}; D3 albedo{0, 0, 0}; D3 emit{0, 0, 0}; };
+Hit trace(const D3& o, const D3& d, SceneKind scene = SceneKind::StillLife);
+bool occluded(const D3& o, const D3& d, double tMax, SceneKind scene = SceneKind::StillLife);
+Hit traceTown(const D3& o, const D3& d);   // art_scene_town.cpp
+
+// The town's people, lamps and living points of interest (P23's focus director and checks).
+struct TownPerson { D3 foot; int obj{0}; bool onStreet{false}; };
+inline constexpr double kPersonHeight = 1.78;
+const std::vector<TownPerson>& townPeople();
+struct TownPoint { D3 p; const char* id; double salience; };
+const std::vector<TownPoint>& townLiving();    // a dog, a lit window, washing
+const std::vector<D3>& townLamps();            // the emissive globes' centres
 D3 rayDir(const View& v, double px, double py);   // px, py in pixels from the top-left corner
 
 }  // namespace raw::art

@@ -15,7 +15,7 @@ CodeStats codeStats(const std::vector<std::uint8_t>& want, const std::vector<std
     for (std::size_t i = 0; i < want.size() && i < got.size(); ++i) {
         if ((i & 3) == 3) continue;
         const int d = std::abs(int(want[i]) - int(got[i]));
-        hist[d]++; sum += d; s.n++; s.max = std::max(s.max, d); s.over2 += d > 2; s.differ += d > 0;
+        hist[d]++; sum += d; s.n++; s.max = std::max(s.max, d); s.over2 += d > 2; s.over8 += d > 8; s.differ += d > 0;
     }
     s.mean = s.n ? sum / double(s.n) : 0;
     long acc = 0;
@@ -73,7 +73,7 @@ std::string pairedJson(const art::Paired& p) {
 }
 std::string statsJson(const CodeStats& s) {
     Json j;
-    j.integer("max", s.max).integer("p999", s.p999).num("mean", s.mean).integer("differ", s.differ).integer("over2", s.over2).integer("values", s.n);
+    j.integer("max", s.max).integer("p999", s.p999).num("mean", s.mean).integer("differ", s.differ).integer("over2", s.over2).integer("over8", s.over8).integer("values", s.n);
     return j.done();
 }
 bool writeText(const std::string& path, const std::string& text) {

@@ -1,0 +1,677 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/tiltshift-bounds.json (with addenda A and B)",
+ "branch": "feat/tiltshift",
+ "verdict": "CPU stage recorded. Met: t1 (people in the wedge keep their ink exactly, the screen band fails as required), t5 (the orbit is 24% steadier than the base paint), d1 to d5 (no pumping; drift and events never take focus from a speaker or a fight, the lock-off control fails on 916 frames), c1 to c3 (no flash added, no red window, reduced motion stills weave and grain), g2 goldens (GCC and MSVC agree). Missed: t2 (the ink does not fall off out of focus: ratio 1.32 against at most 0.5), t3 (the art scene's E is 0.474 against at least 0.5, and the gaussian control does not fail E on the town, 0.716), t6 (ill-posed: with the camera held the base paint does not change, so its instability is 0 and any rack counts as infinitely worse). On the GPU: g1 parity holds on D3D12 WARP, Vulkan lavapipe and the RTX 4090 (CoC within 8e-6 px; codes max 8 (at the bound), p99.9 1, mean under 0.008; every K x 1.1 control fails). g3 cost misses: the chain takes 2.85 ms at 1080p against 1.0 ms, of which the painted defocus pass is 2.12 ms. Second record (addendum C): t2 now holds, t5 improves to 55% steadier, t6b holds, the dream look is distinct; t3 still misses; g3 improves from 2.85 to 1.235 ms and still misses the 1.0 ms bound; halation and the star filter remain invisible on the night scene.",
+ "runs": {
+  "run1": "evidence/tiltshift/cpu-run1.json: the first CPU run (no orbit), MSVC, before addendum B: cMax 8 px at 540 lines; 2 people in the wedge; t2 1.35; t3 town gaussian E 0.88. Kept as recorded.",
+  "exploratory": "One probe after run 1 with addendum B's changes and before it was written (disclosed in the addendum).",
+  "record": "evidence/tiltshift/cpu-record.json: MSVC (VS 18) Release build of 33e8739, CPU float64, 20 threads, 2026-10-22, with the orbit and the rack.",
+  "goldens": "test_art_tiltshift on MSVC and GCC 13.3 (WSL Ubuntu 24.04): coc 0x2c4cd941314f50b5, codes 0xb2f84d054ae9ba92 on both.",
+  "gpu": "D3D12: MSVC build of this branch on local WARP and the RTX 4090 (hardware, under the shared GPU lock D:/gpu.lock.d), 2026-10-22. Vulkan: GCC 13.3 (WSL Ubuntu 24.04) raw_native_cli_vk on lavapipe (VK_ICD_FILENAMES lvp_icd.json). Files evidence/tiltshift/gpu-{warp,lavapipe,rtx4090}.json."
+ },
+ "checks": {
+  "t1_ink_in_wedge": {
+   "in_wedge": 5,
+   "y_span": 0.495340771,
+   "people": [
+    {
+     "obj": 40,
+     "pixels": 379,
+     "in_wedge": true,
+     "screen_y": 0.285883905,
+     "ink_ratio_ours": 1,
+     "ink_ratio_band": 3.24103829
+    },
+    {
+     "obj": 41,
+     "pixels": 410,
+     "in_wedge": true,
+     "screen_y": 0.371738934,
+     "ink_ratio_ours": 1,
+     "ink_ratio_band": 2.09089456
+    },
+    {
+     "obj": 42,
+     "pixels": 464,
+     "in_wedge": true,
+     "screen_y": 0.499225734,
+     "ink_ratio_ours": 1,
+     "ink_ratio_band": 1.00634673
+    },
+    {
+     "obj": 43,
+     "pixels": 547,
+     "in_wedge": true,
+     "screen_y": 0.628630916,
+     "ink_ratio_ours": 1,
+     "ink_ratio_band": 1.95317991
+    },
+    {
+     "obj": 44,
+     "pixels": 649,
+     "in_wedge": true,
+     "screen_y": 0.781224676,
+     "ink_ratio_ours": 1.00000088,
+     "ink_ratio_band": 1.19610367
+    },
+    {
+     "obj": 45,
+     "pixels": 142,
+     "in_wedge": false,
+     "screen_y": 0.62446531,
+     "ink_ratio_ours": 0.984572356,
+     "ink_ratio_band": 1.29746431
+    }
+   ],
+   "pass": true,
+   "band_people_failing": 4,
+   "band_control_fails": true
+  },
+  "t2_ink_falls_off": {
+   "ratio": 1.31994761,
+   "bound": "at most 0.5",
+   "pass": false,
+   "diagnosis": "The coarse Kuwahara keeps outlines that lie on region edges (the line sits on the boundary between two flat sectors, so a sector that contains it can still have the least variance). The ink measure is also not robust: Y(no lines) - Y(lines) after two independent Kuwahara runs differs by sector choice. An explicit ink falloff (the paint pass exporting its line layer, attenuated by the CoC) is the likely fix; not built."
+  },
+  "t3_painted_not_blurred": {
+   "town_ours": {
+    "D": 0.619981013,
+    "E": 0.636998241,
+    "pixels": 450491
+   },
+   "town_gaussian": {
+    "D": 0.372812015,
+    "E": 0.715993626,
+    "pixels": 450491
+   },
+   "art_ours": {
+    "D": 0.487177395,
+    "E": 0.474407351,
+    "pixels": 492125
+   },
+   "art_gaussian": {
+    "D": 0.176058275,
+    "E": 0.282751232,
+    "pixels": 492125
+   },
+   "pass": false,
+   "gaussian_control_fails": false,
+   "diagnosis": "By eye the gaussian control is an obvious optical blur and ours is flat paint with hard patch edges (evidence/tiltshift/town-gaussian.png against town-ours.png), but E (a 95th-percentile gradient ratio over all pixels with c >= 4 px) does not separate them on the town: many pixels sit in the mild-defocus range where a gaussian of sigma 1 to 2 px keeps the strong building edges. The metric, not the look, is what fails here; a better one is not substituted after the fact."
+  },
+  "t4_wedge_follows_world": {
+   "lens_in_focus_band_defocused": 0.916522342,
+   "band_in_focus_lens_defocused": 0.874791667,
+   "hinge_tilt_deg": 3.6787624
+  },
+  "t5_temporal_orbit": {
+   "ours_vs_base": {
+    "mean_a": 0.0101040674,
+    "mean_b": 0.0132228481,
+    "diff": -0.00311878073,
+    "diff_lo": -0.0036872219,
+    "diff_hi": -0.0026652076,
+    "reduction": 0.235863008,
+    "reduction_lo": 0.227895558,
+    "reduction_hi": 0.243276024,
+    "frames": 39,
+    "seed": "0x000000000135289e"
+   },
+   "relative_change": -0.235863008,
+   "pass": true,
+   "ours": [
+    0.008279937,
+    0.008307612,
+    0.008312711,
+    0.008135534,
+    0.008192693,
+    0.008084162,
+    0.008152286,
+    0.02283116,
+    0.009576106,
+    0.009289174,
+    0.009246699,
+    0.009181617,
+    0.009059416,
+    0.008981429,
+    0.008913209,
+    0.008808731,
+    0.008687147,
+    0.008585752,
+    0.00846691,
+    0.02487882,
+    0.009642259,
+    0.009421774,
+    0.009384414,
+    0.009252979,
+    0.009136477,
+    0.009055902,
+    0.009012973,
+    0.00900747,
+    0.008831192,
+    0.008932916,
+    0.00881344,
+    0.0235098,
+    0.01003267,
+    0.009652151,
+    0.009555929,
+    0.009519547,
+    0.00923355,
+    0.009118863,
+    0.008973218
+   ],
+   "base": [
+    0.01101223,
+    0.01095656,
+    0.01087848,
+    0.01078808,
+    0.01073973,
+    0.01068542,
+    0.01066388,
+    0.03098061,
+    0.01203729,
+    0.01189245,
+    0.0118887,
+    0.01182129,
+    0.01177116,
+    0.01169308,
+    0.01159799,
+    0.01152637,
+    0.01137098,
+    0.01126619,
+    0.01116506,
+    0.03345724,
+    0.01201445,
+    0.01189641,
+    0.0118952,
+    0.011927,
+    0.01189616,
+    0.01190639,
+    0.0118126,
+    0.01178112,
+    0.01168381,
+    0.01166167,
+    0.01151503,
+    0.03254486,
+    0.01239127,
+    0.0122262,
+    0.01219477,
+    0.01216736,
+    0.01213087,
+    0.01201315,
+    0.01183997
+   ]
+  },
+  "t6_temporal_rack": {
+   "ours_vs_base": {
+    "mean_a": 0.00245058728,
+    "mean_b": 4.65523341e-09,
+    "diff": 0.00245058263,
+    "diff_lo": 0.00186631119,
+    "diff_hi": 0.00304026816,
+    "reduction": -526414.556,
+    "reduction_lo": -890625.034,
+    "reduction_hi": -346106.419,
+    "frames": 39,
+    "seed": "0x000000000135289e"
+   },
+   "relative_change": 526414.556,
+   "pass": false,
+   "ours": [
+    7.060437e-08,
+    3.025902e-08,
+    0,
+    0,
+    3.025902e-08,
+    7.060437e-08,
+    1.210361e-07,
+    4.034536e-08,
+    1.008634e-08,
+    0.006407438,
+    0.003099088,
+    0.003838255,
+    0.004243908,
+    0.004426541,
+    0.004376543,
+    0.00414599,
+    0.003951122,
+    0.00349645,
+    0.002865922,
+    0.002394114,
+    0.002013102,
+    0.001666213,
+    0.001350823,
+    0.001141279,
+    0.0009185629,
+    0.00646264,
+    0.004810599,
+    0.005067861,
+    0.004783608,
+    0.004237927,
+    0.003480765,
+    0.002898289,
+    0.002613895,
+    0.002381092,
+    0.002141935,
+    0.001923909,
+    0.001693849,
+    0.001475863,
+    0.001264948
+   ],
+   "base": [
+    1.008634e-08,
+    0,
+    1.008634e-08,
+    0,
+    1.008634e-08,
+    1.008634e-08,
+    0,
+    1.008634e-08,
+    1.008634e-08,
+    2.017268e-08,
+    1.008634e-08,
+    1.008634e-08,
+    0,
+    1.008634e-08,
+    2.017268e-08,
+    0,
+    0,
+    1.008634e-08,
+    0,
+    0,
+    1.008634e-08,
+    0,
+    0,
+    1.008634e-08,
+    0,
+    1.008634e-08,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0,
+    1.008634e-08,
+    0,
+    0,
+    0,
+    0,
+    0
+   ],
+   "diagnosis": "The bound is ill-posed for a held camera: the base paint frame is identical every frame (instability 0.0), so the relative change is unbounded. The tilt-shifted rack's own instability against its optical reference is 0.00245, below a fifth of the base pass's orbit instability (0.0132). Recorded as a miss; the bound is not rewritten."
+  },
+  "d_director": {
+   "max_overshoot": 0,
+   "underdamped_overshoot": 0.00370526461,
+   "d1_pass": true,
+   "lock_frames_checked": 2280,
+   "lock_fails": 0,
+   "lock_off_control_fails": 916,
+   "events_in_locks": 5,
+   "idle_s_in_locks": 40,
+   "d2_pass": true,
+   "drifts": 6,
+   "dwells_s": [
+    3.516667,
+    3.516667,
+    3.516667,
+    3.516667,
+    3.516667,
+    3.516667
+   ],
+   "returns_s": [
+    0.35,
+    0.3166667,
+    0.5,
+    0.35,
+    0.3166667,
+    0.5
+   ],
+   "calm_drifts": 0,
+   "calm_animated_frames": 0,
+   "d3_pass": true,
+   "event_latency_s": 0,
+   "event_settle_s": 0.483333333,
+   "d4_pass": true,
+   "child_max_jitter_step_dioptre": 0.00253805561,
+   "child_jitter_hz": 0.4,
+   "calm_jitter": 0,
+   "d5_pass": true
+  },
+  "c_care": {
+   "flashes_in": 0,
+   "flashes_out": 0,
+   "c1_pass": true,
+   "red_windows_added_frames": 0,
+   "red_pixels_max_out": 0,
+   "red_pixels_max_in": 0,
+   "c2_pass": true,
+   "grain_still": true,
+   "c3_pass": true
+  },
+  "g2_goldens": {
+   "coc_fnv": "0x2c4cd941314f50b5",
+   "tiltshift_fnv": "0xb2f84d054ae9ba92"
+  },
+  "g1_gpu_parity": {
+   "warp": {
+    "town-map": {
+     "coc_max_abs": 6.67572021e-06,
+     "codes": {
+      "max": 8,
+      "p999": 1,
+      "mean": 0.00742283951,
+      "differ": 2500,
+      "over2": 78,
+      "values": 388800
+     },
+     "control_fails": true,
+     "pass": true
+    },
+    "town-night": {
+     "coc_max_abs": 3.33786011e-06,
+     "codes": {
+      "max": 3,
+      "p999": 1,
+      "mean": 0.00247427984,
+      "differ": 939,
+      "over2": 2,
+      "values": 388800
+     },
+     "control_fails": true,
+     "pass": true
+    },
+    "art-daily": {
+     "coc_max_abs": 1.43051147e-06,
+     "codes": {
+      "max": 6,
+      "p999": 1,
+      "mean": 0.0012037037,
+      "differ": 429,
+      "over2": 7,
+      "values": 388800
+     },
+     "control_fails": true,
+     "pass": true
+    }
+   },
+   "lavapipe": {
+    "town-map": {
+     "coc_max_abs": 6.67572021e-06,
+     "codes": {
+      "max": 8,
+      "p999": 1,
+      "mean": 0.00764660494,
+      "differ": 2589,
+      "over2": 78,
+      "values": 388800
+     },
+     "control_fails": true,
+     "pass": true
+    },
+    "town-night": {
+     "coc_max_abs": 3.33786011e-06,
+     "codes": {
+      "max": 3,
+      "p999": 1,
+      "mean": 0.0027340535,
+      "differ": 1040,
+      "over2": 2,
+      "values": 388800
+     },
+     "control_fails": true,
+     "pass": true
+    },
+    "art-daily": {
+     "coc_max_abs": 1.43051147e-06,
+     "codes": {
+      "max": 6,
+      "p999": 1,
+      "mean": 0.00124485597,
+      "differ": 445,
+      "over2": 7,
+      "values": 388800
+     },
+     "control_fails": true,
+     "pass": true
+    }
+   },
+   "rtx4090": {
+    "town-map": {
+     "coc_max_abs": 7.62939453e-06,
+     "codes": {
+      "max": 8,
+      "p999": 1,
+      "mean": 0.00702674897,
+      "differ": 2369,
+      "over2": 79,
+      "values": 388800
+     },
+     "control_fails": true,
+     "pass": true
+    },
+    "town-night": {
+     "coc_max_abs": 2.86102295e-06,
+     "codes": {
+      "max": 3,
+      "p999": 1,
+      "mean": 0.00202932099,
+      "differ": 767,
+      "over2": 2,
+      "values": 388800
+     },
+     "control_fails": true,
+     "pass": true
+    },
+    "art-daily": {
+     "coc_max_abs": 1.49011612e-06,
+     "codes": {
+      "max": 6,
+      "p999": 0,
+      "mean": 0.00104938272,
+      "differ": 379,
+      "over2": 6,
+      "values": 388800
+     },
+     "control_fails": true,
+     "pass": true
+    }
+   },
+   "pass": true
+  },
+  "g3_cost": {
+   "chain_ms": 2.84671783,
+   "bound_ms": 1.0,
+   "pass": false,
+   "pass_ms": {
+    "coc": 0.02145767,
+    "weight": 0.04506111,
+    "prep": 0.1730919,
+    "tensor": 0.02980232,
+    "blur_x": 0.0462532,
+    "blur_y": 0.07486343,
+    "defocus": 2.122879,
+    "bright": 0.01335144,
+    "glow": 0.1003742,
+    "finish": 0.03600121
+   },
+   "first_run_chain_ms": 2.84981728,
+   "method": "GPU timestamps around the ten passes, one chain a submission, median of 50 warm submissions; each pass alone the same way.",
+   "diagnosis": "The defocus pass (48 samples, two loops, 8 sectors, a KM decode) over most of the frame at the town_map miniature is 2.12 ms; everything else is 0.54 ms. A half-resolution defocus (the defocused region carries no fine detail by design) or skipping tiles with no weight are the next steps, under an addendum before any rerun, as the bounds said."
+  }
+ },
+ "captures": {
+  "files": "evidence/tiltshift/: town-{plain,band,ours,gaussian,coc}.png, art-{plain,band,ours,gaussian,coc}.png, town-look-{daily,town_map,record,memory,dream,night}.png, crop-band-vs-ours.png (band left, ours right), 960 x 540.",
+  "seen": [
+   "The CoC map follows the world: on the town the in-focus wedge runs along the diagonal street and up the walls where they cross the plane, which a screen band cannot do (t4: 92% of the lens's in-focus pixels are defocused by the matched band).",
+   "Town, ours: walls and roofs off the plane flatten into smooth paint with crisp patch edges; the five street people keep their outlines. The screen band smears the people at the street's ends and breaks the lamp post into a jagged line. The gaussian control is a plain optical blur.",
+   "Art still life: the defocus is subtle. The paint pass's own large ground blotches survive the coarser Kuwahara, so the model-town read is weak on this scene.",
+   "Looks: record shows the halftone dot screen; memory the warm print and vignette. Night shows no visible halation or star: the dusk scene is bright and the lamp globes are a few pixels, so the bright pass's 4 x 4 mean stays near the knee. Dream is hard to tell from daily at this framing. The effects need a darker night scene to be judged."
+  ]
+ },
+ "does_not_prove": "That the look is good (the captures are for review). Moving figures (the CoC is per frame). The director's timings as a player feels them. The game's browser renderer.",
+ "record_c": {
+  "what": "The second record, after addendum C: MSVC build of db75f33, CPU float64 with WARP parity; lavapipe (GCC 13.3, raw_native_cli_vk); the RTX 4090 cost under the GPU lock. Files evidence/tiltshift/cpu-record-c.json, gpu-rtx4090-c.json, gpu-lavapipe-c.json. The captures in evidence/tiltshift/ are replaced by this record's (the first record's numbers stay in cpu-record.json).",
+  "t1": {
+   "in_wedge": 5,
+   "pass": true,
+   "band_people_failing": 5
+  },
+  "t2": {
+   "ratio": 4.34408204e-07,
+   "pass": true,
+   "note": "Holds: the defocus works on the unlined colour, so where w = 1 (c >= 2.5 px) the ink is gone; between c0 and c1 it fades as 1 - w."
+  },
+  "t3": {
+   "town_ours": {
+    "D": 0.463590659,
+    "E": 0.820249883,
+    "pixels": 450491
+   },
+   "town_gaussian": {
+    "D": 0.354217282,
+    "E": 0.692618696,
+    "pixels": 450491
+   },
+   "art_ours": {
+    "D": 0.312483046,
+    "E": 0.392696797,
+    "pixels": 492125
+   },
+   "art_gaussian": {
+    "D": 0.1672799,
+    "E": 0.270535307,
+    "pixels": 492125
+   },
+   "pass": false,
+   "gaussian_control_fails": false,
+   "note": "Still misses: the art scene's E falls to 0.39 (half resolution and the lines gone lower the patch edges' gradients), and the town's gaussian E 0.69 does not fail. The metric is unchanged, as addendum C says."
+  },
+  "t5": {
+   "ours_vs_base": {
+    "mean_a": 0.00592389547,
+    "mean_b": 0.0132228481,
+    "diff": -0.00729895266,
+    "diff_lo": -0.00776948871,
+    "diff_hi": -0.00692043265,
+    "reduction": 0.5519955,
+    "reduction_lo": 0.511384853,
+    "reduction_hi": 0.594221053,
+    "frames": 39,
+    "seed": "0x000000000135289e"
+   },
+   "relative_change": -0.5519955,
+   "pass": true
+  },
+  "t6_first_record": "Missed (relative bound over a zero baseline), kept on record in cpu-record.json.",
+  "t6b": {
+   "rack_mean": 0.00122265981,
+   "limit_half_base_orbit": 0.00661142407,
+   "underdamped_rack_mean": 0.00148938245,
+   "pass": true
+  },
+  "director": "unchanged: d1 to d5 hold",
+  "care": {
+   "dusk": {
+    "flashes_in": 0,
+    "flashes_out": 0,
+    "c1_pass": true,
+    "red_windows_added_frames": 0,
+    "red_pixels_max_out": 0,
+    "red_pixels_max_in": 0,
+    "c2_pass": true,
+    "grain_still": true,
+    "c3_pass": true
+   },
+   "night": {
+    "flashes_in": 0,
+    "flashes_out": 0,
+    "c1_pass": true,
+    "red_windows_added_frames": 0,
+    "red_pixels_max_out": 0,
+    "red_pixels_max_in": 0,
+    "c2_pass": true,
+    "grain_still": true,
+    "c3_pass": true
+   }
+  },
+  "g1": "holds on WARP, lavapipe and the RTX 4090: CoC within 8e-6 px; codes max 6 (town_map, RTX), p99.9 at most 1; every K x 1.1 control fails",
+  "g3": {
+   "chain_ms": 1.23476982,
+   "pass_ms": {
+    "coc": 0.0205039978,
+    "weight": 0.0450611115,
+    "half": 0.0705718994,
+    "prep": 0.0472068787,
+    "tensor": 0.0112056732,
+    "blur_x": 0.0152587891,
+    "blur_y": 0.0233650208,
+    "defocus": 0.528335571,
+    "compose": 0.112771988,
+    "bright": 0.0133514404,
+    "glow": 0.104427338,
+    "finish": 0.0369548798
+   },
+   "pass": false,
+   "note": "Misses by 0.24 ms: 1.235 ms against 1.0 (2.85 before). The half-resolution defocus is 0.53 ms; the full-resolution compose 0.11 ms and the glow 0.10 ms are next. Tile culling of zero-weight tiles and a 32-sample disc are the remaining levers, under an addendum."
+  },
+  "captures_seen": [
+   "Night (town-look-night.png): the town is dark and the lamps and the window read, but halation and the star filter are still invisible. The bright pass reads the paint frame, whose soft shoulder holds the globes near 1.0, so they barely clear the knee. Feeding the bright pass from the scene-linear light is the fix; not built.",
+   "Dream (town-look-dream.png): now distinct from daily: desaturated toward 55%, hue shifted, and the plane lies wrong so the near roofs and the far row soften while a diagonal band stays sharp.",
+   "Town ours: the defocused walls and roofs carry no ink; the people in the wedge keep theirs."
+  ]
+ },
+ "record_d": {
+  "written": "2026-10-22, after the rebase onto main and addendum D. The first two records stay as they are.",
+  "code": "32-sample defocus disc; t3b added; goldens re-pinned to codes 0x1a208990a1cda158 (CoC 0x2c4cd941314f50b5 unchanged), GCC 13.3 and MSVC agree.",
+  "baseline_rebased_48_samples": "D3D12 chain 1.205 ms; Vulkan 0.997 ms (RTX 4090, 1080p, town_map, every effect on). Defocus pass 0.535 ms on D3D12, 0.429 ms on Vulkan.",
+  "g3_cost_32_samples": {
+   "d3d12_chain_ms_runs": [
+    0.804,
+    0.889,
+    0.86,
+    1.076,
+    0.807,
+    0.915,
+    0.828
+   ],
+   "d3d12_median_ms": 0.86,
+   "d3d12_contended_outliers_ms": [
+    6.936,
+    15.858
+   ],
+   "d3d12_defocus_pass_ms": 0.268,
+   "vulkan_chain_ms_runs": [
+    0.948,
+    0.864,
+    0.709,
+    0.846,
+    0.798
+   ],
+   "vulkan_contended_outliers_ms": [
+    16.165
+   ],
+   "vulkan_defocus_pass_ms": 0.243,
+   "bound_ms": 1.0,
+   "verdict": "holds at the median on both backends; one of seven D3D12 runs (1.076) is over the bound. The GPU was shared with other sessions and no lock was available, so the spread is the honest number: 0.80 to 1.08 ms when not stalled, two runs stalled by other work at 7 to 16 ms and excluded from the median, both listed.",
+   "note": "glow is the next-largest pass on D3D12 (0.104 ms, against 0.062 on Vulkan); compose 0.113 ms on both. About 0.17 ms of the old chain was gaps between 12 passes; none was removed here."
+  },
+  "g1_parity": "D3D12 and Vulkan on the RTX 4090: town-map codes max 6, p99.9 1; town-night max 1; art-daily max 1; the K x 1.1 control fails in every case. WARP and lavapipe run in CI.",
+  "t3b": {
+   "town_ours_E": 0.8248,
+   "town_gaussian_E": 0.6958,
+   "town_ratio": 1.185,
+   "art_ours_E": 0.4007,
+   "art_gaussian_E": 0.2708,
+   "art_ratio": 1.48,
+   "D_town_ours": 0.48,
+   "D_art_ours": 0.332,
+   "pass": true
+  },
+  "t3": "still misses on the absolute form (art scene E 0.40); no longer gating. See addendum_d for the diagnosis and its correction.",
+  "cpu_rerun": "t1 5 in the wedge, ratios 1.000, band fails 5; t2 4.3e-7; orbit ours 0.00617 against base 0.01322 (-53%); rack 0.00133 against limit 0.00661, underdamped 0.00159; d1 to d5, c1 to c3 hold.",
+  "dream": "Still behind its flag; see addendum_d.",
+  "files": "evidence/tiltshift/cpu-record-d.json, gpu-rtx4090-d3d12-d.json, gpu-rtx4090-vulkan-d.json; captures replaced."
+ }
+}
