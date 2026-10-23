@@ -5,6 +5,9 @@ project(raw_native VERSION 0.8.0
     LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+if(MINGW)
+    add_link_options(-static)   # a MinGW build must not pick up another toolchain's libstdc++ DLL
+endif()
 
 option(RAW_NATIVE_BUILD_TESTS "Build the raw-native unit tests" ${PROJECT_IS_TOP_LEVEL})
 
