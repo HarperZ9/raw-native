@@ -12,7 +12,7 @@ import { packAsset, sha256, stringifySculpt } from "./format.mjs";
 import { encodePng, decodePng } from "./png.mjs";
 import { renderView, hstack, upscale, savePng, eyeParts } from "./render.mjs";
 
-export const LODS = [{ name: "portrait", cell: 0.003, relax: 3, budget: 40000, tol: 0.0015 }, { name: "play", cell: 0.006, relax: 3, budget: 9000, tol: 0.004 }, { name: "far", cell: 0.010, relax: 2, budget: 3000, tol: 0.006 }];
+export const LODS = [{ name: "portrait", cell: 0.003, relax: 3, budget: 40000, tol: 0.0015 }, { name: "play", cell: 0.006, relax: 3, budget: 9000, tol: 0.0033 }, { name: "far", cell: 0.010, relax: 2, budget: 3000, tol: 0.006 }];
 const now = () => Number(process.hrtime.bigint()) / 1e6;
 const map8 = (a, W, H, ch = 1) => ({ w: W, h: H, c: ch, data: a });
 
