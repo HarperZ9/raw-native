@@ -99,7 +99,9 @@ struct Book {
     std::map<std::string, std::string> meta; std::vector<std::string> includes;
     std::map<std::string, NodeDef> nodes; std::vector<EventDef> events;
     std::map<std::string, VarDecl> vars; std::map<std::string, Record> skills; std::map<std::string, Record> facts;
-    std::vector<std::string> errors, node_order; int records = 0; double clock0 = 23 * 60;
+    std::vector<std::string> errors, node_order; int records = 0;
+    std::vector<Record> recs;          // every record that is not a node or an event, in file order (game layers read their own kinds)
+    double clock0 = 23 * 60;
 };
 struct Source { std::string file, text; };
 Book load_book(const std::vector<Source>& sources);
@@ -143,6 +145,8 @@ public:
     void host_var(const std::string& n, const Val& v);
     void host_place(const std::string& p) { place_ = p; }
     double clock() const { return clock_; }
+    const Val* raw_var(const std::string& name) const { auto i = vars_.find(name); return i == vars_.end() ? nullptr : &i->second; }
+    const Book& book() const { return book_; }
     bool done() const { return talk_done_; }
     const Beat& beat() const { return beat_; }
     const std::string& node() const { return node_; }

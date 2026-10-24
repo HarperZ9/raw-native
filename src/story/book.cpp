@@ -226,6 +226,7 @@ found:
         for (auto& r : recs) {
             book.records++;
             if (r.kind == "meta") { for (auto& [k, v] : r.kv) { if (k == "include") book.includes.push_back(trim(v)); else book.meta[k] = v; } continue; }
+            if (r.kind != "node" && r.kind != "event") book.recs.push_back(r);
             if (r.kind == "var") { VarDecl d; std::string def = r.one("default"); bool has = false; for (auto& p : r.kv) if (p.first == "default") has = true;
                 if (!has) d.def = Val::num(0); else { char* e = nullptr; double x = std::strtod(def.c_str(), &e); if (!def.empty() && e && *e == 0 && def.find_first_not_of(" ") != std::string::npos) d.def = Val::num(x); else if (def == "true") d.def = Val::boolean(true); else if (def == "false") d.def = Val::boolean(false); else d.def = Val::str(trim(def)); }
                 std::string vals = r.one("values"); std::string cur; for (char c : vals + ",") { if (c == ',') { std::string t = trim(cur); if (!t.empty()) d.values.push_back(t); cur.clear(); } else cur += c; }

@@ -1,4 +1,5 @@
 #include "raw/game/lowwater/replay.hpp"
+#include "raw/game/lowwater/rules.hpp"
 #include <sstream>
 
 namespace raw::game::lowwater {
@@ -8,6 +9,21 @@ namespace {
 struct Recorded : Host {
     std::vector<Json> stream; std::vector<size_t> ks; size_t vmcount = 0; size_t pos = 0; Trace* tr = nullptr; Vm* vm = nullptr; uint32_t seed = 0;
     std::string error; size_t calls = 0;
+    Rules* rules = nullptr; const Compute* cfg = nullptr; std::map<std::string, ModuleStat>* stats = nullptr;
+    // Compute the answer a module owns. The recorded answer is read only to compare, never to answer.
+    Json answer(const std::string& f, const Json& args, const Json& recorded) {
+        if (!rules || !cfg) return recorded;
+        Module m = rules->module_of(f, args);
+        bool on = (m == Module::Checks && cfg->checks) || (m == Module::Sheet && cfg->sheet) || (m == Module::Meters && cfg->meters);
+        Json out = recorded;
+        if (on) {
+            out = rules->answer(f, args);
+            ModuleStat& st = (*stats)[m == Module::Checks ? "checks" : m == Module::Sheet ? "sheet" : "meters"]; st.computed++;
+            if (dump_json(out) != dump_json(recorded)) { st.mismatched++; if (st.first.empty()) st.first = f + " " + dump_json(args) + ": computed " + dump_json(out) + " vs recorded " + dump_json(recorded); }
+        }
+        rules->observe(f, args);
+        return out;
+    }
     static bool host_tagged(const Json& r) { return r.str_or("t") == "ev" || r.str_or("s") == "h"; }
     void fail(const std::string& m) { if (error.empty()) error = m; }
     void apply(const Json& r) {   // a record the host made: apply it to the VM state and pass it through
@@ -45,7 +61,7 @@ struct Recorded : Host {
             fail("host call mismatch: VM " + f + " " + dump_json(args) + " vs golden " + h.str_or("f") + " " + dump_json(*h.get("a")));
             return Json();
         }
-        Json r = *h.get("r"); pos++;
+        Json r = answer(f, args, *h.get("r")); pos++;
         tr->emit(Json::obj().set("t", Json::str("h")).set("f", Json::str(f)).set("a", args).set("r", r));
         drain();
         return r;
@@ -54,7 +70,7 @@ struct Recorded : Host {
 
 }  // namespace
 
-ReplayResult replay(const std::string& golden, const std::vector<Source>& sources, const std::string& until) {
+ReplayResult replay(const std::string& golden, const std::vector<Source>& sources, const std::string& until, const Compute* compute) {
     ReplayResult R; Trace tr; tr.until = until;
     std::vector<Json> driver; Recorded host; host.tr = &tr;
     std::istringstream in(golden); std::string line; size_t vmseen = 0;
@@ -71,6 +87,14 @@ ReplayResult replay(const std::string& golden, const std::vector<Source>& source
         const Json& b = driver[0]; const Json* sd = b.get("seed");
         host.seed = (uint32_t)(sd ? sd->n : 0);
         Vm vm(book, host, tr, host.seed); host.vm = &vm;
+        std::unique_ptr<Rules> rules;
+        if (compute && (compute->checks || compute->sheet || compute->meters)) {
+            rules = std::make_unique<Rules>(book, host.seed); rules->bind(&vm);
+            host.rules = rules.get(); host.cfg = compute; host.stats = &R.modules;
+            auto cs = compute->class_sheets.find(b.str_or("policy"));
+            rules->start(cs != compute->class_sheets.end() ? cs->second : rules->ruleset().str("start-archetype"));
+            for (auto& e : rules->ruleset().errors) host.fail("ruleset: " + e);
+        }
         std::vector<std::string> flags; if (auto* f = b.get("flags")) for (auto& x : f->a) flags.push_back(x.s);
         std::set<std::string> exits; if (auto* e = b.get("exits")) for (auto& x : e->a) exits.insert(x.s);
         const Json* vars = b.get("vars"); const Json* ck = b.get("clock");
