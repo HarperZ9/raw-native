@@ -8,7 +8,7 @@ import { advanceFor, WORLDS } from "./threads.mjs";
 import { fingerprint, jaccard, methodOf, tokens } from "./threads-fingerprint.mjs";
 
 const src = readFileSync(new URL("../src/renderer/gpu/shaders/threads.wgsl", import.meta.url), "utf8").replace(/\r\n/g, "\n");
-const legacy = JSON.parse(readFileSync(new URL("./test/threads-legacy.fingerprint.json", import.meta.url), "utf8"));
+const legacy = JSON.parse(readFileSync(new URL("../tests/web/threads-legacy.fingerprint.json", import.meta.url), "utf8"));
 const layout = readFileSync(new URL("../src/renderer/gpu/shaders/threads_layout.hpp", import.meta.url), "utf8");
 // Below this share of eight-token shingles, two passes are different algorithms.
 // The ported version measured 1.0 against itself and 0.18 (advance) and 0.31
