@@ -78,10 +78,18 @@ function capMesh(c, r, axis, ang, bulge = 0, seg = 24, rings = 4, at = null) {
   for (let j = 0; j < rings; j++) for (let i = 0; i < seg; i++) { const p = j * seg + i, q = j * seg + (i + 1) % seg, d = p + seg, e = q + seg; tri.push(p, d, q, q, d, e); }
   return { pos: Float32Array.from(pos), tri: Uint32Array.from(tri) };
 }
+// An eye record may carry seat: { stroke, gap, offset }. The globe then takes the centre of that lid stroke and a radius gap short
+// of its smallest radius, so moving the lid moves the eye.
+export function seatEye(S, e) {
+  if (!e.seat) return e;
+  const s = S.strokes.find((q) => q.id === e.seat.stroke); if (!s) throw new Error("eye seat: no stroke " + e.seat.stroke);
+  const off = e.seat.offset || [0, 0, 0];
+  return { ...e, c: [s.c[0] + off[0], s.c[1] + off[1], s.c[2] + off[2]], r: Math.min(...(Array.isArray(s.r) ? s.r : [s.r])) - (e.seat.gap ?? 0.0012) };
+}
 export function eyeParts(S) {
   const out = [];
-  for (const e of S.eyes || []) for (const mir of e.mirror ? [1, -1] : [1]) {
-    const c = [e.c[0] * mir, e.c[1], e.c[2]], g = norm([e.gaze[0] * mir, e.gaze[1], e.gaze[2]]), ir = e.iris, ang = Math.asin(ir / e.r), fin = (m, name, color, spec) => { const nrm = new Float32Array(m.pos.length); for (let v = 0; v < m.pos.length; v += 3) { const n = norm([m.pos[v] - c[0], m.pos[v + 1] - c[1], m.pos[v + 2] - c[2]]); nrm.set(n, v); } return { ...m, nrm, name, color, spec, material: name }; };
+  for (const e0 of S.eyes || []) for (const mir of e0.mirror ? [1, -1] : [1]) {
+    const e = seatEye(S, e0), c = [e.c[0] * mir, e.c[1], e.c[2]], g = norm([e.gaze[0] * mir, e.gaze[1], e.gaze[2]]), ir = e.iris, ang = Math.asin(ir / e.r), fin = (m, name, color, spec) => { const nrm = new Float32Array(m.pos.length); for (let v = 0; v < m.pos.length; v += 3) { const n = norm([m.pos[v] - c[0], m.pos[v + 1] - c[1], m.pos[v + 2] - c[2]]); nrm.set(n, v); } return { ...m, nrm, name, color, spec, material: name }; };
     const bulge = e.bulge ?? 0.0007, rc = e.r * 0.62, cc = c.map((v, i) => v + g[i] * (e.r + bulge - rc));
     out.push(fin(sphereMesh(c, e.r), "eye_sclera", e.sclera || [0.82, 0.78, 0.7]));
     out.push(fin(capMesh(cc, rc * 1.002, g, Math.asin(Math.min(1, ir / rc)), 0, 28, 4), "eye_iris", e.irisColor || [0.36, 0.4, 0.42], 40));
