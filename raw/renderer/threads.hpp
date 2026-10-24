@@ -1,6 +1,6 @@
 #pragma once
-// Threads: particles flow along the zero set of one of fifteen form fields and
-// leave luminous trails, tone-mapped by log density. The passes are
+// Threads: chains of eight nodes held on the level lines of one of fifteen form
+// fields, drawn as strokes of light and stretched by asinh of density. The passes are
 // src/renderer/gpu/shaders/threads.wgsl; this records them as a frame graph on
 // the RHI, so the D3D12 build runs the same shader source as the web host
 // (web/threads.mjs). A creative module: it has no CPU reference and writes no
