@@ -18,7 +18,20 @@ function rotInv(rot) {
 }
 const frame = (m, x, y, z) => m ? [m[0] * x + m[1] * y + m[2] * z, m[3] * x + m[4] * y + m[5] * z, m[6] * x + m[7] * y + m[8] * z] : [x, y, z];
 
-export function shapeFn(s) {
+import { PRIMS } from "./prims.mjs";
+import { applyMods, modBox, sminV, sminW } from "./mods.mjs";
+const H = 1e-5;
+// legacy shapes have no analytic normal: central differences of the leaf alone (6 evaluations), only when asked
+function legacyLeaf(s) {
+  const f = legacyShape(s);
+  return (x, y, z, g) => {
+    if (g) { const a = f(x + H, y, z) - f(x - H, y, z), b = f(x, y + H, z) - f(x, y - H, z), c = f(x, y, z + H) - f(x, y, z - H), l = hypot3(a, b, c) || 1; g[0] = a / l; g[1] = b / l; g[2] = c / l; }
+    return f(x, y, z);
+  };
+}
+export const KITS = new Set(Object.keys(PRIMS));
+export function shapeFn(s) { return applyMods(PRIMS[s.shape] ? PRIMS[s.shape](s) : legacyLeaf(s), s.mods); }
+function legacyShape(s) {
   const m = rotInv(s.rot);
   if (s.shape === "ell") {
     const [cx, cy, cz] = s.c, [rx, ry, rz] = s.r;
@@ -40,7 +53,17 @@ export function shapeFn(s) {
 }
 
 // the box a stroke can reach, for culling (rotated shapes use the largest radius)
-export function strokeBox(s) {
+function kitBox(s) {
+  const around = (c, r) => ({ lo: c.map((v) => v - r), hi: c.map((v) => v + r) });
+  if (s.shape === "rbox") return around(s.c, s.rot ? hypot3(...s.r) : Math.max(...s.r));
+  if (s.shape === "ellb") return around(s.c, Math.max(...s.r));
+  if (s.shape === "torx") return around(s.c, s.R + s.r);
+  if (s.shape === "ext") { const P = s.prof, pe = P.kind === "circle" ? P.r : P.kind === "rrect" ? Math.hypot(P.hx, P.hy) : Math.max(...P.pts.map((p) => Math.hypot(...p))); return around(s.c, Math.hypot(pe, s.h)); }
+  const rm = Math.max(...(Array.isArray(s.r) ? s.r : [s.r]));   // rcone, cone
+  return { lo: s.a.map((v, i) => Math.min(v, s.b[i]) - rm), hi: s.a.map((v, i) => Math.max(v, s.b[i]) + rm) };
+}
+export const strokeBox = (s) => modBox(KITS.has(s.shape) ? kitBox(s) : baseBox(s), s.mods);
+function baseBox(s) {
   const around = (c, r) => ({ lo: c.map((v, i) => v - (Array.isArray(r) ? r[i] : r)), hi: c.map((v, i) => v + (Array.isArray(r) ? r[i] : r)) });
   if (s.shape === "ell") return around(s.c, s.rot ? Math.max(...s.r) : s.r);
   if (s.shape === "box") return around(s.c, s.rot ? hypot3(...s.r) : s.r.map((v) => v));
@@ -50,19 +73,26 @@ export function strokeBox(s) {
 
 export const mirrorStroke = (s) => {
   const f = (p) => p && [-p[0], p[1], p[2]], o = { ...s, id: s.id + ".m", mirror: false };
+  if (s.mods?.some((m) => m.c || m.mask || m.kind === "mirror" || m.kind === "repeat" || m.src?.dir)) o.mods = s.mods.map((m) => ({ ...m, c: m.c && f(m.c), mask: m.mask && { ...m.mask, c: f(m.mask.c) }, src: m.src?.dir ? { ...m.src, dir: f(m.src.dir) } : m.src }));
   for (const key of ["c", "a", "b"]) if (s[key]) o[key] = f(s[key]);
   if (s.rot) o.rot = [s.rot[0], -s.rot[1], -s.rot[2]];   // yaw and roll flip across the x = 0 plane
   return o;
 };
 export const expandStrokes = (strokes) => strokes.flatMap((s) => (s.mirror ? [s, mirrorStroke(s)] : [s]));
 
+const foldV = (cur, v, s) => (s.op === "add" ? sminV(cur, v, s.k, s.cubic) : s.op === "sub" ? -sminV(-cur, v, s.k, s.cubic) : -sminV(-cur, -v, s.k, s.cubic));
+function foldG(cur, gc, v, gv, s) {   // sub: -smin(-d, v); and: -smin(-d, -v); gradient weights are the exact derivative
+  const a = s.op === "add" ? cur : -cur, b = s.op === "and" ? -v : v, w = sminW(a, b, s.k, s.cubic), sb = s.op === "sub" ? -1 : 1;
+  for (let i = 0; i < 3; i++) gc[i] = w * gc[i] + (1 - w) * sb * gv[i];
+  return foldV(cur, v, s);
+}
 const CULL_MARGIN = 0.02;   // how far outside its box a stroke can still change the field inside the narrow band
 export class Field {
   constructor(strokes, { exclude = null, cull = true } = {}) {
     this.cull = cull;
     this.list = expandStrokes(strokes).filter((s) => !(exclude && s.tag && exclude.has(s.tag))).map((s) => {
       const k = s.k ?? 0.01, b = strokeBox(s), pad = k + CULL_MARGIN;
-      return { f: shapeFn(s), op: s.op, hair: s.tag === "hair", k, lo: b.lo.map((v) => v - pad), hi: b.hi.map((v) => v + pad), tlo: b.lo, thi: b.hi };
+      return { f: shapeFn(s), op: s.op, cubic: s.blend === "cubic", hair: s.tag === "hair", k, lo: b.lo.map((v) => v - pad), hi: b.hi.map((v) => v + pad), tlo: b.lo, thi: b.hi };
     });
   }
   d(x, y, z) {
@@ -70,15 +100,26 @@ export class Field {
     for (const s of this.list) {
       if (this.cull && s.op !== "and" && (x < s.lo[0] || x > s.hi[0] || y < s.lo[1] || y > s.hi[1] || z < s.lo[2] || z > s.hi[2])) continue;
       const v = s.f(x, y, z);
-      if (s.hair) { hairy = true; h = s.op === "add" ? smin(h, v, s.k) : s.op === "sub" ? smax(h, -v, s.k) : smax(h, v, s.k); }
-      else d = s.op === "add" ? smin(d, v, s.k) : s.op === "sub" ? smax(d, -v, s.k) : smax(d, v, s.k);
+      if (s.hair) { hairy = true; h = foldV(h, v, s); } else d = foldV(d, v, s);
     }
     return hairy ? smin(d, h, 0.003) : d;   // strokes tagged "hair" fold on their own, so a hair clip never cuts skin
   }
-  grad(x, y, z, h = 0.0004) {
+  // value and analytic gradient of the whole fold (exact derivative of the smooth blends); returns d, writes unnormalised g
+  dg(x, y, z, g) {
+    let d = 1e3, h = 1e3, hairy = false; const gd = [0, 0, 0], gh = [0, 0, 0], gv = [0, 0, 0];
+    for (const s of this.list) {
+      if (this.cull && s.op !== "and" && (x < s.lo[0] || x > s.hi[0] || y < s.lo[1] || y > s.hi[1] || z < s.lo[2] || z > s.hi[2])) continue;
+      const v = s.f(x, y, z, gv);
+      if (s.hair) { hairy = true; h = foldG(h, gh, v, gv, s); } else d = foldG(d, gd, v, gv, s);
+    }
+    if (hairy) { const w = sminW(d, h, 0.003, false); for (let i = 0; i < 3; i++) g[i] = w * gd[i] + (1 - w) * gh[i]; return sminV(d, h, 0.003, false); }
+    g[0] = gd[0]; g[1] = gd[1]; g[2] = gd[2]; return d;
+  }
+  gradFD(x, y, z, h = 0.0004) {
     const g = [this.d(x + h, y, z) - this.d(x - h, y, z), this.d(x, y + h, z) - this.d(x, y - h, z), this.d(x, y, z + h) - this.d(x, y, z - h)], l = hypot3(...g) || 1;
     return [g[0] / l, g[1] / l, g[2] / l];
   }
+  grad(x, y, z) { const g = [0, 0, 0]; this.dg(x, y, z, g); const l = hypot3(...g) || 1; return [g[0] / l, g[1] / l, g[2] / l]; }
   // true when some add stroke could place surface inside the box (brick test for the sparse grid)
   touches(lo, hi, band) {
     for (const s of this.list) if (s.op === "add" && !(hi[0] < s.tlo[0] - band - s.k || lo[0] > s.thi[0] + band + s.k || hi[1] < s.tlo[1] - band - s.k || lo[1] > s.thi[1] + band + s.k || hi[2] < s.tlo[2] - band - s.k || lo[2] > s.thi[2] + band + s.k)) return true;
