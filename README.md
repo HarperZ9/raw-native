@@ -223,15 +223,20 @@ port and is not a build dependency.
 
 `web/raw-gpu.mjs` runs WGSL compute and render pipelines through a frame graph
 on WebGPU, with per-pass GPU timing, as one ES module with no dependency.
-`web/threads.mjs` drives Threads on it: particles that trace one of fifteen
-form fields and leave light, about 0.25 ms of GPU time per frame at 960 x 540
-with 262,144 particles on an RTX 4090. The same WGSL runs natively:
+`web/threads.mjs` drives Threads on it: chains of eight nodes held on the level
+lines of one of fifteen form fields by position-based constraints, steered by a
+structure-tensor tangent field and drawn as strokes of light, about 0.9 ms of
+GPU time per frame at 960 x 540 with 262,144 nodes on an RTX 4090 (shared with
+other work when measured). The same WGSL runs natively:
 
 ```sh
 raw_native_cli threads --world 5 --frames 90 --width 960 --height 540 --out ./out   # D3D12 build
 ```
 
-Threads has no CPU reference and writes no certificate.
+Threads has no CPU reference and writes no certificate. On a GPU,
+`python tests/gpu/threads_golden.py <cli>` checks six worlds against the goldens
+in `evidence/threads/` and checks that their stroke structure stays far from the
+earlier ported renderer's.
 Open `bench/threads.html` through `python bench/serve.py` to time it in a browser.
 
 ### Textures, compositing and one device

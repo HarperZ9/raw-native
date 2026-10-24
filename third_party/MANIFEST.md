@@ -38,7 +38,7 @@ These were found while writing this manifest and are not resolved here:
 
 - **The Hanken Grotesk font version is not recorded.** The atlas does not record which release of the font file it was cut from. The next atlas build should write the font's version string and the SHA-256 of its file into the atlas.
 - **The full OFL-1.1 text is not in the repository.** (Resolved for Hanken Grotesk on 2026-10-16: `third_party/fonts/OFL-hanken-grotesk.txt`, copied from the site repository's vendored copy.) The atlas carries the copyright line and the licence URL. The OFL asks that the licence travel with the font software, and whether a derived glyph atlas needs the full text beside it is not settled here. Adding the text from the upstream repository needs a download, which waits for the author's approval.
-- **The Threads shader names no source.** `src/renderer/gpu/shaders/threads.wgsl` says it was "ported from a GLSL thread renderer" but does not name which. If that renderer is the author's own, it is first party and belongs nowhere in this file. If it is not, it needs a row here.
+- **The Threads shader names no source.** (Resolved on 2026-10-23.) The renderer it was ported from is first party: the offline thread renderer written for the author's One Step film on 2026-10-04 (a moderngl tool in the author's private work notes), so it needs no row here. Threads was then rebuilt from first principles on the engine's own primitives (position-based chains, a structure-tensor tangent field, the noise module, the rope ease and spring token, an asinh finish). The shader header names every published idea it uses. `web/threads.test.mjs` checks that the method is not the ported one renamed.
 
 ## Hashes
 

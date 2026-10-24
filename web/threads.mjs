@@ -1,5 +1,5 @@
-// Threads on the web host: particles that flow along the zero set of a form
-// field, fifteen worlds, crossfading through an aperture. The passes are
+// Threads on the web host: chains of light held on the level lines of a form
+// field, fifteen worlds, crossing from one to the next through an iris. The passes are
 // src/renderer/gpu/shaders/threads.wgsl, the same source the D3D12 build runs.
 //
 //   const host = await createHost({ canvas });
