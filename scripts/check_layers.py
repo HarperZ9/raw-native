@@ -8,7 +8,7 @@ or src/ (app/ is the tools layer). A file may include:
   - a graphics or OS API header only where API_HEADERS allows it;
   - a vendored header only where VENDORED allows it.
 Public headers (raw/) include public headers only. Code includes the layered
-path raw/<layer>/<name>.hpp. The 0.5 paths raw/<name>.hpp were removed in 0.8.0,
+path raw/<layer>/<name>.hpp (.h for a plain C ABI header). The 0.5 paths raw/<name>.hpp were removed in 0.8.0,
 and a header placed directly under raw/ is refused.
 tests/ may include any public header and is not checked further.
 
@@ -88,7 +88,7 @@ def check_file(rel, text, exists):
                 if pat.search(inc) and not rel.startswith(dirs):
                     out.append(f"{rel}: includes the API header <{inc}>, allowed only in {', '.join(dirs)}")
             continue
-        m = re.fullmatch(r"raw/(\w+)/[\w/]+\.hpp", inc)
+        m = re.fullmatch(r"raw/(\w+)/[\w/]+\.h(?:pp)?", inc)
         if m:
             if m.group(1) not in allowed:
                 out.append(f"{rel}: layer {layer} may not include {inc} (layer {m.group(1)})")
@@ -132,7 +132,7 @@ def report():
         if not layer or rel.startswith("tests/"):
             continue
         for kind, inc in INCLUDE.findall(text):
-            m = re.fullmatch(r"raw/(\w+)/[\w/]+\.hpp", inc) if kind == '"' else None
+            m = re.fullmatch(r"raw/(\w+)/[\w/]+\.h(?:pp)?", inc) if kind == '"' else None
             if m and m.group(1) != layer:
                 edges.setdefault(layer, set()).add(m.group(1))
     for layer in LAYERS:
@@ -156,6 +156,7 @@ def selftest():
         "vendored header outside its layer": ("src/core/x.cpp", '#include "superstack.hpp"\n'),
         "undeclared layer": ("src/physics/x.cpp", '#include "raw/core/arena.hpp"\n'),
         "another backend's private header": ("src/rhi/webgpu/w.cpp", '#include "../d3d12/d.hpp"\n'),
+        "upward include of a C header": ("src/core/x.cpp", '#include "raw/game/lowwater/rules_c.h"\n'),
     }
     for what, (rel, text) in refused.items():
         if not check_file(rel, text, exists):
@@ -166,6 +167,7 @@ def selftest():
         "private header beside it": ("src/core/a.cpp", '#include "p.hpp"\n'),
         "API header in its backend": ("src/rhi/d3d12/x.cpp", "#include <d3d12.h>\n#include <wrl/client.h>\n"),
         "standard headers": ("src/core/x.cpp", "#include <vector>\n#include <span>\n"),
+        "a C ABI header of its own layer": ("src/game/x.cpp", '#include "raw/game/lowwater/rules_c.h"\n'),
     }
     for what, (rel, text) in accepted.items():
         if check_file(rel, text, exists):
