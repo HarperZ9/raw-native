@@ -6,13 +6,13 @@ import { retopo, meshError, quadQuality } from "./retopo.mjs";
 import { triangulate } from "./extract.mjs";
 import { unwrap } from "./uv.mjs";
 import { Volume, makeSampler, bakeMaps, dilate, curvByte, cavByte } from "./bake.mjs";
-import { decimate, triError } from "./decimate.mjs";
+import { adaptiveLod, triError } from "./decimate.mjs";
 import { paintAt } from "./paint.mjs";
 import { packAsset, sha256, stringifySculpt } from "./format.mjs";
 import { encodePng, decodePng } from "./png.mjs";
 import { renderView, hstack, upscale, savePng, eyeParts } from "./render.mjs";
 
-export const LODS = [{ name: "portrait", cell: 0.003, relax: 3, budget: 40000, tol: 0.0015 }, { name: "play", cell: 0.006, relax: 3, budget: 9000, tol: 0.0033 }, { name: "far", cell: 0.010, relax: 2, budget: 3000, tol: 0.006 }];
+export const LODS = [{ name: "portrait", cell: 0.003, relax: 3, budget: 40000, tol: 0.0015 }, { name: "play", cell: 0.006, baseCell: 0.004, relax: 3, budget: 9000, tol: 0.0033 }, { name: "far", cell: 0.010, baseCell: 0.004, relax: 2, budget: 3000, tol: 0.006 }];
 const now = () => Number(process.hrtime.bigint()) / 1e6;
 const map8 = (a, W, H, ch = 1) => ({ w: W, h: H, c: ch, data: a });
 
@@ -29,9 +29,9 @@ export function buildAsset({ sculpt, paint, res = 1024, lods = LODS, refCell = 0
     let tri = triangulate(M), out = M, adaptive = null;
     const uniform = { tris: tri.length / 3, error: meshError(F, M) };
     if (L.budget && L.adaptive !== false) {   // curvature-adaptive: quadric collapse against the field, to the budget inside the tolerance
-      const D = decimate(F, { pos: M.pos, tri }, { target: L.budget, tol: L.tol }), W = D.pos.length / 3, c2 = new Float32Array(W * 3), cv2 = new Uint8Array(W), ca2 = new Uint8Array(W), h2 = new Uint8Array(W);
+      const D = adaptiveLod(F, B, { ...L, base: { ...M, tri } }), W = D.pos.length / 3, c2 = new Float32Array(W * 3), cv2 = new Uint8Array(W), ca2 = new Uint8Array(W), h2 = new Uint8Array(W);
       for (let v = 0; v < W; v++) { const S = sampler([D.pos[v * 3], D.pos[v * 3 + 1], D.pos[v * 3 + 2]], v); c2.set(paintAt(paint, S), v * 3); cv2[v] = curvByte(S.kappa); ca2[v] = cavByte(S.cav); h2[v] = S.hair; }
-      adaptive = { tris: D.tri.length / 3, error: triError(F, D), stats: D.stats, budget: L.budget, budgetMet: D.tri.length / 3 <= L.budget, tol: L.tol }; out = { ...M, pos: D.pos, nrm: D.nrm, quads: new Uint32Array(0) }; tri = D.tri; outLods.push({ ...L, M: out, uvM: M, col: c2, curv: cv2, cav: ca2, hair: h2, tri }); 
+      adaptive = { baseCell: D.baseCell, baseTris: D.baseTris, tris: D.tri.length / 3, error: triError(F, D), stats: D.stats, budget: L.budget, budgetMet: D.tri.length / 3 <= L.budget, tol: L.tol }; out = { ...M, pos: D.pos, nrm: D.nrm, quads: new Uint32Array(0) }; tri = D.tri; outLods.push({ ...L, M: out, uvM: M, col: c2, curv: cv2, cav: ca2, hair: h2, tri }); 
     } else outLods.push({ ...L, M, uvM: M, col, curv, cav, hair, tri });
     bounds.lods.push({ name: L.name, cell: L.cell, vertices: out.pos.length / 3, tris: tri.length / 3, uniform, adaptive, error: adaptive ? adaptive.error : meshError(F, M), quality: quadQuality(M) }); tick(`lod_${L.name}`, t0);
   }

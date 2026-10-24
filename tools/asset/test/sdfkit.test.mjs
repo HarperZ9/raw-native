@@ -197,3 +197,22 @@ test("adaptive decimation meets the budget inside the tolerance; a zero toleranc
   const Z = decimate(F, { pos: M.pos, tri }, { target, tol: 0 });
   assert.ok(Z.tri.length / 3 > target, "control: tolerance 0 cannot reach the budget");
 });
+
+test("decimation never leaves a face sagging past the tolerance (fails on the centroid-blind version: max 6.19 mm against 6 mm)", () => {
+  const F = new Field([{ id: "a", op: "add", shape: "ellb", c: [0, 0, 0], r: [0.05, 0.06, 0.05], k: 0.02, blend: "cubic" }, { id: "n", op: "add", shape: "rcone", a: [0, -0.01, 0.04], b: [0, -0.03, 0.07], r: [0.01, 0.005], k: 0.02, blend: "cubic" },
+    { id: "e", op: "add", shape: "ellb", c: [0.03, 0.02, 0.04], r: [0.012, 0.008, 0.01], k: 0.01, blend: "cubic", mirror: true }, { id: "s", op: "sub", shape: "ellb", c: [0.02, -0.03, 0.05], r: [0.006, 0.003, 0.006], k: 0.003, mirror: true }]);
+  const B = F.bounds(0.004), M = retopo(F, { lo: B.lo, hi: B.hi, cell: 0.004, relax: 2 }), tri = triangulate(M);
+  const D = decimate(F, { pos: M.pos, tri }, { target: Math.floor(tri.length / 3 * 0.08), tol: 0.006 });
+  assert.ok(D.tri.length / 3 < tri.length / 3 * 0.2, "decimated hard");
+  assert.ok(triError(F, D).max <= 0.006, `max sag ${triError(F, D).max}`);
+});
+
+import { adaptiveLod } from "../src/decimate.mjs";
+test("a finer base cell keeps the decimated mesh inside tol; the coarse base fails it (control, the old behaviour)", () => {
+  const F = new Field([{ id: "a", op: "add", shape: "ellb", c: [0, 0, 0], r: [0.05, 0.06, 0.05], k: 0.02, blend: "cubic" }, { id: "ear", op: "add", shape: "ellb", c: [0.055, 0, -0.01], r: [0.008, 0.03, 0.018], k: 0.006, blend: "cubic", mirror: true },
+    { id: "e", op: "add", shape: "ellb", c: [0.03, 0.02, 0.04], r: [0.012, 0.008, 0.01], k: 0.01, blend: "cubic", mirror: true }, { id: "s", op: "sub", shape: "ellb", c: [0.02, -0.03, 0.05], r: [0.006, 0.003, 0.006], k: 0.003, mirror: true }]);
+  const B = F.bounds(0.004), tol = 0.004, fine = adaptiveLod(F, B, { cell: 0.010, baseCell: 0.004, budget: 500, tol }), old = adaptiveLod(F, B, { cell: 0.010, budget: 500, tol });
+  assert.equal(fine.baseCell, 0.004); assert.equal(old.baseCell, 0.010);
+  assert.ok(triError(F, fine).max <= tol + 1e-9, `fine base max ${triError(F, fine).max}`);
+  assert.ok(triError(F, old).max > tol * 1.5, `control: the coarse base must exceed tol, got ${triError(F, old).max}`);
+});

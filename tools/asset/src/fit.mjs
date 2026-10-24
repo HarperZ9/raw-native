@@ -23,6 +23,11 @@ function solve(A, b) {   // Gaussian elimination with partial pivoting
   for (let r = n - 1; r >= 0; r--) { let s = M[r][n]; for (let k = r + 1; k < n; k++) s -= M[r][k] * x[k]; x[r] = s / (M[r][r] || 1e-12); }
   return x;
 }
+// Shape-level parameters (a rig): one scalar v in metres drives several stroke entries, S[id][key][i] = S0[id][key][i] + gain * v.
+// The fit then has a handful of meaningful degrees of freedom (jaw width, brow depth) and not one per stroke number.
+function applyRig(S, S0, rig, v) {
+  for (const e of rig.edits) { const si = S.findIndex((s) => s.id === e.id); if (si < 0) throw new Error("rig " + rig.name + ": no stroke " + e.id); S[si][e.key][e.i] = S0[si][e.key][e.i] + e.gain * v; }
+}
 export const skinField = (strokes, cull = false) => new Field(strokes, { exclude: SKIN, cull });   // no culling: a far landmark must see the true field, not 1e3
 // distance from each landmark to the zero set: Newton projection of the landmark onto the surface, metres
 export function landmarkErrors(strokes, landmarks) {
@@ -39,8 +44,8 @@ export function creaseOf(strokes, cell = 0.004) {
   a.sort((x, y) => x - y);
   return { max: a[a.length - 1], p99: a[Math.floor(0.99 * (a.length - 1))] };
 }
-export function fitLandmarks(strokes0, landmarks, { free, tol = 0.002, iters = 40, lambda = 1, scale = 0.01, creaseSlack = 15, rMin = 0.6, rMax = 1.6 } = {}) {
-  const ps = paramsOf(strokes0, new Set(free)), x0 = ps.map((p) => get(strokes0, p)), before = landmarkErrors(strokes0, landmarks), c0 = creaseOf(strokes0);
+export function fitLandmarks(strokes0, landmarks, { free = [], rigs = [], tol = 0.002, iters = 40, lambda = 1, scale = 0.01, creaseSlack = 15, rMin = 0.6, rMax = 1.6 } = {}) {
+  const ps = [...paramsOf(strokes0, new Set(free)), ...rigs.map((r) => ({ rig: r }))], x0 = ps.map((p) => (p.rig ? 0 : get(strokes0, p))), put = (S, p, v) => (p.rig ? applyRig(S, strokes0, p.rig, v) : set(S, p, v)), before = landmarkErrors(strokes0, landmarks), c0 = creaseOf(strokes0);
   let lam = lambda, best = null;
   for (let attempt = 0; attempt < 4; attempt++, lam *= 8) {
     const S = JSON.parse(JSON.stringify(strokes0)), x = [...x0], w = lam * 1e-6 / (scale * scale);   // trust weight per parameter
@@ -48,20 +53,21 @@ export function fitLandmarks(strokes0, landmarks, { free, tol = 0.002, iters = 4
     const cost = (rr, xx) => rr.reduce((s, v) => s + v * v, 0) + xx.reduce((s, v, i) => s + w * (v - x0[i]) ** 2, 0);
     let r = res(), cur = cost(r, x), mu = 1e-6;
     for (let it = 0; it < iters; it++) {
-      const J = ps.map((p, j) => { const h = 2e-5, v = x[j]; set(S, p, v + h); const rp = res(); set(S, p, v); return rp.map((q, i) => (q - r[i]) / h); });
+      const J = ps.map((p, j) => { const h = 2e-5, v = x[j]; put(S, p, v + h); const rp = res(); put(S, p, v); return rp.map((q, i) => (q - r[i]) / h); });
       const n = ps.length, A = Array.from({ length: n }, (_, a) => Array.from({ length: n }, (_, b) => J[a].reduce((s, v, i) => s + v * J[b][i], 0) + (a === b ? mu + w : 0)));
       const g = J.map((col, a) => col.reduce((s, v, i) => s + v * r[i], 0) + w * (x[a] - x0[a])), d = solve(A, g.map((v) => -v));
       const xn = x.map((v, j) => {
-        const p = ps[j], lo = p.k === "r" ? x0[j] * rMin : -Infinity, hi = p.k === "r" ? x0[j] * rMax : Infinity;
+        const p = ps[j]; if (p.rig) { const m = p.rig.max ?? 0.008; return Math.max(-m, Math.min(m, v + Math.max(-0.01, Math.min(0.01, d[j])))); }   // a rig scalar stays within +-max metres (default 8 mm)
+        const lo = p.k === "r" ? x0[j] * rMin : -Infinity, hi = p.k === "r" ? x0[j] * rMax : Infinity;
         return Math.min(hi, Math.max(lo, v + Math.max(-0.01, Math.min(0.01, d[j]))));
       });
-      ps.forEach((p, j) => set(S, p, xn[j])); const rn = res(), cn = cost(rn, xn);
+      ps.forEach((p, j) => put(S, p, xn[j])); const rn = res(), cn = cost(rn, xn);
       if (cn < cur) { const done = cur - cn < 1e-13; for (let j = 0; j < n; j++) x[j] = xn[j]; r = rn; cur = cn; mu = Math.max(1e-9, mu / 3); if (done) break; }
-      else { ps.forEach((p, j) => set(S, p, x[j])); mu *= 5; }
+      else { ps.forEach((p, j) => put(S, p, x[j])); mu *= 5; }
     }
-    ps.forEach((p, j) => set(S, p, x[j]));
+    ps.forEach((p, j) => put(S, p, x[j]));
     const after = landmarkErrors(S, landmarks), cr = creaseOf(S), ok = cr.p99 <= c0.p99 + creaseSlack;
-    best = { strokes: S, before, after, crease: { before: c0, after: cr, ok }, tolMet: after.every((e) => e.err <= tol), attempts: attempt + 1 };
+    best = { strokes: S, rigValues: Object.fromEntries(ps.map((p, j) => [p.rig?.name, x[j]]).filter(([n]) => n)), before, after, crease: { before: c0, after: cr, ok }, tolMet: after.every((e) => e.err <= tol), attempts: attempt + 1 };
     if (ok) break;
   }
   return best;

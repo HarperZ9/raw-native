@@ -4,6 +4,8 @@
 // a neighbouring face would flip, or when the vertex sits on an open boundary. Stops at the triangle budget or when no
 // collapse passes. Deterministic: ties break on vertex ids.
 import { project } from "./sdf.mjs";
+import { retopo } from "./retopo.mjs";
+import { triangulate } from "./extract.mjs";
 
 class Heap {
   constructor() { this.a = []; }
@@ -36,6 +38,11 @@ export function decimate(F, M, { target, tol, minDot = 0.1 }) {
     const m = project(F, [(P[a * 3] + P[b * 3]) / 2, (P[a * 3 + 1] + P[b * 3 + 1]) / 2, (P[a * 3 + 2] + P[b * 3 + 2]) / 2], 5, tol), around = new Set([...vf[a], ...vf[b]]), shared = [...vf[a]].filter((f) => vf[b].has(f));
     let ok = m[3] <= tol * 0.25;
     const oldP = [P[a * 3], P[a * 3 + 1], P[a * 3 + 2]];
+    const sag = (f, rm) => {   // field distance at the centroid and the three edge midpoints of face f, with vertex b read as a
+      const v = [0, 1, 2].map((k) => (rm && T[f * 3 + k] === b ? a : T[f * 3 + k])), at = (u, w, s) => Math.abs(F.d((P[u * 3] + P[w * 3] + (s ? P[s * 3] : 0)) / (s ? 3 : 2), (P[u * 3 + 1] + P[w * 3 + 1] + (s ? P[s * 3 + 1] : 0)) / (s ? 3 : 2), (P[u * 3 + 2] + P[w * 3 + 2] + (s ? P[s * 3 + 2] : 0)) / (s ? 3 : 2)));
+      return Math.max(at(v[0], v[1], v[2]), at(v[0], v[1]), at(v[1], v[2]), at(v[2], v[0]));
+    };
+    const oldSag = new Map(); if (ok) for (const f of around) if (!shared.includes(f)) oldSag.set(f, sag(f, false));
     if (ok) {
       P[a * 3] = m[0]; P[a * 3 + 1] = m[1]; P[a * 3 + 2] = m[2];
       for (const f of around) {
@@ -48,7 +55,7 @@ export function decimate(F, M, { target, tol, minDot = 0.1 }) {
         void pb;
       }
     }
-    if (ok) for (const f of around) { if (shared.includes(f)) continue; for (let e2 = 0; e2 < 3 && ok; e2++) { const u = T[f * 3 + e2] === b ? a : T[f * 3 + e2], w = T[f * 3 + (e2 + 1) % 3] === b ? a : T[f * 3 + (e2 + 1) % 3]; if (u !== a && w !== a) continue; if (Math.abs(F.d((P[u * 3] + P[w * 3]) / 2, (P[u * 3 + 1] + P[w * 3 + 1]) / 2, (P[u * 3 + 2] + P[w * 3 + 2]) / 2)) > tol) ok = false; } }
+    if (ok) for (const [f, was] of oldSag) { const now = sag(f, true); if (now > tol && now > was + 1e-4) { ok = false; break; } }   // a face may not sag past tol unless it already did, and then not further
     if (!ok) { P[a * 3] = oldP[0]; P[a * 3 + 1] = oldP[1]; P[a * 3 + 2] = oldP[2]; rejected++; continue; }
     for (const f of shared) { alive[f] = 0; tris--; for (let k = 0; k < 3; k++) vf[T[f * 3 + k]].delete(f); }
     for (const f of vf[b]) { for (let k = 0; k < 3; k++) if (T[f * 3 + k] === b) T[f * 3 + k] = a; vf[a].add(f); }
@@ -68,4 +75,12 @@ export function triError(F, M) {
   const p = M.pos, d = [], t = M.tri, at = (a, b, c) => d.push(Math.abs(F.d((p[a * 3] + p[b * 3] + p[c * 3]) / 3, (p[a * 3 + 1] + p[b * 3 + 1] + p[c * 3 + 1]) / 3, (p[a * 3 + 2] + p[b * 3 + 2] + p[c * 3 + 2]) / 3)));
   for (let i = 0; i < t.length; i += 3) { at(t[i], t[i + 1], t[i + 2]); for (let e = 0; e < 3; e++) { const a = t[i + e], b = t[i + (e + 1) % 3]; d.push(Math.abs(F.d((p[a * 3] + p[b * 3]) / 2, (p[a * 3 + 1] + p[b * 3 + 1]) / 2, (p[a * 3 + 2] + p[b * 3 + 2]) / 2))); } }
   d.sort((x, y) => x - y); return { n: d.length, p50: d[d.length >> 1], p99: d[Math.floor(0.99 * (d.length - 1))], max: d[d.length - 1] };
+}
+
+// An adaptive LOD: extract a base net at baseCell (never coarser than the LOD's own cell), then collapse it to the budget inside tol.
+// A coarse base can sag past tol before decimation starts, and a collapse never repairs that, so the base cell is part of the bound.
+export function adaptiveLod(F, B, { cell, baseCell, relax = 2, budget, tol, base = null }) {
+  const bc = Math.min(cell, baseCell ?? cell), M = base && bc >= cell ? base : retopo(F, { lo: B.lo, hi: B.hi, cell: bc, relax });
+  const tri = base && bc >= cell ? base.tri : triangulate(M), D = decimate(F, { pos: M.pos, tri }, { target: budget, tol });
+  return { ...D, baseCell: bc, baseTris: tri.length / 3 };
 }

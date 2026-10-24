@@ -62,3 +62,12 @@ test("an eye seated on a lid stroke follows it; a missing stroke is an error (co
   S.strokes[0].c[2] = 0.05; assert.equal(seatEye(S, e).c[2], 0.05);
   assert.throws(() => seatEye(S, { ...e, seat: { stroke: "nope" } }), /no stroke/);
 });
+
+test("shape-level rigs: two scalars recover a width and a chin offset; a rig naming a missing stroke throws (control)", () => {
+  const T = HEAD({ sw: 0.006, cy: -0.006 }), F = skinField(T);
+  const L = [[0.09, 0, -0.02], [-0.09, 0, -0.02], [0, 0.11, -0.02], [0, -0.14, 0.055], [0, -0.135, 0.05]].map((p, i) => ({ id: "r" + i, p: project(F, p, 20, 0.02).slice(0, 3) }));
+  const rigs = [{ name: "skullWidth", edits: [{ id: "skull", key: "r", i: 0, gain: 1 }] }, { name: "chinY", edits: [{ id: "chin", key: "c", i: 1, gain: 1 }] }];
+  const R = fitLandmarks(HEAD(), L, { rigs });
+  assert.ok(R.tolMet, "landmarks inside 2 mm"); assert.ok(Math.abs(R.rigValues.skullWidth - 0.006) < 0.001 && Math.abs(R.rigValues.chinY + 0.006) < 0.001, JSON.stringify(R.rigValues));
+  assert.throws(() => fitLandmarks(HEAD(), L, { rigs: [{ name: "bad", edits: [{ id: "nope", key: "c", i: 0, gain: 1 }] }] }), /no stroke/);
+});
