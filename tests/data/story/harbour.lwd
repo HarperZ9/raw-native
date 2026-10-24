@@ -1,0 +1,65 @@
+# An original fixture for the story VM tests: a ferry keeper at a harbour. Not Low Water content.
+@meta
+title: The Ferry
+format: lwd/1
+start: pier.start
+clock: 06:00
+end-clock: 09:00
+at-end: pier.late
+
+@var crossings
+default: 0
+about: trips made
+
+@var mood
+default: calm
+values: calm, sour
+about: the keeper's mood
+
+@fact rope.frayed
+about: The mooring rope is frayed.
+
+@node pier.start
+place: pier
+speaker: KEEPER
+cost: 5
+nar: Grey water, a rope, a bell on a post.
+line: KEEPER: [dry 1] You are early. <pause> The tide is not.
+do: set(met.keeper); crossings += 1
+voice: salt: The rope looks worse than it did.  {when: crossings >= 1}
+opt: "Ask for a crossing." -> pier.cross +10 {once}
+opt: "Say the rope is frayed." -> pier.rope ? has(met.keeper) {do: set(rope.frayed); mood = sour}
+opt: "Wait for the tide." -> pier.wait
+
+@node pier.cross
+cost: 20
+line: KEEPER: Sit at the back.
+if: mood == sour => crossings += 2
+go: pier.hub
+
+@node pier.rope
+nar: He looks at the rope for a long time.
+go: pier.hub
+
+@node pier.wait
+cost: 30
+nar: The water moves.
+call: pier.bell
+go: pier.hub
+
+@node pier.bell
+nar: The bell rings once.
+return:
+
+@node pier.hub
+hub: yes
+nar: {{crossings}} crossings so far.
+opt: "Walk the pier." -> pier.start
+opt: "Go home." -> pier.end
+
+@node pier.end
+end: home
+
+@node pier.late
+nar: Nine o'clock. The ferry has gone.
+end: late

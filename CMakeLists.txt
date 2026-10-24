@@ -5,13 +5,16 @@ project(raw_native VERSION 0.8.0
     LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+if(MINGW)
+    add_link_options(-static)   # a MinGW build must not pick up another toolchain's libstdc++ DLL
+endif()
 
 option(RAW_NATIVE_BUILD_TESTS "Build the raw-native unit tests" ${PROJECT_IS_TOP_LEVEL})
 
 # The library: every layer except the RHI backends and the shader libraries,
 # which a build picks in cmake/gpu.cmake (docs/architecture/ARCHITECTURE.md).
 # scripts/check_layers.py enforces which layer may include which.
-set(RAW_NATIVE_LIB_LAYERS core cert scene assets graph renderer tools)
+set(RAW_NATIVE_LIB_LAYERS core cert scene assets graph renderer story game tools)
 set(LIB_SRCS "")
 foreach(layer ${RAW_NATIVE_LIB_LAYERS})
     file(GLOB layer_srcs CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/${layer}/*.cpp")
@@ -91,6 +94,18 @@ set(RAW_NATIVE_NULL_BACKEND
     "${CMAKE_CURRENT_SOURCE_DIR}/src/rhi/null/null_device.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/renderer/gpu/shaders_none.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/rhi/null/hw_null.cpp")
+
+add_executable(lw_trace_replay app/lw_trace_replay.cpp)
+target_link_libraries(lw_trace_replay PRIVATE raw_native)
+if(MINGW)
+    target_link_options(lw_trace_replay PRIVATE -static)
+endif()
+if(EMSCRIPTEN)
+    # raw_native compiles with -fwasm-exceptions (cmake/wasm.cmake), and the
+    # story layer throws. The link must name it too, or em++ picks the
+    # no-exceptions libc++ and __cpp_exception is undefined.
+    target_link_options(lw_trace_replay PRIVATE ${RAW_NATIVE_WASM_COMPILE})
+endif()
 
 if(RAW_NATIVE_BUILD_TESTS)
     enable_testing()

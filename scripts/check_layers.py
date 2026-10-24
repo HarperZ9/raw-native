@@ -37,10 +37,12 @@ LAYERS = {
     "audio": ["math", "core", "platform"],
     "world": ["math", "core", "platform", "cert", "scene", "assets", "renderer", "audio"],
     "scripting": ["math", "core", "scene", "world"],
+    "story": ["math", "core"],
+    "game": ["math", "core", "story"],
     "tools": ["math", "core", "platform", "cert", "scene", "assets", "rhi", "graph", "renderer",
-              "audio", "world", "scripting"],
+              "audio", "world", "scripting", "story", "game"],
     "editor": ["math", "core", "platform", "cert", "scene", "assets", "rhi", "graph", "renderer",
-               "audio", "world", "scripting", "tools"],
+               "audio", "world", "scripting", "story", "game", "tools"],
 }
 # System headers that belong to one backend or platform directory.
 API_HEADERS = [

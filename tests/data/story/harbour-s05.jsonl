@@ -1,0 +1,32 @@
+{"t":"begin","v":1,"seed":5,"policy":"eye","clock":360,"place":"","vars":{},"flags":[],"start":"pier.start","exits":[]}
+{"t":"talk","node":"pier.start","clock":360}
+{"t":"h","f":"pressure.takeFull","a":[],"r":null}
+{"t":"node","id":"pier.start","clock":360}
+{"t":"place","id":"pier"}
+{"t":"time","from":360,"to":365}
+{"t":"line","k":"nar","who":"","text":"Grey water, a rope, a bell on a post.","clock":365,"node":"pier.start"}
+{"t":"line","k":"line","who":"KEEPER","text":"You are early. The tide is not.","clock":365,"node":"pier.start"}
+{"t":"h","f":"get","a":["met.keeper"],"r":null}
+{"t":"flag","id":"met.keeper","on":1}
+{"t":"var","n":"crossings","v":1}
+{"t":"line","k":"voice","who":"salt","text":"The rope looks worse than it did.","clock":365,"node":"pier.start"}
+{"t":"h","f":"get","a":["met.keeper"],"r":null}
+{"t":"offer","node":"pier.start","opts":[{"key":"pier.start#0","kind":"opt","locked":0},{"key":"pier.start#1","kind":"opt","locked":0},{"key":"pier.start#2","kind":"opt","locked":0}]}
+{"t":"take","i":1,"key":"pier.start#1"}
+{"t":"line","k":"you","who":"LAMB","text":"Say the rope is frayed.","clock":365,"node":"pier.start"}
+{"t":"h","f":"get","a":["rope.frayed"],"r":null}
+{"t":"flag","id":"rope.frayed","on":1}
+{"t":"var","n":"mood","v":"sour"}
+{"t":"h","f":"pressure.takeFull","a":[],"r":null}
+{"t":"node","id":"pier.rope","clock":365}
+{"t":"line","k":"nar","who":"","text":"He looks at the rope for a long time.","clock":365,"node":"pier.rope"}
+{"t":"h","f":"pressure.takeFull","a":[],"r":null}
+{"t":"node","id":"pier.hub","clock":365}
+{"t":"h","f":"fill","a":["{{crossings}} crossings so far."],"r":"1 crossings so far."}
+{"t":"line","k":"nar","who":"","text":"1 crossings so far.","clock":365,"node":"pier.hub"}
+{"t":"offer","node":"pier.hub","opts":[{"key":"pier.hub#0","kind":"opt","locked":0},{"key":"pier.hub#1","kind":"opt","locked":0}]}
+{"t":"take","i":1,"key":"pier.hub#1"}
+{"t":"line","k":"you","who":"LAMB","text":"Go home.","clock":365,"node":"pier.hub"}
+{"t":"h","f":"pressure.takeFull","a":[],"r":null}
+{"t":"node","id":"pier.end","clock":365}
+{"t":"end","id":"home"}
