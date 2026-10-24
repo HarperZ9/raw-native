@@ -99,6 +99,12 @@ target_link_libraries(lw_trace_replay PRIVATE raw_native)
 if(MINGW)
     target_link_options(lw_trace_replay PRIVATE -static)
 endif()
+if(EMSCRIPTEN)
+    # raw_native compiles with -fwasm-exceptions (cmake/wasm.cmake), and the
+    # story layer throws. The link must name it too, or em++ picks the
+    # no-exceptions libc++ and __cpp_exception is undefined.
+    target_link_options(lw_trace_replay PRIVATE ${RAW_NATIVE_WASM_COMPILE})
+endif()
 
 if(RAW_NATIVE_BUILD_TESTS)
     enable_testing()
