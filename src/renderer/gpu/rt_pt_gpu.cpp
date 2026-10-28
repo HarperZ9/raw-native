@@ -76,6 +76,11 @@ rt::PathTraceOutput pathTraceGpu(rhi::Device& device, const rt::PtScene& s, cons
     slice = std::max<std::uint32_t>(1, slice);
     const Packed p = pack(s);
     const std::uint64_t npx = std::uint64_t(d.width) * std::uint64_t(d.height);
+    // `slice` samples a submission is sized for 1280 x 720. Above that, keep a submission's sample-pixel
+    // count at that budget: at 3840 x 2160 the default 16 spp a slice ran 3.2 s on raw_hall (RTX 4090)
+    // and the watchdog removed the device. The sum over slices is unchanged (sample indices are absolute).
+    constexpr std::uint64_t kSliceBudgetPx = 1280ull * 720ull;
+    if (npx > kSliceBudgetPx) slice = std::max<std::uint32_t>(1, std::uint32_t(std::uint64_t(slice) * kSliceBudgetPx / npx));
     if (!(D.cl = device.begin(O.error))) return O;
     const BufferHandle NI = D.upload(p.ni.data(), p.ni.size() * 4, "pt ni"), NB = D.upload(p.nb.data(), p.nb.size() * 4, "pt nb");
     const BufferHandle T = D.upload(p.tris.data(), p.tris.size() * 4, "pt tris"), A = D.upload(p.attrs.data(), p.attrs.size() * 4, "pt attrs");
