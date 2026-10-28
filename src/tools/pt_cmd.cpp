@@ -5,6 +5,7 @@
 #include "raw/renderer/rt_scenes.hpp"
 #include "raw/renderer/swr_scenes.hpp"
 #include "raw/tools/image_out.hpp"
+#include "rr_scenes.hpp"
 #include <chrono>
 #include <cstdio>
 #include <cstdlib>
@@ -27,8 +28,9 @@ bool vec3Arg(const char* s, Vec3& v) { return std::sscanf(s, "%f,%f,%f", &v.x, &
 struct Args {
     std::string scene{"retro_room"}, out{"pathtrace"};
     rt::PathTraceDesc d;
-    bool cpu{false}, prevEye{false}, prevTarget{false};
-    Vec3 pe, pt;
+    bool cpu{false}, prevEye{false}, prevTarget{false}, eye{false}, target{false}, bad{false};
+    Vec3 pe, pt, e, t;
+    float fovy{0.0f};   // 0: the scene's own
 };
 bool parse(int argc, char** argv, Args& a) {
     a.d.width = 320; a.d.height = 240; a.d.spp = 64;
@@ -44,26 +46,37 @@ bool parse(int argc, char** argv, Args& a) {
         else if (!std::strcmp(argv[i], "--cpu")) a.cpu = true;
         else if (!std::strcmp(argv[i], "--prev-eye") && more) a.prevEye = vec3Arg(argv[++i], a.pe);
         else if (!std::strcmp(argv[i], "--prev-target") && more) a.prevTarget = vec3Arg(argv[++i], a.pt);
+        else if (!std::strcmp(argv[i], "--eye") && more) { a.eye = vec3Arg(argv[++i], a.e); a.bad |= !a.eye; }
+        else if (!std::strcmp(argv[i], "--target") && more) { a.target = vec3Arg(argv[++i], a.t); a.bad |= !a.target; }
+        else if (!std::strcmp(argv[i], "--fovy") && more) { a.fovy = std::strtof(argv[++i], nullptr); a.bad |= !(a.fovy > 0.01f && a.fovy < 3.1f); }
         else return false;
     }
-    return a.d.width >= 8 && a.d.width <= 4096 && a.d.height >= 8 && a.d.height <= 4096 && a.d.spp >= 1 && a.d.spp <= 65536 && a.d.maxBounces <= 64;
+    return !a.bad && a.d.width >= 8 && a.d.width <= 4096 && a.d.height >= 8 && a.d.height <= 4096 && a.d.spp >= 1 && a.d.spp <= 65536 && a.d.maxBounces <= 64;
 }
 }  // namespace
 
 int ptCommand(int argc, char** argv) {
     Args a;
     if (!parse(argc, argv, a)) {
-        std::printf("usage: raw_native_cli rt-pathtrace [--scene retro_room|iso_street|dense_block] [--width W] [--height H] [--spp N]\n"
-                    "         [--seed S] [--bounces B] [--out DIR] [--cpu] [--prev-eye x,y,z] [--prev-target x,y,z]\n");
+        std::printf("usage: raw_native_cli rt-pathtrace [--scene retro_room|iso_street|dense_block|<rr-render scene>] [--width W] [--height H] [--spp N]\n"
+                    "         [--seed S] [--bounces B] [--out DIR] [--cpu] [--prev-eye x,y,z] [--prev-target x,y,z]\n"
+                    "         [--eye x,y,z] [--target x,y,z] [--fovy RAD]   (camera override; previous follows unless --prev-* is given)\n");
         return 2;
     }
     rt::PtScene s;
-    swr::Scene base;
-    if (a.scene == "retro_room") { s = rt::ptRetroRoom(); base = swr::retroRoom(); }
-    else if (a.scene == "iso_street") { s = rt::ptIsoStreet(); base = swr::isoStreet(); }
-    else if (a.scene == "dense_block") { s = rt::ptDenseBlock(); base = rt::denseBlock(); }
-    else { std::printf("rt-pathtrace: unknown scene %s\n", a.scene.c_str()); return 2; }
-    a.d.camera = a.d.previous = rt::cameraOf(base);
+    rt::PtCamera cam;
+    if (a.scene == "retro_room") { s = rt::ptRetroRoom(); cam = rt::cameraOf(swr::retroRoom()); }
+    else if (a.scene == "iso_street") { s = rt::ptIsoStreet(); cam = rt::cameraOf(swr::isoStreet()); }
+    else if (a.scene == "dense_block") { s = rt::ptDenseBlock(); cam = rt::cameraOf(rt::denseBlock()); }
+    else {
+        // The owned scenes rr-render draws (raw_hall, raw_hero, cloister, terrain_<seed>, ...), lit as there.
+        std::string lighting;
+        if (!rr::scene(a.scene, s, cam, lighting)) { std::printf("rt-pathtrace: unknown scene %s\n", a.scene.c_str()); return 2; }
+    }
+    if (a.eye) cam.eye = a.e;
+    if (a.target) cam.target = a.t;
+    if (a.fovy > 0.0f) cam.fovy = a.fovy;
+    a.d.camera = a.d.previous = cam;
     if (a.prevEye) a.d.previous.eye = a.pe;
     if (a.prevTarget) a.d.previous.target = a.pt;
     std::error_code ec;

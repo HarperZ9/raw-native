@@ -48,6 +48,8 @@ void render(rhi::Device& dev, const sdf::Scene& s, int w, int h, const std::stri
     }
     j.god = false; j.points = pts;
     const gpu_check::SdfGpu t = gpu_check::sdfGpu(dev, s, j);
+    // A failed shading pass used to leave every pixel at the sky colour and still write the PNG.
+    if (!t.error.empty()) { std::printf("sdf-render: %s: shading pass: %s\n", s.name.c_str(), t.error.c_str()); return; }
     std::vector<std::uint8_t> rgb(n * 3);
     const Vec3 sky{0.62f, 0.7f, 0.82f}, sun{1.0f, 0.93f, 0.8f}, l = normalize(s.sunDir);
     std::vector<Vec3> col(n, sky);
