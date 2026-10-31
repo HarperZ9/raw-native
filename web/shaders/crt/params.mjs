@@ -6,6 +6,7 @@ import { lowpassTaps, notchTaps, identityTaps } from "../common.mjs";
 import { screenMatrix, decayTable } from "./phosphors.mjs";
 import { PRIMARIES } from "../spectral.mjs";
 import { haloKernel } from "./halo.mjs";
+import { option } from "../options.mjs";
 
 export const STANDARDS = {
   ntsc: { fsc: 315 / 88, lumaMHz: 4.2, iMHz: 1.3, qMHz: 0.4, lineDeg: 180, frameDeg: 180, field: 1 / 59.94 },
@@ -49,6 +50,25 @@ export const PRESETS = {
   "scope-p31": { tube: { diagonalIn: 8 }, mask: { type: "none" }, spot: { lo: 0.25, hi: 0.4 }, curvature: { rx: 1e9, ry: 1e9 },
     phosphor: { screen: "p31" }, glass: { transmission: 0.85 } },
 };
+
+// Presets built from cited manufacturer records (options.mjs crt.maskRecord): mask type, pitch and diagonal as
+// the document gives them. Curvature and glass stay the matching hand-set preset's.
+export const PRESET_PROV = {};
+for (const [name, id, from, extra] of [
+  ["pvm-14l2", "sony-pvm-14l2", "pvm-20", {}],
+  ["pvm-20l2", "sony-pvm-20l2", "pvm-20", {}],
+  ["pvm-9l2", "sony-pvm-9l2", "pvm-20", {}],
+  ["tm32-slot", "ikegami-tm32-17", "slot-tv", {}],
+  ["hitachi-cm81x", "hitachi-cm81x-21", "vga-14", {}],
+  ["diamondtron-2070sb", "mitsubishi-2070sb", "pvm-20", { curvature: { rx: 4000, ry: 1e9 } }],
+]) {
+  const r = option("crt.maskRecord", id);
+  PRESETS[name] = merge(merge(PRESETS[from], { mask: { type: r.mask, pitch: r.pitch_mm }, tube: { diagonalIn: r.diagonal_in } }), extra);
+  PRESET_PROV[name] = { record: id, product: r.product, prov: r.prov, from };
+}
+// The same tube with the oxysulfide P22 red (the other common red host).
+PRESETS["pvm-20-y2o2s"] = merge(PRESETS["pvm-20"], { phosphor: { screen: "p22-y2o2s", primaries: "spectral" } });
+PRESET_PROV["pvm-20-y2o2s"] = { record: "p22-red-y2o2seu", prov: option("crt.phosphor", "p22-red-y2o2seu").prov, from: "pvm-20" };
 
 function merge(a, b) {
   const o = Array.isArray(a) ? a.slice() : { ...a };
