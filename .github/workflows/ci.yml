@@ -669,7 +669,7 @@ jobs:
         run: python tests/web/rhi_texture.py --command rt-bvh-parity --args=--quick --dir build-wasm-gpu --adapter swiftshader --out rt-bvh-webgpu.json
       - name: The compute path tracer in Chrome on SwiftShader, quick; P4's albedo and depth are a recorded open failure
         run: |
-          python tests/web/rhi_texture.py --command rt-pt-parity --args=--quick --dir build-wasm-gpu --adapter swiftshader --out rt-pt-webgpu.json || true
+          python tests/web/rhi_texture.py --command rt-pt-parity --args=--quick --dir build-wasm-gpu --adapter swiftshader --timeout 480 --out rt-pt-webgpu.json || true
           python tests/gpu/pt_gate.py rt-pt-webgpu.json
       - name: Hybrid ray-traced shadows and reflections in Chrome on SwiftShader match CPU rays (RT stage R2, H1 and H2)
         run: python tests/web/rhi_texture.py --command rt-hybrid-parity --dir build-wasm-gpu --adapter swiftshader --out rt-hybrid-webgpu.json

@@ -83,4 +83,36 @@ std::string splitConvJson(const SplitConv& v, const char* scene, bool specular, 
     return b;
 }
 
+PlaneFurnace planeFurnace(const PathTraceOutput& o) {
+    PlaneFurnace f;
+    const std::size_t W = std::size_t(o.width), H = std::size_t(o.height);
+    double sum = 0, var = 0;
+    f.lo = 1e30; f.hi = -1e30;
+    for (std::size_t y = 0; y < H; ++y) {
+        double rs = 0, rv = 0;
+        for (std::size_t x = 0; x < W; ++x) {
+            const std::size_t p = y * W + x;
+            ++f.pixels;
+            f.misses += o.triangle[p] < 0;
+            const double l = lum3(o.radiance, p), v = o.variance[p];
+            if (!std::isfinite(l) || !std::isfinite(v)) { ++f.nonfinite; continue; }
+            rs += l; rv += v;
+        }
+        const double rm = rs / double(W), rse = std::sqrt(rv) / double(W);
+        f.lo = std::min(f.lo, rm); f.hi = std::max(f.hi, rm);
+        f.rowsOver += std::fabs(rm - 1.0) > 4.0 * rse + PlaneFurnace::kTol;
+        sum += rs; var += rv;
+    }
+    f.mean = sum / double(f.pixels);
+    f.se = std::sqrt(var) / double(f.pixels);
+    return f;
+}
+std::string planeFurnaceJson(const PlaneFurnace& f, const char* material, const char* side, bool control) {
+    char b[500];
+    std::snprintf(b, sizeof b, "{\"check\": \"e2\", \"material\": \"%s\", \"side\": \"%s\", \"control_legacy_lobe\": %s, \"pixels\": %ld, \"misses\": %ld, "
+                  "\"mean\": %.6f, \"standard_error\": %.3g, \"lowest_row\": %.5f, \"highest_row\": %.5f, \"rows_over\": %ld, \"nonfinite\": %ld, \"within\": %s}",
+                  material, side, tf(control), f.pixels, f.misses, f.mean, f.se, f.lo, f.hi, f.rowsOver, f.nonfinite, tf(f.within()));
+    return b;
+}
+
 }  // namespace raw::rt

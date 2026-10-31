@@ -24,6 +24,9 @@ the same punctual lights.
 
 ## The compatibility promise
 
+Interface v4 ended this promise on 2026-10-31 to fix the lobe's energy and the triangle test
+(`docs/rt-interface-v4.md`). The text below describes v3.
+
 **Every v2 scene renders byte for byte as it did under v2, on every backend.** A v2 scene leaves
 all v3 fields empty, and the tracer takes the v2 code path unchanged. Only the version number in
 each output and receipt changes, from 2 to 3. `tests/test_rt_pt_v3.cpp` checks the promise: the

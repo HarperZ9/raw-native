@@ -2,7 +2,7 @@
 // A bounding volume hierarchy over triangles for the CPU references (ROADMAP M3: shadow
 // visibility, the lightmap baker and the path-traced references). Binned surface-area
 // heuristic, deterministic for a given triangle order; the triangle test is the same
-// Moeller-Trumbore intersectTri the linear accelerator uses, so a query returns exactly
+// watertight intersectTri the linear accelerator uses, so a query returns exactly
 // what a scan of every triangle would (tests/test_bvh.cpp checks that on random rays).
 #include "raw/math/primitives.hpp"
 #include <cstdint>
