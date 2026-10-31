@@ -11,7 +11,10 @@
 #include <string>
 namespace raw::gpu_check {
 
-void rtPtEnergy(rhi::Device& dev, const std::function<void(const std::string&, bool)>& record, std::string& error) {
+// quick (the browser job on a software adapter, which has a time budget): a quarter of the pixels.
+// The controls still fall far outside: e2 by 0.02 against about 9e-3, e3 by about 80 standard errors.
+void rtPtEnergy(rhi::Device& dev, bool quick, const std::function<void(const std::string&, bool)>& record, std::string& error) {
+    const int W = quick ? 32 : 64, H = quick ? 24 : 48;
     struct Case { const char* what; rt::PtMaterial m; bool legacy; };
     const Case cases[] = {
         {"default dielectric", rt::PtMaterial{}, false},
@@ -23,7 +26,7 @@ void rtPtEnergy(rhi::Device& dev, const std::function<void(const std::string&, b
     for (const Case& k : cases) {
         const rt::PtScene s = rt::ptWhitePlane(k.m, {1.0f, 1.0f, 1.0f});
         rt::PathTraceDesc d;
-        d.width = 64; d.height = 48; d.spp = 64; d.seed = 105;
+        d.width = W; d.height = H; d.spp = 64; d.seed = 105;
         d.camera = d.previous = rt::whitePlaneCamera();
         d.controls.legacyLobeV2 = k.legacy;
         const rt::PathTraceOutput o = pathTraceGpu(dev, s, d);
@@ -35,7 +38,7 @@ void rtPtEnergy(rhi::Device& dev, const std::function<void(const std::string&, b
     for (const auto& [a, control] : {std::pair<float, bool>{0.8f, false}, {0.9f, false}, {0.8f, true}}) {
         const rt::PtScene s = rt::ptFurnace(1.0f, a);
         rt::PathTraceDesc d;
-        d.width = 64; d.height = 48; d.spp = 64; d.seed = 107;
+        d.width = W; d.height = H; d.spp = 64; d.seed = 107;
         if (control) d.maxBounces = 8;
         d.camera = d.previous = rt::cameraOf(rt::furnaceBox());
         const rt::PathTraceOutput o = pathTraceGpu(dev, s, d);

@@ -11,10 +11,10 @@
 #include <functional>
 namespace raw::gpu_check {
 // rt_pt_parity_energy.cpp: e2 and e3 of interface v4.
-void rtPtEnergy(rhi::Device& dev, const std::function<void(const std::string&, bool)>& record, std::string& error);
+void rtPtEnergy(rhi::Device& dev, bool quick, const std::function<void(const std::string&, bool)>& record, std::string& error);
 namespace {
 float lumAt(const std::vector<float>& rgb, std::size_t p) { return 0.2126f * rgb[p * 3] + 0.7152f * rgb[p * 3 + 1] + 0.0722f * rgb[p * 3 + 2]; }
-struct Ctx { rhi::Device& dev; RtPtParity& R; bool all{true}; int w{128}, h{96}; std::uint32_t spp{256}; };
+struct Ctx { rhi::Device& dev; RtPtParity& R; bool all{true}; int w{128}, h{96}; std::uint32_t spp{256}, bounces{64}; };
 void record(Ctx& c, const std::string& s, bool pass) {
     c.R.results += (c.R.results.empty() ? "  " : ",\n  ") + s;
     c.all = c.all && pass;
@@ -84,6 +84,11 @@ rt::PathTraceDesc descFor(const swr::Scene& s, int w, int h, std::uint32_t spp, 
     rt::PathTraceDesc d;
     d.width = w; d.height = h; d.spp = spp; d.seed = seed;
     d.camera = d.previous = rt::cameraOf(s);
+    return d;
+}
+rt::PathTraceDesc descFor(const swr::Scene& s, int w, int h, std::uint32_t spp, std::uint32_t bounces, std::uint64_t seed) {
+    rt::PathTraceDesc d = descFor(s, w, h, spp, seed);
+    d.maxBounces = bounces;
     return d;
 }
 // P4: the pixel-centre AOVs against the R1 rasterizer's visibility buffer and resolve.
@@ -206,9 +211,9 @@ std::string aovs(Ctx& c, const rt::PtScene& ps, const swr::Scene& base, bool& ok
 }
 // P2 for one scene, with the MIS control on scenes that have emitters.
 void convergence(Ctx& c, const rt::PtScene& ps, const swr::Scene& base) {
-    const rt::PathTraceOutput g = pathTraceGpu(c.dev, ps, descFor(base, c.w, c.h, c.spp, 11));
+    const rt::PathTraceOutput g = pathTraceGpu(c.dev, ps, descFor(base, c.w, c.h, c.spp, c.bounces, 11));
     if (!g.error.empty()) { c.R.error = g.error; return; }
-    const rt::PathTraceOutput cpu = rt::pathTraceCpu(ps, descFor(base, c.w, c.h, c.spp, 9001));
+    const rt::PathTraceOutput cpu = rt::pathTraceCpu(ps, descFor(base, c.w, c.h, c.spp, c.bounces, 9001));
     const Conv v = compare(g, cpu);
     record(c, convJson(ps.name.c_str(), "gpu against cpu", v), v.ok);
     // P5a and P5c on the same renders; on retro_room their control drops indirect specular.
@@ -221,7 +226,7 @@ void convergence(Ctx& c, const rt::PtScene& ps, const swr::Scene& base) {
         record(c, rt::splitConvJson(sv, ps.name.c_str(), spec, false), sv.within());
     }
     if (ps.name == "retro_room") {
-        rt::PathTraceDesc dx = descFor(base, c.w, c.h, c.spp, 11);
+        rt::PathTraceDesc dx = descFor(base, c.w, c.h, c.spp, c.bounces, 11);
         dx.controls.aovDropSpecularIndirect = true;
         const rt::PathTraceOutput gx = pathTraceGpu(c.dev, ps, dx);
         if (!gx.error.empty()) { c.R.error = gx.error; return; }
@@ -231,7 +236,7 @@ void convergence(Ctx& c, const rt::PtScene& ps, const swr::Scene& base) {
         record(c, rt::splitConvJson(sv, ps.name.c_str(), true, true), !sv.within());
     }
     if (ps.emitters.empty()) return;
-    rt::PathTraceDesc dc = descFor(base, c.w, c.h, c.spp, 11);
+    rt::PathTraceDesc dc = descFor(base, c.w, c.h, c.spp, c.bounces, 11);
     dc.controls.misWeightOne = true;
     const rt::PathTraceOutput gc = pathTraceGpu(c.dev, ps, dc);
     if (!gc.error.empty()) { c.R.error = gc.error; return; }
@@ -240,7 +245,7 @@ void convergence(Ctx& c, const rt::PtScene& ps, const swr::Scene& base) {
 }
 // P3: the same seed twice is bit-identical; seed + 1 changes nearly every pixel.
 void determinism(Ctx& c, const rt::PtScene& ps, const swr::Scene& base) {
-    const rt::PathTraceDesc d3 = descFor(base, 64, 48, 16, 5);
+    const rt::PathTraceDesc d3 = descFor(base, 64, 48, 16, c.bounces, 5);
     rt::PathTraceDesc d4 = d3;
     d4.seed = 6;
     const rt::PathTraceOutput a = pathTraceGpu(c.dev, ps, d3), b = pathTraceGpu(c.dev, ps, d3), e = pathTraceGpu(c.dev, ps, d4);
@@ -271,13 +276,13 @@ RtPtParity rtPtParity(rhi::Device& dev, bool quick) {
     RtPtParity R;
     R.backend = dev.backendName(); R.adapter = dev.adapter().description;
     Ctx c{dev, R};
-    if (quick) { c.w = 64; c.h = 48; c.spp = 128; }
+    if (quick) { c.w = 64; c.h = 48; c.spp = 128; c.bounces = 8; }   // the time budget of the browser job; e2 and e3 still cover 64
     std::string line;
     for (float a : {0.5f, 0.8f}) { const bool ok = furnace(c, a, false, line); record(c, line, ok); }
     { const bool ok = furnace(c, 0.5f, true, line); record(c, line, !ok); }        // the control must fail
     { const bool ok = furnace(c, 0.5f, false, line, true); (void)ok; }             // P5b's control (P1 unchanged by it)
     if (!R.error.empty()) return R;
-    rtPtEnergy(dev, [&](const std::string& s, bool pass) { record(c, s, pass); }, R.error);
+    rtPtEnergy(dev, quick, [&](const std::string& s, bool pass) { record(c, s, pass); }, R.error);
     if (!R.error.empty()) return R;
     const swr::Scene room = swr::retroRoom(), street = swr::isoStreet();
     const rt::PtScene pr = rt::ptRetroRoom(), pst = rt::ptIsoStreet();
