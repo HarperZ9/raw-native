@@ -94,8 +94,8 @@ CrtScreen crtScreen(const std::string& name) {
     bool colour = false;
     if (name == "p22") {
         colour = true;
-        parts = {{0, lineSpectrum({{611, 1}, {588, 0.1}, {595, 0.1}, {630, 0.15}, {707, 0.05}}), {1.0, 0.35e-3, 1e-3}},
-                 {0, energyBand(535, 80), {0.9, 20e-6, 0.5e-3}}, {0, energyBand(450, 60), {0.95, 5e-6, 0.2e-3}}};
+        parts = {{0, lineSpectrum({{611, 1}, {588, 0.1}, {595, 0.1}, {630, 0.15}, {707, 0.05}}), {0.077, 35.9e-6, 0.427e-3}},
+                 {0, energyBand(535, 80), {0.505, 25.4e-6, 1.459e-3}}, {0, energyBand(450, 60), {0.500, 14.4e-6, 1.138e-3}}};
     } else if (name == "p4") {
         parts = {{0.45, energyBand(450, 55), {1.0, 5e-6, 5e-6}}, {0.55, energyBand(565, 110), {0.9, 20e-6, 0.5e-3}}, {0, energyBand(565, 110), {1, 1e-6, 1e-6}}};
     } else if (name == "p7") {

@@ -2,10 +2,10 @@
 // mirror reflection where a ghost reflects). Written separately from the paraxial matrices in
 // prescription.mjs so the two can check each other: at small field angles they must agree.
 // Coordinates: z along the axis, y up; a ray is { z, y, dz, dy } with a unit direction.
-import { GLASS, cauchy, LAMBDA_D } from "./spectrum.mjs";
+import { GLASS, glassIndex, LAMBDA_D } from "./spectrum.mjs";
 import { LENS, firstOrder } from "./prescription.mjs";
 
-const n = (lens, k, nm) => (k < 0 ? 1 : cauchy(GLASS[lens.surfaces[k].glass], nm));
+const n = (lens, k, nm) => (k < 0 ? 1 : glassIndex(GLASS[lens.surfaces[k].glass], nm));
 function vertices(lens) { const z = [0]; for (let k = 0; k < lens.surfaces.length - 1; k++) z.push(z[k] + lens.surfaces[k].t); return z; }
 
 // Intersect a ray with surface k; returns the point and the unit normal (pointing toward -z side).

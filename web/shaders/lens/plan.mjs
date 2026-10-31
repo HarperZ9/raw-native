@@ -1,6 +1,6 @@
 // The lens plan: every constant table the CPU reference and the GPU pass share, resolved once
 // from the parameters and the output size. Pure f64 arithmetic; the GPU reads f32 copies.
-import { BINS, BIN_NM, BIN_RGB, GLASS, cauchy, LAMBDA_D } from "./spectrum.mjs";
+import { BINS, BIN_NM, BIN_RGB, GLASS, glassIndex, LAMBDA_D } from "./spectrum.mjs";
 import { filmReflectance } from "./coating.mjs";
 import { shapeArea, starburstTable } from "./aperture.mjs";
 import { ghostTable, LENS } from "./prescription.mjs";
@@ -27,7 +27,7 @@ export function resolveLens(params = {}, size) {
   // Halation: red reaches the film base and back; depth rises through the red end.
   const depth = BIN_NM.map((nm) => 1 / (1 + Math.exp(-(nm - 600) / 25)));
   const halo = depth.map((d) => [p.haloGain * d, p.haloRadiusPx * (0.5 + d)]);
-  const nd = cauchy(GLASS.crown, LAMBDA_D), caScale = BIN_NM.map((nm) => 1 + (p.caAmount * (cauchy(GLASS.crown, nm) - nd)) / (nd - 1));
+  const nd = glassIndex(GLASS.crown, LAMBDA_D), caScale = BIN_NM.map((nm) => 1 + (p.caAmount * (glassIndex(GLASS.crown, nm) - nd)) / (nd - 1));
   const key = JSON.stringify(p.iris); if (!starCache.has(key)) starCache.set(key, starburstTable({ iris: p.iris }));
   const star = starCache.get(key), starCell = p.starCellPxPerStop * p.fNumber;
   // Fraction of over-threshold light each channel hands to the lens terms (normal incidence).

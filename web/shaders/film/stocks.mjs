@@ -8,16 +8,21 @@ import { cmf, blackbody, rgbToXYZ, inv3, apply3, PRIMARIES, WHITE, XYZ_TO, mul3,
 
 export const LAMBDA = Array.from({ length: 41 }, (_, i) => 380 + 10 * i);
 const g = (c, fwhm) => { const s = fwhm / 2.3548; return (l) => Math.exp(-0.5 * ((l - c) / s) ** 2); };
+// A gaussian with its own half width at half maximum on each side of the peak (nm).
+const g2 = (c, left, right) => { const sl = left / 1.17741, sr = right / 1.17741; return (l) => Math.exp(-0.5 * ((l - c) / (l < c ? sl : sr)) ** 2); };
 
 export const NEGATIVES = {
-  // A tungsten-balanced 500-speed colour negative (Vision3 500T class).
-  "neg-500t": { sens: [g(645, 55), g(545, 55), g(445, 60)], gamma: [0.62, 0.62, 0.62], span: [2.6, 2.6, 2.6], dmin: [0.05, 0.05, 0.05],
-    dyes: { prim: [g(670, 100), g(550, 85), g(450, 90)], sec: [(l) => 0.3 * g(550, 80)(l) + 0.08 * g(440, 60)(l), (l) => 0.15 * g(435, 60)(l), () => 0] },
-    base: 0.1, grainUm: [3.2, 3.4, 4.2], interimage: 0.3, sigmaD48: 0.008 },
-  // A daylight 250-speed negative: finer grain.
+  // A tungsten-balanced 500-speed colour negative (Vision3 500T class). Measured from the figures of
+  // Kodak H-1-5219t (2015): layer sensitivity peaks and half-maximum spans, the dye peaks, the gamma of
+  // each layer over log H -2 to 0, and the RMS granularity at net density 1.0 through a 48 um aperture.
+  "neg-500t": { sens: [g2(650.2, 51.1, 15.0), g2(547.9, 25.1, 27.0), g2(401.8, 21.2, 73.7)], gamma: [0.45, 0.53, 0.51], span: [2.6, 2.6, 2.6], dmin: [0.05, 0.05, 0.05],
+    dyes: { prim: [g(686, 100), g(539, 85), g(447, 90)], sec: [(l) => 0.3 * g(550, 80)(l) + 0.08 * g(440, 60)(l), (l) => 0.15 * g(435, 60)(l), () => 0] },
+    base: 0.1, grainUm: [3.2, 3.4, 4.2], interimage: 0.3, sigmaD48: [0.0064, 0.0071, 0.0191] },
+  // A daylight 250-speed negative: finer grain. Its data sheet is not held, so its curves stay the
+  // recalled shapes (docs/shaders/CONSTANTS.md).
   "neg-250d": { sens: [g(645, 55), g(545, 55), g(445, 60)], gamma: [0.62, 0.62, 0.62], span: [2.6, 2.6, 2.6], dmin: [0.05, 0.05, 0.05],
     dyes: { prim: [g(670, 100), g(550, 85), g(450, 90)], sec: [(l) => 0.3 * g(550, 80)(l) + 0.08 * g(440, 60)(l), (l) => 0.15 * g(435, 60)(l), () => 0] },
-    base: 0.1, grainUm: [2.4, 2.5, 3.0], interimage: 0.3, sigmaD48: 0.006 },
+    base: 0.1, grainUm: [2.4, 2.5, 3.0], interimage: 0.3, sigmaD48: [0.006, 0.006, 0.006] },
 };
 export const PRINTS = {
   // A colour print film (2383 class): high contrast, no masking, unwanted absorptions kept.

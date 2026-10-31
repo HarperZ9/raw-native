@@ -25,9 +25,10 @@ static void lens() {
     // Each channel's bin weights sum to 1, so a wavelength-independent term returns the source's RGB.
     const LensBin3 w = lensBinRgb();
     for (int k = 0; k < 3; ++k) { double s = 0; for (const auto& b : w) s += b[std::size_t(k)]; CHECK(std::abs(s - 1) < 1e-12); }
-    // The prescription's focal length (prescription.mjs: f = 43.0 mm) and its 15 ghost pairs.
+    // The prescription's focal length (prescription.mjs: 43.0 mm as drawn, 42.80 mm with the catalogue
+    // N-BK7 and N-SF2 glasses) and its 15 ghost pairs.
     const LensGhostTable gt = lensGhostTable();
-    CHECK(std::abs(gt.f - 43.0) < 0.1);
+    CHECK(std::abs(gt.f - 42.80) < 0.01);
     CHECK(gt.m.size() == 15);
     // A quarter-wave coating at its design wavelength and normal incidence: the closed form.
     const LensCoating c;

@@ -67,11 +67,11 @@ export const MTF_WGSL = /* wgsl */ `
 @compute @workgroup_size(8, 8) fn main(@builtin(global_invocation_id) id: vec3u) {
   let W = i32(P[P_outW]); let Hh = i32(P[P_outH]); let x = i32(id.x); let y = i32(id.y);
   if (x >= W || y >= Hh) { return; }
-  let r = (i32(arrayLength(&mw)) - 1) / 2; let alongY = P[P_mtfDir] > 0.5; var s = vec3f(0.0);
+  let r = (i32(arrayLength(&mw)) / 3 - 1) / 2; let alongY = P[P_mtfDir] > 0.5; var s = vec3f(0.0);
   for (var k = -r; k <= r; k++) {
     var xx = x; var yy = y;
     if (alongY) { yy = clamp(y + k, 0, Hh - 1); } else { xx = clamp(x + k, 0, W - 1); }
-    s += mw[k + r] * a[yy * W + xx].xyz;
+    let j = 3 * (k + r); s += vec3f(mw[j], mw[j + 1], mw[j + 2]) * a[yy * W + xx].xyz;
   }
   o[y * W + x] = vec4f(s, 0.0);
 }`;

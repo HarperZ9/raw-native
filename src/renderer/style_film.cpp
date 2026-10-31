@@ -45,13 +45,13 @@ std::vector<float> expose(const FilmPlan& plan, const std::vector<float>& scene,
     return H;
 }
 std::vector<float> mtfPass(const FilmPlan& plan, const std::vector<float>& src, bool alongY) {
-    const int r = int(plan.mtf.size() - 1) / 2, W = plan.outW, Hh = plan.outH;
+    const int r = (int(plan.mtf.size()) / 3 - 1) / 2, W = plan.outW, Hh = plan.outH;
     std::vector<float> o(src.size(), 0.0f);
     for (int y = 0; y < Hh; ++y) for (int x = 0; x < W; ++x) for (int c = 0; c < 3; ++c) {
         double s = 0;
         for (int k = -r; k <= r; ++k) {
             const int xx = alongY ? x : std::min(W - 1, std::max(0, x + k)), yy = alongY ? std::min(Hh - 1, std::max(0, y + k)) : y;
-            s += double(plan.mtf[std::size_t(k + r)]) * double(src[px4(W, xx, yy) + std::size_t(c)]);
+            s += double(plan.mtf[std::size_t(3 * (k + r) + c)]) * double(src[px4(W, xx, yy) + std::size_t(c)]);
         }
         o[px4(W, x, y) + std::size_t(c)] = float(s);
     }
@@ -119,13 +119,19 @@ std::vector<float> develop(const FilmPlan& plan, const std::vector<float>& H, co
 }
 }  // namespace
 
-std::vector<float> filmMtfWeights(double sigmaPx) {
-    if (!(sigmaPx >= 0.15)) return {1.0f};
-    const int r = std::min(16, int(std::ceil(3 * sigmaPx)));
-    std::vector<float> w(static_cast<std::size_t>(2 * r + 1));
-    double s = 0;
-    for (int i = -r; i <= r; ++i) { const double q = i / sigmaPx; w[std::size_t(i + r)] = float(std::exp(-0.5 * (q * q))); s += w[std::size_t(i + r)]; }
-    for (float& v : w) v = float(double(v) / s);
+std::vector<float> filmMtfWeights(const T3& sigmaPx) {
+    double top = 0;
+    for (double v : sigmaPx) if (v >= 0.15) top = std::max(top, v);
+    if (!(top >= 0.15)) return {1.0f, 1.0f, 1.0f};
+    const int r = std::min(16, int(std::ceil(3 * top)));
+    std::vector<float> w(static_cast<std::size_t>(3 * (2 * r + 1)), 0.0f);
+    for (int c = 0; c < 3; ++c) {
+        const double sg = sigmaPx[std::size_t(c)];
+        if (!(sg >= 0.15)) { w[std::size_t(3 * r + c)] = 1.0f; continue; }
+        double s = 0;
+        for (int i = -r; i <= r; ++i) { const double q = i / sg; const std::size_t j = std::size_t(3 * (i + r) + c); w[j] = float(std::exp(-0.5 * (q * q))); s += w[j]; }
+        for (int i = 0; i < 2 * r + 1; ++i) { const std::size_t j = std::size_t(3 * i + c); w[j] = float(double(w[j]) / s); }
+    }
     return w;
 }
 
@@ -152,20 +158,20 @@ FilmPlan resolveFilm(const FilmParams& p, int inW, int inH, int outW, int outH) 
     const double kappa = filmRadialKappa(glass, 0.001, 5);
     for (int l = 0; l < 3; ++l) {
         const std::size_t L = std::size_t(l);
-        plan.grainContrast[L] = 1 / std::sqrt(depthLayers(plan.t.grainUm[L], plan.t.negSpan[L], plan.t.sigmaD48, plan.jTable));
+        plan.grainContrast[L] = 1 / std::sqrt(depthLayers(plan.t.grainUm[L], plan.t.negSpan[L], plan.t.sigmaD48[std::size_t(L)], plan.jTable));
         plan.haloStrength[L] = p.halationReach[L] * kappa * (p.remjet ? 0.03 : 1);
         plan.grainUm[L] = plan.t.grainUm[L] * p.grainScale;
     }
     plan.haloQ = hk.q; plan.haloR = hk.R; plan.ringMm = hk.ringMm;
     plan.haloWeights.resize(hk.weights.size());
     for (std::size_t i = 0; i < hk.weights.size(); ++i) plan.haloWeights[i] = float(sum > 0 ? double(hk.weights[i]) / sum : 0);
-    plan.mtf = filmMtfWeights(p.emulsionSigmaUm / plan.umPerPx);
+    plan.mtf = filmMtfWeights({p.emulsionSigmaUm[0] / plan.umPerPx, p.emulsionSigmaUm[1] / plan.umPerPx, p.emulsionSigmaUm[2] / plan.umPerPx});
     return plan;
 }
 
 std::vector<float> filmFrame(const FilmPlan& plan, const std::vector<float>& scene, int f) {
     std::vector<float> H = expose(plan, scene, f);
-    if (plan.mtf.size() > 1) H = mtfPass(plan, mtfPass(plan, H, false), true);
+    if (plan.mtf.size() > 3) H = mtfPass(plan, mtfPass(plan, H, false), true);
     const int gw = (plan.outW + plan.haloQ - 1) / plan.haloQ, gh = (plan.outH + plan.haloQ - 1) / plan.haloQ;
     const std::vector<float> halo = haloConv(plan, haloDown(plan, H, gw, gh), gw, gh);
     const std::vector<float> F = develop(plan, H, halo, gw, gh);
