@@ -21,10 +21,16 @@ test("colour timing prints an 18% grey as a neutral 18%, for every process", () 
   }
 });
 
-test("the grey scale tracks: RMS chroma deviation under 3% from -5 to +5 stops", () => {
-  const t = build({}); let e = 0, n = 0;
-  for (let ev = -5; ev <= 5; ev += 0.5) { const o = out(t, [0.18, 0.18, 0.18], ev), m = (o[0] + o[1] + o[2]) / 3; for (const v of o) { e += ((v - m) / m) ** 2; n++; } }
-  assert.ok(Math.sqrt(e / n) < 0.03, `RMS ${Math.sqrt(e / n)}`);
+// The 500T negative carries its measured layer gammas (0.45, 0.53, 0.51) and dye peaks (H-1-5219t); the
+// print's dyes are still engineered, not measured, and the best of their documented grid search tracks
+// the measured negative at 3.6 to 3.7% (2.4% against the recalled equal-gamma negative). The bound is
+// 4% for 500T until the 2383 curves are digitised; 250D keeps recalled curves and the 3% bound.
+test("the grey scale tracks: RMS chroma deviation under 4% (500T) and 3% (250D) from -5 to +5 stops", () => {
+  for (const [negative, bound] of [["neg-500t", 0.04], ["neg-250d", 0.03]]) {
+    const t = build({ negative }); let e = 0, n = 0;
+    for (let ev = -5; ev <= 5; ev += 0.5) { const o = out(t, [0.18, 0.18, 0.18], ev), m = (o[0] + o[1] + o[2]) / 3; for (const v of o) { e += ((v - m) / m) ** 2; n++; } }
+    assert.ok(Math.sqrt(e / n) < bound, `${negative}: RMS ${Math.sqrt(e / n)}`);
+  }
 });
 
 test("tone: brighter scenes print brighter, from -8 to +10 stops, with a shoulder below white", () => {
@@ -107,9 +113,14 @@ test("the pressure plate adds to the Fresnel fill inside the halation ring, in p
   assert.ok(p5.kappa > off.kappa && p5.kappa - off.kappa < 0.05, `returned energy ${off.kappa} -> ${p5.kappa}`);
 });
 
-test("emulsion scatter: sigma 4.2 um puts the 50% MTF near 45 cycles/mm, and the blur keeps the mean", () => {
-  const sigma = 4.2e-3, f50 = Math.sqrt(Math.LN2 / (2 * Math.PI * Math.PI)) / sigma;
-  near(f50, 45, 1, "f50 in cycles/mm");
-  const w = mtfWeights(1.3); near(w.reduce((a, b) => a + b, 0), 1, 1e-6, "weights");
-  assert.equal(mtfWeights(0.1).length, 1, "no blur under 0.15 pixel");
+test("emulsion scatter: each layer's sigma puts its 50% MTF at the measured 56.3, 49.9, 33.8 cycles/mm, and the blur keeps the mean", () => {
+  const f50 = (sigmaMm) => Math.sqrt(Math.LN2 / (2 * Math.PI * Math.PI)) / sigmaMm;
+  const plan = resolveFilm("500t-print", {}, { w: 64, h: 48 }, { w: 64, h: 48 });
+  [56.3, 49.9, 33.8].forEach((want, c) => near(f50(plan.p.emulsionSigmaUm[c] / 1000), want, 0.3, `layer ${c} f50 in cycles/mm`));
+  const w = mtfWeights([1.3, 0.9, 2.1]), taps = w.length / 3;
+  for (let c = 0; c < 3; c++) { let s = 0; for (let i = 0; i < taps; i++) s += w[3 * i + c]; near(s, 1, 1e-6, `weights of layer ${c}`); }
+  // The blue layer is the widest: its outermost tap carries weight, red's barely does.
+  assert.ok(w[2] > w[0], "blue spreads further than red");
+  const sharp = mtfWeights([0.1, 1.3, 0.1]); assert.equal(sharp[3 * ((sharp.length / 3 - 1) / 2)], 1, "a layer under 0.15 pixel stays sharp");
+  assert.equal(mtfWeights(0.1).length, 3, "no blur when every layer is under 0.15 pixel");
 });

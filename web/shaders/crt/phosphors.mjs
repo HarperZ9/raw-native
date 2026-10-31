@@ -9,11 +9,13 @@ import { energyBand, lineSpectrum, sumSpd, spdToXYZ, xyOf, xyToXYZ, apply3, inv3
 const eu611 = lineSpectrum([[611, 1], [588, 0.1], [595, 0.1], [630, 0.15], [707, 0.05]]);
 
 export const SCREENS = {
-  // Colour P22: Y2O3:Eu red, ZnS:Cu,Al green, ZnS:Ag blue.
+  // Colour P22: Y2O3:Eu red (one of the two P22 red hosts; Y2O2S:Eu at 626 nm is the other),
+  // ZnS:Cu,Al green, ZnS:Ag blue. Decays: two-exponential fits to the measured P22 curves of
+  // Kuhn 2002 (kuhn2002.mjs), largest error in the cumulative light 0.004 red, 0.053 green, 0.064 blue.
   p22: { colour: true, parts: [
-    { gun: "r", spd: eu611, decay: [1.0, 0.35e-3, 1e-3] },
-    { gun: "g", spd: energyBand(535, 80), decay: [0.9, 20e-6, 0.5e-3] },
-    { gun: "b", spd: energyBand(450, 60), decay: [0.95, 5e-6, 0.2e-3] }] },
+    { gun: "r", spd: eu611, decay: [0.077, 35.9e-6, 0.427e-3] },
+    { gun: "g", spd: energyBand(535, 80), decay: [0.505, 25.4e-6, 1.459e-3] },
+    { gun: "b", spd: energyBand(450, 60), decay: [0.500, 14.4e-6, 1.138e-3] }] },
   // P4 white (black-and-white television): a blue and a yellow component.
   p4: { colour: false, parts: [
     { gun: "y", share: 0.45, spd: energyBand(450, 55), decay: [1.0, 5e-6, 5e-6] },
