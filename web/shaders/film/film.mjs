@@ -5,7 +5,8 @@
 //   develop    characteristic curves and interimage -> each layer's developed dye fraction
 //   print      grain on the negative, then the full spectral print and projection
 import { haloKernel, radialReturn } from "../crt/halo.mjs";
-import { build, curve, interimage } from "./stocks.mjs";
+import { build, curve, interimage, negativeRecord } from "./stocks.mjs";
+import { FILM_LIBRARY, HALATION, statedHalation } from "./library.mjs";
 import { varianceTable, depthLayers } from "./grain.mjs";
 import { hash3 } from "../common.mjs";
 
@@ -15,11 +16,35 @@ export const FILM_PRESETS = {
   "250d-print": { negative: "neg-250d", remjet: true },
   "bleach-bypass": { negative: "neg-500t", process: "bleach-bypass", remjet: true },
 };
+// One preset per measured colour negative in the library, through the 2383 print, with the halation
+// control its current edition states and its own emulsion scatter where the sheet gives an MTF.
+// "<stock>-print" (for example "kodak-portra400-print"); the measured 2383 curve shape is "-print2383m".
+for (const id of Object.keys(FILM_LIBRARY.stocks)) {
+  const s = FILM_LIBRARY.stocks[id];
+  if (s.kind !== "colour-negative" || !s.sensitometry) continue;
+  const N = negativeRecord("lib:" + id), extra = N.emulsionSigmaUm ? { emulsionSigmaUm: N.emulsionSigmaUm } : {};
+  FILM_PRESETS[`${id}-print`] = { negative: "lib:" + id, halation: statedHalation(id) || "ahu", ...extra };
+  FILM_PRESETS[`${id}-print2383m`] = { negative: "lib:" + id, print: "print-2383-measured", halation: statedHalation(id) || "ahu", ...extra };
+}
+// CineStill: a Kodak motion-picture negative with the rem-jet washed off, rated faster than Kodak rates it.
+// The base stock is inferred (CineStill names none; see FILM_LIBRARY.cinestill); the curves are that stock's
+// rem-jet edition. ev shifts exposure for the rating: 800 on a 500-speed emulsion is log2(500 / 800) stops.
+for (const [key, c] of Object.entries(FILM_LIBRARY.cinestill)) {
+  if (!c.base_stock || !FILM_LIBRARY.stocks[c.base_stock]?.sensitometry) continue;
+  const base = FILM_LIBRARY.stocks[c.base_stock], N = negativeRecord("lib:" + c.base_stock);
+  FILM_PRESETS[key] = { negative: "lib:" + c.base_stock, halation: "none", ev: Math.log2(base.iso / c.rated_ei),
+    ...(N.emulsionSigmaUm ? { emulsionSigmaUm: N.emulsionSigmaUm } : {}) };
+  FILM_PRESETS[key + "-remjet"] = { ...FILM_PRESETS[key], halation: "remjet" };
+}
 const base = { negative: "neg-500t", print: "print-2383", process: "normal", printerPoints: [0, 0, 0], ev: 0,
   gateWidthMm: 24.89, grainScale: 1, grainAmount: 1, remjet: true, pressurePlate: 0.05, emulsionSigmaUm: [3.33, 3.75, 5.54], halationReach: [0.25, 0.06, 0], weaveUm: 6, jitterUm: 1.5, seed: 1 };
 
 export function resolveFilm(preset, overrides, input, out) {
+  if (typeof preset === "string" && !FILM_PRESETS[preset]) throw new Error(`unknown film preset ${preset}`);
   const p = { ...base, ...(typeof preset === "string" ? FILM_PRESETS[preset] : preset || {}), ...(overrides || {}) };
+  // halation: "none" | "remjet" | "ahu"; the older boolean remjet still works (false = none).
+  const halation = p.halation || (p.remjet ? "remjet" : "none");
+  if (!(halation in HALATION)) throw new Error(`unknown halation control ${halation}`);
   const t = build(p), umPerPx = (p.gateWidthMm * 1000) / out.w, jTable = varianceTable();
   // Returned light exposes the emulsion; the part the turbid emulsion scatters back down (albedo
   // about 0.4, low confidence) returns again. Only the kernel shape is used; its strength is below.
@@ -35,7 +60,7 @@ export function resolveFilm(preset, overrides, input, out) {
     grainContrast: t.grainUm.map((r, l) => 1 / Math.sqrt(depthLayers(r, t.neg.span[l], t.sigmaD48[l], jTable))),
     // At a coarse scale the whole ring falls inside one cell: no halo to draw.
     halo: { q: hk.q, R: hk.R, weights: hk.weights.map((w) => (sum > 0 ? w / sum : 0)), ringMm: hk.ringMm },
-    haloStrength: p.halationReach.map((r) => r * kappa * (p.remjet ? 0.03 : 1)),
+    haloStrength: p.halationReach.map((r) => r * kappa * HALATION[halation]), halation,
     grainUm: t.grainUm.map((r) => r * p.grainScale),
     // emulsionSigmaUm: one sigma per layer, or one number for all three.
     mtf: mtfWeights([0, 1, 2].map((c) => [].concat(p.emulsionSigmaUm)[Array.isArray(p.emulsionSigmaUm) ? c : 0] / umPerPx)),

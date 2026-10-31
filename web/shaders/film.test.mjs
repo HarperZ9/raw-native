@@ -21,10 +21,9 @@ test("colour timing prints an 18% grey as a neutral 18%, for every process", () 
   }
 });
 
-// The 500T negative carries its measured layer gammas (0.45, 0.53, 0.51) and dye peaks (H-1-5219t); the
-// print's dyes are still engineered, not measured, and the best of their documented grid search tracks
-// the measured negative at 3.6 to 3.7% (2.4% against the recalled equal-gamma negative). The bound is
-// 4% for 500T until the 2383 curves are digitised; 250D keeps recalled curves and the 3% bound.
+// The named negatives carry the digitised curves of H-1-5219t and H-1-5207; the print's dyes are engineered
+// (grid search in stocks.mjs). The bounds are the ones the earlier parametric curves met: 4% for 500T, 3% for
+// 250D. The measured curves meet them unchanged at 3.3% and 2.5%.
 test("the grey scale tracks: RMS chroma deviation under 4% (500T) and 3% (250D) from -5 to +5 stops", () => {
   for (const [negative, bound] of [["neg-500t", 0.04], ["neg-250d", 0.03]]) {
     const t = build({ negative }); let e = 0, n = 0;
