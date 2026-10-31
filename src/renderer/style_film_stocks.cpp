@@ -14,6 +14,11 @@ constexpr int kNL = 41;
 using Spec = std::function<double(double)>;
 double lambdaAt(int w) { return 380 + 10 * w; }
 Spec g(double c, double fwhm) { const double s = fwhm / 2.3548; return [c, s](double l) { const double q = (l - c) / s; return std::exp(-0.5 * (q * q)); }; }
+// A gaussian with its own half width at half maximum on each side of the peak (nm), stocks.mjs g2.
+Spec g2(double c, double left, double right) {
+    const double sl = left / 1.17741, sr = right / 1.17741;
+    return [c, sl, sr](double l) { const double q = (l - c) / (l < c ? sl : sr); return std::exp(-0.5 * (q * q)); };
+}
 
 Spec blackbody(double T) {
     return [T](double wl) { const double c2 = 1.4387769e-2, l = wl * 1e-9; return 1 / (std::pow(l, 5) * (std::exp(c2 / (l * T)) - 1)); };
@@ -21,7 +26,7 @@ Spec blackbody(double T) {
 double curve(double x, double dmin, double span, double k, double x0) { return dmin + span / (1 + std::exp(-k * (x - x0))); }
 double curveInv(double D, double dmin, double span, double k, double x0) { return x0 - std::log(span / (D - dmin) - 1) / k; }
 
-struct Negative { Spec sens[3], prim[3], sec[3]; double gamma, span, dmin, base, interimage, sigmaD48; T3 grainUm; };
+struct Negative { Spec sens[3], prim[3], sec[3]; T3 gamma, sigmaD48; double span, dmin, base, interimage; T3 grainUm; };
 Negative negativeOf(const std::string& name) {
     Negative N;
     N.sens[0] = g(645, 55); N.sens[1] = g(545, 55); N.sens[2] = g(445, 60);
@@ -30,9 +35,15 @@ Negative negativeOf(const std::string& name) {
     N.sec[0] = [a, b](double l) { return 0.3 * a(l) + 0.08 * b(l); };
     N.sec[1] = [c](double l) { return 0.15 * c(l); };
     N.sec[2] = [](double) { return 0.0; };
-    N.gamma = 0.62; N.span = 2.6; N.dmin = 0.05; N.base = 0.1; N.interimage = 0.3;
-    if (name == "neg-500t") { N.grainUm = {3.2, 3.4, 4.2}; N.sigmaD48 = 0.008; return N; }
-    if (name == "neg-250d") { N.grainUm = {2.4, 2.5, 3.0}; N.sigmaD48 = 0.006; return N; }
+    N.gamma = {0.62, 0.62, 0.62}; N.span = 2.6; N.dmin = 0.05; N.base = 0.1; N.interimage = 0.3;
+    if (name == "neg-500t") {
+        // Kodak H-1-5219t (2015), measured from its figures (stocks.mjs neg-500t).
+        N.sens[0] = g2(650.2, 51.1, 15.0); N.sens[1] = g2(547.9, 25.1, 27.0); N.sens[2] = g2(401.8, 21.2, 73.7);
+        N.prim[0] = g(686, 100); N.prim[1] = g(539, 85); N.prim[2] = g(447, 90);
+        N.gamma = {0.45, 0.53, 0.51};
+        N.grainUm = {3.2, 3.4, 4.2}; N.sigmaD48 = {0.0064, 0.0071, 0.0191}; return N;
+    }
+    if (name == "neg-250d") { N.grainUm = {2.4, 2.5, 3.0}; N.sigmaD48 = {0.006, 0.006, 0.006}; return N; }
     throw std::invalid_argument("film: unknown negative " + name);
 }
 
@@ -165,7 +176,7 @@ FilmStock buildFilmStock(const FilmParams& p) {
     for (int w = 0; w < kNL; ++w) openY = openY + t.projV[std::size_t(w)][1] * std::pow(10, -(prBase + dsum / 3));
     for (auto& r : t.projV) for (double& v : r) v = v / openY;
     for (int i = 0; i < 3; ++i) {
-        t.negDmin[std::size_t(i)] = N.dmin; t.negSpan[std::size_t(i)] = N.span; t.negK[std::size_t(i)] = (4 * N.gamma) / N.span; t.negX0[std::size_t(i)] = std::log10(0.18) + 0.6;
+        t.negDmin[std::size_t(i)] = N.dmin; t.negSpan[std::size_t(i)] = N.span; t.negK[std::size_t(i)] = (4 * N.gamma[std::size_t(i)]) / N.span; t.negX0[std::size_t(i)] = std::log10(0.18) + 0.6;
         t.prtDmin[std::size_t(i)] = prDmin; t.prtSpan[std::size_t(i)] = prSpan; t.prtK[std::size_t(i)] = (4 * prGamma) / prSpan;
     }
     t.printBase = prBase;

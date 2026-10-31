@@ -23,17 +23,23 @@ export const BIN_RGB = (() => {
   return raw.map((w) => w.map((v, k) => v / sum[k]));
 })();
 
-// Glass by the two-term Cauchy formula n = A + B / lambda^2 (lambda in micrometres). The
-// coefficients are round values chosen to sit near a common crown and a dense flint; they are
-// not a catalogue fit, and the lens suite only needs plausible dispersion (Abbe numbers near 64
-// and 33).
+// Glass by the Sellmeier formula n^2 - 1 = sum B_i l^2 / (l^2 - C_i) (l in micrometres), with
+// SCHOTT's catalogue coefficients (optical glass overview, 2025): the crown is N-BK7 (nd 1.5168,
+// vd 64.17) and the flint N-SF2 (nd 1.6477, vd 33.82), the catalogue glasses nearest the indices
+// the suite's prescriptions were drawn for.
 export const GLASS = {
-  crown: { A: 1.5046, B: 0.0042 },
-  flint: { A: 1.6200, B: 0.0105 },
-  air: { A: 1, B: 0 },
+  crown: { name: "N-BK7", B: [1.03961212, 0.231792344, 1.01046945], C: [0.00600069867, 0.0200179144, 103.560653] },
+  flint: { name: "N-SF2", B: [1.47343127, 0.163681849, 1.36920899], C: [0.0109019098, 0.0585683687, 127.404933] },
+  air: { name: "air", B: [0, 0, 0], C: [0, 0, 0] },
 };
-export const cauchy = (g, nm) => g.A + g.B / ((nm / 1000) * (nm / 1000));
-export function abbe(g) { return (cauchy(g, LAMBDA_D) - 1) / (cauchy(g, 486.1) - cauchy(g, 656.3)); }
+export function glassIndex(g, nm) {
+  const l2 = (nm / 1000) * (nm / 1000);
+  let s = 1;
+  for (let i = 0; i < 3; i++) s += (g.B[i] * l2) / (l2 - g.C[i]);
+  return Math.sqrt(s);
+}
+// Abbe number at the helium d line and the hydrogen F and C lines.
+export function abbe(g) { return (glassIndex(g, LAMBDA_D) - 1) / (glassIndex(g, 486.1327) - glassIndex(g, 656.2725)); }
 
 // Per-channel sum of w(l) * f(l): how a wavelength-dependent factor f weights each channel.
 export function channelMean(f) { const o = [0, 0, 0]; for (let l = 0; l < BINS; l++) for (let k = 0; k < 3; k++) o[k] += BIN_RGB[l][k] * f(l); return o; }

@@ -11,15 +11,23 @@ namespace {
 constexpr double kPi = 3.141592653589793;
 constexpr double kLambdaD = 587.6;
 double binNm(int l) { return 420 + 40 * l; }
-struct Glass { double A, B; };
-constexpr Glass kCrown{1.5046, 0.0042}, kFlint{1.6200, 0.0105}, kAir{1, 0};
-double cauchy(const Glass& g, double nm) { return g.A + g.B / ((nm / 1000) * (nm / 1000)); }
+// Sellmeier glasses from the SCHOTT catalogue (lens/spectrum.mjs GLASS): N-BK7 crown, N-SF2 flint.
+struct Glass { double B[3], C[3]; };
+constexpr Glass kCrown{{1.03961212, 0.231792344, 1.01046945}, {0.00600069867, 0.0200179144, 103.560653}};
+constexpr Glass kFlint{{1.47343127, 0.163681849, 1.36920899}, {0.0109019098, 0.0585683687, 127.404933}};
+constexpr Glass kAir{{0, 0, 0}, {0, 0, 0}};
+double glassIndex(const Glass& g, double nm) {
+    const double l2 = (nm / 1000) * (nm / 1000);
+    double s = 1;
+    for (int i = 0; i < 3; ++i) s += (g.B[i] * l2) / (l2 - g.C[i]);
+    return std::sqrt(s);
+}
 struct Surface { double R, t; Glass glass; };
 constexpr Surface kLens[6] = {{14.2, 3.5, kCrown}, {-288.4, 4.0, kAir}, {-29.7, 1.5, kFlint}, {43.9, 2.4, kAir}, {80.1, 3.0, kCrown}, {-42.8, 0, kAir}};
 constexpr int kStopAfter = 3, kN = 6;
 constexpr double kStopAt = 1.2;
 using Ray = std::array<double, 2>;
-double idx(int k, double nm) { return k < 0 ? 1 : cauchy(kLens[k].glass, nm); }
+double idx(int k, double nm) { return k < 0 ? 1 : glassIndex(kLens[k].glass, nm); }
 double Cv(int k) { return 1 / kLens[k].R; }
 Ray Tr(const Ray& r, double d, double n) { return {r[0] + (d * r[1]) / n, r[1]}; }
 Ray Sf(const Ray& r, double c, double n, double n2) { return {r[0], r[1] - r[0] * (n2 - n) * c}; }
@@ -224,11 +232,11 @@ LensPlan resolveLens(const LensParams& in, int W, int H) {
     double rs = 0;
     for (int l = 0; l < kLensBins; ++l) { plan.R0[std::size_t(l)] = lensFilmReflectance(binNm(l), 0, p.coating); rs = rs + plan.R0[std::size_t(l)]; }
     plan.Rbar = rs / kLensBins;
-    const double nd = cauchy(kCrown, kLambdaD);
+    const double nd = glassIndex(kCrown, kLambdaD);
     for (int l = 0; l < kLensBins; ++l) {
         const double nm = binNm(l), depth = 1 / (1 + std::exp(-(nm - 600) / 25));
         plan.halo[std::size_t(l)] = {p.haloGain * depth, p.haloRadiusPx * (0.5 + depth)};
-        plan.caScale[std::size_t(l)] = 1 + (p.caAmount * (cauchy(kCrown, nm) - nd)) / (nd - 1);
+        plan.caScale[std::size_t(l)] = 1 + (p.caAmount * (glassIndex(kCrown, nm) - nd)) / (nd - 1);
     }
     plan.star = lensStarburst(p.iris);
     plan.starCell = p.starCellPxPerStop * p.fNumber;

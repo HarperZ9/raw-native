@@ -33,7 +33,7 @@ export async function createGpuFilm(host, preset, overrides, input, out) {
   for (const k of Object.keys(B)) r[k] = g.importBuffer(k, B[k]);
   const R = Access.StorageRead, W = Access.StorageWrite, wg = (n) => Math.ceil(n / 8);
   g.addPass("expose", [[r.P, R], [r.scene, R], [r.H, W]], (c) => c.dispatch(pipes.expose, [B.P, B.scene, B.H], wg(out.w), wg(out.h)));
-  if (plan.mtf.length > 1) {
+  if (plan.mtf.length > 3) {
     g.addPass("mtf.x", [[r.Px, R], [r.mw, R], [r.H, R], [r.Hb, W]], (c) => c.dispatch(pipes.mtf, [B.Px, B.mw, B.H, B.Hb], wg(out.w), wg(out.h)));
     g.addPass("mtf.y", [[r.Py, R], [r.mw, R], [r.Hb, R], [r.H, W]], (c) => c.dispatch(pipes.mtf, [B.Py, B.mw, B.Hb, B.H], wg(out.w), wg(out.h)));
   }
