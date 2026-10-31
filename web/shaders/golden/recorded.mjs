@@ -1,5 +1,5 @@
 // CPU fingerprints of the presets that existed before the film-stock library, recorded 2026-10-31 from
-// the parent commit (726a98a). Re-record only for a deliberate look change: node web/shaders/golden/presets.mjs --write
+// the parent commit (726a98a). Re-record only for a deliberate look change: node web/shaders/golden/presets.mjs --write prints the block
 export const RECORDED = {
  "film": {
   "500t-print": "77347764fb424569",

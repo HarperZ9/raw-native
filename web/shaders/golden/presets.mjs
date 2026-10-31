@@ -1,9 +1,8 @@
 // Fingerprints of every existing film, CRT and lens preset on a small fixed scene (CPU reference).
 // library.test.mjs compares them with recorded.mjs, recorded before the film-stock and option
 // libraries landed, so an existing look can change only on purpose: a deliberate change re-records
-// the file (node web/shaders/golden/presets.mjs --write) in the same commit and says why.
+// recorded.mjs (node web/shaders/golden/presets.mjs --write prints the block) in the same commit and says why.
 import { createHash } from "node:crypto";
-import { writeFileSync } from "node:fs";
 import { RECORDED } from "./recorded.mjs";
 import { fileURLToPath } from "node:url";
 import { createFilm } from "../film/run.mjs";
@@ -42,9 +41,8 @@ export function fingerprints(filmNames = RECORDED_FILM, crtNames = RECORDED_CRT)
   out.lens.default = hash(runLens(plan, fr, prepareSources(plan, src.list), src.keep).data);
   return out;
 }
-const FILE = fileURLToPath(new URL("./presets.json", import.meta.url));
-export const recorded = () => JSON.parse(readFileSync(FILE, "utf8"));
+export const recorded = () => RECORDED;
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1] && process.argv.includes("--write")) {
-  writeFileSync(FILE, JSON.stringify({ note: "CPU fingerprints of the presets that existed before the film-stock library (2026-10-31)", ...fingerprints() }, null, 1) + "\n");
-  console.log("wrote", FILE);
+  // Prints the block for recorded.mjs; paste it by hand so a re-record is a reviewed diff. The JSON form is git-ignored.
+  console.log(JSON.stringify(fingerprints(), null, 1));
 }
