@@ -35,6 +35,8 @@ export function statedHalation(id) {
   // the current edition wins: a held edition that names an undercoat is newer than one that names rem-jet
   const eds = Object.values(h.byEdition || {});
   const s = eds.find((v) => v.includes("undercoat")) || h.stated || "";
+  // "limited antihalation" (HARMAN PHOENIX) has no stated density: treated as none, the upper bound on the return.
+  if (s.includes("limited")) return "none";
   return s.includes("undercoat") || s.includes("antihalation") ? "ahu" : s.includes("rem-jet") ? "remjet" : null;
 }
 

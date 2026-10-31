@@ -1,7 +1,7 @@
 // Catalogue glasses and coatings for the lens suite, from the option library (options.mjs).
 //
 // A catalogue glass carries its maker's dispersion formula as compiled in the refractiveindex.info
-// release (CC0): formula 1 and 2 are Sellmeier forms, formula 3 the polynomial (SCHOTT's old form).
+// release (dedicated to the public domain): formula 1 and 2 are Sellmeier forms, formula 3 the polynomial (SCHOTT's old form).
 // glassIndex in spectrum.mjs evaluates any of them, so a catalogue glass can stand wherever GLASS.crown
 // or GLASS.flint does.
 import { option, registerOptionGroup } from "../options.mjs";
@@ -32,11 +32,11 @@ export function coatingParams(id, ns = 1.52) {
 // These are design choices over measured glass data (status defined), not claims about one product.
 export const LENS_ERAS = {
   vintage: { glass: { crown: "schott:N-K5", flint: "schott:N-F2" }, coating: "uncoated",
-    prov: { status: "defined", citation: "uncoated classic crown and flint (SCHOTT N-K5 and N-F2 formulas, RII CC0); the pre-1940 build" } },
+    prov: { status: "defined", citation: "uncoated classic crown and flint (SCHOTT N-K5 and N-F2 formulas, refractiveindex.info); the pre-1940 build" } },
   coated: { glass: { crown: "schott:N-BK7", flint: "schott:N-SF2" }, coating: "mgf2-quarter-wave",
     prov: { status: "defined", citation: "single MgF2 quarter-wave on the suite's own N-BK7 / N-SF2; the 1950s to 1970s build" } },
   modern: { glass: { crown: "ohara:S-FPL51", flint: "ohara:S-NBH5" }, coating: "mgf2-quarter-wave",
-    prov: { status: "defined", citation: "fluorophosphate low-dispersion crown with a modern flint (OHARA formulas, RII CC0); the multi-coat stays library data" } },
+    prov: { status: "defined", citation: "fluorophosphate low-dispersion crown with a modern flint (OHARA formulas, refractiveindex.info); the multi-coat stays library data" } },
 };
 
 // Lens parameters for an era: the coating and the crown glass whose dispersion sets the lateral colour.

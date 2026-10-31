@@ -2,8 +2,8 @@
 // dye spectral densities, lamps and grain, and build(), which turns a stock pair into the
 // tables the passes read. Channel index 0 is the red-sensitive layer (cyan dye), 1 green
 // (magenta), 2 blue (yellow), in RGB order. Curves and spectra are parametric
-// approximations of published data-sheet shapes, not digitised measurements; their sources
-// and confidence are in docs/shaders/CONSTANTS.md.
+// approximations fixed by readings of the data sheets, kept so the existing looks hold; "lib:<stock>" reads the
+// digitised curves' logistic fits (library.mjs). Sources and confidence are in docs/shaders/CONSTANTS.md.
 import { cmf, blackbody, rgbToXYZ, inv3, apply3, PRIMARIES, WHITE, XYZ_TO, mul3, xyToXYZ } from "../spectral.mjs";
 import { FILM_LIBRARY, libraryNegative } from "./library.mjs";
 
