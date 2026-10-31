@@ -33,10 +33,20 @@ export const GLASS = {
   air: { name: "air", B: [0, 0, 0], C: [0, 0, 0] },
 };
 export function glassIndex(g, nm) {
+  if (g.formula) return riiIndex(g, nm);
   const l2 = (nm / 1000) * (nm / 1000);
   let s = 1;
   for (let i = 0; i < 3; i++) s += (g.B[i] * l2) / (l2 - g.C[i]);
   return Math.sqrt(s);
+}
+// A catalogue glass from the option library (lens/glasses.mjs) carries its maker's formula as the
+// refractiveindex.info release compiles it: 1 and 2 are Sellmeier forms, 3 the polynomial.
+export function riiIndex(g, nm) {
+  const c = g.c, lam = nm / 1000, l2 = lam * lam;
+  if (g.formula === 1) { let s = 1 + c[0]; for (let i = 1; i + 1 < c.length; i += 2) s += (c[i] * l2) / (l2 - c[i + 1] * c[i + 1]); return Math.sqrt(s); }
+  if (g.formula === 2) { let s = 1 + c[0]; for (let i = 1; i + 1 < c.length; i += 2) s += (c[i] * l2) / (l2 - c[i + 1]); return Math.sqrt(s); }
+  if (g.formula === 3) { let s = c[0]; for (let i = 1; i + 1 < c.length; i += 2) s += c[i] * Math.pow(lam, c[i + 1]); return Math.sqrt(s); }
+  throw new Error(`dispersion formula ${g.formula} not supported`);
 }
 // Abbe number at the helium d line and the hydrogen F and C lines.
 export function abbe(g) { return (glassIndex(g, LAMBDA_D) - 1) / (glassIndex(g, 486.1327) - glassIndex(g, 656.2725)); }

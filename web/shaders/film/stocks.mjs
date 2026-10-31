@@ -5,6 +5,7 @@
 // approximations of published data-sheet shapes, not digitised measurements; their sources
 // and confidence are in docs/shaders/CONSTANTS.md.
 import { cmf, blackbody, rgbToXYZ, inv3, apply3, PRIMARIES, WHITE, XYZ_TO, mul3, xyToXYZ } from "../spectral.mjs";
+import { FILM_LIBRARY, libraryNegative } from "./library.mjs";
 
 export const LAMBDA = Array.from({ length: 41 }, (_, i) => 380 + 10 * i);
 const g = (c, fwhm) => { const s = fwhm / 2.3548; return (l) => Math.exp(-0.5 * ((l - c) / s) ** 2); };
@@ -33,7 +34,30 @@ export const PRINTS = {
   "print-2383": { sens: [g(690, 40), g(545, 45), g(445, 50)], gamma: [2.8, 2.8, 2.8], span: [3.9, 3.9, 3.9], dmin: [0.06, 0.06, 0.06],
     dyes: [(l) => g(655, 100)(l) + 0.22 * g(560, 80)(l) + 0.06 * g(440, 60)(l), (l) => g(555, 80)(l) + 0.1 * g(435, 60)(l), g(445, 90)], base: 0.05 },
 };
+// The measured 2383 curves (H-1-2383, 8-26, raster figure): each layer's logistic slope and span. Its toe below
+// D 0.17 is not resolved in the figure, so D-min stays the engineered 0.06; its dyes and sensitivities are still
+// the engineered ones above (their figures are not digitised yet).
+{
+  const m = FILM_LIBRARY.stocks["kodak-2383"]?.sensitometry;
+  if (m) {
+    const L = ["R", "G", "B"];
+    PRINTS["print-2383-measured"] = { ...PRINTS["print-2383"], k: L.map((c) => m.fit[c].k), span: L.map((c) => m.fit[c].span),
+      gamma: L.map((c) => (m.fit[c].k * m.fit[c].span) / 4), prov: FILM_LIBRARY.stocks["kodak-2383"].prov };
+  }
+}
 export const PROCESSES = { normal: { bleach: 0 }, "bleach-bypass": { bleach: 0.7 } };
+
+// A negative by name: the hand-set records above, or "lib:<stock id>" for a measured library stock.
+export function negativeRecord(name) {
+  if (NEGATIVES[name]) return NEGATIVES[name];
+  if (typeof name === "string" && name.startsWith("lib:")) {
+    const fb = NEGATIVES["neg-500t"], L = libraryNegative(name.slice(4), fb);
+    return { sens: L.sens, gamma: L.gamma, span: L.span, k: L.k, x0: L.x0, dmin: L.dmin, dyes: { prim: L.prim, sec: fb.dyes.sec },
+      base: fb.base, grainUm: fb.grainUm, interimage: fb.interimage, sigmaD48: L.sigmaD48, emulsionSigmaUm: L.emulsionSigmaUm,
+      borrowed: [...L.borrowed, "grain size"], prov: L.prov, grey: L.grey };
+  }
+  throw new Error(`unknown negative ${name}`);
+}
 
 const sigmoidCurve = (gamma, span) => ({ k: (4 * gamma) / span });
 export const curve = (x, dmin, span, k, x0) => dmin + span / (1 + Math.exp(-k * (x - x0)));
@@ -41,7 +65,7 @@ export const curveInv = (D, dmin, span, k, x0) => x0 - Math.log(span / (D - dmin
 
 // Three smooth basis spectra, corrected so a linear Rec.709 triple reconstructs a spectrum
 // whose CIE XYZ is exactly that triple's (scene light upsampled to a spectrum, linearly).
-function rgbBasis() {
+export function rgbBasis() {
   const B = [(l) => 1 / (1 + Math.exp(-(l - 595) / 14)), g(540, 90), g(450, 70)];
   const P = new Array(9).fill(0), ynorm = LAMBDA.reduce((a, l) => a + cmf(l)[1], 0);
   for (const l of LAMBDA) { const c = cmf(l); for (let r = 0; r < 3; r++) for (let k = 0; k < 3; k++) P[r * 3 + k] += (c[r] * B[k](l)) / ynorm; }
@@ -51,7 +75,7 @@ function rgbBasis() {
 
 // build(options) -> the tables (all at LAMBDA) and constants of a negative/print pair.
 export function build({ negative = "neg-500t", print = "print-2383", process = "normal", printerPoints = [0, 0, 0] } = {}) {
-  const N = NEGATIVES[negative], Pr = PRINTS[print], basis = rgbBasis();
+  const N = negativeRecord(negative), Pr = PRINTS[print], basis = rgbBasis();
   // Exposure matrix: layer i from scene channel c, rows scaled so white exposes 1 (filtered to balance).
   const E = new Array(9).fill(0);
   LAMBDA.forEach((l, w) => { for (let i = 0; i < 3; i++) for (let c = 0; c < 3; c++) E[i * 3 + c] += N.sens[i](l) * basis[w][c]; });
@@ -67,8 +91,8 @@ export function build({ negative = "neg-500t", print = "print-2383", process = "
   let projV = LAMBDA.map((l) => cmf(l).map((v) => v * xenon(l)));
   const openY = projV.reduce((a, r) => a + r[1] * Math.pow(10, -(Pr.base + Pr.dmin.reduce((s, d) => s + d, 0) / 3)), 0);
   projV = projV.map((r) => r.map((v) => v / openY));
-  const negK = N.gamma.map((gm, i) => sigmoidCurve(gm, N.span[i]).k), printK = Pr.gamma.map((gm, i) => sigmoidCurve(gm, Pr.span[i]).k);
-  const negX0 = [0, 1, 2].map(() => Math.log10(0.18) + 0.6);
+  const negK = N.k || N.gamma.map((gm, i) => sigmoidCurve(gm, N.span[i]).k), printK = Pr.k || Pr.gamma.map((gm, i) => sigmoidCurve(gm, Pr.span[i]).k);
+  const negX0 = N.x0 || [0, 1, 2].map(() => Math.log10(0.18) + 0.6);
   const t = {
     negative, print, process, E, negPrim, negConst, printW, printPrim, projV, printBase: Pr.base,
     neg: { dmin: N.dmin, span: N.span, k: negK, x0: negX0 }, prt: { dmin: Pr.dmin, span: Pr.span, k: printK, x0: [0, 0, 0] },
