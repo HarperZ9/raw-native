@@ -129,6 +129,8 @@ double read1(const std::vector<double>& g, double r) {
 }
 }  // namespace
 
+void ggxAlbedoSplit(double mu, double alpha, int samples, double& a, double& b) { albedoSplit(mu, alpha, samples, a, b); }
+
 Tables::Tables()
     : a_(std::size_t(kRough) * kTheta), b_(std::size_t(kRough) * kTheta), sh_(std::size_t(kSheenRough) * kSheenMu),
       aavg_(kRough), bavg_(kRough) {

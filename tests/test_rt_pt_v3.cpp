@@ -198,7 +198,7 @@ void c7Switch() {
     PtScene a = v2; a.lights.push_back({}); CHECK(usesV3(a));
     PtScene b = v2; b.environment = uniformEnv(1); CHECK(usesV3(b));
     PtScene c = v2; c.fullMaterials.push_back({}); CHECK(usesV3(c));
-    CHECK(kPathTraceVersion == 3);
+    CHECK(kPathTraceVersion == 4);   // v4 (docs/rt-interface-v4.md) keeps every v3 field
 }
 }  // namespace
 

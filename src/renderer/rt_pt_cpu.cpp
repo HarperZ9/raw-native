@@ -37,7 +37,7 @@ Sample tracePath(const Ctx& C, const PtScene& s, const PathTraceDesc& d, Ray ray
             if (b == 0) o.E = s.sky; else R = R + mul(tw, s.sky);
             break;
         }
-        const Bsdf bs{x0.base, x0.m->roughness, x0.m->metallic, x0.m->specular};
+        const Bsdf bs{x0.base, x0.m->roughness, x0.m->metallic, x0.m->specular, d.controls.legacyLobeV2};
         if (b == 0) {
             o.alb = x0.base; o.nrm = x0.n;
             o.dAlb = x0.base * (1.0f - x0.m->metallic);

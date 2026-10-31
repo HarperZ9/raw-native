@@ -76,4 +76,20 @@ PtScene ptFurnace(float emission, float albedo) {
     return p;
 }
 
+PtScene ptWhitePlane(const PtMaterial& m, Vec3 sky) {
+    PtScene p;
+    p.name = "white_plane";
+    const std::uint32_t white = p.tex.add(4, 4, std::vector<std::uint32_t>(16, 0xffffffffu));
+    p.materials.assign(std::size_t(white) + 1, m);
+    p.materials[white].baseFactor = 1.0f;
+    const float e = 400.0f;
+    swr::Builder b{p.geo};
+    b.quad({-e, 0.0f, e}, {e, 0.0f, e}, {e, 0.0f, -e}, {-e, 0.0f, -e}, 1, 1, white);   // facing +y
+    p.sky = sky;
+    finishPtScene(p);
+    return p;
+}
+// Pitched 45 degrees down with a vertical field of 1.4 rad: the top row looks 5 degrees below the horizon.
+PtCamera whitePlaneCamera() { return {{0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, -1.0f}, {0.0f, 1.0f, 0.0f}, 1.4f}; }
+
 }  // namespace raw::rt
