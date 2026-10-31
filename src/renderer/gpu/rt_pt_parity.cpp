@@ -8,7 +8,10 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <functional>
 namespace raw::gpu_check {
+// rt_pt_parity_energy.cpp: e2 and e3 of interface v4.
+void rtPtEnergy(rhi::Device& dev, const std::function<void(const std::string&, bool)>& record, std::string& error);
 namespace {
 float lumAt(const std::vector<float>& rgb, std::size_t p) { return 0.2126f * rgb[p * 3] + 0.7152f * rgb[p * 3 + 1] + 0.0722f * rgb[p * 3 + 2]; }
 struct Ctx { rhi::Device& dev; RtPtParity& R; bool all{true}; int w{128}, h{96}; std::uint32_t spp{256}; };
@@ -259,7 +262,7 @@ void determinism(Ctx& c, const rt::PtScene& ps, const swr::Scene& base) {
 }  // namespace
 
 std::string RtPtParity::json() const {
-    return "{\n \"schema\": \"raw-native.evidence/1\",\n \"criterion\": \"RT stage R2, the GPU path tracer: P1 to P4 (evidence/rt-r2-bounds.json)\",\n"
+    return "{\n \"schema\": \"raw-native.evidence/1\",\n \"criterion\": \"RT stage R2, the GPU path tracer: P1 to P4 (evidence/rt-r2-bounds.json) and the v4 energy checks e2, e3\",\n"
            " \"interface_version\": " + std::to_string(rt::kPathTraceVersion) + ",\n \"backend\": \"" + backend + "\",\n \"adapter\": \"" + jsonText(adapter) +
            "\",\n \"error\": \"" + jsonText(error) + "\",\n \"pass\": " + (pass() ? "true" : "false") + ",\n \"results\": [\n" + results + "\n ]\n}\n";
 }
@@ -273,6 +276,8 @@ RtPtParity rtPtParity(rhi::Device& dev, bool quick) {
     for (float a : {0.5f, 0.8f}) { const bool ok = furnace(c, a, false, line); record(c, line, ok); }
     { const bool ok = furnace(c, 0.5f, true, line); record(c, line, !ok); }        // the control must fail
     { const bool ok = furnace(c, 0.5f, false, line, true); (void)ok; }             // P5b's control (P1 unchanged by it)
+    if (!R.error.empty()) return R;
+    rtPtEnergy(dev, [&](const std::string& s, bool pass) { record(c, s, pass); }, R.error);
     if (!R.error.empty()) return R;
     const swr::Scene room = swr::retroRoom(), street = swr::isoStreet();
     const rt::PtScene pr = rt::ptRetroRoom(), pst = rt::ptIsoStreet();

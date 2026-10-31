@@ -199,6 +199,10 @@ Rgb emission(const Material& m);
 
 // Lobe building blocks, exposed for the tests.
 double alphaOf(double roughness);                       // clamp, then r^2
+// The split albedo A, B of the white isotropic GGX lobe at view cosine mu and alpha, by `samples`
+// VNDF samples on a Hammersley set: the estimator the A and B tables are built with (the path
+// tracer's v4 energy table uses it too, src/renderer/rt_pt_energy.cpp).
+void ggxAlbedoSplit(double mu, double alpha, int samples, double& a, double& b);
 void anisoAlphas(const Material& m, double& ax, double& ay);
 double ggxD(D3 h, double ax, double ay);                // h unit, in the frame
 double smithV(D3 wo, D3 wi, double ax, double ay);      // G2 / (4 |mu_o| |mu_i|)
