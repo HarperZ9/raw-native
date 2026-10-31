@@ -1,9 +1,10 @@
 // Fingerprints of every existing film, CRT and lens preset on a small fixed scene (CPU reference).
-// golden.test.mjs compares them with presets.json, recorded before the film-stock and option
+// library.test.mjs compares them with recorded.mjs, recorded before the film-stock and option
 // libraries landed, so an existing look can change only on purpose: a deliberate change re-records
 // the file (node web/shaders/golden/presets.mjs --write) in the same commit and says why.
 import { createHash } from "node:crypto";
-import { writeFileSync, readFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
+import { RECORDED } from "./recorded.mjs";
 import { fileURLToPath } from "node:url";
 import { createFilm } from "../film/run.mjs";
 import { createCrt } from "../crt/crt.mjs";
