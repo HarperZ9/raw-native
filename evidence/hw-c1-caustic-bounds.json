@@ -1,0 +1,37 @@
+{
+ "schema": "raw-native.evidence/1",
+ "criterion": "Effect C1: spectral caustics through measured glass on hardware ray queries, equivalent to its CPU reference within a tolerance contract that catches planted bugs, timed with energy per frame on the RTX 4090",
+ "written": "2026-11-02, before the first run of the caustic tracer on any backend",
+ "inputs": {
+  "glasses": "SCHOTT N-SF11 (prism) and N-BK7 (lens), dispersion formula 2 coefficients as compiled by refractiveindex.info release v2026-05-24 (CC0), the same rows as web/shaders/lens/glass-data.mjs; status measured (maker's catalogue fit)",
+  "observer": "CIE 1931 2 degree colour matching functions, 380 to 780 nm at 5 nm (src/renderer/data/cie1931.hpp)",
+  "lamp": "CIE illuminant A by its defining equation (Planck, 2848 K, c2 = 1.435e-2 m K); status defined, not measured",
+  "albedos": "floor 0.8, walls 0.6, stands 0.05, spectrally flat; status chosen"
+ },
+ "definitions": {
+  "batches": "B = 16 independent renders per side, each with its own seed; a pixel's estimate is the batch mean, its variance the batch sample variance over B",
+  "z": "per pixel and per channel X, Y, Z: (m_a - m_b) / sqrt(s_a^2 / B + s_b^2 / B); 0 where both sides are 0 in every batch",
+  "image_z": "per channel, the difference of image sums over the standard error of that difference from the batch variance of the image sums"
+ },
+ "checks": {
+  "K1_hardware_against_cpu": {
+   "what": "prism_room (showcase view) at 192 x 108, 12 bounces, each batch 4 camera samples and 4 photons a pixel (64 and 64 in all), hardware seeds 1000 + i, CPU seeds 5000 + i",
+   "bound": "mean |z| <= 0.9 over every pixel and channel; fraction |z| > 4 <= 0.5%; image_z <= 3 on each channel; no non-finite value"
+  },
+  "K2_estimators_agree": {
+   "what": "on the hardware, the split estimator (camera paths with next-event estimation plus light paths) against the BSDF-only estimator (camera paths only, every emitter hit counted), on prism_room with its lamps enlarged 8 times and cones of 30 degrees, from the view that sees no glass, 96 x 54, each batch 16 camera samples and 16 photons (split) or 1024 camera samples (BSDF-only)",
+   "bound": "the K1 bound; and the test must have power: the standard error of the image sum of Y on the BSDF-only side at most 2% of that sum; and no pixel centre of that view sees glass (checked on the CPU)"
+  },
+  "D1_no_dispersion": { "what": "the hardware with every wavelength at the d-line index, against the K1 CPU reference", "bound": "K1 must fail" },
+  "D2_drop_splat_cosine": { "what": "the hardware with the light paths' surface cosine dropped at the camera join", "bound": "K1 must fail" },
+  "D3_offset": { "what": "the hardware instance moved by 1% of the scene box diagonal along (1, 1, 1) / sqrt 3", "bound": "K1 must fail" },
+  "sweeps": "reported, not bounded: a constant added to every glass index (1e-4, 3e-4, 1e-3, 3e-3) and the instance offset at 0.1%, 0.3% and 3%; the smallest that fails K1 is the contract's resolving power at this resolution and sample count",
+  "K3_measured_data": {
+   "what": "tests/test_caustic.cpp, on the CPU in every build",
+   "bound": "the Sellmeier index at 587.5618 nm within 5e-5 of the catalogue nd and the Abbe number from 486.1327 and 656.2725 nm within 0.05 of the catalogue vd, for both glasses; glass triangles' winding normals agree in sign with their shading normals"
+  }
+ },
+ "timing": "reported, not bounded: on the RTX 4090 at 3840 x 2160, a frame of 1 camera sample and 1 photon a pixel: GPU time of each pass from timestamps over 30 frames after 3 warm-up frames (median, p5, p95), and energy per frame from NVML's total energy counter around those frames, with the idle board power over the same duration recorded beside it; the final still's sample counts and total time",
+ "adapters": "the RTX 4090 under the D:/lw-gpu lock; WARP where it offers tier 1.1 and shader model 6.6",
+ "does_not_prove": "That the image is a photograph of this room: polarisation, absorption in the glass, coatings, the lamp's real spectrum and geometry, and the paths through glass after a diffuse bounce back to the camera through glass are not modelled; equivalence on other scenes or sample counts."
+}
