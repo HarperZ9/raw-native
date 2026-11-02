@@ -1,0 +1,26 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/hw-h2-pt-bounds.json",
+ "backend": "d3d12",
+ "adapter": "NVIDIA GeForce RTX 4090",
+ "driver": "32.0.16.1088",
+ "quick": false,
+ "spp": 256,
+ "error": "",
+ "fallback": false,
+ "results": [
+  {"check": "Q1", "scene": "retro_room", "case": "hardware against cpu", "mean_abs_z": 0.8208, "fraction_z_over_4": 0.00008, "image_z": 0.305, "nonfinite": 0, "fraction_bit_identical": 0.00000, "mean_rel_diff": 8.793e-02, "max_rel_diff": 1.841e+00, "within_q1_bound": true, "verdict": "pass"},
+  {"check": "Q2", "scene": "retro_room", "case": "hardware against compute, same seed", "mean_abs_z": 0.0001, "fraction_z_over_4": 0.00000, "image_z": 0.001, "nonfinite": 0, "fraction_bit_identical": 0.19434, "mean_rel_diff": 9.426e-06, "max_rel_diff": 9.983e-03, "within_q1_bound": true, "verdict": "pass"},
+  {"check": "C1", "scene": "retro_room", "case": "control: MIS weight 1", "mean_abs_z": 1.8100, "fraction_z_over_4": 0.03125, "image_z": 173.578, "nonfinite": 0, "fraction_bit_identical": 0.00000, "mean_rel_diff": 4.226e-01, "max_rel_diff": 3.679e+00, "within_q1_bound": false, "verdict": "pass"},
+  {"check": "C2", "scene": "retro_room", "case": "control: Lambert cosine dropped", "mean_abs_z": 1.7875, "fraction_z_over_4": 0.03532, "image_z": 1.009, "nonfinite": 0, "fraction_bit_identical": 0.00000, "mean_rel_diff": 1.543e+09, "max_rel_diff": 1.615e+13, "within_q1_bound": false, "verdict": "pass"},
+  {"check": "C3_sweep", "scene": "retro_room", "case": "control: instance offset 0.1% of the diagonal (0.0200)", "mean_abs_z": 1.0812, "fraction_z_over_4": 0.01815, "image_z": 9.643, "nonfinite": 0, "fraction_bit_identical": 0.00000, "mean_rel_diff": 1.065e-01, "max_rel_diff": 3.722e+00, "within_q1_bound": false, "verdict": "reported"},
+  {"check": "C3_sweep", "scene": "retro_room", "case": "control: instance offset 0.3% of the diagonal (0.0600)", "mean_abs_z": 1.8055, "fraction_z_over_4": 0.10173, "image_z": 27.994, "nonfinite": 0, "fraction_bit_identical": 0.00000, "mean_rel_diff": 1.645e-01, "max_rel_diff": 6.343e+00, "within_q1_bound": false, "verdict": "reported"},
+  {"check": "C3", "scene": "retro_room", "case": "control: instance offset 1.0% of the diagonal (0.2001)", "mean_abs_z": 4.1087, "fraction_z_over_4": 0.24910, "image_z": 91.098, "nonfinite": 0, "fraction_bit_identical": 0.00000, "mean_rel_diff": 4.062e-01, "max_rel_diff": 4.989e+01, "within_q1_bound": false, "verdict": "pass"},
+  {"check": "C3_sweep", "scene": "retro_room", "case": "control: instance offset 3.0% of the diagonal (0.6002)", "mean_abs_z": 7.4101, "fraction_z_over_4": 0.39738, "image_z": 244.977, "nonfinite": 0, "fraction_bit_identical": 0.00000, "mean_rel_diff": 1.067e+00, "max_rel_diff": 7.810e+01, "within_q1_bound": false, "verdict": "reported"},
+  {"check": "Q1", "scene": "iso_street", "case": "hardware against cpu", "mean_abs_z": 0.3806, "fraction_z_over_4": 0.00000, "image_z": 0.331, "nonfinite": 0, "fraction_bit_identical": 0.53890, "mean_rel_diff": 1.340e-02, "max_rel_diff": 5.754e-01, "within_q1_bound": true, "verdict": "pass"},
+  {"check": "Q2", "scene": "iso_street", "case": "hardware against compute, same seed", "mean_abs_z": 0.0004, "fraction_z_over_4": 0.00000, "image_z": 0.008, "nonfinite": 0, "fraction_bit_identical": 0.89933, "mean_rel_diff": 1.761e-05, "max_rel_diff": 4.078e-02, "within_q1_bound": true, "verdict": "pass"},
+  {"check": "Q1", "scene": "raw_hall", "case": "hardware against cpu", "mean_abs_z": 0.7751, "fraction_z_over_4": 0.00000, "image_z": 0.100, "nonfinite": 0, "fraction_bit_identical": 0.06076, "mean_rel_diff": 1.485e-01, "max_rel_diff": 2.160e+00, "within_q1_bound": true, "verdict": "pass"},
+  {"check": "Q2", "scene": "raw_hall", "case": "hardware against compute, same seed", "mean_abs_z": 0.0177, "fraction_z_over_4": 0.00000, "image_z": 0.005, "nonfinite": 0, "fraction_bit_identical": 0.06722, "mean_rel_diff": 3.214e-03, "max_rel_diff": 9.541e-01, "within_q1_bound": true, "verdict": "pass"}
+ ],
+ "pass": true
+}

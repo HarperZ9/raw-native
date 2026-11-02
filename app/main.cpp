@@ -21,6 +21,8 @@
 #include "raw/tools/relight_cmd.hpp"
 #include "raw/tools/sdf_cmd.hpp"
 #include "raw/tools/hw_rayquery_cmd.hpp"
+#include "raw/tools/hw_pt_cmd.hpp"
+#include "raw/tools/caustic_cmd.hpp"
 #include "raw/tools/rr_cmd.hpp"
 #include "raw/tools/rr_taa_cmd.hpp"
 #include "raw/tools/hw_async_cmd.hpp"
@@ -135,6 +137,8 @@ static const char* kUsage =
     "         the software rasterizer's GPU compute form against its CPU reference, every mode\n"
     "         (same output and exit codes)\n"
     "       raw_native_cli hw-rayquery [--warmup N] [--repeats N] [--criterion b] [--out FILE]\n"
+    "       raw_native_cli hw-pt contract|render|time [...]   (docs/hw-rt.md)\n"
+    "       raw_native_cli caustic render|contract|time [...]   (docs/hw-rt.md)\n"
     "         inline ray query against the CPU BVH on procedural scenes, with controls and timings\n"
     "       raw_native_cli rr-render --scene NAME --path SEED --frames N [--spp S] [--out DIR]\n"
     "         ray reconstruction dataset frames from the path tracer along a camera path\n"
@@ -207,6 +211,8 @@ int main(int argc, char** argv){
     if (argc >= 2 && std::strcmp(argv[1], "restir-di") == 0) return restirCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "sdf-render") == 0) return sdfRenderCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "hw-rayquery") == 0) return hwRayQueryCommand(argc - 1, argv + 1);
+    if (argc >= 2 && std::strcmp(argv[1], "hw-pt") == 0) return hwPtCommand(argc - 1, argv + 1);
+    if (argc >= 2 && std::strcmp(argv[1], "caustic") == 0) return causticCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "rr-render") == 0) return rrRenderCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "rr-taa") == 0) return rrTaaCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "hw-async") == 0) return hwAsyncCommand(argc - 1, argv + 1);

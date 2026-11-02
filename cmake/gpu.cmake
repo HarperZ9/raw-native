@@ -197,6 +197,8 @@ function(raw_native_hw_shaders gen out_header)
         "hw_half_fallback|hw_half_fallback|cs_6_0|"
         "hw_rayquery_probe|hw_rayquery_probe|cs_6_5|"
         "hw_rayquery|hw_rayquery|cs_6_5|"
+        "hw_pt|hw_pt|cs_6_5|" "hw_pt_finish|../../../renderer/gpu/shaders/hlsl/pt_finish|cs_6_0|"
+        "hw_caustic_camera|hw_caustic|cs_6_6|-DPASS=0" "hw_caustic_light|hw_caustic|cs_6_6|-DPASS=1"
         "hw_scan_level_shared|hw_scan_level|cs_6_0|-DMODE=0 -DDROP=0" "hw_scan_level_wave|hw_scan_level|cs_6_0|-DMODE=1 -DDROP=0"
         "hw_scan_level_drop|hw_scan_level|cs_6_0|-DMODE=1 -DDROP=1" "hw_scan_add|hw_scan_add|cs_6_0|"
         "hw_bilateral_fp32|hw_bilateral|cs_6_0|-DMODE=0" "hw_bilateral_fp16|hw_bilateral|cs_6_2|-enable-16bit-types -DMODE=1"
@@ -261,6 +263,7 @@ if(RAW_NATIVE_GPU_D3D12)
         src/rhi/d3d12/d3d12_raster.cpp src/rhi/d3d12/d3d12_texture.cpp src/rhi/d3d12/d3d12_swapchain.cpp
         src/renderer/gpu/shaders_dxil.cpp
         src/rhi/d3d12/hw_queue.cpp src/rhi/d3d12/hw_probe.cpp src/rhi/d3d12/hw_checks.cpp src/rhi/d3d12/hw_rayquery.cpp src/rhi/d3d12/hw_async.cpp src/rhi/d3d12/hw_wave16.cpp src/rhi/d3d12/hw_mesh.cpp
+        src/rhi/d3d12/hw_accel.cpp src/rhi/d3d12/hw_pt.cpp src/rhi/d3d12/hw_caustic.cpp
         ${RAW_NATIVE_DXIL_HEADERS} ${RAW_NATIVE_HW_DXIL_HEADERS})
     target_include_directories(raw_native_d3d12 PRIVATE "${gen}")
     target_link_libraries(raw_native_d3d12 PUBLIC raw_native d3d12 dxgi user32)
