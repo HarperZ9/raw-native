@@ -1,0 +1,25 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/hw-c1-caustic-bounds.json",
+ "backend": "d3d12",
+ "adapter": "NVIDIA GeForce RTX 4090",
+ "driver": "32.0.16.1088",
+ "quick": false,
+ "batches": 16,
+ "error": "",
+ "results": [
+  {"check": "K1", "case": "hardware against cpu (region 479 px)", "mean_abs_z": 0.8591, "fraction_z_over_4": 0.00016, "image_z_xyz": [0.280, 0.208, 1.093], "nonfinite": 0, "within_k1_bound": true, "region_mean_abs_z": 0.8692, "region_fraction_z_over_4": 0.00000, "within_k1_bound_with_region": true, "verdict": "pass"},
+  {"check": "D1", "case": "control: no dispersion (d-line index at every wavelength)", "mean_abs_z": 0.8604, "fraction_z_over_4": 0.00019, "image_z_xyz": [0.270, 0.235, 0.967], "nonfinite": 0, "within_k1_bound": true, "region_mean_abs_z": 0.9262, "region_fraction_z_over_4": 0.00139, "within_k1_bound_with_region": false, "verdict": "pass"},
+  {"check": "D2", "case": "control: splat cosine dropped", "mean_abs_z": 0.8659, "fraction_z_over_4": 0.00031, "image_z_xyz": [5.535, 5.646, 2.836], "nonfinite": 0, "within_k1_bound": false, "region_mean_abs_z": 1.1483, "region_fraction_z_over_4": 0.00626, "within_k1_bound_with_region": false, "verdict": "pass"},
+  {"check": "D3_sweep", "case": "control: instance offset 0.1% of the diagonal (0.0045)", "mean_abs_z": 0.8708, "fraction_z_over_4": 0.00037, "image_z_xyz": [0.001, 0.490, 0.723], "nonfinite": 0, "within_k1_bound": true, "region_mean_abs_z": 1.3626, "region_fraction_z_over_4": 0.00835, "within_k1_bound_with_region": false, "verdict": "reported"},
+  {"check": "D3_sweep", "case": "control: instance offset 0.3% of the diagonal (0.0136)", "mean_abs_z": 0.8933, "fraction_z_over_4": 0.00051, "image_z_xyz": [2.682, 2.905, 0.957], "nonfinite": 0, "within_k1_bound": true, "region_mean_abs_z": 2.0243, "region_fraction_z_over_4": 0.00696, "within_k1_bound_with_region": false, "verdict": "reported"},
+  {"check": "D3", "case": "control: instance offset 1.0% of the diagonal (0.0452)", "mean_abs_z": 0.9117, "fraction_z_over_4": 0.00088, "image_z_xyz": [11.282, 11.098, 7.120], "nonfinite": 0, "within_k1_bound": false, "region_mean_abs_z": 1.5601, "region_fraction_z_over_4": 0.00765, "within_k1_bound_with_region": false, "verdict": "pass"},
+  {"check": "D3_sweep", "case": "control: instance offset 3.0% of the diagonal (0.1356)", "mean_abs_z": 0.9439, "fraction_z_over_4": 0.00154, "image_z_xyz": [35.456, 33.460, 23.772], "nonfinite": 0, "within_k1_bound": false, "region_mean_abs_z": 1.6308, "region_fraction_z_over_4": 0.01322, "within_k1_bound_with_region": false, "verdict": "reported"},
+  {"check": "index_sweep", "case": "sweep: glass index + 1e-04", "mean_abs_z": 0.8591, "fraction_z_over_4": 0.00016, "image_z_xyz": [0.278, 0.205, 1.077], "nonfinite": 0, "within_k1_bound": true, "region_mean_abs_z": 0.8697, "region_fraction_z_over_4": 0.00000, "within_k1_bound_with_region": true, "verdict": "reported"},
+  {"check": "index_sweep", "case": "sweep: glass index + 3e-04", "mean_abs_z": 0.8590, "fraction_z_over_4": 0.00016, "image_z_xyz": [0.294, 0.211, 1.084], "nonfinite": 0, "within_k1_bound": true, "region_mean_abs_z": 0.8711, "region_fraction_z_over_4": 0.00000, "within_k1_bound_with_region": true, "verdict": "reported"},
+  {"check": "index_sweep", "case": "sweep: glass index + 1e-03", "mean_abs_z": 0.8593, "fraction_z_over_4": 0.00016, "image_z_xyz": [0.286, 0.202, 1.093], "nonfinite": 0, "within_k1_bound": true, "region_mean_abs_z": 0.8763, "region_fraction_z_over_4": 0.00000, "within_k1_bound_with_region": true, "verdict": "reported"},
+  {"check": "index_sweep", "case": "sweep: glass index + 3e-03", "mean_abs_z": 0.8596, "fraction_z_over_4": 0.00016, "image_z_xyz": [0.290, 0.200, 1.118], "nonfinite": 0, "within_k1_bound": true, "region_mean_abs_z": 0.8949, "region_fraction_z_over_4": 0.00000, "within_k1_bound_with_region": true, "verdict": "reported"},
+  {"check": "K2", "case": "split estimator against bsdf-only, no glass in view", "mean_abs_z": 0.9857, "fraction_z_over_4": 0.01588, "image_z_xyz": [1.675, 2.027, 0.716], "nonfinite": 0, "within_k1_bound": false, "reference_se_share_of_y": 0.00473, "glass_pixels_in_view": 0, "verdict": "FAIL"}
+ ],
+ "pass": false
+}

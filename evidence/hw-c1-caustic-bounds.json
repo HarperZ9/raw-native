@@ -40,5 +40,10 @@
   "change_1_region": "Every K1 comparison (K1, D1 to D3, sweeps) is also made over the caustic region: the pixels where the CPU reference's light paths carry at least 5% of Y (batch means). A case is within the K1 bound only when the whole image and the region both meet it.",
   "change_2_random_numbers": "The caustic tracer's random numbers move from the path tracer's PCG2D over (pixel, sample * 64 + dimension) to a nested lowbias32 hash of (seed, pixel, sample, dimension), on CPU and GPU alike, and the wavelength takes dimension 63. With the old numbers the split and BSDF-only estimators of the glass-free room differed by 1.5 to 3% and the gap changed sign when only the wavelength's dimension moved; with the new numbers they agree within 0.2%, the seed-to-seed spread.",
   "not_changed": "K2's bound, the controls, the sample counts and the scenes of K1"
+ },
+ "addendum_2": {
+  "written": "2026-11-02, after run 2 (evidence/hw-c1-caustic-rtx4090-run2.json) and before run 3; no bound changed",
+  "finding": "Run 2: K1 and D1 to D3 met their bounds; K2 failed again (mean |z| 0.986, 1.6% past 4) while its image sums met theirs. At 4096 split samples against 262144 BSDF-only samples the two estimators' image sums agree within 0.04% on every channel (diagnostic renders, runs file).",
+  "change": "A reported row, K2_null: the K2 test between two BSDF-only seed sets. It has no bound. If it fails as K2 does, the per-pixel z test is miscalibrated for this estimator (rare lamp hits make the batch variance underestimate the true variance), and K2's failure says that, not that the estimators disagree."
  }
 }
