@@ -33,5 +33,12 @@
  },
  "timing": "reported, not bounded: on the RTX 4090 at 3840 x 2160, a frame of 1 camera sample and 1 photon a pixel: GPU time of each pass from timestamps over 30 frames after 3 warm-up frames (median, p5, p95), and energy per frame from NVML's total energy counter around those frames, with the idle board power over the same duration recorded beside it; the final still's sample counts and total time",
  "adapters": "the RTX 4090 under the D:/lw-gpu lock; WARP where it offers tier 1.1 and shader model 6.6",
- "does_not_prove": "That the image is a photograph of this room: polarisation, absorption in the glass, coatings, the lamp's real spectrum and geometry, and the paths through glass after a diffuse bounce back to the camera through glass are not modelled; equivalence on other scenes or sample counts."
+ "does_not_prove": "That the image is a photograph of this room: polarisation, absorption in the glass, coatings, the lamp's real spectrum and geometry, and the paths through glass after a diffuse bounce back to the camera through glass are not modelled; equivalence on other scenes or sample counts.",
+ "addendum_1": {
+  "written": "2026-11-02, after run 1 (evidence/hw-c1-caustic-rtx4090-run1.json) and before run 2; the bounds above are unchanged",
+  "finding": "Run 1 failed the contract twice. D1 (no dispersion) stayed within the K1 bound: the spectrum covers well under 1% of the 192 x 108 pixels, so whole-image statistics cannot see a change confined to it. K2 failed (mean |z| 0.97, 1.4% of values past 4); diagnosis traced it to the random numbers, not the estimators (runs file).",
+  "change_1_region": "Every K1 comparison (K1, D1 to D3, sweeps) is also made over the caustic region: the pixels where the CPU reference's light paths carry at least 5% of Y (batch means). A case is within the K1 bound only when the whole image and the region both meet it.",
+  "change_2_random_numbers": "The caustic tracer's random numbers move from the path tracer's PCG2D over (pixel, sample * 64 + dimension) to a nested lowbias32 hash of (seed, pixel, sample, dimension), on CPU and GPU alike, and the wavelength takes dimension 63. With the old numbers the split and BSDF-only estimators of the glass-free room differed by 1.5 to 3% and the gap changed sign when only the wavelength's dimension moved; with the new numbers they agree within 0.2%, the seed-to-seed spread.",
+  "not_changed": "K2's bound, the controls, the sample counts and the scenes of K1"
+ }
 }

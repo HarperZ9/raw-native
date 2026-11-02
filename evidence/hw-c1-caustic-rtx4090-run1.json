@@ -1,0 +1,25 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/hw-c1-caustic-bounds.json",
+ "backend": "d3d12",
+ "adapter": "NVIDIA GeForce RTX 4090",
+ "driver": "32.0.16.1088",
+ "quick": false,
+ "batches": 16,
+ "error": "",
+ "results": [
+  {"check": "K1", "case": "hardware against cpu", "mean_abs_z": 0.8282, "fraction_z_over_4": 0.00005, "image_z_xyz": [1.566, 1.214, 1.043], "nonfinite": 0, "within_k1_bound": true, "verdict": "pass"},
+  {"check": "D1", "case": "control: no dispersion (d-line index at every wavelength)", "mean_abs_z": 0.8296, "fraction_z_over_4": 0.00010, "image_z_xyz": [1.574, 1.216, 1.056], "nonfinite": 0, "within_k1_bound": true, "verdict": "FAIL"},
+  {"check": "D2", "case": "control: splat cosine dropped", "mean_abs_z": 0.8352, "fraction_z_over_4": 0.00021, "image_z_xyz": [2.453, 3.848, 4.720], "nonfinite": 0, "within_k1_bound": false, "verdict": "pass"},
+  {"check": "D3_sweep", "case": "control: instance offset 0.1% of the diagonal (0.0045)", "mean_abs_z": 0.8407, "fraction_z_over_4": 0.00031, "image_z_xyz": [1.332, 0.969, 1.187], "nonfinite": 0, "within_k1_bound": true, "verdict": "pass"},
+  {"check": "D3_sweep", "case": "control: instance offset 0.3% of the diagonal (0.0136)", "mean_abs_z": 0.8652, "fraction_z_over_4": 0.00037, "image_z_xyz": [0.558, 1.432, 3.298], "nonfinite": 0, "within_k1_bound": false, "verdict": "FAIL"},
+  {"check": "D3", "case": "control: instance offset 1.0% of the diagonal (0.0452)", "mean_abs_z": 0.8809, "fraction_z_over_4": 0.00068, "image_z_xyz": [6.755, 9.287, 9.416], "nonfinite": 0, "within_k1_bound": false, "verdict": "pass"},
+  {"check": "D3_sweep", "case": "control: instance offset 3.0% of the diagonal (0.1356)", "mean_abs_z": 0.9150, "fraction_z_over_4": 0.00119, "image_z_xyz": [22.674, 29.786, 24.390], "nonfinite": 0, "within_k1_bound": false, "verdict": "FAIL"},
+  {"check": "index_sweep", "case": "sweep: glass index + 1e-04", "mean_abs_z": 0.8282, "fraction_z_over_4": 0.00005, "image_z_xyz": [1.583, 1.226, 1.044], "nonfinite": 0, "within_k1_bound": true, "verdict": "pass"},
+  {"check": "index_sweep", "case": "sweep: glass index + 3e-04", "mean_abs_z": 0.8282, "fraction_z_over_4": 0.00005, "image_z_xyz": [1.571, 1.221, 1.035], "nonfinite": 0, "within_k1_bound": true, "verdict": "pass"},
+  {"check": "index_sweep", "case": "sweep: glass index + 1e-03", "mean_abs_z": 0.8284, "fraction_z_over_4": 0.00005, "image_z_xyz": [1.560, 1.207, 1.035], "nonfinite": 0, "within_k1_bound": true, "verdict": "pass"},
+  {"check": "index_sweep", "case": "sweep: glass index + 3e-03", "mean_abs_z": 0.8286, "fraction_z_over_4": 0.00005, "image_z_xyz": [1.586, 1.227, 1.032], "nonfinite": 0, "within_k1_bound": true, "verdict": "pass"},
+  {"check": "K2", "case": "split estimator against bsdf-only, no glass in view", "mean_abs_z": 0.9722, "fraction_z_over_4": 0.01363, "image_z_xyz": [3.564, 2.266, 0.916], "nonfinite": 0, "within_k1_bound": false, "reference_se_share_of_y": 0.00467, "glass_pixels_in_view": 0, "verdict": "FAIL"}
+ ],
+ "pass": false
+}
