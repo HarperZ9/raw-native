@@ -1,0 +1,90 @@
+{
+ "method": "NVML total energy, differenced between runs of n1 and n2 frames (scripts/gpu_energy.py)",
+ "n1": 40,
+ "n2": 440,
+ "repeats": 3,
+ "command": [
+  "D:/rn-hwrt/build/Release/raw_native_cli.exe",
+  "caustic",
+  "time",
+  "--width",
+  "3840",
+  "--height",
+  "2160",
+  "--out",
+  "D:\\rn-out\\hwrt\\t-caustic-4k-440.json"
+ ],
+ "median_joules_per_frame_gross": 1.294685,
+ "median_joules_per_frame_above_idle": 1.1291904425034076,
+ "runs": [
+  {
+   "idle_watts": 51.7806248161843,
+   "joules_per_frame_gross": 1.294685,
+   "joules_per_frame_above_idle": 1.1518164049219164,
+   "seconds_per_frame_wall": 0.0027591129999927945,
+   "timing_n2": {
+    "scene": "prism_room",
+    "width": 3840,
+    "height": 2160,
+    "frames": 440,
+    "warmup": 3,
+    "adapter": "NVIDIA GeForce RTX 4090",
+    "frame_gpu_ms": {
+     "median": 2.329,
+     "p5": 2.309,
+     "p95": 2.354
+    },
+    "camera_gpu_ms_median": 0.886,
+    "light_gpu_ms_median": 1.443,
+    "build_ms": 0.521,
+    "wall_ms": 1867.6
+   }
+  },
+  {
+   "idle_watts": 65.6828173192273,
+   "joules_per_frame_gross": 1.310385,
+   "joules_per_frame_above_idle": 1.1291904425034076,
+   "seconds_per_frame_wall": 0.0027586294999491657,
+   "timing_n2": {
+    "scene": "prism_room",
+    "width": 3840,
+    "height": 2160,
+    "frames": 440,
+    "warmup": 3,
+    "adapter": "NVIDIA GeForce RTX 4090",
+    "frame_gpu_ms": {
+     "median": 2.33,
+     "p5": 2.31,
+     "p95": 2.358
+    },
+    "camera_gpu_ms_median": 0.886,
+    "light_gpu_ms_median": 1.442,
+    "build_ms": 0.54,
+    "wall_ms": 1876.0
+   }
+  },
+  {
+   "idle_watts": 65.97590687150804,
+   "joules_per_frame_gross": 1.2927349999999997,
+   "joules_per_frame_above_idle": 1.0999836995498686,
+   "seconds_per_frame_wall": 0.0029215407501033044,
+   "timing_n2": {
+    "scene": "prism_room",
+    "width": 3840,
+    "height": 2160,
+    "frames": 440,
+    "warmup": 3,
+    "adapter": "NVIDIA GeForce RTX 4090",
+    "frame_gpu_ms": {
+     "median": 2.326,
+     "p5": 2.306,
+     "p95": 2.355
+    },
+    "camera_gpu_ms_median": 0.885,
+    "light_gpu_ms_median": 1.44,
+    "build_ms": 0.466,
+    "wall_ms": 1897.4
+   }
+  }
+ ]
+}
