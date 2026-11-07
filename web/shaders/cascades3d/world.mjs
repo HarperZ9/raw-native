@@ -1,5 +1,5 @@
 // World-level options of the 3D cascades, CPU float64 (wgsl3d-world.mjs is the GPU side). Each is a
-// plan switch (math3d.mjs planCascades3d), off by default:
+// plan switch (math3d.mjs planCascades3d); sv 2, ft 1, cg 2 and jit 8 are on by default since the sixth round:
 // - mw: how a screen probe weighs level 1's eight neighbours. "seg" (the default): on or off by one
 //   segment from the surface to the neighbour. "vis": instead, the depth-moment visibility of the
 //   surface point from the level-0 probe at the neighbour's place (level 1's probes sit on every other

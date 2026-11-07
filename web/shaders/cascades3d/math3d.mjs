@@ -75,7 +75,7 @@ export function jitter(p, k) {
 // screen probes every k pixels with m x m cosine directions, merged into level 1. fix: "none", "probe"
 // or "full" (cascades3d.mjs).
 export function planCascades3d(bounds, { h0 = 0.5, c0 = 1, r0 = 2, f = 2, levels = 0, fix = "probe", ov = 1, stride = 4, m = 8, bounces = 8, cd = 4,
-  tf = 0, tmax = 32, sf = 0, sl = 0, move = null, c1 = 0, mw = "seg", sv = 0, fz = 0, ft = 0, cg = 0, sd = 0, jit = 0, jl = 1, go = null } = {}) {
+  tf = 32, tmax = 32, sf = 0, sl = 0, move = null, c1 = 0, mw = "seg", sv = 2, fz = 0, ft = 1, cg = 2, sd = 0, jit = undefined, jl = 1, go = null } = {}) {
   // c1 (0 = off): level 1's face side, c0 times a power of two above c0; levels above keep at least
   // c1, so a parent texel splits into (c_i+1 / c_i)^2 children. mw: how screen probes weigh level 1's
   // neighbours ("seg" the segment test, "vis" depth-moment visibility); sv 1 weighs every merge by
@@ -86,6 +86,10 @@ export function planCascades3d(bounds, { h0 = 0.5, c0 = 1, r0 = 2, f = 2, levels
   if (c1 && !(c1 > c0 && Number.isInteger(Math.log2(c1 / c0)))) throw new Error(`c1 ${c1}: c0 times a power of two above c0`);
   if (!["seg", "vis"].includes(mw)) throw new Error(`mw ${mw}`);
   if (![0, 1, 2, 3].includes(+cg) || (sd && sv !== 2)) throw new Error("cg is 0 to 3; sd needs sv 2");
+  // Defaults (2026-11-07, sixth round, evidence/cascades3d-cost-rtx4090.json): the leak-tight merges
+  // sv 2, ft 1, cg 2, and grid jitter with temporal accumulation, jit 8 and tf 32 (jit defaults to 0
+  // when tf is 0). Pass sv 0, ft 0, cg 0, tf 0 for the round-1 setting.
+  if (jit === undefined) jit = tf ? 8 : 0;
   if (jit && (jit % 2 || !tf)) throw new Error("jit needs an even phase count and temporal accumulation (tf)");
   // The grid starts half a spacing (plus an odd fraction) below the bounds: probes then never sit on a
   // box's face or on the diagonal of a face's two triangles, where f32 and f64 ray tests disagree. With

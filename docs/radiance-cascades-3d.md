@@ -52,9 +52,15 @@ raw_native_cli gi-reference --scene-file build/gi/hall.bin --pt build/gi/pt --wi
 python tests/web/cascades3d.py measure --adapter gpu --file build/gi/hall.bin --width 1920 --height 1080 \
   --plan '{"h0":0.5,"fix":"probe","stride":8,"m":6}' --static 1 --baseline 16 --save build/gi/run
 python tests/web/cascades3d_metrics.py build/gi/run --pt build/gi/pt --images build/gi/img/hall
-# world-grid jitter with temporal accumulation (opt-in; it leaks through thin walls, see below)
-#   --plan '{"h0":0.5,"fix":"probe","stride":8,"m":6,"tf":32,"jit":8}'
+# the round-1 setting, without the sixth round's defaults:
+#   --plan '{"h0":0.5,"fix":"probe","stride":8,"m":6,"sv":0,"ft":0,"cg":0,"tf":0}'
 ```
+
+Since 2026-11-07 (sixth round, below) the plan's defaults are the leak-tight merges `sv 2`, `ft 1`,
+`cg 2` and world-grid jitter with temporal accumulation, `jit 8` and `tf 32`. The first command above
+runs that setting. A frame then shows the converged result after 7 warm-up frames and 32 frames of
+history; the scene and camera must hold still for that long, or the history is reprojected
+(`move`).
 
 ## Results on the RTX 4090
 
@@ -64,8 +70,10 @@ timestamps, around the GI passes only. The GPU was shared with other training wo
 run. Evidence: `evidence/cascades3d-rtx4090.json`, bounds in `evidence/cascades3d-bounds.json`,
 written before the first run.
 
-Shipped setting: `h0 0.5 m, c0 1, r0 2, f 2, fix probe, stride 8, m 6`, probe flags and depth
-moments computed once (static geometry).
+Round-1 setting (the shipped setting until the sixth round): `h0 0.5 m, c0 1, r0 2, f 2, fix probe,
+stride 8, m 6`, probe flags and depth moments computed once (static geometry). The table below is
+that setting; the current default adds `sv 2, ft 1, cg 2, jit 8, tf 32` and reads 0.082 at 5.0 ms
+(see "Cheaper visibility and a new default").
 
 | raw-hall nave | Relative RMSE | No-GI baseline | Reference noise | GI ms |
 |---|---|---|---|---|
@@ -156,9 +164,15 @@ Renders, references and error maps at 3840 x 2160, opened at full size and in cr
 - Converged state after 7 frames of a static scene and light; a moving light needs those frames.
 - The probe denoise below removes the fine probe mottle but not the larger blotches, which come
   from the world levels. Grid jitter (`jit`) removes most of them but leaks through thin walls.
-- The shipped default's thin-wall result holds only at the measured grid placement (see "World-level
-  options"). `sv 2` with `ft` is leak-tight at every placement tested, but is not the default yet (see
-  "Leak-tight merges").
+- The round-1 setting's thin-wall result holds only at the measured grid placement (see "World-level
+  options"). The current default (sixth round) reads 0.12% to 0.39% of room A's light in the closed
+  room at every placement and phase tested; the residual sits along wall seams.
+- The default needs 39 frames of a still scene to converge (7 bounces, 32 frames of history), and
+  the first frame of each of its 8 grid phases traces that phase's depth moments and start
+  visibility (static geometry). At 4K it takes 10.2 ms.
+- The cache gather's `cg` fallback returns no light where no probe is shown to see a surface. The
+  white furnace at a moved grid reads up to 1.05% low at 10 of 96 pixels on the CPU (every `cg` mode
+  alike).
 - The 4K reference has one seed, so its noise is not measured.
 
 ## Probe denoise (2026-11-07)
@@ -370,3 +384,62 @@ L is black with a few isolated speckles; under J a faint glow remains along the 
 wall-wall seams, which is where its 0.1% to 0.4% sits. In the door-lit room B0 and L show bright
 probe speckles; J is smooth. In raw-hall the error crops show L brighter than B0 along column edges
 facing the aisle wall, and J matching jit except one brighter band on a column flank.
+
+## Cheaper visibility and a new default (2026-11-07, sixth round)
+
+Two opt-in switches, CPU (`cascades3d.mjs`, `world.mjs`) and GPU (`wgsl3d-core.mjs`,
+`wgsl3d-passes.mjs`, `wgsl3d-world.mjs`), with five new parity cases. Bounds and the kill line were
+written before any run: `evidence/cascades3d-cost-bounds.json` (two amendments, each logged before
+the runs it governs). Results: `evidence/cascades3d-cost-rtx4090.json`.
+
+- `cg: 2` (and `3`): the cache gather's fallback without rays. The depth pass already traces 4 rays
+  a texel from every level-0 probe, once a grid phase; it now also keeps each texel's nearest and
+  farthest distance. When no probe passes the depth-moment test, a lit-side probe outside geometry
+  counts if the farthest (`cg 2`) or nearest (`cg 3`) of those rays toward the point reaches past
+  it. `cg 1` traced a segment to each of up to 8 probes at every such hit.
+- `sd: 1` (with `sv 2`): an entry whose own ray is blocked over the skipped `[0, T_i]` traces from 0
+  instead and holds the surface that blocks it, so no entry is dropped. A first version that capped
+  the dropped entries at the trusted mean failed the white furnace on the CPU (1.4%) and was
+  replaced before any GPU run.
+
+raw-hall nave at 1920 x 1080 against the 8-bounce path trace (GPU shared with training and another
+agent, 17.7 to 18.7 GB of 24.5 GB in use by them):
+
+| Setting | Relative RMSE | Bias | Wall mottle | GI ms (p5 to p95) |
+|---|---|---|---|---|
+| B0, round-1 setting | 0.104 (0.097 to 0.111) | -0.5% | 0.040 | 3.93 (3.88 to 4.16) |
+| J: jit 8, tf 32, sv 2, ft 1, cg 1 (round 5) | 0.083 (0.078 to 0.088) | +1.4% | 0.032 | 6.30 (5.85 to 7.19) |
+| **J2: J with cg 2 (the new default)** | **0.082 (0.077 to 0.088)** | +1.3% | 0.032 | **5.05, 5.02, 5.01** (4.88 to 5.37) |
+| J with sd | 0.130 (0.121 to 0.139) | -6.9% | 0.035 | 6.16 |
+| K: J2 with sd | 0.130 (0.121 to 0.139) | -7.0% | 0.035 | 4.97 |
+| J2 at 3840 x 2160 | 0.093 (0.090 to 0.097) | +1.3% | 0.025 | 10.2 (10.0 to 10.6) |
+
+Closed room at 960 x 540, room B over the room A view's light (bound 1%):
+
+| Setting | g0 | g1 | g2 | g3 | g4 | ph4 to ph7 (fixed grids) |
+|---|---|---|---|---|---|---|
+| J2 | 0.15% | 0.29% | 0.39% | 0.16% | 0.12% | |
+| J2 fixed grid (no jit) | 0.009% | 0.031% | 0.002% | 0.006% | 0.000% | 0.003%, 0.006%, 0.002%, 0.15% |
+| K | 0.17% | 0.26% | 0.40% | 0.16% | 0.13% | |
+| K fixed grid | 0.009% | 0.019% | 0.001% | 0.007% | 0.000% | 0.003%, 0.004%, 0.001%, 0.24% |
+
+Door-lit room B, light ratio and error (no GI 1.66): J2 0.83, 0.94; K 0.63, 1.02. On the CPU at
+16 x 10 px every combination of `sv 2`, `ft`, `cg 2`, `cg 3` and `sd` reads 0.000% at 13 grids.
+
+What this shows:
+
+- `cg 2` does what `cg 1` did at about the cost of no `cg` (round 5: 5.0 ms): 1.25 to 1.29 ms less GI time in the same
+  session, the same leak to within 0.01 percentage point and the same error. The fallback rarely
+  fires, so the cost of `cg 1` was its rays, not its effect.
+- `sd` is a null. The surfaces that block an entry carry less light than the merge needs, and the
+  hall comes out 7% dark instead of 1.4% bright. The renders show the error rising over columns,
+  floor and far wall alike. `sv 2`'s brightening stays open.
+- J2 meets every bound: leak under 0.4% at 5 placements and at most 0.15% at all 8 phase grids, RMSE
+  0.082 (target 0.080 to 0.085; bound 0.111), and three timing medians of 5.0 ms against 6. It is the
+  new default of `planCascades3d`. Parity: all 24 cases within 2e-3 on the RTX 4090; worst 1.4e-4,
+  and the 19 earlier cases read exactly as before.
+
+Renders (`H:` renders folder `cascades3d-cost-2026-11-07`: the 4K frame, reference and error map,
+4K crops of B0, J and J2, 1:1 zooms), opened at full size: J and J2 are indistinguishable at 1:1;
+against B0 the 100 px blotches on the right aisle wall are gone, and a bright band on one column
+flank and thin lines under the arches remain. Under K the whole error map lifts.
