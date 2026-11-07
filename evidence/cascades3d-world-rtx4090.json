@@ -1,0 +1,1743 @@
+{
+ "schema": "raw-native evidence v1",
+ "bounds": "evidence/cascades3d-world-bounds.json",
+ "date": "2026-11-07",
+ "machine": "RTX 4090, shared with training work (about 18.6 GB of 24.5 GB in use by other processes, 97% utilisation during the runs); runs at below-normal priority",
+ "scene": "raw-hall nave (hall-nave.bin), references: 8-bounce path trace, 1024 spp, two seeds at 1080p, one at 4K",
+ "hall": {
+  "B0-1080": {
+   "plan": {
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 0,
+    "tmax": 32,
+    "sf": 0,
+    "sl": 0,
+    "h0": 0.5,
+    "c0": 1,
+    "r0": 2,
+    "f": 2,
+    "c1": 0,
+    "mw": "seg",
+    "sv": 0,
+    "jit": 0,
+    "jl": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 336030608,
+   "rel_rmse": 0.1043,
+   "interval95": [
+    0.0974,
+    0.1114
+   ],
+   "bias": -0.0051,
+   "mottle_walls": {
+    "band": 0.0404,
+    "interval95": [
+     0.0365,
+     0.0445
+    ],
+    "lowpass": 0.0831,
+    "probe_band": 0.0253
+   },
+   "mottle_floor": {
+    "band": 0.0303,
+    "interval95": [
+     0.0265,
+     0.0343
+    ],
+    "lowpass": 0.0629,
+    "probe_band": 0.0226
+   },
+   "metric_checks": {
+    "planted_sinusoid_5pct": 0.0314,
+    "reference_seed2_walls": 0.0032
+   },
+   "gi_ms": {
+    "median": 3.87,
+    "p05": 3.559,
+    "p95": 4.222,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 2.138,
+    "cache": 0.009,
+    "svis": 0.293,
+    "srays": 1.331,
+    "ssum": 0.015,
+    "final": 0.165
+   },
+   "setup_ms": [
+    {
+     "name": "gbuf",
+     "ms": 1.908
+    },
+    {
+     "name": "depth",
+     "ms": 7.731
+    },
+    {
+     "name": "clear",
+     "ms": 0
+    },
+    {
+     "name": "flags",
+     "ms": 0.559
+    },
+    {
+     "name": "flags",
+     "ms": 0.197
+    },
+    {
+     "name": "flags",
+     "ms": 0.472
+    },
+    {
+     "name": "flags",
+     "ms": 0.198
+    },
+    {
+     "name": "flags",
+     "ms": 0.037
+    },
+    {
+     "name": "flags",
+     "ms": 0.011
+    }
+   ]
+  },
+  "a-c1-1080": {
+   "plan": {
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 0,
+    "tmax": 32,
+    "sf": 0,
+    "sl": 0,
+    "h0": 0.5,
+    "c0": 1,
+    "r0": 2,
+    "f": 2,
+    "c1": 4,
+    "mw": "seg",
+    "sv": 0,
+    "jit": 0,
+    "jl": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 349690160,
+   "rel_rmse": 0.0999,
+   "interval95": [
+    0.0938,
+    0.1065
+   ],
+   "bias": 0.0126,
+   "mottle_walls": {
+    "band": 0.0387,
+    "interval95": [
+     0.0356,
+     0.0419
+    ],
+    "lowpass": 0.0721,
+    "probe_band": 0.0261
+   },
+   "mottle_floor": {
+    "band": 0.0279,
+    "interval95": [
+     0.0255,
+     0.0305
+    ],
+    "lowpass": 0.072,
+    "probe_band": 0.0222
+   },
+   "metric_checks": {
+    "planted_sinusoid_5pct": 0.0314,
+    "reference_seed2_walls": 0.0032
+   },
+   "gi_ms": {
+    "median": 5.642,
+    "p05": 4.955,
+    "p95": 5.958,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 3.842,
+    "cache": 0.009,
+    "svis": 0.295,
+    "srays": 1.416,
+    "ssum": 0.015,
+    "final": 0.163
+   },
+   "setup_ms": [
+    {
+     "name": "gbuf",
+     "ms": 1.572
+    },
+    {
+     "name": "depth",
+     "ms": 6.764
+    },
+    {
+     "name": "clear",
+     "ms": 0
+    },
+    {
+     "name": "flags",
+     "ms": 0.553
+    },
+    {
+     "name": "flags",
+     "ms": 0.196
+    },
+    {
+     "name": "flags",
+     "ms": 0.688
+    },
+    {
+     "name": "flags",
+     "ms": 0.182
+    },
+    {
+     "name": "flags",
+     "ms": 0.037
+    },
+    {
+     "name": "flags",
+     "ms": 0.01
+    }
+   ]
+  },
+  "b-vis-1080": {
+   "plan": {
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 0,
+    "tmax": 32,
+    "sf": 0,
+    "sl": 0,
+    "h0": 0.5,
+    "c0": 1,
+    "r0": 2,
+    "f": 2,
+    "c1": 0,
+    "mw": "vis",
+    "sv": 0,
+    "jit": 0,
+    "jl": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 336030608,
+   "rel_rmse": 0.1033,
+   "interval95": [
+    0.0967,
+    0.1103
+   ],
+   "bias": -0.0049,
+   "mottle_walls": {
+    "band": 0.0396,
+    "interval95": [
+     0.0358,
+     0.0435
+    ],
+    "lowpass": 0.0824,
+    "probe_band": 0.0252
+   },
+   "mottle_floor": {
+    "band": 0.0303,
+    "interval95": [
+     0.0265,
+     0.0343
+    ],
+    "lowpass": 0.0629,
+    "probe_band": 0.0226
+   },
+   "metric_checks": {
+    "planted_sinusoid_5pct": 0.0314,
+    "reference_seed2_walls": 0.0032
+   },
+   "gi_ms": {
+    "median": 3.824,
+    "p05": 3.322,
+    "p95": 3.984,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 2.258,
+    "cache": 0.009,
+    "svis": 0.011,
+    "srays": 1.423,
+    "ssum": 0.02,
+    "final": 0.168
+   },
+   "setup_ms": [
+    {
+     "name": "gbuf",
+     "ms": 1.632
+    },
+    {
+     "name": "depth",
+     "ms": 6.249
+    },
+    {
+     "name": "clear",
+     "ms": 0
+    },
+    {
+     "name": "flags",
+     "ms": 0.562
+    },
+    {
+     "name": "flags",
+     "ms": 0.198
+    },
+    {
+     "name": "flags",
+     "ms": 0.207
+    },
+    {
+     "name": "flags",
+     "ms": 0.314
+    },
+    {
+     "name": "flags",
+     "ms": 0.037
+    },
+    {
+     "name": "flags",
+     "ms": 0.011
+    }
+   ]
+  },
+  "b2-sv-1080": {
+   "plan": {
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 0,
+    "tmax": 32,
+    "sf": 0,
+    "sl": 0,
+    "h0": 0.5,
+    "c0": 1,
+    "r0": 2,
+    "f": 2,
+    "c1": 0,
+    "mw": "seg",
+    "sv": 1,
+    "jit": 0,
+    "jl": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 341471624,
+   "rel_rmse": 0.1069,
+   "interval95": [
+    0.0998,
+    0.114
+   ],
+   "bias": 0.0157,
+   "mottle_walls": {
+    "band": 0.0403,
+    "interval95": [
+     0.0362,
+     0.0445
+    ],
+    "lowpass": 0.0826,
+    "probe_band": 0.0255
+   },
+   "mottle_floor": {
+    "band": 0.0332,
+    "interval95": [
+     0.0294,
+     0.0372
+    ],
+    "lowpass": 0.0755,
+    "probe_band": 0.0242
+   },
+   "metric_checks": {
+    "planted_sinusoid_5pct": 0.0314,
+    "reference_seed2_walls": 0.0032
+   },
+   "gi_ms": {
+    "median": 4.007,
+    "p05": 3.567,
+    "p95": 4.232,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 2.235,
+    "cache": 0.009,
+    "svis": 0.294,
+    "srays": 1.345,
+    "ssum": 0.015,
+    "final": 0.165
+   },
+   "setup_ms": [
+    {
+     "name": "gbuf",
+     "ms": 1.592
+    },
+    {
+     "name": "depth",
+     "ms": 6.48
+    },
+    {
+     "name": "start",
+     "ms": 0.015
+    },
+    {
+     "name": "start",
+     "ms": 0.287
+    },
+    {
+     "name": "start",
+     "ms": 0.22
+    },
+    {
+     "name": "start",
+     "ms": 0.242
+    },
+    {
+     "name": "start",
+     "ms": 0.693
+    },
+    {
+     "name": "start",
+     "ms": 0.198
+    },
+    {
+     "name": "clear",
+     "ms": 0
+    },
+    {
+     "name": "flags",
+     "ms": 0.551
+    },
+    {
+     "name": "flags",
+     "ms": 0.197
+    },
+    {
+     "name": "flags",
+     "ms": 0.695
+    },
+    {
+     "name": "flags",
+     "ms": 0.188
+    },
+    {
+     "name": "flags",
+     "ms": 0.037
+    },
+    {
+     "name": "flags",
+     "ms": 0.01
+    }
+   ]
+  },
+  "svfz-1080": {
+   "plan": {
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 0,
+    "tmax": 32,
+    "sf": 0,
+    "sl": 0,
+    "h0": 0.5,
+    "c0": 1,
+    "r0": 2,
+    "f": 2,
+    "c1": 0,
+    "mw": "seg",
+    "sv": 1,
+    "fz": 1,
+    "jit": 0,
+    "jl": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 341471624,
+   "rel_rmse": 0.2688,
+   "interval95": [
+    0.251,
+    0.2891
+   ],
+   "bias": -0.2093,
+   "mottle_walls": {
+    "band": 0.0529,
+    "interval95": [
+     0.0485,
+     0.0572
+    ],
+    "lowpass": 0.2251,
+    "probe_band": 0.028
+   },
+   "mottle_floor": {
+    "band": 0.1001,
+    "interval95": [
+     0.0936,
+     0.1062
+    ],
+    "lowpass": 0.3368,
+    "probe_band": 0.0454
+   },
+   "metric_checks": {
+    "planted_sinusoid_5pct": 0.0314,
+    "reference_seed2_walls": 0.0032
+   },
+   "gi_ms": {
+    "median": 3.974,
+    "p05": 3.571,
+    "p95": 4.191,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 2.242,
+    "cache": 0.009,
+    "svis": 0.294,
+    "srays": 1.304,
+    "ssum": 0.015,
+    "final": 0.165
+   },
+   "setup_ms": [
+    {
+     "name": "gbuf",
+     "ms": 1.518
+    },
+    {
+     "name": "depth",
+     "ms": 6.285
+    },
+    {
+     "name": "start",
+     "ms": 0.016
+    },
+    {
+     "name": "start",
+     "ms": 0.283
+    },
+    {
+     "name": "start",
+     "ms": 0.22
+    },
+    {
+     "name": "start",
+     "ms": 0.242
+    },
+    {
+     "name": "start",
+     "ms": 0.214
+    },
+    {
+     "name": "start",
+     "ms": 0.64
+    },
+    {
+     "name": "clear",
+     "ms": 0
+    },
+    {
+     "name": "flags",
+     "ms": 0.58
+    },
+    {
+     "name": "flags",
+     "ms": 0.197
+    },
+    {
+     "name": "flags",
+     "ms": 0.207
+    },
+    {
+     "name": "flags",
+     "ms": 0.634
+    },
+    {
+     "name": "flags",
+     "ms": 0.042
+    },
+    {
+     "name": "flags",
+     "ms": 0.01
+    }
+   ]
+  },
+  "T-1080": {
+   "plan": {
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "tmax": 32,
+    "sf": 0,
+    "sl": 0,
+    "h0": 0.5,
+    "c0": 1,
+    "r0": 2,
+    "f": 2,
+    "c1": 0,
+    "mw": "seg",
+    "sv": 0,
+    "jit": 0,
+    "jl": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 435575736,
+   "rel_rmse": 0.0946,
+   "interval95": [
+    0.0883,
+    0.1011
+   ],
+   "bias": -0.0009,
+   "mottle_walls": {
+    "band": 0.0363,
+    "interval95": [
+     0.0324,
+     0.0405
+    ],
+    "lowpass": 0.0803,
+    "probe_band": 0.017
+   },
+   "mottle_floor": {
+    "band": 0.0264,
+    "interval95": [
+     0.0226,
+     0.0304
+    ],
+    "lowpass": 0.0621,
+    "probe_band": 0.0165
+   },
+   "metric_checks": {
+    "planted_sinusoid_5pct": 0.0314,
+    "reference_seed2_walls": 0.0032
+   },
+   "gi_ms": {
+    "median": 4.507,
+    "p05": 3.94,
+    "p95": 4.98,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 2.265,
+    "cache": 0.009,
+    "svis": 0.303,
+    "srays": 1.345,
+    "ssum": 0.015,
+    "final": 0.159,
+    "accum": 0.723
+   },
+   "setup_ms": [
+    {
+     "name": "gbuf",
+     "ms": 1.633
+    },
+    {
+     "name": "depth",
+     "ms": 6.694
+    },
+    {
+     "name": "clear",
+     "ms": 0
+    },
+    {
+     "name": "flags",
+     "ms": 0.623
+    },
+    {
+     "name": "flags",
+     "ms": 0.201
+    },
+    {
+     "name": "flags",
+     "ms": 0.676
+    },
+    {
+     "name": "flags",
+     "ms": 0.174
+    },
+    {
+     "name": "flags",
+     "ms": 0.036
+    },
+    {
+     "name": "flags",
+     "ms": 0.01
+    }
+   ]
+  },
+  "DN-1080": {
+   "plan": {
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "tmax": 32,
+    "sf": 2,
+    "sl": 0.5,
+    "h0": 0.5,
+    "c0": 1,
+    "r0": 2,
+    "f": 2,
+    "c1": 0,
+    "mw": "seg",
+    "sv": 0,
+    "jit": 0,
+    "jl": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 436118792,
+   "rel_rmse": 0.0943,
+   "interval95": [
+    0.0881,
+    0.1005
+   ],
+   "bias": -0.001,
+   "mottle_walls": {
+    "band": 0.0329,
+    "interval95": [
+     0.0292,
+     0.0365
+    ],
+    "lowpass": 0.0782,
+    "probe_band": 0.0173
+   },
+   "mottle_floor": {
+    "band": 0.0219,
+    "interval95": [
+     0.0193,
+     0.0246
+    ],
+    "lowpass": 0.0592,
+    "probe_band": 0.0137
+   },
+   "metric_checks": {
+    "planted_sinusoid_5pct": 0.0314,
+    "reference_seed2_walls": 0.0032
+   },
+   "gi_ms": {
+    "median": 4.532,
+    "p05": 4.072,
+    "p95": 5.018,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 2.267,
+    "cache": 0.009,
+    "svis": 0.303,
+    "srays": 1.364,
+    "ssum": 0.015,
+    "atrous": 0.023,
+    "final": 0.157,
+    "accum": 0.559
+   },
+   "setup_ms": [
+    {
+     "name": "gbuf",
+     "ms": 1.863
+    },
+    {
+     "name": "depth",
+     "ms": 7.594
+    },
+    {
+     "name": "clear",
+     "ms": 0
+    },
+    {
+     "name": "flags",
+     "ms": 0.56
+    },
+    {
+     "name": "flags",
+     "ms": 0.197
+    },
+    {
+     "name": "flags",
+     "ms": 0.705
+    },
+    {
+     "name": "flags",
+     "ms": 0.183
+    },
+    {
+     "name": "flags",
+     "ms": 0.037
+    },
+    {
+     "name": "flags",
+     "ms": 0.011
+    }
+   ]
+  },
+  "c-jit-1080": {
+   "plan": {
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "tmax": 32,
+    "sf": 0,
+    "sl": 0,
+    "h0": 0.5,
+    "c0": 1,
+    "r0": 2,
+    "f": 2,
+    "c1": 0,
+    "mw": "seg",
+    "sv": 0,
+    "jit": 8,
+    "jl": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 979096880,
+   "rel_rmse": 0.0797,
+   "interval95": [
+    0.0746,
+    0.085
+   ],
+   "bias": 0.001,
+   "mottle_walls": {
+    "band": 0.03,
+    "interval95": [
+     0.0275,
+     0.0326
+    ],
+    "lowpass": 0.0691,
+    "probe_band": 0.0156
+   },
+   "mottle_floor": {
+    "band": 0.0178,
+    "interval95": [
+     0.0148,
+     0.0212
+    ],
+    "lowpass": 0.0344,
+    "probe_band": 0.0105
+   },
+   "metric_checks": {
+    "planted_sinusoid_5pct": 0.0314,
+    "reference_seed2_walls": 0.0032
+   },
+   "gi_ms": {
+    "median": 4.764,
+    "p05": 4.141,
+    "p95": 5.028,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 2.327,
+    "cache": 0.01,
+    "svis": 0.301,
+    "srays": 1.229,
+    "ssum": 0.014,
+    "final": 0.156,
+    "accum": 0.723
+   },
+   "setup_ms": [
+    {
+     "name": "gbuf",
+     "ms": 1.883
+    },
+    {
+     "name": "depth",
+     "ms": 8.482
+    },
+    {
+     "name": "clear",
+     "ms": 0
+    },
+    {
+     "name": "flags",
+     "ms": 0.733
+    },
+    {
+     "name": "flags",
+     "ms": 0.146
+    },
+    {
+     "name": "flags",
+     "ms": 0.054
+    },
+    {
+     "name": "flags",
+     "ms": 0.049
+    },
+    {
+     "name": "flags",
+     "ms": 0.033
+    },
+    {
+     "name": "flags",
+     "ms": 0.01
+    }
+   ]
+  },
+  "c-jitsv-1080": {
+   "plan": {
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "tmax": 32,
+    "sf": 0,
+    "sl": 0,
+    "h0": 0.5,
+    "c0": 1,
+    "r0": 2,
+    "f": 2,
+    "c1": 0,
+    "mw": "seg",
+    "sv": 1,
+    "jit": 8,
+    "jl": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 1027057832,
+   "rel_rmse": 0.0827,
+   "interval95": [
+    0.0777,
+    0.0882
+   ],
+   "bias": 0.0122,
+   "mottle_walls": {
+    "band": 0.0309,
+    "interval95": [
+     0.0284,
+     0.0336
+    ],
+    "lowpass": 0.0728,
+    "probe_band": 0.0158
+   },
+   "mottle_floor": {
+    "band": 0.0179,
+    "interval95": [
+     0.0149,
+     0.0214
+    ],
+    "lowpass": 0.0342,
+    "probe_band": 0.0112
+   },
+   "metric_checks": {
+    "planted_sinusoid_5pct": 0.0314,
+    "reference_seed2_walls": 0.0032
+   },
+   "gi_ms": {
+    "median": 4.57,
+    "p05": 4.079,
+    "p95": 4.997,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 2.21,
+    "cache": 0.01,
+    "svis": 0.3,
+    "srays": 1.145,
+    "ssum": 0.014,
+    "final": 0.157,
+    "accum": 0.584
+   },
+   "setup_ms": [
+    {
+     "name": "gbuf",
+     "ms": 1.662
+    },
+    {
+     "name": "depth",
+     "ms": 7.778
+    },
+    {
+     "name": "start",
+     "ms": 0.015
+    },
+    {
+     "name": "start",
+     "ms": 0.768
+    },
+    {
+     "name": "start",
+     "ms": 0.271
+    },
+    {
+     "name": "start",
+     "ms": 0.231
+    },
+    {
+     "name": "start",
+     "ms": 0.209
+    },
+    {
+     "name": "start",
+     "ms": 0.173
+    },
+    {
+     "name": "clear",
+     "ms": 0
+    },
+    {
+     "name": "flags",
+     "ms": 1.206
+    },
+    {
+     "name": "flags",
+     "ms": 0.144
+    },
+    {
+     "name": "flags",
+     "ms": 0.054
+    },
+    {
+     "name": "flags",
+     "ms": 0.049
+    },
+    {
+     "name": "flags",
+     "ms": 0.033
+    },
+    {
+     "name": "flags",
+     "ms": 0.01
+    }
+   ]
+  },
+  "jitsvfz-1080": {
+   "plan": {
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "tmax": 32,
+    "sf": 0,
+    "sl": 0,
+    "h0": 0.5,
+    "c0": 1,
+    "r0": 2,
+    "f": 2,
+    "c1": 0,
+    "mw": "seg",
+    "sv": 1,
+    "fz": 1,
+    "jit": 8,
+    "jl": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 1027057832,
+   "rel_rmse": 0.2365,
+   "interval95": [
+    0.2207,
+    0.2547
+   ],
+   "bias": -0.1841,
+   "mottle_walls": {
+    "band": 0.0436,
+    "interval95": [
+     0.04,
+     0.0472
+    ],
+    "lowpass": 0.1862,
+    "probe_band": 0.0202
+   },
+   "mottle_floor": {
+    "band": 0.0956,
+    "interval95": [
+     0.0893,
+     0.1015
+    ],
+    "lowpass": 0.3265,
+    "probe_band": 0.0428
+   },
+   "metric_checks": {
+    "planted_sinusoid_5pct": 0.0314,
+    "reference_seed2_walls": 0.0032
+   },
+   "gi_ms": {
+    "median": 4.59,
+    "p05": 4.049,
+    "p95": 4.967,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 2.211,
+    "cache": 0.01,
+    "svis": 0.301,
+    "srays": 1.154,
+    "ssum": 0.014,
+    "final": 0.157,
+    "accum": 0.693
+   },
+   "setup_ms": [
+    {
+     "name": "gbuf",
+     "ms": 1.677
+    },
+    {
+     "name": "depth",
+     "ms": 7.44
+    },
+    {
+     "name": "start",
+     "ms": 0.015
+    },
+    {
+     "name": "start",
+     "ms": 0.284
+    },
+    {
+     "name": "start",
+     "ms": 0.727
+    },
+    {
+     "name": "start",
+     "ms": 0.248
+    },
+    {
+     "name": "start",
+     "ms": 0.215
+    },
+    {
+     "name": "start",
+     "ms": 0.175
+    },
+    {
+     "name": "clear",
+     "ms": 0
+    },
+    {
+     "name": "flags",
+     "ms": 1.11
+    },
+    {
+     "name": "flags",
+     "ms": 0.151
+    },
+    {
+     "name": "flags",
+     "ms": 0.056
+    },
+    {
+     "name": "flags",
+     "ms": 0.049
+    },
+    {
+     "name": "flags",
+     "ms": 0.033
+    },
+    {
+     "name": "flags",
+     "ms": 0.01
+    }
+   ]
+  },
+  "jitsvfzdn-1080": {
+   "plan": {
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "tmax": 32,
+    "sf": 2,
+    "sl": 0.5,
+    "h0": 0.5,
+    "c0": 1,
+    "r0": 2,
+    "f": 2,
+    "c1": 0,
+    "mw": "seg",
+    "sv": 1,
+    "fz": 1,
+    "jit": 8,
+    "jl": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 1027674856,
+   "rel_rmse": 0.2371,
+   "interval95": [
+    0.2212,
+    0.2554
+   ],
+   "bias": -0.1842,
+   "mottle_walls": {
+    "band": 0.0423,
+    "interval95": [
+     0.0385,
+     0.046
+    ],
+    "lowpass": 0.1854,
+    "probe_band": 0.0205
+   },
+   "mottle_floor": {
+    "band": 0.0952,
+    "interval95": [
+     0.089,
+     0.1012
+    ],
+    "lowpass": 0.3261,
+    "probe_band": 0.0423
+   },
+   "metric_checks": {
+    "planted_sinusoid_5pct": 0.0314,
+    "reference_seed2_walls": 0.0032
+   },
+   "gi_ms": {
+    "median": 4.593,
+    "p05": 4.147,
+    "p95": 5.035,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 2.166,
+    "cache": 0.01,
+    "svis": 0.301,
+    "srays": 1.193,
+    "ssum": 0.014,
+    "atrous": 0.023,
+    "final": 0.157,
+    "accum": 0.633
+   },
+   "setup_ms": [
+    {
+     "name": "gbuf",
+     "ms": 1.851
+    },
+    {
+     "name": "depth",
+     "ms": 8.337
+    },
+    {
+     "name": "start",
+     "ms": 0.015
+    },
+    {
+     "name": "start",
+     "ms": 0.742
+    },
+    {
+     "name": "start",
+     "ms": 0.27
+    },
+    {
+     "name": "start",
+     "ms": 0.231
+    },
+    {
+     "name": "start",
+     "ms": 0.212
+    },
+    {
+     "name": "start",
+     "ms": 0.173
+    },
+    {
+     "name": "clear",
+     "ms": 0
+    },
+    {
+     "name": "flags",
+     "ms": 1.105
+    },
+    {
+     "name": "flags",
+     "ms": 0.16
+    },
+    {
+     "name": "flags",
+     "ms": 0.055
+    },
+    {
+     "name": "flags",
+     "ms": 0.048
+    },
+    {
+     "name": "flags",
+     "ms": 0.033
+    },
+    {
+     "name": "flags",
+     "ms": 0.01
+    }
+   ]
+  },
+  "B0-4k": {
+   "plan": {
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 0,
+    "tmax": 32,
+    "sf": 0,
+    "sl": 0,
+    "h0": 0.5,
+    "c0": 1,
+    "r0": 2,
+    "f": 2,
+    "c1": 0,
+    "mw": "seg",
+    "sv": 0,
+    "fz": 0,
+    "jit": 0,
+    "jl": 1
+   },
+   "size": [
+    3840,
+    2160
+   ],
+   "gpu_bytes": 792093008,
+   "rel_rmse": 0.1108,
+   "interval95": [
+    0.107,
+    0.1147
+   ],
+   "bias": -0.0052,
+   "mottle_walls": {
+    "band": 0.0337,
+    "interval95": [
+     0.0318,
+     0.0355
+    ],
+    "lowpass": 0.0835,
+    "probe_band": 0.0289
+   },
+   "mottle_floor": {
+    "band": 0.0276,
+    "interval95": [
+     0.0252,
+     0.0302
+    ],
+    "lowpass": 0.066,
+    "probe_band": 0.0235
+   },
+   "gi_ms": {
+    "median": 8.113,
+    "p05": 7.206,
+    "p95": 8.79,
+    "frames": 20
+   },
+   "pass_ms": {
+    "level": 2.274,
+    "cache": 0.009,
+    "svis": 0.693,
+    "srays": 4.574,
+    "ssum": 0.205,
+    "final": 0.561
+   },
+   "setup_ms": [
+    {
+     "name": "gbuf",
+     "ms": 6.586
+    },
+    {
+     "name": "depth",
+     "ms": 6.5
+    },
+    {
+     "name": "clear",
+     "ms": 0
+    },
+    {
+     "name": "flags",
+     "ms": 0.777
+    },
+    {
+     "name": "flags",
+     "ms": 0.197
+    },
+    {
+     "name": "flags",
+     "ms": 0.208
+    },
+    {
+     "name": "flags",
+     "ms": 0.168
+    },
+    {
+     "name": "flags",
+     "ms": 0.232
+    },
+    {
+     "name": "flags",
+     "ms": 0.01
+    }
+   ]
+  },
+  "T-4k": {
+   "plan": {
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "tmax": 32,
+    "sf": 0,
+    "sl": 0,
+    "h0": 0.5,
+    "c0": 1,
+    "r0": 2,
+    "f": 2,
+    "c1": 0,
+    "mw": "seg",
+    "sv": 0,
+    "fz": 0,
+    "jit": 0,
+    "jl": 1
+   },
+   "size": [
+    3840,
+    2160
+   ],
+   "gpu_bytes": 1190236536,
+   "rel_rmse": 0.105,
+   "interval95": [
+    0.1014,
+    0.1088
+   ],
+   "bias": -0.0013,
+   "mottle_walls": {
+    "band": 0.0285,
+    "interval95": [
+     0.0266,
+     0.0305
+    ],
+    "lowpass": 0.0804,
+    "probe_band": 0.0211
+   },
+   "mottle_floor": {
+    "band": 0.0244,
+    "interval95": [
+     0.0218,
+     0.0272
+    ],
+    "lowpass": 0.0652,
+    "probe_band": 0.0184
+   },
+   "gi_ms": {
+    "median": 9.322,
+    "p05": 8.495,
+    "p95": 10.246,
+    "frames": 20
+   },
+   "pass_ms": {
+    "level": 2.139,
+    "cache": 0.009,
+    "svis": 0.783,
+    "srays": 4.46,
+    "ssum": 0.202,
+    "final": 0.554,
+    "accum": 1.232
+   },
+   "setup_ms": [
+    {
+     "name": "gbuf",
+     "ms": 5.444
+    },
+    {
+     "name": "depth",
+     "ms": 6.048
+    },
+    {
+     "name": "clear",
+     "ms": 0
+    },
+    {
+     "name": "flags",
+     "ms": 1.06
+    },
+    {
+     "name": "flags",
+     "ms": 0.198
+    },
+    {
+     "name": "flags",
+     "ms": 0.208
+    },
+    {
+     "name": "flags",
+     "ms": 0.628
+    },
+    {
+     "name": "flags",
+     "ms": 0.042
+    },
+    {
+     "name": "flags",
+     "ms": 0.01
+    }
+   ]
+  },
+  "jit-4k": {
+   "plan": {
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "tmax": 32,
+    "sf": 0,
+    "sl": 0,
+    "h0": 0.5,
+    "c0": 1,
+    "r0": 2,
+    "f": 2,
+    "c1": 0,
+    "mw": "seg",
+    "sv": 0,
+    "fz": 0,
+    "jit": 8,
+    "jl": 1
+   },
+   "size": [
+    3840,
+    2160
+   ],
+   "gpu_bytes": 1733757680,
+   "rel_rmse": 0.0905,
+   "interval95": [
+    0.0874,
+    0.0938
+   ],
+   "bias": 0.0004,
+   "mottle_walls": {
+    "band": 0.0243,
+    "interval95": [
+     0.0228,
+     0.0256
+    ],
+    "lowpass": 0.0685,
+    "probe_band": 0.0207
+   },
+   "mottle_floor": {
+    "band": 0.015,
+    "interval95": [
+     0.0136,
+     0.0166
+    ],
+    "lowpass": 0.037,
+    "probe_band": 0.0155
+   },
+   "gi_ms": {
+    "median": 8.795,
+    "p05": 8.43,
+    "p95": 10.24,
+    "frames": 20
+   },
+   "pass_ms": {
+    "level": 2.065,
+    "cache": 0.01,
+    "svis": 0.632,
+    "srays": 4.108,
+    "ssum": 0.156,
+    "final": 0.563,
+    "accum": 1.187
+   },
+   "setup_ms": [
+    {
+     "name": "gbuf",
+     "ms": 6.57
+    },
+    {
+     "name": "depth",
+     "ms": 8.404
+    },
+    {
+     "name": "clear",
+     "ms": 0
+    },
+    {
+     "name": "flags",
+     "ms": 0.592
+    },
+    {
+     "name": "flags",
+     "ms": 0.269
+    },
+    {
+     "name": "flags",
+     "ms": 0.054
+    },
+    {
+     "name": "flags",
+     "ms": 0.049
+    },
+    {
+     "name": "flags",
+     "ms": 0.034
+    },
+    {
+     "name": "flags",
+     "ms": 0.011
+    }
+   ]
+  }
+ },
+ "leak_closed_room": {
+  "B0": {
+   "g0": 0.00097,
+   "g1": 0.14333,
+   "g2": 0.36989,
+   "g3": 0.09868,
+   "g4": 0.10433
+  },
+  "sv": {
+   "g0": 0.00117,
+   "g1": 0.00217,
+   "g2": 0.04773,
+   "g3": 0.01058,
+   "g4": 0.04275
+  },
+  "svfz": {
+   "g0": 0.00011,
+   "g1": 0.00035,
+   "g2": 0.00041,
+   "g3": 0.00575,
+   "g4": 0.00925
+  },
+  "jit": {
+   "g0": 0.17894,
+   "g1": 0.16715,
+   "g2": 0.14675,
+   "g3": 0.14065,
+   "g4": 0.15302
+  },
+  "jitsv": {
+   "g0": 0.03213,
+   "g1": 0.02485,
+   "g2": 0.02439,
+   "g3": 0.02317,
+   "g4": 0.02487
+  },
+  "jitsvfz": {
+   "g0": 0.02047,
+   "g1": 0.01358,
+   "g2": 0.01612,
+   "g3": 0.01306,
+   "g4": 0.01585
+  },
+  "placements_go_m": {
+   "g0": "shipped placement",
+   "g1": [
+    -0.6667,
+    -0.8,
+    -0.5
+   ],
+   "g2": [
+    -0.3333,
+    -0.6,
+    -0.75
+   ],
+   "g3": [
+    -0.8889,
+    -0.4,
+    -0.25
+   ],
+   "g4": [
+    -0.5556,
+    -0.2,
+    -0.875
+   ]
+  },
+  "what": "leak-closed-B at 960 x 540: room B frame mean over the room A view reference mean (0.0501, pt-leak-closed-A-960-s1); bound 1%"
+ },
+ "leak_door_room_b": {
+  "B0": {
+   "room_b_light_ratio": 0.533,
+   "room_b_rel_rmse": 1.329,
+   "no_gi_room_b_rel_rmse": 1.658,
+   "view_rel_rmse": 1.095
+  },
+  "sv": {
+   "room_b_light_ratio": 0.64,
+   "room_b_rel_rmse": 1.352,
+   "no_gi_room_b_rel_rmse": 1.658,
+   "view_rel_rmse": 1.101
+  },
+  "svfz": {
+   "room_b_light_ratio": 0.247,
+   "room_b_rel_rmse": 1.534,
+   "no_gi_room_b_rel_rmse": 1.658,
+   "view_rel_rmse": 1.497
+  },
+  "jit": {
+   "room_b_light_ratio": 18.829,
+   "room_b_rel_rmse": 18.39,
+   "no_gi_room_b_rel_rmse": 1.658,
+   "view_rel_rmse": 11.361
+  },
+  "jitsv": {
+   "room_b_light_ratio": 3.933,
+   "room_b_rel_rmse": 3.213,
+   "no_gi_room_b_rel_rmse": 1.658,
+   "view_rel_rmse": 2.131
+  },
+  "jitsvfz": {
+   "room_b_light_ratio": 2.695,
+   "room_b_rel_rmse": 2.047,
+   "no_gi_room_b_rel_rmse": 1.658,
+   "view_rel_rmse": 1.548
+  },
+  "what": "leak-door-B at 960 x 540 against 4096 spp: room B (x > 5.02) light ratio and relative error; bound: relative error not above the no-GI baseline"
+ },
+ "grid_phase_diagnostic": {
+  "what": "tests/web/cascades3d_gridphase.py on B0-1080 (exploratory, written after the first runs): share of the wall band-pass error energy carried by the means of 512 bins of the fractional grid-cell position",
+  "h_0.5": {
+   "share": 0.029,
+   "shuffled_control": 0.0007
+  },
+  "h_1": {
+   "share": 0.046,
+   "shuffled_control": 0.0005
+  },
+  "h_2": {
+   "share": 0.08,
+   "shuffled_control": 0.0004
+  },
+  "reading": "the blotches are mostly not a periodic trilinear pattern locked to the grid; jit still helps because the parallax error at a point changes with the grid offset and the history averages it"
+ },
+ "parity_gpu_rtx4090": {
+  "leak-door-probe-s2": 3.99e-05,
+  "leak-door-none-world": 1.79e-06,
+  "leak-closed-full-s3": 5.93e-07,
+  "leak-door-A-probe-c2": 2.44e-07,
+  "furnace-planted": 6.12e-08,
+  "baseline-leak-door-A": 2.31e-07,
+  "denoise-spatial-s2": 3.76e-05,
+  "denoise-temporal-s2": 0.00014,
+  "denoise-both-moving-s2": 6.82e-05,
+  "furnace-denoise-planted": 6.07e-08,
+  "world-c1-s2": 3.07e-05,
+  "world-mw-vis-s2": 4.95e-05,
+  "world-sv-s2": 4.5e-05,
+  "world-sv-jit-s2": 3.82e-07,
+  "furnace-world-planted": 6.13e-08
+ }
+}
