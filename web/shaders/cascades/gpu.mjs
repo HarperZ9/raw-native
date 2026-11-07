@@ -65,10 +65,15 @@ export async function createGpuCascades(host, sc, opts = {}) {
   const canTime = dev.features.has("timestamp-query");
   const qs = canTime ? dev.createQuerySet({ type: "timestamp", count: 2 }) : null;
   const qb = canTime ? dev.createBuffer({ size: 16, usage: 0x200 | 0x04, label: "rc timestamps" }) : null; // QUERY_RESOLVE | COPY_SRC
+  // One compute pass per step: every step reads what the step before wrote. Dispatches inside one
+  // pass are ordered by the spec, but SwiftShader in CI raced them (2026-11-06), so pass boundaries
+  // carry the dependency. The timestamps bracket the first and the last pass.
   function record(enc, timed = false) {
-    const cp = enc.beginComputePass(timed && qs ? { timestampWrites: { querySet: qs, beginningOfPassWriteIndex: 0, endOfPassWriteIndex: 1 } } : {});
-    for (const [pipe, bufs, x, y] of steps) { cp.setPipeline(pipe); cp.setBindGroup(0, host.bind(pipe, bufs)); cp.dispatchWorkgroups(x, y); }
-    cp.end();
+    steps.forEach(([pipe, bufs, x, y], i) => {
+      const tw = timed && qs ? { querySet: qs, ...(i === 0 ? { beginningOfPassWriteIndex: 0 } : {}), ...(i === steps.length - 1 ? { endOfPassWriteIndex: 1 } : {}) } : null;
+      const cp = enc.beginComputePass(tw && (i === 0 || i === steps.length - 1) ? { timestampWrites: tw } : {});
+      cp.setPipeline(pipe); cp.setBindGroup(0, host.bind(pipe, bufs)); cp.dispatchWorkgroups(x, y); cp.end();
+    });
     if (timed && qs) enc.resolveQuerySet(qs, 0, 2, qb, 0);
   }
   async function readBuf(buf, bytes) {
@@ -93,9 +98,9 @@ export async function createGpuCascades(host, sc, opts = {}) {
     async reference({ rays = 4096, stride = 1, seed = 1, chunk = 64, fresnel = true } = {}) {
       const g = refGrid(sc.W, sc.H, stride), total = g.w * g.h, d = grid2(total), R = mk(12 * total, "rc reference");
       dev.queue.writeBuffer(R, 0, new Float32Array(3 * total));
-      { const enc = dev.createCommandEncoder(), cp = enc.beginComputePass(); // the occupancy pyramid
-        for (const [pipe, bufs, x, y] of steps.slice(0, MIP_LEVELS)) { cp.setPipeline(pipe); cp.setBindGroup(0, host.bind(pipe, bufs)); cp.dispatchWorkgroups(x, y); }
-        cp.end(); dev.queue.submit([enc.finish()]); }
+      { const enc = dev.createCommandEncoder(); // the occupancy pyramid, one pass per level
+        for (const [pipe, bufs, x, y] of steps.slice(0, MIP_LEVELS)) { const cp = enc.beginComputePass(); cp.setPipeline(pipe); cp.setBindGroup(0, host.bind(pipe, bufs)); cp.dispatchWorkgroups(x, y); cp.end(); }
+        dev.queue.submit([enc.finish()]); }
       const t = performance.now();
       for (let r0 = 0; r0 < rays; r0 += chunk) {
         const P = mk(4 * PARAMS_WORDS, "rc reference params", packParams(sc, plan, mips, { rays0: r0, rays1: Math.min(rays, r0 + chunk), raysTotal: rays, seed, stride, gw: g.w, gh: g.h, fresnel, total, gridX: d.gridX }));

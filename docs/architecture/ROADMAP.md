@@ -255,7 +255,7 @@ GPUs; only a run on the reference machine sets raw-native's numbers.
 
 P6 status (2026-11-06). The flatland stage is built: `web/shaders/cascades`, measured in
 `docs/radiance-cascades.md` and `evidence/cascades-rtx4090.json`. At 3840 x 2160 on the RTX 4090,
-branch 4 reaches relative RMSE 0.038 on a thin-wall room in 49 ms and branch 2 0.125 in 12 ms; the
+branch 4 reaches relative RMSE 0.038 on a thin-wall room in 70 ms (49 ms in an earlier run) and branch 2 0.125 in 12 ms; the
 per-neighbour continuation removes the leak (dark room 1.00 of its reference against 1.65 at branch 2)
 at 2.5 to 4.5 times the cost. Error within 2 px of a glass interface is 2.7 to 5.4 times the image's
 (H150). The raw-hall criteria above are open: the 3D cascades are not built.

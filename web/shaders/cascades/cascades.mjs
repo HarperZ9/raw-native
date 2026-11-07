@@ -57,7 +57,7 @@ function mod(a, n) { return ((a % n) + n) % n; }
 function angleOf(d) { const a = Math.atan2(d[1], d[0]); return a < 0 ? a + TAU : a; }
 
 // Merged radiance of one entry (probe px, py, direction k) of cascade i.
-function entry(sc, mips, plan, i, px, py, k, next) {
+export function entry(sc, mips, plan, i, px, py, k, next) {
   const c = plan.cascades[i], cn = plan.cascades[i + 1], th = (k + 0.5) * TAU / c.n;
   const p = [(px + 0.5) * c.s, (py + 0.5) * c.s], d = [Math.cos(th), Math.sin(th)];
   const glass = sc.circles.some((g) => g.kind === "glass");

@@ -8,37 +8,37 @@
     {
       "id": "disk-b2",
       "scene": "disk",
-      "cascades_rel_rmse": 3.645885313281413e-07,
-      "reference_rel_rmse": 4.931848913976098e-08,
+      "cascades_rel_rmse": 3.8696886992332394e-07,
+      "reference_rel_rmse": 4.9454082103555416e-08,
       "reference_flip_fraction": 0
     },
     {
       "id": "room-b4-fix",
       "scene": "room",
-      "cascades_rel_rmse": 1.1163191637053133e-06,
-      "reference_rel_rmse": 1.355553971026456e-07,
+      "cascades_rel_rmse": 1.4715108410301184e-06,
+      "reference_rel_rmse": 3.662442280921512e-07,
       "reference_flip_fraction": 0
     },
     {
       "id": "room-b2",
       "scene": "room",
-      "cascades_rel_rmse": 2.5037443873635152e-06,
-      "reference_rel_rmse": 1.355553971026456e-07,
+      "cascades_rel_rmse": 5.14429118552733e-06,
+      "reference_rel_rmse": 3.662442280921512e-07,
       "reference_flip_fraction": 0
     },
     {
       "id": "glass-b2",
       "scene": "glass",
-      "cascades_rel_rmse": 6.211789941507919e-07,
-      "reference_rel_rmse": 0.07719009986968095,
-      "reference_flip_fraction": 0.029513888888888888
+      "cascades_rel_rmse": 3.5153617975271866e-06,
+      "reference_rel_rmse": 0.05967780547069339,
+      "reference_flip_fraction": 0.027777777777777776
     },
     {
       "id": "glass-b4",
       "scene": "glass",
-      "cascades_rel_rmse": 9.277876845113355e-06,
-      "reference_rel_rmse": 0.07719009986968095,
-      "reference_flip_fraction": 0.029513888888888888
+      "cascades_rel_rmse": 5.262763883740926e-05,
+      "reference_rel_rmse": 0.05967780547069339,
+      "reference_flip_fraction": 0.027777777777777776
     }
   ],
   "adapter": {

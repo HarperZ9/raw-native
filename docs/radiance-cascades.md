@@ -47,18 +47,21 @@ from timestamps. Evidence: `evidence/cascades-rtx4090.json`, `evidence/cascades-
 
 | Scene | b, n0, r0 | Relative RMSE | Reference noise | GPU ms per frame |
 |---|---|---|---|---|
-| disk (planted) | 2, 4, 4 | 0.107 (0.101 to 0.114) | 0.0027 | 4.55 (4.34 to 4.79) |
-| disk (planted) | 4, 4, 2 | 0.022 (0.018 to 0.025) | 0.0027 | 34.4 (31.9 to 35.8) |
-| disk (planted) | 4, 8, 4 | 0.013 (0.012 to 0.015) | 0.0027 | 67.8 (62.4 to 73.8) |
-| room | 2, 4, 4 | 0.125 (0.117 to 0.133) | 0.0045 | 12.0 (11.2 to 13.2) |
-| room | 4, 4, 2 | 0.038 (0.031 to 0.045) | 0.0045 | 49.3 (47.3 to 74.6) |
-| room | 4, 8, 4 | 0.025 (0.021 to 0.028) | 0.0045 | 147 (95 to 152) |
-| glass | 2, 4, 4 | 0.290 (0.262 to 0.317) | 0.0116 | 5.65 (5.52 to 5.76) |
-| glass | 4, 4, 2 | 0.203 (0.181 to 0.226) | 0.0116 | 36.1 (35.9 to 36.4) |
-| glass | 4, 8, 4 | 0.174 (0.149 to 0.200) | 0.0116 | 82.9 (82.0 to 84.2) |
+| disk (planted) | 2, 4, 4 | 0.107 (0.101 to 0.114) | 0.0027 | 5.81 (5.22 to 6.44) |
+| disk (planted) | 4, 4, 2 | 0.022 (0.018 to 0.025) | 0.0027 | 34.7 (31.9 to 36.3) |
+| disk (planted) | 4, 8, 4 | 0.013 (0.012 to 0.015) | 0.0027 | 67.4 (64.0 to 69.4) |
+| room | 2, 4, 4 | 0.125 (0.117 to 0.133) | 0.0045 | 12.3 (11.6 to 12.9) |
+| room | 4, 4, 2 | 0.038 (0.031 to 0.045) | 0.0045 | 69.7 (66.3 to 72.0) |
+| room | 4, 8, 4 | 0.025 (0.021 to 0.028) | 0.0045 | 97.6 (88.1 to 133.7) |
+| glass | 2, 4, 4 | 0.283 (0.258 to 0.309) | 0.0130 | 5.72 (5.65 to 5.87) |
+| glass | 4, 4, 2 | 0.200 (0.178 to 0.222) | 0.0130 | 36.4 (36.0 to 36.6) |
+| glass | 4, 8, 4 | 0.173 (0.149 to 0.198) | 0.0130 | 68.0 (66.7 to 68.5) |
 
-At 1920 x 1080 on the room scene: b = 2 (4, 4) 3.84 ms at 0.145; b = 4 (4, 2) 16.6 ms at 0.055;
-b = 4 (8, 4) 28.2 ms at 0.038; b = 4 (4, 2) with fix 48.9 ms at 0.043.
+Frame times repeat to about 40%. An earlier run of the same settings gave room 49.3 ms at (4, 4, 2)
+and 147 ms at (4, 8, 4); both runs are in the evidence file.
+
+At 1920 x 1080 on the room scene: b = 2 (4, 4) 4.22 ms at 0.145; b = 4 (4, 2) 15.2 ms at 0.055;
+b = 4 (8, 4) 24.8 ms at 0.038; b = 4 (4, 2) with fix 46.0 ms at 0.043.
 
 **Planted check.** The disk has a closed form, 2 L asin(R / d). The brute force sits 0.0027 from
 it, the same as its seed-to-seed noise. The metric applied to the closed form plus 1% of its mean
@@ -75,8 +78,8 @@ setting. Fix costs 2.5 to 4.5 times the frame time. At branch 4 without fix, thi
 still cross the dark room in the render.
 
 **Refractive interface (H150).** Error grows toward the glass interface. Within 2 px of it the RMSE
-is 2.7 to 5.4 times the image's (0.83, 0.55 and 0.94 of the image mean for the three settings,
-against 0.29, 0.20 and 0.17 overall). Against a reference without Fresnel reflection the bands move
+is 2.7 to 5.4 times the image's (0.81, 0.53 and 0.93 of the image mean for the three settings,
+against 0.28, 0.20 and 0.17 overall). Against a reference without Fresnel reflection the bands move
 by under 0.03, so the error is the cascades' angular sampling of the bent rays. The deterministic
 refraction is a small part of it. The render shows banding inside the rim, a smeared caustic and
 soft block-shaped ghosts in open space where bent continuations read coarse cascades. The kill
@@ -85,6 +88,8 @@ bite at refractive interfaces.
 
 ## Limits
 
+- GPU parity holds on the RTX 4090 and on SwiftShader only because the shader computes sin, cos,
+  atan2 and sqrt itself: WGSL's own accuracy bounds let SwiftShader move rays enough to fail.
 - Flatland only. The 3D world-space or screen-space extension (ROADMAP P6, raw-hall) is not built.
 - Cascade 0 has one probe per pixel; no lower-resolution cascade 0 or temporal reuse is tried, so
   the frame times are the brute-force cost of the method at full resolution.

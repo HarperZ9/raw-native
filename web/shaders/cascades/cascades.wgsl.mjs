@@ -26,6 +26,9 @@ const MIPS = 8u;
 struct Acc { L: vec3f, T: f32, out: bool }
 struct Seg { L: vec3f, T: f32, p: vec2f, d: vec2f, out: bool, bent: bool }
 
+// Square root with one Newton step: WGSL lets an adapter compute sqrt as 1 / inverseSqrt, which
+// leaves relative errors that bend refracted rays visibly against the f64 reference.
+fn sqrtR(x: f32) -> f32 { if (x <= 0.0) { return 0.0; } let r = sqrt(x); return 0.5 * (r + x / r); }
 fn occ(l: u32, x: i32, y: i32) -> bool { return mip[P.mipOff[l] + u32(y >> l) * P.mipW[l] + u32(x >> l)] != 0u; }
 fn exitT(b: f32, p: f32, iv: f32, nz: bool) -> f32 { return select(1e30, (b - p) * iv, nz); }
 
@@ -69,10 +72,10 @@ fn hitCircle(p: vec2f, d: vec2f, last: i32, inside: bool) -> vec2f { // (t, inde
   for (var i = 0u; i < P.nCirc; i++) {
     let c = circ[2u * i]; let o = p - c.xy; let b = dot(o, d); let disc = b * b - (dot(o, o) - c.z * c.z);
     var t = 1e30;
-    if (i32(i) == last) { if (!inside) { continue; } t = -b + sqrt(max(0.0, disc)); }
+    if (i32(i) == last) { if (!inside) { continue; } t = -b + sqrtR(disc); }
     else {
       if (disc < 0.0) { continue; }
-      let q = sqrt(disc); let t1 = -b - q; let t2 = -b + q;
+      let q = sqrtR(disc); let t1 = -b - q; let t2 = -b + q;
       t = select(select(1e30, t2, t2 > 1e-4), t1, t1 > 1e-4);
     }
     if (t < best) { best = t; bi = f32(i); }
@@ -93,12 +96,12 @@ fn scatterGlass(ci: u32, p: vec2f, d: vec2f, fres: bool, u: f32) -> vec2f {
   let eta = n1 / n2; let k = 1.0 - eta * eta * (1.0 - cosi * cosi);
   let refl = d + 2.0 * cosi * n;
   if (k < 0.0) { return refl; }
-  let cost = sqrt(k);
+  let cost = sqrtR(k);
   if (fres) {
     let rs = (n1 * cosi - n2 * cost) / (n1 * cosi + n2 * cost); let rp = (n2 * cosi - n1 * cost) / (n2 * cosi + n1 * cost);
     if (u < 0.5 * (rs * rs + rp * rp)) { return refl; }
   }
-  return normalize(eta * d + (eta * cosi - cost) * n);
+  let v = eta * d + (eta * cosi - cost) * n; return v / sqrtR(dot(v, v));
 }
 fn hash32(x0: u32) -> u32 {
   let x = x0 * 747796405u + 2891336453u; let w = ((x >> ((x >> 28u) + 4u)) ^ x) * 277803737u;
@@ -131,7 +134,19 @@ fn traceInterval(o: vec2f, d0: vec2f, t0: f32, t1: f32, rng: ptr<function, u32>,
   return Seg(acc.L, acc.T, p, dir, acc.out, bent);
 }
 fn flatIndex(gid: vec3u) -> u32 { return gid.y * P.gridX + gid.x; }
-fn dirOf(th: f32) -> vec2f { let a = select(th, th - TAU, th > 3.141592653589793); return vec2f(cos(a), sin(a)); }
+// cos and sin of th in [0, 2 pi) by quadrant reduction and Taylor polynomials on [-pi/4, pi/4]
+// (error under 3e-8), so ray directions do not depend on the adapter's sin and cos, which WGSL bounds
+// only to 2^-11 absolute (SwiftShader uses that room; the RTX 4090 does not).
+fn dirOf(th: f32) -> vec2f {
+  let q = round(th / 1.5707963267948966); let r = th - q * 1.5707963267948966; let r2 = r * r;
+  let s = r * (1.0 + r2 * (-1.0 / 6.0 + r2 * (1.0 / 120.0 + r2 * (-1.0 / 5040.0 + r2 * (1.0 / 362880.0)))));
+  let c = 1.0 + r2 * (-0.5 + r2 * (1.0 / 24.0 + r2 * (-1.0 / 720.0 + r2 * (1.0 / 40320.0))));
+  let k = u32(i32(q) & 3);
+  if (k == 0u) { return vec2f(c, s); }
+  if (k == 1u) { return vec2f(-s, c); }
+  if (k == 2u) { return vec2f(-c, -s); }
+  return vec2f(s, -c);
+}
 `;
 
 export const MERGE_WGSL = /* wgsl */ `
@@ -157,12 +172,19 @@ fn sampleNext(q: vec2f, th: f32) -> vec3f {
   }
   return out;
 }
-// atan2 and sin/cos carry loose accuracy bounds in WGSL (sin/cos: 2^-11 absolute), enough to move
-// a ray a quarter of a fine cascade's bin. Angles are reduced to [-pi, pi] before sin/cos, and
-// atan2 is refined with one Newton step on tan(a - a0).
+// The angle of a unit vector in [0, 2 pi): a polynomial arctangent on the first octant, then two
+// Newton steps on tan(a - a0) with dirOf, so the result does not rest on the adapter's atan2, which
+// WGSL bounds loosely.
 fn angleOf(d: vec2f) -> f32 {
-  let a0 = atan2(d.y, d.x); let c = dirOf(select(a0, a0 + TAU, a0 < 0.0));
-  let a = a0 + (c.x * d.y - c.y * d.x) / (c.x * d.x + c.y * d.y);
+  let ax = abs(d.x); let ay = abs(d.y); let m = min(ax, ay) / max(max(ax, ay), 1e-30); let m2 = m * m;
+  var a = m * (0.99997726 + m2 * (-0.33262347 + m2 * (0.19354346 + m2 * (-0.11643287 + m2 * (0.05265332 + m2 * -0.01172120)))));
+  if (ay > ax) { a = 1.5707963267948966 - a; }
+  if (d.x < 0.0) { a = 3.141592653589793 - a; }
+  if (d.y < 0.0) { a = TAU - a; }
+  for (var it = 0; it < 2; it++) {
+    let c = dirOf(clamp(a, 0.0, TAU));
+    a += (c.x * d.y - c.y * d.x) / (c.x * d.x + c.y * d.y);
+  }
   return select(select(a, a - TAU, a >= TAU), a + TAU, a < 0.0);
 }
 fn entry(px: u32, py: u32, k: u32) -> vec3f {
@@ -179,7 +201,7 @@ fn entry(px: u32, py: u32, k: u32) -> vec3f {
     for (var c = 0u; c < 4u; c++) {
       if (ws[c] == 0.0) { continue; }
       let q = (vec2f(f32(min(xs[c], P.npw - 1u)), f32(min(ys[c], P.nph - 1u))) + 0.5) * ns;
-      let e = q + d * P.t1 - start; let len = length(e);
+      let e = q + d * P.t1 - start; let len = sqrtR(dot(e, e));
       let r = traceInterval(start, e / len, 0.0, len, &rng, false);
       var M = vec3f(0.0);
       if (!(r.out || r.T < 1e-6)) { M = sampleNext(q, th); }

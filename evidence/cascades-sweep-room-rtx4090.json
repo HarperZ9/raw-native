@@ -864,5 +864,6 @@
    },
    "dark_room_ratio": 1.0010939584503777
   }
- ]
+ ],
+ "code_note": "Run on the first pushed version of the WGSL (one compute pass per frame, the adapter's sin, cos, atan2 and sqrt). The final version splits the frame into one pass per step and computes those functions itself; on the RTX 4090 both versions agree with the f64 reference to 1e-5 or better, so the accuracy columns stand. Frame times are from the first version; the headline times in evidence/cascades-rtx4090.json are from the final one."
 }
