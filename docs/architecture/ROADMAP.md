@@ -258,7 +258,14 @@ P6 status (2026-11-06). The flatland stage is built: `web/shaders/cascades`, mea
 branch 4 reaches relative RMSE 0.038 on a thin-wall room in 70 ms (49 ms in an earlier run) and branch 2 0.125 in 12 ms; the
 per-neighbour continuation removes the leak (dark room 1.00 of its reference against 1.65 at branch 2)
 at 2.5 to 4.5 times the cost. Error within 2 px of a glass interface is 2.7 to 5.4 times the image's
-(H150). The raw-hall criteria above are open: the 3D cascades are not built.
+(H150). The raw-hall criteria above are open: the 3D cascades are not built. The raw-hall stage followed the same day
+(`web/shaders/cascades3d`, `docs/radiance-cascades-3d.md`, `evidence/cascades3d-rtx4090.json`): world-space
+cascades with screen probes every 8 pixels read relative RMSE 0.104 (0.097 to 0.111) against the
+8-bounce path trace at 1080p in 3.6 to 4.0 ms of GI passes (three runs; 5.3 ms with the probe flags
+recomputed every frame), so both criteria are met. On the thin-wall leak scene the per-pair
+visibility fix keeps the closed room under 0.1% of the lit room and beats the no-GI baseline; the
+flatland full fix leaks in 3D (0.44). H150's traced segment cuts the glass interface error by 34 to
+58% at a cost that grows with its length.
 
 Order. P1 goes first: it is the only one the current work can absorb, because M3 criterion 1's last
 piece (the gallery's path-traced error) already needs path tracer interface v3, and v3's punctual

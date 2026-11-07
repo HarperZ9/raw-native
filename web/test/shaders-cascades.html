@@ -25,7 +25,7 @@ try {
   } else if (q.get("mode") === "measure") {
     const res = await measureScene(host, { scene: q.get("scene") || "disk", w: num("w", 3840), h: num("h", 2160), branch: num("branch", 2),
       n0: num("n0", 4), r0: num("r0", 1), fix: num("fix", 0), rays: num("rays", 4096), stride: num("stride", 2), frames: num("frames", 50),
-      chunk: num("chunk", 32), images: num("images", 0) });
+      chunk: num("chunk", 32), images: num("images", 0), band: q.get("band") ? JSON.parse(q.get("band")) : null });
     await host.done();
     window.__result = { ...res, adapter: host.info, gpuErrors };
   } else {

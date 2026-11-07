@@ -1,0 +1,54 @@
+{
+  "what": "World-space radiance cascades for diffuse GI in 3D (web/shaders/cascades3d), ROADMAP P6 raw-hall stage, and H150's traced-segment remedy in the flatland path",
+  "written": "2026-11-06, before any 3D code ran and before any measurement",
+  "method": {
+    "frame": "pixel = emission + albedo / pi x (E_sun + E_gi). E_sun is the shadowed sun as in lighting model 2. E_gi (sky and every interreflection) comes from the cascades. The primary hit is the pixel-centre ray, as in the path tracer and pt-error.",
+    "reference": "raw_native_cli gi-reference: the repository's path tracer (interface v2, pure Lambert, ambient sky 0.2, sun irradiance pi) on the same triangles, 8 bounces. Two seeds give its own noise.",
+    "metric": "pt-error's: relative RMSE in luminance over pixels both cover, plus bias. A 95% tile-bootstrap interval (32 x 32 tiles).",
+    "no_gi_baseline": "the same pipeline with E_gi = pi x sky x cosine-weighted sky visibility (256 rays a pixel), which is lighting model 2 with more sky rays",
+    "timing": "GPU timestamps around the GI passes only (world cascades, screen probes, gather); the primary hit and the sun ray are timed separately and reported beside it. Median and 5th to 95th percentile of 50 frames; three separate runs for repeatability."
+  },
+  "checks": {
+    "p1_planted_furnace": {
+      "what": "a closed box with an inner box, albedo 128/255 and emission 1 everywhere, no sun and no sky; the exact answer after B bounces is sum_{k=0..B} rho^k",
+      "bound": "cascades against the closed form: relative RMSE at most 1e-4 on the CPU (float64) and at most 2e-3 on the GPU; the metric on the closed form plus 1% of its mean reads 0.0100 +- 0.0001; the path tracer against the closed form within 3 x its own noise",
+      "prediction": "holds: every weight in the method is normalised, so a uniform field is reproduced exactly"
+    },
+    "p2_parity": {
+      "what": "GPU (f32) against the float64 CPU reference on small scenes, all fix modes and screen-probe strides",
+      "bound": "relative RMSE at most 2e-3 per case on SwiftShader and on the RTX 4090",
+      "prediction": "holds, with a few pixels flipping where a ray grazes an edge"
+    },
+    "e1_hall_error": {
+      "what": "raw-hall nave against the 8-bounce path trace at 512 x 320 (the size of lighting model 2's 0.43) and at 1920 x 1080",
+      "bound": "relative RMSE at most 0.30 (ROADMAP P6: at least 30% below 0.43) for the shipped setting",
+      "prediction": "0.10 to 0.25; the no-GI baseline in this pipeline reads 0.38 to 0.48, which also checks that this pipeline agrees with pt-error's"
+    },
+    "t1_hall_time": {
+      "what": "the GI passes for raw-hall nave at 1920 x 1080 on the RTX 4090 (WebGPU in Chrome, D3D12)",
+      "bound": "median under 6.0 ms for the shipped setting, the same setting as e1",
+      "prediction": "uncertain: 4 to 12 ms; the world cascades cost the same at any resolution, the screen probes scale with pixels over stride squared"
+    },
+    "k1_leak_kill": {
+      "what": "leak scene (two rooms, a 4 cm partition, sun through a skylight in room A), door variant, camera in room B",
+      "bound": "kill if the cascades' relative RMSE in room B exceeds the no-GI baseline's",
+      "prediction": "holds with the probe-visibility fix"
+    },
+    "l1_closed_room": {
+      "what": "the leak scene with the door shut: room B's exact radiance is 0",
+      "bound": "with either fix, room B's mean luminance at most 1% of room A's view mean; without fix recorded",
+      "prediction": "no fix leaks several percent; the probe-visibility fix and the full fix stay under 1%"
+    },
+    "c1_cost_cuts": {
+      "what": "screen-probe stride 1, 2, 4, 8 (cascade 0 at lower density) and fix none, probe visibility (one segment a probe pair) and full (one ray a probe, direction and neighbour)",
+      "bound": "recorded, no gate",
+      "prediction": "stride 4 within 10% of stride 1's error at a quarter of the screen-probe cost; probe visibility within 2x of the full fix's leak at under 1/8 of its fix cost"
+    },
+    "h150_traced_segment": {
+      "what": "flatland glass scene: inside a band of width D around the glass circle, fluence = w x traced + (1 - w) x cascades, w = 1 - d / D; traced = rays bent exactly for a path length S, then the cascade read at the virtual probe end - dir x t_c",
+      "bound": "the 0 to 2 px band's error over the image mean falls by at least 30% against the plain cascades at the same plan; cost recorded",
+      "kill": "the band error falls by less than 10%",
+      "prediction": "falls by 40 to 70%; the band cost scales with the band's pixel count"
+    }
+  }
+}

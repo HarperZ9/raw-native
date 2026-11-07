@@ -11,7 +11,7 @@ struct Params {
   glass: u32, rays0: u32, rays1: u32, raysTotal: u32,
   seed: u32, stride: u32, gw: u32, gh: u32,
   fresnel: u32, total: u32, gridX: u32, level: u32,
-  pad0: u32, pad1: u32, pad2: u32, pad3: u32,
+  bandN: u32, bandD: f32, bandS: f32, pad3: u32,
   mipW: array<u32, 8>, mipOff: array<u32, 8>,
 }
 `;
@@ -233,6 +233,47 @@ export const FINAL_MAIN = /* wgsl */ `
   for (var k = 0u; k < P.n; k++) { F += entry(i % P.W, i / P.W, k); }
   F *= TAU / f32(P.n);
   outF[3u * i] = F.x; outF[3u * i + 1u] = F.y; outF[3u * i + 2u] = F.z;
+}`;
+
+// H150's traced segment near glass (cascades.mjs bandBlend): blends into outF, which FINAL_MAIN wrote.
+export const BAND_MAIN = /* wgsl */ `
+@group(0) @binding(5) var<storage, read_write> outF: array<f32>;
+fn sampleOne(q: vec2f, th: f32) -> vec3f { // cascade 1 at q, one bin, linear in angle
+  let pw = f32(P.npw); let ph = f32(P.nph); let s = f32(P.ns);
+  let u = clamp(q.x / s - 0.5, 0.0, pw - 1.0); let v = clamp(q.y / s - 0.5, 0.0, ph - 1.0);
+  let x0 = u32(floor(u)); let y0 = u32(floor(v)); let fx = u - f32(x0); let fy = v - f32(y0);
+  let x1 = min(x0 + 1u, P.npw - 1u); let y1 = min(y0 + 1u, P.nph - 1u);
+  let a = th / TAU * f32(P.nn) - 0.5; let k0 = i32(floor(a)); let f = a - f32(k0);
+  let xs = array<u32, 4>(x0, x1, x0, x1); let ys = array<u32, 4>(y0, y0, y1, y1);
+  let ws = array<f32, 4>((1.0 - fx) * (1.0 - fy), fx * (1.0 - fy), (1.0 - fx) * fy, fx * fy);
+  var out = vec3f(0.0);
+  for (var c = 0u; c < 4u; c++) {
+    if (ws[c] == 0.0) { continue; }
+    let base = (ys[c] * P.npw + xs[c]) * P.nn;
+    out += ws[c] * ((1.0 - f) * rd3(base + wrapK(k0, i32(P.nn))) + f * rd3(base + wrapK(k0 + 1, i32(P.nn))));
+  }
+  return out;
+}
+@compute @workgroup_size(256) fn main(@builtin(global_invocation_id) gid: vec3u) {
+  let i = flatIndex(gid); if (i >= P.total) { return; }
+  let p = vec2f(f32(i % P.W) + 0.5, f32(i / P.W) + 0.5);
+  var dist = 1e30;
+  for (var c = 0u; c < P.nCirc; c++) {
+    let g = circ[2u * c];
+    if (g.w == 1.0) { let e = p - g.xy; dist = min(dist, abs(sqrtR(dot(e, e)) - g.z)); }
+  }
+  if (!(dist < P.bandD)) { return; }
+  var T = vec3f(0.0); var rng = 0u;
+  for (var k = 0u; k < P.bandN; k++) {
+    let th = (f32(k) + 0.5) * TAU / f32(P.bandN);
+    let r = traceInterval(p, dirOf(th), 0.0, P.bandS, &rng, false);
+    var M = vec3f(0.0);
+    if (!(r.out || r.T < 1e-6)) { M = sampleOne(r.p - r.d * P.t1, angleOf(r.d)); }
+    T += r.L + r.T * M;
+  }
+  let wb = 1.0 - dist / P.bandD; let F = vec3f(outF[3u * i], outF[3u * i + 1u], outF[3u * i + 2u]);
+  let B = wb * T * (TAU / f32(P.bandN)) + (1.0 - wb) * F;
+  outF[3u * i] = B.x; outF[3u * i + 1u] = B.y; outF[3u * i + 2u] = B.z;
 }`;
 
 // Brute force: rays [rays0, rays1) of raysTotal per sample, accumulated into refF (cleared by the host).

@@ -59,6 +59,7 @@ def main() -> int:
     ap.add_argument("--stride", type=int, default=2)
     ap.add_argument("--frames", type=int, default=50)
     ap.add_argument("--chunk", type=int, default=32)
+    ap.add_argument("--band", help='H150: a JSON {"D": px, "S": px, "N": rays} for the traced segment near glass')
     ap.add_argument("--images")
     ap.add_argument("--out")
     a = ap.parse_args()
@@ -73,13 +74,15 @@ def main() -> int:
     else:
         q = {"mode": "measure", "scene": a.scene, "w": a.width, "h": a.height, "branch": a.branch, "n0": a.n0, "r0": a.r0,
              "fix": a.fix, "rays": a.rays, "stride": a.stride, "frames": a.frames, "chunk": a.chunk, "images": 1 if a.images else 0}
+        if a.band:
+            q["band"] = a.band
         res = run("cascades", a.adapter, q, 3600000)
         problems = [res["error"]] if "error" in res else ["WebGPU error: " + m for m in res.get("gpuErrors", [])]
         images = res.pop("images", None)
         if images and a.images:
             d = Path(a.images)
             d.mkdir(parents=True, exist_ok=True)
-            tag = f"{a.scene}-b{a.branch}-n{a.n0}-r{a.r0:g}{'-fix' if a.fix else ''}-{a.width}x{a.height}"
+            tag = f"{a.scene}-b{a.branch}-n{a.n0}-r{a.r0:g}{'-fix' if a.fix else ''}{'-band' if a.band else ''}-{a.width}x{a.height}"
             for k, v in images.items():
                 (d / f"{tag}-{k}.png").write_bytes(base64.b64decode(v))
     text = json.dumps(res, indent=2)

@@ -55,6 +55,21 @@
         "r0": 1,
         "fix": false
       }
+    },
+    {
+      "id": "glass-b2-band",
+      "scene": "glass",
+      "plan": {
+        "branch": 2,
+        "n0": 8,
+        "r0": 2,
+        "fix": false,
+        "band": {
+          "D": 6,
+          "S": 24,
+          "N": 64
+        }
+      }
     }
   ],
   "reference": {
@@ -68,5 +83,11 @@
     "glass_reference_flip_fraction": 0.06
   },
   "why": "Both sides run the same steps in the same order; f32 against f64 moves chord lengths and angles by rounding, and a ray flips only where it grazes a pixel corner or a circle tangent. Relative RMSE is over every channel of every pixel, divided by the f64 side's mean.",
-  "amended": "2026-11-06, after the first runs on the RTX 4090. Run 1 failed glass-b4 cascades (1.4e-2) and both glass reference cases (4.3e-2): WGSL sin, cos and atan2 carry loose accuracy bounds (sin and cos 2^-11 absolute), enough to move a bent ray a quarter of a fine cascade's bin. The fix (angles reduced to [-pi, pi], atan2 refined by one Newton step) brought glass-b4 to 9.3e-6. The glass reference still differs by 7.7e-2 relative RMSE at 64 rays: 15 of 576 samples differ by more than 0.05 and the rest agree. The glass circle focuses a small bright emitter, so a direction change of f32 rounding size turns a ray from missing the emitter to hitting it (the same flips appear on the CPU when the circle moves 3e-5 px: 2.8e-2). The glass reference is therefore bounded by the fraction of samples that differ by more than 1e-3 relative (glass_reference_flip_fraction), and its relative RMSE is reported, not bounded. Every other bound is unchanged. Second amendment, 2026-11-06, after CI ran the parity on SwiftShader for the first time: every case failed there (cascades up to 1.2e-1). Two causes were found and fixed in the WGSL. SwiftShader's sin and cos used the 2^-11 room WGSL allows, so the shader now computes directions with its own reduced polynomial (error under 3e-8). SwiftShader's sqrt moved refracted rays, so the shader now refines sqrt with one Newton step. At 96 x 54 the disk's centre also sat where some probe rays were exactly tangent to it, so the output size moved to 97 x 55. After the fixes both adapters pass every bound; the worst cascades case is 7.1e-5 on SwiftShader."
+  "amended": "2026-11-06, after the first runs on the RTX 4090. Run 1 failed glass-b4 cascades (1.4e-2) and both glass reference cases (4.3e-2): WGSL sin, cos and atan2 carry loose accuracy bounds (sin and cos 2^-11 absolute), enough to move a bent ray a quarter of a fine cascade's bin. The fix (angles reduced to [-pi, pi], atan2 refined by one Newton step) brought glass-b4 to 9.3e-6. The glass reference still differs by 7.7e-2 relative RMSE at 64 rays: 15 of 576 samples differ by more than 0.05 and the rest agree. The glass circle focuses a small bright emitter, so a direction change of f32 rounding size turns a ray from missing the emitter to hitting it (the same flips appear on the CPU when the circle moves 3e-5 px: 2.8e-2). The glass reference is therefore bounded by the fraction of samples that differ by more than 1e-3 relative (glass_reference_flip_fraction), and its relative RMSE is reported, not bounded. Every other bound is unchanged. Second amendment, 2026-11-06, after CI ran the parity on SwiftShader for the first time: every case failed there (cascades up to 1.2e-1). Two causes were found and fixed in the WGSL. SwiftShader's sin and cos used the 2^-11 room WGSL allows, so the shader now computes directions with its own reduced polynomial (error under 3e-8). SwiftShader's sqrt moved refracted rays, so the shader now refines sqrt with one Newton step. At 96 x 54 the disk's centre also sat where some probe rays were exactly tangent to it, so the output size moved to 97 x 55. After the fixes both adapters pass every bound; the worst cascades case is 7.1e-5 on SwiftShader.",
+  "amendments": [
+    {
+      "date": "2026-11-06",
+      "what": "case glass-b2-band added for H150's traced segment near glass (cascades.mjs bandBlend, BAND_MAIN), under the same bounds, before its first run"
+    }
+  ]
 }
