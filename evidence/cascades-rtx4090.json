@@ -1,0 +1,1006 @@
+{
+ "what": "Radiance cascades (web/shaders/cascades) against the brute-force fluence, RTX 4090, WebGPU in Chrome on D3D12",
+ "date": "2026-11-06",
+ "command": "python tests/web/cascades.py measure --adapter gpu --scene SCENE --branch B --n0 N --r0 R [--fix 1] --rays 4096 --stride 2 --frames 50 (the room1080 runs: --width 1920 --height 1080 --rays 2048)",
+ "definitions": {
+  "rel_rmse": "RMSE over all channels of every reference sample, divided by the reference's mean fluence",
+  "interval95": "tile bootstrap of rel_rmse, 32 x 32 sample tiles, 1000 resamples",
+  "reference_noise.per_reference": "rel RMSE between two references with different seeds, over sqrt(2): the floor under every rel_rmse",
+  "timing.gpu_ms": "GPU timestamps around one frame (occupancy pyramid, every cascade, cascade 0); median and 5th to 95th percentile of 50 frames",
+  "planted": "disk only: the closed form 2 L asin(R/d); metric_on_planted_1pct is the metric applied to the closed form plus 1% of its mean, expected 0.0100",
+  "interface": "glass only: rmse per band of distance (pixels) from the glass interface, over the whole image's mean, against the Fresnel reference; interface_transmit_only against a reference that always refracts",
+  "dark_room.ratio": "room only: mean fluence behind the thin wall, cascades over reference"
+ },
+ "adapter": {
+  "vendor": "nvidia",
+  "architecture": "lovelace",
+  "device": "",
+  "description": ""
+ },
+ "runs": {
+  "disk-b2-n4-r4": {
+   "scene": "disk",
+   "size": [
+    3840,
+    2160
+   ],
+   "options": {
+    "branch": 2,
+    "n0": 4,
+    "r0": 4,
+    "fix": false
+   },
+   "cascades": 11,
+   "gpu_bytes": 674614520,
+   "reference": {
+    "rays": 4096,
+    "stride": 2,
+    "samples": [
+     1920,
+     1080
+    ],
+    "ms": [
+     1895.4000000059605,
+     1888.7000000178814
+    ]
+   },
+   "accuracy": {
+    "rel_rmse": 0.10724179341778994,
+    "interval95": {
+     "lo": 0.10076177091468355,
+     "hi": 0.11406482436944292,
+     "tiles": 2040
+    },
+    "ref_mean": 0.32919910185744
+   },
+   "reference_noise": {
+    "rel_rmse_between_seeds": 0.0037913375957137284,
+    "per_reference": 0.0026808805236966785
+   },
+   "timing": {
+    "gpu_ms": {
+     "median": 4.553728,
+     "p05": 4.344832,
+     "p95": 4.79232,
+     "n": 50
+    },
+    "wall_ms": {
+     "median": 6,
+     "p05": 4.9000000059604645,
+     "p95": 7.700000017881393,
+     "n": 50
+    }
+   },
+   "planted": {
+    "reference_vs_analytic": 0.0026809490390799517,
+    "cascades_vs_analytic": 0.10720541885176395,
+    "metric_on_planted_1pct": 0.010000000000202321,
+    "cascades_vs_analytic_interval95": {
+     "lo": 0.10072697717139467,
+     "hi": 0.11402684551554705,
+     "tiles": 2040
+    }
+   }
+  },
+  "disk-b4-n4-r2": {
+   "scene": "disk",
+   "size": [
+    3840,
+    2160
+   ],
+   "options": {
+    "branch": 4,
+    "n0": 4,
+    "r0": 2,
+    "fix": false
+   },
+   "cascades": 7,
+   "gpu_bytes": 1078643192,
+   "reference": {
+    "rays": 4096,
+    "stride": 2,
+    "samples": [
+     1920,
+     1080
+    ],
+    "ms": [
+     2439.600000023842,
+     2446.5999999940395
+    ]
+   },
+   "accuracy": {
+    "rel_rmse": 0.02192140926687001,
+    "interval95": {
+     "lo": 0.01844544635923753,
+     "hi": 0.024661924436873633,
+     "tiles": 2040
+    },
+    "ref_mean": 0.32919910185744
+   },
+   "reference_noise": {
+    "rel_rmse_between_seeds": 0.0037913375957137284,
+    "per_reference": 0.0026808805236966785
+   },
+   "timing": {
+    "gpu_ms": {
+     "median": 34.376704,
+     "p05": 31.8464,
+     "p95": 35.816448,
+     "n": 50
+    },
+    "wall_ms": {
+     "median": 36.400000005960464,
+     "p05": 33.19999998807907,
+     "p95": 38.400000005960464,
+     "n": 50
+    }
+   },
+   "planted": {
+    "reference_vs_analytic": 0.0026809490390799517,
+    "cascades_vs_analytic": 0.021755135255193493,
+    "metric_on_planted_1pct": 0.010000000000202321,
+    "cascades_vs_analytic_interval95": {
+     "lo": 0.018248076372226713,
+     "hi": 0.024510031445691485,
+     "tiles": 2040
+    }
+   }
+  },
+  "disk-b4-n8-r4": {
+   "scene": "disk",
+   "size": [
+    3840,
+    2160
+   ],
+   "options": {
+    "branch": 4,
+    "n0": 8,
+    "r0": 4,
+    "fix": false
+   },
+   "cascades": 6,
+   "gpu_bytes": 1880803640,
+   "reference": {
+    "rays": 4096,
+    "stride": 2,
+    "samples": [
+     1920,
+     1080
+    ],
+    "ms": [
+     2528.2000000178814,
+     2527.2000000178814
+    ]
+   },
+   "accuracy": {
+    "rel_rmse": 0.01341110863979965,
+    "interval95": {
+     "lo": 0.011462382104670961,
+     "hi": 0.015011581090226416,
+     "tiles": 2040
+    },
+    "ref_mean": 0.32919910185744
+   },
+   "reference_noise": {
+    "rel_rmse_between_seeds": 0.0037913375957137284,
+    "per_reference": 0.0026808805236966785
+   },
+   "timing": {
+    "gpu_ms": {
+     "median": 67.750912,
+     "p05": 62.437376,
+     "p95": 73.83552,
+     "n": 50
+    },
+    "wall_ms": {
+     "median": 69.90000000596046,
+     "p05": 64.09999999403954,
+     "p95": 76.69999998807907,
+     "n": 50
+    }
+   },
+   "planted": {
+    "reference_vs_analytic": 0.0026809490390799517,
+    "cascades_vs_analytic": 0.01313721190179531,
+    "metric_on_planted_1pct": 0.010000000000202321,
+    "cascades_vs_analytic_interval95": {
+     "lo": 0.011120492086617178,
+     "hi": 0.014781855863760286,
+     "tiles": 2040
+    }
+   }
+  },
+  "glass-b2-n4-r4": {
+   "scene": "glass",
+   "size": [
+    3840,
+    2160
+   ],
+   "options": {
+    "branch": 2,
+    "n0": 4,
+    "r0": 4,
+    "fix": false
+   },
+   "cascades": 11,
+   "gpu_bytes": 674614584,
+   "reference": {
+    "rays": 4096,
+    "stride": 2,
+    "samples": [
+     1920,
+     1080
+    ],
+    "ms": [
+     8769.90000000596,
+     8800.799999982119
+    ]
+   },
+   "accuracy": {
+    "rel_rmse": 0.28949854015667387,
+    "interval95": {
+     "lo": 0.26211299970092444,
+     "hi": 0.31652190405162783,
+     "tiles": 2040
+    },
+    "ref_mean": 0.576441028905313
+   },
+   "reference_noise": {
+    "rel_rmse_between_seeds": 0.016387640598392355,
+    "per_reference": 0.011587811794771205
+   },
+   "timing": {
+    "gpu_ms": {
+     "median": 5.649408,
+     "p05": 5.516288,
+     "p95": 5.761024,
+     "n": 50
+    },
+    "wall_ms": {
+     "median": 7.5999999940395355,
+     "p05": 6.899999976158142,
+     "p95": 8.900000005960464,
+     "n": 50
+    }
+   },
+   "interface": {
+    "image_rmse_over_mean": 0.28949854015667387,
+    "bands": [
+     {
+      "from": 0,
+      "to": 2,
+      "pixels": 2978,
+      "rmse_over_image_mean": 0.8261693045679486
+     },
+     {
+      "from": 2,
+      "to": 8,
+      "pixels": 8952,
+      "rmse_over_image_mean": 0.7711339387477898
+     },
+     {
+      "from": 8,
+      "to": 32,
+      "pixels": 35834,
+      "rmse_over_image_mean": 0.677427198382735
+     },
+     {
+      "from": 32,
+      "to": 128,
+      "pixels": 143333,
+      "rmse_over_image_mean": 0.5100135190455893
+     },
+     {
+      "from": 128,
+      "to": 1000000000,
+      "pixels": 1882503,
+      "rmse_over_image_mean": 0.24468173892084452
+     }
+    ]
+   },
+   "interface_transmit_only": {
+    "image_rmse_over_mean": 0.30139387374624976,
+    "bands": [
+     {
+      "from": 0,
+      "to": 2,
+      "pixels": 2978,
+      "rmse_over_image_mean": 0.831421364380906
+     },
+     {
+      "from": 2,
+      "to": 8,
+      "pixels": 8952,
+      "rmse_over_image_mean": 0.7827769148463061
+     },
+     {
+      "from": 8,
+      "to": 32,
+      "pixels": 35834,
+      "rmse_over_image_mean": 0.6966257102945157
+     },
+     {
+      "from": 32,
+      "to": 128,
+      "pixels": 143333,
+      "rmse_over_image_mean": 0.5362794062718995
+     },
+     {
+      "from": 128,
+      "to": 1000000000,
+      "pixels": 1882503,
+      "rmse_over_image_mean": 0.25478838981054325
+     }
+    ]
+   }
+  },
+  "glass-b4-n4-r2": {
+   "scene": "glass",
+   "size": [
+    3840,
+    2160
+   ],
+   "options": {
+    "branch": 4,
+    "n0": 4,
+    "r0": 2,
+    "fix": false
+   },
+   "cascades": 7,
+   "gpu_bytes": 1078643256,
+   "reference": {
+    "rays": 4096,
+    "stride": 2,
+    "samples": [
+     1920,
+     1080
+    ],
+    "ms": [
+     8829.90000000596,
+     9107.300000011921
+    ]
+   },
+   "accuracy": {
+    "rel_rmse": 0.20337906882641063,
+    "interval95": {
+     "lo": 0.18101318624520557,
+     "hi": 0.22545883093579558,
+     "tiles": 2040
+    },
+    "ref_mean": 0.576441028905313
+   },
+   "reference_noise": {
+    "rel_rmse_between_seeds": 0.016387640598392355,
+    "per_reference": 0.011587811794771205
+   },
+   "timing": {
+    "gpu_ms": {
+     "median": 36.10112,
+     "p05": 35.881984,
+     "p95": 36.365312,
+     "n": 50
+    },
+    "wall_ms": {
+     "median": 38,
+     "p05": 37,
+     "p95": 39.29999998211861,
+     "n": 50
+    }
+   },
+   "interface": {
+    "image_rmse_over_mean": 0.20337906882641063,
+    "bands": [
+     {
+      "from": 0,
+      "to": 2,
+      "pixels": 2978,
+      "rmse_over_image_mean": 0.5467153358539569
+     },
+     {
+      "from": 2,
+      "to": 8,
+      "pixels": 8952,
+      "rmse_over_image_mean": 0.5623328126436087
+     },
+     {
+      "from": 8,
+      "to": 32,
+      "pixels": 35834,
+      "rmse_over_image_mean": 0.5190527723059102
+     },
+     {
+      "from": 32,
+      "to": 128,
+      "pixels": 143333,
+      "rmse_over_image_mean": 0.4413309029970139
+     },
+     {
+      "from": 128,
+      "to": 1000000000,
+      "pixels": 1882503,
+      "rmse_over_image_mean": 0.15371071890850485
+     }
+    ]
+   },
+   "interface_transmit_only": {
+    "image_rmse_over_mean": 0.21106442490447874,
+    "bands": [
+     {
+      "from": 0,
+      "to": 2,
+      "pixels": 2978,
+      "rmse_over_image_mean": 0.5494403752449504
+     },
+     {
+      "from": 2,
+      "to": 8,
+      "pixels": 8952,
+      "rmse_over_image_mean": 0.5788937374142418
+     },
+     {
+      "from": 8,
+      "to": 32,
+      "pixels": 35834,
+      "rmse_over_image_mean": 0.5378626808029465
+     },
+     {
+      "from": 32,
+      "to": 128,
+      "pixels": 143333,
+      "rmse_over_image_mean": 0.455426100748708
+     },
+     {
+      "from": 128,
+      "to": 1000000000,
+      "pixels": 1882503,
+      "rmse_over_image_mean": 0.16031228449425894
+     }
+    ]
+   }
+  },
+  "glass-b4-n8-r4": {
+   "scene": "glass",
+   "size": [
+    3840,
+    2160
+   ],
+   "options": {
+    "branch": 4,
+    "n0": 8,
+    "r0": 4,
+    "fix": false
+   },
+   "cascades": 6,
+   "gpu_bytes": 1880803704,
+   "reference": {
+    "rays": 4096,
+    "stride": 2,
+    "samples": [
+     1920,
+     1080
+    ],
+    "ms": [
+     9101,
+     9112.800000011921
+    ]
+   },
+   "accuracy": {
+    "rel_rmse": 0.17432085692800225,
+    "interval95": {
+     "lo": 0.1493195867779993,
+     "hi": 0.20044853464470483,
+     "tiles": 2040
+    },
+    "ref_mean": 0.576441028905313
+   },
+   "reference_noise": {
+    "rel_rmse_between_seeds": 0.016387640598392355,
+    "per_reference": 0.011587811794771205
+   },
+   "timing": {
+    "gpu_ms": {
+     "median": 82.934784,
+     "p05": 81.985536,
+     "p95": 84.210688,
+     "n": 50
+    },
+    "wall_ms": {
+     "median": 85.2999999821186,
+     "p05": 84,
+     "p95": 86.59999999403954,
+     "n": 50
+    }
+   },
+   "interface": {
+    "image_rmse_over_mean": 0.17432085692800225,
+    "bands": [
+     {
+      "from": 0,
+      "to": 2,
+      "pixels": 2978,
+      "rmse_over_image_mean": 0.9431791632899029
+     },
+     {
+      "from": 2,
+      "to": 8,
+      "pixels": 8952,
+      "rmse_over_image_mean": 0.7860718745768839
+     },
+     {
+      "from": 8,
+      "to": 32,
+      "pixels": 35834,
+      "rmse_over_image_mean": 0.5848244865455211
+     },
+     {
+      "from": 32,
+      "to": 128,
+      "pixels": 143333,
+      "rmse_over_image_mean": 0.3089355746750078
+     },
+     {
+      "from": 128,
+      "to": 1000000000,
+      "pixels": 1882503,
+      "rmse_over_image_mean": 0.12389323919179687
+     }
+    ]
+   },
+   "interface_transmit_only": {
+    "image_rmse_over_mean": 0.1860875793560782,
+    "bands": [
+     {
+      "from": 0,
+      "to": 2,
+      "pixels": 2978,
+      "rmse_over_image_mean": 0.9566124356530796
+     },
+     {
+      "from": 2,
+      "to": 8,
+      "pixels": 8952,
+      "rmse_over_image_mean": 0.8046157754315759
+     },
+     {
+      "from": 8,
+      "to": 32,
+      "pixels": 35834,
+      "rmse_over_image_mean": 0.6028047553062803
+     },
+     {
+      "from": 32,
+      "to": 128,
+      "pixels": 143333,
+      "rmse_over_image_mean": 0.32818853746225624
+     },
+     {
+      "from": 128,
+      "to": 1000000000,
+      "pixels": 1882503,
+      "rmse_over_image_mean": 0.13601384804483554
+     }
+    ]
+   }
+  },
+  "room-b2-n4-r4": {
+   "scene": "room",
+   "size": [
+    3840,
+    2160
+   ],
+   "options": {
+    "branch": 2,
+    "n0": 4,
+    "r0": 4,
+    "fix": false
+   },
+   "cascades": 11,
+   "gpu_bytes": 674614552,
+   "reference": {
+    "rays": 4096,
+    "stride": 2,
+    "samples": [
+     1920,
+     1080
+    ],
+    "ms": [
+     14950.90000000596,
+     14899.59999999404
+    ]
+   },
+   "accuracy": {
+    "rel_rmse": 0.12494599224988953,
+    "interval95": {
+     "lo": 0.11714298937069437,
+     "hi": 0.13311455075057732,
+     "tiles": 2040
+    },
+    "ref_mean": 0.5021766642593809
+   },
+   "reference_noise": {
+    "rel_rmse_between_seeds": 0.006433434689539229,
+    "per_reference": 0.00454912529529396
+   },
+   "timing": {
+    "gpu_ms": {
+     "median": 11.984896,
+     "p05": 11.185152,
+     "p95": 13.172736,
+     "n": 50
+    },
+    "wall_ms": {
+     "median": 14.400000005960464,
+     "p05": 12.799999982118607,
+     "p95": 15.5,
+     "n": 50
+    }
+   },
+   "dark_room": {
+    "cascades_mean": 0.034286105429982124,
+    "reference_mean": 0.02075556674127754,
+    "ratio": 1.6518992642969266,
+    "rel_rmse_in_room": 1.6722749317449017
+   }
+  },
+  "room-b4-n4-r2": {
+   "scene": "room",
+   "size": [
+    3840,
+    2160
+   ],
+   "options": {
+    "branch": 4,
+    "n0": 4,
+    "r0": 2,
+    "fix": false
+   },
+   "cascades": 7,
+   "gpu_bytes": 1078643224,
+   "reference": {
+    "rays": 4096,
+    "stride": 2,
+    "samples": [
+     1920,
+     1080
+    ],
+    "ms": [
+     14946.09999999404,
+     14918.399999976158
+    ]
+   },
+   "accuracy": {
+    "rel_rmse": 0.03793736968033934,
+    "interval95": {
+     "lo": 0.030633190854793834,
+     "hi": 0.04535591097776849,
+     "tiles": 2040
+    },
+    "ref_mean": 0.5021766642593809
+   },
+   "reference_noise": {
+    "rel_rmse_between_seeds": 0.006433434689539229,
+    "per_reference": 0.00454912529529396
+   },
+   "timing": {
+    "gpu_ms": {
+     "median": 49.258496,
+     "p05": 47.33952,
+     "p95": 74.61888,
+     "n": 50
+    },
+    "wall_ms": {
+     "median": 50.60000002384186,
+     "p05": 48.10000002384186,
+     "p95": 76.59999999403954,
+     "n": 50
+    }
+   },
+   "dark_room": {
+    "cascades_mean": 0.021936037346364363,
+    "reference_mean": 0.02075556674127754,
+    "ratio": 1.0568748914352297,
+    "rel_rmse_in_room": 0.34357262972224306
+   }
+  },
+  "room-b4-n8-r4": {
+   "scene": "room",
+   "size": [
+    3840,
+    2160
+   ],
+   "options": {
+    "branch": 4,
+    "n0": 8,
+    "r0": 4,
+    "fix": false
+   },
+   "cascades": 6,
+   "gpu_bytes": 1880803672,
+   "reference": {
+    "rays": 4096,
+    "stride": 2,
+    "samples": [
+     1920,
+     1080
+    ],
+    "ms": [
+     14972,
+     14959.5
+    ]
+   },
+   "accuracy": {
+    "rel_rmse": 0.024569123877619857,
+    "interval95": {
+     "lo": 0.021075442204224384,
+     "hi": 0.028337629836629803,
+     "tiles": 2040
+    },
+    "ref_mean": 0.5021766642593809
+   },
+   "reference_noise": {
+    "rel_rmse_between_seeds": 0.006433434689539229,
+    "per_reference": 0.00454912529529396
+   },
+   "timing": {
+    "gpu_ms": {
+     "median": 147.462144,
+     "p05": 94.604288,
+     "p95": 152.462336,
+     "n": 50
+    },
+    "wall_ms": {
+     "median": 148.90000000596046,
+     "p05": 96.40000000596046,
+     "p95": 154.40000000596046,
+     "n": 50
+    }
+   },
+   "dark_room": {
+    "cascades_mean": 0.021576859794909913,
+    "reference_mean": 0.02075556674127754,
+    "ratio": 1.0395697724793527,
+    "rel_rmse_in_room": 0.24083894474592255
+   }
+  },
+  "room1080-b2-n4-r4-f0": {
+   "scene": "room",
+   "size": [
+    1920,
+    1080
+   ],
+   "options": {
+    "branch": 2,
+    "n0": 4,
+    "r0": 4,
+    "fix": false
+   },
+   "cascades": 10,
+   "gpu_bytes": 168656500,
+   "reference": {
+    "rays": 2048,
+    "stride": 2,
+    "samples": [
+     960,
+     540
+    ],
+    "ms": [
+     1603.800000011921,
+     1854.699999988079
+    ]
+   },
+   "accuracy": {
+    "rel_rmse": 0.14481825784020938,
+    "interval95": {
+     "lo": 0.12543166415908005,
+     "hi": 0.1686138911429884,
+     "tiles": 510
+    },
+    "ref_mean": 0.5019657037471942
+   },
+   "reference_noise": {
+    "rel_rmse_between_seeds": 0.01286225149006838,
+    "per_reference": 0.009094985249954127
+   },
+   "timing": {
+    "gpu_ms": {
+     "median": 3.844096,
+     "p05": 3.647488,
+     "p95": 4.071424,
+     "n": 50
+    },
+    "wall_ms": {
+     "median": 5.199999988079071,
+     "p05": 4.4000000059604645,
+     "p95": 6.5,
+     "n": 50
+    }
+   },
+   "dark_room": {
+    "cascades_mean": 0.03483104137314369,
+    "reference_mean": 0.020712572144335247,
+    "ratio": 1.6816376609541346,
+    "rel_rmse_in_room": 1.5717919871789399
+   }
+  },
+  "room1080-b4-n4-r2-f0": {
+   "scene": "room",
+   "size": [
+    1920,
+    1080
+   ],
+   "options": {
+    "branch": 4,
+    "n0": 4,
+    "r0": 2,
+    "fix": false
+   },
+   "cascades": 6,
+   "gpu_bytes": 269663092,
+   "reference": {
+    "rays": 2048,
+    "stride": 2,
+    "samples": [
+     960,
+     540
+    ],
+    "ms": [
+     1919,
+     1924.2000000178814
+    ]
+   },
+   "accuracy": {
+    "rel_rmse": 0.055351658607212334,
+    "interval95": {
+     "lo": 0.041980941556107605,
+     "hi": 0.0672622700451136,
+     "tiles": 510
+    },
+    "ref_mean": 0.5019657037471942
+   },
+   "reference_noise": {
+    "rel_rmse_between_seeds": 0.01286225149006838,
+    "per_reference": 0.009094985249954127
+   },
+   "timing": {
+    "gpu_ms": {
+     "median": 16.603136,
+     "p05": 16.380928,
+     "p95": 16.841728,
+     "n": 50
+    },
+    "wall_ms": {
+     "median": 18.600000023841858,
+     "p05": 17.900000005960464,
+     "p95": 20.599999994039536,
+     "n": 50
+    }
+   },
+   "dark_room": {
+    "cascades_mean": 0.022587493773932498,
+    "reference_mean": 0.020712572144335247,
+    "ratio": 1.09052094624134,
+    "rel_rmse_in_room": 0.48732851413586864
+   }
+  },
+  "room1080-b4-n4-r2-f1": {
+   "scene": "room",
+   "size": [
+    1920,
+    1080
+   ],
+   "options": {
+    "branch": 4,
+    "n0": 4,
+    "r0": 2,
+    "fix": true
+   },
+   "cascades": 6,
+   "gpu_bytes": 269663092,
+   "reference": {
+    "rays": 2048,
+    "stride": 2,
+    "samples": [
+     960,
+     540
+    ],
+    "ms": [
+     1905.2999999821186,
+     1895.5
+    ]
+   },
+   "accuracy": {
+    "rel_rmse": 0.04317508811997554,
+    "interval95": {
+     "lo": 0.028376726610889795,
+     "hi": 0.05610697694981874,
+     "tiles": 510
+    },
+    "ref_mean": 0.5019657037471942
+   },
+   "reference_noise": {
+    "rel_rmse_between_seeds": 0.01286225149006838,
+    "per_reference": 0.009094985249954127
+   },
+   "timing": {
+    "gpu_ms": {
+     "median": 48.864256,
+     "p05": 48.188416,
+     "p95": 49.335296,
+     "n": 50
+    },
+    "wall_ms": {
+     "median": 50.80000001192093,
+     "p05": 49.599999994039536,
+     "p95": 52.099999994039536,
+     "n": 50
+    }
+   },
+   "dark_room": {
+    "cascades_mean": 0.020726125542774913,
+    "reference_mean": 0.020712572144335247,
+    "ratio": 1.0006543561246386,
+    "rel_rmse_in_room": 0.2502402117499792
+   }
+  },
+  "room1080-b4-n8-r4-f0": {
+   "scene": "room",
+   "size": [
+    1920,
+    1080
+   ],
+   "options": {
+    "branch": 4,
+    "n0": 8,
+    "r0": 4,
+    "fix": false
+   },
+   "cascades": 6,
+   "gpu_bytes": 470203252,
+   "reference": {
+    "rays": 2048,
+    "stride": 2,
+    "samples": [
+     960,
+     540
+    ],
+    "ms": [
+     1932.4000000059605,
+     1927.4000000059605
+    ]
+   },
+   "accuracy": {
+    "rel_rmse": 0.038301418328178204,
+    "interval95": {
+     "lo": 0.030096256554365357,
+     "hi": 0.04676900394068254,
+     "tiles": 510
+    },
+    "ref_mean": 0.5019657037471942
+   },
+   "reference_noise": {
+    "rel_rmse_between_seeds": 0.01286225149006838,
+    "per_reference": 0.009094985249954127
+   },
+   "timing": {
+    "gpu_ms": {
+     "median": 28.230656,
+     "p05": 27.720704,
+     "p95": 28.719104,
+     "n": 50
+    },
+    "wall_ms": {
+     "median": 30.5,
+     "p05": 29.599999994039536,
+     "p95": 32,
+     "n": 50
+    }
+   },
+   "dark_room": {
+    "cascades_mean": 0.021960284737765172,
+    "reference_mean": 0.020712572144335247,
+    "ratio": 1.0602393843089724,
+    "rel_rmse_in_room": 0.38668126481451787
+   }
+  }
+ }
+}

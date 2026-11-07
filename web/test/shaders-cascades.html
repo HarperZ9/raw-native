@@ -1,0 +1,47 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Radiance cascades: GPU against the CPU reference, and measurement</title>
+<link rel="icon" href="data:,">
+<!-- Run by tests/web/cascades.py. Parity (default): each case of
+     evidence/shaders-cascades-parity-bounds.json through cascades.mjs (CPU, float64) and
+     cascades/gpu.mjs, cascades and brute force both. ?mode=sweep: many settings against one reference. ?mode=measure: one scene at a given size
+     against the GPU brute force (cascades/measure.mjs). -->
+<script type="module">
+import { createHost } from "../raw-gpu.mjs";
+import { buildScene } from "../shaders/cascades/scenes.mjs";
+import { planCascades, runCascades, referenceFluence } from "../shaders/cascades/cascades.mjs";
+import { createGpuCascades } from "../shaders/cascades/gpu.mjs";
+import { relRmse } from "../shaders/cascades/metrics.mjs";
+import { measureScene, sweepScene } from "../shaders/cascades/measure.mjs";
+const q = new URLSearchParams(location.search), num = (k, d) => (q.has(k) ? Number(q.get(k)) : d);
+try {
+  const host = await createHost({ timing: true });
+  const gpuErrors = []; host.device.onuncapturederror = (e) => gpuErrors.push(e.error.message);
+  if (q.get("mode") === "sweep") {
+    const res = await sweepScene(host, { scene: q.get("scene"), w: num("w", 3840), h: num("h", 2160), rays: num("rays", 1024), stride: num("stride", 8),
+      frames: num("frames", 10), chunk: num("chunk", 32) }, JSON.parse(q.get("configs")));
+    await host.done();
+    window.__result = { ...res, adapter: host.info, gpuErrors };
+  } else if (q.get("mode") === "measure") {
+    const res = await measureScene(host, { scene: q.get("scene") || "disk", w: num("w", 3840), h: num("h", 2160), branch: num("branch", 2),
+      n0: num("n0", 4), r0: num("r0", 1), fix: num("fix", 0), rays: num("rays", 4096), stride: num("stride", 2), frames: num("frames", 50),
+      chunk: num("chunk", 32), images: num("images", 0) });
+    await host.done();
+    window.__result = { ...res, adapter: host.info, gpuErrors };
+  } else {
+    const bounds = await (await fetch("../../evidence/shaders-cascades-parity-bounds.json")).json(), { width: W, height: H } = bounds.output;
+    const cases = [];
+    for (const c of bounds.cases) {
+      if (q.get("case") && q.get("case") !== c.id) continue;
+      const sc = buildScene(c.scene, W, H), want = runCascades(sc, planCascades(W, H, c.plan));
+      const g = await createGpuCascades(host, sc, c.plan); g.frame();
+      const got = await g.read(), rr = bounds.reference;
+      const refWant = referenceFluence(sc, rr), refGot = (await g.reference({ ...rr, chunk: 16 })).fluence; g.destroy();
+      let flips = 0; for (let i = 0; i < refWant.length; i += 3) if (Math.abs(refGot[i] - refWant[i]) > 1e-3 * (1 + Math.abs(refWant[i]))) flips++;
+      cases.push({ id: c.id, scene: c.scene, cascades_rel_rmse: relRmse(got, want), reference_rel_rmse: relRmse(refGot, refWant), reference_flip_fraction: flips / (refWant.length / 3) });
+    }
+    await host.done();
+    window.__result = { bounds: bounds.bounds, cases, adapter: host.info, gpuErrors };
+  }
+} catch (e) { window.__result = { error: String(e && e.stack || e) }; }
+</script>

@@ -1,0 +1,52 @@
+{
+  "bounds": {
+    "cascades_rel_rmse": 0.002,
+    "reference_rel_rmse": 0.005,
+    "glass_reference_flip_fraction": 0.06
+  },
+  "cases": [
+    {
+      "id": "disk-b2",
+      "scene": "disk",
+      "cascades_rel_rmse": 3.645885313281413e-07,
+      "reference_rel_rmse": 4.931848913976098e-08,
+      "reference_flip_fraction": 0
+    },
+    {
+      "id": "room-b4-fix",
+      "scene": "room",
+      "cascades_rel_rmse": 1.1163191637053133e-06,
+      "reference_rel_rmse": 1.355553971026456e-07,
+      "reference_flip_fraction": 0
+    },
+    {
+      "id": "room-b2",
+      "scene": "room",
+      "cascades_rel_rmse": 2.5037443873635152e-06,
+      "reference_rel_rmse": 1.355553971026456e-07,
+      "reference_flip_fraction": 0
+    },
+    {
+      "id": "glass-b2",
+      "scene": "glass",
+      "cascades_rel_rmse": 6.211789941507919e-07,
+      "reference_rel_rmse": 0.07719009986968095,
+      "reference_flip_fraction": 0.029513888888888888
+    },
+    {
+      "id": "glass-b4",
+      "scene": "glass",
+      "cascades_rel_rmse": 9.277876845113355e-06,
+      "reference_rel_rmse": 0.07719009986968095,
+      "reference_flip_fraction": 0.029513888888888888
+    }
+  ],
+  "adapter": {
+    "vendor": "nvidia",
+    "architecture": "lovelace",
+    "device": "",
+    "description": ""
+  },
+  "gpuErrors": [],
+  "adapter_kind": "gpu"
+}
