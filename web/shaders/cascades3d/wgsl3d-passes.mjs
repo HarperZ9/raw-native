@@ -1,6 +1,6 @@
 // The compute mains of the 3D cascades (one module each: PARAMS + CORE [+ GATHER] + main).
 // Dispatches are 2D: invocation id = gid.y * P.gridX + gid.x, below P.total.
-import { PARAMS, CORE, GATHER } from "./wgsl3d-core.mjs";
+import { PARAMS, CORE, GATHER, LOOKUP } from "./wgsl3d-core.mjs";
 
 export const ID = /* wgsl */ `let id = gid.y * P.gridX + gid.x; if (id >= P.total) { return; } _ = scene[0];`;
 
@@ -53,15 +53,18 @@ const INSIDE = /* wgsl */ `
 fn insideF(f: u32) -> bool { let back = (f >> 16u) & 15u; let front = (f >> 20u) & 15u; return back >= 3u && back > front; }
 `;
 const MERGE = INSIDE + /* wgsl */ `
-fn children(l1: u32, q: u32, k: u32, c: u32) -> vec3f {
-  let cc = 2u * c; let f = k / (c * c); let r = k - f * c * c; let j = r / c; let i = r - j * c;
+// s x s children, s = c(l1) / c; w: their start visibility (1 without sv), which also weighs them.
+fn children(l1: u32, q: u32, k: u32, c: u32) -> vec4f {
+  let cc = u32(P.geo[l1].y); let sp = cc / c; let f = k / (c * c); let r = k - f * c * c; let j = r / c; let i = r - j * c;
   let tex = P.ofs[l1].z; let oo = P.ofs[l1].x;
-  var out = vec3f(0.0); var ws = 0.0;
-  for (var b = 0u; b < 2u; b++) { for (var a = 0u; a < 2u; a++) {
-    let ti = 2u * i + a; let tj = 2u * j + b; let w = P.omega[oo + tj * cc + ti];
-    out += w * next[q * tex + f * cc * cc + tj * cc + ti].xyz; ws += w;
+  var out = vec3f(0.0); var ws = 0.0; var ov = vec3f(0.0); var wv = 0.0;
+  for (var b = 0u; b < sp; b++) { for (var a = 0u; a < sp; a++) {
+    let ti = sp * i + a; let tj = sp * j + b; let w = P.omega[oo + tj * cc + ti];
+    let e = next[q * tex + f * cc * cc + tj * cc + ti];
+    out += w * e.xyz; ws += w; ov += w * e.w * e.xyz; wv += w * e.w;
   } }
-  return out / ws;
+  if (P.wo.y != 1u) { return vec4f(out / ws, 1.0); }
+  return select(vec4f(out / ws, 0.0), vec4f(ov / wv, wv / ws), wv > 0.0);
 }
 fn traced(o: vec3f, d: vec3f, t0: f32, t1: f32, found: ptr<function, bool>) -> vec3f {
   let h = trace(o, d, t0, t1, false);
@@ -78,11 +81,14 @@ export const LEVEL = PARAMS + CORE + /* wgsl */ `
 @group(0) @binding(4) var<storage, read> flags: array<u32>;
 @group(0) @binding(5) var<storage, read> next: array<vec4f>;
 @group(0) @binding(6) var<storage, read_write> cur: array<vec4f>;
+@group(0) @binding(7) var<storage, read> sv: array<f32>;
 ` + GATHER + MERGE + /* wgsl */ `
 @compute @workgroup_size(256) fn main(@builtin(global_invocation_id) gid: vec3u) {
   ${ID}
-  _ = next[0]; _ = flags[0];
+  _ = next[0]; _ = flags[0]; _ = sv[0];
   let l = P.level; let tex = P.ofs[l].z; let idx = id / tex; let k = id % tex; let c = u32(P.geo[l].y);
+  var vis = 1.0; // this entry's start visibility, read by the level below's merges
+  if (P.wo.y == 1u) { vis = sv[P.ofs[l].w + id]; }
   let p = probePos(l, idx); let d = texelDir(k, c); let top = l + 1u == P.nLevels; let T0 = P.geo[l].z; let T1x = P.geo[l].w;
   var found = false;
   if (P.fix == 2u && !top) {
@@ -92,25 +98,25 @@ export const LEVEL = PARAMS + CORE + /* wgsl */ `
       if (q.w <= 0.0) { continue; }
       let e = q.pos + d * T1 - s; let len = lenR(e);
       var v = traced(s, e / len, 0.0, len, &found);
-      if (!found) { v = children(l + 1u, q.idx, k, c); }
+      if (!found) { v = children(l + 1u, q.idx, k, c).xyz; }
       out += q.w * v;
     }
-    cur[id] = vec4f(out, 0.0); return;
+    cur[id] = vec4f(out, vis); return;
   }
   var v = traced(p, d, T0, T1x, &found);
-  if (found) { cur[id] = vec4f(v, 0.0); return; }
-  if (top) { cur[id] = vec4f(P.sky.xyz, 0.0); return; }
+  if (found) { cur[id] = vec4f(v, vis); return; }
+  if (top) { cur[id] = vec4f(P.sky.xyz, vis); return; }
   let bits = flags[P.ofs[l].y + idx];
   var out = vec3f(0.0); var all = vec3f(0.0); var ws = 0.0; var wa = 0.0;
   for (var cn = 0u; cn < 8u; cn++) {
     let q = neighbour(l + 1u, p, cn);
     if (q.w <= 0.0) { continue; }
     let m = children(l + 1u, q.idx, k, c);
-    all += q.w * m; wa += q.w;
+    all += q.w * m.xyz; wa += q.w;
     if (P.fix == 1u && ((bits & (1u << cn)) == 0u || insideF(flags[P.ofs[l + 1u].y + q.idx]))) { continue; }
-    out += q.w * m; ws += q.w;
+    out += q.w * m.w * m.xyz; ws += q.w * m.w;
   }
-  cur[id] = vec4f(select(all / max(wa, 1e-30), out / ws, ws > 0.0), 0.0);
+  cur[id] = vec4f(select(select(all / max(wa, 1e-30), vec3f(0.0), P.wo.z == 1u), out / ws, ws > 0.0), vis);
 }`;
 
 // Level 0's merged radiance as the L1 irradiance cache (cascades3d.mjs cacheOf): thread = probe.
@@ -132,16 +138,6 @@ export const CACHE = PARAMS + CORE + /* wgsl */ `
   cacheOut[4u * id + 1u] = vec4f(bx, 0.0); cacheOut[4u * id + 2u] = vec4f(by, 0.0); cacheOut[4u * id + 3u] = vec4f(bz, 0.0);
 }`;
 
-const LOOKUP = /* wgsl */ `
-fn lookup(q: u32, d: vec3f) -> vec3f { // level 1's merged radiance at probe q, bilinear in the face
-  let c = u32(P.geo[1].y); let tex = P.ofs[1].z; let F = faceOf(d); let cf = f32(c);
-  if (c == 1u) { return next[q * tex + F.f].xyz; }
-  let u = clamp((F.s + 1.0) / 2.0 * cf - 0.5, 0.0, cf - 1.0); let v = clamp((F.t + 1.0) / 2.0 * cf - 0.5, 0.0, cf - 1.0);
-  let i0 = min(c - 2u, u32(floor(u))); let j0 = min(c - 2u, u32(floor(v))); let fu = u - f32(i0); let fv = v - f32(j0);
-  let b = q * tex + F.f * c * c + j0 * c + i0;
-  return (1.0 - fu) * (1.0 - fv) * next[b].xyz + fu * (1.0 - fv) * next[b + 1u].xyz + (1.0 - fu) * fv * next[b + c].xyz + fu * fv * next[b + c + 1u].xyz;
-}
-`;
 
 // Screen probe (i, j) of stride P.stride sits on pixel (k i + off, k j + off). Three passes:
 // SVIS (thread a probe): which level-1 neighbours the probe sees, outside geometry (fix "probe"), or
@@ -167,7 +163,7 @@ export const SVIS = PARAMS + CORE + /* wgsl */ `
     let up = offsetP(x, x.ng);
     for (var c = 0u; c < 8u; c++) {
       let q = neighbour(1u, x.p, c); let e = q.pos - up; let len = lenR(e);
-      if ((len == 0.0 || !occluded(up, e / len, len)) && !insideF(flags[P.ofs[1].y + q.idx])) { b |= 1u << c; }
+      if ((P.wo.x == 1u || len == 0.0 || !occluded(up, e / len, len)) && !insideF(flags[P.ofs[1].y + q.idx])) { b |= 1u << c; }
     }
   } else { b |= 255u; }
   bits[id] = b;
@@ -196,7 +192,7 @@ export const SRAYS = PARAMS + CORE + /* wgsl */ `
       if (q.w <= 0.0) { continue; }
       let e = q.pos + d * T1 - o; let len = lenR(e);
       var r = traced(o, e / len, 0.0, len, &found);
-      if (!found) { r = lookup(q.idx, d); }
+      if (!found) { r = lookup(q.idx, d).xyz; }
       v += q.w * r;
     }
   } else {
@@ -208,11 +204,15 @@ export const SRAYS = PARAMS + CORE + /* wgsl */ `
         for (var c = 0u; c < 8u; c++) {
           let q = neighbour(1u, x.p, c);
           if (q.w <= 0.0) { continue; }
-          let r = lookup(q.idx, d); all += q.w * r; wa += q.w;
+          let r = lookup(q.idx, d); all += q.w * r.xyz; wa += q.w;
           if ((b & (1u << c)) == 0u) { continue; }
-          out += q.w * r; ws += q.w;
+          var w = q.w;
+          let q0 = levelZeroIndex(1u, q.idx);
+          if (q0 >= 0 && P.wo.x == 1u) { w *= chebVis(u32(q0), q.pos, x.p + x.ng * (0.25 * P.lo.w)); }
+          w *= r.w;
+          out += w * r.xyz; ws += w;
         }
-        v = select(all / max(wa, 1e-30), out / ws, ws > 0.0);
+        v = select(select(all / max(wa, 1e-30), vec3f(0.0), P.wo.z == 1u), out / ws, ws > 0.0);
       }
     }
   }

@@ -48,7 +48,9 @@ test("scene files round-trip", () => {
 test("planted white furnace: started at the fixed point, every pixel stays at 1 / (1 - rho)", () => {
   const sc = buildScene3d("furnace"), S = prepare(sc, buildBvh(sc)), want = furnaceExact(sc.alb[0]);
   for (const opts of [{ fix: "none", stride: 0 }, { fix: "probe", stride: 0 }, { fix: "probe", stride: 3, m: 4 }, { fix: "full", stride: 2, m: 3 },
-    { fix: "probe", stride: 2, m: 3, tf: 3, sf: 2, sl: 0.5 }, { fix: "probe", stride: 3, m: 2, tf: 4, move: { d: [0.2, 0, 0.1], k: 2 } }]) {
+    { fix: "probe", stride: 2, m: 3, tf: 3, sf: 2, sl: 0.5 }, { fix: "probe", stride: 3, m: 2, tf: 4, move: { d: [0.2, 0, 0.1], k: 2 } },
+    { fix: "probe", stride: 2, m: 3, c1: 4 }, { fix: "full", stride: 0, c1: 4 }, { fix: "probe", stride: 2, m: 3, mw: "vis" },
+    { fix: "probe", stride: 2, m: 3, sv: 1 }, { fix: "probe", stride: 3, m: 2, tf: 3, jit: 2, sv: 1 }]) {
     const plan = planCascades3d(bounds(sc), { h0: 0.5, c0: 1, r0: 2, f: 2, bounces: 3, ...opts }), out = runCascades3d(sc, S, plan, 12, 8, { cacheInit: sc.sky });
     let worst = 0;
     for (let p = 0; p < 96; p++) if (out.hit[p]) worst = Math.max(worst, Math.abs(out.radiance[3 * p] - want) / want);
@@ -85,4 +87,32 @@ test("denoise: the probes move through every cell position, and history accumula
     return Math.sqrt(s) / n;
   };
   assert.ok(spread(12) < spread(1), `${spread(12)} against ${spread(1)}`);
+});
+
+test("world options: c1 children nest, jit phases stay inside one span, levels map onto level 0", async () => {
+  const { phaseOffset, levelZeroIndex } = await import("./world.mjs");
+  for (let k = 0; k < 96; k++) assert.equal(texelOf(texelDir(k, 4), 1), Math.floor(k / 16)); // a c-4 texel lies inside its c-1 parent
+  const sc = buildScene3d("leak-closed-B");
+  const plan = planCascades3d(bounds(sc), { h0: 0.5, c0: 1, stride: 4, m: 3, tf: 2, jit: 4 }), seen = new Set();
+  for (let p = 0; p < 4; p++) { const o = phaseOffset(plan, p); assert.ok(o.every((v) => v >= 0 && v < plan.hj)); seen.add(o.join()); }
+  assert.equal(seen.size, 4);
+  const L1 = plan.levels[1], n0 = plan.levels[0].n;
+  for (let i = 0; i < L1.probes; i++) {
+    const q0 = levelZeroIndex(plan, 1, i), x = i % L1.n[0];
+    if (q0 >= 0) assert.equal(q0 % n0[0], 2 * x); else assert.ok(2 * x >= n0[0] || 2 * (Math.floor(i / L1.n[0]) % L1.n[1]) >= n0[1] || 2 * Math.floor(i / (L1.n[0] * L1.n[1])) >= n0[2]);
+  }
+  assert.throws(() => planCascades3d(bounds(sc), { c1: 3 }));
+  assert.throws(() => planCascades3d(bounds(sc), { jit: 4 }));
+});
+
+test("start visibility: the closed room stays dark at every grid placement, far darker than without it", () => {
+  const sc = buildScene3d("leak-closed-B"), S = prepare(sc, buildBvh(sc)), room = (o) => {
+    const plan = planCascades3d(bounds(sc), { h0: 0.5, c0: 1, r0: 2, f: 2, bounces: 1, fix: "probe", stride: 4, m: 3, ...o }), out = runCascades3d(sc, S, plan, 16, 10);
+    let lum = 0;
+    for (let i = 0; i < out.radiance.length; i++) lum += out.radiance[i];
+    return lum / 480;
+  };
+  let on = 0, off = 0;
+  for (const go of [[-2 / 3, -4 / 5, -1 / 2], [-1 / 3, -3 / 5, -3 / 4], [-8 / 9, -2 / 5, -1 / 4], [-5 / 9, -1 / 5, -7 / 8]]) { on += room({ go, sv: 1 }); off += room({ go }); }
+  assert.ok(on < 0.2 * off, `with ${on} without ${off}`);
 });
