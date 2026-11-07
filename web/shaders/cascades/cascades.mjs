@@ -22,7 +22,7 @@ import { buildMips, traceInterval, hash32, makeRng } from "./trace.mjs";
 
 const TAU = 2 * Math.PI;
 
-export function planCascades(W, H, { branch = 2, n0 = 4, r0 = 1, fix = false } = {}) {
+export function planCascades(W, H, { branch = 2, n0 = 4, r0 = 1, fix = false, band = null } = {}) {
   const diag = Math.hypot(W, H), cascades = [];
   for (let i = 0; ; i++) {
     const bi = branch ** i, s = 2 ** i;
@@ -30,7 +30,7 @@ export function planCascades(W, H, { branch = 2, n0 = 4, r0 = 1, fix = false } =
     cascades.push({ i, s, pw: Math.ceil(W / s), ph: Math.ceil(H / s), n: n0 * bi, t0, t1 });
     if (t1 >= diag) break;
   }
-  return { W, H, branch, n0, r0, fix, cascades };
+  return { W, H, branch, n0, r0, fix, band, cascades };
 }
 
 // Cascade i+1's merged radiance at position q (pixels) for a continuous direction angle th, averaged
@@ -96,7 +96,31 @@ export function runCascades(sc, plan, mips = buildMips(sc.grid, sc.W, sc.H)) {
     const L = entry(sc, mips, plan, 0, x, y, k, next), o = 3 * (y * sc.W + x);
     F[o] += w * L[0]; F[o + 1] += w * L[1]; F[o + 2] += w * L[2];
   }
+  if (plan.band && next) for (let y = 0; y < sc.H; y++) for (let x = 0; x < sc.W; x++) bandBlend(sc, mips, plan, next, x, y, F);
   return F;
+}
+
+// H150's remedy (S. Caires's suggestion, MAP row 689): inside a band of width D (pixels) around a
+// glass circle, blend the cascades' fluence with a traced one by w = 1 - d / D, d the pixel's distance
+// from the interface. The traced fluence takes N evenly spaced directions, follows each bent path
+// exactly for a path length S, then reads cascade 1 at the virtual probe end - dir_end * t_1 in the
+// end direction (one bin, linear in angle), so the far field still comes from the cascades.
+export function glassDistance(sc, x, y) {
+  let d = Infinity;
+  for (const g of sc.circles) if (g.kind === "glass") d = Math.min(d, Math.abs(Math.hypot(x + 0.5 - g.cx, y + 0.5 - g.cy) - g.r));
+  return d;
+}
+export function bandBlend(sc, mips, plan, next, x, y, F) {
+  const { D, S, N } = plan.band, dist = glassDistance(sc, x, y);
+  if (!(dist < D)) return;
+  const cn = plan.cascades[1], p = [x + 0.5, y + 0.5], T = [0, 0, 0], wb = 1 - dist / D, o = 3 * (y * sc.W + x);
+  for (let k = 0; k < N; k++) {
+    const th = (k + 0.5) * TAU / N, r = traceInterval(sc, mips, p, [Math.cos(th), Math.sin(th)], 0, S);
+    let M = [0, 0, 0];
+    if (!(r.out || r.T < 1e-6)) M = sampleNext(next, cn, 1, [r.p[0] - r.d[0] * cn.t0, r.p[1] - r.d[1] * cn.t0], angleOf(r.d));
+    for (let c = 0; c < 3; c++) T[c] += r.L[c] + r.T * M[c];
+  }
+  for (let c = 0; c < 3; c++) F[o + c] = wb * T[c] * TAU / N + (1 - wb) * F[o + c];
 }
 
 // Reference grid of a stride: sample (i, j) sits at pixel (stride i + stride/2, stride j + stride/2).

@@ -1,0 +1,15 @@
+{
+  "what": "3D radiance cascades (web/shaders/cascades3d): GPU passes (f32) against the float64 CPU reference (run3d.mjs), final radiance per pixel",
+  "fixed_before_first_run": "2026-11-06",
+  "output": { "width": 40, "height": 24 },
+  "cases": [
+    { "id": "leak-door-probe-s2", "scene": "leak-door-B", "plan": { "h0": 0.5, "c0": 1, "r0": 2, "f": 2, "fix": "probe", "stride": 2, "m": 3, "bounces": 3, "cd": 4 } },
+    { "id": "leak-door-none-world", "scene": "leak-door-B", "plan": { "h0": 0.5, "c0": 1, "r0": 2, "f": 2, "fix": "none", "stride": 0, "bounces": 3, "cd": 4 } },
+    { "id": "leak-closed-full-s3", "scene": "leak-closed-B", "plan": { "h0": 0.5, "c0": 1, "r0": 2, "f": 4, "fix": "full", "stride": 3, "m": 2, "bounces": 2, "cd": 4 } },
+    { "id": "leak-door-A-probe-c2", "scene": "leak-door-A", "plan": { "h0": 0.75, "c0": 2, "r0": 1.5, "f": 4, "fix": "probe", "stride": 1, "m": 2, "bounces": 2, "cd": 2 } },
+    { "id": "furnace-planted", "scene": "furnace", "plan": { "h0": 0.5, "c0": 1, "r0": 2, "f": 2, "fix": "probe", "stride": 2, "m": 3, "bounces": 2, "cd": 4 }, "cacheInit": true },
+    { "id": "baseline-leak-door-A", "scene": "leak-door-A", "baseline": 4 }
+  ],
+  "bounds": { "rel_rmse": 0.002, "planted_rel_rmse_against_closed_form": 0.002 },
+  "notes": "rel_rmse is the GPU frame against the CPU frame over pixels both hit, divided by the CPU mean (every channel). The furnace case is also scored against its closed form 1 / (1 - rho)."
+}

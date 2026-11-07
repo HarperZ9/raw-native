@@ -5,7 +5,7 @@
 import { planCascades, refGrid } from "./cascades.mjs";
 import { packCircles } from "./scenes.mjs";
 import { MIP_LEVELS } from "./trace.mjs";
-import { PARAMS_WORDS, TRACE_WGSL, MERGE_WGSL, LEVEL_MAIN, FINAL_MAIN, REF_MAIN, MIP_MAIN } from "./cascades.wgsl.mjs";
+import { PARAMS_WORDS, TRACE_WGSL, MERGE_WGSL, LEVEL_MAIN, FINAL_MAIN, BAND_MAIN, REF_MAIN, MIP_MAIN } from "./cascades.wgsl.mjs";
 
 const WG = 256;
 
@@ -25,6 +25,7 @@ export function packParams(sc, plan, mips, f = {}) {
   if (cn) u.set([cn.n, cn.pw, cn.ph, cn.s], 12);
   u[16] = sc.circles.some((g) => g.kind === "glass") ? 1 : 0;
   u.set([f.rays0 || 0, f.rays1 || 0, f.raysTotal || 0, f.seed || 0, f.stride || 1, f.gw || 0, f.gh || 0, f.fresnel ? 1 : 0, f.total || 0, f.gridX || 0, f.level || 0], 17);
+  if (plan.band) { u[28] = plan.band.N; fl[29] = plan.band.D; fl[30] = plan.band.S; }
   u.set(mips.w, 32); u.set(mips.off, 40);
   return u;
 }
@@ -35,6 +36,7 @@ export async function createGpuCascades(host, sc, opts = {}) {
   const pipes = {
     level: await host.compute("rc.level", TRACE_WGSL + MERGE_WGSL + LEVEL_MAIN),
     final: await host.compute("rc.final", TRACE_WGSL + MERGE_WGSL + FINAL_MAIN),
+    band: plan.band ? await host.compute("rc.band", TRACE_WGSL + MERGE_WGSL + BAND_MAIN) : null,
     ref: await host.compute("rc.reference", TRACE_WGSL + REF_MAIN),
     mip: await host.compute("rc.mip", MIP_MAIN),
   };
@@ -61,6 +63,7 @@ export async function createGpuCascades(host, sc, opts = {}) {
     const c = plan.cascades[0], cn = top >= 1 ? plan.cascades[1] : null, total = sc.W * sc.H, g = grid2(total);
     const P = mk(4 * PARAMS_WORDS, "rc cascade 0", packParams(sc, plan, mips, { c, cn, total, gridX: g.gridX })); owned.push(P);
     steps.push([pipes.final, [P, G, M, C, src, F], g.gx, g.gy]);
+    if (plan.band && cn) steps.push([pipes.band, [P, G, M, C, src, F], g.gx, g.gy]);
   }
   const canTime = dev.features.has("timestamp-query");
   const qs = canTime ? dev.createQuerySet({ type: "timestamp", count: 2 }) : null;

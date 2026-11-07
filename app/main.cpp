@@ -113,6 +113,7 @@ static const char* kUsage =
     "       raw_native_cli swr-render [--out DIR] [--cpu-only]\n"
     "         raw-native's own rasterizer on its owned scenes, modern and retro modes; PNG and JSON\n"
     "       raw_native_cli pt-error --raster DIR [scene flags] [--spp N] [--bounces B] [--json FILE]\n"
+    "       raw_native_cli gi-reference (--scene-file F | scene flags) [--export F] [--pt DIR --spp N --bounces B --seed S] [--cpu]\n"
     "       raw_native_cli gpu-timestamps\n"
     "       raw_native_cli envmaps [--out DIR] [--size N]\n"
     "       raw_native_cli relight [--out DIR] [--size N]\n"
@@ -195,6 +196,7 @@ int main(int argc, char** argv){
     if (argc >= 2 && std::strcmp(argv[1], "swr-render") == 0) return swrRenderCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "rt-pathtrace") == 0) return ptCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "pt-error") == 0) return ptErrorCommand(argc - 1, argv + 1);
+    if (argc >= 2 && std::strcmp(argv[1], "gi-reference") == 0) return giReferenceCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "gpu-timestamps") == 0) return timestampsCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "envmaps") == 0) return envmapsCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "relight") == 0) return relightCommand(argc - 1, argv + 1);

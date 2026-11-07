@@ -4,7 +4,7 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { buildScene, diskFluence, OPAQUE } from "./scenes.mjs";
 import { buildMips, marchGrid, traceInterval, scatterGlass, hash32, MIP_LEVELS } from "./trace.mjs";
-import { planCascades, runCascades, referenceFluence, atGrid, refGrid } from "./cascades.mjs";
+import { planCascades, runCascades, referenceFluence, atGrid, refGrid, glassDistance } from "./cascades.mjs";
 import { relRmse, tileBootstrap, bandErrors } from "./metrics.mjs";
 
 function analyticDisk(sc, stride) {
@@ -98,4 +98,17 @@ test("the error bands and the GPU's hash are fixed", () => {
   assert.equal(b.bands[0].rmse_over_image_mean, 0); assert.equal(b.bands[1].rmse_over_image_mean, 1);
   assert.deepEqual([hash32(0), hash32(1), hash32(123456789)], [129708002, 2831084092, 4272394698]);
   assert.equal(atGrid(new Float64Array(12), 2, 2, 2).length, 3);
+});
+
+test("H150's traced segment changes only pixels inside its band, and moves them toward the reference", () => {
+  const sc = buildScene("glass", 97, 55), base = { branch: 2, n0: 8, r0: 2, fix: false };
+  const F0 = runCascades(sc, planCascades(97, 55, base)), F1 = runCascades(sc, planCascades(97, 55, { ...base, band: { D: 6, S: 24, N: 128 } }));
+  const R = referenceFluence(sc, { rays: 1024, stride: 1, seed: 1 });
+  let e0 = 0, e1 = 0;
+  for (let y = 0; y < 55; y++) for (let x = 0; x < 97; x++) {
+    const o = 3 * (y * 97 + x), inBand = glassDistance(sc, x, y) < 6;
+    if (!inBand) { assert.equal(F1[o], F0[o]); continue; }
+    e0 += (F0[o] - R[o]) ** 2; e1 += (F1[o] - R[o]) ** 2;
+  }
+  assert.ok(e1 < e0, `band error ${Math.sqrt(e1)} against ${Math.sqrt(e0)} without it`);
 });

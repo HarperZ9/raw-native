@@ -40,7 +40,7 @@ export function encodeError(E, scale, top = 0.5) {
 }
 
 export async function measureScene(host, q) {
-  const sc = buildScene(q.scene, q.w, q.h), opts = { branch: q.branch, n0: q.n0, r0: q.r0, fix: !!q.fix };
+  const sc = buildScene(q.scene, q.w, q.h), opts = { branch: q.branch, n0: q.n0, r0: q.r0, fix: !!q.fix, band: q.band || null };
   const rc = await createGpuCascades(host, sc, opts);
   rc.frame(); const F = await rc.read();
   const timing = await rc.time(q.frames);
