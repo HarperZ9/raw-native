@@ -10,6 +10,7 @@ export const START = PARAMS + CORE + /* wgsl */ `
   ${ID}
   let l = P.level; let tex = P.ofs[l].z; let q = id / tex; let k = id % tex; let c = u32(P.geo[l].y); let T0 = P.geo[l].z;
   let p = probePos(l, q); var n = 0.0;
+  if (P.wo.y == 2u) { sv[P.ofs[l].w + id] = select(1.0, 0.0, T0 > 0.0 && occluded(p, texelDir(k, c), T0)); return; } // sv 2: the entry's own ray
   for (var r = 0u; r < 4u; r++) { if (T0 <= 0.0 || !occluded(p, subTexelDir(k, c, r & 1u, r >> 1u), T0)) { n += 1.0; } }
   sv[P.ofs[l].w + id] = n * 0.25;
 }`;

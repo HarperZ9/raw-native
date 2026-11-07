@@ -50,7 +50,8 @@ test("planted white furnace: started at the fixed point, every pixel stays at 1 
   for (const opts of [{ fix: "none", stride: 0 }, { fix: "probe", stride: 0 }, { fix: "probe", stride: 3, m: 4 }, { fix: "full", stride: 2, m: 3 },
     { fix: "probe", stride: 2, m: 3, tf: 3, sf: 2, sl: 0.5 }, { fix: "probe", stride: 3, m: 2, tf: 4, move: { d: [0.2, 0, 0.1], k: 2 } },
     { fix: "probe", stride: 2, m: 3, c1: 4 }, { fix: "full", stride: 0, c1: 4 }, { fix: "probe", stride: 2, m: 3, mw: "vis" },
-    { fix: "probe", stride: 2, m: 3, sv: 1 }, { fix: "probe", stride: 3, m: 2, tf: 3, jit: 2, sv: 1 }]) {
+    { fix: "probe", stride: 2, m: 3, sv: 1 }, { fix: "probe", stride: 3, m: 2, tf: 3, jit: 2, sv: 1 },
+    { fix: "probe", stride: 2, m: 3, sv: 2, ft: 1, go: [-1 / 3, -3 / 5, -3 / 4] }, { fix: "probe", stride: 3, m: 2, tf: 3, jit: 2, sv: 2, ft: 1 }]) {
     const plan = planCascades3d(bounds(sc), { h0: 0.5, c0: 1, r0: 2, f: 2, bounces: 3, ...opts }), out = runCascades3d(sc, S, plan, 12, 8, { cacheInit: sc.sky });
     let worst = 0;
     for (let p = 0; p < 96; p++) if (out.hit[p]) worst = Math.max(worst, Math.abs(out.radiance[3 * p] - want) / want);
@@ -115,4 +116,20 @@ test("start visibility: the closed room stays dark at every grid placement, far 
   let on = 0, off = 0;
   for (const go of [[-2 / 3, -4 / 5, -1 / 2], [-1 / 3, -3 / 5, -3 / 4], [-8 / 9, -2 / 5, -1 / 4], [-5 / 9, -1 / 5, -7 / 8]]) { on += room({ go, sv: 1 }); off += room({ go }); }
   assert.ok(on < 0.2 * off, `with ${on} without ${off}`);
+});
+
+test("own-ray start visibility with the traced fallback: the closed room stays dark at every placement; sub-texel sv does not", () => {
+  const sc = buildScene3d("leak-closed-B"), S = prepare(sc, buildBvh(sc)), room = (o) => {
+    const plan = planCascades3d(bounds(sc), { h0: 0.5, c0: 1, r0: 2, f: 2, bounces: 2, fix: "probe", stride: 4, m: 3, ...o }), out = runCascades3d(sc, S, plan, 16, 10);
+    let lum = 0;
+    for (let i = 0; i < out.radiance.length; i++) lum += out.radiance[i];
+    return lum / 480;
+  };
+  const lit = 0.055; // room A's view under the same plan (build/diag, 16 x 10)
+  for (const go of [null, [-1 / 3, -3 / 5, -3 / 4], [-2 / 9, -0.96, -3 / 8], [-1 / 9, -0.36, -15 / 16]]) {
+    const v = room({ go, sv: 2, ft: 1 });
+    assert.ok(v / lit < 1e-4, `go ${go}: ${v / lit}`);
+  }
+  // The control: the same fallback with round 4's sub-texel start visibility leaks at the second placement.
+  assert.ok(room({ go: [-1 / 3, -3 / 5, -3 / 4], sv: 1, ft: 1 }) / lit > 5e-3);
 });

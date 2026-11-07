@@ -156,7 +156,9 @@ Renders, references and error maps at 3840 x 2160, opened at full size and in cr
 - Converged state after 7 frames of a static scene and light; a moving light needs those frames.
 - The probe denoise below removes the fine probe mottle but not the larger blotches, which come
   from the world levels. Grid jitter (`jit`) removes most of them but leaks through thin walls.
-- The thin-wall result holds only at the measured grid placement (see "World-level options").
+- The shipped default's thin-wall result holds only at the measured grid placement (see "World-level
+  options"). `sv 2` with `ft` is leak-tight at every placement tested, but is not the default yet (see
+  "Leak-tight merges").
 - The 4K reference has one seed, so its noise is not measured.
 
 ## Probe denoise (2026-11-07)
@@ -297,3 +299,74 @@ cases (5 new) within 2e-3 on the RTX 4090; worst 1.4e-4.
 Not closed: with `jit`, `sv` and `fz`, the CPU at 16 x 10 px shows one phase of eight leaking 2%
 through the screen probes, not through the cache's fallback. A leak-tight `jit` needs that path, and
 a merge fallback that neither leaks nor goes dark.
+
+## Leak-tight merges (2026-11-07, fifth round)
+
+Three opt-in switches, CPU (`cascades3d.mjs`, `world.mjs`) and GPU (`wgsl3d-passes.mjs`,
+`wgsl3d-core.mjs`, `wgsl3d-world.mjs`), with four new parity cases. Bounds and the kill line were
+written before any run: `evidence/cascades3d-leak-bounds.json` (one amendment, logged before its run).
+Results: `evidence/cascades3d-leak-rtx4090.json`.
+
+- `sv: 2`: start visibility of the entry's own ray. An entry's value comes from one ray, the texel
+  centre's. `sv 1` weighed it by the share of 4 sub-texel rays that cross `[0, T_i]` unblocked, so an
+  entry whose own ray had passed through the wall still counted at 1/4 to 3/4. `sv 2` traces the
+  centre ray over `[0, T_i]` once (static geometry) and weighs the entry 1 or 0.
+- `ft: 1`: a merge that trusts no neighbour traces its own ray on from its interval's end to the
+  end of the scene (a hit returns the surface with the cache; a miss the sky). The old default took
+  the plain mean of all eight neighbours, which leaks; `fz` took no light, which goes dark.
+- `cg: 1`: when no level-0 probe passes the cache gather's depth test, only lit-side probes that an
+  unblocked segment from the surface reaches count; none gives no light. The old chain fell back to
+  probes without a visibility test.
+
+Each switch keeps a chain of unblocked segments from the pixel to every light it gathers, so in a
+closed room nothing from the other side can arrive. That argument is inferred; the runs below test it.
+
+Closed room at 960 x 540, room B over the room A view's light (bound 1%):
+
+| Setting | g0 | g1 | g2 | g3 | g4 | Phases 4 to 7 (fixed grids) |
+|---|---|---|---|---|---|---|
+| B0 (round 4) | 0.10% | 14.3% | 37.0% | 9.9% | 10.4% | |
+| jit 8, tf 32 (round 4) | 17.9% | 16.7% | 14.7% | 14.1% | 15.3% | |
+| L: B0 + sv 2, ft, cg | 0.009% | 0.031% | 0.002% | 0.006% | 0.000% | 0.003%, 0.006%, 0.002%, 0.15% |
+| L without cg | 0.014% | 0.035% | 0.074% | 0.023% | 0.020% | |
+| L with sv 1 | 0.009% | 0.030% | 4.9% | 0.005% | 0.020% | |
+| J: jit 8, tf 32 + sv 2, ft, cg | 0.15% | 0.30% | 0.40% | 0.17% | 0.12% | |
+| J without cg | 0.45% | 0.71% | 0.53% | 0.45% | 0.41% | |
+| J with sv 1 | 2.2% | 1.5% | 1.6% | 0.87% | 0.75% | |
+
+Phases 0 to 3 of jit 8 sit at g1 to g4. On the CPU at 16 x 10 px, `sv 2` with `ft` reads 0.000% at
+all 12 grids; `sv 1` with `ft` still reads 0.97% at g2, which is how the sub-texel share was found to
+be the leak. Door-lit room B, light ratio and error (no GI 1.66): B0 0.53, 1.33; L 0.51, 1.27; J 0.83,
+0.94. J is the first setting that lights room B to within a fifth of the reference without leaking.
+
+raw-hall nave at 1920 x 1080 against the 8-bounce path trace:
+
+| Setting | Relative RMSE | Bias | Wall mottle | GI ms |
+|---|---|---|---|---|
+| B0 | 0.104 (0.097 to 0.111) | -0.5% | 0.040 | 3.82 |
+| sv 2 | 0.113 (0.105 to 0.120) | +2.1% | 0.042 | 4.06 |
+| L without cg | 0.114 (0.107 to 0.122) | +2.6% | 0.043 | 4.68 |
+| L | 0.112 (0.105 to 0.120) | +2.4% | 0.043 | 4.94 |
+| jit 8, tf 32 | 0.080 (0.075 to 0.085) | +0.1% | 0.030 | 4.92, 4.66 |
+| J without cg | 0.086 (0.081 to 0.092) | +2.0% | 0.032 | 5.02, 4.97 |
+| J | 0.083 (0.078 to 0.088) | +1.4% | 0.032 | 6.66, 6.38, 6.58 |
+| 4K: L / J | 0.118 / 0.094 | +2.3% / +1.4% | 0.036 / 0.025 | 10.5 / 12.3 |
+
+Decisions under the pre-registered rules: no default changes.
+
+- L closes the shipped default's leak (worst 0.15% over 9 grids) but misses the error bound by 0.001
+  (0.112 against B0's upper limit 0.111). `sv 2` alone accounts for it: dropping the entries whose
+  skipped start crossed a surface also drops the dark values those entries held, and the hall comes
+  out 2% bright.
+- J meets the leak and error bounds and misses time: 6.4 to 6.7 ms against 6. `cg` runs a segment
+  test at every traced hit whose depth test finds no probe, about 1.2 ms in the level pass. Without
+  `cg`, J fits (5.0 ms) and stays under 1% (0.71% worst) but misses the error bound (0.086 against
+  0.085).
+- The kill line (worst leak above 1.3%, or a loss of light over 10%) is not met: the approach works,
+  and the remaining gaps are cost and a 2% bias.
+
+Renders (`H:` renders folder `cascades3d-leak-2026-11-07`), opened at full size: the closed room under
+L is black with a few isolated speckles; under J a faint glow remains along the wall-ceiling and
+wall-wall seams, which is where its 0.1% to 0.4% sits. In the door-lit room B0 and L show bright
+probe speckles; J is smooth. In raw-hall the error crops show L brighter than B0 along column edges
+facing the aisle wall, and J matching jit except one brighter band on a column flank.
