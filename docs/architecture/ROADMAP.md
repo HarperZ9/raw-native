@@ -253,6 +253,13 @@ GPUs; only a run on the reference machine sets raw-native's numbers.
 | P21 | Era window (section 11, ideas only): one region of the frame (a window or portal in the scene) rendered in a different style or time of day than the frame around it, composited through a world-anchored mask with a stated soft edge | M5 (styles), Low Water's old-town scenes | float64 reference and WGSL composite with parity on WARP and lavapipe; goldens per compiler family; outside the mask the frame equals the base style and inside it equals the other, both exactly, with the seam band within its stated width; the mask follows the scene on the orbit (warp-metric instability of the mask no worse than the scene's own edges); at most 0.5 ms at 1080p beyond the two styles' own cost | either side differs from its source, or the mask swims | P5, any two style passes |
 | P23 | Tilt-shift lens (Low Water's camera, author's direction 2026-10-22): the plane of focus tilted in the world (Scheimpflug), CoC per pixel from depth against it, defocus painted as a coarser anisotropic Kuwahara over pigment latents, a focus director by story intent with an observer's drift that never leaves a speaker or a fight, and an optional lens and print effect stack under the care limits | M5 (styles), Low Water | `evidence/tiltshift-bounds.json`: people in the wedge keep their ink within 5%, the screen band fails; ink falls off out of focus; painted not blurred (the gaussian control fails); temporal instability on the orbit and a rack no worse than the base paint; director and care checks; parity on WARP and lavapipe; at most 1.0 ms at 1080p | a control passes, parity fails, or the cost misses | P5 (art scene, orbit, metric) |
 
+P6 status (2026-11-06). The flatland stage is built: `web/shaders/cascades`, measured in
+`docs/radiance-cascades.md` and `evidence/cascades-rtx4090.json`. At 3840 x 2160 on the RTX 4090,
+branch 4 reaches relative RMSE 0.038 on a thin-wall room in 70 ms (49 ms in an earlier run) and branch 2 0.125 in 12 ms; the
+per-neighbour continuation removes the leak (dark room 1.00 of its reference against 1.65 at branch 2)
+at 2.5 to 4.5 times the cost. Error within 2 px of a glass interface is 2.7 to 5.4 times the image's
+(H150). The raw-hall criteria above are open: the 3D cascades are not built.
+
 Order. P1 goes first: it is the only one the current work can absorb, because M3 criterion 1's last
 piece (the gallery's path-traced error) already needs path tracer interface v3, and v3's punctual
 lights are what ReSTIR DI resamples. P1 stage 1 runs on the CPU; stage 2, P2, P6 and P7's timings
