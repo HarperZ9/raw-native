@@ -18,7 +18,7 @@ struct Params {
   dnf: vec4f,   // luminance edge stop sl, planted edge x, planted value below it, above it
   pEye: vec4f, pF: vec4f, pS: vec4f, pU: vec4f, // previous frame's camera (pEye.w tan half fovy, pF.w aspect)
   clo: vec4f,   // the grid origin of the cache this pass gathers from (lo, unless the grid moves: world.mjs jit)
-  wo: vec4u,    // mw (0 seg, 1 vis), sv (1: merges weigh texels by start visibility, in level buffers' w)
+  wo: vec4u,    // mw (0 seg, 1 vis), sv (1: merges weigh texels by start visibility, in level buffers' w), fz
   dims: array<vec4u, 8>,
   geo: array<vec4f, 8>,
   ofs: array<vec4u, 8>,

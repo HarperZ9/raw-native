@@ -60,7 +60,7 @@ export function packParams(sc, plan, W, H, triOff, x = {}) {
   f.set([...k.eye, k.th, ...k.f, k.aspect, ...k.s, 0, ...k.u, 0], 32);
   new Uint8Array(buf).set(frameWords(sc, plan, W, H, 0, x.planted), 4 * FRAME_WORDS[0]);
   f.set([...(x.clo || plan.lo), 0], 72);
-  u.set([{ seg: 0, vis: 1 }[plan.mw || "seg"], plan.sv ? 1 : 0, 0, 0], 76);
+  u.set([{ seg: 0, vis: 1 }[plan.mw || "seg"], plan.sv ? 1 : 0, plan.fz ? 1 : 0, 0], 76);
   L.forEach((l, i) => {
     u.set([...l.n, l.probes], 80 + 4 * i);
     f.set([l.h, l.c, fin(l.T0), fin(l.T1x)], 112 + 4 * i);

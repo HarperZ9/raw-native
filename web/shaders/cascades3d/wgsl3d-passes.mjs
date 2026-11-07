@@ -116,7 +116,7 @@ export const LEVEL = PARAMS + CORE + /* wgsl */ `
     if (P.fix == 1u && ((bits & (1u << cn)) == 0u || insideF(flags[P.ofs[l + 1u].y + q.idx]))) { continue; }
     out += q.w * m.w * m.xyz; ws += q.w * m.w;
   }
-  cur[id] = vec4f(select(all / max(wa, 1e-30), out / ws, ws > 0.0), vis);
+  cur[id] = vec4f(select(select(all / max(wa, 1e-30), vec3f(0.0), P.wo.z == 1u), out / ws, ws > 0.0), vis);
 }`;
 
 // Level 0's merged radiance as the L1 irradiance cache (cascades3d.mjs cacheOf): thread = probe.
@@ -212,7 +212,7 @@ export const SRAYS = PARAMS + CORE + /* wgsl */ `
           w *= r.w;
           out += w * r.xyz; ws += w;
         }
-        v = select(all / max(wa, 1e-30), out / ws, ws > 0.0);
+        v = select(select(all / max(wa, 1e-30), vec3f(0.0), P.wo.z == 1u), out / ws, ws > 0.0);
       }
     }
   }

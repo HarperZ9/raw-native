@@ -50,5 +50,12 @@
     "sv_default": "sv becomes the default if it passes L1 and L2 at all five placements, keeps RMSE at most 0.111 and the 1080p median under 6 ms, whatever its mottle (it fixes a leak)",
     "denoise_default": "temporal and a-trous turn on by default only if a combination with the denoise reaches wall mottle at most 0.0303 (25% under B0's 0.0404, the original line), with RMSE at most 0.111, E1, L1, L2 and the 6 ms budget"
   },
-  "budget": "1080p GI median under 6 ms; GPU memory under 6 GB (the GPU is shared); at most 3 CPU workers at below-normal priority; SwiftShader parity runs in CI only"
+  "budget": "1080p GI median under 6 ms; GPU memory under 6 GB (the GPU is shared); at most 3 CPU workers at below-normal priority; SwiftShader parity runs in CI only",
+  "amendment_fz": {
+    "written": "2026-11-07, after the first L1/L2 runs and before any run of fz",
+    "seen": "closed room at 960 x 540: B0 reads 0.10% at the shipped placement and 14.3%, 37.0% and 9.9% at three others; sv 0.12%, 0.22% and 4.8%; jit 17.9%, 16.7%, 14.7%; jit with sv 3.2%, 2.5%, 2.4%. jit and jit with sv fail L1. On the CPU at 16 x 10 px, the light that sv leaves comes from merges that reject all eight neighbours and then fall back to the plain mean of all eight, which takes back the neighbours behind the wall (zeroing that fallback cuts phase 1's 2.35% to 0.00% and phase 3's 0.85% to 0.14%)",
+    "change": "fz 1: a merge (world levels and screen probes) that rejects all eight neighbours returns no light. On its own it changes nothing the tests do not reject; it is meant with sv. In the white furnace at an offset placement, fz with sv reads 0.5% low on the CPU (merges near the box's walls that trust no neighbour), against 2e-16 at the shipped placement",
+    "tested": "sv with fz, and jit with sv and fz, against the same L1, L2, hall error, mottle and time bounds, and the same decision rules: sv_default and the denoise default now read 'sv with fz' for 'sv'",
+    "prediction": "sv with fz under 1% at all five placements; hall RMSE within 0.005 of sv's; jit with sv and fz under 1% at every placement, with wall mottle within 0.002 of jit with sv"
+  }
 }

@@ -205,6 +205,7 @@ function mergeNext(ctx, l1, p, bits, nextFlags, value) {
     for (let ch = 0; ch < 3; ch++) out[ch] += w * v[ch];
     ws += w;
   });
+  if (!(ws > 0) && ctx.plan.fz) return [0, 0, 0]; // fz: no trusted neighbour, no light (world.mjs)
   return ws > 0 ? mul(out, 1 / ws) : mul(all, 1 / Math.max(wa, 1e-30));
 }
 // Level 0's merged radiance as an L1 irradiance cache: E(n) = a + bx n.x + by n.y + bz n.z.

@@ -9,6 +9,8 @@
 //   each entry carries the share of 4 sub-texel rays that cross [0, T_i] unblocked (traced once for
 //   static geometry, cascades3d.mjs startPass), and every merge (world levels and screen probes)
 //   weighs a neighbour's texels by it.
+// - fz: a merge that rejects all eight neighbours returns no light, instead of the plain mean of all
+//   eight (which takes back the neighbours behind a wall that the tests rejected).
 // - jit K: the whole world grid moves by one of K offsets a frame (Halton 3, 5, 2 times h0 2^jl), so
 //   the trilinear pattern of the world levels changes from frame to frame and the temporal
 //   accumulation averages it. Depth moments and probe flags belong to a phase; with static geometry
@@ -73,5 +75,6 @@ export function mergeWeighted(ctx, p, wts, value) {
     for (let ch = 0; ch < 3; ch++) { all[ch] += q.w * v[ch]; out[ch] += w * v[ch]; }
     wa += q.w; ws += w;
   });
+  if (!(ws > 0) && ctx.plan.fz) return [0, 0, 0];
   return ws > 0 ? mul(out, 1 / ws) : mul(all, 1 / Math.max(wa, 1e-30));
 }
