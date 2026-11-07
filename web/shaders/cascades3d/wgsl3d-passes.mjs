@@ -116,10 +116,7 @@ export const LEVEL = PARAMS + CORE + /* wgsl */ `
     if (P.fix == 1u && ((bits & (1u << cn)) == 0u || insideF(flags[P.ofs[l + 1u].y + q.idx]))) { continue; }
     out += q.w * m.w * m.xyz; ws += q.w * m.w;
   }
-  if (ws <= 0.0 && (P.wo.w & 1u) != 0u) { // ft: trace the entry's own ray on (cascades3d.mjs onward)
-    v = traced(p, d, T1x, 1e30, &found);
-    cur[id] = vec4f(select(P.sky.xyz, v, found), vis); return;
-  }
+  if (ws <= 0.0 && (P.wo.w & 1u) != 0u) { v = traced(p, d, T1x, 1e30, &found); cur[id] = vec4f(select(P.sky.xyz, v, found), vis); return; } // ft
   cur[id] = vec4f(select(select(all / max(wa, 1e-30), vec3f(0.0), P.wo.z == 1u), out / ws, ws > 0.0), vis);
 }`;
 
@@ -141,7 +138,6 @@ export const CACHE = PARAMS + CORE + /* wgsl */ `
   cacheOut[4u * id] = vec4f(a, select(0.0, 1.0, insideF(flags[P.ofs[0].y + id])));
   cacheOut[4u * id + 1u] = vec4f(bx, 0.0); cacheOut[4u * id + 2u] = vec4f(by, 0.0); cacheOut[4u * id + 3u] = vec4f(bz, 0.0);
 }`;
-
 
 // Screen probe (i, j) of stride P.stride sits on pixel (k i + off, k j + off). Three passes:
 // SVIS (thread a probe): which level-1 neighbours the probe sees, outside geometry (fix "probe"), or
@@ -258,8 +254,7 @@ export const FINAL = PARAMS + CORE + /* wgsl */ `
 ` + GATHER + SHADE + /* wgsl */ `
 @compute @workgroup_size(256) fn main(@builtin(global_invocation_id) gid: vec3u) {
   ${ID}
-  _ = E[0];
-  let g1 = G[3u * id + 1u];
+  _ = E[0]; let g1 = G[3u * id + 1u];
   if (g1.w < 0.0) { outp[id] = vec4f(0.0); return; }
   let px = id % P.W; let py = id / P.W; let g0 = G[3u * id];
   let x = Surf(g0.xyz, g1.xyz, G[3u * id + 2u].xyz, false, u32(g1.w));
