@@ -37,5 +37,13 @@
     "default": "if K (or K3 when K fails only the leak bound) passes the pass line, its switches become the default of planCascades3d in the same PR (tf 32 and jit 8 apply when screen probes run; stride 0 plans keep no jitter), with docs and the changelog saying so. Among passing candidates the lower RMSE wins; within 0.002 the lower worst leak",
     "otherwise": "keep the shipped defaults and record the nulls"
   },
-  "budget": "GPU memory under about 6 GB (shared with wmm-4 training using up to about 12 GB and a universe agent; never stop other processes; wait when the GPU is near full); at most 3 CPU workers at below-normal priority; one GPU run at a time; SwiftShader parity in CI only. Timings note that the GPU was shared"
+  "budget": "GPU memory under about 6 GB (shared with wmm-4 training using up to about 12 GB and a universe agent; never stop other processes; wait when the GPU is near full); at most 3 CPU workers at below-normal priority; one GPU run at a time; SwiftShader parity in CI only. Timings note that the GPU was shared",
+  "amendment_sd": {
+    "written": "2026-11-07, after the CPU 16 x 10 leak diagnosis (all settings 0.000% at 13 grids) and the CPU white-furnace unit test, before any GPU run",
+    "seen": "the cap version of sd 1 above failed the planted white furnace with cg 2 under jit: worst pixel 1.4% off the closed form (12 x 8 px). Dropped entries hold the far side of the surface that blocked them (outside the box, a back face or a surface whose cache gather finds no probe), and the cap only lowers values, so wrong dark values entered",
+    "change": "sd 1 is redefined before any GPU run: an entry whose own ray is blocked over [0, T_i] (sv 2's flag) traces that ray from 0 instead and holds the radiance of the surface that blocks it; merges then weigh every entry (no sv weights). The cap is dropped. Leak argument (inferred): that surface is the first one along the entry's ray from the probe, so it lies on the probe's side of any wall; the merge's probe-fix segment keeps the probe on the merging side. On the CPU the white furnace with sd (no cg) is exact to 2e-16 at a moved grid",
+    "also_seen": "every cg mode (cg 1 of round 5 included) returns no light where no probe is shown to see the surface; on the CPU white furnace at a moved grid (go g2) 10 of 96 pixels read up to 1.05% low, the same for cg 1, 2 and 3. Recorded as a limit of cg, not a new effect of cg 2",
+    "kill_line_sd": "unchanged in substance: sd is a null if J with sd (or K against J with cg 2) does not move the raw-hall bias at least halfway from its value without sd toward zero, or raises the worst closed-room leak above 1%",
+    "predictions": "unchanged"
+  }
 }

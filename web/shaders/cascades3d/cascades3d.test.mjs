@@ -51,7 +51,8 @@ test("planted white furnace: started at the fixed point, every pixel stays at 1 
     { fix: "probe", stride: 2, m: 3, tf: 3, sf: 2, sl: 0.5 }, { fix: "probe", stride: 3, m: 2, tf: 4, move: { d: [0.2, 0, 0.1], k: 2 } },
     { fix: "probe", stride: 2, m: 3, c1: 4 }, { fix: "full", stride: 0, c1: 4 }, { fix: "probe", stride: 2, m: 3, mw: "vis" },
     { fix: "probe", stride: 2, m: 3, sv: 1 }, { fix: "probe", stride: 3, m: 2, tf: 3, jit: 2, sv: 1 },
-    { fix: "probe", stride: 2, m: 3, sv: 2, ft: 1, go: [-1 / 3, -3 / 5, -3 / 4] }, { fix: "probe", stride: 3, m: 2, tf: 3, jit: 2, sv: 2, ft: 1 }]) {
+    { fix: "probe", stride: 2, m: 3, sv: 2, ft: 1, go: [-1 / 3, -3 / 5, -3 / 4] }, { fix: "probe", stride: 3, m: 2, tf: 3, jit: 2, sv: 2, ft: 1 },
+    { fix: "probe", stride: 3, m: 2, tf: 3, jit: 2, sv: 2, ft: 1, sd: 1 }, { fix: "probe", stride: 2, m: 3, sv: 2, sd: 1, mw: "vis" }]) {
     const plan = planCascades3d(bounds(sc), { h0: 0.5, c0: 1, r0: 2, f: 2, bounces: 3, ...opts }), out = runCascades3d(sc, S, plan, 12, 8, { cacheInit: sc.sky });
     let worst = 0;
     for (let p = 0; p < 96; p++) if (out.hit[p]) worst = Math.max(worst, Math.abs(out.radiance[3 * p] - want) / want);
@@ -132,4 +133,32 @@ test("own-ray start visibility with the traced fallback: the closed room stays d
   }
   // The control: the same fallback with round 4's sub-texel start visibility leaks at the second placement.
   assert.ok(room({ go: [-1 / 3, -3 / 5, -3 / 4], sv: 1, ft: 1 }) / lit > 5e-3);
+});
+
+test("sd keeps the white furnace exact at a moved grid; cg's no-light fallback does not, and cg 2 is no worse than cg 1", () => {
+  const sc = buildScene3d("furnace"), S = prepare(sc, buildBvh(sc)), want = furnaceExact(sc.alb[0]);
+  const run = (o) => {
+    const plan = planCascades3d(bounds(sc), { h0: 0.5, c0: 1, r0: 2, f: 2, bounces: 3, fix: "probe", stride: 3, m: 2, sv: 2, ft: 1, go: [-1 / 3, -3 / 5, -3 / 4], ...o });
+    const out = runCascades3d(sc, S, plan, 12, 8, { cacheInit: sc.sky });
+    let worst = 0;
+    for (let p = 0; p < 96; p++) if (out.hit[p]) worst = Math.max(worst, Math.abs(out.radiance[3 * p] - want) / want);
+    return worst;
+  };
+  assert.ok(run({ sd: 1 }) < 1e-6, `sd ${run({ sd: 1 })}`);
+  // cg returns no light where no probe is shown to see the surface: 10 of 96 pixels, up to 1% here (2026-11-07).
+  const c1 = run({ sd: 1, cg: 1 }), c2 = run({ sd: 1, cg: 2 });
+  assert.ok(c2 <= c1 + 1e-12 && c2 < 0.02, `cg 1 ${c1}, cg 2 ${c2}`);
+});
+
+test("cg 2 and sd with sv 2 and ft: the closed room stays dark at every placement", () => {
+  const sc = buildScene3d("leak-closed-B"), S = prepare(sc, buildBvh(sc)), lit = 0.055;
+  for (const go of [null, [-1 / 3, -3 / 5, -3 / 4], [-2 / 9, -0.96, -3 / 8]]) {
+    const plan = planCascades3d(bounds(sc), { h0: 0.5, c0: 1, r0: 2, f: 2, bounces: 2, fix: "probe", stride: 4, m: 3, sv: 2, ft: 1, cg: 2, sd: 1, go });
+    const out = runCascades3d(sc, S, plan, 16, 10);
+    let lum = 0;
+    for (let i = 0; i < out.radiance.length; i++) lum += out.radiance[i];
+    assert.ok(lum / 480 / lit < 1e-4, `go ${go}: ${lum / 480 / lit}`);
+  }
+  assert.throws(() => planCascades3d(bounds(sc), { sd: 1 }));
+  assert.throws(() => planCascades3d(bounds(sc), { cg: 4 }));
 });

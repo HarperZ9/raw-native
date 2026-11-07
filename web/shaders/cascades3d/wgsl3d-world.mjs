@@ -1,7 +1,32 @@
-// The GPU side of world.mjs: the start-visibility pass (sv). The weighted merges live in
-// wgsl3d-passes.mjs (children, SRAYS) and wgsl3d-core.mjs (lookup, chebVis, levelZeroIndex).
-import { PARAMS, CORE } from "./wgsl3d-core.mjs";
-import { ID } from "./wgsl3d-passes.mjs";
+// The GPU side of world.mjs: the start-visibility pass (sv) and the merge helpers of the level pass
+// (children, traced). The merges' loops and sd live in wgsl3d-passes.mjs (LEVEL, SRAYS); lookup,
+// chebVis, levelZeroIndex and the cg gathers in wgsl3d-core.mjs.
+import { PARAMS, CORE, ID } from "./wgsl3d-core.mjs";
+
+export const INSIDE = /* wgsl */ `
+fn insideF(f: u32) -> bool { let back = (f >> 16u) & 15u; let front = (f >> 20u) & 15u; return back >= 3u && back > front; }
+`;
+export const MERGE = INSIDE + /* wgsl */ `
+// s x s children, s = c(l1) / c; w: their start visibility (1 without sv), which also weighs them.
+fn children(l1: u32, q: u32, k: u32, c: u32) -> vec4f {
+  let cc = u32(P.geo[l1].y); let sp = cc / c; let f = k / (c * c); let r = k - f * c * c; let j = r / c; let i = r - j * c;
+  let tex = P.ofs[l1].z; let oo = P.ofs[l1].x;
+  var out = vec3f(0.0); var ws = 0.0; var ov = vec3f(0.0); var wv = 0.0;
+  for (var b = 0u; b < sp; b++) { for (var a = 0u; a < sp; a++) {
+    let ti = sp * i + a; let tj = sp * j + b; let w = P.omega[oo + tj * cc + ti];
+    let e = next[q * tex + f * cc * cc + tj * cc + ti];
+    out += w * e.xyz; ws += w; ov += w * e.w * e.xyz; wv += w * e.w;
+  } }
+  if (P.wo.y == 0u) { return vec4f(out / ws, 1.0); }
+  return select(vec4f(out / ws, 0.0), vec4f(ov / wv, wv / ws), wv > 0.0);
+}
+fn traced(o: vec3f, d: vec3f, t0: f32, t1: f32, found: ptr<function, bool>) -> vec3f {
+  let h = trace(o, d, t0, t1, false);
+  *found = h.slot >= 0;
+  if (!*found) { return vec3f(0.0); }
+  return surfaceRadiance(surfaceAt(o, d, h), d, P.sub0 == 1u);
+}
+`;
 
 // Start visibility of level P.level (cascades3d.mjs startPass): thread = probe * texels + texel.
 export const START = PARAMS + CORE + /* wgsl */ `

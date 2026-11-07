@@ -4,6 +4,7 @@
   "denoise_cases_added": "2026-11-07, before their first run; the bound is unchanged. Amended after the first GPU run: denoise-both-moving-s2 first used leak-door-A-probe-c2's plan (h0 0.75, c0 2, f 4, cd 2, m 2) and read 1.46e-3 on the RTX 4090. The gap is in single probe rays under the new per-frame seeds (with tmax 1 the frame's own probes alone differ by up to 2e-2 a pixel; with h0 0.5, c0 1, f 2, cd 4 no pixel differs by 1e-3), not in the accumulation. The case moved to that plan and m 3 so CI on SwiftShader does not sit on the edge of the bound.",
   "world_cases_added": "2026-11-07, before their first run; the bound is unchanged. They cover evidence/cascades3d-world-bounds.json: c1 (level-1 angular resolution), mw vis (depth-moment weights at the screen probes), sv (start visibility in every merge) and jit (a moving world grid with temporal accumulation).",
   "leak_cases_added": "2026-11-07, before their first run; the bound is unchanged. They cover evidence/cascades3d-leak-bounds.json: sv 2 (the entry's own start visibility), ft (a merge that trusts no neighbour traces on) and cg (the cache gather's fallback tested by segments), with and without jit, and the white furnace at a moved grid.",
+  "cost_cases_added": "2026-11-07, before their first run; the bound is unchanged. They cover evidence/cascades3d-cost-bounds.json: cg 2 and cg 3 (the cache gather's fallback by the depth pass's farthest or nearest ray, no rays), sd (an entry blocked over its skipped start holds the surface that blocks it), with and without jit, and the white furnace with sd at a moved grid.",
   "output": { "width": 40, "height": 24 },
   "cases": [
     { "id": "leak-door-probe-s2", "scene": "leak-door-B", "plan": { "h0": 0.5, "c0": 1, "r0": 2, "f": 2, "fix": "probe", "stride": 2, "m": 3, "bounces": 3, "cd": 4 } },
@@ -24,7 +25,11 @@
     { "id": "leak-sv2-ft-cg-s2", "scene": "leak-door-B", "plan": { "h0": 0.5, "c0": 1, "r0": 2, "f": 2, "fix": "probe", "stride": 2, "m": 3, "cd": 4, "bounces": 3, "sv": 2, "ft": 1, "cg": 1 } },
     { "id": "leak-closed-sv2-ft-go", "scene": "leak-closed-B", "plan": { "h0": 0.5, "c0": 1, "r0": 2, "f": 2, "fix": "probe", "stride": 2, "m": 3, "cd": 4, "bounces": 2, "sv": 2, "ft": 1, "go": [-0.3333, -0.6, -0.75] } },
     { "id": "leak-sv2-ft-cg-jit-s2", "scene": "leak-door-A", "plan": { "h0": 0.5, "c0": 1, "r0": 2, "f": 2, "fix": "probe", "stride": 2, "m": 3, "cd": 4, "bounces": 2, "tf": 4, "tmax": 8, "jit": 4, "sv": 2, "ft": 1, "cg": 1 } },
-    { "id": "furnace-leak-planted", "scene": "furnace", "plan": { "h0": 0.5, "c0": 1, "r0": 2, "f": 2, "fix": "probe", "stride": 2, "m": 3, "cd": 4, "bounces": 2, "sv": 2, "ft": 1, "go": [-0.3333, -0.6, -0.75] }, "cacheInit": true }
+    { "id": "furnace-leak-planted", "scene": "furnace", "plan": { "h0": 0.5, "c0": 1, "r0": 2, "f": 2, "fix": "probe", "stride": 2, "m": 3, "cd": 4, "bounces": 2, "sv": 2, "ft": 1, "go": [-0.3333, -0.6, -0.75] }, "cacheInit": true },
+    { "id": "cost-cg2-sd-s2", "scene": "leak-door-B", "plan": { "h0": 0.5, "c0": 1, "r0": 2, "f": 2, "fix": "probe", "stride": 2, "m": 3, "cd": 4, "bounces": 3, "sv": 2, "ft": 1, "cg": 2, "sd": 1 } },
+    { "id": "cost-cg3-s2", "scene": "leak-door-B", "plan": { "h0": 0.5, "c0": 1, "r0": 2, "f": 2, "fix": "probe", "stride": 2, "m": 3, "cd": 4, "bounces": 3, "sv": 2, "ft": 1, "cg": 3 } },
+    { "id": "cost-cg2-sd-jit-s2", "scene": "leak-door-A", "plan": { "h0": 0.5, "c0": 1, "r0": 2, "f": 2, "fix": "probe", "stride": 2, "m": 3, "cd": 4, "bounces": 2, "tf": 4, "tmax": 8, "jit": 4, "sv": 2, "ft": 1, "cg": 2, "sd": 1 } },
+    { "id": "furnace-cost-planted", "scene": "furnace", "plan": { "h0": 0.5, "c0": 1, "r0": 2, "f": 2, "fix": "probe", "stride": 2, "m": 3, "cd": 4, "bounces": 2, "sv": 2, "ft": 1, "sd": 1, "go": [-0.3333, -0.6, -0.75] }, "cacheInit": true }
   ],
   "bounds": { "rel_rmse": 0.002, "planted_rel_rmse_against_closed_form": 0.002 },
   "notes": "rel_rmse is the GPU frame against the CPU frame over pixels both hit, divided by the CPU mean (every channel). The furnace case is also scored against its closed form 1 / (1 - rho)."

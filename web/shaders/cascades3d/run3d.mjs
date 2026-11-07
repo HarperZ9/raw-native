@@ -39,7 +39,8 @@ export function runCascades3d(sc, S, plan, W, H, { frames = plan.frames, cacheIn
   for (let f = 0; f < frames; f++) {
     if (plan.move && f > 0) ({ G, kb } = view(f));
     const ph = phase(plan.jit ? f % plan.jit : 0);
-    ctx.plan = ph.plan; ctx.depth = ph.depth; ctx.sv = ph.sv; flags = ph.flags;
+    ctx.plan = ph.plan; ctx.depth = ph.depth; flags = ph.flags;
+    ctx.sv = plan.sd ? null : ph.sv; ctx.svStart = plan.sd ? ph.sv : null; // sd: blocked entries trace from 0, merges weigh all (world.mjs)
     let next = null;
     for (let l = L.length - 1; l >= 0; l--) {
       const cur = new Float64Array(3 * L[l].probes * L[l].texels);
