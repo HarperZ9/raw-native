@@ -2,11 +2,12 @@
 // screen probes. wgsl3d.mjs and gpu3d.mjs are the same passes on the GPU.
 //   const out = runCascades3d(sc, S, plan, W, H);   // { radiance, hit } after plan.frames frames
 //   const base = noGiBaseline(sc, S, W, H, 16);     // sun + pi sky x cosine sky visibility (m^2 rays)
-import { entry, probeFlags, cacheOf, gbuffer, screenProbe, gatherCache, offset, depthPass } from "./cascades3d.mjs";
+import { entry, probeFlags, cacheOf, gbuffer, screenProbe, gatherCache, offset, depthPass, startPass } from "./cascades3d.mjs";
 import { cosineDir, jitter, dot, sub } from "./math3d.mjs";
 import { occluded } from "./bvh.mjs";
 import { cameraBasis } from "./scene3d.mjs";
 import { frameSeed, probeOffsets, cameraAt, footprint, atrous, accumulate } from "./denoise3d.mjs";
+import { phasePlan } from "./world.mjs";
 
 // Screen probe (i, j) of stride k sits on pixel (k i + ox, k j + oy), clamped to the frame; the
 // offsets are k / 2, or move every frame under temporal accumulation (denoise3d.mjs probeOffsets).
@@ -23,13 +24,22 @@ export function upWeight(x, q, w, tol) {
 }
 
 export function runCascades3d(sc, S, plan, W, H, { frames = plan.frames, cacheInit = null } = {}) {
-  const ctx = { S, sc, plan, cachePrev: null, depth: depthPass(S, plan) }, L = plan.levels;
+  const ctx = { S, sc, plan, cachePrev: null, depth: null }, L = plan.levels;
   const view = (f) => { const camera = cameraAt(sc, plan, f); return { G: gbuffer(S, { ...sc, camera }, W, H), kb: cameraBasis(camera, W, H) }; };
-  const flags = L.map((_, l) => probeFlags(ctx, l));
-  let { G, kb } = view(0), buf0 = null, buf1 = null, cache = null, E = null, hist = null;
+  // A phase's grid, depth moments and flags (one phase without jit), traced on its first frame.
+  const phases = new Map(), phase = (p) => {
+    if (!phases.has(p)) {
+      const pl = phasePlan(plan, p), c = { ...ctx, plan: pl, depth: depthPass(S, pl) };
+      phases.set(p, { plan: pl, depth: c.depth, flags: L.map((_, l) => probeFlags(c, l)), sv: plan.sv ? L.map((_, l) => startPass(S, pl, l)) : null });
+    }
+    return phases.get(p);
+  };
+  let { G, kb } = view(0), buf0 = null, buf1 = null, cache = null, E = null, hist = null, flags = null;
   if (cacheInit) { ctx.cachePrev = initCache(plan, cacheInit); }
   for (let f = 0; f < frames; f++) {
     if (plan.move && f > 0) ({ G, kb } = view(f));
+    const ph = phase(plan.jit ? f % plan.jit : 0);
+    ctx.plan = ph.plan; ctx.depth = ph.depth; ctx.sv = ph.sv; flags = ph.flags;
     let next = null;
     for (let l = L.length - 1; l >= 0; l--) {
       const cur = new Float64Array(3 * L[l].probes * L[l].texels);
@@ -41,6 +51,7 @@ export function runCascades3d(sc, S, plan, W, H, { frames = plan.frames, cacheIn
       next = cur;
     }
     cache = cacheOf(ctx, buf0, flags[0]);
+    if (plan.jit) { cache.plan = ph.plan; cache.depth = ph.depth; }
     ctx.cachePrev = cache;
     if (plan.stride) {
       E = screenPass(ctx, G, W, H, buf1, flags[1], f);

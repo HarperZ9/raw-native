@@ -3,7 +3,7 @@
 // binding 0 (params) and 1 (scene: BVH nodes, then 8 vec4 a triangle from triOff: p0, p1, p2, n0, n1,
 // n2, albedo, emission). Shaders compute sin, cos and sqrt themselves: WGSL lets an adapter compute
 // them loosely (SwiftShader did, in the flatland path), which moves rays against the f64 reference.
-export const PARAMS_WORDS = 72 + 4 * 8 * 3; // header and 14 vec4, then dims, geo and ofs (8 vec4 each)
+export const PARAMS_WORDS = 80 + 4 * 8 * 3; // header and 16 vec4, then dims, geo and ofs (8 vec4 each)
 export const FRAME_WORDS = [32, 72]; // the camera, denoise and previous-camera words, rewritten every frame
 
 export const PARAMS = /* wgsl */ `
@@ -17,6 +17,8 @@ struct Params {
   dn: vec4u,    // ray seed, probe offsets ox | oy << 16, flags (1 history on, 2 planted probes, 4 irradiance out), tmax
   dnf: vec4f,   // luminance edge stop sl, planted edge x, planted value below it, above it
   pEye: vec4f, pF: vec4f, pS: vec4f, pU: vec4f, // previous frame's camera (pEye.w tan half fovy, pF.w aspect)
+  clo: vec4f,   // the grid origin of the cache this pass gathers from (lo, unless the grid moves: world.mjs jit)
+  wo: vec4u,    // mw (0 seg, 1 vis), sv (1: merges weigh texels by start visibility, in level buffers' w)
   dims: array<vec4u, 8>,
   geo: array<vec4f, 8>,
   ofs: array<vec4u, 8>,
@@ -146,14 +148,15 @@ fn probePos(l: u32, idx: u32) -> vec3f {
   return P.lo.xyz + vec3f(f32(x), f32(y), f32(z)) * P.geo[l].x;
 }
 struct Nb { idx: u32, w: f32, pos: vec3f }
-fn neighbour(l: u32, p: vec3f, c: u32) -> Nb {
+fn neighbourLo(l: u32, p: vec3f, c: u32, lo: vec3f) -> Nb {
   let n = P.dims[l]; let h = P.geo[l].x; let nf = vec3f(f32(n.x), f32(n.y), f32(n.z));
-  let g = clamp((p - P.lo.xyz) / h, vec3f(0.0), nf - 1.0);
+  let g = clamp((p - lo) / h, vec3f(0.0), nf - 1.0);
   let b = min(floor(g), nf - 2.0); let fr = g - b;
   let o = vec3f(f32(c & 1u), f32((c >> 1u) & 1u), f32((c >> 2u) & 1u));
   let q = b + o; let w3 = select(1.0 - fr, fr, o > vec3f(0.5));
-  return Nb(u32((q.z * nf.y + q.y) * nf.x + q.x), w3.x * w3.y * w3.z, P.lo.xyz + q * h);
+  return Nb(u32((q.z * nf.y + q.y) * nf.x + q.x), w3.x * w3.y * w3.z, lo + q * h);
 }
+fn neighbour(l: u32, p: vec3f, c: u32) -> Nb { return neighbourLo(l, p, c, P.lo.xyz); }
 fn cosineDir(n: vec3f, i: u32, j: u32, m: u32, h1: f32, h2: f32) -> vec3f {
   let a = 2.0 * (f32(i) + h1) / f32(m) - 1.0; let b = 2.0 * (f32(j) + h2) / f32(m) - 1.0;
   var r = 0.0; var phi = 0.0;
@@ -172,17 +175,27 @@ fn pixelDir(x: u32, y: u32) -> vec3f {
 fn jitter(p: u32, k: u32) -> vec2f { let h = hash32(p * 0x9e3779b9u + k); let g = hash32(h); return vec2f(f32(h) / 4294967296.0, f32(g) / 4294967296.0); }
 `;
 
-// The cache gather (cascades3d.mjs gatherCache), for passes that bind cache and depth.
+// The cache gather (cascades3d.mjs gatherCache), for passes that bind cache and depth. The cache's
+// grid starts at P.clo; depth holds that grid's moments.
 export const GATHER = /* wgsl */ `
+fn chebVis(q0: u32, qp: vec3f, at: vec3f) -> f32 { // world.mjs chebVis
+  let v = at - qp; let dist = lenR(v); let h0 = P.lo.w;
+  if (dist <= 0.0) { return 1.0; }
+  let t = depth[q0 * P.depthTexels + texelOf(v / dist, P.cd)]; let mu = t.x;
+  if (dist <= mu || mu >= 0.999 * P.sunE.w) { return 1.0; }
+  let va = max(t.y - mu * mu, 1e-4 * h0 * h0);
+  var vis = va / (va + (dist - mu) * (dist - mu)); vis = vis * vis * vis;
+  return select(vis, 0.0, vis < 0.05);
+}
 fn cacheE(q: u32, n: vec3f) -> vec3f {
   return max(vec3f(0.0), cache[4u * q].xyz + cache[4u * q + 1u].xyz * n.x + cache[4u * q + 2u].xyz * n.y + cache[4u * q + 3u].xyz * n.z);
 }
 fn gatherCache(x: Surf) -> vec3f {
   var E = vec3f(0.0); var El = vec3f(0.0); var Ef = vec3f(0.0); var Ea = vec3f(0.0);
   var ws = 0.0; var wl = 0.0; var wf = 0.0; var wa = 0.0;
-  let h0 = P.lo.w; let at = x.p + x.ng * (0.25 * h0); let nt = P.depthTexels;
+  let h0 = P.lo.w; let at = x.p + x.ng * (0.25 * h0);
   for (var c = 0u; c < 8u; c++) {
-    let q = neighbour(0u, x.p, c);
+    let q = neighbourLo(0u, x.p, c, P.clo.xyz);
     if (q.w <= 0.0) { continue; }
     let e = cacheE(q.idx, x.n);
     Ea += q.w * e; wa += q.w;
@@ -190,13 +203,7 @@ fn gatherCache(x: Surf) -> vec3f {
     Ef += q.w * e; wf += q.w;
     if (dot(q.pos - x.p, x.ng) <= 0.0) { continue; }
     El += q.w * e; wl += q.w;
-    let v = at - q.pos; let dist = lenR(v);
-    var vis = 1.0;
-    if (dist > 0.0) {
-      let t = depth[q.idx * nt + texelOf(v / dist, P.cd)]; let mu = t.x; let va = max(t.y - mu * mu, 1e-4 * h0 * h0);
-      if (dist > mu) { vis = va / (va + (dist - mu) * (dist - mu)); vis = vis * vis * vis; if (vis < 0.05) { vis = 0.0; } }
-    }
-    let w = q.w * vis;
+    let w = q.w * chebVis(q.idx, q.pos, at);
     if (w > 0.0) { E += w * e; ws += w; }
   }
   if (ws > 0.0) { return E / ws; }
@@ -210,5 +217,33 @@ fn surfaceRadiance(x: Surf, d: vec3f, useCache: bool) -> vec3f {
   var E = P.sunE.xyz * sunScale(x);
   if (useCache) { E += gatherCache(x); }
   return em + albedo(x.slot) / PI * E;
+}
+`;
+
+// Level 1's merged radiance at a probe (bilinear in the face), and the level-0 probe under a level-l
+// probe; for passes that bind level 1 as `next`.
+export const LOOKUP = /* wgsl */ `
+fn levelZeroIndex(l: u32, idx: u32) -> i32 { // world.mjs levelZeroIndex
+  let n = P.dims[l]; let n0 = P.dims[0]; let s = 1u << l;
+  let x = (idx % n.x) * s; let y = ((idx / n.x) % n.y) * s; let z = (idx / (n.x * n.y)) * s;
+  if (x >= n0.x || y >= n0.y || z >= n0.z) { return -1; }
+  return i32((z * n0.y + y) * n0.x + x);
+}
+// Level 1's merged radiance at probe q, bilinear in the face; w: the start visibility (1 without sv),
+// which also weighs the bilinear taps (cascades3d.mjs lookup).
+fn lookup(q: u32, d: vec3f) -> vec4f {
+  let c = u32(P.geo[1].y); let tex = P.ofs[1].z; let F = faceOf(d); let cf = f32(c); let sv = P.wo.y == 1u;
+  if (c == 1u) { let e = next[q * tex + F.f]; return vec4f(e.xyz, select(1.0, e.w, sv)); }
+  let u = clamp((F.s + 1.0) / 2.0 * cf - 0.5, 0.0, cf - 1.0); let v = clamp((F.t + 1.0) / 2.0 * cf - 0.5, 0.0, cf - 1.0);
+  let i0 = min(c - 2u, u32(floor(u))); let j0 = min(c - 2u, u32(floor(v))); let fu = u - f32(i0); let fv = v - f32(j0);
+  let b = q * tex + F.f * c * c + j0 * c + i0;
+  var out = vec3f(0.0); var ov = vec3f(0.0); var wv = 0.0;
+  for (var t = 0u; t < 4u; t++) {
+    let e = next[b + (t & 1u) + (t >> 1u) * c];
+    let w = select(1.0 - fu, fu, (t & 1u) == 1u) * select(1.0 - fv, fv, (t >> 1u) == 1u);
+    out += w * e.xyz; ov += w * e.w * e.xyz; wv += w * e.w;
+  }
+  if (!sv) { return vec4f(out, 1.0); }
+  return select(vec4f(out, 0.0), vec4f(ov / wv, wv), wv > 0.0);
 }
 `;

@@ -75,13 +75,24 @@ export function jitter(p, k) {
 // screen probes every k pixels with m x m cosine directions, merged into level 1. fix: "none", "probe"
 // or "full" (cascades3d.mjs).
 export function planCascades3d(bounds, { h0 = 0.5, c0 = 1, r0 = 2, f = 2, levels = 0, fix = "probe", ov = 1, stride = 4, m = 8, bounces = 8, cd = 4,
-  tf = 0, tmax = 32, sf = 0, sl = 0, move = null } = {}) {
+  tf = 0, tmax = 32, sf = 0, sl = 0, move = null, c1 = 0, mw = "seg", sv = 0, jit = 0, jl = 1, go = null } = {}) {
+  // c1 (0 = off): level 1's face side, c0 times a power of two above c0; levels above keep at least
+  // c1, so a parent texel splits into (c_i+1 / c_i)^2 children. mw: how screen probes weigh level 1's
+  // neighbours ("seg" the segment test, "vis" depth-moment visibility); sv 1 weighs every merge by
+  // the start visibility of the neighbour's texels (world.mjs).
+  // go: a fixed offset of the whole grid (metres), for testing how results depend on its placement.
+  // jit K > 0: K phases of a world-grid offset of up to h0 2^jl a frame (world.mjs phasePlan).
+  if (c1 && !(c1 > c0 && Number.isInteger(Math.log2(c1 / c0)))) throw new Error(`c1 ${c1}: c0 times a power of two above c0`);
+  if (!["seg", "vis"].includes(mw)) throw new Error(`mw ${mw}`);
+  if (jit && (jit % 2 || !tf)) throw new Error("jit needs an even phase count and temporal accumulation (tf)");
   // The grid starts half a spacing (plus an odd fraction) below the bounds: probes then never sit on a
-  // box's face or on the diagonal of a face's two triangles, where f32 and f64 ray tests disagree.
-  const lo = bounds.lo.map((v, k) => v - h0 * (0.5 + [0.0137, 0.0291, 0.0419][k])), ext = bounds.hi.map((v, k) => v - lo[k]);
+  // box's face or on the diagonal of a face's two triangles, where f32 and f64 ray tests disagree. With
+  // jit it starts one jitter span lower, so every phase's grid still covers the bounds.
+  const hj = jit ? h0 * 2 ** jl : 0;
+  const lo = bounds.lo.map((v, k) => v - h0 * (0.5 + [0.0137, 0.0291, 0.0419][k]) - hj + (go ? go[k] : 0)), ext = bounds.hi.map((v, k) => v - lo[k]);
   const diag = Math.hypot(...ext), T = (i) => r0 * h0 * (f ** i - 1) / (f - 1), L = [];
   for (let i = 0; ; i++) {
-    const h = h0 * 2 ** i, c = c0 * 2 ** i, n = ext.map((e) => Math.ceil(e / h) + 1);
+    const h = h0 * 2 ** i, c = i && c1 ? Math.max(c0 * 2 ** i, c1) : c0 * 2 ** i, n = ext.map((e) => Math.ceil(e / h) + 1);
     L.push({ i, h, c, n, probes: n[0] * n[1] * n[2], texels: 6 * c * c, T0: T(i), T1: T(i + 1) });
     if ((levels && L.length === levels) || (!levels && (T(i + 1) >= diag || L.length === 8))) break;
   }
@@ -95,7 +106,7 @@ export function planCascades3d(bounds, { h0 = 0.5, c0 = 1, r0 = 2, f = 2, levels
   // history) after the warm-up; sf a-trous passes over the screen probes, sl their luminance edge stop.
   const warm = stride ? Math.max(1, bounces - 1) : bounces, frames = warm + (stride ? tf : 0);
   return { lo, levels: L, fix, ov, stride, m, bounces, frames, warm, tf: stride ? tf : 0, tmax, sf: stride ? sf : 0, sl, move,
-    h0, c0, r0, f, cd, dmax: 2 * Math.sqrt(3) * h0, omega: L.map((l) => omegaTable(l.c)) };
+    h0, c0, r0, f, cd, dmax: 2 * Math.sqrt(3) * h0, omega: L.map((l) => omegaTable(l.c)), c1, mw, sv, jit: stride ? jit : 0, jl, hj };
 }
 // The 8 neighbours of point p on level l: { idx, w } with trilinear weights (clamped to the grid).
 export function neighbours(plan, l, p) {

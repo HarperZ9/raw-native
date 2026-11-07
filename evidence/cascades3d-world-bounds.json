@@ -1,0 +1,54 @@
+{
+  "what": "World-level blotch error of the 3D radiance cascades (web/shaders/cascades3d): the 50 to 150 px blotches that the probe denoise of evidence/cascades3d-denoise-rtx4090.json left in place. Four plan switches, each off by default, tested one at a time against the re-measured baseline and against the denoise of the third round",
+  "written": "2026-11-07, after the CPU and WGSL code were written and before any GPU run, measurement or parity run. Before this file, the CPU reference ran only at 16 x 10 px on the synthetic closed-room scene (node unit tests and a diagnosis, below)",
+  "pre_run_diagnosis": {
+    "what": "While writing the jit unit test, the closed-room check failed. The CPU reference at 16 x 10 px, leak-closed-B, fix probe, stride 4, m 3, 1 bounce, with the whole grid moved to four other placements (the offsets of jit 4) read room B at 6.7%, 22.7%, 5.2% and 2.9% of the room A view's mean, against 0.07% at the shipped placement. So the round-1 closed-room pass (0.09%) depends on where the grid happens to sit against the 4 cm wall. Most of it came through the screen probes (18.9 of the 22.7 points), the rest through the cache gather's fallback. Cause found: level i's entry for direction d traces from q + d T_i, so it skips the first T_i of its ray; a probe 0.2 m on the dark side of the wall holds, for directions toward the wall, the light of the far side, and the segment test (probe to probe) does not see that. This motivated option b2 (sv). With sv the same four placements read 0.02%, 2.35%, 0.09% and 0.85%",
+    "status": "exploratory, 16 x 10 px CPU; the GPU check at 960 x 540 below is the test"
+  },
+  "baselines": {
+    "B0": "round-1 shipped setting: h0 0.5, c0 1, r0 2, f 2, fix probe, stride 8, m 6, bounces 8, static flags. Round 3: rel. RMSE 0.104 (0.097 to 0.111), wall mottle 0.040 (0.037 to 0.045), GI 3.6 to 4.0 ms",
+    "T": "B0 plus temporal accumulation tf 32 (round 3: 0.095, wall mottle 0.036)",
+    "DN": "B0 plus tf 32, a-trous sf 2 with sl 0.5 (round 3: 0.094, wall mottle 0.033)",
+    "remeasure": "B0, T and DN are re-measured on this build, so every comparison shares one machine state. The GPU is shared with training work; timing runs three times for B0 and for any candidate default."
+  },
+  "options": {
+    "a_c1": {
+      "change": "c1 4: level 1 gets 96 directions (face side 4) instead of 24; level 2 keeps face side 4 (its children are the same texels); above that unchanged",
+      "comparator": "B0",
+      "prediction": "level 1 is the costliest level pass (0.96 ms of 2.2 ms in round 3) and its texel count goes up 4 times, so GI rises to about 6.5 to 7.5 ms and fails the time bound; wall mottle falls 5 to 20% if part of the blotch is angular"
+    },
+    "b_mw_vis": {
+      "change": "mw vis: a screen probe weighs level 1's eight neighbours by the Chebyshev depth-moment visibility of the surface point from the level-0 probe at the same place (as the cache gather does), instead of the on/off segment test",
+      "comparator": "B0",
+      "prediction": "null: wall mottle within 10% of B0. On walls and columns the segment test rarely changes from probe to probe, so on/off switching is not the blotch source. Cost under 0.1 ms (no rays; 8 depth reads a ray on the merge path, and SVIS skips its 8 segment rays)"
+    },
+    "b2_sv": {
+      "change": "sv 1: start visibility in every merge (world levels and screen probes). Each level entry carries the share of 4 sub-texel rays that cross [0, T_i] unblocked, traced once for static geometry; merges weigh a neighbour's texels by it",
+      "comparator": "B0",
+      "prediction": "closed room under 1% at every placement below; wall mottle falls 10 to 30% if the skipped segments near columns and wall junctions are a blotch source, else within 10%; RMSE at or below B0; GI within 0.3 ms of B0 (one more read a merge); setup about 1 ms once"
+    },
+    "c_jit": {
+      "change": "jit 8 with tf 32: the whole world grid moves by one of 8 offsets a frame (Halton 3, 5, 2 times 1 m, the level-1 spacing), and the per-pixel temporal accumulation averages the 8 trilinear patterns. Depth moments, probe flags (and sv) belong to a phase and are traced on the phase's first frame, then reused (static geometry). Tested alone and with sv",
+      "comparator": "T (and DN for the combination with a-trous)",
+      "prediction": "jit alone fails the closed-room bound at some phase (the diagnosis above); jit with sv: wall mottle at most 0.75 of T's, RMSE at most T's; GI within 0.3 ms of T in steady state; each of the first 8 frames pays one depth pass (about 7 ms) and the flags once; memory about 80 MB a phase"
+    }
+  },
+  "metrics": {
+    "error": "pt-error's relative RMSE of luminance over pixels both cover, with the 95% 32 x 32 tile bootstrap (tests/web/cascades3d_metrics.py), raw-hall nave 1920 x 1080 against the 8-bounce path trace (1024 spp, two seeds)",
+    "mottle": "tests/web/cascades3d_mottle.py unchanged: wall and column pixels, band-pass sigma 4 to 32 px, RMS, 64 x 64 tile bootstrap; also its low-pass and probe band, and floor numbers. Its planted 5% sinusoid must read 0.0354 within 15% and the second reference seed at most a third of B0's mottle, as in round 3",
+    "timing": "GPU timestamps around the GI passes, median and 5th to 95th percentile of 50 frames, after every phase is traced"
+  },
+  "checks": {
+    "L1_leak_shipped_placement": "960 x 540 against 4096 spp references, as round 1: closed room (leak-closed-B) room B frame mean over the room A view's reference mean under 1%; door-lit room B (leak-door-B) room-B relative error not above the no-GI baseline's (1.66), and its light ratio reported (round 1: 0.53)",
+    "L2_leak_placements": "the closed room at four more grid placements (go = [-2/3, -4/5, -1/2], [-1/3, -3/5, -3/4], [-8/9, -2/5, -1/4], [-5/9, -1/5, -7/8] m), each under 1%, for every setting that would ship as a default. Reported for B0 too",
+    "E1_planted_edge": "for a setting with temporal accumulation: tests/web/cascades3d_mottle.py --edge on the planted probe step; widening at most 8 px over the undenoised step (round 3: 7.4 px), as round 3's s1",
+    "P1_parity": "GPU f32 against the float64 CPU reference on the 5 new cases of evidence/shaders-cascades3d-parity-bounds.json and the 10 old ones, bound 2e-3 a case (unchanged)"
+  },
+  "decisions": {
+    "target": "an option meets its target when its wall mottle is at most 0.85 of its comparator's, its RMSE at most the comparator's upper 95% limit (B0 0.111, T 0.101), its 1080p GI median under 6.0 ms and L1 holds",
+    "kill": "an option whose wall mottle falls less than 10% below its comparator's is a null for the blotch and stays off by default for the blotch; it stays in the evidence",
+    "sv_default": "sv becomes the default if it passes L1 and L2 at all five placements, keeps RMSE at most 0.111 and the 1080p median under 6 ms, whatever its mottle (it fixes a leak)",
+    "denoise_default": "temporal and a-trous turn on by default only if a combination with the denoise reaches wall mottle at most 0.0303 (25% under B0's 0.0404, the original line), with RMSE at most 0.111, E1, L1, L2 and the 6 ms budget"
+  },
+  "budget": "1080p GI median under 6 ms; GPU memory under 6 GB (the GPU is shared); at most 3 CPU workers at below-normal priority; SwiftShader parity runs in CI only"
+}

@@ -19,8 +19,9 @@
 // (planCascades3d T1x). "full": every entry traces one ray to each neighbour's interval start (the
 // flatland path's fix, 8 rays an entry).
 import { closestHit, occluded } from "./bvh.mjs";
-import { sub, add, mul, dot, cross, norm, texelDir, texelOf, faceOf, cosineDir, jitter, neighbours, probePos } from "./math3d.mjs";
+import { sub, add, mul, dot, cross, norm, texelDir, faceOf, cosineDir, jitter, neighbours, probePos } from "./math3d.mjs";
 import { cameraBasis, pixelDir } from "./scene3d.mjs";
+import { chebVis, levelOneWeights, mergeWeighted, usesSegment } from "./world.mjs";
 
 const AXES = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
 const tri3 = (A, s, k) => [A[3 * s + 0 + 3 * k], A[3 * s + 1 + 3 * k], A[3 * s + 2 + 3 * k]];
@@ -51,9 +52,10 @@ export function sunScale(S, sc, x) {
 // the point, cubed, and dropped under 0.05. The test point is lifted off the surface by a quarter
 // spacing (a normal bias, as in irradiance-probe practice). If no probe counts, the lit-side probes
 // are used without the depth test, then the plain trilinear mix of probes outside geometry, then of
-// all eight (a surface hidden inside geometry, seen only by probes inside it).
+// all eight (a surface hidden inside geometry, seen only by probes inside it). A cache made on a moved
+// grid (world.mjs, jit) carries that grid's plan and depth moments.
 export function gatherCache(ctx, cache, x) {
-  const { plan, depth } = ctx, nb = neighbours(plan, 0, x.p), E = [0, 0, 0], Ef = [0, 0, 0], El = [0, 0, 0], cd = plan.cd, nt = 6 * cd * cd;
+  const plan = cache.plan || ctx.plan, depth = cache.depth || ctx.depth, nb = neighbours(plan, 0, x.p), E = [0, 0, 0], Ef = [0, 0, 0], El = [0, 0, 0];
   let ws = 0, wf = 0, wl = 0, wa = 0;
   const Ea = [0, 0, 0];
   const at = add(x.p, mul(x.ng, 0.25 * plan.h0));
@@ -65,16 +67,10 @@ export function gatherCache(ctx, cache, x) {
     if (cache[o + 3] > 0) continue;
     for (let c = 0; c < 3; c++) Ef[c] += q.w * e[c];
     wf += q.w;
-    const v = sub(at, q.pos), dist = Math.hypot(...v);
     if (dot(sub(q.pos, x.p), x.ng) <= 0) continue; // the probe is behind the surface's plane
     for (let c = 0; c < 3; c++) El[c] += q.w * e[c];
     wl += q.w;
-    let vis = 1;
-    if (dist > 0) {
-      const t = 2 * (q.idx * nt + texelOf(mul(v, 1 / dist), cd)), mu = depth[t], var_ = Math.max(depth[t + 1] - mu * mu, 1e-4 * plan.h0 * plan.h0);
-      if (dist > mu) { vis = var_ / (var_ + (dist - mu) ** 2); vis = vis * vis * vis; if (vis < 0.05) vis = 0; }
-    }
-    const w = q.w * vis;
+    const w = q.w * chebVis(plan, depth, q.idx, q.pos, at);
     if (w > 0) { for (let c = 0; c < 3; c++) E[c] += w * e[c]; ws += w; }
   }
   if (ws > 0) return mul(E, 1 / ws);
@@ -94,6 +90,21 @@ export function depthPass(S, plan) {
         m1 += t / 4; m2 += t * t / 4;
       }
       out[2 * (q * nt + k)] = m1; out[2 * (q * nt + k) + 1] = m2;
+    }
+  }
+  return out;
+}
+// Start visibility of level l (world.mjs sv): for every probe and texel, the share of its 4 sub-texel
+// rays that cross [0, T_l] without a hit. Static geometry: traced once a grid, like the depth moments.
+export function startPass(S, plan, l) {
+  const L = plan.levels[l], out = new Float64Array(L.probes * L.texels).fill(1);
+  if (!(L.T0 > 0)) return out;
+  for (let q = 0; q < L.probes; q++) {
+    const p = probePos(plan, l, q);
+    for (let k = 0; k < L.texels; k++) {
+      let n = 0;
+      for (let r = 0; r < 4; r++) if (!closestHit(S, p, subTexelDir(k, L.c, r & 1, r >> 1), 0, L.T0)) n++;
+      out[q * L.texels + k] = n / 4;
     }
   }
   return out;
@@ -130,30 +141,37 @@ export function probeFlags(ctx, l) {
 }
 function triEdges(S, s) { const a = tri3(S.tris, 3 * s, 0); return [sub(tri3(S.tris, 3 * s, 1), a), sub(tri3(S.tris, 3 * s, 2), a)]; }
 
-// The next level's merged radiance at probe q for parent texel k (face side c): its 4 children,
-// weighted by solid angle.
+// The next level's merged radiance at probe q for parent texel k (face side c): its s x s children
+// (s = the next level's face side over c: 2, or 1 and 4 around a raised c1), weighted by solid angle.
+// With start visibility (ctx.sv) the children are weighed by it too, and the 4th element is their
+// solid-angle-weighted visibility (the merge's weight for this neighbour).
 export function children(ctx, l1, buf, q, k, c) {
-  const L = ctx.plan.levels[l1], cc = 2 * c, f = Math.floor(k / (c * c)), r = k - f * c * c, j = Math.floor(r / c), i = r - j * c;
-  const om = ctx.plan.omega[l1], out = [0, 0, 0];
-  let ws = 0;
-  for (let b = 0; b < 2; b++) for (let a = 0; a < 2; a++) {
-    const ti = 2 * i + a, tj = 2 * j + b, w = om[tj * cc + ti], o = 3 * (q * L.texels + f * cc * cc + tj * cc + ti);
+  const L = ctx.plan.levels[l1], cc = L.c, sp = cc / c, f = Math.floor(k / (c * c)), r = k - f * c * c, j = Math.floor(r / c), i = r - j * c;
+  const om = ctx.plan.omega[l1], sv = ctx.sv ? ctx.sv[l1] : null, out = [0, 0, 0], ov = [0, 0, 0];
+  let ws = 0, wv = 0;
+  for (let b = 0; b < sp; b++) for (let a = 0; a < sp; a++) {
+    const ti = sp * i + a, tj = sp * j + b, w = om[tj * cc + ti], e = q * L.texels + f * cc * cc + tj * cc + ti, o = 3 * e;
     out[0] += w * buf[o]; out[1] += w * buf[o + 1]; out[2] += w * buf[o + 2]; ws += w;
+    if (sv) { const x = w * sv[e]; ov[0] += x * buf[o]; ov[1] += x * buf[o + 1]; ov[2] += x * buf[o + 2]; wv += x; }
   }
-  return mul(out, 1 / ws);
+  if (!sv) return mul(out, 1 / ws);
+  return wv > 0 ? [...mul(ov, 1 / wv), wv / ws] : [...mul(out, 1 / ws), 0];
 }
 // Level l1's merged radiance at probe q in direction d: bilinear over the face's texel centres.
 export function lookup(ctx, l1, buf, q, d) {
   const L = ctx.plan.levels[l1], c = L.c, { f, s, t } = faceOf(d);
   const u = Math.min(c - 1, Math.max(0, (s + 1) / 2 * c - 0.5)), v = Math.min(c - 1, Math.max(0, (t + 1) / 2 * c - 0.5));
-  const i0 = Math.min(c - 2, Math.floor(u)), j0 = Math.min(c - 2, Math.floor(v)), out = [0, 0, 0];
-  if (c === 1) { const o = 3 * (q * L.texels + f); return [buf[o], buf[o + 1], buf[o + 2]]; }
-  const fu = u - i0, fv = v - j0;
+  const i0 = Math.min(c - 2, Math.floor(u)), j0 = Math.min(c - 2, Math.floor(v)), out = [0, 0, 0], sv = ctx.sv ? ctx.sv[l1] : null;
+  if (c === 1) { const e = q * L.texels + f, o = 3 * e; return sv ? [buf[o], buf[o + 1], buf[o + 2], sv[e]] : [buf[o], buf[o + 1], buf[o + 2]]; }
+  const fu = u - i0, fv = v - j0, ov = [0, 0, 0];
+  let wv = 0;
   for (const [i, j, w] of [[i0, j0, (1 - fu) * (1 - fv)], [i0 + 1, j0, fu * (1 - fv)], [i0, j0 + 1, (1 - fu) * fv], [i0 + 1, j0 + 1, fu * fv]]) {
-    const o = 3 * (q * L.texels + f * c * c + j * c + i);
+    const e = q * L.texels + f * c * c + j * c + i, o = 3 * e;
     out[0] += w * buf[o]; out[1] += w * buf[o + 1]; out[2] += w * buf[o + 2];
+    if (sv) { const x = w * sv[e]; ov[0] += x * buf[o]; ov[1] += x * buf[o + 1]; ov[2] += x * buf[o + 2]; wv += x; }
   }
-  return out;
+  if (!sv) return out;
+  return wv > 0 ? [...mul(ov, 1 / wv), wv] : [...out, 0];
 }
 
 // One entry of level l: probe idx, texel k. `next` is level l+1's merged buffer, flags this level's.
@@ -183,8 +201,9 @@ function mergeNext(ctx, l1, p, bits, nextFlags, value) {
     for (let ch = 0; ch < 3; ch++) all[ch] += q.w * v[ch];
     wa += q.w;
     if (ctx.plan.fix === "probe" && (!(bits & (1 << c)) || (nextFlags[q.idx] & 256))) return;
-    for (let ch = 0; ch < 3; ch++) out[ch] += q.w * v[ch];
-    ws += q.w;
+    const w = q.w * (v.length > 3 ? v[3] : 1); // with sv, the neighbour's start visibility
+    for (let ch = 0; ch < 3; ch++) out[ch] += w * v[ch];
+    ws += w;
   });
   return ws > 0 ? mul(out, 1 / ws) : mul(all, 1 / Math.max(wa, 1e-30));
 }
@@ -222,8 +241,9 @@ export function gbuffer(S, sc, W, H) {
 export function screenProbe(ctx, x, pid, buf1, flags1) {
   const { plan } = ctx, m = plan.m, T1 = plan.levels[0].T1, T1x = plan.levels[0].T1x, E = [0, 0, 0], one = plan.levels.length > 1;
   const up = offset(x, x.ng);
-  let bits = 0;
-  if (one && plan.fix === "probe") neighbours(plan, 1, x.p).forEach((q, c) => { const e = sub(q.pos, up), len = Math.hypot(...e); if (len === 0 || !occluded(ctx.S, up, mul(e, 1 / len), len)) bits |= 1 << c; });
+  let bits = 0, wts = null;
+  if (one && plan.fix === "probe" && usesSegment(plan.mw)) neighbours(plan, 1, x.p).forEach((q, c) => { const e = sub(q.pos, up), len = Math.hypot(...e); if (len === 0 || !occluded(ctx.S, up, mul(e, 1 / len), len)) bits |= 1 << c; });
+  if (one && plan.fix === "probe" && plan.mw !== "seg") wts = levelOneWeights(ctx, x, bits, flags1);
   for (let j = 0; j < m; j++) for (let i = 0; i < m; i++) {
     const [h1, h2] = jitter(pid, j * m + i), d = cosineDir(x.n, i, j, m, h1, h2), o = offset(x, d);
     let v;
@@ -237,7 +257,8 @@ export function screenProbe(ctx, x, pid, buf1, flags1) {
       }
     } else {
       v = traced(ctx, o, d, 0, one ? T1x : Infinity);
-      if (!v) v = one ? mergeNext(ctx, 1, x.p, bits, flags1, (q) => lookup(ctx, 1, buf1, q, d)) : ctx.sc.sky;
+      const look = (q) => lookup(ctx, 1, buf1, q, d);
+      if (!v) v = !one ? ctx.sc.sky : wts ? mergeWeighted(ctx, x.p, wts, look) : mergeNext(ctx, 1, x.p, bits, flags1, look);
     }
     for (let c = 0; c < 3; c++) E[c] += v[c];
   }

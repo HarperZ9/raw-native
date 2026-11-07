@@ -7,13 +7,15 @@
 // (as dynamic geometry would need), the levels top-down, the cache, the screen probes and the final.
 import { PARAMS_WORDS, FRAME_WORDS } from "./wgsl3d-core.mjs";
 import { GBUF, FLAGS, DEPTH, LEVEL, CACHE, SVIS, SRAYS, SSUM, FINAL, BASELINE } from "./wgsl3d-passes.mjs";
+import { START } from "./wgsl3d-world.mjs";
 import { ATROUS, ACCUM } from "./wgsl3d-denoise.mjs";
 import { cameraBasis } from "./scene3d.mjs";
 import { probeGrid } from "./run3d.mjs";
 import { frameSeed, probeOffsets, cameraAt } from "./denoise3d.mjs";
+import { phasePlan } from "./world.mjs";
 
-const WGS = { gbuf: 256, flags: 256, depth: 256, level: 256, cache: 256, svis: 256, srays: 64, ssum: 256, atrous: 256, final: 256, accum: 256, baseline: 64 };
-const CODE = { gbuf: GBUF, flags: FLAGS, depth: DEPTH, level: LEVEL, cache: CACHE, svis: SVIS, srays: SRAYS, ssum: SSUM, atrous: ATROUS, final: FINAL, accum: ACCUM, baseline: BASELINE };
+const WGS = { gbuf: 256, flags: 256, depth: 256, start: 256, level: 256, cache: 256, svis: 256, srays: 64, ssum: 256, atrous: 256, final: 256, accum: 256, baseline: 64 };
+const CODE = { gbuf: GBUF, flags: FLAGS, depth: DEPTH, start: START, level: LEVEL, cache: CACHE, svis: SVIS, srays: SRAYS, ssum: SSUM, atrous: ATROUS, final: FINAL, accum: ACCUM, baseline: BASELINE };
 
 function grid2(total, wg) { const groups = Math.max(1, Math.ceil(total / wg)), gx = Math.min(65535, groups); return { gx, gy: Math.ceil(groups / gx), gridX: gx * wg }; }
 
@@ -43,10 +45,12 @@ export function frameWords(sc, plan, W, H, f, planted = null) {
   return new Uint8Array(buf);
 }
 
+// x.clo: the grid origin of the cache the pass gathers from (the previous phase's for the levels
+// under jit); plan.lo otherwise.
 export function packParams(sc, plan, W, H, triOff, x = {}) {
-  const L = plan.levels, omOff = [], flagOff = [];
-  let om = 0, fl = 0;
-  for (const l of L) { omOff.push(om); om += l.c * l.c; flagOff.push(fl); fl += l.probes; }
+  const L = plan.levels, omOff = [], flagOff = [], svOff = [];
+  let om = 0, fl = 0, sv = 0;
+  for (const l of L) { omOff.push(om); om += l.c * l.c; flagOff.push(fl); fl += l.probes; svOff.push(sv); sv += l.probes * l.texels; }
   const words = PARAMS_WORDS + om, buf = new ArrayBuffer(4 * words), u = new Uint32Array(buf), f = new Float32Array(buf);
   const g = plan.stride ? probeGrid(W, H, plan.stride) : { pw: 0, ph: 0, off: 0 }, k = cameraBasis(sc.camera, W, H);
   const fix = { none: 0, probe: 1, full: 2 }[plan.fix];
@@ -55,13 +59,15 @@ export function packParams(sc, plan, W, H, triOff, x = {}) {
   f.set([...plan.lo, plan.h0, ...sc.sunDir, Math.max(...sc.sunE) > 0 ? 1 : 0, ...sc.sunE, plan.dmax, ...sc.sky, 0], 16);
   f.set([...k.eye, k.th, ...k.f, k.aspect, ...k.s, 0, ...k.u, 0], 32);
   new Uint8Array(buf).set(frameWords(sc, plan, W, H, 0, x.planted), 4 * FRAME_WORDS[0]);
+  f.set([...(x.clo || plan.lo), 0], 72);
+  u.set([{ seg: 0, vis: 1 }[plan.mw || "seg"], plan.sv ? 1 : 0, 0, 0], 76);
   L.forEach((l, i) => {
-    u.set([...l.n, l.probes], 72 + 4 * i);
-    f.set([l.h, l.c, fin(l.T0), fin(l.T1x)], 104 + 4 * i);
-    u.set([omOff[i], flagOff[i], l.texels, 0], 136 + 4 * i);
+    u.set([...l.n, l.probes], 80 + 4 * i);
+    f.set([l.h, l.c, fin(l.T0), fin(l.T1x)], 112 + 4 * i);
+    u.set([omOff[i], flagOff[i], l.texels, svOff[i]], 144 + 4 * i);
   });
   plan.omega.forEach((t, i) => f.set(t, PARAMS_WORDS + omOff[i]));
-  return { data: new Uint8Array(buf), flagWords: fl };
+  return { data: new Uint8Array(buf), flagWords: fl, svWords: sv };
 }
 
 export async function createGpuCascades3d(host, sc, S, plan, W, H, { cacheInit = null, staticFlags = false, planted = null } = {}) {
@@ -70,10 +76,13 @@ export async function createGpuCascades3d(host, sc, S, plan, W, H, { cacheInit =
   const pipes = {};
   for (const k of Object.keys(CODE)) pipes[k] = await host.compute(`rc3d.${k}`, CODE[k]);
   const sp = packScene(S), SC = mk(4 * sp.data.length, "rc3d scene", sp.data);
-  const params = (x) => { const p = packParams(sc, plan, W, H, sp.triOff, { ...x, planted }); return mk(p.data.byteLength, "rc3d params", p.data); };
-  const flagWords = packParams(sc, plan, W, H, sp.triOff).flagWords, nt = 6 * plan.cd * plan.cd, npx = W * H;
+  // K grid phases (world.mjs jit; one without), each with its own flags and depth moments.
+  const K = plan.jit || 1, PH = Array.from({ length: K }, (_, p) => phasePlan(plan, p));
+  const params = (x, pl) => { const p = packParams(sc, pl, W, H, sp.triOff, { ...x, planted }); return mk(p.data.byteLength, "rc3d params", p.data); };
+  const { flagWords, svWords } = packParams(sc, plan, W, H, sp.triOff), nt = 6 * plan.cd * plan.cd, npx = W * H;
   const T = plan.tf > 0, mv = !!plan.move, GA = mk(48 * npx, "rc3d gbuffer"), GB = mv ? mk(48 * npx, "rc3d gbuffer b") : GA, G = GA;
-  const FL = mk(4 * flagWords, "rc3d flags"), D = mk(8 * L[0].probes * nt, "rc3d depth");
+  const FLs = PH.map((_, p) => mk(4 * flagWords, `rc3d flags ${p}`)), Ds = PH.map((_, p) => mk(8 * L[0].probes * nt, `rc3d depth ${p}`));
+  const SVs = PH.map((_, p) => (plan.sv ? mk(4 * svWords, `rc3d start visibility ${p}`) : null));
   const LV = L.map((l, i) => mk(16 * l.probes * l.texels, `rc3d level ${i}`)), dummy = mk(16, "rc3d dummy");
   const cinit = new Float32Array(16 * L[0].probes);
   if (cacheInit) for (let q = 0; q < L[0].probes; q++) cinit.set([Math.PI * cacheInit[0], Math.PI * cacheInit[1], Math.PI * cacheInit[2]], 16 * q);
@@ -82,34 +91,38 @@ export async function createGpuCascades3d(host, sc, S, plan, W, H, { cacheInit =
   const BI = mk(4 * np, "rc3d screen bits"), R = mk(plan.stride ? 16 * np * plan.m * plan.m : 16, "rc3d screen rays");
   const OUT = mk(16 * npx, "rc3d out"), E2 = plan.sf ? mk(16 * np, "rc3d screen probes b") : null;
   const I = T ? mk(16 * npx, "rc3d irradiance") : null, HA = T ? mk(16 * npx, "rc3d history a") : null, HB = T ? mk(16 * npx, "rc3d history b") : null;
-  const step = (name, total, bufs, x = {}) => { const g = grid2(total, WGS[name]); return { name, pipe: pipes[name], bufs: [params({ ...x, total, gridX: g.gridX }), SC, ...bufs], gx: g.gx, gy: g.gy }; };
-  // One frame's steps reading cache `cp` and writing cache `cn`, on g-buffer Gc (Gp the previous
-  // frame's, the same buffer for a still camera) and history Hp into Hn.
-  function frameSteps(cp, cn, Gc, Gp, Hp, Hn) {
-    const out = [];
+  const step = (name, total, bufs, x = {}, pl = PH[0]) => { const g = grid2(total, WGS[name]); return { name, pipe: pipes[name], bufs: [params({ ...x, total, gridX: g.gridX }, pl), SC, ...bufs], gx: g.gx, gy: g.gy }; };
+  const flagSteps = (p) => [{ clear: FLs[p] }, ...L.map((l, i) => step("flags", 14 * l.probes, [FLs[p]], { level: i }, PH[p]))];
+  // One frame's steps in grid phase p, reading cache `cp` (made in phase p - 1) and writing cache
+  // `cn`, on g-buffer Gc (Gp the previous frame's, the same buffer for a still camera) and history
+  // Hp into Hn.
+  function frameSteps(cp, cn, Gc, Gp, Hp, Hn, p) {
+    const out = [], pl = PH[p], q = (p + K - 1) % K, FL = FLs[p], D = Ds[p];
     if (mv) out.push(step("gbuf", npx, [Gc]));
-    if (!staticFlags) { out.push({ clear: FL }); L.forEach((l, i) => out.push(step("flags", 14 * l.probes, [FL], { level: i }))); }
-    for (let i = L.length - 1; i >= 0; i--) out.push(step("level", L[i].probes * L[i].texels, [cp, D, FL, i + 1 < L.length ? LV[i + 1] : dummy, LV[i]], { level: i }));
-    out.push(step("cache", L[0].probes, [LV[0], FL, cn]));
+    if (!staticFlags) out.push(...flagSteps(p));
+    for (let i = L.length - 1; i >= 0; i--) out.push(step("level", L[i].probes * L[i].texels, [cp, Ds[q], FL, i + 1 < L.length ? LV[i + 1] : dummy, LV[i], SVs[p] || dummy], { level: i, clo: PH[q].lo }, pl));
+    out.push(step("cache", L[0].probes, [LV[0], FL, cn], {}, pl));
     if (plan.stride) {
-      out.push(step("svis", np, [FL, Gc, BI]));
-      out.push(step("srays", np * plan.m * plan.m, [cn, D, L.length > 1 ? LV[1] : dummy, Gc, BI, R]));
-      out.push(step("ssum", np, [BI, R, E, Gc]));
+      out.push(step("svis", np, [FL, Gc, BI], {}, pl));
+      out.push(step("srays", np * plan.m * plan.m, [cn, D, L.length > 1 ? LV[1] : dummy, Gc, BI, R], {}, pl));
+      out.push(step("ssum", np, [BI, R, E, Gc], {}, pl));
     }
     let Ef = E;
-    for (let p = 0; p < plan.sf; p++) { const Eo = Ef === E ? E2 : E; out.push(step("atrous", np, [Gc, Ef, Eo], { level: 1 << p })); Ef = Eo; }
-    out.push(step("final", npx, [cn, D, Gc, Ef, T ? I : OUT]));
-    if (T) out.push(step("accum", npx, [Gc, Gp, I, Hp, Hn, OUT]));
+    for (let a = 0; a < plan.sf; a++) { const Eo = Ef === E ? E2 : E; out.push(step("atrous", np, [Gc, Ef, Eo], { level: 1 << a }, pl)); Ef = Eo; }
+    out.push(step("final", npx, [cn, D, Gc, Ef, T ? I : OUT], {}, pl));
+    if (T) out.push(step("accum", npx, [Gc, Gp, I, Hp, Hn, OUT], {}, pl));
     return out;
   }
-  const frames = [frameSteps(CA, CB, GA, GB, HA, HB), frameSteps(CB, CA, GB, GA, HB, HA)];
-  const setup = [step("gbuf", npx, [G]), step("depth", L[0].probes * nt, [D])];
-  // Static geometry: the probe flags once, at setup, like the depth moments.
-  if (staticFlags) { setup.push({ clear: FL }); L.forEach((l, i) => setup.push(step("flags", 14 * l.probes, [FL], { level: i }))); }
+  // Frame f runs step set f % sets: cache parity f % 2 and phase f % K (K is even under jit).
+  const sets = Math.max(2, K), frames = Array.from({ length: sets }, (_, s) => (s % 2 ? frameSteps(CB, CA, GB, GA, HB, HA, s % K) : frameSteps(CA, CB, GA, GB, HA, HB, s % K)));
+  // A phase's depth moments (and, for static geometry, its flags) are traced on its first frame.
+  const startSteps = (p) => (plan.sv ? L.map((l, i) => step("start", l.probes * l.texels, [SVs[p]], { level: i }, PH[p])) : []);
+  const phaseSetup = (p) => [step("depth", L[0].probes * nt, [Ds[p]], {}, PH[p]), ...startSteps(p), ...(staticFlags ? flagSteps(p) : [])], built = new Set([0]);
+  const setup = [step("gbuf", npx, [G]), ...phaseSetup(0)];
   const canTime = dev.features.has("timestamp-query"), maxQ = 2 * Math.max(frames[0].length, setup.length, 2);
   const qs = canTime ? dev.createQuerySet({ type: "timestamp", count: maxQ }) : null;
   const qb = canTime ? dev.createBuffer({ size: 8 * maxQ, usage: 0x200 | 0x04, label: "rc3d timestamps" }) : null;
-  let parity = 0, frameNo = 0;
+  let frameNo = 0;
   // Before a frame: its camera and denoise words into every pass's params.
   function setFrame(steps) {
     const w = frameWords(sc, plan, W, H, frameNo++, planted);
@@ -136,19 +149,26 @@ export async function createGpuCascades3d(host, sc, S, plan, W, H, { cacheInit =
     return steps.map((s, i) => ({ name: s.name || "clear", ms: s.clear ? 0 : Number(v[2 * i + 1] - v[2 * i]) / 1e6 }));
   }
   const setupTimes = await submit(setup, true);
+  // The step set of the next frame, after tracing its phase's moments if this is the phase's first frame.
+  async function nextSet() {
+    const s = frameNo % sets, p = s % K;
+    if (!built.has(p)) { await submit(phaseSetup(p)); built.add(p); }
+    const steps = frames[s]; setFrame(steps); return steps;
+  }
   return {
     plan, bytes: owned.reduce((a, b) => a + b.size, 0), setupTimes,
-    async run(n = plan.frames) { for (let f = 0; f < n; f++) { setFrame(frames[parity]); await submit(frames[parity]); parity ^= 1; } },
+    async run(n = plan.frames) { for (let f = 0; f < n; f++) await submit(await nextSet()); },
     async read() { return new Float32Array(await readBuf(OUT, 16 * npx)); },
     async readParts() { // the frame's intermediate buffers, for debugging against the CPU
-      return { flags: new Uint32Array(await readBuf(FL, 4 * flagWords)), levels: await Promise.all(LV.map(async (b) => new Float32Array(await readBuf(b, b.size)))),
-        cache: new Float32Array(await readBuf(parity ? CB : CA, 64 * L[0].probes)), depth: new Float32Array(await readBuf(D, 8 * L[0].probes * nt)), G: new Float32Array(await readBuf(parity ? GA : GB, 48 * npx)) };
+      const p = ((frameNo + sets - 1) % sets) % K, odd = frameNo % 2; // the last frame's phase, and the cache and g-buffer it wrote
+      return { flags: new Uint32Array(await readBuf(FLs[p], 4 * flagWords)), levels: await Promise.all(LV.map(async (b) => new Float32Array(await readBuf(b, b.size)))),
+        cache: new Float32Array(await readBuf(odd ? CB : CA, 64 * L[0].probes)), depth: new Float32Array(await readBuf(Ds[p], 8 * L[0].probes * nt)), G: new Float32Array(await readBuf(odd ? GA : GB, 48 * npx)) };
     },
     // n timed frames: GI ms a frame (first pass start to last pass end) and the per-pass split.
     async time(n = 50) {
       const gi = [], passes = [];
       for (let f = 0; f < n; f++) {
-        const steps = frames[parity]; setFrame(steps); const enc = dev.createCommandEncoder(); record(enc, steps, true); parity ^= 1;
+        const steps = await nextSet(); const enc = dev.createCommandEncoder(); record(enc, steps, true);
         dev.queue.submit([enc.finish()]); await dev.queue.onSubmittedWorkDone();
         if (!qb) continue;
         const v = new BigUint64Array(await readBuf(qb, 16 * steps.length)), on = steps.map((s, i) => i).filter((i) => !steps[i].clear);
