@@ -45,5 +45,11 @@
     "also_seen": "every cg mode (cg 1 of round 5 included) returns no light where no probe is shown to see the surface; on the CPU white furnace at a moved grid (go g2) 10 of 96 pixels read up to 1.05% low, the same for cg 1, 2 and 3. Recorded as a limit of cg, not a new effect of cg 2",
     "kill_line_sd": "unchanged in substance: sd is a null if J with sd (or K against J with cg 2) does not move the raw-hall bias at least halfway from its value without sd toward zero, or raises the worst closed-room leak above 1%",
     "predictions": "unchanged"
+  },
+  "amendment_J2": {
+    "written": "2026-11-07, after K's leak runs (closed room 0.13% to 0.40% at g0 to g4; Kfix 0.000% to 0.24% at 9 grids) and the first raw-hall 1080p runs of K, J with cg 2 (J2), J (control) and J with sd, before any leak run of J2, its second and third timing runs and any 4K run",
+    "seen": "K reads RMSE 0.130 (0.121 to 0.139), bias -7.0%, 4.97 ms: sd darkens raw-hall (J with sd: 0.130, -6.9%), so K fails the error bound and sd meets its kill line in spirit (the bias moved from +1.4% to -6.9%, five times further from zero). J2 reads 0.082 (0.077 to 0.088), bias +1.3%, 5.05 ms; J in this session 0.083 (0.078 to 0.088), +1.4%, 6.30 ms",
+    "change": "J2 = J with cg 2 in place of cg 1 (jit 8, tf 32, sv 2, ft 1, cg 2 on B0), the successor of J that the brief names, becomes a default candidate under the unchanged pass line: closed room under 1% at g0 to g4, its fixed grids (B0 plus sv 2, ft 1, cg 2) under 1% at g0 to g4 and ph4 to ph7, RMSE at most 0.111, and three 1080p timing runs each with a median under 6 ms. If it passes, its switches become the default as written under decisions; a 4K run is reported",
+    "prediction": "J2 closed room within 0.1 percentage point of J's (0.12% to 0.40%), worst under 0.5%; its two further timing medians 4.8 to 5.4 ms"
   }
 }
