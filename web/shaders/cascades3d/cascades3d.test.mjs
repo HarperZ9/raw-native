@@ -47,7 +47,8 @@ test("scene files round-trip", () => {
 
 test("planted white furnace: started at the fixed point, every pixel stays at 1 / (1 - rho)", () => {
   const sc = buildScene3d("furnace"), S = prepare(sc, buildBvh(sc)), want = furnaceExact(sc.alb[0]);
-  for (const opts of [{ fix: "none", stride: 0 }, { fix: "probe", stride: 0 }, { fix: "probe", stride: 3, m: 4 }, { fix: "full", stride: 2, m: 3 }]) {
+  for (const opts of [{ fix: "none", stride: 0 }, { fix: "probe", stride: 0 }, { fix: "probe", stride: 3, m: 4 }, { fix: "full", stride: 2, m: 3 },
+    { fix: "probe", stride: 2, m: 3, tf: 3, sf: 2, sl: 0.5 }, { fix: "probe", stride: 3, m: 2, tf: 4, move: { d: [0.2, 0, 0.1], k: 2 } }]) {
     const plan = planCascades3d(bounds(sc), { h0: 0.5, c0: 1, r0: 2, f: 2, bounces: 3, ...opts }), out = runCascades3d(sc, S, plan, 12, 8, { cacheInit: sc.sky });
     let worst = 0;
     for (let p = 0; p < 96; p++) if (out.hit[p]) worst = Math.max(worst, Math.abs(out.radiance[3 * p] - want) / want);
@@ -63,4 +64,25 @@ test("closed room: with the probe fix, no light reaches room B in the CPU refere
   for (let i = 0; i < out.radiance.length; i++) { lum += out.radiance[i]; b += base.radiance[i]; }
   assert.equal(b, 0);
   assert.ok(lum / 480 < 1e-3, `mean ${lum / 480}`);
+});
+
+test("denoise: the probes move through every cell position, and history accumulates on a still camera", async () => {
+  const { probeOffsets, frameSeed } = await import("./denoise3d.mjs");
+  const plan = { stride: 4, tf: 16 }, seen = new Set();
+  for (let f = 0; f < 16; f++) { const [x, y] = probeOffsets(plan, f); assert.ok(x >= 0 && x < 4 && y >= 0 && y < 4); seen.add(x + 4 * y); }
+  assert.ok(seen.size >= 12, `cell positions ${seen.size}`);
+  assert.deepEqual(probeOffsets({ stride: 8, tf: 0 }, 5), [4, 4]);
+  assert.equal(frameSeed({ tf: 0 }, 3), 0);
+  // Variance of a pixel's irradiance across seeds falls with the history length.
+  const sc = buildScene3d("leak-door-A"), S = prepare(sc, buildBvh(sc)), W = 12, H = 8, spread = (tf) => {
+    const vals = [];
+    for (const d of [0.0, 1e-9]) { // two plans that differ only in their frame count reach different seeds
+      const plan = planCascades3d(bounds(sc), { h0: 0.75, c0: 2, r0: 1.5, f: 4, fix: "probe", stride: 2, m: 2, bounces: 2, cd: 2, tf: tf + (d ? 1 : 0), tmax: 64 });
+      vals.push(runCascades3d(sc, S, plan, W, H).radiance);
+    }
+    let s = 0, n = 0;
+    for (let i = 0; i < vals[0].length; i++) { s += (vals[0][i] - vals[1][i]) ** 2; n += vals[0][i]; }
+    return Math.sqrt(s) / n;
+  };
+  assert.ok(spread(12) < spread(1), `${spread(12)} against ${spread(1)}`);
 });

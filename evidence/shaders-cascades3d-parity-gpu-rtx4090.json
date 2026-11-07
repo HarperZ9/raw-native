@@ -37,6 +37,30 @@
       "id": "baseline-leak-door-A",
       "rel_rmse": 2.3111391271809295e-07,
       "coverage_flips": 0
+    },
+    {
+      "id": "denoise-spatial-s2",
+      "rel_rmse": 3.7552733620641126e-05,
+      "coverage_flips": 0
+    },
+    {
+      "id": "denoise-temporal-s2",
+      "rel_rmse": 0.00014001080553333045,
+      "coverage_flips": 0
+    },
+    {
+      "id": "denoise-both-moving-s2",
+      "rel_rmse": 6.819349648875578e-05,
+      "coverage_flips": 0
+    },
+    {
+      "id": "furnace-denoise-planted",
+      "rel_rmse": 6.067362426808594e-08,
+      "coverage_flips": 0,
+      "planted": {
+        "gpu_vs_closed_form": 6.067362440667885e-08,
+        "cpu_vs_closed_form": 2.203659903526791e-16
+      }
     }
   ],
   "adapter": {

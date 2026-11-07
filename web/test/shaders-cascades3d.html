@@ -4,7 +4,7 @@
 <link rel="icon" href="data:,">
 <!-- Run by tests/web/cascades3d.py. Parity (default): each case of
      evidence/shaders-cascades3d-parity-bounds.json through run3d.mjs (CPU, float64) and gpu3d.mjs.
-     ?mode=measure&scene=NAME|file=URL&plan=JSON&w=&h=: one GPU run, its timing, and the frames,
+     ?mode=measure&scene=NAME|file=URL&plan=JSON&w=&h=[&planted=JSON]: one GPU run, its timing, and the frames,
      kept in window.__frames for the driver to read in chunks (window.__chunk). -->
 <script type="module">
 import { createHost } from "../raw-gpu.mjs";
@@ -54,13 +54,18 @@ try {
     const sc = q.get("file") ? parseScene(await (await fetch(q.get("file"))).arrayBuffer(), q.get("file")) : buildScene3d(q.get("scene"));
     const S = prepare(sc, buildBvh(sc)), bvhMs = performance.now() - t0, W = num("w", 512), H = num("h", 320);
     const plan = planCascades3d(bounds(sc), JSON.parse(q.get("plan") || "{}"));
-    const rc = await createGpuCascades3d(host, sc, S, plan, W, H, { staticFlags: num("static", 0) === 1 });
+    const planted = q.get("planted") ? JSON.parse(q.get("planted")) : null;
+    const rc = await createGpuCascades3d(host, sc, S, plan, W, H, { staticFlags: num("static", 0) === 1, planted });
     const res = { scene: sc.name, size: [W, H], triangles: sc.alb.length / 3, bvh: { nodes: S.count, build_ms: bvhMs }, gpu_bytes: rc.bytes,
       plan: { ...plan, omega: undefined, levels: plan.levels.map((l) => ({ ...l, T1: l.T1 === Infinity ? "inf" : l.T1, T1x: l.T1x === Infinity ? "inf" : l.T1x })) },
       setup_ms: rc.setupTimes, static_flags: num("static", 0) === 1 };
     await rc.run(plan.frames);
     window.__frames.frame = new Uint8Array((await rc.read()).buffer);
-    if (num("pos", 0)) { const G = (await rc.readParts()).G, pos = new Float32Array(4 * W * H); for (let i = 0; i < W * H; i++) pos.set(G.subarray(12 * i, 12 * i + 4), 4 * i); window.__frames.pos = new Uint8Array(pos.buffer); }
+    if (num("pos", 0)) {
+      const G = (await rc.readParts()).G, pos = new Float32Array(4 * W * H), nrm = new Float32Array(4 * W * H);
+      for (let i = 0; i < W * H; i++) { pos.set(G.subarray(12 * i, 12 * i + 4), 4 * i); nrm.set(G.subarray(12 * i + 4, 12 * i + 8), 4 * i); }
+      window.__frames.pos = new Uint8Array(pos.buffer); window.__frames.nrm = new Uint8Array(nrm.buffer);
+    }
     const frames = num("frames", 50);
     if (frames > 0) { const t = await rc.time(frames); res.timing = t; res.gbuffer_ms = await rc.gbufferMs(10); }
     if (num("baseline", 0) > 0) { await rc.baseline(num("baseline", 16)); window.__frames.baseline = new Uint8Array((await rc.read()).buffer); }

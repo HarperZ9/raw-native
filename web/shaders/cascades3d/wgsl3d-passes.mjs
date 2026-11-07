@@ -2,7 +2,7 @@
 // Dispatches are 2D: invocation id = gid.y * P.gridX + gid.x, below P.total.
 import { PARAMS, CORE, GATHER } from "./wgsl3d-core.mjs";
 
-const ID = /* wgsl */ `let id = gid.y * P.gridX + gid.x; if (id >= P.total) { return; } _ = scene[0];`;
+export const ID = /* wgsl */ `let id = gid.y * P.gridX + gid.x; if (id >= P.total) { return; } _ = scene[0];`;
 
 // Primary hits: 3 vec4 a pixel: (p, sun scale), (n, slot or -1), (ng, back).
 export const GBUF = PARAMS + CORE + /* wgsl */ `
@@ -147,8 +147,8 @@ fn lookup(q: u32, d: vec3f) -> vec3f { // level 1's merged radiance at probe q, 
 // SVIS (thread a probe): which level-1 neighbours the probe sees, outside geometry (fix "probe"), or
 // all 8 (fix "none"); bit 8 marks a probe on a surface. SRAYS (thread a probe and ray): one cosine
 // ray of cascades3d.mjs screenProbe. SSUM (thread a probe): E = pi / m^2 x the sum, valid in w.
-const PROBE_PIXEL = /* wgsl */ `
-fn probePixel(id: u32) -> u32 { let k = P.stride; return min(P.H - 1u, k * (id / P.pw) + P.sub1) * P.W + min(P.W - 1u, k * (id % P.pw) + P.sub1); }
+export const PROBE_PIXEL = /* wgsl */ `
+fn probePixel(id: u32) -> u32 { let k = P.stride; return min(P.H - 1u, k * (id / P.pw) + (P.dn.y >> 16u)) * P.W + min(P.W - 1u, k * (id % P.pw) + (P.dn.y & 0xffffu)); }
 fn probeSurf(g: u32) -> Surf { let g1 = G[3u * g + 1u]; return Surf(G[3u * g].xyz, g1.xyz, G[3u * g + 2u].xyz, false, u32(max(g1.w, 0.0))); }
 `;
 export const SVIS = PARAMS + CORE + /* wgsl */ `
@@ -188,7 +188,7 @@ export const SRAYS = PARAMS + CORE + /* wgsl */ `
   if ((b & 256u) == 0u) { R[id] = vec4f(0.0); return; }
   let x = probeSurf(probePixel(pr));
   let one = P.nLevels > 1u; let T1 = P.geo[min(1u, P.nLevels - 1u)].z; let T1x = P.geo[0].w;
-  let jt = jitter(pr, j * m + i); let d = cosineDir(x.n, i, j, m, jt.x, jt.y); let o = offsetP(x, d);
+  let jt = jitter(pr ^ P.dn.x, j * m + i); let d = cosineDir(x.n, i, j, m, jt.x, jt.y); let o = offsetP(x, d);
   var v = vec3f(0.0); var found = false;
   if (one && P.fix == 2u) {
     for (var c = 0u; c < 8u; c++) {
@@ -218,19 +218,23 @@ export const SRAYS = PARAMS + CORE + /* wgsl */ `
   }
   R[id] = vec4f(v, 0.0);
 }`;
+// Flag 2 (the planted check of denoise): every probe holds dnf.z below x = dnf.y and dnf.w above.
 export const SSUM = PARAMS + CORE + /* wgsl */ `
 @group(0) @binding(2) var<storage, read> bits: array<u32>;
 @group(0) @binding(3) var<storage, read> R: array<vec4f>;
 @group(0) @binding(4) var<storage, read_write> E: array<vec4f>;
+@group(0) @binding(5) var<storage, read> G: array<vec4f>;
+` + PROBE_PIXEL + /* wgsl */ `
 @compute @workgroup_size(256) fn main(@builtin(global_invocation_id) gid: vec3u) {
   ${ID}
   if ((bits[id] & 256u) == 0u) { E[id] = vec4f(0.0); return; }
+  if ((P.dn.z & 2u) != 0u) { E[id] = vec4f(vec3f(select(P.dnf.w, P.dnf.z, G[3u * probePixel(id)].x < P.dnf.y)), 1.0); return; }
   let M = P.m * P.m; var sum = vec3f(0.0);
   for (var k = 0u; k < M; k++) { sum += R[id * M + k].xyz; }
   E[id] = vec4f(sum * (PI / f32(M)), 1.0);
 }`;
 
-const SHADE = /* wgsl */ `
+export const SHADE = /* wgsl */ `
 fn shade(x: Surf, d: vec3f, sun: f32, Egi: vec3f) -> vec3f {
   let em = emission(x.slot);
   if (dot(x.n, d) >= 0.0) { return em; }
@@ -238,7 +242,8 @@ fn shade(x: Surf, d: vec3f, sun: f32, Egi: vec3f) -> vec3f {
 }
 `;
 
-// Every pixel (run3d.mjs finalPass): screen probes upsampled, else the cache gather; out (rgb, hit).
+// Every pixel (run3d.mjs pixelE): screen probes upsampled, else the cache gather; out (rgb, hit), or
+// with flag 4 the irradiance (for temporal accumulation, wgsl3d-denoise.mjs ACCUM).
 export const FINAL = PARAMS + CORE + /* wgsl */ `
 @group(0) @binding(2) var<storage, read> cache: array<vec4f>;
 @group(0) @binding(3) var<storage, read> depth: array<vec2f>;
@@ -256,8 +261,8 @@ export const FINAL = PARAMS + CORE + /* wgsl */ `
   var Egi = vec3f(0.0);
   var ws = 0.0;
   if (P.stride > 0u) {
-    let k = f32(P.stride); let off = f32(P.sub1);
-    let u = max(0.0, (f32(px) - off) / k); let v = max(0.0, (f32(py) - off) / k);
+    let k = f32(P.stride); let ox = P.dn.y & 0xffffu; let oy = P.dn.y >> 16u;
+    let u = max(0.0, (f32(px) - f32(ox)) / k); let v = max(0.0, (f32(py) - f32(oy)) / k);
     let i0 = min(P.pw - 1u, u32(floor(u))); let j0 = min(P.ph - 1u, u32(floor(v))); let fu = u - f32(i0); let fv = v - f32(j0);
     let tol = 4.0 * k * lenR(x.p - P.eye.xyz) * 2.0 * P.eye.w / f32(P.H) + 1e-3;
     for (var c = 0u; c < 4u; c++) {
@@ -266,12 +271,13 @@ export const FINAL = PARAMS + CORE + /* wgsl */ `
       let w = select(1.0 - fu, fu, (c & 1u) == 1u) * select(1.0 - fv, fv, (c >> 1u) == 1u);
       let e = E[j * P.pw + i];
       if (w <= 0.0 || e.w <= 0.0) { continue; }
-      let qp = min(P.H - 1u, P.stride * j + P.sub1) * P.W + min(P.W - 1u, P.stride * i + P.sub1);
+      let qp = min(P.H - 1u, P.stride * j + oy) * P.W + min(P.W - 1u, P.stride * i + ox);
       let qn = G[3u * qp + 1u].xyz; let nn = dot(x.n, qn);
       if (nn > 0.5 && abs(dot(G[3u * qp].xyz - x.p, x.ng)) <= tol) { let ww = w * nn * nn * nn * nn; Egi += ww * e.xyz; ws += ww; }
     }
   }
   if (ws > 0.0) { Egi = Egi / ws; } else { Egi = gatherCache(x); }
+  if ((P.dn.z & 4u) != 0u) { outp[id] = vec4f(Egi, 1.0); return; }
   outp[id] = vec4f(shade(x, pixelDir(px, py), g0.w, Egi), 1.0);
 }`;
 

@@ -5,11 +5,14 @@
 import { entry, probeFlags, cacheOf, gbuffer, screenProbe, gatherCache, offset, depthPass } from "./cascades3d.mjs";
 import { cosineDir, jitter, dot, sub } from "./math3d.mjs";
 import { occluded } from "./bvh.mjs";
+import { cameraBasis } from "./scene3d.mjs";
+import { frameSeed, probeOffsets, cameraAt, footprint, atrous, accumulate } from "./denoise3d.mjs";
 
-// Screen probe (i, j) of stride k sits on pixel (k i + k/2, k j + k/2), clamped to the frame.
-export function probeGrid(W, H, k) {
-  const pw = Math.ceil(W / k), ph = Math.ceil(H / k), off = k >> 1;
-  return { pw, ph, off, at: (i, j) => [Math.min(W - 1, k * i + off), Math.min(H - 1, k * j + off)] };
+// Screen probe (i, j) of stride k sits on pixel (k i + ox, k j + oy), clamped to the frame; the
+// offsets are k / 2, or move every frame under temporal accumulation (denoise3d.mjs probeOffsets).
+export function probeGrid(W, H, k, ox = k >> 1, oy = ox) {
+  const pw = Math.ceil(W / k), ph = Math.ceil(H / k);
+  return { pw, ph, off: ox, ox, oy, at: (i, j) => [Math.min(W - 1, k * i + ox), Math.min(H - 1, k * j + oy)] };
 }
 // Upsampling weight of probe surface q for pixel surface x: bilinear weight times a plane-distance
 // and a normal test. tol is the pixel footprint at x times 4 k.
@@ -20,11 +23,13 @@ export function upWeight(x, q, w, tol) {
 }
 
 export function runCascades3d(sc, S, plan, W, H, { frames = plan.frames, cacheInit = null } = {}) {
-  const ctx = { S, sc, plan, cachePrev: null, depth: depthPass(S, plan) }, L = plan.levels, G = gbuffer(S, sc, W, H);
+  const ctx = { S, sc, plan, cachePrev: null, depth: depthPass(S, plan) }, L = plan.levels;
+  const view = (f) => { const camera = cameraAt(sc, plan, f); return { G: gbuffer(S, { ...sc, camera }, W, H), kb: cameraBasis(camera, W, H) }; };
   const flags = L.map((_, l) => probeFlags(ctx, l));
-  let buf0 = null, buf1 = null, cache = null, E = null;
+  let { G, kb } = view(0), buf0 = null, buf1 = null, cache = null, E = null, hist = null;
   if (cacheInit) { ctx.cachePrev = initCache(plan, cacheInit); }
   for (let f = 0; f < frames; f++) {
+    if (plan.move && f > 0) ({ G, kb } = view(f));
     let next = null;
     for (let l = L.length - 1; l >= 0; l--) {
       const cur = new Float64Array(3 * L[l].probes * L[l].texels);
@@ -37,9 +42,17 @@ export function runCascades3d(sc, S, plan, W, H, { frames = plan.frames, cacheIn
     }
     cache = cacheOf(ctx, buf0, flags[0]);
     ctx.cachePrev = cache;
-    if (plan.stride) E = screenPass(ctx, G, W, H, buf1, flags[1]);
+    if (plan.stride) {
+      E = screenPass(ctx, G, W, H, buf1, flags[1], f);
+      if (plan.sf) E = atrous(plan, kb, E, H);
+    }
+    if (plan.tf > 0) {
+      const Ecur = G.map((s, p) => (s ? pixelE(ctx, s.x, p % W, Math.floor(p / W), H, E, cache, kb) : null));
+      hist = accumulate(plan, G, W, H, Ecur, kb, f >= plan.warm ? hist : null);
+    }
   }
-  return finalPass(ctx, G, W, H, E, cache);
+  if (hist) return shadeAll(sc, G, W, H, (p) => hist.hist.subarray(3 * p, 3 * p + 3));
+  return shadeAll(sc, G, W, H, (p) => pixelE(ctx, G[p].x, p % W, Math.floor(p / W), H, E, cache, kb));
 }
 
 // A cache holding uniform radiance L (rgb) in every direction: E(n) = pi L.
@@ -49,37 +62,34 @@ export function initCache(plan, L) {
   return c;
 }
 
-export function screenPass(ctx, G, W, H, buf1, flags1) {
-  const g = probeGrid(W, H, ctx.plan.stride), E = new Array(g.pw * g.ph).fill(null);
+export function screenPass(ctx, G, W, H, buf1, flags1, f = 0) {
+  const [ox, oy] = probeOffsets(ctx.plan, f), seed = frameSeed(ctx.plan, f);
+  const g = probeGrid(W, H, ctx.plan.stride, ox, oy), E = new Array(g.pw * g.ph).fill(null);
   for (let j = 0; j < g.ph; j++) for (let i = 0; i < g.pw; i++) {
-    const [px, py] = g.at(i, j), s = G[py * W + px];
-    if (s) E[j * g.pw + i] = { e: screenProbe(ctx, s.x, j * g.pw + i, buf1, flags1), p: s.x.p, n: s.x.n };
+    const [px, py] = g.at(i, j), s = G[py * W + px], pid = j * g.pw + i;
+    if (s) E[pid] = { e: screenProbe(ctx, s.x, (pid ^ seed) >>> 0, buf1, flags1), p: s.x.p, n: s.x.n, ng: s.x.ng };
   }
   return { g, E };
 }
 
-export function finalPass(ctx, G, W, H, SP, cache) {
-  const { sc, plan } = ctx, rad = new Float64Array(3 * W * H), hit = new Uint8Array(W * H), th = Math.tan(sc.camera.fovy / 2);
-  for (let y = 0; y < H; y++) for (let x = 0; x < W; x++) {
-    const s = G[y * W + x];
-    if (!s) continue;
-    hit[y * W + x] = 1;
-    const X = s.x;
-    let E;
-    if (SP) {
-      const k = plan.stride, u = Math.max(0, (x - SP.g.off) / k), v = Math.max(0, (y - SP.g.off) / k);
-      const i0 = Math.min(SP.g.pw - 1, Math.floor(u)), j0 = Math.min(SP.g.ph - 1, Math.floor(v)), fu = u - i0, fv = v - j0;
-      const tol = 4 * k * Math.hypot(...sub(X.p, sc.camera.eye)) * 2 * th / H + 1e-3;
-      let ws = 0; E = [0, 0, 0];
-      for (const [i, j, w] of [[i0, j0, (1 - fu) * (1 - fv)], [i0 + 1, j0, fu * (1 - fv)], [i0, j0 + 1, (1 - fu) * fv], [i0 + 1, j0 + 1, fu * fv]]) {
-        if (i >= SP.g.pw || j >= SP.g.ph) continue;
-        const q = SP.E[j * SP.g.pw + i], ww = upWeight(X, q, w, tol);
-        if (ww > 0) { for (let c = 0; c < 3; c++) E[c] += ww * q.e[c]; ws += ww; }
-      }
-      E = ws > 0 ? E.map((e) => e / ws) : gatherCache(ctx, cache, X);
-    } else E = gatherCache(ctx, cache, X);
-    shade(rad, 3 * (y * W + x), sc, s, E);
+// Irradiance at pixel (x, y), surface X: screen probes upsampled, else the cache gather.
+export function pixelE(ctx, X, x, y, H, SP, cache, kb) {
+  if (!SP) return gatherCache(ctx, cache, X);
+  const k = ctx.plan.stride, u = Math.max(0, (x - SP.g.ox) / k), v = Math.max(0, (y - SP.g.oy) / k);
+  const i0 = Math.min(SP.g.pw - 1, Math.floor(u)), j0 = Math.min(SP.g.ph - 1, Math.floor(v)), fu = u - i0, fv = v - j0;
+  const tol = 4 * k * footprint(kb, X.p, H) + 1e-3, E = [0, 0, 0];
+  let ws = 0;
+  for (const [i, j, w] of [[i0, j0, (1 - fu) * (1 - fv)], [i0 + 1, j0, fu * (1 - fv)], [i0, j0 + 1, (1 - fu) * fv], [i0 + 1, j0 + 1, fu * fv]]) {
+    if (i >= SP.g.pw || j >= SP.g.ph) continue;
+    const q = SP.E[j * SP.g.pw + i], ww = upWeight(X, q, w, tol);
+    if (ww > 0) { for (let c = 0; c < 3; c++) E[c] += ww * q.e[c]; ws += ww; }
   }
+  return ws > 0 ? E.map((e) => e / ws) : gatherCache(ctx, cache, X);
+}
+
+export function shadeAll(sc, G, W, H, Eof) {
+  const rad = new Float64Array(3 * W * H), hit = new Uint8Array(W * H);
+  for (let p = 0; p < W * H; p++) { if (!G[p]) continue; hit[p] = 1; shade(rad, 3 * p, sc, G[p], Eof(p)); }
   return { radiance: rad, hit };
 }
 function shade(rad, o, sc, s, E) {

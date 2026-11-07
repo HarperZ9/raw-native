@@ -3,7 +3,7 @@
 
     python tests/web/cascades3d.py parity [--adapter gpu|swiftshader] [--case ID] [--out evidence.json]
     python tests/web/cascades3d.py measure (--scene NAME | --file build/gi/x.bin) --plan '{"h0": 0.5}'
-        [--width 512 --height 320] [--frames 50] [--baseline 16] [--save DIR] [--out run.json]
+        [--width 512 --height 320] [--frames 50] [--baseline 16] [--pos 1] [--planted JSON] [--save DIR] [--out run.json]
 
 Parity opens web/test/shaders-cascades3d.html, which runs every case of
 evidence/shaders-cascades3d-parity-bounds.json through the float64 CPU reference and the WebGPU
@@ -55,6 +55,8 @@ def measure(a) -> dict:
     if a.adapter == "swiftshader":
         args += ["--enable-unsafe-swiftshader", "--use-webgpu-adapter=swiftshader", *CPU_FRAME]
     q = {"mode": "measure", "plan": a.plan, "w": a.width, "h": a.height, "frames": a.frames, "baseline": a.baseline, "pos": a.pos, "static": a.static}
+    if a.planted:
+        q["planted"] = a.planted
     if a.file:
         q["file"] = "/" + Path(a.file).resolve().relative_to(ROOT).as_posix()
     else:
@@ -94,7 +96,8 @@ def main() -> int:
     ap.add_argument("--baseline", type=int, default=0)
     ap.add_argument("--save")
     ap.add_argument("--static", type=int, default=0, help="probe flags once at setup (static geometry), not every frame")
-    ap.add_argument("--pos", type=int, default=0, help="also save each pixel's surface position (pos.f32)")
+    ap.add_argument("--pos", type=int, default=0, help="also save each pixel's surface position and normal (pos.f32, nrm.f32)")
+    ap.add_argument("--planted", help='planted probe edge for the denoise check, JSON {"x": X0, "a": below, "b": above}; the frame is the irradiance')
     ap.add_argument("--out")
     a = ap.parse_args()
     if a.mode == "debug":

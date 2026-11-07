@@ -3,7 +3,8 @@
 // binding 0 (params) and 1 (scene: BVH nodes, then 8 vec4 a triangle from triOff: p0, p1, p2, n0, n1,
 // n2, albedo, emission). Shaders compute sin, cos and sqrt themselves: WGSL lets an adapter compute
 // them loosely (SwiftShader did, in the flatland path), which moves rays against the f64 reference.
-export const PARAMS_WORDS = 48 + 4 * 8 * 3; // header and 8 vec4, then dims, geo and ofs (8 vec4 each)
+export const PARAMS_WORDS = 72 + 4 * 8 * 3; // header and 14 vec4, then dims, geo and ofs (8 vec4 each)
+export const FRAME_WORDS = [32, 72]; // the camera, denoise and previous-camera words, rewritten every frame
 
 export const PARAMS = /* wgsl */ `
 struct Params {
@@ -13,6 +14,9 @@ struct Params {
   pw: u32, ph: u32, sub0: u32, sub1: u32,
   lo: vec4f, sunDir: vec4f, sunE: vec4f, sky: vec4f,
   eye: vec4f, camF: vec4f, camS: vec4f, camU: vec4f,
+  dn: vec4u,    // ray seed, probe offsets ox | oy << 16, flags (1 history on, 2 planted probes, 4 irradiance out), tmax
+  dnf: vec4f,   // luminance edge stop sl, planted edge x, planted value below it, above it
+  pEye: vec4f, pF: vec4f, pS: vec4f, pU: vec4f, // previous frame's camera (pEye.w tan half fovy, pF.w aspect)
   dims: array<vec4u, 8>,
   geo: array<vec4f, 8>,
   ofs: array<vec4u, 8>,
