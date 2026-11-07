@@ -74,7 +74,8 @@ export function jitter(p, k) {
 // runs to infinity. Options: stride 0 gathers every pixel from level 0 ("world"); stride k >= 1 adds
 // screen probes every k pixels with m x m cosine directions, merged into level 1. fix: "none", "probe"
 // or "full" (cascades3d.mjs).
-export function planCascades3d(bounds, { h0 = 0.5, c0 = 1, r0 = 2, f = 2, levels = 0, fix = "probe", ov = 1, stride = 4, m = 8, bounces = 8, cd = 4 } = {}) {
+export function planCascades3d(bounds, { h0 = 0.5, c0 = 1, r0 = 2, f = 2, levels = 0, fix = "probe", ov = 1, stride = 4, m = 8, bounces = 8, cd = 4,
+  tf = 0, tmax = 32, sf = 0, sl = 0, move = null } = {}) {
   // The grid starts half a spacing (plus an odd fraction) below the bounds: probes then never sit on a
   // box's face or on the diagonal of a face's two triangles, where f32 and f64 ray tests disagree.
   const lo = bounds.lo.map((v, k) => v - h0 * (0.5 + [0.0137, 0.0291, 0.0419][k])), ext = bounds.hi.map((v, k) => v - lo[k]);
@@ -90,8 +91,11 @@ export function planCascades3d(bounds, { h0 = 0.5, c0 = 1, r0 = 2, f = 2, levels
   // interval start is met here instead of skipped (the merge's parallax).
   L.forEach((l, i) => { l.T1x = i + 1 < L.length && fix === "probe" ? l.T1 + ov * Math.sqrt(3) * L[i + 1].h : l.T1; });
   // A frame adds one bounce: with screen probes the pixel holds B bounces after B - 1 frames.
-  const frames = stride ? Math.max(1, bounces - 1) : bounces;
-  return { lo, levels: L, fix, ov, stride, m, bounces, frames, h0, c0, r0, f, cd, dmax: 2 * Math.sqrt(3) * h0, omega: L.map((l) => omegaTable(l.c)) };
+  // Denoise (denoise3d.mjs): tf > 0 adds tf frames of temporal accumulation (at most tmax frames of
+  // history) after the warm-up; sf a-trous passes over the screen probes, sl their luminance edge stop.
+  const warm = stride ? Math.max(1, bounces - 1) : bounces, frames = warm + (stride ? tf : 0);
+  return { lo, levels: L, fix, ov, stride, m, bounces, frames, warm, tf: stride ? tf : 0, tmax, sf: stride ? sf : 0, sl, move,
+    h0, c0, r0, f, cd, dmax: 2 * Math.sqrt(3) * h0, omega: L.map((l) => omegaTable(l.c)) };
 }
 // The 8 neighbours of point p on level l: { idx, w } with trilinear weights (clamped to the grid).
 export function neighbours(plan, l, p) {

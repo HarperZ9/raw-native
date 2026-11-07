@@ -149,5 +149,54 @@ Renders, references and error maps at 3840 x 2160, opened at full size and in cr
 - Static geometry for the shipped timing: depth moments (7 to 8 ms) are traced once. Probe flags
   every frame add 1.6 ms.
 - Converged state after 7 frames of a static scene and light; a moving light needs those frames.
-- The mottle needs a temporal or spatial filter, which is not built.
+- The probe denoise below removes the fine probe mottle but not the larger blotches, which come
+  from the world levels.
 - The 4K reference has one seed, so its noise is not measured.
+
+## Probe denoise (2026-11-07)
+
+`denoise3d.mjs` (CPU, float64) and `wgsl3d-denoise.mjs` (GPU) add three switches to the plan. All are
+off by default.
+
+- `tf`, `tmax`: temporal accumulation. Every frame the screen probes move inside their stride cell
+  (Halton 2, 3) and their rays take a new seed. Each pixel's irradiance is blended with its history,
+  reprojected through the previous camera, bilinear over 4 pixels. A tap counts only when its
+  surface lies within 4 pixel footprints of the pixel's plane and its normal is within dot 0.9. The
+  blend weight is 1 / n, with n at most `tmax`. History starts after the 7 warm-up frames.
+- `sf`, `sl`: `sf` a-trous passes (steps 1, 2, 4) of a 3 x 3 kernel over the probe grid, with the
+  upsampling's plane and normal test, and with `sl` > 0 a luminance edge stop.
+- `move: { d, k }`: the camera starts `d` away and slides onto the scene camera over the last `k`
+  frames, to test reprojection.
+
+Bounds were written before the first run: `evidence/cascades3d-denoise-bounds.json`. Results are in
+`evidence/cascades3d-denoise-rtx4090.json`. "Mottle" is the RMS of the relative error band-passed
+between Gaussian sigma 4 px and 32 px on wall and column pixels. A planted 5% sinusoid reads 0.0314
+(expected 0.0354), and the second reference seed against the first reads 0.0032.
+
+raw-hall nave at 1920 x 1080 against the 8-bounce path trace, with the round-1 setting:
+
+| Setting | Relative RMSE | Wall mottle | Floor mottle | GI ms, three runs |
+|---|---|---|---|---|
+| none (round 1) | 0.104 (0.097 to 0.111) | 0.040 (0.037 to 0.045) | 0.030 | 4.04, 3.59, 3.71 |
+| temporal, 32 frames | 0.095 (0.088 to 0.101) | 0.036 (0.032 to 0.041) | 0.026 | 4.30, 4.31, 4.12 |
+| a-trous 2, sl 0.5 | 0.099 (0.093 to 0.106) | 0.034 (0.030 to 0.037) | 0.022 | 3.95 |
+| both | 0.094 (0.088 to 0.101) | 0.033 (0.029 to 0.036) | 0.022 | 4.29, 4.36, 4.33 |
+| both, moving camera | 0.095 (0.089 to 0.102) | 0.033 | 0.022 | |
+| none, 4K | 0.111 (0.107 to 0.115) | 0.034 | 0.028 | 7.4 |
+| both, 4K | 0.105 (0.101 to 0.109) | 0.028 | 0.021 | 8.6 |
+
+The temporal filter lowers the error by 9% and the bias from -0.5% to -0.1%. Most of that gain
+comes in the first 8 frames: 0.104, 0.099, 0.096, 0.095 and 0.095 at 1, 2, 4, 8 and 16 frames of
+history. A planted step of probe irradiance (0.2 to 1.0 across a floor line) widens from 7.4 px
+(10% to 90%) to 9.9 px with the temporal filter, 8.1 px with a-trous and the luminance stop, and
+11.3 px with both. Without the luminance stop a-trous widens it to 37 px. With the stop, a 2% to 5%
+tail still reaches 20 px past the edge.
+
+The pre-registered targets were missed. The best band mottle fell 19%, against a 50% target and a
+25% kill line. RMSE reached 0.094 against a 0.090 target. The denoise therefore stays off by
+default. The renders explain the miss. The fine speckle from the stride-8 probes is gone in the
+temporal frames, and a probe-scale band (sigma 1 to 8 px, added after the first runs) falls from
+0.025 to 0.017, with a 0.012 reference-noise floor. The blotches that remain are 50 to 150 px across.
+Neither filter changes them, so they come from the world levels and the cache, not from probe
+noise. Longer screen-probe intervals (`ov` 2 or 3, `r0` 4) made those blotches worse: RMSE rose to
+0.12, with a 5% bias.
