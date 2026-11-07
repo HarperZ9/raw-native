@@ -63,7 +63,7 @@ fn children(l1: u32, q: u32, k: u32, c: u32) -> vec4f {
     let e = next[q * tex + f * cc * cc + tj * cc + ti];
     out += w * e.xyz; ws += w; ov += w * e.w * e.xyz; wv += w * e.w;
   } }
-  if (P.wo.y != 1u) { return vec4f(out / ws, 1.0); }
+  if (P.wo.y == 0u) { return vec4f(out / ws, 1.0); }
   return select(vec4f(out / ws, 0.0), vec4f(ov / wv, wv / ws), wv > 0.0);
 }
 fn traced(o: vec3f, d: vec3f, t0: f32, t1: f32, found: ptr<function, bool>) -> vec3f {
@@ -88,7 +88,7 @@ export const LEVEL = PARAMS + CORE + /* wgsl */ `
   _ = next[0]; _ = flags[0]; _ = sv[0];
   let l = P.level; let tex = P.ofs[l].z; let idx = id / tex; let k = id % tex; let c = u32(P.geo[l].y);
   var vis = 1.0; // this entry's start visibility, read by the level below's merges
-  if (P.wo.y == 1u) { vis = sv[P.ofs[l].w + id]; }
+  if (P.wo.y != 0u) { vis = sv[P.ofs[l].w + id]; }
   let p = probePos(l, idx); let d = texelDir(k, c); let top = l + 1u == P.nLevels; let T0 = P.geo[l].z; let T1x = P.geo[l].w;
   var found = false;
   if (P.fix == 2u && !top) {
@@ -115,6 +115,10 @@ export const LEVEL = PARAMS + CORE + /* wgsl */ `
     all += q.w * m.xyz; wa += q.w;
     if (P.fix == 1u && ((bits & (1u << cn)) == 0u || insideF(flags[P.ofs[l + 1u].y + q.idx]))) { continue; }
     out += q.w * m.w * m.xyz; ws += q.w * m.w;
+  }
+  if (ws <= 0.0 && (P.wo.w & 1u) != 0u) { // ft: trace the entry's own ray on (cascades3d.mjs onward)
+    v = traced(p, d, T1x, 1e30, &found);
+    cur[id] = vec4f(select(P.sky.xyz, v, found), vis); return;
   }
   cur[id] = vec4f(select(select(all / max(wa, 1e-30), vec3f(0.0), P.wo.z == 1u), out / ws, ws > 0.0), vis);
 }`;
@@ -212,7 +216,8 @@ export const SRAYS = PARAMS + CORE + /* wgsl */ `
           w *= r.w;
           out += w * r.xyz; ws += w;
         }
-        v = select(select(all / max(wa, 1e-30), vec3f(0.0), P.wo.z == 1u), out / ws, ws > 0.0);
+        if (ws <= 0.0 && (P.wo.w & 1u) != 0u) { v = traced(o, d, T1x, 1e30, &found); if (!found) { v = P.sky.xyz; } }
+        else { v = select(select(all / max(wa, 1e-30), vec3f(0.0), P.wo.z == 1u), out / ws, ws > 0.0); }
       }
     }
   }

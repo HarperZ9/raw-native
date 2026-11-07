@@ -66,7 +66,7 @@ export function levelOneWeights(ctx, x, bits, flags1) {
 }
 // Level 1's values at p merged with trilinear weights times wts (and, with sv, the value's start
 // visibility, its 4th element); all eight when every weight is 0.
-export function mergeWeighted(ctx, p, wts, value) {
+export function mergeWeighted(ctx, p, wts, value, fallback) {
   const out = [0, 0, 0], all = [0, 0, 0];
   let ws = 0, wa = 0;
   neighbours(ctx.plan, 1, p).forEach((q, c) => {
@@ -75,6 +75,7 @@ export function mergeWeighted(ctx, p, wts, value) {
     for (let ch = 0; ch < 3; ch++) { all[ch] += q.w * v[ch]; out[ch] += w * v[ch]; }
     wa += q.w; ws += w;
   });
+  if (!(ws > 0) && ctx.plan.ft) return fallback();
   if (!(ws > 0) && ctx.plan.fz) return [0, 0, 0];
   return ws > 0 ? mul(out, 1 / ws) : mul(all, 1 / Math.max(wa, 1e-30));
 }

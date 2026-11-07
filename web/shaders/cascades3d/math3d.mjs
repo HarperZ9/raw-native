@@ -75,7 +75,7 @@ export function jitter(p, k) {
 // screen probes every k pixels with m x m cosine directions, merged into level 1. fix: "none", "probe"
 // or "full" (cascades3d.mjs).
 export function planCascades3d(bounds, { h0 = 0.5, c0 = 1, r0 = 2, f = 2, levels = 0, fix = "probe", ov = 1, stride = 4, m = 8, bounces = 8, cd = 4,
-  tf = 0, tmax = 32, sf = 0, sl = 0, move = null, c1 = 0, mw = "seg", sv = 0, fz = 0, jit = 0, jl = 1, go = null } = {}) {
+  tf = 0, tmax = 32, sf = 0, sl = 0, move = null, c1 = 0, mw = "seg", sv = 0, fz = 0, ft = 0, cg = 0, jit = 0, jl = 1, go = null } = {}) {
   // c1 (0 = off): level 1's face side, c0 times a power of two above c0; levels above keep at least
   // c1, so a parent texel splits into (c_i+1 / c_i)^2 children. mw: how screen probes weigh level 1's
   // neighbours ("seg" the segment test, "vis" depth-moment visibility); sv 1 weighs every merge by
@@ -106,7 +106,7 @@ export function planCascades3d(bounds, { h0 = 0.5, c0 = 1, r0 = 2, f = 2, levels
   // history) after the warm-up; sf a-trous passes over the screen probes, sl their luminance edge stop.
   const warm = stride ? Math.max(1, bounces - 1) : bounces, frames = warm + (stride ? tf : 0);
   return { lo, levels: L, fix, ov, stride, m, bounces, frames, warm, tf: stride ? tf : 0, tmax, sf: stride ? sf : 0, sl, move,
-    h0, c0, r0, f, cd, dmax: 2 * Math.sqrt(3) * h0, omega: L.map((l) => omegaTable(l.c)), c1, mw, sv, fz, jit: stride ? jit : 0, jl, hj };
+    h0, c0, r0, f, cd, dmax: 2 * Math.sqrt(3) * h0, omega: L.map((l) => omegaTable(l.c)), c1, mw, sv, fz, ft, cg, jit: stride ? jit : 0, jl, hj };
 }
 // The 8 neighbours of point p on level l: { idx, w } with trilinear weights (clamped to the grid).
 export function neighbours(plan, l, p) {

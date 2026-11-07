@@ -18,7 +18,7 @@ struct Params {
   dnf: vec4f,   // luminance edge stop sl, planted edge x, planted value below it, above it
   pEye: vec4f, pF: vec4f, pS: vec4f, pU: vec4f, // previous frame's camera (pEye.w tan half fovy, pF.w aspect)
   clo: vec4f,   // the grid origin of the cache this pass gathers from (lo, unless the grid moves: world.mjs jit)
-  wo: vec4u,    // mw (0 seg, 1 vis), sv (1: merges weigh texels by start visibility, in level buffers' w), fz
+  wo: vec4u,    // mw (0 seg, 1 vis), sv (1 or 2: merges weigh texels by start visibility, in level buffers' w), fz, ft | cg << 1
   dims: array<vec4u, 8>,
   geo: array<vec4f, 8>,
   ofs: array<vec4u, 8>,
@@ -190,6 +190,19 @@ fn chebVis(q0: u32, qp: vec3f, at: vec3f) -> f32 { // world.mjs chebVis
 fn cacheE(q: u32, n: vec3f) -> vec3f {
   return max(vec3f(0.0), cache[4u * q].xyz + cache[4u * q + 1u].xyz * n.x + cache[4u * q + 2u].xyz * n.y + cache[4u * q + 3u].xyz * n.z);
 }
+// cg (cascades3d.mjs gatherSeen): lit-side probes outside geometry that a segment from the surface reaches.
+fn gatherSeen(x: Surf) -> vec3f {
+  let up = offsetP(x, x.ng); var E = vec3f(0.0); var ws = 0.0;
+  for (var c = 0u; c < 8u; c++) {
+    let q = neighbourLo(0u, x.p, c, P.clo.xyz);
+    if (q.w <= 0.0 || cache[4u * q.idx].w > 0.0 || dot(q.pos - x.p, x.ng) <= 0.0) { continue; }
+    let e = q.pos - up; let len = lenR(e);
+    if (len > 0.0 && occluded(up, e / len, len)) { continue; }
+    E += q.w * cacheE(q.idx, x.n); ws += q.w;
+  }
+  if (ws > 0.0) { return E / ws; }
+  return vec3f(0.0);
+}
 fn gatherCache(x: Surf) -> vec3f {
   var E = vec3f(0.0); var El = vec3f(0.0); var Ef = vec3f(0.0); var Ea = vec3f(0.0);
   var ws = 0.0; var wl = 0.0; var wf = 0.0; var wa = 0.0;
@@ -207,6 +220,7 @@ fn gatherCache(x: Surf) -> vec3f {
     if (w > 0.0) { E += w * e; ws += w; }
   }
   if (ws > 0.0) { return E / ws; }
+  if ((P.wo.w & 2u) != 0u) { return gatherSeen(x); }
   if (wl > 0.0) { return El / wl; }
   if (wf > 0.0) { return Ef / wf; }
   return Ea / wa;
@@ -232,7 +246,7 @@ fn levelZeroIndex(l: u32, idx: u32) -> i32 { // world.mjs levelZeroIndex
 // Level 1's merged radiance at probe q, bilinear in the face; w: the start visibility (1 without sv),
 // which also weighs the bilinear taps (cascades3d.mjs lookup).
 fn lookup(q: u32, d: vec3f) -> vec4f {
-  let c = u32(P.geo[1].y); let tex = P.ofs[1].z; let F = faceOf(d); let cf = f32(c); let sv = P.wo.y == 1u;
+  let c = u32(P.geo[1].y); let tex = P.ofs[1].z; let F = faceOf(d); let cf = f32(c); let sv = P.wo.y != 0u;
   if (c == 1u) { let e = next[q * tex + F.f]; return vec4f(e.xyz, select(1.0, e.w, sv)); }
   let u = clamp((F.s + 1.0) / 2.0 * cf - 0.5, 0.0, cf - 1.0); let v = clamp((F.t + 1.0) / 2.0 * cf - 0.5, 0.0, cf - 1.0);
   let i0 = min(c - 2u, u32(floor(u))); let j0 = min(c - 2u, u32(floor(v))); let fu = u - f32(i0); let fv = v - f32(j0);

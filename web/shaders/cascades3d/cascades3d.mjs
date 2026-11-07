@@ -74,8 +74,24 @@ export function gatherCache(ctx, cache, x) {
     if (w > 0) { for (let c = 0; c < 3; c++) E[c] += w * e[c]; ws += w; }
   }
   if (ws > 0) return mul(E, 1 / ws);
+  if (ctx.plan.cg) return gatherSeen(ctx, cache, x, nb); // cg (world.mjs): no fallback past a wall
   if (wl > 0) return mul(El, 1 / wl);
   return wf > 0 ? mul(Ef, 1 / wf) : mul(Ea, 1 / wa);
+}
+// cg: when no probe passes the depth test, the lit-side probes outside geometry that a segment from
+// the surface reaches; no light when none does.
+function gatherSeen(ctx, cache, x, nb) {
+  const up = offset(x, x.ng), E = [0, 0, 0];
+  let ws = 0;
+  for (const q of nb) {
+    const o = 16 * q.idx;
+    if (q.w <= 0 || cache[o + 3] > 0 || dot(sub(q.pos, x.p), x.ng) <= 0) continue;
+    const e = sub(q.pos, up), len = Math.hypot(...e);
+    if (len > 0 && occluded(ctx.S, up, mul(e, 1 / len), len)) continue;
+    for (let c = 0; c < 3; c++) E[c] += q.w * Math.max(0, cache[o + c] + cache[o + 4 + c] * x.n[0] + cache[o + 8 + c] * x.n[1] + cache[o + 12 + c] * x.n[2]);
+    ws += q.w;
+  }
+  return ws > 0 ? mul(E, 1 / ws) : E;
 }
 // Depth moments of level 0's probes: cd x cd texels a face, 2 x 2 rays a texel, distances capped at
 // plan.dmax. Static geometry: traced once, like the BVH.
@@ -96,12 +112,15 @@ export function depthPass(S, plan) {
 }
 // Start visibility of level l (world.mjs sv): for every probe and texel, the share of its 4 sub-texel
 // rays that cross [0, T_l] without a hit. Static geometry: traced once a grid, like the depth moments.
+// With sv 2 the share is the entry's own ray (the texel centre, the ray its value comes from): 1 when
+// it crosses [0, T_l] unblocked, else 0.
 export function startPass(S, plan, l) {
   const L = plan.levels[l], out = new Float64Array(L.probes * L.texels).fill(1);
   if (!(L.T0 > 0)) return out;
   for (let q = 0; q < L.probes; q++) {
     const p = probePos(plan, l, q);
     for (let k = 0; k < L.texels; k++) {
+      if (plan.sv === 2) { out[q * L.texels + k] = occluded(S, p, texelDir(k, L.c), L.T0) ? 0 : 1; continue; }
       let n = 0;
       for (let r = 0; r < 4; r++) if (!closestHit(S, p, subTexelDir(k, L.c, r & 1, r >> 1), 0, L.T0)) n++;
       out[q * L.texels + k] = n / 4;
@@ -190,9 +209,11 @@ export function entry(ctx, l, idx, k, next, flags, nextFlags) {
   const v = traced(ctx, p, d, L.T0, L.T1x);
   if (v) return v;
   if (top) return sc.sky;
-  return mergeNext(ctx, l + 1, p, flags ? flags[idx] : 511, nextFlags, (q) => children(ctx, l + 1, next, q, k, L.c));
+  return mergeNext(ctx, l + 1, p, flags ? flags[idx] : 511, nextFlags, (q) => children(ctx, l + 1, next, q, k, L.c), () => onward(ctx, p, d, L.T1x));
 }
-function mergeNext(ctx, l1, p, bits, nextFlags, value) {
+// ft (world.mjs): the radiance along the merge's own ray past its interval, traced to the end.
+export const onward = (ctx, o, d, t0) => traced(ctx, o, d, t0, Infinity) || ctx.sc.sky;
+function mergeNext(ctx, l1, p, bits, nextFlags, value, fallback) {
   const out = [0, 0, 0], all = [0, 0, 0];
   let ws = 0, wa = 0;
   neighbours(ctx.plan, l1, p).forEach((q, c) => {
@@ -205,6 +226,7 @@ function mergeNext(ctx, l1, p, bits, nextFlags, value) {
     for (let ch = 0; ch < 3; ch++) out[ch] += w * v[ch];
     ws += w;
   });
+  if (!(ws > 0) && ctx.plan.ft) return fallback(); // ft: no trusted neighbour, trace on (world.mjs)
   if (!(ws > 0) && ctx.plan.fz) return [0, 0, 0]; // fz: no trusted neighbour, no light (world.mjs)
   return ws > 0 ? mul(out, 1 / ws) : mul(all, 1 / Math.max(wa, 1e-30));
 }
@@ -258,8 +280,8 @@ export function screenProbe(ctx, x, pid, buf1, flags1) {
       }
     } else {
       v = traced(ctx, o, d, 0, one ? T1x : Infinity);
-      const look = (q) => lookup(ctx, 1, buf1, q, d);
-      if (!v) v = !one ? ctx.sc.sky : wts ? mergeWeighted(ctx, x.p, wts, look) : mergeNext(ctx, 1, x.p, bits, flags1, look);
+      const look = (q) => lookup(ctx, 1, buf1, q, d), on = () => onward(ctx, o, d, T1x);
+      if (!v) v = !one ? ctx.sc.sky : wts ? mergeWeighted(ctx, x.p, wts, look, on) : mergeNext(ctx, 1, x.p, bits, flags1, look, on);
     }
     for (let c = 0; c < 3; c++) E[c] += v[c];
   }
