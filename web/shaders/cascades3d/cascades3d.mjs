@@ -74,20 +74,21 @@ export function gatherCache(ctx, cache, x) {
     if (w > 0) { for (let c = 0; c < 3; c++) E[c] += w * e[c]; ws += w; }
   }
   if (ws > 0) return mul(E, 1 / ws);
-  if (ctx.plan.cg >= 4) { const e = gatherDepthSeen(ctx, cache, x, nb, plan, depth, 2); return e ? e : gatherSeen(ctx, cache, x, nb) || [0, 0, 0]; }
+  if (ctx.plan.cg >= 4) { const e = gatherDepthSeen(ctx, cache, x, nb, plan, depth, 2); return e ? e : gatherSeen(ctx, cache, x, nb, ctx.plan.cg === 5) || [0, 0, 0]; }
   if (ctx.plan.cg >= 2) return gatherDepthSeen(ctx, cache, x, nb, plan, depth) || [0, 0, 0]; // cg 2, 3 (world.mjs): no rays
   if (ctx.plan.cg) return gatherSeen(ctx, cache, x, nb); // cg (world.mjs): no fallback past a wall
   if (wl > 0) return mul(El, 1 / wl);
   return wf > 0 ? mul(Ef, 1 / wf) : mul(Ea, 1 / wa);
 }
 // cg: when no probe passes the depth test, the lit-side probes outside geometry that a segment from
-// the surface reaches; no light when none does.
-function gatherSeen(ctx, cache, x, nb) {
-  const up = offset(x, x.ng), E = [0, 0, 0];
-  let ws = 0;
+// the surface reaches; no light when none does. one (cg 5): only the eligible probe of largest weight.
+function gatherSeen(ctx, cache, x, nb, one = false) {
+  const up = offset(x, x.ng), E = [0, 0, 0], ok = (q) => q.w > 0 && !(cache[16 * q.idx + 3] > 0) && dot(sub(q.pos, x.p), x.ng) > 0;
+  let ws = 0, top = null;
+  if (one) for (const q of nb) if (ok(q) && (!top || q.w > top.w)) top = q;
   for (const q of nb) {
     const o = 16 * q.idx;
-    if (q.w <= 0 || cache[o + 3] > 0 || dot(sub(q.pos, x.p), x.ng) <= 0) continue;
+    if (!ok(q) || (one && q !== top)) continue;
     const e = sub(q.pos, up), len = Math.hypot(...e);
     if (len > 0 && occluded(ctx.S, up, mul(e, 1 / len), len)) continue;
     for (let c = 0; c < 3; c++) E[c] += q.w * Math.max(0, cache[o + c] + cache[o + 4 + c] * x.n[0] + cache[o + 8 + c] * x.n[1] + cache[o + 12 + c] * x.n[2]);

@@ -192,12 +192,15 @@ fn chebVis(q0: u32, qp: vec3f, at: vec3f) -> f32 { // world.mjs chebVis
 fn cacheE(q: u32, n: vec3f) -> vec3f {
   return max(vec3f(0.0), cache[4u * q].xyz + cache[4u * q + 1u].xyz * n.x + cache[4u * q + 2u].xyz * n.y + cache[4u * q + 3u].xyz * n.z);
 }
-// cg (cascades3d.mjs gatherSeen): lit-side probes outside geometry that a segment from the surface reaches.
+// cg (cascades3d.mjs gatherSeen): lit-side probes outside geometry that a segment from the surface
+// reaches; cg 5 only the eligible probe of largest weight (the first on ties, as the CPU).
+fn seenOk(q: Nb, x: Surf) -> bool { return q.w > 0.0 && cache[4u * q.idx].w <= 0.0 && dot(q.pos - x.p, x.ng) > 0.0; }
 fn gatherSeen(x: Surf) -> vec3f {
-  let up = offsetP(x, x.ng); var E = vec3f(0.0); var ws = 0.0;
+  let up = offsetP(x, x.ng); var E = vec3f(0.0); var ws = 0.0; let one = (P.wo.w >> 1u) == 5u; var top = 8u; var tw = 0.0;
+  if (one) { for (var c = 0u; c < 8u; c++) { let q = neighbourLo(0u, x.p, c, P.clo.xyz); if (seenOk(q, x) && (top == 8u || q.w > tw)) { top = c; tw = q.w; } } }
   for (var c = 0u; c < 8u; c++) {
     let q = neighbourLo(0u, x.p, c, P.clo.xyz);
-    if (q.w <= 0.0 || cache[4u * q.idx].w > 0.0 || dot(q.pos - x.p, x.ng) <= 0.0) { continue; }
+    if (!seenOk(q, x) || (one && c != top)) { continue; }
     let e = q.pos - up; let len = lenR(e);
     if (len > 0.0 && occluded(up, e / len, len)) { continue; }
     E += q.w * cacheE(q.idx, x.n); ws += q.w;

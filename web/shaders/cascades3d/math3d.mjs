@@ -85,7 +85,7 @@ export function planCascades3d(bounds, { h0 = 0.5, c0 = 1, r0 = 2, f = 2, levels
   // jit K > 0: K phases of a world-grid offset of up to h0 2^jl a frame (world.mjs phasePlan).
   if (c1 && !(c1 > c0 && Number.isInteger(Math.log2(c1 / c0)))) throw new Error(`c1 ${c1}: c0 times a power of two above c0`);
   if (!["seg", "vis"].includes(mw)) throw new Error(`mw ${mw}`);
-  if (![0, 1, 2, 3, 4].includes(+cg) || (sd && sv !== 2) || ![0, 1].includes(pi) || ![0, 1, 2].includes(fd) || (fd && !sv)) throw new Error("cg is 0 to 4, pi 0 or 1, fd 0 to 2; sd and fd need sv");
+  if (![0, 1, 2, 3, 4, 5].includes(+cg) || (sd && sv !== 2) || ![0, 1].includes(pi) || ![0, 1, 2].includes(fd) || (fd && !sv)) throw new Error("cg is 0 to 5, pi 0 or 1, fd 0 to 2; sd and fd need sv");
   // Defaults (2026-11-07, sixth round, evidence/cascades3d-cost-rtx4090.json): the leak-tight merges
   // sv 2, ft 1, cg 2, and grid jitter with temporal accumulation, jit 8 and tf 32 (jit defaults to 0
   // when tf is 0). Pass sv 0, ft 0, cg 0, tf 0 for the round-1 setting.
