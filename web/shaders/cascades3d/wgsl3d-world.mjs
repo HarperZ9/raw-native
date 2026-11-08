@@ -4,7 +4,8 @@
 import { PARAMS, CORE, ID } from "./wgsl3d-core.mjs";
 
 export const INSIDE = /* wgsl */ `
-fn insideF(f: u32) -> bool { let back = (f >> 16u) & 15u; let front = (f >> 20u) & 15u; return back >= 3u && back > front; }
+// pi (bit 2 of wo.z): also inside when at least half of 96 rays (bits 24 to 31) meet a surface from behind.
+fn insideF(f: u32) -> bool { let back = (f >> 16u) & 15u; let front = (f >> 20u) & 15u; return (back >= 3u && back > front) || ((P.wo.z & 4u) != 0u && (f >> 24u) * 2u >= 96u); }
 `;
 export const MERGE = INSIDE + /* wgsl */ `
 // s x s children, s = c(l1) / c; w: their start visibility (1 without sv), which also weighs them.

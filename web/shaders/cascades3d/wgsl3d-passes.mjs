@@ -18,12 +18,14 @@ export const GBUF = PARAMS + CORE + /* wgsl */ `
 
 // Probe flags of level P.level, one thread a (probe, ray): rays 0-5 are the axis rays (their hit
 // counts, from behind in bits 16-19 and from the front in 20-23), rays 6-13 the segments to the next
-// level's 8 neighbours (bit c when seen). The host clears the buffer first. insideF reads it.
+// level's 8 neighbours (bit c when seen); with pi, rays 14-109 the 96 buried-test rays (bits 24-31).
+// The host clears the buffer first. insideF reads it.
 export const FLAGS = PARAMS + CORE + /* wgsl */ `
 @group(0) @binding(2) var<storage, read_write> flags: array<atomic<u32>>;
 @compute @workgroup_size(256) fn main(@builtin(global_invocation_id) gid: vec3u) {
   ${ID}
-  let l = P.level; let pr = id / 14u; let r = id % 14u; let p = probePos(l, pr); let h = P.geo[l].x; let at = P.ofs[l].y + pr;
+  let R = select(14u, 110u, (P.wo.z & 4u) != 0u); let l = P.level; let pr = id / R; let r = id % R; let p = probePos(l, pr); let h = P.geo[l].x; let at = P.ofs[l].y + pr;
+  if (r >= 14u) { let d = texelDir(r - 14u, 4u); let t = trace(p, d, 0.0, 1e30, false); if (t.slot >= 0 && surfaceAt(p, d, t).back) { atomicAdd(&flags[at], 1u << 24u); } return; } // pi
   if (r < 6u) {
     var d = vec3f(0.0); d[r >> 1u] = select(1.0, -1.0, (r & 1u) == 1u);
     let t = trace(p, d, 0.0, h, false);
@@ -65,6 +67,7 @@ export const LEVEL = PARAMS + CORE + /* wgsl */ `
   let l = P.level; let tex = P.ofs[l].z; let idx = id / tex; let k = id % tex; let c = u32(P.geo[l].y);
   var vis = 1.0; // this entry's start visibility, read by the level below's merges
   if (P.wo.y != 0u) { vis = sv[P.ofs[l].w + id]; }
+  if ((P.wo.z & 32u) != 0u && insideF(flags[P.ofs[l].y + idx])) { cur[id] = vec4f(0.0, 0.0, 0.0, vis); return; } // sk: nothing reads it
   let p = probePos(l, idx); let d = texelDir(k, c); let top = l + 1u == P.nLevels; let T0 = P.geo[l].z; let T1x = P.geo[l].w;
   var found = false;
   if ((P.wo.z & 2u) != 0u) { // sd (world.mjs): a blocked entry holds the surface that blocks it; every entry counts
@@ -87,14 +90,17 @@ export const LEVEL = PARAMS + CORE + /* wgsl */ `
   if (found) { cur[id] = vec4f(v, vis); return; }
   if (top) { cur[id] = vec4f(P.sky.xyz, vis); return; }
   let bits = flags[P.ofs[l].y + idx];
-  var out = vec3f(0.0); var all = vec3f(0.0); var ws = 0.0; var wa = 0.0;
+  var out = vec3f(0.0); var all = vec3f(0.0); var ws = 0.0; var wa = 0.0; var wt = 0.0;
   for (var cn = 0u; cn < 8u; cn++) {
     let q = neighbour(l + 1u, p, cn);
     if (q.w <= 0.0) { continue; }
     let m = children(l + 1u, q.idx, k, c);
     all += q.w * m.xyz; wa += q.w;
     if (P.fix == 1u && ((bits & (1u << cn)) == 0u || insideF(flags[P.ofs[l + 1u].y + q.idx]))) { continue; }
-    out += q.w * m.w * m.xyz; ws += q.w * m.w;
+    out += q.w * m.w * m.xyz; ws += q.w * m.w; wt += q.w;
+  }
+  if (ws > 0.0 && ((P.wo.z >> 3u) & 3u) == 2u && wt - ws > 1e-6 * wt) { // fd 2: the dropped share takes the own ray
+    v = traced(p, d, T1x, 1e30, &found); cur[id] = vec4f((out + (wt - ws) * select(P.sky.xyz, v, found)) / wt, vis); return;
   }
   if (ws <= 0.0 && (P.wo.w & 1u) != 0u) { v = traced(p, d, T1x, 1e30, &found); cur[id] = vec4f(select(P.sky.xyz, v, found), vis); return; } // ft
   cur[id] = vec4f(select(select(all / max(wa, 1e-30), vec3f(0.0), (P.wo.z & 1u) != 0u), out / ws, ws > 0.0), vis);
@@ -180,7 +186,7 @@ export const SRAYS = PARAMS + CORE + /* wgsl */ `
     if (!found) {
       if (!one) { v = P.sky.xyz; }
       else {
-        var out = vec3f(0.0); var all = vec3f(0.0); var ws = 0.0; var wa = 0.0;
+        var out = vec3f(0.0); var all = vec3f(0.0); var ws = 0.0; var wa = 0.0; var wt = 0.0;
         for (var c = 0u; c < 8u; c++) {
           let q = neighbour(1u, x.p, c);
           if (q.w <= 0.0) { continue; }
@@ -189,9 +195,10 @@ export const SRAYS = PARAMS + CORE + /* wgsl */ `
           var w = q.w;
           let q0 = levelZeroIndex(1u, q.idx);
           if (q0 >= 0 && P.wo.x == 1u) { w *= chebVis(u32(q0), q.pos, x.p + x.ng * (0.25 * P.lo.w)); }
-          out += w * r.w * r.xyz; ws += w * r.w;
+          out += w * r.w * r.xyz; ws += w * r.w; wt += w;
         }
         if (ws <= 0.0 && (P.wo.w & 1u) != 0u) { v = traced(o, d, T1x, 1e30, &found); if (!found) { v = P.sky.xyz; } }
+        else if (ws > 0.0 && ((P.wo.z >> 3u) & 3u) != 0u && wt - ws > 1e-6 * wt) { v = traced(o, d, T1x, 1e30, &found); v = (out + (wt - ws) * select(P.sky.xyz, v, found)) / wt; } // fd
         else { v = select(select(all / max(wa, 1e-30), vec3f(0.0), (P.wo.z & 1u) != 0u), out / ws, ws > 0.0); }
       }
     }

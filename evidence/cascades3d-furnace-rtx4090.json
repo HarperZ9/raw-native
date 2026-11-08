@@ -1,0 +1,1300 @@
+{
+ "schema": "cascades3d-furnace-rtx4090/1",
+ "bounds": "evidence/cascades3d-furnace-bounds.json (written before any leak, GPU or hall run; four amendments, each logged before the runs it governs)",
+ "date": "2026-11-07",
+ "machine": "RTX 4090 shared with a training job (12.6 to 14.6 GB in use by others during the runs; these runs used at most 1.7 GB), WebGPU in Chrome on D3D12; CPU float64 in node, at most 3 workers at below-normal priority",
+ "references": "reused from rounds 4 to 6 (same path tracer and scene files): raw-hall 8-bounce 1024 spp, two seeds at 1080p, one at 4K; leak scenes 4096 spp",
+ "source": "J. Tollenaar, Split Radiance Cascades (the author's save, batch 36), read as data: probes buried in geometry cause leaks and dark splotches; rays from real surface points avoid them. Used for pi (test probes for being buried) and for the segment fallbacks cg 4 and cg 6",
+ "cpu_furnace_12x8": {
+  "what": "white furnace, 3 bounces, started at the fixed point; 21 grids (g0-g4, ph0-ph7, r0-r7; 17 distinct, since ph0-ph3 are g1-g4); worst relative error and failing grids (>= 1e-6) per plan: s3 = stride 3 m 2, s0 = stride 0, jit = stride 3 m 2 tf 3 jit 2",
+  "J2": {
+   "s3": {
+    "grids": 21,
+    "worst": 0.03628653694142809,
+    "failing": {
+     "ph1": {
+      "worst": 0.01045024312618625,
+      "pixels": 10
+     },
+     "g1": {
+      "worst": 0.025090731889091358,
+      "pixels": 9
+     },
+     "g4": {
+      "worst": 0.03628653694142809,
+      "pixels": 96
+     },
+     "g2": {
+      "worst": 0.01045024312618625,
+      "pixels": 10
+     },
+     "ph0": {
+      "worst": 0.025090731889091358,
+      "pixels": 1
+     },
+     "ph3": {
+      "worst": 0.03628653694142809,
+      "pixels": 96
+     },
+     "ph6": {
+      "worst": 0.02265818327250253,
+      "pixels": 96
+     },
+     "r1": {
+      "worst": 0.00018301561121154776,
+      "pixels": 10
+     }
+    }
+   },
+   "s0": {
+    "grids": 21,
+    "worst": 0.15747376523312367,
+    "failing": {
+     "ph1": {
+      "worst": 0.003442573202047177,
+      "pixels": 11
+     },
+     "ph4": {
+      "worst": 0.12588007480835625,
+      "pixels": 42
+     },
+     "ph7": {
+      "worst": 0.15747376523312367,
+      "pixels": 21
+     },
+     "g1": {
+      "worst": 0.1385787190531665,
+      "pixels": 6
+     },
+     "g4": {
+      "worst": 0.08653288053999283,
+      "pixels": 96
+     },
+     "r0": {
+      "worst": 0.0012914354786412706,
+      "pixels": 5
+     },
+     "g2": {
+      "worst": 0.003442573202047177,
+      "pixels": 11
+     },
+     "ph0": {
+      "worst": 0.13857871905316682,
+      "pixels": 2
+     },
+     "ph3": {
+      "worst": 0.08653288053999283,
+      "pixels": 96
+     },
+     "ph6": {
+      "worst": 0.0309948931122872,
+      "pixels": 96
+     },
+     "r1": {
+      "worst": 0.09512880133304917,
+      "pixels": 16
+     },
+     "r7": {
+      "worst": 0.09175831754146437,
+      "pixels": 41
+     }
+    }
+   },
+   "jit": {
+    "grids": 21,
+    "worst": 0.021468151888403935,
+    "failing": {
+     "g0": {
+      "worst": 2.119208474625148e-05,
+      "pixels": 62
+     },
+     "g3": {
+      "worst": 0.00518475299067946,
+      "pixels": 96
+     },
+     "ph1": {
+      "worst": 0.0011464085460290876,
+      "pixels": 95
+     },
+     "ph4": {
+      "worst": 0.00011636826715278768,
+      "pixels": 81
+     },
+     "ph7": {
+      "worst": 0.012704718264314218,
+      "pixels": 96
+     },
+     "r2": {
+      "worst": 0.0001758632169800838,
+      "pixels": 96
+     },
+     "r5": {
+      "worst": 0.015747341223304887,
+      "pixels": 96
+     },
+     "g1": {
+      "worst": 0.008876376537444532,
+      "pixels": 96
+     },
+     "g4": {
+      "worst": 0.00027024691663568275,
+      "pixels": 84
+     },
+     "ph2": {
+      "worst": 0.0051848355758752135,
+      "pixels": 96
+     },
+     "ph5": {
+      "worst": 0.008640543593606453,
+      "pixels": 96
+     },
+     "r0": {
+      "worst": 0.009384953551854319,
+      "pixels": 94
+     },
+     "r3": {
+      "worst": 0.010473511588393504,
+      "pixels": 96
+     },
+     "r6": {
+      "worst": 0.021468151888403935,
+      "pixels": 96
+     },
+     "g2": {
+      "worst": 0.0011464085460293088,
+      "pixels": 95
+     },
+     "ph0": {
+      "worst": 0.008876376537444532,
+      "pixels": 96
+     },
+     "ph3": {
+      "worst": 0.00027024691663568275,
+      "pixels": 84
+     },
+     "ph6": {
+      "worst": 5.6965247270766296e-05,
+      "pixels": 94
+     },
+     "r1": {
+      "worst": 0.0027217006529621146,
+      "pixels": 81
+     },
+     "r4": {
+      "worst": 0.01157123167146968,
+      "pixels": 96
+     }
+    }
+   }
+  },
+  "F_first_version": {
+   "s3": {
+    "grids": 21,
+    "worst": 2.2117382858547426e-16,
+    "failing": {}
+   },
+   "s0": {
+    "grids": 21,
+    "worst": 2.2117382858547426e-16,
+    "failing": {}
+   },
+   "jit": {
+    "grids": 21,
+    "worst": 0.000735812044833369,
+    "failing": {
+     "ph2": {
+      "worst": 0.000735812044833369,
+      "pixels": 56
+     },
+     "r1": {
+      "worst": 0.0002223326835670804,
+      "pixels": 86
+     }
+    }
+   }
+  },
+  "F": {
+   "s3": {
+    "grids": 21,
+    "worst": 2.2117382858547426e-16,
+    "failing": {}
+   },
+   "s0": {
+    "grids": 21,
+    "worst": 2.2117382858547426e-16,
+    "failing": {}
+   },
+   "jit": {
+    "grids": 21,
+    "worst": 2.2117382858547426e-16,
+    "failing": {}
+   }
+  },
+  "G": {
+   "s3": {
+    "grids": 21,
+    "worst": 2.2117382858547426e-16,
+    "failing": {}
+   },
+   "s0": {
+    "grids": 21,
+    "worst": 2.2117382858547426e-16,
+    "failing": {}
+   },
+   "jit": {
+    "grids": 21,
+    "worst": 2.2117382858547426e-16,
+    "failing": {}
+   }
+  },
+  "F5": {
+   "s3": {
+    "grids": 21,
+    "worst": 2.660351056436018e-06,
+    "failing": {
+     "r1": {
+      "worst": 2.660351056436018e-06,
+      "pixels": 9
+     }
+    }
+   },
+   "s0": {
+    "grids": 21,
+    "worst": 4.067525602639485e-07,
+    "failing": {}
+   },
+   "jit": {
+    "grids": 21,
+    "worst": 0.01155943217442115,
+    "failing": {
+     "r5": {
+      "worst": 0.0006387653779667027,
+      "pixels": 96
+     },
+     "r4": {
+      "worst": 0.01155943217442115,
+      "pixels": 96
+     }
+    }
+   }
+  },
+  "H": {
+   "s3": {
+    "grids": 21,
+    "worst": 2.2117382858547426e-16,
+    "failing": {}
+   },
+   "s0": {
+    "grids": 21,
+    "worst": 2.2117382858547426e-16,
+    "failing": {}
+   },
+   "jit": {
+    "grids": 21,
+    "worst": 2.2117382858547426e-16,
+    "failing": {}
+   }
+  }
+ },
+ "cpu_leak_16x10": {
+  "what": "closed room B mean over 0.055 at 13 grids",
+  "F_first_version": {
+   "g0": 0,
+   "g1": 0,
+   "g2": 0,
+   "g3": 0,
+   "g4": 0,
+   "ph0": 0,
+   "ph1": 0,
+   "ph2": 0,
+   "ph3": 0,
+   "ph4": 0,
+   "ph5": 0,
+   "ph6": 0,
+   "ph7": 0
+  },
+  "G_first_version": {
+   "g0": 0,
+   "g1": 0,
+   "g2": 0,
+   "g3": 0,
+   "g4": 0,
+   "ph0": 0,
+   "ph1": 0,
+   "ph2": 0,
+   "ph3": 0,
+   "ph4": 0,
+   "ph5": 0,
+   "ph6": 0,
+   "ph7": 0
+  },
+  "F": {
+   "g0": 0,
+   "g1": 0,
+   "g2": 0,
+   "g3": 0,
+   "g4": 0,
+   "ph0": 0,
+   "ph1": 0,
+   "ph2": 0,
+   "ph3": 0,
+   "ph4": 0,
+   "ph5": 0,
+   "ph6": 0,
+   "ph7": 0
+  },
+  "G": {
+   "g0": 0,
+   "g1": 0,
+   "g2": 0,
+   "g3": 0,
+   "g4": 0,
+   "ph0": 0,
+   "ph1": 0,
+   "ph2": 0,
+   "ph3": 0,
+   "ph4": 0,
+   "ph5": 0,
+   "ph6": 0,
+   "ph7": 0
+  },
+  "F5": {
+   "g0": 0,
+   "g1": 0,
+   "g2": 0,
+   "g3": 0,
+   "g4": 0,
+   "ph0": 0,
+   "ph1": 0,
+   "ph2": 0,
+   "ph3": 0,
+   "ph4": 0,
+   "ph5": 0,
+   "ph6": 0,
+   "ph7": 0
+  },
+  "H": {
+   "g0": 0,
+   "g1": 0,
+   "g2": 0,
+   "g3": 0,
+   "g4": 0,
+   "ph0": 0,
+   "ph1": 0,
+   "ph2": 0,
+   "ph3": 0,
+   "ph4": 0,
+   "ph5": 0,
+   "ph6": 0,
+   "ph7": 0
+  }
+ },
+ "hall": {
+  "J2-1080": {
+   "plan": {
+    "h0": 0.5,
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "jit": 8,
+    "sv": 2,
+    "ft": 1,
+    "cg": 2
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 1628014760,
+   "rel_rmse": 0.0822,
+   "interval95": [
+    0.0773,
+    0.0878
+   ],
+   "bias": 0.0133,
+   "mottle_walls": 0.0315,
+   "mottle_floor": 0.0182,
+   "gi_ms": {
+    "median": 4.932,
+    "p05": 4.649,
+    "p95": 5.172,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 2.468,
+    "cache": 0.011,
+    "svis": 0.752,
+    "srays": 0.774,
+    "ssum": 0.013,
+    "final": 0.162,
+    "accum": 0.727
+   },
+   "gpu_mib_in_use_before_run": "14630 MiB"
+  },
+  "J2-1080-r2": {
+   "plan": {
+    "h0": 0.5,
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "jit": 8,
+    "sv": 2,
+    "ft": 1,
+    "cg": 2
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 1628014760,
+   "rel_rmse": 0.0822,
+   "interval95": [
+    0.0773,
+    0.0878
+   ],
+   "bias": 0.0133,
+   "mottle_walls": 0.0315,
+   "mottle_floor": 0.0182,
+   "gi_ms": {
+    "median": 4.925,
+    "p05": 4.637,
+    "p95": 5.249,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 2.465,
+    "cache": 0.012,
+    "svis": 0.759,
+    "srays": 0.775,
+    "ssum": 0.013,
+    "final": 0.161,
+    "accum": 0.741
+   },
+   "gpu_mib_in_use_before_run": "14078 MiB"
+  },
+  "J2-1080-r3": {
+   "plan": {
+    "h0": 0.5,
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "jit": 8,
+    "sv": 2,
+    "ft": 1,
+    "cg": 2
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 1628014760,
+   "rel_rmse": 0.0822,
+   "interval95": [
+    0.0773,
+    0.0878
+   ],
+   "bias": 0.0133,
+   "mottle_walls": 0.0315,
+   "mottle_floor": 0.0182,
+   "gi_ms": {
+    "median": 4.999,
+    "p05": 4.836,
+    "p95": 5.249,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 2.479,
+    "cache": 0.012,
+    "svis": 0.758,
+    "srays": 0.776,
+    "ssum": 0.013,
+    "final": 0.161,
+    "accum": 0.726
+   },
+   "gpu_mib_in_use_before_run": "14075 MiB"
+  },
+  "Jpi-1080": {
+   "plan": {
+    "h0": 0.5,
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "jit": 8,
+    "sv": 2,
+    "ft": 1,
+    "cg": 2,
+    "pi": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 1628014760,
+   "rel_rmse": 0.0823,
+   "interval95": [
+    0.0774,
+    0.0878
+   ],
+   "bias": 0.0136,
+   "mottle_walls": 0.0314,
+   "mottle_floor": 0.0182,
+   "gi_ms": {
+    "median": 4.995,
+    "p05": 4.707,
+    "p95": 5.209,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 2.468,
+    "cache": 0.012,
+    "svis": 0.766,
+    "srays": 0.78,
+    "ssum": 0.013,
+    "final": 0.161,
+    "accum": 0.734
+   },
+   "gpu_mib_in_use_before_run": "14078 MiB"
+  },
+  "J2sk-1080": {
+   "plan": {
+    "h0": 0.5,
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "jit": 8,
+    "sv": 2,
+    "ft": 1,
+    "cg": 2,
+    "sk": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 1628014760,
+   "rel_rmse": 0.0822,
+   "interval95": [
+    0.0773,
+    0.0878
+   ],
+   "bias": 0.0133,
+   "mottle_walls": 0.0315,
+   "mottle_floor": 0.0182,
+   "gi_ms": {
+    "median": 4.911,
+    "p05": 4.621,
+    "p95": 5.258,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 2.409,
+    "cache": 0.012,
+    "svis": 0.757,
+    "srays": 0.785,
+    "ssum": 0.013,
+    "final": 0.161,
+    "accum": 0.729
+   },
+   "gpu_mib_in_use_before_run": "14075 MiB"
+  },
+  "F-1080": {
+   "plan": {
+    "h0": 0.5,
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "jit": 8,
+    "sv": 2,
+    "ft": 1,
+    "cg": 4,
+    "pi": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 1628014760,
+   "rel_rmse": 0.0828,
+   "interval95": [
+    0.0778,
+    0.0883
+   ],
+   "bias": 0.0146,
+   "mottle_walls": 0.0314,
+   "mottle_floor": 0.0183,
+   "gi_ms": {
+    "median": 6.198,
+    "p05": 5.657,
+    "p95": 7.132,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 3.758,
+    "cache": 0.013,
+    "svis": 0.302,
+    "srays": 1.475,
+    "ssum": 0.017,
+    "final": 0.19,
+    "accum": 0.249
+   },
+   "gpu_mib_in_use_before_run": "14626 MiB"
+  },
+  "F-1080-r2": {
+   "plan": {
+    "h0": 0.5,
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "jit": 8,
+    "sv": 2,
+    "ft": 1,
+    "cg": 4,
+    "pi": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 1628014760,
+   "rel_rmse": 0.0828,
+   "interval95": [
+    0.0778,
+    0.0883
+   ],
+   "bias": 0.0146,
+   "mottle_walls": 0.0314,
+   "mottle_floor": 0.0183,
+   "gi_ms": {
+    "median": 6.586,
+    "p05": 5.925,
+    "p95": 7.17,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 3.905,
+    "cache": 0.015,
+    "svis": 0.306,
+    "srays": 1.559,
+    "ssum": 0.017,
+    "final": 0.19,
+    "accum": 0.703
+   },
+   "gpu_mib_in_use_before_run": "14012 MiB"
+  },
+  "F-1080-r3": {
+   "plan": {
+    "h0": 0.5,
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "jit": 8,
+    "sv": 2,
+    "ft": 1,
+    "cg": 4,
+    "pi": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 1628014760,
+   "rel_rmse": 0.0828,
+   "interval95": [
+    0.0778,
+    0.0883
+   ],
+   "bias": 0.0146,
+   "mottle_walls": 0.0314,
+   "mottle_floor": 0.0183,
+   "gi_ms": {
+    "median": 6.389,
+    "p05": 5.74,
+    "p95": 7.067,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 3.847,
+    "cache": 0.013,
+    "svis": 0.303,
+    "srays": 1.493,
+    "ssum": 0.016,
+    "final": 0.19,
+    "accum": 0.249
+   },
+   "gpu_mib_in_use_before_run": "14078 MiB"
+  },
+  "Fsk-1080": {
+   "plan": {
+    "h0": 0.5,
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "jit": 8,
+    "sv": 2,
+    "ft": 1,
+    "cg": 4,
+    "pi": 1,
+    "sk": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 1628014760,
+   "rel_rmse": 0.0828,
+   "interval95": [
+    0.0778,
+    0.0883
+   ],
+   "bias": 0.0146,
+   "mottle_walls": 0.0314,
+   "mottle_floor": 0.0183,
+   "gi_ms": {
+    "median": 5.273,
+    "p05": 4.938,
+    "p95": 5.921,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 2.595,
+    "cache": 0.012,
+    "svis": 0.747,
+    "srays": 0.898,
+    "ssum": 0.013,
+    "final": 0.648,
+    "accum": 0.262
+   },
+   "gpu_mib_in_use_before_run": "14075 MiB"
+  },
+  "G-1080": {
+   "plan": {
+    "h0": 0.5,
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "jit": 8,
+    "sv": 2,
+    "ft": 1,
+    "cg": 4,
+    "pi": 1,
+    "fd": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 1628014760,
+   "rel_rmse": 0.0817,
+   "interval95": [
+    0.0767,
+    0.0871
+   ],
+   "bias": 0.0136,
+   "mottle_walls": 0.0309,
+   "mottle_floor": 0.0178,
+   "gi_ms": {
+    "median": 7.522,
+    "p05": 6.979,
+    "p95": 8.486,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 3.801,
+    "cache": 0.014,
+    "svis": 0.304,
+    "srays": 2.927,
+    "ssum": 0.029,
+    "final": 0.194,
+    "accum": 0.248
+   },
+   "gpu_mib_in_use_before_run": "14012 MiB"
+  },
+  "G-1080-r2": {
+   "plan": {
+    "h0": 0.5,
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "jit": 8,
+    "sv": 2,
+    "ft": 1,
+    "cg": 4,
+    "pi": 1,
+    "fd": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 1628014760,
+   "rel_rmse": 0.0817,
+   "interval95": [
+    0.0767,
+    0.0871
+   ],
+   "bias": 0.0136,
+   "mottle_walls": 0.0309,
+   "mottle_floor": 0.0178,
+   "gi_ms": {
+    "median": 7.427,
+    "p05": 7.052,
+    "p95": 7.975,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 3.76,
+    "cache": 0.013,
+    "svis": 0.304,
+    "srays": 2.842,
+    "ssum": 0.02,
+    "final": 0.194,
+    "accum": 0.248
+   },
+   "gpu_mib_in_use_before_run": "14078 MiB"
+  },
+  "G-1080-r3": {
+   "plan": {
+    "h0": 0.5,
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "jit": 8,
+    "sv": 2,
+    "ft": 1,
+    "cg": 4,
+    "pi": 1,
+    "fd": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 1628014760,
+   "rel_rmse": 0.0817,
+   "interval95": [
+    0.0767,
+    0.0871
+   ],
+   "bias": 0.0136,
+   "mottle_walls": 0.0309,
+   "mottle_floor": 0.0178,
+   "gi_ms": {
+    "median": 7.584,
+    "p05": 7.029,
+    "p95": 8.242,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 3.893,
+    "cache": 0.014,
+    "svis": 0.306,
+    "srays": 2.883,
+    "ssum": 0.029,
+    "final": 0.195,
+    "accum": 0.248
+   },
+   "gpu_mib_in_use_before_run": "14078 MiB"
+  },
+  "G2-1080": {
+   "plan": {
+    "h0": 0.5,
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "jit": 8,
+    "sv": 2,
+    "ft": 1,
+    "cg": 4,
+    "pi": 1,
+    "fd": 2
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 1628014760,
+   "rel_rmse": 0.0821,
+   "interval95": [
+    0.0771,
+    0.0872
+   ],
+   "bias": 0.0151,
+   "mottle_walls": 0.0322,
+   "mottle_floor": 0.0178,
+   "gi_ms": {
+    "median": 8.179,
+    "p05": 7.478,
+    "p95": 9.123,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 4.349,
+    "cache": 0.012,
+    "svis": 0.691,
+    "srays": 2.347,
+    "ssum": 0.024,
+    "final": 0.19,
+    "accum": 0.442
+   },
+   "gpu_mib_in_use_before_run": "14078 MiB"
+  },
+  "H-1080": {
+   "plan": {
+    "h0": 0.5,
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "jit": 8,
+    "sv": 2,
+    "ft": 1,
+    "cg": 6,
+    "pi": 1,
+    "sk": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 1628014760,
+   "rel_rmse": 0.0827,
+   "interval95": [
+    0.0778,
+    0.0883
+   ],
+   "bias": 0.0145,
+   "mottle_walls": 0.0314,
+   "mottle_floor": 0.0183,
+   "gi_ms": {
+    "median": 5.19,
+    "p05": 4.834,
+    "p95": 5.724,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 2.526,
+    "cache": 0.012,
+    "svis": 0.756,
+    "srays": 0.883,
+    "ssum": 0.013,
+    "final": 0.645,
+    "accum": 0.266
+   },
+   "gpu_mib_in_use_before_run": "14077 MiB"
+  },
+  "H-1080-r2": {
+   "plan": {
+    "h0": 0.5,
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "jit": 8,
+    "sv": 2,
+    "ft": 1,
+    "cg": 6,
+    "pi": 1,
+    "sk": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 1628014760,
+   "rel_rmse": 0.0827,
+   "interval95": [
+    0.0778,
+    0.0883
+   ],
+   "bias": 0.0145,
+   "mottle_walls": 0.0314,
+   "mottle_floor": 0.0183,
+   "gi_ms": {
+    "median": 5.171,
+    "p05": 4.807,
+    "p95": 5.755,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 2.528,
+    "cache": 0.012,
+    "svis": 0.748,
+    "srays": 0.885,
+    "ssum": 0.013,
+    "final": 0.643,
+    "accum": 0.265
+   },
+   "gpu_mib_in_use_before_run": "14075 MiB"
+  },
+  "H-1080-r3": {
+   "plan": {
+    "h0": 0.5,
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "jit": 8,
+    "sv": 2,
+    "ft": 1,
+    "cg": 6,
+    "pi": 1,
+    "sk": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 1628014760,
+   "rel_rmse": 0.0827,
+   "interval95": [
+    0.0778,
+    0.0883
+   ],
+   "bias": 0.0145,
+   "mottle_walls": 0.0314,
+   "mottle_floor": 0.0183,
+   "gi_ms": {
+    "median": 5.181,
+    "p05": 4.864,
+    "p95": 5.774,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 2.528,
+    "cache": 0.012,
+    "svis": 0.755,
+    "srays": 0.891,
+    "ssum": 0.013,
+    "final": 0.647,
+    "accum": 0.265
+   },
+   "gpu_mib_in_use_before_run": "14075 MiB"
+  },
+  "H-4k": {
+   "plan": {
+    "h0": 0.5,
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "jit": 8,
+    "sv": 2,
+    "ft": 1,
+    "cg": 6,
+    "pi": 1,
+    "sk": 1
+   },
+   "size": [
+    3840,
+    2160
+   ],
+   "gpu_bytes": 2382675560,
+   "rel_rmse": 0.0937,
+   "interval95": [
+    0.0905,
+    0.0969
+   ],
+   "bias": 0.014,
+   "mottle_walls": 0.025,
+   "mottle_floor": 0.0163,
+   "gi_ms": {
+    "median": 10.647,
+    "p05": 10.342,
+    "p95": 11.691,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 2.559,
+    "cache": 0.012,
+    "svis": 0.875,
+    "srays": 4.911,
+    "ssum": 0.207,
+    "final": 0.587,
+    "accum": 1.448
+   },
+   "gpu_mib_in_use_before_run": "14075 MiB"
+  }
+ },
+ "sk_output_identity": "frame.f32 of F and F with sk, and of J2 and J2 with sk, are byte-identical at 1080p; a unit test checks the same on the CPU furnace",
+ "band": {
+  "what": "tests/web/cascades3d_band.py: region chosen on round 6's J2 1080p frame (13 px box blur, signed error above +0.15 of the reference mean, over the metric's covered pixels); mean signed error over the region and over the rest",
+  "pixels": 42745,
+  "mask_sha256": "5ee57ae5be5ee0cc01f56e3cc680260423eb6eeffc53bfafaa2f27de5b0a6560",
+  "runs": {
+   "B0-1080-r6": {
+    "band_mean_signed": 0.10642271486845135,
+    "rest_mean_signed": -0.007604363511914463
+   },
+   "J2-1080": {
+    "band_mean_signed": 0.20299068785337102,
+    "rest_mean_signed": 0.009040668908872063
+   },
+   "F-1080": {
+    "band_mean_signed": 0.20541042747737936,
+    "rest_mean_signed": 0.010235052070533362
+   },
+   "G-1080": {
+    "band_mean_signed": 0.20108974806975252,
+    "rest_mean_signed": 0.009353017263292521
+   },
+   "G2-1080": {
+    "band_mean_signed": 0.19526574083656248,
+    "rest_mean_signed": 0.011034810937760375
+   },
+   "Jpi-1080": {
+    "band_mean_signed": 0.20390900602026177,
+    "rest_mean_signed": 0.009312962271732086
+   },
+   "H-1080": {
+    "band_mean_signed": 0.2051991753012372,
+    "rest_mean_signed": 0.010138377306581507
+   }
+  },
+  "earlier_rounds": {
+   "what": "band mean signed error of earlier rounds' runs (their build folders), for attribution",
+   "B0 (round 5 run)": 0.1064,
+   "t32, temporal only (round 3)": 0.1126,
+   "sv 2 (round 5)": 0.1587,
+   "L = B0 + sv 2, ft, cg (round 5)": 0.159,
+   "jit 8 + tf 32 (round 5)": 0.17,
+   "J without cg (round 5)": 0.2135,
+   "J (round 5)": 0.2044
+  }
+ },
+ "leak_closed_room": {
+  "what": "leak-closed-B at 960 x 540, 20 frames, static flags: room B frame mean over the room A view's reference mean 0.0501",
+  "H": {
+   "g0": 0.00015,
+   "g1": 0.00034,
+   "g2": 0.00032,
+   "g3": 0.00048,
+   "g4": 0.00043
+  },
+  "Hfix": {
+   "g0": 9e-05,
+   "g1": 0.00031,
+   "g2": 2e-05,
+   "g3": 6e-05,
+   "g4": 0.0,
+   "ph4": 3e-05,
+   "ph5": 6e-05,
+   "ph6": 2e-05,
+   "ph7": 0.00151
+  },
+  "J2_round6": {
+   "g0": 0.00151,
+   "g1": 0.00292,
+   "g2": 0.00391,
+   "g3": 0.00163,
+   "g4": 0.00123
+  }
+ },
+ "leak_door_room_b": {
+  "H": {
+   "room_b_light_ratio": 0.692,
+   "room_b_rel_rmse": 0.966,
+   "no_gi_room_b_rel_rmse": 1.658
+  },
+  "Hfix": {
+   "room_b_light_ratio": 0.516,
+   "room_b_rel_rmse": 1.268,
+   "no_gi_room_b_rel_rmse": 1.658
+  },
+  "J2_round6": {
+   "room_b_light_ratio": 0.829,
+   "room_b_rel_rmse": 0.935
+  }
+ },
+ "parity_gpu_rtx4090": {
+  "before_default_flip": {
+   "leak-door-probe-s2": 3.991111926416875e-05,
+   "leak-door-none-world": 1.790926148578268e-06,
+   "leak-closed-full-s3": 5.931028218541555e-07,
+   "leak-door-A-probe-c2": 2.437889425617673e-07,
+   "furnace-planted": 6.12243542638047e-08,
+   "baseline-leak-door-A": 2.3111391271809295e-07,
+   "denoise-spatial-s2": 3.7552733620641126e-05,
+   "denoise-temporal-s2": 0.00014001080553333045,
+   "denoise-both-moving-s2": 6.819349648875578e-05,
+   "furnace-denoise-planted": 6.067362426808594e-08,
+   "world-c1-s2": 3.071293151549737e-05,
+   "world-mw-vis-s2": 4.946278881108042e-05,
+   "world-sv-s2": 4.497884253251052e-05,
+   "world-sv-jit-s2": 3.8150271771741587e-07,
+   "furnace-world-planted": 6.130929577986066e-08,
+   "leak-sv2-ft-cg-s2": 2.269585675892851e-06,
+   "leak-closed-sv2-ft-go": 0,
+   "leak-sv2-ft-cg-jit-s2": 3.847390053581789e-07,
+   "furnace-leak-planted": 6.063930577106501e-08,
+   "cost-cg2-sd-s2": 1.605974888037307e-06,
+   "cost-cg3-s2": 2.269585675892851e-06,
+   "cost-cg2-sd-jit-s2": 3.976775066787989e-07,
+   "furnace-cost-planted": 6.081926188783564e-08,
+   "default-jit-s2": 3.838691773349037e-07,
+   "fb-pi-cg4-s2": 1.6117583483307764e-06,
+   "fb-fd1-s2": 1.676754316896428e-06,
+   "fb-fd2-jit-s2": 3.7862423406014436e-07,
+   "furnace-fb-planted": 5.967037459746628e-08,
+   "fb-cg5-s2": 1.6117583483307764e-06,
+   "fb-cg6-sk-s2": 1.6117583483307764e-06,
+   "fb-cg6-sk-jit-s2": 3.8434730944640437e-07
+  },
+  "after_default_flip": {
+   "leak-door-probe-s2": 3.991111926416875e-05,
+   "leak-door-none-world": 1.790926148578268e-06,
+   "leak-closed-full-s3": 5.931028218541555e-07,
+   "leak-door-A-probe-c2": 2.437889425617673e-07,
+   "furnace-planted": 6.12243542638047e-08,
+   "baseline-leak-door-A": 2.3111391271809295e-07,
+   "denoise-spatial-s2": 3.7552733620641126e-05,
+   "denoise-temporal-s2": 0.00014001080553333045,
+   "denoise-both-moving-s2": 6.819349648875578e-05,
+   "furnace-denoise-planted": 6.067362426808594e-08,
+   "world-c1-s2": 3.071293151549737e-05,
+   "world-mw-vis-s2": 4.946278881108042e-05,
+   "world-sv-s2": 4.497884253251052e-05,
+   "world-sv-jit-s2": 3.8150271771741587e-07,
+   "furnace-world-planted": 6.130929577986066e-08,
+   "leak-sv2-ft-cg-s2": 2.269585675892851e-06,
+   "leak-closed-sv2-ft-go": 0,
+   "leak-sv2-ft-cg-jit-s2": 3.847390053581789e-07,
+   "furnace-leak-planted": 6.063930577106501e-08,
+   "cost-cg2-sd-s2": 1.605974888037307e-06,
+   "cost-cg3-s2": 2.269585675892851e-06,
+   "cost-cg2-sd-jit-s2": 3.976775066787989e-07,
+   "furnace-cost-planted": 6.081926188783564e-08,
+   "default-jit-s2": 3.854204994664613e-07,
+   "fb-pi-cg4-s2": 1.6117583483307764e-06,
+   "fb-fd1-s2": 1.676754316896428e-06,
+   "fb-fd2-jit-s2": 3.7862423406014436e-07,
+   "furnace-fb-planted": 5.967037459746628e-08,
+   "fb-cg5-s2": 1.6117583483307764e-06,
+   "fb-cg6-sk-s2": 1.6117583483307764e-06,
+   "fb-cg6-sk-jit-s2": 3.8434730944640437e-07
+  },
+  "note": "31 cases, bound 2e-3, worst 1.4e-4; before the flip the 24 earlier cases read exactly as in round 6; after it only default-jit-s2, which runs the default, changed"
+ },
+ "decisions": {
+  "target_1": "H (J2 with pi 1, cg 6, sk 1) meets every pass-line bound: CPU furnace under 1e-6 at all 21 grids with all three plans (J2 fails 8, 12 and 20 of them, worst 3.6%, 15.7%, 2.1%); closed room 0.015% to 0.048% at g0-g4 (J2 0.12% to 0.39%) and at most 0.15% at the 9 fixed grids; raw-hall RMSE 0.0827 (0.0778 to 0.0883), bias +1.45%; GI 5.19, 5.17, 5.18 ms, +0.25 ms over the J2 control (4.93, 4.93, 5.00), under the 0.5 ms kill line; parity 31 cases, worst 1.4e-4. H becomes the default",
+  "F": "meets the furnace and leak bounds but costs 6.20, 6.59, 6.39 ms. The segment fallback fired mostly at entries of buried probes, which nothing reads; with sk, F costs 5.27 ms (Fsk) with the same frame byte for byte",
+  "F5": "null: one segment to the top-weight probe fails the CPU furnace with the jit plan (1.16% at r4)",
+  "target_2": "null: fd 1 (G) leaves the bias at +1.36% (control +1.33%) and costs 7.4 to 7.6 ms; fd 2 reads +1.51% at 8.18 ms. The renormalisation over kept texels is not where sv 2's brightening comes from",
+  "target_3": "null for every candidate: the band's mean signed error stays between +0.195 and +0.205 against the control's +0.203 (under 4% change). Attribution on earlier runs: B0 +0.106, temporal alone +0.113, sv 2 +0.159, jit +0.170, J +0.204: jit and sv 2 each add about half of the band",
+  "target_4": "not attempted. H at 4K: 0.0937 (0.0905 to 0.0969), +1.40%, 10.6 ms (screen rays 4.9 ms)",
+  "missed_predictions": "F time (predicted 5.0 to 5.6 ms, read 6.2 to 6.6); G bias (predicted at most +0.65%, read +1.36%) and time (predicted 5.3 to 6.0, read 7.4 to 7.6); band for G (predicted at least -25%, read -1%); H's door-room light ratio 0.692 against a predicted 0.7 to 1.0; F's first version failed the jit furnace (coplanar contact); F5 failed the furnace"
+ },
+ "renders": "H: renders folder cascades3d-furnace-2026-11-07: H 4K frame and error map, reference; crops (right aisle wall, far wall, left columns, column flanks, arch soffits) of B0, J2 and H with the reference; 1:1 error zooms of J2 against H at a column flank and under the arches; closed room at g2, J2 against H at 40x exposure"
+}
