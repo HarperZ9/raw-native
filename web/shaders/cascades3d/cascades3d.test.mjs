@@ -7,7 +7,7 @@ import { omegaTable, texelDir, texelOf, planCascades3d, cosineDir, jitter, dot }
 import { runCascades3d, noGiBaseline } from "./run3d.mjs";
 
 // The tests written before the sixth round's defaults keep the old ones (sv, ft, cg, tf and jit off).
-const plan3 = (b, o) => planCascades3d(b, { sv: 0, ft: 0, cg: 0, tf: 0, ...o });
+const plan3 = (b, o) => planCascades3d(b, { sv: 0, ft: 0, cg: 0, tf: 0, pi: 0, sk: 0, ...o });
 
 test("cube texels: exact solid angles sum to 4 pi, directions round-trip, children nest", () => {
   for (const c of [1, 2, 4, 8]) {
@@ -208,8 +208,9 @@ test("cg 6 keeps the white furnace exact; cg 5 (one probe) does not; sk leaves e
   assert.deepEqual(Array.from(b.radiance), Array.from(a.radiance));
 });
 
-test("defaults: sv 2, ft 1, cg 2 and, with screen probes, tf 32 and jit 8; tf 0 or stride 0 runs no jitter", () => {
+test("defaults: sv 2, ft 1, cg 6, pi 1, sk 1 and, with screen probes, tf 32 and jit 8; tf 0 or stride 0 runs no jitter", () => {
   const b = bounds(buildScene3d("leak-closed-B")), d = planCascades3d(b, { stride: 8, m: 6 });
-  assert.deepEqual([d.sv, d.ft, d.cg, d.tf, d.jit, d.sd], [2, 1, 2, 32, 8, 0]);
+  assert.deepEqual([d.sv, d.ft, d.cg, d.tf, d.jit, d.sd, d.pi, d.sk, d.fd], [2, 1, 6, 32, 8, 0, 1, 1, 0]);
+  assert.deepEqual([planCascades3d(b, { ft: 0 }).sk, planCascades3d(b, { fix: "none" }).sk], [0, 0]);
   assert.deepEqual([planCascades3d(b, { tf: 0 }).jit, planCascades3d(b, { stride: 0 }).jit, planCascades3d(b, { stride: 0 }).tf], [0, 0, 0]);
 });

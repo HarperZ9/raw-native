@@ -1,5 +1,6 @@
 // World-level options of the 3D cascades, CPU float64 (wgsl3d-world.mjs is the GPU side). Each is a
-// plan switch (math3d.mjs planCascades3d); sv 2, ft 1, cg 2 and jit 8 are on by default since the sixth round:
+// plan switch (math3d.mjs planCascades3d); sv 2, ft 1 and jit 8 are on by default since the sixth round, pi 1,
+// cg 6 and sk 1 since the seventh (cascades3d.mjs: probeFlags, gatherCache, entry):
 // - mw: how a screen probe weighs level 1's eight neighbours. "seg" (the default): on or off by one
 //   segment from the surface to the neighbour. "vis": instead, the depth-moment visibility of the
 //   surface point from the level-0 probe at the neighbour's place (level 1's probes sit on every other
@@ -25,6 +26,11 @@
 //   the occluder, often its back face), which brightened raw-hall by 2%. The surface lies on the
 //   probe's side of anything the ray crosses, so no entry holds light from past a wall, and merges
 //   weigh every entry again, as without sv.
+// - pi: a probe also counts as inside geometry when at least half of 96 rays meet a surface from behind
+//   (thin slabs, which the 6 axis rays miss). cg 4 / 5 / 6: after cg 2, traced segments from the surface
+//   to all eligible probes / the one of largest weight / each in decreasing weight until one is reached.
+//   sk: skip the entries of probes inside geometry (nothing reads them with fix probe, ft and cg).
+//   fd 1 (screen probes) / 2 (every merge): a merge's dropped share takes its own ray traced on.
 import { add, mul, sub, dot, texelOf, neighbours } from "./math3d.mjs";
 
 export const halton = (i, b) => { let r = 0; for (let s = 1 / b; i > 0; i = Math.floor(i / b), s /= b) r += s * (i % b); return r; };

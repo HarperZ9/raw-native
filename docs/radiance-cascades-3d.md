@@ -52,13 +52,16 @@ raw_native_cli gi-reference --scene-file build/gi/hall.bin --pt build/gi/pt --wi
 python tests/web/cascades3d.py measure --adapter gpu --file build/gi/hall.bin --width 1920 --height 1080 \
   --plan '{"h0":0.5,"fix":"probe","stride":8,"m":6}' --static 1 --baseline 16 --save build/gi/run
 python tests/web/cascades3d_metrics.py build/gi/run --pt build/gi/pt --images build/gi/img/hall
-# the round-1 setting, without the sixth round's defaults:
-#   --plan '{"h0":0.5,"fix":"probe","stride":8,"m":6,"sv":0,"ft":0,"cg":0,"tf":0}'
+# the round-1 setting, without the later rounds' defaults:
+#   --plan '{"h0":0.5,"fix":"probe","stride":8,"m":6,"sv":0,"ft":0,"cg":0,"tf":0,"pi":0}'
+# the sixth round's default (J2): add "pi":0,"cg":2,"sk":0 to the first plan
 ```
 
 Since 2026-11-07 (sixth round, below) the plan's defaults are the leak-tight merges `sv 2`, `ft 1`,
-`cg 2` and world-grid jitter with temporal accumulation, `jit 8` and `tf 32`. The first command above
-runs that setting. A frame then shows the converged result after 7 warm-up frames and 32 frames of
+`cg 2` and world-grid jitter with temporal accumulation, `jit 8` and `tf 32`. Since the seventh round
+the defaults also test probes for being buried in geometry (`pi 1`), fall back to traced segments
+where the depth tests find no probe (`cg 6`), and skip the entries of buried probes (`sk 1`). The first
+command above runs that setting. A frame then shows the converged result after 7 warm-up frames and 32 frames of
 history; the scene and camera must hold still for that long, or the history is reprojected
 (`move`).
 
@@ -165,14 +168,16 @@ Renders, references and error maps at 3840 x 2160, opened at full size and in cr
 - The probe denoise below removes the fine probe mottle but not the larger blotches, which come
   from the world levels. Grid jitter (`jit`) removes most of them but leaks through thin walls.
 - The round-1 setting's thin-wall result holds only at the measured grid placement (see "World-level
-  options"). The current default (sixth round) reads 0.12% to 0.39% of room A's light in the closed
-  room at every placement and phase tested; the residual sits along wall seams.
+  options"). The current default (seventh round) reads 0.015% to 0.048% of room A's light in the
+  closed room at every placement tested and at most 0.15% at the fixed phase grids.
 - The default needs 39 frames of a still scene to converge (7 bounces, 32 frames of history), and
   the first frame of each of its 8 grid phases traces that phase's depth moments and start
-  visibility (static geometry). At 4K it takes 10.2 ms.
-- The cache gather's `cg` fallback returns no light where no probe is shown to see a surface. The
-  white furnace at a moved grid reads up to 1.05% low at 10 of 96 pixels on the CPU (every `cg` mode
-  alike).
+  visibility (static geometry). At 4K it takes 10.6 ms.
+- Since the seventh round the CPU white furnace holds to 1e-6 at all 21 grids tested with the
+  default switches. A surface that no probe is shown to see, by depth or by a traced segment, still
+  gets no light; the furnace no longer meets one.
+- raw-hall reads about 1.4% bright, and a bright band on the right-hand column flanks and the arch
+  soffits remains (seventh round, below). The door-lit room B gets 0.69 of its light (J2 0.83).
 - The 4K reference has one seed, so its noise is not measured.
 
 ## Probe denoise (2026-11-07)
@@ -443,3 +448,93 @@ Renders (`H:` renders folder `cascades3d-cost-2026-11-07`: the 4K frame, referen
 4K crops of B0, J and J2, 1:1 zooms), opened at full size: J and J2 are indistinguishable at 1:1;
 against B0 the 100 px blotches on the right aisle wall are gone, and a bright band on one column
 flank and thin lines under the arches remain. Under K the whole error map lifts.
+
+## Buried probes and the dark fallback (2026-11-07, seventh round)
+
+Four opt-in switches, CPU (`cascades3d.mjs`, `world.mjs`) and GPU (`wgsl3d-core.mjs`,
+`wgsl3d-passes.mjs`, `wgsl3d-world.mjs`, `gpu3d.mjs`), with seven new parity cases. Bounds and the kill
+lines were written before any leak, GPU or raw-hall run: `evidence/cascades3d-furnace-bounds.json` (four
+amendments, each logged before the runs it governs). Results: `evidence/cascades3d-furnace-rtx4090.json`.
+Source: J. Tollenaar's article "Split Radiance Cascades", which names probes buried in geometry as a
+cause of leaks and dark splotches and traces from real surface points instead. Its sparse hashed
+probes and its transmittance-weighted merge were not built.
+
+What made the white furnace read low. Round 6 saw 1.05% at one grid. A sweep over 21 grids (17
+distinct) and three plans found J2 low at 8, 12 and 20 of them, by up to 3.6%, 15.7% and 2.1%. Two
+causes, each found by returning the exact value for one class of gather at a time:
+
+- Probes inside the 0.2 m wall slabs were not flagged as inside. The test cast 6 axis rays one
+  spacing long and needed 3 back-face hits; in a thin slab only 2 axis rays meet a face. Their own
+  rays met the slab from inside, gathered nothing there, and room surfaces took their dark caches
+  through the depth test.
+- A probe 1 cm from a wall sees the floor straight below it, but the depth texel that holds that
+  direction also spans the wall, so its farthest ray stops at the wall and `cg 2` drops the probe.
+
+The switches:
+
+- `pi: 1`: a probe also counts as inside when at least half of 96 rays (the texel centres of face
+  side 4) meet a surface from behind. Traced with the flags, once a grid phase. "More than half"
+  failed first: a probe 3.5 cm above the floor inside a block that rests on it reads exactly half,
+  because the block's base and the floor are coplanar.
+- `cg: 4`, `5`, `6`: after `cg 2`'s depth test, a traced segment from the surface to the probes.
+  `cg 4` tests all eligible probes (as `cg 1`), `cg 5` only the one of largest weight, `cg 6` goes
+  through them in decreasing weight and stops at the first it reaches.
+- `sk: 1`: the level pass skips the entries of probes flagged inside. With `fix probe`, `ft` and
+  `cg`, no merge or gather reads them, so frames are byte-identical with and without it.
+- `fd: 1` (screen probes) or `2` (every merge): a merge that drops part of its trusted weight to
+  start visibility fills that part with its own ray traced on, instead of renormalising.
+
+CPU white furnace at 12 x 8 px, 21 grids, worst relative error (plans: stride 3; stride 0; stride 3
+with `jit 2`):
+
+| Setting | Stride 3 | Stride 0 | Jit |
+|---|---|---|---|
+| J2 | 3.6%, 8 grids fail | 15.7%, 12 fail | 2.1%, 20 fail |
+| `pi`, `cg 4`, first version (more than half) | 2e-16 | 2e-16 | 0.074%, 2 fail |
+| `pi`, `cg 4` (F) | 2e-16 | 2e-16 | 2e-16 |
+| `pi`, `cg 5` (F5) | 0.0003%, 1 fails | 4e-7 | 1.16%, 2 fail |
+| `pi`, `cg 6`, `sk` (H) | 2e-16 | 2e-16 | 2e-16 |
+
+Every candidate reads 0.000% in the CPU closed room at 13 grids.
+
+raw-hall nave at 1920 x 1080 against the 8-bounce path trace (GPU shared with a training job, 12.6
+to 14.6 GB in use by it):
+
+| Setting | Relative RMSE | Bias | GI ms, three runs |
+|---|---|---|---|
+| J2 control (the sixth round's default) | 0.082 (0.077 to 0.088) | +1.33% | 4.93, 4.93, 5.00 |
+| J2 with `pi` | 0.082 | +1.36% | 5.00 |
+| F: J2 with `pi`, `cg 4` | 0.083 (0.078 to 0.088) | +1.46% | 6.20, 6.59, 6.39 |
+| F with `sk` | 0.083 | +1.46% | 5.27 |
+| G: F with `fd 1` | 0.082 (0.077 to 0.087) | +1.36% | 7.52, 7.43, 7.58 |
+| F with `fd 2` | 0.082 | +1.51% | 8.18 |
+| **H: J2 with `pi`, `cg 6`, `sk` (the new default)** | **0.083 (0.078 to 0.088)** | +1.45% | **5.19, 5.17, 5.18** |
+| H at 3840 x 2160 | 0.094 (0.091 to 0.097) | +1.40% | 10.6 |
+
+Closed room at 960 x 540, room B over the room A view's light (bound 1%): H 0.015%, 0.034%, 0.032%,
+0.048%, 0.043% at g0 to g4, where J2 read 0.12% to 0.39%; H on fixed grids at most 0.15% (ph7) over 9
+grids. Door-lit room B: light ratio 0.69, error 0.97 (J2 0.83, 0.94; no GI 1.66).
+
+What this shows:
+
+- H meets every bound and is the new default of `planCascades3d`: `pi 1`, `cg 6`, and `sk 1` wherever
+  it is exact. Pass `pi: 0, cg: 2, sk: 0` for J2. Parity: 31 cases within 2e-3, worst 1.4e-4; the
+  earlier cases pin `pi` and `sk` to 0 and read as before.
+- `pi` cuts the closed-room leak eightfold: the residual glow along J2's wall seams came from probes
+  buried in the 4 cm wall. It costs nothing a frame.
+- F's 1.3 ms came almost all from entries of buried probes, whose rays meet geometry from inside and
+  fall through to segments; nothing reads those entries. `sk` removes them without changing a pixel.
+- Nulls: `fd` leaves the bias where it was, so sv 2's brightening does not come from renormalising
+  over kept texels; `cg 5` (one segment) does not hold the furnace.
+- The bright band (column flanks, the far-wall patch, arch soffits; a region of 23,000 px chosen on
+  round 6's frame) did not move under any candidate: mean signed error +0.195 to +0.205 against the
+  control's +0.203. On earlier rounds' frames the same region reads +0.106 for the round-1 setting,
+  +0.113 with temporal accumulation alone, +0.159 with `sv 2` and +0.170 with `jit`: start visibility
+  and grid jitter each add about half of it.
+
+Renders (`H:` renders folder `cascades3d-furnace-2026-11-07`: the 4K frame, reference and error map,
+crops of B0, J2 and H, 1:1 error zooms of J2 against H, the closed room at 40x exposure), opened
+myself: in raw-hall J2 and H look the same at 1:1, and the column-flank band and the bright lines
+under the arches remain in both. In the closed room at 40x, J2's walls glow evenly and its seams
+shine; under H the walls are dark, and a fainter line along the far wall's seams and sparse
+speckles remain.
