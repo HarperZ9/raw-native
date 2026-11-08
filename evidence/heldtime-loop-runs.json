@@ -1,0 +1,38 @@
+{
+ "bounds": "evidence/heldtime-loop-bounds.json",
+ "written": "2026-11-07, after the runs below; amendments were logged before the runs they govern in the author's state file (mission-control 2026-11-08-game-engine STATE-heldtime.md)",
+ "machine": "Windows 11, g++ 13.2.0 (MinGW-w64 UCRT) Release, Ninja, 3 workers at BelowNormal priority; CPU only",
+ "amendments": [
+  "1: B3's scene parameters fixed before the governed run (demo scene, character on twos, camera arc continuous with period 144 frames, boil on, median-cut palette of 32 colours, delta frames, scale 1). No bound changed.",
+  "2: disclosure. A look-dev run before amendment 1 measured B3 at 5,080,308 bytes on the first scene (an infinite ground plane whose hatching aliased to grey at the horizon): a failure of that scene, kept here. The ground then became a round table top (the frame closes to paper past its rim), the camera moved closer, and the boil field frequency went from 2.2 to 5.5 per unit at amplitude 0.35 line periods, for the look; these also shrink the GIF."
+ ],
+ "p1": {
+  "A1_held_ratio": {"result": "holds", "observed": "10 s at 24 fps, 240 frames: ones 0.0000, twos 0.5000, threes 0.6667 (tests/test_held_time.cpp)"},
+  "A2_camera_ones": {"result": "holds", "observed": "ratio 0 at 24, 30, 60 and 144 fps"},
+  "A3_boil_subset": {"result": "holds", "observed": "0 exceptions for ones, twos, threes and 12 Hz at 24, 30, 60 and 144 fps (16 runs)"},
+  "A4_sequence_hash": {"result": "holds", "observed": "equal at 30, 60 and 144 fps: ones f740dfcc27621556..., twos and 12 Hz f2dd12edf43239b5... (both 12 Hz, so equal by design), threes 98a426cf1ec8dae5..."},
+  "A5_onset_exact": {"result": "holds", "observed": "0 late onsets in all 16 runs"},
+  "C1_seed_per_frame": {"result": "fails as planted", "observed": "120 exceptions"},
+  "C2_unheld": {"result": "fails as planted", "observed": "ratio 0.0000 (outside the twos band); 30 and 144 fps sequences differ"},
+  "C3_float_clock": {"result": "prediction held", "observed": "a float64-accumulating 12 Hz clock at 144 fps puts 23 ticks on the wrong frame; the deduplicated sequence hash (A4) cannot see this, A5 can"},
+  "js_parity": {"result": "holds", "observed": "web/anim/heldtime.test.mjs: the same tick, onset, FNV-1a and boil-seed vectors as the C++ test; raw/scene/clip.hpp matches clip.mjs within 1e-12 at four times on the demo clip"},
+  "paint_boil": {"result": "holds", "observed": "oil paint with paintBoilOffset(seed): frames 0 and 1 of one held pose equal, frames 1 and 2 differ"},
+  "hatch_unchanged": {"result": "holds", "observed": "runHatch (no boil) SHA-256 over rgba, hit and fallback at 160 x 100 is identical before and after the refactor for engraving, crosshatch and ink"}
+ },
+ "p2": {
+  "B1_closure": {"result": "holds", "observed": "max 8-bit difference 0 for frame 96 vs 0 and 97 vs 1, ones, twos and threes, at 960 x 540 (raw_native_cli held-time) and 64 x 36 (tests/test_loop_contract.cpp); the 144-frame size loop also 0"},
+  "B2_palette": {"result": "holds", "observed": "0 off-palette pixels in every GIF, by the first-party decoder and by Pillow 12.2.0 (every frame decoded)"},
+  "B3_size": {"result": "holds", "observed": "size-12s-12fps-480x270.gif: 3,208,861 bytes (bound 4,000,000)"},
+  "B4_scale": {"result": "holds", "observed": "decoded triptych at scale 2 equals 2 x 2 repetition, GIF (first-party decoder) and WebP (Pillow); scale 1 to 3 in tests/test_loop_media.cpp"},
+  "B5_webp": {"result": "holds", "observed": "Pillow decodes every animated WebP to N frames equal to the source exactly, loop 0 (6 files, 96 or 144 frames)"},
+  "B6_mp4": {"result": "holds", "observed": "N frames each; PSNR 42.18 (ones), 42.22 (twos), 42.24 (threes), 42.13 (triptych), 43.43 dB (size loop); bound 35 dB. ffmpeg 7.1 from imageio-ffmpeg 0.6.0, libx264 crf 12, yuv420p"},
+  "K1_open_camera": {"result": "fails as planted", "observed": "refused by checkLoop (period 97 does not divide 96); measured max difference 184"},
+  "K2_partial_ticks": {"result": "fails as planted", "observed": "refused; ticksPerLoop -1"},
+  "K3_palette_checker": {"result": "fails as planted", "observed": "1 planted off-palette pixel counted"}
+ },
+ "sizes": {
+  "hatch-ones/twos/threes 960x540 96 frames": "GIF 7.23 / 7.11 / 7.06 MB (64 colours); lossless WebP 11.86 MB each; MP4 5.70 / 4.92 / 4.70 MB",
+  "note": "the first-party WebP has no LZ77 back references, so it is larger than the 64-colour GIF of the same loop; it carries every source colour exactly"
+ },
+ "renders": "the author's render folder held-time-2026-11-08 (stills, GIF, WebP, MP4; not in the repository)"
+}

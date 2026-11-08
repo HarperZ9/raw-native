@@ -1,6 +1,7 @@
 // Curvature hatching, float64 reference: see raw/renderer/style_hatch.hpp. Operations are in the
 // order of web/shaders/hatch/hatch.mjs and web/shaders/fixtures/stilllife.mjs.
 #include "raw/renderer/style_hatch.hpp"
+#include "raw/renderer/noise.hpp"
 #include <algorithm>
 #include <cmath>
 #include <stdexcept>
@@ -40,10 +41,10 @@ double sdRoundBox(const V3& p) {
     const V3 q{std::abs(p[0] - kBoxC[0]) - kBoxB[0], std::abs(p[1] - kBoxC[1]) - kBoxB[1], std::abs(p[2] - kBoxC[2]) - kBoxB[2]};
     return len3(std::max(q[0], 0.0), std::max(q[1], 0.0), std::max(q[2], 0.0)) + std::min(std::max({q[0], q[1], q[2]}), 0.0) - kBoxR;
 }
-double march(const V3& ro, const V3& rd) {
+double march(const HatchField& f, const V3& ro, const V3& rd) {
     double t = 0;
     for (int i = 0; i < 160; ++i) {
-        const double d = stillSdf(add(ro, mul(rd, t)));
+        const double d = f.sdf(add(ro, mul(rd, t)));
         if (d < 1e-4 * (1 + t)) return t;
         t += d;
         if (t > 30) break;
@@ -58,6 +59,14 @@ double hatchLines(double s, double freq, double px, double halfW) {
     const double lev = std::max(0.0, std::log2((px * freq) / 0.25)), l0 = std::floor(lev), t = lev - l0, f0 = freq / std::pow(2.0, l0);
     return lineCov(s, f0, halfW, px) * (1 - t) + lineCov(s, f0 / 2, halfW, px) * t;
 }
+// Boil offsets in line periods (d1, d2) and a relative contour change (dc), from the noise module's
+// Perlin field at the hit point and the held pose's seed.
+struct Boil { double d1, d2, dc; };
+Boil boilAt(const HatchBoil& b, const V3& q) {
+    const float x = float(q[0] * b.freq), y = float(q[1] * b.freq), z = float(q[2] * b.freq);
+    return {b.amp * noise::perlin3(x, y, z, b.seed), b.amp * noise::perlin3(x + 17.3f, y, z, b.seed ^ 0x9e3779b9u),
+            0.5 * b.amp * noise::perlin3(x, y + 31.7f, z, b.seed ^ 0x85ebca6bu)};
+}
 }  // namespace
 
 HatchPlan hatchPreset(const std::string& name) {
@@ -70,18 +79,21 @@ HatchPlan hatchPreset(const std::string& name) {
 
 double stillSdf(const V3& p) { return std::min({p[1], sdSphere(p), sdTorus(p), sdCapsule(p), sdRoundBox(p)}); }
 
-Curvature curvature(const V3& p, double umb) {
+Curvature curvature(const V3& p, double umb) { return curvatureOf(stillField(), p, umb); }
+
+Curvature curvatureOf(const HatchField& f, const V3& p, double umb) {
+    const auto& sdf = f.sdf;
     const V3 ax[3] = {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}};
-    const double f0 = stillSdf(p);
+    const double f0 = sdf(p);
     V3 g;
-    for (std::size_t i = 0; i < 3; ++i) g[i] = (stillSdf(add(p, mul(ax[i], kE))) - stillSdf(sub(p, mul(ax[i], kE)))) / (2 * kE);
+    for (std::size_t i = 0; i < 3; ++i) g[i] = (sdf(add(p, mul(ax[i], kE))) - sdf(sub(p, mul(ax[i], kE)))) / (2 * kE);
     const double gl = len(g);
     const V3 n = mul(g, 1 / gl);
     double H[3][3] = {};
-    for (std::size_t i = 0; i < 3; ++i) H[i][i] = (stillSdf(add(p, mul(ax[i], kE))) - 2 * f0 + stillSdf(sub(p, mul(ax[i], kE)))) / (kE * kE);
+    for (std::size_t i = 0; i < 3; ++i) H[i][i] = (sdf(add(p, mul(ax[i], kE))) - 2 * f0 + sdf(sub(p, mul(ax[i], kE)))) / (kE * kE);
     for (std::size_t i = 0; i < 3; ++i) for (std::size_t j = i + 1; j < 3; ++j) {
         const V3 ei = mul(ax[i], kE), ej = mul(ax[j], kE);
-        H[i][j] = H[j][i] = (stillSdf(add(add(p, ei), ej)) - stillSdf(sub(add(p, ei), ej)) - stillSdf(add(sub(p, ei), ej)) + stillSdf(sub(sub(p, ei), ej))) / (4 * kE * kE);
+        H[i][j] = H[j][i] = (sdf(add(add(p, ei), ej)) - sdf(sub(add(p, ei), ej)) - sdf(add(sub(p, ei), ej)) + sdf(sub(sub(p, ei), ej))) / (4 * kE * kE);
     }
     const V3 t1 = norm(cross(n, std::abs(n[1]) < 0.9 ? V3{0, 1, 0} : V3{1, 0, 0})), t2 = cross(n, t1);
     auto Hv = [&H](const V3& v) { return V3{H[0][0] * v[0] + H[0][1] * v[1] + H[0][2] * v[2], H[1][0] * v[0] + H[1][1] * v[1] + H[1][2] * v[2],
@@ -101,29 +113,40 @@ Curvature curvature(const V3& p, double umb) {
     return c;
 }
 
-HatchFrame runHatch(const HatchPlan& p, int w, int h) {
+HatchField stillField() { return {[](const V3& p) { return stillSdf(p); }, kEye, kTarget, kLight, kTan}; }
+
+HatchFrame runHatch(const HatchPlan& p, int w, int h) { return runHatchField(p, stillField(), {}, w, h); }
+
+HatchFrame runHatchField(const HatchPlan& p, const HatchField& f, const HatchBoil& boil, int w, int h) {
     HatchFrame out{std::vector<double>(std::size_t(w) * h * 4, 0.0), std::vector<std::uint8_t>(std::size_t(w) * h, 0), std::vector<std::uint8_t>(std::size_t(w) * h, 0)};
-    const V3 L = norm(kLight), fwd = norm(sub(kTarget, kEye)), right = norm({-fwd[2], 0, fwd[0]}), up = cross(right, fwd);
+    const V3 eye = f.eye;
+    const double tanH = f.tanHalf;
+    const V3 L = norm(f.light), fwd = norm(sub(f.target, eye)), right = norm({-fwd[2], 0, fwd[0]}), up = cross(right, fwd);
     for (int y = 0; y < h; ++y) for (int x = 0; x < w; ++x) {
         const std::size_t i = std::size_t(y) * w + std::size_t(x);
-        const double sx = ((x + 0.5) / w - 0.5) * 2 * (double(w) / h) * kTan, sy = (0.5 - (y + 0.5) / h) * 2 * kTan;
+        const double sx = ((x + 0.5) / w - 0.5) * 2 * (double(w) / h) * tanH, sy = (0.5 - (y + 0.5) / h) * 2 * tanH;
         const V3 rd = norm(add(add(fwd, mul(right, sx)), mul(up, sy)));
-        const double t = march(kEye, rd);
+        const double t = march(f, eye, rd);
         V3 col = p.paper;
         if (t > 0) {
-            const V3 q = add(kEye, mul(rd, t));
-            const Curvature cv = curvature(q, p.umb);
+            const V3 q = add(eye, mul(rd, t));
+            const Curvature cv = curvatureOf(f, q, p.umb);
             const double tone = p.toneFloor + 0.88 * std::max(0.0, dot(cv.n, L));
             out.hit[i] = 1; out.fallback[i] = cv.umbilic ? 1 : 0;
-            const double px = (t * 2 * kTan) / h, halfW = 0.5 * p.width * px, dark = 1 - tone, second = dot(q, kCross);
+            const double px = (t * 2 * tanH) / h, halfW = 0.5 * p.width * px, dark = 1 - tone, second = dot(q, kCross);
             double s1 = dot(q, cv.other), s2 = second;
             if (cv.umbilic && std::abs(cv.n[1]) > 0.95) { s1 = dot(q, kSlant); s2 = dot(q, kSlant2); }
             else if (cv.umbilic) s1 = q[1];
+            double contour = p.contour;
+            if (boil.amp != 0) {   // boil: the lines and the contour wobble by a field reseeded per held pose
+                const Boil b = boilAt(boil, q);
+                s1 += b.d1 / p.freq; s2 += b.d2 / p.freq; contour *= 1 + b.dc;
+            }
             double ink = hatchLines(s1, p.freq, px, halfW * (0.4 + 1.6 * dark));
             if (p.layers > 1 && tone < 0.5) ink = 1 - (1 - ink) * (1 - hatchLines(s2, p.freq, px, halfW * (0.4 + 2 * (0.5 - tone))));
-            if (p.contour > 0) {
+            if (contour > 0) {
                 const double nv = std::abs(dot(cv.n, rd));
-                if (nv < p.contour) ink = std::max(ink, std::min(1.0, (p.contour - nv) / (0.5 * p.contour)));
+                if (nv < contour) ink = std::max(ink, std::min(1.0, (contour - nv) / (0.5 * contour)));
             }
             for (std::size_t k = 0; k < 3; ++k) col[k] = p.paper[k] * (1 - ink) + p.ink[k] * ink;
         }
