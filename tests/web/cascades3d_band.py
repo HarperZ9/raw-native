@@ -59,7 +59,8 @@ def main() -> int:
     ap.add_argument("--json", type=Path)
     a = ap.parse_args()
     yr = reference(a.pt, a.pt2)
-    mask = yr > 0
+    h, w = yr.shape  # pixels the metric scores: the path tracer hit a triangle and the run covers the pixel
+    mask = (np.fromfile(a.pt / "triangle.i32", dtype="<i4").reshape(h, w) >= 0) & (load(a.select, "frame", w, h)[..., 3] > 0)
     mr = float(yr[mask].mean())
     band = (box(signed(a.select, yr, mask, mr), BLUR) > THRESHOLD) & mask
     rest = mask & ~band
