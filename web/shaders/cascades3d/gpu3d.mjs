@@ -60,7 +60,7 @@ export function packParams(sc, plan, W, H, triOff, x = {}) {
   f.set([...k.eye, k.th, ...k.f, k.aspect, ...k.s, 0, ...k.u, 0], 32);
   new Uint8Array(buf).set(frameWords(sc, plan, W, H, 0, x.planted), 4 * FRAME_WORDS[0]);
   f.set([...(x.clo || plan.lo), 0], 72);
-  u.set([{ seg: 0, vis: 1 }[plan.mw || "seg"], plan.sv || 0, (plan.fz ? 1 : 0) | (plan.sd ? 2 : 0), (plan.ft ? 1 : 0) | ((plan.cg || 0) << 1)], 76);
+  u.set([{ seg: 0, vis: 1 }[plan.mw || "seg"], plan.sv || 0, (plan.fz ? 1 : 0) | (plan.sd ? 2 : 0) | (plan.pi ? 4 : 0) | ((plan.fd || 0) << 3), (plan.ft ? 1 : 0) | ((plan.cg || 0) << 1)], 76);
   L.forEach((l, i) => {
     u.set([...l.n, l.probes], 80 + 4 * i);
     f.set([l.h, l.c, fin(l.T0), fin(l.T1x)], 112 + 4 * i);
@@ -92,7 +92,7 @@ export async function createGpuCascades3d(host, sc, S, plan, W, H, { cacheInit =
   const OUT = mk(16 * npx, "rc3d out"), E2 = plan.sf ? mk(16 * np, "rc3d screen probes b") : null;
   const I = T ? mk(16 * npx, "rc3d irradiance") : null, HA = T ? mk(16 * npx, "rc3d history a") : null, HB = T ? mk(16 * npx, "rc3d history b") : null;
   const step = (name, total, bufs, x = {}, pl = PH[0]) => { const g = grid2(total, WGS[name]); return { name, pipe: pipes[name], bufs: [params({ ...x, total, gridX: g.gridX }, pl), SC, ...bufs], gx: g.gx, gy: g.gy }; };
-  const flagSteps = (p) => [{ clear: FLs[p] }, ...L.map((l, i) => step("flags", 14 * l.probes, [FLs[p]], { level: i }, PH[p]))];
+  const flagSteps = (p) => [{ clear: FLs[p] }, ...L.map((l, i) => step("flags", (plan.pi ? 110 : 14) * l.probes, [FLs[p]], { level: i }, PH[p]))];
   // One frame's steps in grid phase p, reading cache `cp` (made in phase p - 1) and writing cache
   // `cn`, on g-buffer Gc (Gp the previous frame's, the same buffer for a still camera) and history
   // Hp into Hn.

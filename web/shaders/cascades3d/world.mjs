@@ -77,19 +77,23 @@ export function levelOneWeights(ctx, x, bits, flags1) {
 // Level 1's values at p merged with trilinear weights times wts (and, with sv, the value's start
 // visibility, its 4th element); all eight when every weight is 0.
 export function mergeWeighted(ctx, p, wts, value, fallback) {
-  return mergeOf(ctx, neighbours(ctx.plan, 1, p).map((q, c) => (q.w > 0 ? { w: q.w, v: value(q.idx), t: wts[c] } : null)), fallback);
+  return mergeOf(ctx, neighbours(ctx.plan, 1, p).map((q, c) => (q.w > 0 ? { w: q.w, v: value(q.idx), t: wts[c] } : null)), fallback, true);
 }
 // A merge over rows { w: trilinear weight, v: value (with sv: rgb, share), t: trust }: the mean
 // weighed by w t share. No trusted weight: ft traces on (fallback), fz gives no light, else the plain
 // mean of all rows.
-export function mergeOf(ctx, rows, fallback) {
+export function mergeOf(ctx, rows, fallback, screen = false) {
   const out = [0, 0, 0], all = [0, 0, 0];
-  let ws = 0, wa = 0;
+  let ws = 0, wa = 0, wt = 0;
   for (const r of rows) {
     if (!r) continue;
     const w = r.w * r.t * (r.v.length > 3 ? r.v[3] : 1);
     for (let c = 0; c < 3; c++) { all[c] += r.w * r.v[c]; out[c] += w * r.v[c]; }
-    wa += r.w; ws += w;
+    wa += r.w; ws += w; wt += r.w * r.t;
+  }
+  if (ws > 0 && ctx.plan.fd && (screen || ctx.plan.fd === 2) && wt - ws > 1e-6 * wt) { // fd: the dropped share takes the own ray
+    const v = fallback();
+    return [0, 1, 2].map((c) => (out[c] + (wt - ws) * v[c]) / wt);
   }
   if (!(ws > 0) && ctx.plan.ft) return fallback();
   if (!(ws > 0) && ctx.plan.fz) return [0, 0, 0];
@@ -97,8 +101,8 @@ export function mergeOf(ctx, rows, fallback) {
 }
 // cg 2, 3 (cascades3d.mjs gatherCache): lit-side probes outside geometry whose farthest (cg 2) or
 // nearest (cg 3) depth ray of the texel toward the lifted point reaches it; none gives no light.
-export function gatherDepthSeen(ctx, cache, x, nb, plan, depth) {
-  const at = add(x.p, mul(x.ng, 0.25 * plan.h0)), nt = 6 * plan.cd * plan.cd, k = ctx.plan.cg === 3 ? 2 : 3, E = [0, 0, 0];
+export function gatherDepthSeen(ctx, cache, x, nb, plan, depth, cg = ctx.plan.cg) {
+  const at = add(x.p, mul(x.ng, 0.25 * plan.h0)), nt = 6 * plan.cd * plan.cd, k = cg === 3 ? 2 : 3, E = [0, 0, 0];
   let ws = 0;
   for (const q of nb) {
     const o = 16 * q.idx;
@@ -108,5 +112,5 @@ export function gatherDepthSeen(ctx, cache, x, nb, plan, depth) {
     for (let c = 0; c < 3; c++) E[c] += q.w * Math.max(0, cache[o + c] + cache[o + 4 + c] * x.n[0] + cache[o + 8 + c] * x.n[1] + cache[o + 12 + c] * x.n[2]);
     ws += q.w;
   }
-  return ws > 0 ? mul(E, 1 / ws) : E;
+  return ws > 0 ? mul(E, 1 / ws) : null;
 }

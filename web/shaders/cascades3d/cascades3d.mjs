@@ -74,7 +74,8 @@ export function gatherCache(ctx, cache, x) {
     if (w > 0) { for (let c = 0; c < 3; c++) E[c] += w * e[c]; ws += w; }
   }
   if (ws > 0) return mul(E, 1 / ws);
-  if (ctx.plan.cg >= 2) return gatherDepthSeen(ctx, cache, x, nb, plan, depth); // cg 2, 3 (world.mjs): no rays
+  if (ctx.plan.cg >= 4) { const e = gatherDepthSeen(ctx, cache, x, nb, plan, depth, 2); return e ? e : gatherSeen(ctx, cache, x, nb) || [0, 0, 0]; }
+  if (ctx.plan.cg >= 2) return gatherDepthSeen(ctx, cache, x, nb, plan, depth) || [0, 0, 0]; // cg 2, 3 (world.mjs): no rays
   if (ctx.plan.cg) return gatherSeen(ctx, cache, x, nb); // cg (world.mjs): no fallback past a wall
   if (wl > 0) return mul(El, 1 / wl);
   return wf > 0 ? mul(Ef, 1 / wf) : mul(Ea, 1 / wa);
@@ -92,7 +93,7 @@ function gatherSeen(ctx, cache, x, nb) {
     for (let c = 0; c < 3; c++) E[c] += q.w * Math.max(0, cache[o + c] + cache[o + 4 + c] * x.n[0] + cache[o + 8 + c] * x.n[1] + cache[o + 12 + c] * x.n[2]);
     ws += q.w;
   }
-  return ws > 0 ? mul(E, 1 / ws) : E;
+  return ws > 0 ? mul(E, 1 / ws) : ctx.plan.cg >= 4 ? null : E;
 }
 // Depth moments of level 0's probes: cd x cd texels a face, 2 x 2 rays a texel, distances capped at
 // plan.dmax; 4 values a texel: mean, mean square, nearest and farthest of the 4 (cg 2, 3). Static
@@ -155,10 +156,17 @@ export function probeFlags(ctx, l) {
     let back = 0, front = 0;
     for (const a of AXES) { const h = closestHit(S, p, a, 0, L.h); if (h) { if (dot(norm(cross(...triEdges(S, h.slot))), a) > 0) back++; else front++; } }
     let f = back >= 3 && back > front ? 256 : 0;
+    if (plan.pi && !f && buriedShare(S, p) >= 0.5) f = 256;
     if (!top) neighbours(plan, l + 1, p).forEach((q, c) => { const e = sub(q.pos, p), len = Math.hypot(...e); if (len === 0 || !occluded(S, p, mul(e, 1 / len), len)) f |= 1 << c; });
     out[idx] = f;
   }
   return out;
+}
+// pi (world.mjs): the share of 96 rays (texel centres of a face side 4) that hit a surface from behind.
+export function buriedShare(S, p) {
+  let n = 0;
+  for (let k = 0; k < 96; k++) { const d = texelDir(k, 4), h = closestHit(S, p, d, 0, 1e30); if (h && dot(norm(cross(...triEdges(S, h.slot))), d) > 0) n++; }
+  return n / 96;
 }
 function triEdges(S, s) { const a = tri3(S.tris, 3 * s, 0); return [sub(tri3(S.tris, 3 * s, 1), a), sub(tri3(S.tris, 3 * s, 2), a)]; }
 
@@ -217,9 +225,9 @@ export function entry(ctx, l, idx, k, next, flags, nextFlags) {
 // ft (world.mjs): the radiance along the merge's own ray past its interval, traced to the end.
 export const onward = (ctx, o, d, t0) => traced(ctx, o, d, t0, Infinity) || ctx.sc.sky;
 // The probe fix trusts neighbour c when bit c is set and it is not inside geometry (world.mjs mergeOf).
-function mergeNext(ctx, l1, p, bits, nextFlags, value, fallback) {
+function mergeNext(ctx, l1, p, bits, nextFlags, value, fallback, screen = false) {
   const fix = ctx.plan.fix === "probe", rows = neighbours(ctx.plan, l1, p).map((q, c) => (q.w > 0 ? { w: q.w, v: value(q.idx), t: !fix || ((bits & (1 << c)) && !(nextFlags[q.idx] & 256)) ? 1 : 0 } : null));
-  return mergeOf(ctx, rows, fallback);
+  return mergeOf(ctx, rows, fallback, screen);
 }
 // Level 0's merged radiance as an L1 irradiance cache: E(n) = a + bx n.x + by n.y + bz n.z.
 export function cacheOf(ctx, buf0, flags0) {
@@ -272,7 +280,7 @@ export function screenProbe(ctx, x, pid, buf1, flags1) {
     } else {
       v = traced(ctx, o, d, 0, one ? T1x : Infinity);
       const look = (q) => lookup(ctx, 1, buf1, q, d), on = () => onward(ctx, o, d, T1x);
-      if (!v) v = !one ? ctx.sc.sky : wts ? mergeWeighted(ctx, x.p, wts, look, on) : mergeNext(ctx, 1, x.p, bits, flags1, look, on);
+      if (!v) v = !one ? ctx.sc.sky : wts ? mergeWeighted(ctx, x.p, wts, look, on) : mergeNext(ctx, 1, x.p, bits, flags1, look, on, true);
     }
     for (let c = 0; c < 3; c++) E[c] += v[c];
   }

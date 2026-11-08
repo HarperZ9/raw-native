@@ -163,7 +163,37 @@ test("cg 2 and sd with sv 2 and ft: the closed room stays dark at every placemen
     assert.ok(lum / 480 / lit < 1e-4, `go ${go}: ${lum / 480 / lit}`);
   }
   assert.throws(() => planCascades3d(bounds(sc), { sd: 1, sv: 0 }));
-  assert.throws(() => planCascades3d(bounds(sc), { cg: 4 }));
+  assert.throws(() => planCascades3d(bounds(sc), { cg: 5 }));
+  assert.throws(() => planCascades3d(bounds(sc), { fd: 1, sv: 0 }));
+});
+
+test("pi and cg 4: the white furnace stays exact where cg 2 goes dark (buried probes, a wall in the depth texel); fd keeps it exact", () => {
+  const sc = buildScene3d("furnace"), S = prepare(sc, buildBvh(sc)), want = furnaceExact(sc.alb[0]);
+  const run = (o) => {
+    const plan = plan3(bounds(sc), { h0: 0.5, c0: 1, r0: 2, f: 2, bounces: 3, fix: "probe", stride: 3, m: 2, sv: 2, ft: 1, ...o });
+    const out = runCascades3d(sc, S, plan, 12, 8, { cacheInit: sc.sky });
+    let worst = 0;
+    for (let p = 0; p < 96; p++) if (out.hit[p]) worst = Math.max(worst, Math.abs(out.radiance[3 * p] - want) / want);
+    return worst;
+  };
+  // g2: probes inside the 0.2 m wall slabs; g4: a probe 1 cm from a wall whose depth texel spans the wall (2026-11-07).
+  for (const go of [[-1 / 3, -3 / 5, -3 / 4], [-5 / 9, -1 / 5, -7 / 8]]) {
+    assert.ok(run({ cg: 2, go }) > 1e-3, `control at ${go}`);
+    for (const o of [{ pi: 1, cg: 4 }, { pi: 1, cg: 4, fd: 1 }, { pi: 1, cg: 4, fd: 2 }]) assert.ok(run({ ...o, go }) < 1e-6, `${JSON.stringify(o)} at ${go}: ${run({ ...o, go })}`);
+  }
+  // Coplanar contact: a probe 3.5 cm above the floor inside the block sees exactly half its rays from behind.
+  assert.ok(run({ pi: 1, cg: 4, tf: 3, jit: 2, go: [-8 / 9, -0.3999999999999999, -0.25] }) < 1e-6);
+});
+
+test("pi, cg 4 and fd: the closed room stays dark at every placement", () => {
+  const sc = buildScene3d("leak-closed-B"), S = prepare(sc, buildBvh(sc)), lit = 0.055;
+  for (const go of [null, [-1 / 3, -3 / 5, -3 / 4], [-5 / 9, -1 / 5, -7 / 8]]) for (const fd of [1, 2]) {
+    const plan = plan3(bounds(sc), { h0: 0.5, c0: 1, r0: 2, f: 2, bounces: 2, fix: "probe", stride: 4, m: 3, sv: 2, ft: 1, cg: 4, pi: 1, fd, go });
+    const out = runCascades3d(sc, S, plan, 16, 10);
+    let lum = 0;
+    for (let i = 0; i < out.radiance.length; i++) lum += out.radiance[i];
+    assert.ok(lum / 480 / lit < 1e-4, `fd ${fd} go ${go}: ${lum / 480 / lit}`);
+  }
 });
 
 test("defaults: sv 2, ft 1, cg 2 and, with screen probes, tf 32 and jit 8; tf 0 or stride 0 runs no jitter", () => {

@@ -18,7 +18,7 @@ struct Params {
   dnf: vec4f,   // luminance edge stop sl, planted edge x, planted value below it, above it
   pEye: vec4f, pF: vec4f, pS: vec4f, pU: vec4f, // previous frame's camera (pEye.w tan half fovy, pF.w aspect)
   clo: vec4f,   // the grid origin of the cache this pass gathers from (lo, unless the grid moves: world.mjs jit)
-  wo: vec4u,    // mw (0 seg, 1 vis), sv (1 or 2: merges weigh texels by start visibility, in level buffers' w), fz | sd << 1 (blocked entries trace from 0, written w 1), ft | cg << 1
+  wo: vec4u,    // mw (0 seg, 1 vis), sv (1 or 2: merges weigh texels by start visibility, in level buffers' w), fz | sd << 1 (blocked entries trace from 0, written w 1) | pi << 2 | fd << 3, ft | cg << 1
   dims: array<vec4u, 8>,
   geo: array<vec4f, 8>,
   ofs: array<vec4u, 8>,
@@ -206,7 +206,7 @@ fn gatherSeen(x: Surf) -> vec3f {
   return vec3f(0.0);
 }
 // cg 2, 3 (world.mjs gatherDepthSeen): no rays; the farthest (2) or nearest (3) depth ray must reach the point.
-fn gatherDepthSeen(x: Surf) -> vec3f {
+fn gatherDepthSeen(x: Surf) -> vec4f { // w: whether a probe was kept
   let at = x.p + x.ng * (0.25 * P.lo.w); let near = (P.wo.w >> 1u) == 3u; var E = vec3f(0.0); var ws = 0.0;
   for (var c = 0u; c < 8u; c++) {
     let q = neighbourLo(0u, x.p, c, P.clo.xyz);
@@ -215,8 +215,8 @@ fn gatherDepthSeen(x: Surf) -> vec3f {
     if (dist > 0.0) { let t = depth[q.idx * P.depthTexels + texelOf(v / dist, P.cd)]; if (select(t.w, t.z, near) < dist) { continue; } }
     E += q.w * cacheE(q.idx, x.n); ws += q.w;
   }
-  if (ws > 0.0) { return E / ws; }
-  return vec3f(0.0);
+  if (ws > 0.0) { return vec4f(E / ws, 1.0); }
+  return vec4f(0.0);
 }
 fn gatherCache(x: Surf) -> vec3f {
   var E = vec3f(0.0); var El = vec3f(0.0); var Ef = vec3f(0.0); var Ea = vec3f(0.0);
@@ -235,7 +235,7 @@ fn gatherCache(x: Surf) -> vec3f {
     if (w > 0.0) { E += w * e; ws += w; }
   }
   if (ws > 0.0) { return E / ws; }
-  if ((P.wo.w >> 1u) >= 2u) { return gatherDepthSeen(x); }
+  if ((P.wo.w >> 1u) >= 2u) { let g = gatherDepthSeen(x); if (g.w > 0.0 || (P.wo.w >> 1u) < 4u) { return g.xyz; } return gatherSeen(x); } // cg 4: then segments
   if ((P.wo.w >> 1u) == 1u) { return gatherSeen(x); }
   if (wl > 0.0) { return El / wl; }
   if (wf > 0.0) { return Ef / wf; }
