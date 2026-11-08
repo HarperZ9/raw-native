@@ -42,5 +42,12 @@
   "otherwise": "keep H and record the nulls"
  },
  "budget": "GPU memory under about 6 GB of the RTX 4090 shared with a training job and other agents (12.6 GB in use by them at the start); never stop other processes; wait when memory is near full. At most 3 CPU workers at below-normal priority",
- "amendments": []
+ "amendments": [
+  {
+   "date": "2026-11-08",
+   "before": "any run of sx (Hsx, B0sx, Hsxm5), of X4 in the closed room, and of the remaining D3 phase runs' reading (queued, none read)",
+   "seen_so_far": "D1: 64 bounces read 0.22% brighter than 8 (prediction met; below the 0.5% rule, so the 8-bounce reference stays). D2: X4 bias +0.04%, RMSE 0.049, mottle 0.009; X2 -0.88%; X4b -0.34% (prediction 'merges not the source' failed: with exact rays the bias is gone). D5: J2 with pi only reads 0.692, J2 with cg 6 only 0.832, H 0.692; X4 door 1.20 (over-lit). The 0.83 to 0.69 drop is pi's alone, and its size (6.6e-5 of luminance) matches J2's closed-room leak at g0 (7.6e-5): J2's extra light in room B was most likely the leak pi closed. D4 GPU: H with sv 0 -2.58%; sv on one level only: level 1 -0.51%, level 2 -3.01%, level 3 -1.96%, levels 4-5 -2.43%. D4 CPU (build/diag/svstats.mjs; a first 3-frame run compared against an exact ray shaded with a cache one bounce newer and is superseded by a 6-frame run with the same cache): the merge's mean signed deviation from the exact own ray traced on: level-0 merges without sv -5.7%, with sv 2 +1.4%; screen probes +3.5% / +5.0%; level-1 merges +1.5% / +2.5%; level-2 -1.6% / -0.1%. Start-to-start segment test (ss) instead: screen -1.4%, level 1 +0.5%, level 0 -5.7%",
+   "text": "New switch sx (CPU f64 and WGSL): screen probes trace every ray to the end (Tollenaar's rays from real surface points, for the screen level), with no level-1 merge and no segment tests (svis skips them under sx). Runs: Hsx = H with sx; B0sx; Hsxm5 = Hsx with m 5; X4 and Hsx in the closed room at g0 to g4 (Hsx also fixed grids g0 to g4, ph4 to ph7); Hsx in the door room. Candidate S = Hsx (and Sm5 = Hsxm5 if Hsx misses only time) under the pass line and decision rule above. Predictions: Hsx bias between -1% and +1%, RMSE at most 0.070, GI median 1.0 to 1.8 ms above H in the same session; door room B ratio 0.85 to 1.25; closed room under 0.1% at g0 to g4. Parity case sx-s2 added before its first run (bound unchanged)"
+  }
+ ]
 }
