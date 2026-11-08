@@ -18,7 +18,7 @@ struct Params {
   dnf: vec4f,   // luminance edge stop sl, planted edge x, planted value below it, above it
   pEye: vec4f, pF: vec4f, pS: vec4f, pU: vec4f, // previous frame's camera (pEye.w tan half fovy, pF.w aspect)
   clo: vec4f,   // the grid origin of the cache this pass gathers from (lo, unless the grid moves: world.mjs jit)
-  wo: vec4u,    // mw (0 seg, 1 vis), sv (1 or 2: merges weigh texels by start visibility, in level buffers' w), fz | sd << 1 (blocked entries trace from 0, written w 1) | pi << 2 | fd << 3, ft | cg << 1
+  wo: vec4u,    // mw (0 seg, 1 vis), sv (1 or 2: merges weigh texels by start visibility, in level buffers' w), fz | sd << 1 (blocked entries trace from 0, written w 1) | pi << 2 | fd << 3 | sk << 5, ft | cg << 1
   dims: array<vec4u, 8>,
   geo: array<vec4f, 8>,
   ofs: array<vec4u, 8>,
@@ -193,14 +193,26 @@ fn cacheE(q: u32, n: vec3f) -> vec3f {
   return max(vec3f(0.0), cache[4u * q].xyz + cache[4u * q + 1u].xyz * n.x + cache[4u * q + 2u].xyz * n.y + cache[4u * q + 3u].xyz * n.z);
 }
 // cg (cascades3d.mjs gatherSeen): lit-side probes outside geometry that a segment from the surface
-// reaches; cg 5 only the eligible probe of largest weight (the first on ties, as the CPU).
+// reaches; cg 5 and 6: the eligible probes in decreasing weight (the first on ties, as the CPU), up to
+// 1 or 8 of them, stopping at the first a segment reaches.
 fn seenOk(q: Nb, x: Surf) -> bool { return q.w > 0.0 && cache[4u * q.idx].w <= 0.0 && dot(q.pos - x.p, x.ng) > 0.0; }
+fn gatherFirst(x: Surf, tries: u32) -> vec3f {
+  let up = offsetP(x, x.ng); var used = 0u;
+  for (var it = 0u; it < tries; it++) {
+    var top = 8u; var tw = 0.0;
+    for (var c = 0u; c < 8u; c++) { let q = neighbourLo(0u, x.p, c, P.clo.xyz); if ((used & (1u << c)) == 0u && seenOk(q, x) && (top == 8u || q.w > tw)) { top = c; tw = q.w; } }
+    if (top == 8u) { break; }
+    used |= 1u << top; let q = neighbourLo(0u, x.p, top, P.clo.xyz); let e = q.pos - up; let len = lenR(e);
+    if (len <= 0.0 || !occluded(up, e / len, len)) { return cacheE(q.idx, x.n); }
+  }
+  return vec3f(0.0);
+}
 fn gatherSeen(x: Surf) -> vec3f {
-  let up = offsetP(x, x.ng); var E = vec3f(0.0); var ws = 0.0; let one = (P.wo.w >> 1u) == 5u; var top = 8u; var tw = 0.0;
-  if (one) { for (var c = 0u; c < 8u; c++) { let q = neighbourLo(0u, x.p, c, P.clo.xyz); if (seenOk(q, x) && (top == 8u || q.w > tw)) { top = c; tw = q.w; } } }
+  let cg = P.wo.w >> 1u; if (cg >= 5u) { return gatherFirst(x, select(8u, 1u, cg == 5u)); }
+  let up = offsetP(x, x.ng); var E = vec3f(0.0); var ws = 0.0;
   for (var c = 0u; c < 8u; c++) {
     let q = neighbourLo(0u, x.p, c, P.clo.xyz);
-    if (!seenOk(q, x) || (one && c != top)) { continue; }
+    if (!seenOk(q, x)) { continue; }
     let e = q.pos - up; let len = lenR(e);
     if (len > 0.0 && occluded(up, e / len, len)) { continue; }
     E += q.w * cacheE(q.idx, x.n); ws += q.w;

@@ -74,21 +74,22 @@ export function gatherCache(ctx, cache, x) {
     if (w > 0) { for (let c = 0; c < 3; c++) E[c] += w * e[c]; ws += w; }
   }
   if (ws > 0) return mul(E, 1 / ws);
-  if (ctx.plan.cg >= 4) { const e = gatherDepthSeen(ctx, cache, x, nb, plan, depth, 2); return e ? e : gatherSeen(ctx, cache, x, nb, ctx.plan.cg === 5) || [0, 0, 0]; }
+  if (ctx.plan.cg >= 4) { const e = gatherDepthSeen(ctx, cache, x, nb, plan, depth, 2); return e ? e : gatherSeen(ctx, cache, x, nb, [8, 1, 8][ctx.plan.cg - 4]) || [0, 0, 0]; }
   if (ctx.plan.cg >= 2) return gatherDepthSeen(ctx, cache, x, nb, plan, depth) || [0, 0, 0]; // cg 2, 3 (world.mjs): no rays
   if (ctx.plan.cg) return gatherSeen(ctx, cache, x, nb); // cg (world.mjs): no fallback past a wall
   if (wl > 0) return mul(El, 1 / wl);
   return wf > 0 ? mul(Ef, 1 / wf) : mul(Ea, 1 / wa);
 }
 // cg: when no probe passes the depth test, the lit-side probes outside geometry that a segment from
-// the surface reaches; no light when none does. one (cg 5): only the eligible probe of largest weight.
-function gatherSeen(ctx, cache, x, nb, one = false) {
+// the surface reaches; no light when none does. cg 5 and 6 (tries 1 or 8, below): the eligible probes in
+// decreasing weight (the first on ties), stopping at the first that a segment reaches; cg 5 tries one.
+function gatherSeen(ctx, cache, x, nb, tries = 0) {
   const up = offset(x, x.ng), E = [0, 0, 0], ok = (q) => q.w > 0 && !(cache[16 * q.idx + 3] > 0) && dot(sub(q.pos, x.p), x.ng) > 0;
-  let ws = 0, top = null;
-  if (one) for (const q of nb) if (ok(q) && (!top || q.w > top.w)) top = q;
-  for (const q of nb) {
+  let ws = 0;
+  const order = ctx.plan.cg >= 5 ? nb.filter(ok).map((q, i) => [q, i]).sort((a, b) => b[0].w - a[0].w || a[1] - b[1]).slice(0, tries).map((r) => r[0]) : nb;
+  for (const q of order) {
     const o = 16 * q.idx;
-    if (!ok(q) || (one && q !== top)) continue;
+    if (!ok(q) || (ctx.plan.cg >= 5 && ws > 0)) continue;
     const e = sub(q.pos, up), len = Math.hypot(...e);
     if (len > 0 && occluded(ctx.S, up, mul(e, 1 / len), len)) continue;
     for (let c = 0; c < 3; c++) E[c] += q.w * Math.max(0, cache[o + c] + cache[o + 4 + c] * x.n[0] + cache[o + 8 + c] * x.n[1] + cache[o + 12 + c] * x.n[2]);
@@ -207,6 +208,7 @@ export function lookup(ctx, l1, buf, q, d) {
 // One entry of level l: probe idx, texel k. `next` is level l+1's merged buffer, flags this level's.
 export function entry(ctx, l, idx, k, next, flags, nextFlags) {
   const { plan, sc } = ctx, L = plan.levels[l], p = probePos(plan, l, idx), d = texelDir(k, L.c), top = l === plan.levels.length - 1;
+  if (plan.sk && flags && flags[idx] & 256) return [0, 0, 0]; // sk: no merge or gather reads a probe inside geometry
   if (ctx.svStart && ctx.svStart[l][idx * L.texels + k] === 0) { const v0 = traced(ctx, p, d, 0, L.T0); if (v0) return v0; } // sd (world.mjs)
   if (plan.fix === "full" && !top) {
     const s = add(p, mul(d, L.T0)), out = [0, 0, 0];

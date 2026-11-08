@@ -65,6 +65,11 @@
       "date": "2026-11-07",
       "before": "any run of F5 (CPU or GPU)",
       "text": "Seen so far on the RTX 4090: the J2 control reads as in round 6 (0.0822, +1.33%, 4.93 ms); F reads 0.0828, +1.46%, GI 6.20 and 6.59 ms (level pass +1.3 ms, screen rays +0.7 ms: the segment fallback fires often in raw-hall); G reads 0.0817, +1.36%, 7.52 ms. New candidate F5: F with cg 5, where the segment fallback traces one ray, to the eligible probe of largest trilinear weight, instead of up to 8. Same pass line, kill lines and decision rule as F; its CPU furnace (21 grids, three plans) and closed-room sweeps run before its GPU runs. Parity case fb-cg5-s2 added before its first run (bound unchanged)."
+    },
+    {
+      "date": "2026-11-07",
+      "before": "any run of H or of sk (CPU or GPU)",
+      "text": "Results so far (RTX 4090, raw-hall 1080p): F GI 6.20, 6.59, 6.39 ms (fails time; kill line met for F: +1.3 to +1.7 ms over the J2 control's 4.93 and 4.93); J2 with pi alone 4.995 ms, 0.0823, +1.36% (pi costs nothing per frame); G 7.52, 7.43, 7.58 ms, bias +1.36% (fd 1 does not move the bias: null); F with fd 2 8.18 ms, +1.51% (null). Band region (cover mask of the metric, 23k px): J2 control +0.203, F +0.205, G +0.201, B0 (round 6 run) +0.106. F5 failed the CPU furnace with the jit plan (1.16% at r4, 0.064% at r5; 0.0003% at r1 with stride 3): null. New switches: cg 6, the segment fallback over the eligible probes in decreasing weight, stopping at the first a segment reaches (one ray when the nearest is seen, up to 8); sk 1, which skips the entries of probes flagged inside geometry, since with fix probe, ft and cg no merge or gather reads them (claimed output-identical: checked by a unit test and parity). Candidate H = J2 with pi 1, cg 6 and sk 1, under the same pass line, kill lines and decision rule as F. Ablations: F with sk (sk's saving), J2 with sk. CPU furnace and leak sweeps of H run before its GPU runs. Parity cases fb-cg6-sk-s2 and fb-cg6-sk-jit-s2 added before their first run (bound unchanged)."
     }
   ]
 }

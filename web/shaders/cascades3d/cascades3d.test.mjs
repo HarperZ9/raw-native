@@ -163,7 +163,8 @@ test("cg 2 and sd with sv 2 and ft: the closed room stays dark at every placemen
     assert.ok(lum / 480 / lit < 1e-4, `go ${go}: ${lum / 480 / lit}`);
   }
   assert.throws(() => planCascades3d(bounds(sc), { sd: 1, sv: 0 }));
-  assert.throws(() => planCascades3d(bounds(sc), { cg: 5 }));
+  assert.throws(() => planCascades3d(bounds(sc), { cg: 7 }));
+  assert.throws(() => planCascades3d(bounds(sc), { sk: 1, ft: 0 }));
   assert.throws(() => planCascades3d(bounds(sc), { fd: 1, sv: 0 }));
 });
 
@@ -194,6 +195,17 @@ test("pi, cg 4 and fd: the closed room stays dark at every placement", () => {
     for (let i = 0; i < out.radiance.length; i++) lum += out.radiance[i];
     assert.ok(lum / 480 / lit < 1e-4, `fd ${fd} go ${go}: ${lum / 480 / lit}`);
   }
+});
+
+test("cg 6 keeps the white furnace exact; cg 5 (one probe) does not; sk leaves every output unchanged", () => {
+  const sc = buildScene3d("furnace"), S = prepare(sc, buildBvh(sc)), want = furnaceExact(sc.alb[0]);
+  const run = (o) => runCascades3d(sc, S, plan3(bounds(sc), { h0: 0.5, c0: 1, r0: 2, f: 2, bounces: 3, fix: "probe", stride: 3, m: 2, sv: 2, ft: 1, pi: 1, tf: 3, jit: 2, ...o }), 12, 8, { cacheInit: sc.sky });
+  const worst = (out) => { let w = 0; for (let p = 0; p < 96; p++) if (out.hit[p]) w = Math.max(w, Math.abs(out.radiance[3 * p] - want) / want); return w; };
+  const go = [-0.7938960790634155, -0.19221007823944092, -0.5798715651035309]; // r4 of the sweep (build/diag furn.mjs): cg 5 reads 1.2% low
+  assert.ok(worst(run({ cg: 5, go })) > 1e-3);
+  const a = run({ cg: 6, go }), b = run({ cg: 6, sk: 1, go });
+  assert.ok(worst(a) < 1e-6, `cg 6: ${worst(a)}`);
+  assert.deepEqual(Array.from(b.radiance), Array.from(a.radiance));
 });
 
 test("defaults: sv 2, ft 1, cg 2 and, with screen probes, tf 32 and jit 8; tf 0 or stride 0 runs no jitter", () => {

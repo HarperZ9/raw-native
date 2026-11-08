@@ -67,6 +67,7 @@ export const LEVEL = PARAMS + CORE + /* wgsl */ `
   let l = P.level; let tex = P.ofs[l].z; let idx = id / tex; let k = id % tex; let c = u32(P.geo[l].y);
   var vis = 1.0; // this entry's start visibility, read by the level below's merges
   if (P.wo.y != 0u) { vis = sv[P.ofs[l].w + id]; }
+  if ((P.wo.z & 32u) != 0u && insideF(flags[P.ofs[l].y + idx])) { cur[id] = vec4f(0.0, 0.0, 0.0, vis); return; } // sk: nothing reads it
   let p = probePos(l, idx); let d = texelDir(k, c); let top = l + 1u == P.nLevels; let T0 = P.geo[l].z; let T1x = P.geo[l].w;
   var found = false;
   if ((P.wo.z & 2u) != 0u) { // sd (world.mjs): a blocked entry holds the surface that blocks it; every entry counts
