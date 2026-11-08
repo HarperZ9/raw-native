@@ -145,7 +145,7 @@ export const SVIS = PARAMS + CORE + /* wgsl */ `
   if (G[3u * g + 1u].w < 0.0) { bits[id] = 0u; return; }
   let x = probeSurf(g);
   var b = 256u;
-  if (P.nLevels > 1u && P.fix == 1u) {
+  if (P.nLevels > 1u && P.fix == 1u && (P.wo.z & 64u) == 0u) { // sx: no merge, no segments
     let up = offsetP(x, x.ng);
     for (var c = 0u; c < 8u; c++) {
       let q = neighbour(1u, x.p, c); let e = q.pos - up; let len = lenR(e);
@@ -169,7 +169,7 @@ export const SRAYS = PARAMS + CORE + /* wgsl */ `
   let b = bits[pr];
   if ((b & 256u) == 0u) { R[id] = vec4f(0.0); return; }
   let x = probeSurf(probePixel(pr));
-  let one = P.nLevels > 1u; let T1 = P.geo[min(1u, P.nLevels - 1u)].z; let T1x = P.geo[0].w;
+  let one = P.nLevels > 1u && (P.wo.z & 64u) == 0u; let T1 = P.geo[min(1u, P.nLevels - 1u)].z; let T1x = P.geo[0].w; // sx (bit 6): traced to the end
   let jt = jitter(pr ^ P.dn.x, j * m + i); let d = cosineDir(x.n, i, j, m, jt.x, jt.y); let o = offsetP(x, d);
   var v = vec3f(0.0); var found = false;
   if (one && P.fix == 2u) {

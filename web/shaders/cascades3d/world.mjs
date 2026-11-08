@@ -31,6 +31,8 @@
 //   to all eligible probes / the one of largest weight / each in decreasing weight until one is reached.
 //   sk: skip the entries of probes inside geometry (nothing reads them with fix probe, ft and cg).
 //   fd 1 (screen probes) / 2 (every merge): a merge's dropped share takes its own ray traced on.
+// - sx (cascades3d.mjs screenProbe; the default since the eighth round): screen rays run to their hit, no level-1
+//   merge. svl: a mask of the levels whose start visibility applies (startPass).
 import { add, mul, sub, dot, texelOf, neighbours } from "./math3d.mjs";
 
 export const halton = (i, b) => { let r = 0; for (let s = 1 / b; i > 0; i = Math.floor(i / b), s /= b) r += s * (i % b); return r; };

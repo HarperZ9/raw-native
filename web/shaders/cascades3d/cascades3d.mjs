@@ -121,7 +121,7 @@ export function depthPass(S, plan) {
 // it crosses [0, T_l] unblocked, else 0.
 export function startPass(S, plan, l) {
   const L = plan.levels[l], out = new Float64Array(L.probes * L.texels).fill(1);
-  if (!(L.T0 > 0)) return out;
+  if (!(L.T0 > 0) || !((plan.svl ?? 255) >> l & 1)) return out; // svl: levels outside the mask weigh 1
   for (let q = 0; q < L.probes; q++) {
     const p = probePos(plan, l, q);
     for (let k = 0; k < L.texels; k++) {
@@ -264,7 +264,7 @@ export function gbuffer(S, sc, W, H) {
 }
 // Screen probe at surface x: irradiance from m^2 cosine rays over [0, T_1], then level 1.
 export function screenProbe(ctx, x, pid, buf1, flags1) {
-  const { plan } = ctx, m = plan.m, T1 = plan.levels[0].T1, T1x = plan.levels[0].T1x, E = [0, 0, 0], one = plan.levels.length > 1;
+  const { plan } = ctx, m = plan.m, T1 = plan.levels[0].T1, T1x = plan.levels[0].T1x, E = [0, 0, 0], one = plan.levels.length > 1 && !plan.sx; // sx: every ray traced to the end
   const up = offset(x, x.ng);
   let bits = 0, wts = null;
   if (one && plan.fix === "probe" && usesSegment(plan.mw)) neighbours(plan, 1, x.p).forEach((q, c) => { const e = sub(q.pos, up), len = Math.hypot(...e); if (len === 0 || !occluded(ctx.S, up, mul(e, 1 / len), len)) bits |= 1 << c; });

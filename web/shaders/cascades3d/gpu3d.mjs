@@ -60,7 +60,7 @@ export function packParams(sc, plan, W, H, triOff, x = {}) {
   f.set([...k.eye, k.th, ...k.f, k.aspect, ...k.s, 0, ...k.u, 0], 32);
   new Uint8Array(buf).set(frameWords(sc, plan, W, H, 0, x.planted), 4 * FRAME_WORDS[0]);
   f.set([...(x.clo || plan.lo), 0], 72);
-  u.set([{ seg: 0, vis: 1 }[plan.mw || "seg"], plan.sv || 0, (plan.fz ? 1 : 0) | (plan.sd ? 2 : 0) | (plan.pi ? 4 : 0) | ((plan.fd || 0) << 3) | (plan.sk ? 32 : 0), (plan.ft ? 1 : 0) | ((plan.cg || 0) << 1)], 76);
+  u.set([{ seg: 0, vis: 1 }[plan.mw || "seg"], plan.sv || 0, (plan.fz ? 1 : 0) | (plan.sd ? 2 : 0) | (plan.pi ? 4 : 0) | ((plan.fd || 0) << 3) | (plan.sk ? 32 : 0) | (plan.sx ? 64 : 0), (plan.ft ? 1 : 0) | ((plan.cg || 0) << 1)], 76);
   L.forEach((l, i) => {
     u.set([...l.n, l.probes], 80 + 4 * i);
     f.set([l.h, l.c, fin(l.T0), fin(l.T1x)], 112 + 4 * i);
@@ -116,7 +116,7 @@ export async function createGpuCascades3d(host, sc, S, plan, W, H, { cacheInit =
   // Frame f runs step set f % sets: cache parity f % 2 and phase f % K (K is even under jit).
   const sets = Math.max(2, K), frames = Array.from({ length: sets }, (_, s) => (s % 2 ? frameSteps(CB, CA, GB, GA, HB, HA, s % K) : frameSteps(CA, CB, GA, GB, HA, HB, s % K)));
   // A phase's depth moments (and, for static geometry, its flags) are traced on its first frame.
-  const startSteps = (p) => (plan.sv ? L.map((l, i) => step("start", l.probes * l.texels, [SVs[p]], { level: i }, PH[p])) : []);
+  const startSteps = (p) => (plan.sv ? L.map((l, i) => step("start", l.probes * l.texels, [SVs[p]], { level: i | ((plan.svl ?? 255) >> i & 1 ? 0 : 65536) }, PH[p])) : []);
   const phaseSetup = (p) => [step("depth", L[0].probes * nt, [Ds[p]], {}, PH[p]), ...startSteps(p), ...(staticFlags ? flagSteps(p) : [])], built = new Set([0]);
   const setup = [step("gbuf", npx, [G]), ...phaseSetup(0)];
   const canTime = dev.features.has("timestamp-query"), maxQ = 2 * Math.max(frames[0].length, setup.length, 2);

@@ -4,10 +4,11 @@ import assert from "node:assert/strict";
 import { buildScene3d, bounds, furnaceExact, writeScene, parseScene } from "./scene3d.mjs";
 import { buildBvh, prepare, closestHit, triHit } from "./bvh.mjs";
 import { omegaTable, texelDir, texelOf, planCascades3d, cosineDir, jitter, dot } from "./math3d.mjs";
-import { runCascades3d, noGiBaseline } from "./run3d.mjs";
+import { runCascades3d, noGiBaseline, initCache } from "./run3d.mjs";
+import { screenProbe, gbuffer, offset, onward, depthPass } from "./cascades3d.mjs";
 
-// The tests written before the sixth round's defaults keep the old ones (sv, ft, cg, tf and jit off).
-const plan3 = (b, o) => planCascades3d(b, { sv: 0, ft: 0, cg: 0, tf: 0, pi: 0, sk: 0, ...o });
+// The tests written before the sixth round's defaults keep the old ones (sv, ft, cg, tf, jit and, since the eighth, sx off).
+const plan3 = (b, o) => planCascades3d(b, { sv: 0, ft: 0, cg: 0, tf: 0, pi: 0, sk: 0, sx: 0, ...o });
 
 test("cube texels: exact solid angles sum to 4 pi, directions round-trip, children nest", () => {
   for (const c of [1, 2, 4, 8]) {
@@ -208,9 +209,29 @@ test("cg 6 keeps the white furnace exact; cg 5 (one probe) does not; sk leaves e
   assert.deepEqual(Array.from(b.radiance), Array.from(a.radiance));
 });
 
-test("defaults: sv 2, ft 1, cg 6, pi 1, sk 1 and, with screen probes, tf 32 and jit 8; tf 0 or stride 0 runs no jitter", () => {
-  const b = bounds(buildScene3d("leak-closed-B")), d = planCascades3d(b, { stride: 8, m: 6 });
-  assert.deepEqual([d.sv, d.ft, d.cg, d.tf, d.jit, d.sd, d.pi, d.sk, d.fd], [2, 1, 6, 32, 8, 0, 1, 1, 0]);
+test("defaults: sv 2, ft 1, cg 6, pi 1, sk 1, sx 1 and, with screen probes, tf 32 and jit 8; tf 0 or stride 0 runs no jitter", () => {
+  const b = bounds(buildScene3d("leak-closed-B")), d = planCascades3d(b, { stride: 8, m: 5 });
+  assert.deepEqual([d.sv, d.ft, d.cg, d.tf, d.jit, d.sd, d.pi, d.sk, d.fd, d.sx, d.svl], [2, 1, 6, 32, 8, 0, 1, 1, 0, 1, 255]);
   assert.deepEqual([planCascades3d(b, { ft: 0 }).sk, planCascades3d(b, { fix: "none" }).sk], [0, 0]);
   assert.deepEqual([planCascades3d(b, { tf: 0 }).jit, planCascades3d(b, { stride: 0 }).jit, planCascades3d(b, { stride: 0 }).tf], [0, 0, 0]);
+});
+
+test("sx: screen rays run to the end with no level-1 merge; the white furnace stays exact", () => {
+  const sc = buildScene3d("leak-door-B"), S = prepare(sc, buildBvh(sc)), plan = planCascades3d(bounds(sc), { h0: 0.5, stride: 2, m: 3, tf: 0, sx: 1 });
+  const ctx = { S, sc, plan, cachePrev: initCache(plan, [0.3, 0.25, 0.2]), depth: depthPass(S, plan) }, G = gbuffer(S, sc, 16, 10);
+  let n = 0;
+  for (let p = 0; p < G.length; p += 7) {
+    if (!G[p]) continue;
+    const x = G[p].x, got = screenProbe(ctx, x, p, null, null), want = [0, 0, 0]; // null level-1 buffers: a merge would throw
+    for (let j = 0; j < 3; j++) for (let i = 0; i < 3; i++) {
+      const [h1, h2] = jitter(p, j * 3 + i), d = cosineDir(x.n, i, j, 3, h1, h2), v = onward(ctx, offset(x, d), d, 0);
+      for (let c = 0; c < 3; c++) want[c] += v[c] * Math.PI / 9;
+    }
+    for (let c = 0; c < 3; c++) assert.ok(Math.abs(got[c] - want[c]) <= 1e-12 * (1 + want[c]));
+    n++;
+  }
+  assert.ok(n > 5);
+  const fs = buildScene3d("furnace"), FS = prepare(fs, buildBvh(fs)), want = furnaceExact(fs.alb[0]);
+  const out = runCascades3d(fs, FS, planCascades3d(bounds(fs), { h0: 0.5, bounces: 3, stride: 3, m: 2, tf: 3, jit: 2, sx: 1, go: [-0.5556, -0.2, -0.875] }), 12, 8, { cacheInit: fs.sky });
+  for (let p = 0; p < 96; p++) if (out.hit[p]) assert.ok(Math.abs(out.radiance[3 * p] - want) / want < 1e-6);
 });
