@@ -55,6 +55,11 @@
       "date": "2026-11-07",
       "before": "reading any result of the CPU furnace and leak sweeps (they were started, none read)",
       "text": "The furnace sweep script (build/diag/furn.mjs) uses the grids g0 to g4, ph0 to ph7 and 8 seeded random offsets r0 to r7, a slightly different list from the exploration's (which had g0, g2, g3, ph4, ph7, the 8 phases and the same 8 random offsets). Phases 0 to 3 of jit 8 are g1 to g4, so both lists hold 17 distinct grids; the pass line (a) applies to the script's list. Parity cases added before their first run (bound unchanged): fb-pi-cg4-s2, fb-fd1-s2, fb-fd2-jit-s2 and furnace-fb-planted (pi 1, cg 4 at g4, where J2 reads 3.6% low on the CPU)."
+    },
+    {
+      "date": "2026-11-07",
+      "before": "any GPU run; the CPU furnace and leak sweeps of F are re-run under this version",
+      "text": "The first CPU sweep (build/diag furnF*, furnJ2*, leakF*, leakG*) read F under 1e-6 at all 21 grids with stride 3 and stride 0, but 0.074% (ph2, 56 px) and 0.022% (r1, 86 px) with the jit plan; J2 failed 8, 12 and 20 of the 21 grids with the three plans (worst 3.6%, 15.7%, 2.1%); F and G read 0.000% in the closed room at all 13 grids. Cause of F's two failures: a level-0 probe 3.5 cm above the floor inside the block reads exactly half of its 96 rays from behind, because the block's bottom face and the floor's top face are coplanar and the downward rays meet the floor first; pi required more than half. pi now flags a probe when at least half of the 96 rays meet a surface from behind (GPU: back * 2 >= 96). With that change both grids read 2e-16. F is this revised version from here on; its furnace and leak sweeps are re-run before the GPU work, and the first sweep stays in the results as the record."
     }
   ]
 }
