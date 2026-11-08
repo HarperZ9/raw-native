@@ -50,5 +50,11 @@
     "otherwise": "keep J2 and record the nulls"
   },
   "budget": "GPU memory under about 6 GB of the RTX 4090 shared with a training job (about 18 GB in use); never stop other processes; wait when memory is near full. At most 3 CPU workers at below-normal priority. Target 4 (4K cost) only if targets 1 to 3 leave time",
-  "amendments": []
+  "amendments": [
+    {
+      "date": "2026-11-07",
+      "before": "reading any result of the CPU furnace and leak sweeps (they were started, none read)",
+      "text": "The furnace sweep script (build/diag/furn.mjs) uses the grids g0 to g4, ph0 to ph7 and 8 seeded random offsets r0 to r7, a slightly different list from the exploration's (which had g0, g2, g3, ph4, ph7, the 8 phases and the same 8 random offsets). Phases 0 to 3 of jit 8 are g1 to g4, so both lists hold 17 distinct grids; the pass line (a) applies to the script's list. Parity cases added before their first run (bound unchanged): fb-pi-cg4-s2, fb-fd1-s2, fb-fd2-jit-s2 and furnace-fb-planted (pi 1, cg 4 at g4, where J2 reads 3.6% low on the CPU)."
+    }
+  ]
 }
