@@ -38,7 +38,7 @@ LAYERS = {
     "world": ["math", "core", "platform", "cert", "scene", "assets", "renderer", "audio"],
     "scripting": ["math", "core", "scene", "world"],
     "story": ["math", "core"],
-    "game": ["math", "core", "story"],
+    "game": ["math", "core", "scene", "story"],
     "tools": ["math", "core", "platform", "cert", "scene", "assets", "rhi", "graph", "renderer",
               "audio", "world", "scripting", "story", "game"],
     "editor": ["math", "core", "platform", "cert", "scene", "assets", "rhi", "graph", "renderer",

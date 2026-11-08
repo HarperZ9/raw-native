@@ -100,6 +100,7 @@ int diff(const char* pa, const char* pb) {
 int actionDumpCommand(int argc, char** argv) {
     if (argc < 3) { std::fprintf(stderr, "usage: action-dump table <moves.json> | strip <moves.json> <set> <id> | diff <a> <b>\n"); return 2; }
     const std::string sub = argv[1];
+    if (sub == "tells" || sub == "trials") return actionTellsCommand(argc, argv);
     try {
         if (sub == "diff" && argc >= 4) return diff(argv[2], argv[3]);
         if (sub == "table") { for (auto& l : frame_lines(expanded(argv[2], argc, argv))) std::printf("%s\n", l.c_str()); return 0; }
