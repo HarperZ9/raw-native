@@ -60,7 +60,7 @@ export function packParams(sc, plan, W, H, triOff, x = {}) {
   f.set([...k.eye, k.th, ...k.f, k.aspect, ...k.s, 0, ...k.u, 0], 32);
   new Uint8Array(buf).set(frameWords(sc, plan, W, H, 0, x.planted), 4 * FRAME_WORDS[0]);
   f.set([...(x.clo || plan.lo), 0], 72);
-  u.set([{ seg: 0, vis: 1 }[plan.mw || "seg"], plan.sv || 0, plan.fz ? 1 : 0, (plan.ft ? 1 : 0) | (plan.cg ? 2 : 0)], 76);
+  u.set([{ seg: 0, vis: 1 }[plan.mw || "seg"], plan.sv || 0, (plan.fz ? 1 : 0) | (plan.sd ? 2 : 0), (plan.ft ? 1 : 0) | ((plan.cg || 0) << 1)], 76);
   L.forEach((l, i) => {
     u.set([...l.n, l.probes], 80 + 4 * i);
     f.set([l.h, l.c, fin(l.T0), fin(l.T1x)], 112 + 4 * i);
@@ -81,7 +81,7 @@ export async function createGpuCascades3d(host, sc, S, plan, W, H, { cacheInit =
   const params = (x, pl) => { const p = packParams(sc, pl, W, H, sp.triOff, { ...x, planted }); return mk(p.data.byteLength, "rc3d params", p.data); };
   const { flagWords, svWords } = packParams(sc, plan, W, H, sp.triOff), nt = 6 * plan.cd * plan.cd, npx = W * H;
   const T = plan.tf > 0, mv = !!plan.move, GA = mk(48 * npx, "rc3d gbuffer"), GB = mv ? mk(48 * npx, "rc3d gbuffer b") : GA, G = GA;
-  const FLs = PH.map((_, p) => mk(4 * flagWords, `rc3d flags ${p}`)), Ds = PH.map((_, p) => mk(8 * L[0].probes * nt, `rc3d depth ${p}`));
+  const FLs = PH.map((_, p) => mk(4 * flagWords, `rc3d flags ${p}`)), Ds = PH.map((_, p) => mk(16 * L[0].probes * nt, `rc3d depth ${p}`));
   const SVs = PH.map((_, p) => (plan.sv ? mk(4 * svWords, `rc3d start visibility ${p}`) : null));
   const LV = L.map((l, i) => mk(16 * l.probes * l.texels, `rc3d level ${i}`)), dummy = mk(16, "rc3d dummy");
   const cinit = new Float32Array(16 * L[0].probes);
@@ -162,7 +162,7 @@ export async function createGpuCascades3d(host, sc, S, plan, W, H, { cacheInit =
     async readParts() { // the frame's intermediate buffers, for debugging against the CPU
       const p = ((frameNo + sets - 1) % sets) % K, odd = frameNo % 2; // the last frame's phase, and the cache and g-buffer it wrote
       return { flags: new Uint32Array(await readBuf(FLs[p], 4 * flagWords)), levels: await Promise.all(LV.map(async (b) => new Float32Array(await readBuf(b, b.size)))),
-        cache: new Float32Array(await readBuf(odd ? CB : CA, 64 * L[0].probes)), depth: new Float32Array(await readBuf(Ds[p], 8 * L[0].probes * nt)), G: new Float32Array(await readBuf(odd ? GA : GB, 48 * npx)) };
+        cache: new Float32Array(await readBuf(odd ? CB : CA, 64 * L[0].probes)), depth: new Float32Array(await readBuf(Ds[p], 16 * L[0].probes * nt)), G: new Float32Array(await readBuf(odd ? GA : GB, 48 * npx)) };
     },
     // n timed frames: GI ms a frame (first pass start to last pass end) and the per-pass split.
     async time(n = 50) {

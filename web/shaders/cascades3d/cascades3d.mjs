@@ -21,7 +21,7 @@
 import { closestHit, occluded } from "./bvh.mjs";
 import { sub, add, mul, dot, cross, norm, texelDir, faceOf, cosineDir, jitter, neighbours, probePos } from "./math3d.mjs";
 import { cameraBasis, pixelDir } from "./scene3d.mjs";
-import { chebVis, levelOneWeights, mergeWeighted, usesSegment } from "./world.mjs";
+import { chebVis, levelOneWeights, mergeWeighted, usesSegment, mergeOf, gatherDepthSeen } from "./world.mjs";
 
 const AXES = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
 const tri3 = (A, s, k) => [A[3 * s + 0 + 3 * k], A[3 * s + 1 + 3 * k], A[3 * s + 2 + 3 * k]];
@@ -74,6 +74,7 @@ export function gatherCache(ctx, cache, x) {
     if (w > 0) { for (let c = 0; c < 3; c++) E[c] += w * e[c]; ws += w; }
   }
   if (ws > 0) return mul(E, 1 / ws);
+  if (ctx.plan.cg >= 2) return gatherDepthSeen(ctx, cache, x, nb, plan, depth); // cg 2, 3 (world.mjs): no rays
   if (ctx.plan.cg) return gatherSeen(ctx, cache, x, nb); // cg (world.mjs): no fallback past a wall
   if (wl > 0) return mul(El, 1 / wl);
   return wf > 0 ? mul(Ef, 1 / wf) : mul(Ea, 1 / wa);
@@ -94,18 +95,19 @@ function gatherSeen(ctx, cache, x, nb) {
   return ws > 0 ? mul(E, 1 / ws) : E;
 }
 // Depth moments of level 0's probes: cd x cd texels a face, 2 x 2 rays a texel, distances capped at
-// plan.dmax. Static geometry: traced once, like the BVH.
+// plan.dmax; 4 values a texel: mean, mean square, nearest and farthest of the 4 (cg 2, 3). Static
+// geometry: traced once, like the BVH.
 export function depthPass(S, plan) {
-  const L = plan.levels[0], cd = plan.cd, nt = 6 * cd * cd, out = new Float64Array(2 * L.probes * nt);
+  const L = plan.levels[0], cd = plan.cd, nt = 6 * cd * cd, out = new Float64Array(4 * L.probes * nt);
   for (let q = 0; q < L.probes; q++) {
     const p = probePos(plan, 0, q);
     for (let k = 0; k < nt; k++) {
-      let m1 = 0, m2 = 0;
+      let m1 = 0, m2 = 0, lo = Infinity, hi = 0;
       for (let r = 0; r < 4; r++) {
         const d = subTexelDir(k, cd, r & 1, r >> 1), h = closestHit(S, p, d, 0, plan.dmax), t = h ? h.t : plan.dmax;
-        m1 += t / 4; m2 += t * t / 4;
+        m1 += t / 4; m2 += t * t / 4; lo = Math.min(lo, t); hi = Math.max(hi, t);
       }
-      out[2 * (q * nt + k)] = m1; out[2 * (q * nt + k) + 1] = m2;
+      out.set([m1, m2, lo, hi], 4 * (q * nt + k));
     }
   }
   return out;
@@ -196,6 +198,7 @@ export function lookup(ctx, l1, buf, q, d) {
 // One entry of level l: probe idx, texel k. `next` is level l+1's merged buffer, flags this level's.
 export function entry(ctx, l, idx, k, next, flags, nextFlags) {
   const { plan, sc } = ctx, L = plan.levels[l], p = probePos(plan, l, idx), d = texelDir(k, L.c), top = l === plan.levels.length - 1;
+  if (ctx.svStart && ctx.svStart[l][idx * L.texels + k] === 0) { const v0 = traced(ctx, p, d, 0, L.T0); if (v0) return v0; } // sd (world.mjs)
   if (plan.fix === "full" && !top) {
     const s = add(p, mul(d, L.T0)), out = [0, 0, 0];
     for (const q of neighbours(plan, l + 1, p)) {
@@ -213,22 +216,10 @@ export function entry(ctx, l, idx, k, next, flags, nextFlags) {
 }
 // ft (world.mjs): the radiance along the merge's own ray past its interval, traced to the end.
 export const onward = (ctx, o, d, t0) => traced(ctx, o, d, t0, Infinity) || ctx.sc.sky;
+// The probe fix trusts neighbour c when bit c is set and it is not inside geometry (world.mjs mergeOf).
 function mergeNext(ctx, l1, p, bits, nextFlags, value, fallback) {
-  const out = [0, 0, 0], all = [0, 0, 0];
-  let ws = 0, wa = 0;
-  neighbours(ctx.plan, l1, p).forEach((q, c) => {
-    if (q.w <= 0) return;
-    const v = value(q.idx);
-    for (let ch = 0; ch < 3; ch++) all[ch] += q.w * v[ch];
-    wa += q.w;
-    if (ctx.plan.fix === "probe" && (!(bits & (1 << c)) || (nextFlags[q.idx] & 256))) return;
-    const w = q.w * (v.length > 3 ? v[3] : 1); // with sv, the neighbour's start visibility
-    for (let ch = 0; ch < 3; ch++) out[ch] += w * v[ch];
-    ws += w;
-  });
-  if (!(ws > 0) && ctx.plan.ft) return fallback(); // ft: no trusted neighbour, trace on (world.mjs)
-  if (!(ws > 0) && ctx.plan.fz) return [0, 0, 0]; // fz: no trusted neighbour, no light (world.mjs)
-  return ws > 0 ? mul(out, 1 / ws) : mul(all, 1 / Math.max(wa, 1e-30));
+  const fix = ctx.plan.fix === "probe", rows = neighbours(ctx.plan, l1, p).map((q, c) => (q.w > 0 ? { w: q.w, v: value(q.idx), t: !fix || ((bits & (1 << c)) && !(nextFlags[q.idx] & 256)) ? 1 : 0 } : null));
+  return mergeOf(ctx, rows, fallback);
 }
 // Level 0's merged radiance as an L1 irradiance cache: E(n) = a + bx n.x + by n.y + bz n.z.
 export function cacheOf(ctx, buf0, flags0) {

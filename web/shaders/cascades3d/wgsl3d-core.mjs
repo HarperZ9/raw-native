@@ -18,7 +18,7 @@ struct Params {
   dnf: vec4f,   // luminance edge stop sl, planted edge x, planted value below it, above it
   pEye: vec4f, pF: vec4f, pS: vec4f, pU: vec4f, // previous frame's camera (pEye.w tan half fovy, pF.w aspect)
   clo: vec4f,   // the grid origin of the cache this pass gathers from (lo, unless the grid moves: world.mjs jit)
-  wo: vec4u,    // mw (0 seg, 1 vis), sv (1 or 2: merges weigh texels by start visibility, in level buffers' w), fz, ft | cg << 1
+  wo: vec4u,    // mw (0 seg, 1 vis), sv (1 or 2: merges weigh texels by start visibility, in level buffers' w), fz | sd << 1 (blocked entries trace from 0, written w 1), ft | cg << 1
   dims: array<vec4u, 8>,
   geo: array<vec4f, 8>,
   ofs: array<vec4u, 8>,
@@ -27,6 +27,8 @@ struct Params {
 @group(0) @binding(0) var<storage, read> P: Params;
 @group(0) @binding(1) var<storage, read> scene: array<vec4f>;
 `;
+
+export const ID = /* wgsl */ `let id = gid.y * P.gridX + gid.x; if (id >= P.total) { return; } _ = scene[0];`;
 
 export const CORE = /* wgsl */ `
 const PI = 3.14159265358979;
@@ -181,7 +183,7 @@ export const GATHER = /* wgsl */ `
 fn chebVis(q0: u32, qp: vec3f, at: vec3f) -> f32 { // world.mjs chebVis
   let v = at - qp; let dist = lenR(v); let h0 = P.lo.w;
   if (dist <= 0.0) { return 1.0; }
-  let t = depth[q0 * P.depthTexels + texelOf(v / dist, P.cd)]; let mu = t.x;
+  let t = depth[q0 * P.depthTexels + texelOf(v / dist, P.cd)]; let mu = t.x; // mean, mean square, nearest, farthest
   if (dist <= mu || mu >= 0.999 * P.sunE.w) { return 1.0; }
   let va = max(t.y - mu * mu, 1e-4 * h0 * h0);
   var vis = va / (va + (dist - mu) * (dist - mu)); vis = vis * vis * vis;
@@ -198,6 +200,19 @@ fn gatherSeen(x: Surf) -> vec3f {
     if (q.w <= 0.0 || cache[4u * q.idx].w > 0.0 || dot(q.pos - x.p, x.ng) <= 0.0) { continue; }
     let e = q.pos - up; let len = lenR(e);
     if (len > 0.0 && occluded(up, e / len, len)) { continue; }
+    E += q.w * cacheE(q.idx, x.n); ws += q.w;
+  }
+  if (ws > 0.0) { return E / ws; }
+  return vec3f(0.0);
+}
+// cg 2, 3 (world.mjs gatherDepthSeen): no rays; the farthest (2) or nearest (3) depth ray must reach the point.
+fn gatherDepthSeen(x: Surf) -> vec3f {
+  let at = x.p + x.ng * (0.25 * P.lo.w); let near = (P.wo.w >> 1u) == 3u; var E = vec3f(0.0); var ws = 0.0;
+  for (var c = 0u; c < 8u; c++) {
+    let q = neighbourLo(0u, x.p, c, P.clo.xyz);
+    if (q.w <= 0.0 || cache[4u * q.idx].w > 0.0 || dot(q.pos - x.p, x.ng) <= 0.0) { continue; }
+    let v = at - q.pos; let dist = lenR(v);
+    if (dist > 0.0) { let t = depth[q.idx * P.depthTexels + texelOf(v / dist, P.cd)]; if (select(t.w, t.z, near) < dist) { continue; } }
     E += q.w * cacheE(q.idx, x.n); ws += q.w;
   }
   if (ws > 0.0) { return E / ws; }
@@ -220,7 +235,8 @@ fn gatherCache(x: Surf) -> vec3f {
     if (w > 0.0) { E += w * e; ws += w; }
   }
   if (ws > 0.0) { return E / ws; }
-  if ((P.wo.w & 2u) != 0u) { return gatherSeen(x); }
+  if ((P.wo.w >> 1u) >= 2u) { return gatherDepthSeen(x); }
+  if ((P.wo.w >> 1u) == 1u) { return gatherSeen(x); }
   if (wl > 0.0) { return El / wl; }
   if (wf > 0.0) { return Ef / wf; }
   return Ea / wa;

@@ -6,6 +6,9 @@ import { buildBvh, prepare, closestHit, triHit } from "./bvh.mjs";
 import { omegaTable, texelDir, texelOf, planCascades3d, cosineDir, jitter, dot } from "./math3d.mjs";
 import { runCascades3d, noGiBaseline } from "./run3d.mjs";
 
+// The tests written before the sixth round's defaults keep the old ones (sv, ft, cg, tf and jit off).
+const plan3 = (b, o) => planCascades3d(b, { sv: 0, ft: 0, cg: 0, tf: 0, ...o });
+
 test("cube texels: exact solid angles sum to 4 pi, directions round-trip, children nest", () => {
   for (const c of [1, 2, 4, 8]) {
     const om = omegaTable(c);
@@ -51,8 +54,9 @@ test("planted white furnace: started at the fixed point, every pixel stays at 1 
     { fix: "probe", stride: 2, m: 3, tf: 3, sf: 2, sl: 0.5 }, { fix: "probe", stride: 3, m: 2, tf: 4, move: { d: [0.2, 0, 0.1], k: 2 } },
     { fix: "probe", stride: 2, m: 3, c1: 4 }, { fix: "full", stride: 0, c1: 4 }, { fix: "probe", stride: 2, m: 3, mw: "vis" },
     { fix: "probe", stride: 2, m: 3, sv: 1 }, { fix: "probe", stride: 3, m: 2, tf: 3, jit: 2, sv: 1 },
-    { fix: "probe", stride: 2, m: 3, sv: 2, ft: 1, go: [-1 / 3, -3 / 5, -3 / 4] }, { fix: "probe", stride: 3, m: 2, tf: 3, jit: 2, sv: 2, ft: 1 }]) {
-    const plan = planCascades3d(bounds(sc), { h0: 0.5, c0: 1, r0: 2, f: 2, bounces: 3, ...opts }), out = runCascades3d(sc, S, plan, 12, 8, { cacheInit: sc.sky });
+    { fix: "probe", stride: 2, m: 3, sv: 2, ft: 1, go: [-1 / 3, -3 / 5, -3 / 4] }, { fix: "probe", stride: 3, m: 2, tf: 3, jit: 2, sv: 2, ft: 1 },
+    { fix: "probe", stride: 3, m: 2, tf: 3, jit: 2, sv: 2, ft: 1, sd: 1 }, { fix: "probe", stride: 2, m: 3, sv: 2, sd: 1, mw: "vis" }]) {
+    const plan = plan3(bounds(sc), { h0: 0.5, c0: 1, r0: 2, f: 2, bounces: 3, ...opts }), out = runCascades3d(sc, S, plan, 12, 8, { cacheInit: sc.sky });
     let worst = 0;
     for (let p = 0; p < 96; p++) if (out.hit[p]) worst = Math.max(worst, Math.abs(out.radiance[3 * p] - want) / want);
     assert.ok(worst < 1e-6, `${JSON.stringify(opts)}: worst relative error ${worst}`); // the f32 albedo against the f64 fixed point: 1e-8
@@ -61,7 +65,7 @@ test("planted white furnace: started at the fixed point, every pixel stays at 1 
 
 test("closed room: with the probe fix, no light reaches room B in the CPU reference", () => {
   const sc = buildScene3d("leak-closed-B"), S = prepare(sc, buildBvh(sc));
-  const plan = planCascades3d(bounds(sc), { h0: 0.5, c0: 1, r0: 2, f: 2, bounces: 2, fix: "probe", stride: 4, m: 3 });
+  const plan = plan3(bounds(sc), { h0: 0.5, c0: 1, r0: 2, f: 2, bounces: 2, fix: "probe", stride: 4, m: 3 });
   const out = runCascades3d(sc, S, plan, 16, 10), base = noGiBaseline(sc, S, 16, 10, 4);
   let lum = 0, b = 0;
   for (let i = 0; i < out.radiance.length; i++) { lum += out.radiance[i]; b += base.radiance[i]; }
@@ -80,7 +84,7 @@ test("denoise: the probes move through every cell position, and history accumula
   const sc = buildScene3d("leak-door-A"), S = prepare(sc, buildBvh(sc)), W = 12, H = 8, spread = (tf) => {
     const vals = [];
     for (const d of [0.0, 1e-9]) { // two plans that differ only in their frame count reach different seeds
-      const plan = planCascades3d(bounds(sc), { h0: 0.75, c0: 2, r0: 1.5, f: 4, fix: "probe", stride: 2, m: 2, bounces: 2, cd: 2, tf: tf + (d ? 1 : 0), tmax: 64 });
+      const plan = plan3(bounds(sc), { h0: 0.75, c0: 2, r0: 1.5, f: 4, fix: "probe", stride: 2, m: 2, bounces: 2, cd: 2, tf: tf + (d ? 1 : 0), tmax: 64 });
       vals.push(runCascades3d(sc, S, plan, W, H).radiance);
     }
     let s = 0, n = 0;
@@ -94,7 +98,7 @@ test("world options: c1 children nest, jit phases stay inside one span, levels m
   const { phaseOffset, levelZeroIndex } = await import("./world.mjs");
   for (let k = 0; k < 96; k++) assert.equal(texelOf(texelDir(k, 4), 1), Math.floor(k / 16)); // a c-4 texel lies inside its c-1 parent
   const sc = buildScene3d("leak-closed-B");
-  const plan = planCascades3d(bounds(sc), { h0: 0.5, c0: 1, stride: 4, m: 3, tf: 2, jit: 4 }), seen = new Set();
+  const plan = plan3(bounds(sc), { h0: 0.5, c0: 1, stride: 4, m: 3, tf: 2, jit: 4 }), seen = new Set();
   for (let p = 0; p < 4; p++) { const o = phaseOffset(plan, p); assert.ok(o.every((v) => v >= 0 && v < plan.hj)); seen.add(o.join()); }
   assert.equal(seen.size, 4);
   const L1 = plan.levels[1], n0 = plan.levels[0].n;
@@ -103,12 +107,12 @@ test("world options: c1 children nest, jit phases stay inside one span, levels m
     if (q0 >= 0) assert.equal(q0 % n0[0], 2 * x); else assert.ok(2 * x >= n0[0] || 2 * (Math.floor(i / L1.n[0]) % L1.n[1]) >= n0[1] || 2 * Math.floor(i / (L1.n[0] * L1.n[1])) >= n0[2]);
   }
   assert.throws(() => planCascades3d(bounds(sc), { c1: 3 }));
-  assert.throws(() => planCascades3d(bounds(sc), { jit: 4 }));
+  assert.throws(() => planCascades3d(bounds(sc), { jit: 4, tf: 0 }));
 });
 
 test("start visibility: the closed room stays dark at every grid placement, far darker than without it", () => {
   const sc = buildScene3d("leak-closed-B"), S = prepare(sc, buildBvh(sc)), room = (o) => {
-    const plan = planCascades3d(bounds(sc), { h0: 0.5, c0: 1, r0: 2, f: 2, bounces: 1, fix: "probe", stride: 4, m: 3, ...o }), out = runCascades3d(sc, S, plan, 16, 10);
+    const plan = plan3(bounds(sc), { h0: 0.5, c0: 1, r0: 2, f: 2, bounces: 1, fix: "probe", stride: 4, m: 3, ...o }), out = runCascades3d(sc, S, plan, 16, 10);
     let lum = 0;
     for (let i = 0; i < out.radiance.length; i++) lum += out.radiance[i];
     return lum / 480;
@@ -120,7 +124,7 @@ test("start visibility: the closed room stays dark at every grid placement, far 
 
 test("own-ray start visibility with the traced fallback: the closed room stays dark at every placement; sub-texel sv does not", () => {
   const sc = buildScene3d("leak-closed-B"), S = prepare(sc, buildBvh(sc)), room = (o) => {
-    const plan = planCascades3d(bounds(sc), { h0: 0.5, c0: 1, r0: 2, f: 2, bounces: 2, fix: "probe", stride: 4, m: 3, ...o }), out = runCascades3d(sc, S, plan, 16, 10);
+    const plan = plan3(bounds(sc), { h0: 0.5, c0: 1, r0: 2, f: 2, bounces: 2, fix: "probe", stride: 4, m: 3, ...o }), out = runCascades3d(sc, S, plan, 16, 10);
     let lum = 0;
     for (let i = 0; i < out.radiance.length; i++) lum += out.radiance[i];
     return lum / 480;
@@ -132,4 +136,38 @@ test("own-ray start visibility with the traced fallback: the closed room stays d
   }
   // The control: the same fallback with round 4's sub-texel start visibility leaks at the second placement.
   assert.ok(room({ go: [-1 / 3, -3 / 5, -3 / 4], sv: 1, ft: 1 }) / lit > 5e-3);
+});
+
+test("sd keeps the white furnace exact at a moved grid; cg's no-light fallback does not, and cg 2 is no worse than cg 1", () => {
+  const sc = buildScene3d("furnace"), S = prepare(sc, buildBvh(sc)), want = furnaceExact(sc.alb[0]);
+  const run = (o) => {
+    const plan = plan3(bounds(sc), { h0: 0.5, c0: 1, r0: 2, f: 2, bounces: 3, fix: "probe", stride: 3, m: 2, sv: 2, ft: 1, go: [-1 / 3, -3 / 5, -3 / 4], ...o });
+    const out = runCascades3d(sc, S, plan, 12, 8, { cacheInit: sc.sky });
+    let worst = 0;
+    for (let p = 0; p < 96; p++) if (out.hit[p]) worst = Math.max(worst, Math.abs(out.radiance[3 * p] - want) / want);
+    return worst;
+  };
+  assert.ok(run({ sd: 1 }) < 1e-6, `sd ${run({ sd: 1 })}`);
+  // cg returns no light where no probe is shown to see the surface: 10 of 96 pixels, up to 1% here (2026-11-07).
+  const c1 = run({ sd: 1, cg: 1 }), c2 = run({ sd: 1, cg: 2 });
+  assert.ok(c2 <= c1 + 1e-12 && c2 < 0.02, `cg 1 ${c1}, cg 2 ${c2}`);
+});
+
+test("cg 2 and sd with sv 2 and ft: the closed room stays dark at every placement", () => {
+  const sc = buildScene3d("leak-closed-B"), S = prepare(sc, buildBvh(sc)), lit = 0.055;
+  for (const go of [null, [-1 / 3, -3 / 5, -3 / 4], [-2 / 9, -0.96, -3 / 8]]) {
+    const plan = plan3(bounds(sc), { h0: 0.5, c0: 1, r0: 2, f: 2, bounces: 2, fix: "probe", stride: 4, m: 3, sv: 2, ft: 1, cg: 2, sd: 1, go });
+    const out = runCascades3d(sc, S, plan, 16, 10);
+    let lum = 0;
+    for (let i = 0; i < out.radiance.length; i++) lum += out.radiance[i];
+    assert.ok(lum / 480 / lit < 1e-4, `go ${go}: ${lum / 480 / lit}`);
+  }
+  assert.throws(() => planCascades3d(bounds(sc), { sd: 1, sv: 0 }));
+  assert.throws(() => planCascades3d(bounds(sc), { cg: 4 }));
+});
+
+test("defaults: sv 2, ft 1, cg 2 and, with screen probes, tf 32 and jit 8; tf 0 or stride 0 runs no jitter", () => {
+  const b = bounds(buildScene3d("leak-closed-B")), d = planCascades3d(b, { stride: 8, m: 6 });
+  assert.deepEqual([d.sv, d.ft, d.cg, d.tf, d.jit, d.sd], [2, 1, 2, 32, 8, 0]);
+  assert.deepEqual([planCascades3d(b, { tf: 0 }).jit, planCascades3d(b, { stride: 0 }).jit, planCascades3d(b, { stride: 0 }).tf], [0, 0, 0]);
 });

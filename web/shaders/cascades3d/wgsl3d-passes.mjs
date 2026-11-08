@@ -1,8 +1,9 @@
 // The compute mains of the 3D cascades (one module each: PARAMS + CORE [+ GATHER] + main).
 // Dispatches are 2D: invocation id = gid.y * P.gridX + gid.x, below P.total.
-import { PARAMS, CORE, GATHER, LOOKUP } from "./wgsl3d-core.mjs";
+import { PARAMS, CORE, GATHER, LOOKUP, ID } from "./wgsl3d-core.mjs";
+import { INSIDE, MERGE } from "./wgsl3d-world.mjs";
 
-export const ID = /* wgsl */ `let id = gid.y * P.gridX + gid.x; if (id >= P.total) { return; } _ = scene[0];`;
+export { ID };
 
 // Primary hits: 3 vec4 a pixel: (p, sun scale), (n, slot or -1), (ng, back).
 export const GBUF = PARAMS + CORE + /* wgsl */ `
@@ -34,50 +35,25 @@ export const FLAGS = PARAMS + CORE + /* wgsl */ `
   if (len == 0.0 || !occluded(p, e / len, len)) { atomicOr(&flags[at], 1u << c); }
 }`;
 
-// Depth moments of level 0's probes (static geometry: once).
+// Depth moments of level 0's probes (static geometry: once): mean, mean square, nearest, farthest.
 export const DEPTH = PARAMS + CORE + /* wgsl */ `
-@group(0) @binding(2) var<storage, read_write> depth: array<vec2f>;
+@group(0) @binding(2) var<storage, read_write> depth: array<vec4f>;
 @compute @workgroup_size(256) fn main(@builtin(global_invocation_id) gid: vec3u) {
   ${ID}
   let q = id / P.depthTexels; let k = id % P.depthTexels; let p = probePos(0u, q); let dmax = P.sunE.w;
-  var m = vec2f(0.0);
+  var m = vec4f(0.0, 0.0, 1e30, 0.0);
   for (var r = 0u; r < 4u; r++) {
     let h = trace(p, subTexelDir(k, P.cd, r & 1u, r >> 1u), 0.0, dmax, false);
     let t = select(dmax, h.t, h.slot >= 0);
-    m += vec2f(t, t * t) * 0.25;
+    m = vec4f(m.xy + vec2f(t, t * t) * 0.25, min(m.z, t), max(m.w, t));
   }
   depth[id] = m;
 }`;
 
-const INSIDE = /* wgsl */ `
-fn insideF(f: u32) -> bool { let back = (f >> 16u) & 15u; let front = (f >> 20u) & 15u; return back >= 3u && back > front; }
-`;
-const MERGE = INSIDE + /* wgsl */ `
-// s x s children, s = c(l1) / c; w: their start visibility (1 without sv), which also weighs them.
-fn children(l1: u32, q: u32, k: u32, c: u32) -> vec4f {
-  let cc = u32(P.geo[l1].y); let sp = cc / c; let f = k / (c * c); let r = k - f * c * c; let j = r / c; let i = r - j * c;
-  let tex = P.ofs[l1].z; let oo = P.ofs[l1].x;
-  var out = vec3f(0.0); var ws = 0.0; var ov = vec3f(0.0); var wv = 0.0;
-  for (var b = 0u; b < sp; b++) { for (var a = 0u; a < sp; a++) {
-    let ti = sp * i + a; let tj = sp * j + b; let w = P.omega[oo + tj * cc + ti];
-    let e = next[q * tex + f * cc * cc + tj * cc + ti];
-    out += w * e.xyz; ws += w; ov += w * e.w * e.xyz; wv += w * e.w;
-  } }
-  if (P.wo.y == 0u) { return vec4f(out / ws, 1.0); }
-  return select(vec4f(out / ws, 0.0), vec4f(ov / wv, wv / ws), wv > 0.0);
-}
-fn traced(o: vec3f, d: vec3f, t0: f32, t1: f32, found: ptr<function, bool>) -> vec3f {
-  let h = trace(o, d, t0, t1, false);
-  *found = h.slot >= 0;
-  if (!*found) { return vec3f(0.0); }
-  return surfaceRadiance(surfaceAt(o, d, h), d, P.sub0 == 1u);
-}
-`;
-
 // One entry of level P.level (cascades3d.mjs entry): thread = probe * texels + texel.
 export const LEVEL = PARAMS + CORE + /* wgsl */ `
 @group(0) @binding(2) var<storage, read> cache: array<vec4f>;
-@group(0) @binding(3) var<storage, read> depth: array<vec2f>;
+@group(0) @binding(3) var<storage, read> depth: array<vec4f>;
 @group(0) @binding(4) var<storage, read> flags: array<u32>;
 @group(0) @binding(5) var<storage, read> next: array<vec4f>;
 @group(0) @binding(6) var<storage, read_write> cur: array<vec4f>;
@@ -91,6 +67,10 @@ export const LEVEL = PARAMS + CORE + /* wgsl */ `
   if (P.wo.y != 0u) { vis = sv[P.ofs[l].w + id]; }
   let p = probePos(l, idx); let d = texelDir(k, c); let top = l + 1u == P.nLevels; let T0 = P.geo[l].z; let T1x = P.geo[l].w;
   var found = false;
+  if ((P.wo.z & 2u) != 0u) { // sd (world.mjs): a blocked entry holds the surface that blocks it; every entry counts
+    if (vis == 0.0) { let v0 = traced(p, d, 0.0, T0, &found); if (found) { cur[id] = vec4f(v0, 1.0); return; } }
+    vis = 1.0;
+  }
   if (P.fix == 2u && !top) {
     let T1 = P.geo[l + 1u].z; let s = p + d * T0; var out = vec3f(0.0);
     for (var cn = 0u; cn < 8u; cn++) {
@@ -117,7 +97,7 @@ export const LEVEL = PARAMS + CORE + /* wgsl */ `
     out += q.w * m.w * m.xyz; ws += q.w * m.w;
   }
   if (ws <= 0.0 && (P.wo.w & 1u) != 0u) { v = traced(p, d, T1x, 1e30, &found); cur[id] = vec4f(select(P.sky.xyz, v, found), vis); return; } // ft
-  cur[id] = vec4f(select(select(all / max(wa, 1e-30), vec3f(0.0), P.wo.z == 1u), out / ws, ws > 0.0), vis);
+  cur[id] = vec4f(select(select(all / max(wa, 1e-30), vec3f(0.0), (P.wo.z & 1u) != 0u), out / ws, ws > 0.0), vis);
 }`;
 
 // Level 0's merged radiance as the L1 irradiance cache (cascades3d.mjs cacheOf): thread = probe.
@@ -170,7 +150,7 @@ export const SVIS = PARAMS + CORE + /* wgsl */ `
 }`;
 export const SRAYS = PARAMS + CORE + /* wgsl */ `
 @group(0) @binding(2) var<storage, read> cache: array<vec4f>;
-@group(0) @binding(3) var<storage, read> depth: array<vec2f>;
+@group(0) @binding(3) var<storage, read> depth: array<vec4f>;
 @group(0) @binding(4) var<storage, read> next: array<vec4f>;
 @group(0) @binding(5) var<storage, read> G: array<vec4f>;
 @group(0) @binding(6) var<storage, read> bits: array<u32>;
@@ -209,11 +189,10 @@ export const SRAYS = PARAMS + CORE + /* wgsl */ `
           var w = q.w;
           let q0 = levelZeroIndex(1u, q.idx);
           if (q0 >= 0 && P.wo.x == 1u) { w *= chebVis(u32(q0), q.pos, x.p + x.ng * (0.25 * P.lo.w)); }
-          w *= r.w;
-          out += w * r.xyz; ws += w;
+          out += w * r.w * r.xyz; ws += w * r.w;
         }
         if (ws <= 0.0 && (P.wo.w & 1u) != 0u) { v = traced(o, d, T1x, 1e30, &found); if (!found) { v = P.sky.xyz; } }
-        else { v = select(select(all / max(wa, 1e-30), vec3f(0.0), P.wo.z == 1u), out / ws, ws > 0.0); }
+        else { v = select(select(all / max(wa, 1e-30), vec3f(0.0), (P.wo.z & 1u) != 0u), out / ws, ws > 0.0); }
       }
     }
   }
@@ -247,7 +226,7 @@ fn shade(x: Surf, d: vec3f, sun: f32, Egi: vec3f) -> vec3f {
 // with flag 4 the irradiance (for temporal accumulation, wgsl3d-denoise.mjs ACCUM).
 export const FINAL = PARAMS + CORE + /* wgsl */ `
 @group(0) @binding(2) var<storage, read> cache: array<vec4f>;
-@group(0) @binding(3) var<storage, read> depth: array<vec2f>;
+@group(0) @binding(3) var<storage, read> depth: array<vec4f>;
 @group(0) @binding(4) var<storage, read> G: array<vec4f>;
 @group(0) @binding(5) var<storage, read> E: array<vec4f>;
 @group(0) @binding(6) var<storage, read_write> outp: array<vec4f>;
