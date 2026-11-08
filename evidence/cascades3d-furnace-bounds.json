@@ -1,0 +1,54 @@
+{
+  "what": "Seventh round of the 3D cascades (web/shaders/cascades3d): the cache gather's dark fallback, sv 2's brightening and the bright bands on raw-hall, on the default J2 (round 6, evidence/cascades3d-cost-rtx4090.json: jit 8, tf 32, sv 2, ft 1, cg 2; 1080p RMSE 0.082 (0.077 to 0.088), bias +1.3%, GI 5.0 ms, worst leak 0.39%, 4K 10.2 ms). Round 6 found every cg mode 1.05% low on 10 of 96 pixels of the CPU white furnace at grid g2",
+  "written": "2026-11-07, after the CPU code of pi, cg 4 and fd was written, and after an exploratory CPU furnace diagnosis (listed under exploration, below); before any leak run, GPU run, raw-hall measurement, render or parity run",
+  "source_read": "J. Tollenaar, 'Split Radiance Cascades' (article, author's save, batch 36; read as data, nothing run). What applies here: probes buried in geometry are a cause of leaks and dark splotches; rays from real surface points avoid them. Used as the reason to test probes for being buried (pi) and to fall back to rays from the surface point to the probes (cg 4). The article's own merge (transmittance-weighted bins) and hashed sparse probes are not built this round",
+  "exploration": {
+    "note": "CPU float64 furnace runs made before this file, to find the cause; they are data, not the planted check below",
+    "cause_1": "at g2 the 1.05% comes from level-0 probes inside the 0.2 m wall slabs that the 6-axis-ray test (rays of one spacing, 3 hits from behind) does not flag: their rays meet the slab from inside, the gather there finds no probe and returns 0, and room surfaces gather those dark caches through the depth test. Returning the exact value only for hits seen from inside a slab removes the error; doing so for room-side hits does not",
+    "cause_2": "a 21-grid sweep (5 placements, the 8 jit phases, 8 seeded random offsets) found two more failing grids, 3.6% and 2.3% on all 96 pixels, and one at 0.018%. Cause: a probe 1 cm from a wall sees the floor straight below it, but the depth texel that holds that direction also spans the wall, so its farthest ray stops at the wall and cg 2 rejects the probe; the gather returns 0",
+    "pi_alone": "fixes g2 and phase 0, not the other two grids",
+    "cg4_alone": "fixes the two depth-texel grids, not g2 (cg 1 as well)",
+    "pi_and_cg4": "under 1e-6 at all 21 grids"
+  },
+  "switches": {
+    "pi_1": "a probe also counts as inside geometry when more than half of 96 rays (the texel centres of face side 4, unbounded) meet a surface from behind. Traced once a jitter phase with the flags (static geometry); GPU flags pass bits 24 to 31",
+    "cg_4": "the cache gather's fallback: cg 2 first (no rays); when it keeps no probe, cg 1's segment test (a ray from the surface, lifted along its normal, to each lit-side probe outside geometry); none still gives no light. Rays only where both depth tests fail",
+    "fd_1": "with sv: a screen probe's merge that keeps some trusted weight but drops part of it (texels whose own start ray crossed a surface) fills the dropped part with its own ray traced on past its interval (ft's onward ray), instead of renormalising over the kept part. fd 2: every merge (world levels too). fd adds no light from past a wall: the onward ray starts on the merge's own unblocked ray"
+  },
+  "why_leak_tight": "inferred, not proven. pi only removes probes from merges and gathers. cg 4 keeps a probe only when a traced segment from the surface reaches it (cg 1's test, leak-tight in round 5). fd uses the merge's own ray, whose interval up to the onward start was traced unblocked",
+  "candidates": {
+    "F": "J2 (h0 0.5, fix probe, stride 8, m 6, jit 8, tf 32, sv 2, ft 1, cg 2) with pi 1 and cg 4: target 1",
+    "G": "F with fd 1: target 2 and 3",
+    "ablations": "J2 re-run as the control in this session; J2 with pi 1 alone; F with fd 2; Ffix and Gfix (no jit, no tf) for the fixed-grid leak test. Reported, not used for decisions except as stated"
+  },
+  "metrics": {
+    "cpu_furnace": "white furnace at 12 x 8 px, 3 bounces, started at the fixed point (as round 6), at the 21 grids of the exploration and with three plans: stride 3 m 2; stride 0; stride 3 m 2 with jit 2 tf 3. Worst relative error over hit pixels",
+    "cpu_leak": "closed room at 16 x 10 px (as rounds 5 and 6) at g0 to g4 and the 8 phase grids: room B mean over 0.055",
+    "leak_closed": "leak-closed-B at 960 x 540, static flags, 20 frames: frame mean luminance over the room A view's reference mean (0.0501), at g0 to g4; fixed grids (no jit) at g0 to g4 and ph4 to ph7",
+    "door_room": "leak-door-B at 960 x 540: room B light ratio and relative error, reported",
+    "hall": "raw-hall nave 1920 x 1080 against the 8-bounce path trace (two 1024 spp seeds): relative RMSE with the 95% 32 x 32 tile bootstrap, bias, wall and floor mottle, GI median and p5 to p95 of 50 frames, three timing runs for a candidate; 4K once for a candidate that becomes the default",
+    "band": "tests/web/cascades3d_band.py: the bright-band region is every pixel where round 6's J2 1080p frame (build copy of E:/wt/raw-native-rc3d-cg/build/gi/J2-1080) has a 13 x 13 box-blurred signed luminance error above +0.15 of the reference mean (column flanks, far-wall patch, arch soffits; about 23,000 px). Metric: the mean signed error over that region, normalised by the whole frame's reference mean. The region is chosen on round 6's run and scored on this round's runs; the J2 control re-run is the baseline",
+    "parity": "GPU f32 against CPU f64 on the existing 24 cases and new cases for pi, cg 4, fd 1 and fd 2, bound 2e-3 a case (unchanged)"
+  },
+  "predictions": {
+    "cpu_furnace": "F under 1e-6 at all 21 grids with all three plans; J2 fails at 3 or more grids",
+    "cpu_leak": "F and G 0.000% at all 13 grids",
+    "leak": "F and G under 1% at g0 to g4, worst under 0.4% (pi removes probes buried in the 4 cm wall, which may lower J2's seam glow); fixed grids under 1% at all 9",
+    "hall_F": "RMSE 0.078 to 0.086, bias +0.5% to +1.6%, GI median 5.0 to 5.6 ms",
+    "hall_G": "bias at most +0.65% (half of J2's +1.3%), RMSE at most 0.082, GI median 5.3 to 6.0 ms",
+    "band": "G lowers the band's mean signed error by at least 25% against the J2 control; F by under 10%",
+    "door_room": "F and G light ratio 0.7 to 1.0"
+  },
+  "pass_line": "a candidate passes when (a) the CPU furnace reads under 1e-6 at all 21 grids with all three plans, (b) the closed room reads under 1% at g0 to g4 and its fixed grids under 1% at g0 to g4 and ph4 to ph7, (c) raw-hall 1080p RMSE at most 0.088 (J2's upper 95% limit in round 6), (d) the GI median of each of three 1080p timing runs under 6 ms, and (e) GPU parity within 2e-3 on every case",
+  "kill_line": {
+    "target_1": "pi with cg 4 is a null if F misses (a), or its worst closed-room placement reads above 1%, or it adds more than 0.5 ms of GI median over the J2 control in the same session",
+    "target_2": "fd is a null if G does not move the raw-hall bias at least halfway from the J2 control's toward zero, or misses (b) to (d)",
+    "target_3": "the band is a null for a candidate whose band mean signed error falls by under 25% against the J2 control"
+  },
+  "decisions": {
+    "default": "if G passes, its switches become the default of planCascades3d; else if F passes, F's. Among passing candidates the lower RMSE wins; within 0.002, the bias nearer zero. Docs and changelog say so; old tests and old parity cases pin their switches and must read as before",
+    "otherwise": "keep J2 and record the nulls"
+  },
+  "budget": "GPU memory under about 6 GB of the RTX 4090 shared with a training job (about 18 GB in use); never stop other processes; wait when memory is near full. At most 3 CPU workers at below-normal priority. Target 4 (4K cost) only if targets 1 to 3 leave time",
+  "amendments": []
+}
