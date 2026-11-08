@@ -1,0 +1,37 @@
+{
+ "what": "P1 held-time animation clock and P2 closed-loop contract plus loop writers (mission-control 2026-10-29-game-art PROPOSALS.txt P1 and P2; ART.txt Part 5 section 2 and T12)",
+ "written": "2026-11-07, before any held-time or loop code ran; branch feat/held-time-loop-20261108 from origin/main fa038cb",
+ "design": {
+  "clock": "raw/scene/held_time.hpp. A layer samples at an authored rate: continuous (every render frame, the camera's ones), on N of a 24 fps film base (ones 24 Hz, twos 12 Hz, threes 8 Hz) or a named rational rate (12 Hz). Render frame k at rational fps R gives tick floor(k * R.den * rate.num / (R.num * rate.den)) in 64-bit integers; the held time is tick / rate. No floating accumulation.",
+  "seed": "a layer's boil seed is a hash of its seed and the 64-bit FNV-1a of its pose buffer, so it changes only when the pose bytes change; a replacement-frame swap is a change of the pose buffer (the replacement index is part of it), so boil and swaps follow one rule",
+  "pose_buffer": "skinned vertex positions (float32) from raw/scene/skin.hpp skin() of a mesh on a jointed skeleton, posed from a looping clip sampled at the held time (monotone cubic, a port of web/anim/clip.mjs)",
+  "loop": "raw/scene/loop.hpp. A loop is N frames at a rational fps. Every animated term declares its period in frames; the contract refuses a term whose period does not divide N, and a held layer whose ticks per loop are not whole. Terms read the raw frame index and reduce by their own period, so the measured check below can catch a term that does not close.",
+  "writers": "GIF (one global palette, LZW, NETSCAPE2.0 loop) and animated lossless WebP (VP8L: subtract-green, colour cache, Huffman codes, ANIM and ANMF) are first party in src/core. MP4 (H.264) goes through the imageio-ffmpeg 0.6.0 binary CI already installs, as an external process (ADR 0005: ffmpeg is never linked or shipped). All writers take a whole-number pixel scale."
+ },
+ "bounds_p1": {
+  "A1_held_ratio": "10 s clip rendered at 24 fps (240 frames). Held ratio = frames whose pose buffer bytes equal the previous frame's, divided by 240 (frame 0 counts as a change). Twos: |r - 0.50| <= 0.01. Threes: |r - 0.67| <= 0.01. Ones (24 Hz): r = 0.",
+  "A2_camera_ones": "camera layer continuous: held ratio exactly 0 at 24, 30, 60 and 144 fps",
+  "A3_boil_subset": "for twos, threes and the 12 Hz named layer at 24, 30, 60 and 144 fps: every frame where the boil seed changes is a frame where the pose buffer changes; exceptions = 0",
+  "A4_sequence_hash": "SHA-256 over the per-frame pose-buffer digests with consecutive repeats removed is equal at 30, 60 and 144 fps, for ones, twos, threes and 12 Hz",
+  "A5_onset_exact": "added because A4 removes repeats and so cannot see a pose arriving a frame late: the first frame showing tick n is ceil(n * fps / rate) exactly, for every tick in the 10 s, at 30, 60 and 144 fps"
+ },
+ "controls_p1": {
+  "C1_seed_per_frame": "a layer whose seed hashes the render frame index: A3 exceptions > 0 (must fail)",
+  "C2_unheld": "a character layer sampled continuously: A1 twos band fails (ratio 0) and A4 hashes differ across 30, 60, 144 fps (must fail)",
+  "C3_float_clock": "exploratory: a clock that accumulates t += 1/fps in float64 and takes floor(t * rate). Prediction, low confidence: A4 still passes (repeats are removed) while A5 finds at least one late onset at 144 fps."
+ },
+ "bounds_p2": {
+  "B1_closure": "demo loop (hatch scene, 96 frames at 24 fps) on ones, twos and threes: max per-channel difference between frame N and frame 0 at 8 bits = 0; same for frame N+1 against frame 1",
+  "B2_palette": "palette GIFs: every decoded pixel of every frame is one of the global palette's colours (count outside = 0), checked by a first-party LZW decoder in the test and offline by Pillow; decoded indices equal the encoder's input",
+  "B3_size": "a 12 s, 12 fps, 480x270 loop of the demo scene as a palette GIF at scale 1 is under 4,000,000 bytes",
+  "B4_scale": "at scale 2 and 3 the decoded GIF and WebP frames equal the source frames with each pixel repeated k x k",
+  "B5_webp": "Pillow (offline check only, not a dependency) decodes the animated WebP to N frames equal to the source RGB exactly, loop count 0",
+  "B6_mp4": "the MP4 has N frames at the loop's fps; H.264 is lossy, so its bound is PSNR >= 35 dB against the source, reported per loop"
+ },
+ "controls_p2": {
+  "K1_open_camera": "a camera term whose period is 97 frames in a 96-frame loop: the contract refuses it, and the measured frame N against frame 0 difference is > 0 (must fail B1)",
+  "K2_partial_ticks": "a twos layer in a 99-frame loop at 24 fps (49.5 ticks): the contract refuses it",
+  "K3_palette_checker": "one decoded pixel set to a colour outside the palette: the B2 count is 1 (checks the checker)"
+ },
+ "rules": "Bounds and controls are fixed here before the first run. A change after a run is an amendment logged in mission-control 2026-11-08-game-engine/STATE-heldtime.md before the run it governs, with the reason. Failures and nulls are kept."
+}
