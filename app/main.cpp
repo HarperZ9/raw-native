@@ -29,6 +29,7 @@
 #include "raw/tools/hw_mesh_cmd.hpp"
 #include "raw/tools/style_cmd.hpp"
 #include "raw/tools/action_cmd.hpp"
+#include "raw/tools/impact_cmd.hpp"
 #include "raw/rhi/rhi.hpp"
 #include "raw/renderer/raster.hpp"
 #include "raw/renderer/accel.hpp"
@@ -96,6 +97,7 @@ static const char* kUsage =
     "         (--world 0..14 --frames --width --height --particles --substeps --fps --persistence\n"
     "          --exposure --spacing --levels --out); writes threads.ppm\n"
     "       raw_native_cli action-dump table|strip|diff|tells|trials ...  frame data, clip markers, tell retiming\n"
+    "       raw_native_cli action-impact <trace> <tables> <outdir> ...    a contact frame by frame on one schedule\n"
     "         (table <moves.json>; strip <moves.json> <set> <id>; diff <a.txt> <b.txt>)\n"
     "       raw_native_cli bake-room [--out DIR] [--size N] [--spp K] [--paths P]\n"
     "         Source-style radiosity normal maps for a test room, drawn from the lightmaps and by\n"
@@ -188,6 +190,7 @@ int main(int argc, char** argv){
     if (int rc = infoFlags(argc, argv); rc >= 0) return rc;
     if (argc >= 2 && std::strcmp(argv[1], "threads") == 0) return threadsCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "action-dump") == 0) return actionDumpCommand(argc - 1, argv + 1);
+    if (argc >= 2 && std::strcmp(argv[1], "action-impact") == 0) return actionImpactCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "colour") == 0) return colourCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "material-gallery") == 0) return galleryCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "bake-room") == 0) return bakeCommand(argc - 1, argv + 1);

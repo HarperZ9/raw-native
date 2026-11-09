@@ -20,6 +20,8 @@ void scalars(Move& m, const Json& r) {
     m.total = m.startup + m.active + m.recovery;
     m.stamina = n_or(r, "stamina", 0); m.dmg = n_or(r, "dmg", 0); m.poise = n_or(r, "poise", 0);
     m.hitstop = n_or(r, "hitstop", 0); m.composure = n_or(r, "composure", 0);
+    m.shake = n_or(r, "shake", 0);
+    if (auto* w = r.get("sweep"); w && w->k == Json::Arr && w->a.size() >= 2) { m.smear_from = (int)w->a[0].n; m.smear_to = (int)w->a[1].n - 1; }
     m.parryable = b_or(r, "parryable", true); m.blockable = b_or(r, "blockable", true);
     m.knockdown = b_or(r, "knockdown", false); m.pierce = b_or(r, "pierce", false);
     auto* it = r.get("item"); m.item = it && it->k == Json::Obj;
@@ -40,7 +42,14 @@ void windows(Move& m, const Json& r, ActionClasses& cls) {
         m.tell_kind = t->str_or("kind");
     }
     if (auto* h = r.get("hits"); h && h->k == Json::Arr)
-        for (auto& x : h->a) if (auto* w = window(x, "at")) m.sections.push_back(sec(Sec::Hit, w->a[0].n, w->a[1].n));
+        for (auto& x : h->a) if (auto* w = window(x, "at")) {
+            m.sections.push_back(sec(Sec::Hit, w->a[0].n, w->a[1].n));
+            Ring g; g.on = (int)w->a[0].n; g.off = (int)w->a[1].n;
+            if (auto* a = window(x, "arc")) { g.arc[0] = a->a[0].n; g.arc[1] = a->a[1].n; }
+            if (auto* a = window(x, "r")) { g.r[0] = a->a[0].n; g.r[1] = a->a[1].n; }
+            if (auto* a = window(x, "y")) { g.y[0] = a->a[0].n; g.y[1] = a->a[1].n; }
+            m.rings.push_back(g);
+        }
     // a press made from here on is held to the move (fighter.mjs heldPress): a dodge's from two
     // frames into its invulnerable window, anything else from the end of its wind-up
     int held = m.startup;

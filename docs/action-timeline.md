@@ -21,6 +21,7 @@ tl.receive({.by = foe, .to = lamb, .move = "light_1"});   // a contact your game
 ```
 
 Hit volumes from clip markers and telegraph retiming build on it: [action-hitvol.md](action-hitvol.md).
+Capsule contact on the swing and one schedule for everything a blow shows: [action-schedule.md](action-schedule.md).
 
 ## The tick
 

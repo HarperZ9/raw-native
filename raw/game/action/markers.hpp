@@ -27,6 +27,7 @@ struct MarkerClip {
     int active = 0, recovery = 0, end = 0;
     bool has_tell = false; int tell_on = 0, tell_off = -1;
     std::string tell_kind;               // swing, slam, grab, sweep, pounce, thrust, throw, shout
+    int smear_from = 0, smear_to = -1;   // the authored smear frames, inclusive (none when to < from)
     std::vector<HitMarker> hits;
     bool parryable = true, blockable = true, signature = false;
     int startup() const { return active; }

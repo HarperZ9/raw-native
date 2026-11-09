@@ -116,7 +116,9 @@ human trial has been run. The test is built and waiting:
 | clip.mjs port | `test_clip_phase`, 6 cases and 827 frames from `web/anim/clip.mjs` | bit-identical; one value moved by one ulp is caught |
 | Capsule reach and arc | `test_action_hitvol`, 179 rings | all within 5% of the JS rings (0.0000% by construction); bound to the wrong bone, 177 fail; mirrored, the 35 asymmetric arcs fail; a blade 6% longer fails on 44 of 179 only, so the 5% bound is blind to it where r0 is a large share of r1 |
 | Retime | `test_action_retime`, 211 tell moves (128 parryable), every ease | no retime shortens a lead; 0 keyed, landing or shape issues; a wind-up started at frame 0 shortens 66 leads; a strike ended a frame early moves 205 hit windows |
-| Lead data | the same | two moves are short before any retime, `captain.hook` 24 and `warden.hook` 26 frames where 30 is asked of an unblockable; the test records that set |
+| Lead data | the same | no move is short before any retime. Until 2026-11-09 `captain.hook` (24) and `warden.hook` (26) were short of the 30 asked of an unblockable; Low Water moved both to 30. The old startup is planted and caught |
+
+Low Water's sim adopted capsule contact on 2026-11-09, on the shared math: [action-schedule.md](action-schedule.md).
 
 Not run: the blind readability trials. No human has viewed the sheet, and no model judgement stands
 in for one.

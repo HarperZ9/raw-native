@@ -5,7 +5,7 @@ base bar:light_1 startup=14 active=6 recovery=22 free=42 cancel=light:23-41,roll
 base bar:light_2 startup=19 active=6 recovery=28 free=53 cancel=roll:30-52,step:30-52
 base boss.roar startup=50 active=2 recovery=20 free=72 cancel=-
 base captain.drag startup=40 active=8 recovery=40 free=88 cancel=-
-base captain.hook startup=28 active=6 recovery=30 free=64 cancel=-
+base captain.hook startup=34 active=6 recovery=30 free=70 cancel=-
 base captain.rally startup=36 active=2 recovery=30 free=68 cancel=-
 base captain.whistle startup=36 active=2 recovery=30 free=68 cancel=-
 base cutter.flurry startup=18 active=22 recovery=26 free=66 cancel=-
@@ -93,7 +93,7 @@ base use_lantern startup=14 active=1 recovery=18 free=33 cancel=roll:22-32,step:
 base use_rope startup=16 active=1 recovery=20 free=37 cancel=roll:26-36,step:26-36
 base use_salt startup=12 active=1 recovery=18 free=31 cancel=roll:22-32,step:22-32
 base warden.drag startup=40 active=8 recovery=40 free=88 cancel=-
-base warden.hook startup=30 active=6 recovery=20 free=56 cancel=-
+base warden.hook startup=34 active=6 recovery=20 free=60 cancel=-
 base warden.spin startup=34 active=26 recovery=36 free=96 cancel=-
 base warden.thrust startup=22 active=6 recovery=26 free=54 cancel=-
 base warden.whistle startup=36 active=2 recovery=30 free=68 cancel=-

@@ -31,6 +31,7 @@ struct Config {
     double hitstop_light = 0, hitstop_heavy = 2, heavy_from = 5;   // contact hit-stop by class
     int crowd_at = 3, crowd_cap = 4;
     int parried_hold = 12;       // frames a parried attacker is held
+    bool fx_events = false;      // receive() also emits the blow's "shake" and "rumble", as combat/sim/hits.mjs does
     std::string flinch = "flinch", stagger = "stagger", knockdown = "knockdown", parried = "parried", fall = "fall";
 };
 
@@ -49,7 +50,7 @@ struct ActorDef {
 };
 
 struct Press { std::string action; int t = 0; bool held = false; int seq = 0; };
-struct Act { int move = -1, f = 0, end = 0, charge = 0, seq = 0; bool charging = false; std::vector<int> evaded; };
+struct Act { int move = -1, f = 0, end = 0, charge = 0, seq = 0; bool charging = false; std::vector<int> evaded, hit; };
 
 struct Actor {
     ActorDef def;
@@ -68,7 +69,15 @@ struct Event { int tick = 0; std::string type; Json d = Json::obj(); };
 // A contact the game found: `by` lands `move` on `to`. frontal: inside the target's front cone.
 // crowd: opponents on their feet (caps hit-stop). weak and glance are the game's damage factors
 // (a weak point found, a blow glancing off a shield); glance scales poise damage too.
-struct Contact { int by = 0, to = 0; std::string move; bool frontal = true; int crowd = 1; double weak = 1, glance = 1; };
+// has_pos: the two bodies' positions (ax, az attacker; tx, tz target), which give the shake's direction.
+struct Contact {
+    int by = 0, to = 0; std::string move; bool frontal = true; int crowd = 1; double weak = 1, glance = 1;
+    bool has_pos = false; double ax = 0, az = 0, tx = 0, tz = 0;
+};
+// The direction from (fx, fz) to (tx, tz) as combat/sim/hits.mjs dirFrom writes it: [cos, sin] of the shared
+// datan2, each through JS Number.prototype.toFixed(3) and back (ties away from zero, -0 written as 0).
+Json dir_from(double tx, double tz, double fx, double fz);
+double js_fixed3(double x);
 
 class Timeline {
 public:
@@ -105,7 +114,8 @@ private:
     int tick_ = 0;
     std::vector<Event> events_;
     // receive.cpp
-    std::string parried(Actor& A, Actor& T, const Move& m, int crowd);
+    std::string parried(Actor& A, Actor& T, const Move& m, const Contact& c);
+    void blow_fx(const Actor& A, const Actor& T, const Move& m, const Contact& c);
     std::string take_hit(Actor& A, Actor& T, const Move& m, const Contact& c);
     std::string break_poise(Actor& T, const std::string& how);
     bool interruptible(const Actor& T, const Move& blow) const;

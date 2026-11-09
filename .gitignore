@@ -26,6 +26,8 @@ cmake-build-*/
 # The action-timeline fixtures (tests/data/action/SOURCE.md).
 !tests/data/action/*.json
 !tests/data/action/traces/*.json
+!tests/data/action/contacts/*.json
+!tests/data/action/shake-capture.json
 # The tell readability test's trial and key files (docs/action-hitvol.md).
 !tools/action/readability/*.json
 

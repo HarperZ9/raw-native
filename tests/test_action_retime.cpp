@@ -56,9 +56,18 @@ int main() {
     auto fitted = [](const MarkerClip& c) { return fit_telegraph(c.startup(), c.tell_on); };
     const Run base = lint_all(ms, fitted);
     show("R1-R3 fitted 0.5x / solved strike", base, 12);
-    // R1b: the data's own short leads (needOf asks 30 of an unblockable; tests/telegraph.test.mjs does not)
-    const std::vector<std::string> known = {"base captain.hook", "base warden.hook"};
+    // R1b: the data's own short leads. Until 2026-11-09 captain.hook (24) and warden.hook (26) were short of the 30
+    // needOf asks of an unblockable blow; the author answered "30" and Low Water moved both to a 30-frame lead (and
+    // its telegraph test to needOf). The set is now empty, and the test fails if a short lead comes back.
+    const std::vector<std::string> known = {};
     CHECK(base.short_keys == known);
+    {   // planted: captain.hook with its old startup (28, tell from 4) is short again
+        MarkerSet old = ms;
+        for (MarkerClip& c : old.clips) if (c.key == "base captain.hook") { const int d = c.active - 28; c.active -= d; c.recovery -= d; c.end -= d; c.tell_off -= d; for (auto& h : c.hits) { h.on -= d; h.off -= d; } }
+        const Run r = lint_all(old, fitted);
+        std::printf("planted old captain.hook startup: flat leads short %d (%s)\n", r.flat_short, r.short_keys.empty() ? "none" : r.short_keys[0].c_str());
+        CHECK(r.short_keys == std::vector<std::string>{"base captain.hook"});
+    }
     CHECK(base.moves == 211 && base.induced == 0 && base.issues == base.flat_short && base.lead == base.flat_short);
     int lo = 0, hi = 0; double smin = 9, smax = 0;
     for (const MarkerClip& c : ms.clips) if (c.has_tell) { auto r = fit_telegraph(c.startup(), c.tell_on); if (r.regions.size() == 2) { smin = std::min(smin, r.regions[1].value); smax = std::max(smax, r.regions[1].value); ++hi; } else ++lo; }

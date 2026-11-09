@@ -3,8 +3,12 @@
 // that belong to a game (guards and blocks, seizes, shoves into water, footing, stealth, weak
 // points, damage floors, yielding). Same order of operations, so the same bits.
 #include "raw/game/action/timeline.hpp"
+#include "raw/game/action/detmath.hpp"
 #include <algorithm>
+#include <charconv>
 #include <cmath>
+#include <cstdlib>
+#include <string>
 
 namespace raw::game::action {
 namespace {
@@ -14,6 +18,34 @@ bool heavy_class(const Move& m, double heavy_from) {
 }
 Json s(const std::string& v) { return Json::str(v); }
 }  // namespace
+
+double js_fixed3(double x) {
+    if (!(x == x) || x == 0) return 0;
+    const bool neg = x < 0;
+    char buf[1200];
+    auto r = std::to_chars(buf, buf + sizeof buf, neg ? -x : x, std::chars_format::fixed, 1100);   // the exact decimal
+    const std::string d(buf, r.ptr);
+    const size_t dot = d.find('.');
+    long long n = std::atoll(d.substr(0, dot).c_str()) * 1000 + std::atoll(d.substr(dot + 1, 3).c_str());
+    if (d[dot + 4] >= '5') n++;     // the nearer n, and on a tie the larger (JS toFixed on |x|)
+    const double v = (double)n / 1000;
+    return v == 0 ? 0 : neg ? -v : v;
+}
+
+Json dir_from(double tx, double tz, double fx, double fz) {
+    const double a = datan2(tz - fz, tx - fx);
+    Json d = Json::arr(); d.add(num(js_fixed3(dcos(a)))); d.add(num(js_fixed3(dsin(a))));
+    return d;
+}
+
+void Timeline::blow_fx(const Actor& A, const Actor& T, const Move& m, const Contact& c) {
+    if (!cfg_.fx_events) return;
+    Json spring = fields({{"k", num(180)}, {"damp", num(14)}});
+    if (m.shake > 0)
+        emit("shake", fields({{"amp", num(m.shake)}, {"frames", num(6 + js_round(m.hitstop * 1.5))}, {"dir", dir_from(c.tx, c.tz, c.ax, c.az)}, {"spring", spring}}));
+    emit("rumble", fields({{"id", s(T.def.id)}, {"by", s(A.def.id)}, {"low", num(std::min(1.0, 0.2 + m.shake))},
+                           {"high", num(std::min(1.0, 0.1 + m.dmg / 4))}, {"frames", num(4 + m.hitstop * 2)}}));
+}
 
 int Timeline::stop(bool heavy, int crowd) const {
     const int f = (int)js_round(heavy ? cfg_.hitstop_heavy : cfg_.hitstop_light);
@@ -39,17 +71,23 @@ std::string Timeline::receive(const Contact& c) {
         }
         return "evade";
     }
-    if (tm && tm->in(Sec::Parry, f) && m.parryable && c.frontal) return parried(A, T, m, c.crowd);
+    if (A.has_act) A.act.hit.push_back(to);   // each swing hits a body once (hits.mjs findContacts reads it)
+    if (tm && tm->in(Sec::Parry, f) && m.parryable && c.frontal) return parried(A, T, m, c);
     return take_hit(A, T, m, c);
 }
 
-std::string Timeline::parried(Actor& A, Actor& T, const Move& m, int crowd) {
+std::string Timeline::parried(Actor& A, Actor& T, const Move& m, const Contact& c) {
     T.has_catch_miss = false;
-    T.has_act = false; T.hitstop = stop(true, crowd);
+    T.has_act = false; T.hitstop = stop(true, c.crowd);
     A.hitstop = cfg_.parried_hold;
     if (int p = table_.find(cfg_.parried); p >= 0) start(A, p);
     A.poise = A.def.poise;
     emit("parry", fields({{"id", s(T.def.id)}, {"by", s(A.def.id)}, {"move", s(m.id)}}));
+    if (cfg_.fx_events) {   // a catch lands like a door slamming: a hard spring shake, a heavy rumble
+        emit("shake", fields({{"kind", s("catch")}, {"amp", num(0.6)}, {"frames", num(40)}, {"dir", dir_from(c.ax, c.az, c.tx, c.tz)},
+                              {"spring", fields({{"k", num(260)}, {"damp", num(18)}})}}));
+        emit("rumble", fields({{"id", s(T.def.id)}, {"by", s(A.def.id)}, {"low", num(1)}, {"high", num(0.8)}, {"frames", num(14)}}));
+    }
     return "parry";
 }
 
@@ -64,6 +102,7 @@ std::string Timeline::take_hit(Actor& A, Actor& T, const Move& m, const Contact&
     const int hs = stop(heavy_class(m, cfg_.heavy_from), crowd);
     T.hitstop = std::max(T.hitstop, hs); A.hitstop = std::max(A.hitstop, hs);
     emit("hit", fields({{"id", s(T.def.id)}, {"by", s(A.def.id)}, {"move", s(m.id)}, {"dmg", num(dmg)}, {"poise", num(pd)}, {"armor", Json::boolean(armor > 0)}}));
+    blow_fx(A, T, m, c);
     if (T.hp <= 0) {
         if (int fm = table_.find(cfg_.fall); fm >= 0) start(T, fm);
         emit("fall", fields({{"id", s(T.def.id)}, {"by", s(A.def.id)}}));
