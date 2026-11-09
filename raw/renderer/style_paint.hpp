@@ -24,7 +24,9 @@ struct PaintParams {
     double xdogWeight{0.985};   // a source-edit control changes it in the code
 };
 PaintParams paintPreset(const std::string& name);   // oil-grotesque, oil, gouache, watercolour
-struct PaintPlan { PaintParams p; int w{0}, h{0}; std::vector<float> tw; };
+// threads: rows painted at once; every pixel reads only earlier passes, so the output is the same
+// for any count.
+struct PaintPlan { PaintParams p; int w{0}, h{0}; std::vector<float> tw; int threads{1}; };
 PaintPlan resolvePaint(const PaintParams& p, int w, int h);
 std::vector<float> paintGaussWeights(double sigma);
 
@@ -48,8 +50,13 @@ void paintAdvect(PaintCanvas& st, const std::vector<float>& mv, const std::vecto
 std::array<double, 2> paintLayerWeights(const PaintCanvas& st);
 
 // One frame: scene is scene-linear RGBA f32 rows; canvas null for the offset canvas. Returns the
-// display-linear image, RGBA f32 rows.
+// display-linear image, RGBA f32 rows; alpha carries the line factor (1 where there is no ink), the
+// multiplier the lines applied, so a later pass can take the ink out (P23's defocus).
 std::vector<float> runPaint(const PaintPlan& plan, const std::vector<float>& scene, const PaintCanvas* canvas);
 std::uint8_t paintEncode8(double v);
+// Paint boil (PROPOSALS P1): a canvas offset in pixels from a held layer's boil seed
+// (raw/scene/held_time.hpp), so the bristle, stroke and canvas noise step to a new place only when
+// the pose changes. Put it in PaintParams::canvasOffset for the offset canvas.
+std::array<double, 2> paintBoilOffset(std::uint32_t seed, double spanPx = 48);
 
 }  // namespace raw::style

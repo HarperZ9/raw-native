@@ -21,54 +21,54 @@ D3 skyColour(const Lighting& L, const D3& d) {
             L.skyHorizon[2] + (L.skyTop[2] - L.skyHorizon[2]) * t};
 }
 struct Terms { double sun{0}, lamp{0}, amb{0}; };
-Terms lightTerms(const Lighting& L, const D3& p, const D3& n) {
+Terms lightTerms(const Lighting& L, const D3& p, const D3& n, SceneKind k) {
     Terms t;
     const D3 o{p[0] + n[0] * 1e-6, p[1] + n[1] * 1e-6, p[2] + n[2] * 1e-6};
     const double nl = dot(n, L.sun.dir);
-    if (nl > 0 && !occluded(o, L.sun.dir, 1e30)) t.sun = nl;
+    if (nl > 0 && !occluded(o, L.sun.dir, 1e30, k)) t.sun = nl;
     if (L.lamp.on) {
         const D3 toL = sub(L.lamp.pos, p);
         const double d2 = dot(toL, toL), d = std::sqrt(d2);
         const D3 l{toL[0] / d, toL[1] / d, toL[2] / d};
         const double nl2 = dot(n, l), cone = -dot(l, L.lamp.axis);
         const double s = std::clamp((cone - L.lamp.cosOuter) / (L.lamp.cosInner - L.lamp.cosOuter), 0.0, 1.0);
-        if (nl2 > 0 && s > 0 && !occluded(o, l, d)) t.lamp = nl2 * s * s * (3 - 2 * s) / d2;
+        if (nl2 > 0 && s > 0 && !occluded(o, l, d, k)) t.lamp = nl2 * s * s * (3 - 2 * s) / d2;
     }
     t.amb = 0.5 + 0.5 * n[1];
     return t;
 }
-D3 shade(const Lighting& L, const D3& o, const D3& d, const Hit& h) {
+D3 shade(const Lighting& L, const D3& o, const D3& d, const Hit& h, SceneKind k) {
     if (h.t < 0) return skyColour(L, d);
     const D3 p{o[0] + h.t * d[0], o[1] + h.t * d[1], o[2] + h.t * d[2]};
-    const Terms t = lightTerms(L, p, h.n);
+    const Terms t = lightTerms(L, p, h.n, k);
     D3 c{};
     for (int k = 0; k < 3; ++k) {
         const std::size_t i = std::size_t(k);
         const double amb = L.ground[i] + (L.skyTop[i] - L.ground[i]) * t.amb;
-        c[i] = h.albedo[i] * (L.sun.colour[i] * t.sun + L.lamp.colour[i] * t.lamp + amb);
+        c[i] = h.albedo[i] * (L.sun.colour[i] * t.sun + L.lamp.colour[i] * t.lamp + amb) + h.emit[i] * L.emitScale;
     }
     return c;
 }
-void writePixel(Frame& f, const View& v, const Lighting& L, int x, int y) {
+void writePixel(Frame& f, const View& v, const Lighting& L, int x, int y, SceneKind sk) {
     const std::size_t p = std::size_t(y) * std::size_t(f.w) + std::size_t(x);
     D3 acc{0, 0, 0};
     for (int s = 0; s < 4; ++s) {
         const D3 d = rayDir(v, x + 0.25 + 0.5 * (s & 1), y + 0.25 + 0.5 * (s >> 1));
-        const D3 c = shade(L, v.eye, d, trace(v.eye, d));
+        const D3 c = shade(L, v.eye, d, trace(v.eye, d, sk), sk);
         for (int k = 0; k < 3; ++k) acc[std::size_t(k)] += c[std::size_t(k)] / 4;
     }
     for (int k = 0; k < 3; ++k) f.lit[p * 4 + std::size_t(k)] = float(acc[std::size_t(k)]);
     f.lit[p * 4 + 3] = 1.0f;
     const D3 d = rayDir(v, x + 0.5, y + 0.5);
-    const Hit h = trace(v.eye, d);
-    for (int k = 0; k < 3; ++k) f.dir[p * 3 + std::size_t(k)] = float(d[std::size_t(k)]);
+    const Hit h = trace(v.eye, d, sk);
+    for (int c = 0; c < 3; ++c) f.dir[p * 3 + std::size_t(c)] = float(d[std::size_t(c)]);
     if (h.t < 0) { f.dist[p] = -1.0f; return; }
     const D3 P{v.eye[0] + h.t * d[0], v.eye[1] + h.t * d[1], v.eye[2] + h.t * d[2]};
-    const Terms t = lightTerms(L, P, h.n);
-    for (int k = 0; k < 3; ++k) {
-        f.P[p * 3 + std::size_t(k)] = float(P[std::size_t(k)]);
-        f.N[p * 3 + std::size_t(k)] = float(h.n[std::size_t(k)]);
-        f.albedo[p * 3 + std::size_t(k)] = float(h.albedo[std::size_t(k)]);
+    const Terms t = lightTerms(L, P, h.n, sk);
+    for (int c = 0; c < 3; ++c) {
+        f.P[p * 3 + std::size_t(c)] = float(P[std::size_t(c)]);
+        f.N[p * 3 + std::size_t(c)] = float(h.n[std::size_t(c)]);
+        f.albedo[p * 3 + std::size_t(c)] = float(h.albedo[std::size_t(c)]);
     }
     f.dist[p] = float(h.t); f.sun[p] = float(t.sun); f.lamp[p] = float(t.lamp); f.amb[p] = float(t.amb);
     f.obj[p] = std::uint8_t(h.obj); f.mat[p] = std::uint8_t(h.mat);
@@ -85,6 +85,25 @@ Lighting dusk() {
 Lighting night() {
     Lamp lamp{{2.2, 3.6, 2.4}, norm({-2.2, -2.8, -2.4}), 0.848, 0.927, {14.0, 10.0, 6.0}, true};
     return {{norm({0.3, 0.8, 0.5}), {0.05, 0.07, 0.12}}, lamp, {0.01, 0.015, 0.03}, {0.03, 0.035, 0.05}, {0.005, 0.005, 0.006}};
+}
+
+Lighting townDusk() {
+    Lamp lamp{{0.0, 4.4, -4.6}, norm({0.0, -1.0, 0.75}), 0.62, 0.80, {9.0, 5.2, 1.6}, true};
+    return {{norm({-0.8, 0.22, 0.35}), {1.5, 0.85, 0.45}}, lamp, {0.16, 0.20, 0.36}, {0.70, 0.48, 0.38}, {0.10, 0.08, 0.07}};
+}
+
+Lighting townNight() {
+    Lamp lamp{{0.0, 4.4, -4.6}, norm({0.0, -1.0, 0.75}), 0.62, 0.80, {14.0, 7.6, 2.2}, true};
+    return {{norm({0.3, 0.75, -0.5}), {0.05, 0.065, 0.11}}, lamp, {0.008, 0.012, 0.03}, {0.02, 0.025, 0.045}, {0.004, 0.004, 0.005}, 4.0};
+}
+
+View townView(int w, int h) {
+    const double az = 45.0 * kPi / 180.0, pitch = 35.0 * kPi / 180.0, D = 46.0;
+    View v;
+    v.target = {0.0, 0.8, 0.0};
+    v.eye = {D * std::cos(pitch) * std::sin(az), 0.8 + D * std::sin(pitch), D * std::cos(pitch) * std::cos(az)};
+    v.fovy = 0.45; v.w = w; v.h = h;
+    return v;
 }
 
 double View::focalPx() const { return 0.5 * h / std::tan(0.5 * fovy); }
@@ -104,14 +123,14 @@ D3 rayDir(const View& v, double px, double py) {
     return norm({b.fwd[0] + x * b.right[0] + y * b.up[0], b.fwd[1] + x * b.right[1] + y * b.up[1], b.fwd[2] + x * b.right[2] + y * b.up[2]});
 }
 
-Frame renderFrame(const View& v, const Lighting& L, int threads) {
+Frame renderFrame(const View& v, const Lighting& L, int threads, SceneKind k) {
     Frame f;
     f.w = v.w; f.h = v.h;
     const std::size_t n = std::size_t(v.w) * std::size_t(v.h);
     f.P.assign(n * 3, 0.0f); f.N.assign(n * 3, 0.0f); f.albedo.assign(n * 3, 0.0f); f.dir.assign(n * 3, 0.0f);
     f.dist.assign(n, -1.0f); f.sun.assign(n, 0.0f); f.lamp.assign(n, 0.0f); f.amb.assign(n, 0.0f);
     f.lit.assign(n * 4, 0.0f); f.obj.assign(n, 0); f.mat.assign(n, 0);
-    parallelRows(v.h, threads, [&](int y) { for (int x = 0; x < v.w; ++x) writePixel(f, v, L, x, y); });
+    parallelRows(v.h, threads, [&](int y) { for (int x = 0; x < v.w; ++x) writePixel(f, v, L, x, y, k); });
     return f;
 }
 

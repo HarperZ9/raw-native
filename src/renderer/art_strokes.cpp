@@ -6,13 +6,9 @@
 #include <cmath>
 namespace raw::art {
 namespace {
-struct Seq {
-    std::vector<View> views;
-    std::vector<Frame> frames;
-    std::vector<std::vector<float>> mv;
-    std::vector<std::vector<std::uint8_t>> valid, ref;
-};
-Seq renderOrbit(const StrokeOrbit& o, double exposure) {
+using Seq = OrbitSeq;
+}  // namespace
+OrbitSeq renderOrbit(const StrokeOrbit& o, double exposure) {
     Seq s;
     const Lighting L = daylight();
     for (int t = 0; t < o.frames; ++t) {
@@ -26,7 +22,7 @@ Seq renderOrbit(const StrokeOrbit& o, double exposure) {
     return s;
 }
 // The advected canvas after each frame. Sky pixels get a far distance so their history can hold.
-std::vector<style::PaintCanvas> advectOrbit(const Seq& s, int w, int h) {
+std::vector<style::PaintCanvas> advectOrbit(const OrbitSeq& s, int w, int h) {
     std::vector<style::PaintCanvas> out;
     style::PaintCanvas cv(w, h);
     const std::size_t n = std::size_t(w) * std::size_t(h);
@@ -46,6 +42,7 @@ std::vector<style::PaintCanvas> advectOrbit(const Seq& s, int w, int h) {
     }
     return out;
 }
+namespace {
 std::vector<double> series(const Seq& s, const std::vector<std::vector<std::uint8_t>>& out, int first, int w, int h) {
     std::vector<double> v;
     for (std::size_t t = std::size_t(first); t < out.size(); ++t)

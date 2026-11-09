@@ -57,6 +57,9 @@ jobs:
       - name: Fractal dither GPU parity, f5 (evidence/fractal-dither-bounds.json)
         shell: bash
         run: mkdir -p art && $CLI fractal-dither gpu --out art/fractal-gpu.json > art/fractal-gpu.log || { tail -c 4000 art/fractal-gpu.log; exit 1; }
+      - name: P23 tilt-shift lens, g1 (evidence/tiltshift-bounds.json)
+        shell: bash
+        run: $CLI art tiltshift --no-cpu --gpu --threads 4 --out art/tiltshift > art/tiltshift.log || { tail -c 4000 art/tiltshift.log; exit 1; }
       - uses: actions/upload-artifact@v4
         if: always()
         with: { name: "art-${{ matrix.adapter }}", path: "art/**/*.json\nart/**/*.png", retention-days: 30 }

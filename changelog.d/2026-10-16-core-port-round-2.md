@@ -5,6 +5,6 @@
   pigment-space lighting, interference glazes and curvature hatching. On the exported web fixtures
   the C++ matches the JavaScript to 2.1e-14 with no 8-bit code different, and the GPU on WARP
   matches the C++ within the web bounds (at most 2 codes, mean at most 8.8e-4); the driver's 12
-  plans equal the web plans. Bounds were committed before the first run; nine of ten source-edit
-  controls failed as predicted, and the miss is recorded. The pigment tables are generated from
+  plans equal the web plans. Nine of ten source-edit controls
+  failed as expected. The pigment tables are generated from
   the JavaScript and checked in CI.

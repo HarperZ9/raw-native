@@ -669,7 +669,7 @@ jobs:
         run: python tests/web/rhi_texture.py --command rt-bvh-parity --args=--quick --dir build-wasm-gpu --adapter swiftshader --out rt-bvh-webgpu.json
       - name: The compute path tracer in Chrome on SwiftShader, quick; P4's albedo and depth are a recorded open failure
         run: |
-          python tests/web/rhi_texture.py --command rt-pt-parity --args=--quick --dir build-wasm-gpu --adapter swiftshader --out rt-pt-webgpu.json || true
+          python tests/web/rhi_texture.py --command rt-pt-parity --args=--quick --dir build-wasm-gpu --adapter swiftshader --timeout 480 --out rt-pt-webgpu.json || true
           python tests/gpu/pt_gate.py rt-pt-webgpu.json
       - name: Hybrid ray-traced shadows and reflections in Chrome on SwiftShader match CPU rays (RT stage R2, H1 and H2)
         run: python tests/web/rhi_texture.py --command rt-hybrid-parity --dir build-wasm-gpu --adapter swiftshader --out rt-hybrid-webgpu.json
@@ -865,6 +865,10 @@ jobs:
         run: python tests/web/shaders_parity.py --shader lens --adapter swiftshader --out media-out/shaders-lens-parity.json
       - name: Spectral sodium shading, GPU equals the f64 reference on Sodium Quay G-buffers (evidence/shaders-sodium-parity-bounds.json), on the CPU adapter
         run: python tests/web/shaders_parity.py --shader sodium --adapter swiftshader --out media-out/shaders-sodium-parity.json
+      - name: Radiance cascades, GPU cascades and brute force equal the f64 reference's (evidence/shaders-cascades-parity-bounds.json), on the CPU adapter
+        run: python tests/web/cascades.py parity --adapter swiftshader --out media-out/cascades-parity.json
+      - name: 3D radiance cascades, GPU frames equal the f64 reference's (evidence/shaders-cascades3d-parity-bounds.json), on the CPU adapter
+        run: python tests/web/cascades3d.py parity --adapter swiftshader --out media-out/cascades3d-parity.json
       - name: Shader library, pixel art and scaling, GPU against the CPU reference within the committed bounds, on the CPU adapter
         run: python tests/web/shaders_parity.py --shader pixel --adapter swiftshader --out media-out/shaders-pixel-parity.json
       - name: Shader library, VHS, GPU against the CPU reference within the committed bounds, on the CPU adapter

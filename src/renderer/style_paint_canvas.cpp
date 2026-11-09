@@ -133,4 +133,8 @@ std::uint8_t paintEncode8(double v) {
     return std::uint8_t(std::floor((l <= 0.0031308 ? l * 12.92 : 1.055 * std::pow(l, 1 / 2.4) - 0.055) * 255 + 0.5));
 }
 
+std::array<double, 2> paintBoilOffset(std::uint32_t seed, double spanPx) {
+    return {spanPx * double(seed & 0xFFFFu) / 65535.0, spanPx * double(seed >> 16) / 65535.0};
+}
+
 }  // namespace raw::style

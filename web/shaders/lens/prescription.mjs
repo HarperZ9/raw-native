@@ -10,12 +10,13 @@
 //   surface of curvature C:  omega' = omega - y (n' - n) C
 // A reflection is a surface with n' = -n; a ray travelling backwards carries a negative index.
 // Element edges (vignetting) are not modelled.
-import { GLASS, cauchy, LAMBDA_D, BIN_NM } from "./spectrum.mjs";
+import { GLASS, glassIndex, LAMBDA_D, BIN_NM } from "./spectrum.mjs";
 
 // Our own three-element design, mm: { R (radius, Infinity flat), t (gap to next), glass after }.
 // The stop sits in the air gap after surface 3, `stopAt` mm behind it. The radii came from a
 // seeded random search around a hand-drawn triplet (2026-10-15) that kept the focal length
-// between 40 and 120 mm and asked for a spread of ghost sizes, a few nearly focused: f = 43.0 mm.
+// between 40 and 120 mm and asked for a spread of ghost sizes, a few nearly focused: f = 43.0 mm
+// with the old round Cauchy glasses, 42.80 mm with the catalogue N-BK7 and N-SF2.
 export const LENS = {
   surfaces: [
     { R: 14.2, t: 3.5, glass: "crown" }, { R: -288.4, t: 4.0, glass: "air" },
@@ -25,7 +26,7 @@ export const LENS = {
   stopAfter: 3, stopAt: 1.2,
 };
 
-const idx = (lens, k, nm) => (k < 0 ? 1 : cauchy(GLASS[lens.surfaces[k].glass], nm));
+const idx = (lens, k, nm) => (k < 0 ? 1 : glassIndex(GLASS[lens.surfaces[k].glass], nm));
 const C = (s) => (Number.isFinite(s.R) ? 1 / s.R : 0);
 function T(r, d, n) { return [r[0] + (d * r[1]) / n, r[1]]; }
 function S(r, c, n, n2) { return [r[0], r[1] - r[0] * (n2 - n) * c]; }

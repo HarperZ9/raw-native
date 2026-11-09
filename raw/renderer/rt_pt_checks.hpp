@@ -2,6 +2,7 @@
 // Checks on the path tracer's v2 split radiance (P5 of evidence/rt-r2-bounds.json, addendum 5),
 // shared by the CPU test and the GPU parity run. Each returns a JSON object for the evidence.
 #include "raw/renderer/rt_pathtrace.hpp"
+#include <cmath>
 #include <string>
 namespace raw::rt {
 
@@ -34,5 +35,19 @@ struct SplitConv {
 };
 SplitConv splitConv(const PathTraceOutput& g, const PathTraceOutput& c, bool specular);
 std::string splitConvJson(const SplitConv& v, const char* scene, bool specular, bool control);
+
+// e2 (interface v4, docs/rt-interface-v4.md): the white-plane furnace (ptWhitePlane, sky 1) at
+// the default settings. Every pixel is a hit; the image mean and the mean of every row (one band
+// of view angles, top row the most grazing) are within 4 standard errors plus kTol of 1 (kTol:
+// the energy table's interpolation, 2e-3). Rows, not pixels: a pixel's 64-sample variance is too
+// noisy a scale for the heavy tail of BSDF weights. Reports the lowest and highest row.
+struct PlaneFurnace {
+    static constexpr double kTol = 2e-3;
+    long pixels{0}, misses{0}, rowsOver{0}, nonfinite{0};
+    double mean{0}, se{0}, lo{0}, hi{0};
+    bool within() const { return pixels > 0 && misses == 0 && nonfinite == 0 && rowsOver == 0 && std::fabs(mean - 1.0) <= 4.0 * se + kTol; }
+};
+PlaneFurnace planeFurnace(const PathTraceOutput& o);
+std::string planeFurnaceJson(const PlaneFurnace& f, const char* material, const char* side, bool control);
 
 }  // namespace raw::rt

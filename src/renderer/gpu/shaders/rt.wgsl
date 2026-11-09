@@ -320,33 +320,72 @@ fn inv_dir(x: f32) -> f32 {
     return select(-BIG, BIG, x >= 0.0);
 }
 
-// Moeller-Trumbore in raw/math/primitives.hpp's operation order; x: t, y: 1 when hit.
+// Watertight ray-triangle intersection (Woop, Benthin and Wald, JCGT 2013) by the operations of
+// raw/math/primitives.hpp: the ray's frame (largest |d| as z, x and y swapped when it is negative),
+// then the signs of the three sheared 2D edge functions. x t, y u, z v, w 1 on a hit (t > 1e-4).
+fn wt_frame(v: vec3f, kz: u32, sw: bool) -> vec3f {
+    var p: vec3f = v;
+    if (kz == 0u) { p = vec3f(v.y, v.z, v.x); }
+    if (kz == 1u) { p = vec3f(v.z, v.x, v.y); }
+    if (sw) { p = vec3f(p.y, p.x, p.z); }
+    return p;
+}
+fn wt_hit(o: vec3f, d: vec3f, a: vec3f, b: vec3f, c: vec3f) -> vec4f {
+    let ad: vec3f = abs(d);
+    var kz: u32 = 2u;
+    if (ad.x > ad.y && ad.x > ad.z) { kz = 0u; }
+    if (ad.x <= ad.y && ad.y > ad.z) { kz = 1u; }
+    let dk: vec3f = wt_frame(d, kz, false);
+    let sw: bool = dk.z < 0.0;
+    let dr: vec3f = wt_frame(d, kz, sw);
+    let sx: f32 = dr.x / dr.z;
+    let sy: f32 = dr.y / dr.z;
+    let sz: f32 = 1.0 / dr.z;
+    let pa: vec3f = wt_frame(a - o, kz, sw);
+    let pb: vec3f = wt_frame(b - o, kz, sw);
+    let pc: vec3f = wt_frame(c - o, kz, sw);
+    let ax: f32 = pa.x - sx * pa.z;
+    let ay: f32 = pa.y - sy * pa.z;
+    let bx: f32 = pb.x - sx * pb.z;
+    let by: f32 = pb.y - sy * pb.z;
+    let cx: f32 = pc.x - sx * pc.z;
+    let cy: f32 = pc.y - sy * pc.z;
+    let eu: f32 = cx * by - cy * bx;
+    let ev: f32 = ax * cy - ay * cx;
+    let ew: f32 = bx * ay - by * ax;
+    if ((eu < 0.0 || ev < 0.0 || ew < 0.0) && (eu > 0.0 || ev > 0.0 || ew > 0.0)) { return vec4f(0.0); }
+    let det: f32 = eu + ev + ew;
+    if (det == 0.0) { return vec4f(0.0); }
+    // The signs decided the hit. t, u and v come from Moeller-Trumbore's operations, whose t carries
+    // less rounding than the sheared sum; the sheared values only where its determinant is unusable.
+    let e1: vec3f = b - a;
+    let e2: vec3f = c - a;
+    let p: vec3f = vec3f(d.y * e2.z - d.z * e2.y, d.z * e2.x - d.x * e2.z, d.x * e2.y - d.y * e2.x);
+    let dm: f32 = e1.x * p.x + e1.y * p.y + e1.z * p.z;
+    if (dm > -1e-7 && dm < 1e-7) {
+        let tz: f32 = eu * (sz * pa.z) + ev * (sz * pb.z) + ew * (sz * pc.z);
+        let inv0: f32 = 1.0 / det;
+        let t0: f32 = tz * inv0;
+        return vec4f(t0, ev * inv0, ew * inv0, select(0.0, 1.0, t0 > 1e-4));
+    }
+    let inv: f32 = 1.0 / dm;
+    let tv: vec3f = o - a;
+    var u: f32 = max(0.0, (tv.x * p.x + tv.y * p.y + tv.z * p.z) * inv);
+    let q: vec3f = vec3f(tv.y * e1.z - tv.z * e1.y, tv.z * e1.x - tv.x * e1.z, tv.x * e1.y - tv.y * e1.x);
+    var v: f32 = max(0.0, (d.x * q.x + d.y * q.y + d.z * q.z) * inv);
+    let tt: f32 = (e2.x * q.x + e2.y * q.y + e2.z * q.z) * inv;
+    let s: f32 = u + v;
+    if (s > 1.0) {
+        u = u / s;
+        v = v / s;
+    }
+    return vec4f(tt, u, v, select(0.0, 1.0, tt > 1e-4));
+}
+// x: t, y: 1 when hit.
 fn hit_tri(t: u32, ox: f32, oy: f32, oz: f32, dx: f32, dy: f32, dz: f32) -> vec2f {
     let b: u32 = t * 9u;
-    let e1x: f32 = T[b + 3u] - T[b];
-    let e1y: f32 = T[b + 4u] - T[b + 1u];
-    let e1z: f32 = T[b + 5u] - T[b + 2u];
-    let e2x: f32 = T[b + 6u] - T[b];
-    let e2y: f32 = T[b + 7u] - T[b + 1u];
-    let e2z: f32 = T[b + 8u] - T[b + 2u];
-    let px: f32 = dy * e2z - dz * e2y;
-    let py: f32 = dz * e2x - dx * e2z;
-    let pz: f32 = dx * e2y - dy * e2x;
-    let det: f32 = e1x * px + e1y * py + e1z * pz;
-    if (det > -1e-7 && det < 1e-7) { return vec2f(0.0, 0.0); }
-    let inv: f32 = 1.0 / det;
-    let tx: f32 = ox - T[b];
-    let ty: f32 = oy - T[b + 1u];
-    let tz: f32 = oz - T[b + 2u];
-    let u: f32 = (tx * px + ty * py + tz * pz) * inv;
-    if (u < 0.0 || u > 1.0) { return vec2f(0.0, 0.0); }
-    let qx: f32 = ty * e1z - tz * e1y;
-    let qy: f32 = tz * e1x - tx * e1z;
-    let qz: f32 = tx * e1y - ty * e1x;
-    let v: f32 = (dx * qx + dy * qy + dz * qz) * inv;
-    if (v < 0.0 || u + v > 1.0) { return vec2f(0.0, 0.0); }
-    let tt: f32 = (e2x * qx + e2y * qy + e2z * qz) * inv;
-    return vec2f(tt, select(0.0, 1.0, tt > 1e-4));
+    let h: vec4f = wt_hit(vec3f(ox, oy, oz), vec3f(dx, dy, dz), vec3f(T[b], T[b + 1u], T[b + 2u]), vec3f(T[b + 3u], T[b + 4u], T[b + 5u]), vec3f(T[b + 6u], T[b + 7u], T[b + 8u]));
+    return vec2f(h.x, h.w);
 }
 
 @compute @workgroup_size(64)

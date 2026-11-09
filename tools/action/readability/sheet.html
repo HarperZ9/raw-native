@@ -1,0 +1,106 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Tell readability sheet</title>
+<!-- The blind readability test of G5 (docs/action-hitvol.md). Open this file in a browser, load
+     trials.json, and hand the screen to the viewer. The viewer never sees key.json or the condition.
+     A neutral page on purpose: nothing on it but the figure and the answers, so the page itself does
+     not change what the viewer reads. -->
+<style>
+  body { margin: 0; padding: 24px; background: #f4f1ea; color: #1d1c1a; font: 16px/1.5 system-ui, sans-serif; }
+  main { max-width: 720px; margin: 0 auto; }
+  canvas { display: block; background: #e8e4da; margin: 16px 0; }
+  .answers button { font: inherit; margin: 4px 8px 4px 0; padding: 8px 14px; border: 1px solid #1d1c1a; background: #fff; cursor: pointer; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; }
+  .legend figure { margin: 0; text-align: center; }
+  textarea { width: 100%; height: 160px; font: 12px ui-monospace, monospace; }
+</style>
+<main>
+  <h1>Which attack is coming?</h1>
+  <p id="intro">Load the trials file, read the attacks below, then press Start. Each trial plays a figure
+    winding up an attack and stops on the frame it would land. Name the attack. Each trial plays once.</p>
+  <input type="file" id="file" accept=".json">
+  <div class="legend" id="legend"></div>
+  <p><button id="start" disabled>Start</button> <span id="progress"></span></p>
+  <canvas id="view" width="360" height="200"></canvas>
+  <div class="answers" id="answers"></div>
+  <h2 hidden id="doneH">Done</h2>
+  <p hidden id="doneP">Copy the responses below and give them to the person running the test.</p>
+  <textarea hidden id="out" readonly></textarea>
+</main>
+<script>
+"use strict";
+let T = null, i = 0, shownAt = 0;
+const out = [], $ = (id) => document.getElementById(id);
+const rad = (d) => (d * Math.PI) / 180;
+
+// The proxy figure at figurePx tall, facing right: pose [arm, arm2, elbow, lean, crouch] in degrees
+// (0 hanging down, forward positive) and crouch 0..1.
+function draw(ctx, pose, px, ox, oy) {
+  const [arm, arm2, elbow, lean, crouch] = pose, u = px / 1.69;   // standing: feet to head top = px
+  const hip = [ox, oy - (0.9 - 0.3 * crouch) * u], L = rad(lean);
+  const neck = [hip[0] + Math.sin(L) * 0.55 * u, hip[1] - Math.cos(L) * 0.55 * u];
+  ctx.lineCap = "round"; ctx.strokeStyle = "#1d1c1a"; ctx.lineWidth = Math.max(3, px / 22);
+  const seg = (a, b) => { ctx.beginPath(); ctx.moveTo(a[0], a[1]); ctx.lineTo(b[0], b[1]); ctx.stroke(); };
+  seg(hip, [ox - 0.12 * u, oy]); seg(hip, [ox + 0.12 * u, oy]);
+  seg(hip, neck);
+  ctx.beginPath(); ctx.arc(neck[0] + Math.sin(L) * 0.13 * u, neck[1] - 0.13 * u, 0.11 * u, 0, 2 * Math.PI); ctx.stroke();
+  const limb = (a, e, w) => {
+    const up = rad(a) + L, el = [neck[0] + Math.sin(up) * 0.3 * u, neck[1] + Math.cos(up) * 0.3 * u];
+    const lo = up + rad(e), hand = [el[0] + Math.sin(lo) * 0.28 * u, el[1] + Math.cos(lo) * 0.28 * u];
+    ctx.lineWidth = w; seg(neck, el); seg(el, hand); return hand;
+  };
+  limb(arm2, 10, Math.max(2, px / 30));
+  const hand = limb(arm, elbow, Math.max(3, px / 22));
+  ctx.lineWidth = Math.max(2, px / 40); seg(hand, [hand[0] + Math.sin(rad(arm) + L) * 0.35 * u, hand[1] + Math.cos(rad(arm) + L) * 0.35 * u]);
+}
+
+function frame(ctx, pose) { ctx.clearRect(0, 0, 360, 200); draw(ctx, pose, T.figurePx, 180, 180); }
+
+function legend() {
+  const box = $("legend"); box.innerHTML = "";
+  for (const k of T.options) {
+    const f = document.createElement("figure"), c = document.createElement("canvas");
+    c.width = 120; c.height = 100; c.style.margin = "0";
+    const g = c.getContext("2d"); draw(g, T.legend[k][0], 70, 60, 92);
+    const cap = document.createElement("figcaption"); cap.textContent = k;
+    f.append(c, cap); box.append(f);
+  }
+}
+
+function play() {
+  const t = T.trials[i], ctx = $("view").getContext("2d");
+  $("answers").innerHTML = ""; $("progress").textContent = `Trial ${i + 1} of ${T.trials.length}`;
+  let f = 0, last = null;
+  const step = (now) => {
+    if (last === null) last = now;
+    while (now - last >= 1000 / T.fps && f < t.frames.length) { frame(ctx, t.frames[f]); f++; last += 1000 / T.fps; }
+    if (f < t.frames.length) return requestAnimationFrame(step);
+    setTimeout(() => { ctx.clearRect(0, 0, 360, 200); ask(t); }, 120);
+  };
+  requestAnimationFrame(step);
+}
+
+function ask(t) {
+  shownAt = performance.now();
+  for (const k of T.options) {
+    const b = document.createElement("button"); b.textContent = k;
+    b.onclick = () => { out.push({ id: t.id, answer: k, ms: Math.round(performance.now() - shownAt) }); i++; i < T.trials.length ? setTimeout(play, 600) : done(); };
+    $("answers").append(b);
+  }
+}
+
+function done() {
+  $("answers").innerHTML = ""; $("progress").textContent = "";
+  for (const id of ["doneH", "doneP", "out"]) $(id).hidden = false;
+  $("out").value = JSON.stringify({ format: "raw-tell-responses", version: 1, responses: out });
+}
+
+$("file").onchange = async (e) => {
+  try {
+    T = JSON.parse(await e.target.files[0].text());
+    if (T.format !== "raw-tell-trials") throw new Error("not a raw-tell-trials file");
+    legend(); $("start").disabled = false;
+  } catch (err) { $("intro").textContent = `Could not load the trials: ${err.message}`; console.error(err); }
+};
+$("start").onclick = () => { $("start").disabled = true; $("file").hidden = true; play(); };
+</script>

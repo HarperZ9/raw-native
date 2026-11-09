@@ -2,7 +2,7 @@
 // paraxial against exact ghost trace. Each test fails if its check would be vacuous.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { BINS, BIN_RGB, GLASS, abbe } from "./spectrum.mjs";
+import { BINS, BIN_RGB, GLASS, abbe, glassIndex } from "./spectrum.mjs";
 import { filmReflectance, bare, quarterWaveMinimum } from "./coating.mjs";
 import { resolveLens, extractSources, prepareSources, runLens } from "./lens.mjs";
 import { lensAtHour, LENS_KEYS } from "./params.mjs";
@@ -11,10 +11,15 @@ import { ghostTable, firstOrder } from "./prescription.mjs";
 import { traceExact, chiefRay } from "./exact.mjs";
 import { LAMBDA_D } from "./spectrum.mjs";
 
+const near = (a, b, tol, msg) => assert.ok(Math.abs(a - b) <= tol, `${msg}: ${a} vs ${b} (tol ${tol})`);
+
 test("bin weights sum to 1 per channel; glass dispersion is plausible", () => {
   for (let k = 0; k < 3; k++) assert.ok(Math.abs(BIN_RGB.reduce((s, w) => s + w[k], 0) - 1) < 1e-12);
   assert.equal(BIN_RGB.length, BINS);
   assert.ok(abbe(GLASS.crown) > 55 && abbe(GLASS.crown) < 70 && abbe(GLASS.flint) > 25 && abbe(GLASS.flint) < 40);
+  // The SCHOTT catalogue: N-BK7 nd 1.5168, vd 64.17; N-SF2 nd 1.64769, vd 33.82.
+  near(glassIndex(GLASS.crown, 587.5618), 1.5168, 2e-5, "N-BK7 nd"); near(abbe(GLASS.crown), 64.17, 0.02, "N-BK7 vd");
+  near(glassIndex(GLASS.flint, 587.5618), 1.64769, 2e-5, "N-SF2 nd"); near(abbe(GLASS.flint), 33.82, 0.02, "N-SF2 vd");
 });
 test("quarter-wave coating meets its closed form and beats bare glass in the middle of the band", () => {
   assert.ok(Math.abs(filmReflectance(550, 0) - quarterWaveMinimum()) < 1e-9);

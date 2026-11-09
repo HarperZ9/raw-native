@@ -1,0 +1,99 @@
+{
+ "g1_and_cost": {
+  "backend": "d3d12",
+  "adapter": "NVIDIA GeForce RTX 4090",
+  "g1_cases": [
+   {
+    "case": "town-map",
+    "look": "town_map",
+    "coc_max_abs": 7.62939453e-06,
+    "codes": {
+     "max": 6,
+     "p999": 1,
+     "mean": 0.00398662551,
+     "differ": 1462,
+     "over2": 19,
+     "values": 388800
+    },
+    "control_k_1_1": {
+     "max": 43,
+     "p999": 7,
+     "mean": 0.228315329,
+     "differ": 72035,
+     "over2": 3113,
+     "values": 388800
+    },
+    "control_fails": true,
+    "pass": true
+   },
+   {
+    "case": "town-night",
+    "look": "night",
+    "coc_max_abs": 2.86102295e-06,
+    "codes": {
+     "max": 1,
+     "p999": 0,
+     "mean": 0.000619855967,
+     "differ": 241,
+     "over2": 0,
+     "values": 388800
+    },
+    "control_k_1_1": {
+     "max": 13,
+     "p999": 5,
+     "mean": 0.192098765,
+     "differ": 63340,
+     "over2": 2542,
+     "values": 388800
+    },
+    "control_fails": true,
+    "pass": true
+   },
+   {
+    "case": "art-daily",
+    "look": "daily",
+    "coc_max_abs": 1.49011612e-06,
+    "codes": {
+     "max": 1,
+     "p999": 0,
+     "mean": 0.000182613169,
+     "differ": 71,
+     "over2": 0,
+     "values": 388800
+    },
+    "control_k_1_1": {
+     "max": 15,
+     "p999": 3,
+     "mean": 0.215748457,
+     "differ": 76967,
+     "over2": 671,
+     "values": 388800
+    },
+    "control_fails": true,
+    "pass": true
+   }
+  ],
+  "g3_cost": {
+   "width": 1920,
+   "height": 1080,
+   "repeats": 50,
+   "look": "town_map, every effect on",
+   "chain_ms": 1.23476982,
+   "pass_ms": {
+    "coc": 0.0205039978,
+    "weight": 0.0450611115,
+    "half": 0.0705718994,
+    "prep": 0.0472068787,
+    "tensor": 0.0112056732,
+    "blur_x": 0.0152587891,
+    "blur_y": 0.0233650208,
+    "defocus": 0.528335571,
+    "compose": 0.112771988,
+    "bright": 0.0133514404,
+    "glow": 0.104427338,
+    "finish": 0.0369548798
+   },
+   "g3_pass": false
+  }
+ }
+}

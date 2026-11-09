@@ -3,6 +3,7 @@
 // Float32Array element there.
 #include "raw/renderer/style_paint.hpp"
 #include "raw/renderer/style_image.hpp"
+#include "raw/core/parallel.hpp"
 #include <algorithm>
 #include <cmath>
 namespace raw::style {
@@ -33,14 +34,14 @@ std::array<double, 3> shoulderRGB(double x0, double x1, double x2, double k) {
 std::vector<float> blur4(const PaintPlan& plan, const std::vector<float>& a, bool alongY) {
     const int w = plan.w, h = plan.h, r = int(plan.tw.size() - 1) / 2;
     std::vector<float> o(a.size(), 0.0f);
-    for (int y = 0; y < h; ++y) for (int x = 0; x < w; ++x) for (int c = 0; c < 4; ++c) {
+    parallelRows(h, plan.threads, [&](int y) { for (int x = 0; x < w; ++x) for (int c = 0; c < 4; ++c) {
         double s = 0;
         for (int k = -r; k <= r; ++k) {
             const int xx = alongY ? x : std::min(w - 1, std::max(0, x + k)), yy = alongY ? std::min(h - 1, std::max(0, y + k)) : y;
             s += double(plan.tw[std::size_t(k + r)]) * a[(std::size_t(yy) * w + std::size_t(xx)) * 4 + std::size_t(c)];
         }
         o[(std::size_t(y) * w + std::size_t(x)) * 4 + std::size_t(c)] = float(s);
-    }
+    } });
     return o;
 }
 }  // namespace
@@ -63,7 +64,7 @@ std::vector<float> runPaint(const PaintPlan& plan, const std::vector<float>& sce
     // tensor
     std::vector<float> T(n * 4, 0.0f);
     auto at = [&](int x, int y, int c) { return double(s[(std::size_t(std::min(h - 1, std::max(0, y))) * w + std::size_t(std::min(w - 1, std::max(0, x)))) * 4 + std::size_t(c)]); };
-    for (int y = 0; y < h; ++y) for (int x = 0; x < w; ++x) {
+    parallelRows(h, plan.threads, [&](int y) { for (int x = 0; x < w; ++x) {
         double E = 0, F = 0, G = 0;
         for (int c = 0; c < 3; ++c) {
             const double gx = (at(x + 1, y - 1, c) + 2 * at(x + 1, y, c) + at(x + 1, y + 1, c) - at(x - 1, y - 1, c) - 2 * at(x - 1, y, c) - at(x - 1, y + 1, c)) / 4;
@@ -72,14 +73,13 @@ std::vector<float> runPaint(const PaintPlan& plan, const std::vector<float>& sce
         }
         const std::size_t o = (std::size_t(y) * w + std::size_t(x)) * 4;
         T[o] = float(E); T[o + 1] = float(F); T[o + 2] = float(G);
-    }
+    } });
     T = blur4(plan, blur4(plan, T, false), true);
     // anisotropic Kuwahara
     const int N = 8;
     const double r = p.radius, q = p.q, zeta = p.zeta, eta = (zeta + std::cos(kPi / N)) / std::pow(std::sin(kPi / N), 2);
     std::vector<float> akLat(n * 8, 0.0f), akS(n * 4, 0.0f);
-    std::vector<double> acc(std::size_t(N) * 14);
-    for (int y = 0; y < h; ++y) for (int x = 0; x < w; ++x) {
+    parallelRows(h, plan.threads, [&](int y) { std::vector<double> acc(std::size_t(N) * 14); for (int x = 0; x < w; ++x) {
         const std::size_t pi = std::size_t(y) * w + std::size_t(x);
         const auto fl = flow(T[pi * 4], T[pi * 4 + 1], T[pi * 4 + 2]);
         const double tx = fl[0], ty = fl[1], A = fl[2];
@@ -117,7 +117,7 @@ std::vector<float> runPaint(const PaintPlan& plan, const std::vector<float>& sce
         for (int c = 0; c < 7; ++c) akLat[pi * 8 + std::size_t(c)] = float(L[c] / wsum);
         for (int c = 0; c < 3; ++c) akS[pi * 4 + std::size_t(c)] = float(S3[c] / wsum);
         akS[pi * 4 + 3] = float(A);
-    }
+    } });
     // stroke
     const int SL = int(p.strokeLen);
     std::vector<float> H(n * 2, 0.0f);
@@ -132,7 +132,7 @@ std::vector<float> runPaint(const PaintPlan& plan, const std::vector<float>& sce
         }
         return flow(t[0], t[1], t[2]);
     };
-    for (int y = 0; y < h; ++y) for (int x = 0; x < w; ++x) {
+    parallelRows(h, plan.threads, [&](int y) { for (int x = 0; x < w; ++x) {
         double acc1 = paintCanvasNoise(plan, cv, PaintNoise::Bristle, x, y, 0.5) * (SL + 1), ids = paintCanvasNoise(plan, cv, PaintNoise::StrokeId, x, y, 0.5) * (SL + 1), ws = SL + 1;
         for (int sg = 0; sg < 2; ++sg) {
             const double sgn = sg == 0 ? 1 : -1;
@@ -152,7 +152,7 @@ std::vector<float> runPaint(const PaintPlan& plan, const std::vector<float>& sce
             }
         }
         H[(std::size_t(y) * w + std::size_t(x)) * 2] = float(acc1 / ws); H[(std::size_t(y) * w + std::size_t(x)) * 2 + 1] = float(ids / ws);
-    }
+    } });
     const std::vector<float> Rl = paintRelief(plan, akS, H, T, cv);
     return paintCompose(plan, akLat, H, Rl, cv);
 }

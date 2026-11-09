@@ -1,0 +1,75 @@
+{
+ "backend": "vulkan",
+ "adapter": "llvmpipe (LLVM 20.1.2, 256 bits)",
+ "g1_cases": [
+  {
+   "case": "town-map",
+   "look": "town_map",
+   "coc_max_abs": 6.67572021e-06,
+   "codes": {
+    "max": 8,
+    "p999": 1,
+    "mean": 0.00764660494,
+    "differ": 2589,
+    "over2": 78,
+    "values": 388800
+   },
+   "control_k_1_1": {
+    "max": 92,
+    "p999": 15,
+    "mean": 0.802047325,
+    "differ": 176398,
+    "over2": 29529,
+    "values": 388800
+   },
+   "control_fails": true,
+   "pass": true
+  },
+  {
+   "case": "town-night",
+   "look": "night",
+   "coc_max_abs": 3.33786011e-06,
+   "codes": {
+    "max": 3,
+    "p999": 1,
+    "mean": 0.0027340535,
+    "differ": 1040,
+    "over2": 2,
+    "values": 388800
+   },
+   "control_k_1_1": {
+    "max": 32,
+    "p999": 6,
+    "mean": 0.327615741,
+    "differ": 86028,
+    "over2": 9318,
+    "values": 388800
+   },
+   "control_fails": true,
+   "pass": true
+  },
+  {
+   "case": "art-daily",
+   "look": "daily",
+   "coc_max_abs": 1.43051147e-06,
+   "codes": {
+    "max": 6,
+    "p999": 1,
+    "mean": 0.00124485597,
+    "differ": 445,
+    "over2": 7,
+    "values": 388800
+   },
+   "control_k_1_1": {
+    "max": 19,
+    "p999": 7,
+    "mean": 0.257263374,
+    "differ": 60887,
+    "over2": 9330,
+    "values": 388800
+   },
+   "control_fails": true,
+   "pass": true
+  }
+ ]
+}

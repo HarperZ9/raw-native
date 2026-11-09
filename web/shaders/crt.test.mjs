@@ -11,6 +11,7 @@ import { packTaps, signalChain } from "./crt/signal.mjs";
 import { beamPass } from "./crt/beam.mjs";
 import { maskCover, maskMean } from "./crt/geometry.mjs";
 import { haloKernel, radialReturn } from "./crt/halo.mjs";
+import { cumulativeF, powerTimeTo } from "./crt/kuhn2002.mjs";
 
 const near = (a, b, tol, msg) => assert.ok(Math.abs(a - b) <= tol, `${msg}: ${a} vs ${b} (tol ${tol})`);
 const flat = (w, h, rgb) => { const d = new Float32Array(w * h * 4); for (let i = 0; i < w * h; i++) d.set([...rgb, 1], i * 4); return { width: w, height: h, data: d }; };
@@ -159,4 +160,26 @@ test("pixel-locked mask: one stripe per pixel at pitchPx 3, mean 1, slot rows, m
   // Face lock is unchanged by the new fields.
   const f = resolve("pvm-20", {}, { w: 64, h: 48 }, { w: 96, h: 72 });
   assert.deepEqual(maskCover(f, 1.3, 2.1, 0.2, 0.2, 5, 5), maskCover(f, 1.3, 2.1, 0.2, 0.2));
+});
+
+test("P22 decay follows the measured curves of Kuhn 2002 (two-exponential fit, 1 us to 10 ms)", () => {
+  // The power-law terms fall to 10% in about 39 us (green) and 35 us (blue): RCA TPM-1508A (1961) gives
+  // 38 us for ZnS:Cu and 34 us for ZnS:Ag, a second CRT source.
+  near(powerTimeTo("green", 0.1), 38e-6, 0.04 * 38e-6, "green power law t10 against RCA");
+  near(powerTimeTo("blue", 0.1), 34e-6, 0.04 * 34e-6, "blue power law t10 against RCA");
+  const fit = (d, t) => d[0] * (1 - Math.exp(-t / d[1])) + (1 - d[0]) * (1 - Math.exp(-t / d[2]));
+  const bound = { red: 0.005, green: 0.055, blue: 0.066 };
+  ["red", "green", "blue"].forEach((colour, c) => {
+    const d = SCREENS.p22.parts[c].decay;
+    let worst = 0;
+    for (let i = 0; i <= 200; i++) { const t = 1e-6 * Math.pow(1e4, i / 200); worst = Math.max(worst, Math.abs(fit(d, t) - cumulativeF(colour, t))); }
+    assert.ok(worst <= bound[colour], `${colour}: largest error in cumulative light ${worst} > ${bound[colour]}`);
+    near(fit(d, 1 / 60), 1, 1e-4, `${colour}: nearly all light out within one field`);
+  });
+  // Red: the slowest term (360 Hz, tau 0.442 ms) leaves 90.8% of the light out by 1 ms.
+  near(cumulativeF("red", 1e-3), 0.908, 0.002, "red light out by 1 ms");
+  // Control: the old recalled green (0.9 at 20 us, 0.1 at 0.5 ms) misses the measured curve badly.
+  let old = 0;
+  for (let i = 0; i <= 200; i++) { const t = 1e-6 * Math.pow(1e4, i / 200); old = Math.max(old, Math.abs(fit([0.9, 20e-6, 0.5e-3], t) - cumulativeF("green", t))); }
+  assert.ok(old > 0.2, `the old green decay should fail the measured curve, error ${old}`);
 });

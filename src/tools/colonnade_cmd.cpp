@@ -18,7 +18,7 @@ namespace raw {
 int colonnadeCommand(int argc, char** argv) {
     std::string out = "colonnade";
     rt::ColonnadeParams p;
-    int w = 480, h = 270, spp = 64, bounces = 8, threads = 0;
+    int w = 480, h = 270, spp = 64, bounces = 64, threads = 0;
     double ev = 13.0;
     for (int i = 1; i < argc; ++i) {
         const std::string a = argv[i];

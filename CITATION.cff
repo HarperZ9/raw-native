@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it using these metadata."
+type: software
+title: "raw-native"
+abstract: "A C++23 renderer that runs a fast real-time effect beside a slower reference and reports how far apart they are. Windows, Linux and WebAssembly, with optional D3D12 and WebGPU builds."
+version: "0.8.0"
+date-released: 2026-10-14
+authors:
+  - family-names: "Harper"
+    given-names: "Zain Dana"
+    orcid: "https://orcid.org/0009-0001-7175-5393"
+repository-code: "https://github.com/HarperZ9/raw-native"
+url: "https://harperz9.github.io/raw.html"
+license-url: "https://github.com/HarperZ9/raw-native/blob/main/LICENSE"
+keywords:
+  - ambient-occlusion
+  - cpp23
+  - ray-tracing
+  - renderer
+  - color-management
+  - computer-graphics
+  - d3d12
+  - gltf

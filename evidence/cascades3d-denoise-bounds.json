@@ -1,0 +1,49 @@
+{
+  "what": "Denoise for the stride-8 screen probes of the 3D radiance cascades (web/shaders/cascades3d/denoise3d.mjs, wgsl3d-denoise.mjs): temporal accumulation with reprojection and history rejection, an edge-aware a-trous filter over the probe grid, and both together",
+  "written": "2026-11-07, after the CPU code and the WGSL were written, before any GPU run, measurement or parity run",
+  "baseline": "the round-1 shipped setting (h0 0.5, c0 1, r0 2, f 2, fix probe, stride 8, m 6, bounces 8, static flags) on raw-hall nave at 1920 x 1080: relative RMSE 0.104 (0.097 to 0.111) against the 8-bounce path trace (1024 spp, two seeds), GI 3.6 to 4.0 ms median (evidence/cascades3d-rtx4090.json). The baseline is re-measured in this round on the same build so both sides share one machine state.",
+  "method": {
+    "temporal": "tf frames of accumulation after the 7 warm-up frames (history off while the cache is still adding bounces). Each frame the probes move inside their 8 x 8 cell (Halton 2, 3) and their rays take a new seed. Each pixel's irradiance is blended with its history: reprojection through the previous camera, bilinear over 4 pixels, a tap kept when its surface lies within 4 pixel footprints of the pixel's plane and its normal within dot 0.9; blend weight 1 / n, n at most tmax.",
+    "spatial": "sf a-trous passes (steps 1, 2, 4) of a 3 x 3 [1 2 1] / 4 kernel over the probe grid, with the upsampling's plane-distance and normal test, and with sl > 0 a luminance edge stop exp(-(|dL| / max(L) / sl)^2).",
+    "error": "pt-error's relative RMSE of luminance over pixels both cover, with the 95% 32 x 32 tile bootstrap (tests/web/cascades3d_metrics.py).",
+    "mottle": "relative luminance error e = (frame - reference) / mean(reference), on wall and column pixels (|n_y| < 0.5) at least 3 pixels from a normal or coverage edge. Band-pass: masked Gaussian blur of e at sigma 4 px minus at sigma 32 px (half a stride to four strides at stride 8); mottle = RMS of the band over the mask. Also reported: the low-pass alone (sigma 4 px, which keeps bias), and the same numbers over floor pixels. 95% interval by 64 x 64 tile bootstrap.",
+    "timing": "GPU timestamps around the GI passes only, now including the a-trous and accumulation passes; median and 5th to 95th percentile of 50 frames; the GPU is shared with other work."
+  },
+  "checks": {
+    "m0_planted_mottle_metric": {
+      "what": "the mottle metric on (reference + a planted sinusoid of amplitude 5% of the reference mean, period 64 px, on the wall mask) against the reference, and on the second reference seed against the first",
+      "bound": "the planted sinusoid reads 0.0354 (5% / sqrt 2) within 15%; the seed-against-seed reading is at most a third of the baseline frame's mottle, so the metric measures the cascades and not the reference's own noise",
+      "prediction": "holds; the Gaussian band passes a 64 px period at about 0.9 of its amplitude, so 0.030 to 0.035"
+    },
+    "s1_planted_edge": {
+      "what": "every screen probe set to irradiance 0.2 below a world plane x = x0 and 1.0 above it (SSUM's planted flag), on raw-hall's real g-buffer at 1080p, run through the denoise and the upsampling; the frame is the irradiance. Width of the step: the 10% to 90% distance across the edge, in pixels, over floor pixels within 64 px of it (distance = |x - x0| / pixel footprint).",
+      "bound": "the denoised step is at most 8 px (one stride) wider than the undenoised step at the same stride",
+      "prediction": "temporal alone widens it by under 4 px (the probe jitter averages the bilinear over the cell); a-trous without the luminance stop widens it by 10 to 20 px and fails; with sl 0.5 it holds"
+    },
+    "e1_hall_error": {
+      "what": "raw-hall nave at 1920 x 1080 against the 8-bounce path trace, still camera, after warm-up plus tf frames",
+      "target": "relative RMSE at most 0.090, and the mottle at most 0.5 of the baseline frame's",
+      "bound": "relative RMSE not above the baseline frame's (re-measured) upper 95% limit"
+    },
+    "e2_history_curve": {
+      "what": "error and mottle against frames since a history reset: 1, 2, 4, 8, 16, 32 (a camera cut on a converged cache)",
+      "prediction": "mottle falls about as 1 / sqrt(n) until the structured interpolation error dominates, near n = 8 to 16"
+    },
+    "e3_moving_camera": {
+      "what": "the camera starts 0.6 m to the side and 0.3 m back and slides onto the reference camera over the last 16 frames; the measured frame is the reference view, its history reprojected through the motion",
+      "bound": "relative RMSE not above the baseline frame's upper 95% limit (history rejection keeps the motion from adding error); mottle reported"
+    },
+    "t1_hall_time": {
+      "what": "the GI passes at 1920 x 1080, the shipped denoise setting",
+      "bound": "median under 6.0 ms",
+      "prediction": "the a-trous passes cost under 0.1 ms (32k probes), the accumulation 0.1 to 0.3 ms"
+    },
+    "p2_parity": {
+      "what": "GPU (f32) against the float64 CPU reference with the denoise on: spatial, temporal, both with a moving camera, and the white furnace with both",
+      "bound": "relative RMSE at most 2e-3 a case (the round-1 bound, unchanged); the furnace with denoise at most 2e-3 against 1 / (1 - rho)",
+      "prediction": "holds; reprojection taps flip between pixels only where the bilinear weight is near zero"
+    }
+  },
+  "kill": "the denoise does not ship as the default setting if no setting cuts the mottle by at least 25% while keeping the relative RMSE at or below the baseline's upper limit, the planted edge bound and the 6 ms budget. A failed setting stays in the evidence as a null.",
+  "budget": "1080p GI median under 6 ms; GPU memory under 6 GB (the GPU is shared); at most 3 CPU workers at below-normal priority."
+}

@@ -3,12 +3,13 @@
 #include "raw/renderer/rt_scenes.hpp"
 #include "shaders/pt_layout.hpp"
 #include "rt_dev.hpp"
+#include "../rt_pt_math.hpp"
 #include <cmath>
 #include <cstring>
 namespace raw::gpu_check {
 namespace {
 using namespace rtdev;
-constexpr std::size_t kStride = 36;   // floats a pixel in ACC and O (pt.wgsl, interface v2)
+constexpr std::size_t kStride = 36;   // floats a pixel in ACC and O (pt.wgsl, the v2 layout)
 struct Packed { std::vector<std::int32_t> ni; std::vector<float> nb, tris, attrs, mats; std::vector<std::uint32_t> tex; std::uint32_t emitterOffset{0}; };
 Packed pack(const rt::PtScene& s) {
     Packed p;
@@ -33,6 +34,9 @@ Packed pack(const rt::PtScene& s) {
         p.mats.insert(p.mats.end(), {m.baseFactor, m.roughness, m.metallic, m.specular, m.emission.x, m.emission.y, m.emission.z, 0.0f});
     p.emitterOffset = std::uint32_t(p.mats.size());
     for (std::size_t k = 0; k < s.emitters.size(); ++k) { p.mats.push_back(float(s.emitters[k])); p.mats.push_back(s.emitterCdf[k]); }
+    // Interface v4: the lobe's energy table after the emitter pairs (pt.wgsl's tab_at).
+    const std::vector<float>& tab = rt::pt::energyTable().v;
+    p.mats.insert(p.mats.end(), tab.begin(), tab.end());
     return p;
 }
 void putCam(float* w, const rt::PtCamera& c, int width, int height) {
@@ -47,7 +51,8 @@ std::vector<std::uint32_t> params(const rt::PtScene& s, const rt::PathTraceDesc&
     std::vector<std::uint32_t> w(56, 0u);
     std::uint32_t flags = (d.jitter ? 1u : 0u) | (d.russianRoulette ? 2u : 0u) | (d.controls.dropLambertCosine ? 4u : 0u) |
                           (d.controls.misWeightOne ? 8u : 0u) | (first ? 16u : 0u) |
-                          (d.controls.aovDropSpecularIndirect ? 32u : 0u) | (d.controls.aovEmissionToDiffuse ? 64u : 0u);
+                          (d.controls.aovDropSpecularIndirect ? 32u : 0u) | (d.controls.aovEmissionToDiffuse ? 64u : 0u) |
+                          (d.controls.legacyLobeV2 ? 128u : 0u);
     const std::uint32_t head[11] = {std::uint32_t(d.width), std::uint32_t(d.height), begin, count, d.maxBounces, flags,
                                     std::uint32_t(d.seed), std::uint32_t(d.seed >> 32), std::uint32_t(s.tree.root),
                                     std::uint32_t(s.emitters.size()), emitterOffset};
@@ -76,6 +81,11 @@ rt::PathTraceOutput pathTraceGpu(rhi::Device& device, const rt::PtScene& s, cons
     slice = std::max<std::uint32_t>(1, slice);
     const Packed p = pack(s);
     const std::uint64_t npx = std::uint64_t(d.width) * std::uint64_t(d.height);
+    // `slice` samples a submission is sized for 1280 x 720. Above that, keep a submission's sample-pixel
+    // count at that budget: at 3840 x 2160 the default 16 spp a slice ran 3.2 s on raw_hall (RTX 4090)
+    // and the watchdog removed the device. The sum over slices is unchanged (sample indices are absolute).
+    constexpr std::uint64_t kSliceBudgetPx = 1280ull * 720ull;
+    if (npx > kSliceBudgetPx) slice = std::max<std::uint32_t>(1, std::uint32_t(std::uint64_t(slice) * kSliceBudgetPx / npx));
     if (!(D.cl = device.begin(O.error))) return O;
     const BufferHandle NI = D.upload(p.ni.data(), p.ni.size() * 4, "pt ni"), NB = D.upload(p.nb.data(), p.nb.size() * 4, "pt nb");
     const BufferHandle T = D.upload(p.tris.data(), p.tris.size() * 4, "pt tris"), A = D.upload(p.attrs.data(), p.attrs.size() * 4, "pt attrs");

@@ -5,7 +5,8 @@
 //   develop    characteristic curves and interimage -> each layer's developed dye fraction
 //   print      grain on the negative, then the full spectral print and projection
 import { haloKernel, radialReturn } from "../crt/halo.mjs";
-import { build, curve, interimage } from "./stocks.mjs";
+import { build, curve, interimage, negativeRecord } from "./stocks.mjs";
+import { FILM_LIBRARY, HALATION, statedHalation } from "./library.mjs";
 import { varianceTable, depthLayers } from "./grain.mjs";
 import { hash3 } from "../common.mjs";
 
@@ -15,27 +16,54 @@ export const FILM_PRESETS = {
   "250d-print": { negative: "neg-250d", remjet: true },
   "bleach-bypass": { negative: "neg-500t", process: "bleach-bypass", remjet: true },
 };
+// One preset per measured colour negative in the library, through the 2383 print, with the halation
+// control its current edition states and its own emulsion scatter where the sheet gives an MTF.
+// "<stock>-print" (for example "kodak-portra400-print"); the measured 2383 curve shape is "-print2383m".
+for (const id of Object.keys(FILM_LIBRARY.stocks)) {
+  const s = FILM_LIBRARY.stocks[id];
+  if (s.kind !== "colour-negative" || !s.sensitometry) continue;
+  const N = negativeRecord("lib:" + id), extra = N.emulsionSigmaUm ? { emulsionSigmaUm: N.emulsionSigmaUm } : {};
+  FILM_PRESETS[`${id}-print`] = { negative: "lib:" + id, halation: statedHalation(id) || "ahu", ...extra };
+  FILM_PRESETS[`${id}-print2383m`] = { negative: "lib:" + id, print: "print-2383-measured", halation: statedHalation(id) || "ahu", ...extra };
+}
+// CineStill: a Kodak motion-picture negative with the rem-jet washed off, rated faster than Kodak rates it.
+// The base stock is inferred (CineStill names none; see FILM_LIBRARY.cinestill); the curves are that stock's
+// rem-jet edition. ev shifts exposure for the rating: 800 on a 500-speed emulsion is log2(500 / 800) stops.
+for (const [key, c] of Object.entries(FILM_LIBRARY.cinestill)) {
+  if (!c.base_stock || !FILM_LIBRARY.stocks[c.base_stock]?.sensitometry) continue;
+  const base = FILM_LIBRARY.stocks[c.base_stock], N = negativeRecord("lib:" + c.base_stock);
+  FILM_PRESETS[key] = { negative: "lib:" + c.base_stock, halation: "none", ev: Math.log2(base.iso / c.rated_ei),
+    ...(N.emulsionSigmaUm ? { emulsionSigmaUm: N.emulsionSigmaUm } : {}) };
+  FILM_PRESETS[key + "-remjet"] = { ...FILM_PRESETS[key], halation: "remjet" };
+}
 const base = { negative: "neg-500t", print: "print-2383", process: "normal", printerPoints: [0, 0, 0], ev: 0,
-  gateWidthMm: 24.89, grainScale: 1, grainAmount: 1, remjet: true, pressurePlate: 0.05, emulsionSigmaUm: 4.2, halationReach: [0.25, 0.06, 0], weaveUm: 6, jitterUm: 1.5, seed: 1 };
+  gateWidthMm: 24.89, grainScale: 1, grainAmount: 1, remjet: true, pressurePlate: 0.05, emulsionSigmaUm: [3.33, 3.75, 5.54], halationReach: [0.25, 0.06, 0], weaveUm: 6, jitterUm: 1.5, seed: 1 };
 
 export function resolveFilm(preset, overrides, input, out) {
+  if (typeof preset === "string" && !FILM_PRESETS[preset]) throw new Error(`unknown film preset ${preset}`);
   const p = { ...base, ...(typeof preset === "string" ? FILM_PRESETS[preset] : preset || {}), ...(overrides || {}) };
+  // halation: "none" | "remjet" | "ahu"; the older boolean remjet still works (false = none).
+  const halation = p.halation || (p.remjet ? "remjet" : "none");
+  if (!(halation in HALATION)) throw new Error(`unknown halation control ${halation}`);
   const t = build(p), umPerPx = (p.gateWidthMm * 1000) / out.w, jTable = varianceTable();
   // Returned light exposes the emulsion; the part the turbid emulsion scatters back down (albedo
   // about 0.4, low confidence) returns again. Only the kernel shape is used; its strength is below.
   // pressurePlate: diffuse reflectance behind the base (matte black anodised, about 0.05, low
   // confidence); it fills the inside of the ring. 0 turns it off.
+  // The camera negative's base: acetate with rem-jet (H-1-5219t), thickness not printed, so 0.125 mm
+  // stays a recalled figure. (Print film 2383 is coated on 120 um ESTAR, n 1.573; its halation is not drawn.)
   const baseGlass = { thickness: 0.125, n: 1.49, transmission: 1, albedo: 0.4, cell: 0.02, backReflectance: p.pressurePlate };
   const hk = haloKernel(baseGlass, { mmPerPx: umPerPx / 1000, maxCells: 25 });
   const sum = hk.weights.reduce((a, b) => a + b, 0), kappa = radialReturn(baseGlass, 0.001, 5).kappa;
   return {
     p, t, input, out, umPerPx, jTable,
-    grainContrast: t.grainUm.map((r, l) => 1 / Math.sqrt(depthLayers(r, t.neg.span[l], t.sigmaD48, jTable))),
+    grainContrast: t.grainUm.map((r, l) => 1 / Math.sqrt(depthLayers(r, t.neg.span[l], t.sigmaD48[l], jTable))),
     // At a coarse scale the whole ring falls inside one cell: no halo to draw.
     halo: { q: hk.q, R: hk.R, weights: hk.weights.map((w) => (sum > 0 ? w / sum : 0)), ringMm: hk.ringMm },
-    haloStrength: p.halationReach.map((r) => r * kappa * (p.remjet ? 0.03 : 1)),
+    haloStrength: p.halationReach.map((r) => r * kappa * HALATION[halation]), halation,
     grainUm: t.grainUm.map((r) => r * p.grainScale),
-    mtf: mtfWeights(p.emulsionSigmaUm / umPerPx),
+    // emulsionSigmaUm: one sigma per layer, or one number for all three.
+    mtf: mtfWeights([0, 1, 2].map((c) => [].concat(p.emulsionSigmaUm)[Array.isArray(p.emulsionSigmaUm) ? c : 0] / umPerPx)),
   };
 }
 
@@ -92,19 +120,26 @@ export function upsample(g, gw, gh, q, x, y) {
 }
 
 // Emulsion scatter (the film's own MTF): light spreads sideways in the turbid emulsion before
-// it is recorded. A gaussian of sigma 4.2 um puts the 50% MTF near 45 cycles/mm (an assumed
-// figure for a modern camera negative, low confidence). Normalised weights for a separable
-// blur; none when sigma is under 0.15 pixel.
+// it is recorded, each layer by its own amount. A gaussian of sigma s has its 50% MTF at
+// sqrt(ln 2 / 2) / (pi s); the defaults put it at the 56.3, 49.9 and 33.8 cycles/mm that Kodak
+// H-1-5219t measures for the red, green and blue layers. Normalised weights for a separable blur,
+// interleaved by layer (w[3 (k + r) + c]); a layer under 0.15 pixel is left sharp, and when every
+// layer is, there is no blur ([1, 1, 1]).
 export function mtfWeights(sigmaPx) {
-  if (!(sigmaPx >= 0.15)) return new Float32Array([1]);
-  const r = Math.min(16, Math.ceil(3 * sigmaPx)), w = new Float32Array(2 * r + 1);
-  let s = 0;
-  for (let i = -r; i <= r; i++) { w[i + r] = Math.exp(-0.5 * (i / sigmaPx) ** 2); s += w[i + r]; }
-  for (let i = 0; i < w.length; i++) w[i] /= s;
+  const sg = Array.isArray(sigmaPx) || ArrayBuffer.isView(sigmaPx) ? Array.from(sigmaPx) : [sigmaPx, sigmaPx, sigmaPx];
+  const top = Math.max(...sg.map((v) => (v >= 0.15 ? v : 0)));
+  if (!(top >= 0.15)) return new Float32Array([1, 1, 1]);
+  const r = Math.min(16, Math.ceil(3 * top)), w = new Float32Array(3 * (2 * r + 1));
+  for (let c = 0; c < 3; c++) {
+    if (!(sg[c] >= 0.15)) { w[3 * r + c] = 1; continue; }
+    let s = 0;
+    for (let i = -r; i <= r; i++) { w[3 * (i + r) + c] = Math.exp(-0.5 * (i / sg[c]) ** 2); s += w[3 * (i + r) + c]; }
+    for (let i = 0; i < 2 * r + 1; i++) w[3 * i + c] /= s;
+  }
   return w;
 }
 export function mtf(plan, H) {
-  const w = plan.mtf, r = (w.length - 1) / 2, { w: W, h: Hh } = plan.out;
+  const w = plan.mtf, r = (w.length / 3 - 1) / 2, { w: W, h: Hh } = plan.out;
   if (r === 0) return H;
   const pass = (src, alongY) => {
     const o = new Float32Array(src.length);
@@ -112,7 +147,7 @@ export function mtf(plan, H) {
       let s = 0;
       for (let k = -r; k <= r; k++) {
         const xx = alongY ? x : Math.min(W - 1, Math.max(0, x + k)), yy = alongY ? Math.min(Hh - 1, Math.max(0, y + k)) : y;
-        s += w[k + r] * src[(yy * W + xx) * 4 + c];
+        s += w[3 * (k + r) + c] * src[(yy * W + xx) * 4 + c];
       }
       o[(y * W + x) * 4 + c] = s;
     }

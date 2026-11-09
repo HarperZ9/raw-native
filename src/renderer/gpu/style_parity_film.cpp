@@ -29,7 +29,7 @@ FilmParamsGpu paramsOf(const style::FilmPlan& plan, int f) {
     FilmParamsGpu P{};
     P.outW = std::uint32_t(plan.outW); P.outH = std::uint32_t(plan.outH); P.inW = std::uint32_t(plan.inW); P.inH = std::uint32_t(plan.inH);
     P.gw = std::uint32_t((plan.outW + plan.haloQ - 1) / plan.haloQ); P.gh = std::uint32_t((plan.outH + plan.haloQ - 1) / plan.haloQ);
-    P.haloQ = std::uint32_t(plan.haloQ); P.haloR = std::uint32_t(plan.haloR); P.frame = std::uint32_t(f); P.mtfR = std::uint32_t(plan.mtf.size() / 2);
+    P.haloQ = std::uint32_t(plan.haloQ); P.haloR = std::uint32_t(plan.haloR); P.frame = std::uint32_t(f); P.mtfR = std::uint32_t((plan.mtf.size() / 3) / 2);
     const auto w = style::filmWeave(plan, f);
     put(P.v[0], std::pow(2, plan.p.ev), plan.umPerPx, w[0], w[1]);
     for (int r = 0; r < 3; ++r) put(P.v[1 + r], t.E[std::size_t(3 * r)], t.E[std::size_t(3 * r + 1)], t.E[std::size_t(3 * r + 2)]);
@@ -85,7 +85,7 @@ bool runFilm(rhi::Device& dev, const style::FilmPlan& plan, const std::vector<fl
               });
     style_graph::Passes ps{dev, g, {}};
     if (!ps.add("style_film_expose", {U, S, H}, n, err)) return false;
-    if (plan.mtf.size() > 1 && (!ps.add("style_film_mtf", {UX, MW, H, H2}, n, err) || !ps.add("style_film_mtf", {UY, MW, H2, H}, n, err))) return false;
+    if (plan.mtf.size() > 3 && (!ps.add("style_film_mtf", {UX, MW, H, H2}, n, err) || !ps.add("style_film_mtf", {UY, MW, H2, H}, n, err))) return false;
     if (!ps.add("style_film_halo_down", {U, H, HD}, m, err) || !ps.add("style_film_halo_conv", {U, K, HD, HC}, m, err) ||
         !ps.add("style_film_develop", {U, H, HC, F}, n, err) || !ps.add("style_film_print", {U, T, PO, F, O}, n, err)) return false;
     g.addPass("film readback", {{O, Access::CopySrc}, {RB, Access::CopyDst}}, [ob, rb, n](graph::PassContext& c) { c.cmd->copyBuffer(ob, 0, rb, 0, std::uint64_t(n) * 4); });

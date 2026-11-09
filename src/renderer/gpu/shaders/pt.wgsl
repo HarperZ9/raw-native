@@ -1,5 +1,5 @@
 // raw-native's path tracer on the GPU (RT stage R2): the compute form of
-// src/renderer/rt_pt_cpu.cpp and rt_pt_math.hpp, interface v2 (raw/renderer/rt_pathtrace.hpp).
+// src/renderer/rt_pt_cpu.cpp and rt_pt_math.hpp, interface v4 (raw/renderer/rt_pathtrace.hpp).
 // pt_trace accumulates a slice of samples per pixel into ACC; pt_finish writes the outputs.
 //
 // ACC, 36 floats a pixel: radiance sum (3), luminance Welford n, mean, M2 (3), albedo sum (3),
@@ -27,6 +27,9 @@ const F_MISONE: u32 = 8u;
 const F_FIRST: u32 = 16u;
 const F_AOV_DROPSPEC: u32 = 32u;
 const F_AOV_EMDIFF: u32 = 64u;
+const F_LEGACY: u32 = 128u;
+const TAB_MU: u32 = 64u;
+const TAB_R: u32 = 128u;
 const ACC_N: u32 = 36u;
 
 fn pcg2d(v0: vec2u) -> vec2u {
@@ -56,36 +59,6 @@ fn lambda_g(a2: f32, c: f32) -> f32 {
 }
 fn lobe_prob(metal: f32, spec: f32) -> f32 {
     return metal + (1.0 - metal) * 0.5 * spec;
-}
-// f cos and the mixture pdf, local frame: xyz f cos, w pdf.
-fn eval_bsdf(base: vec3f, rough: f32, metal: f32, spec: f32, wo: vec3f, wi: vec3f, dropCos: bool) -> vec4f {
-    if (wo.z <= 0.0 || wi.z <= 0.0) { return vec4f(0.0); }
-    let ps: f32 = lobe_prob(metal, spec);
-    let cosI: f32 = select(wi.z, 1.0, dropCos);
-    var f: vec3f = base * ((1.0 - metal) / PI);
-    var pdf: f32 = (1.0 - ps) * wi.z / PI;
-    if (ps > 0.0) {
-        let a: f32 = max(1e-4, rough * rough);
-        let a2: f32 = a * a;
-        let h: vec3f = normalize(wo + wi);
-        let oh: f32 = dot(wo, h);
-        let dd: f32 = ggx_d(a2, h.z);
-        let g2: f32 = 1.0 / (1.0 + lambda_g(a2, wo.z) + lambda_g(a2, wi.z));
-        let g1: f32 = 1.0 / (1.0 + lambda_g(a2, wo.z));
-        let x1: f32 = clamp(1.0 - oh, 0.0, 1.0);
-        let fw: f32 = x1 * x1 * x1 * x1 * x1;
-        let f0: vec3f = mix(vec3f(0.04 * spec), base, vec3f(metal));
-        f = f + (f0 + (vec3f(1.0) - f0) * fw) * (dd * g2 / (4.0 * wo.z * wi.z));
-        pdf = pdf + ps * g1 * dd / (4.0 * wo.z);
-    }
-    return vec4f(f * cosI, pdf);
-}
-// The Lambert term of eval_bsdf alone, fd cos, by the same operations (interface v2's diffuse).
-fn lambert_cos(base: vec3f, metal: f32, wo: vec3f, wi: vec3f, dropCos: bool) -> vec3f {
-    if (wo.z <= 0.0 || wi.z <= 0.0) { return vec3f(0.0); }
-    let cosI: f32 = select(wi.z, 1.0, dropCos);
-    let f: vec3f = base * ((1.0 - metal) / PI);
-    return f * cosI;
 }
 // Interface v2's specular albedo estimate: F0 + (1 - F0)(1 - cos_o)^5 where the lobe exists.
 fn spec_albedo(base: vec3f, metal: f32, spec: f32, cosO: f32) -> vec3f {
@@ -149,26 +122,166 @@ fn basis_b(n: vec3f) -> vec3f {
 @group(0) @binding(6) var<storage, read> M: array<f32>;
 @group(0) @binding(7) var<storage, read_write> ACC: array<f32>;
 
+// Interface v4's energy table (EnergyTable in src/renderer/rt_pt_math.hpp), after the emitter pairs in M:
+// (A, B) on TAB_MU columns of u = sqrt(mu) by TAB_R rows of roughness, then (Aavg, Bavg) a row.
+fn tab_at(i: u32) -> vec2f {
+    let b: u32 = P.emitterOffset + P.emitters * 2u + i * 2u;
+    return vec2f(M[b], M[b + 1u]);
+}
+fn tab_ab(mu: f32, rough: f32) -> vec2f {
+    let x: f32 = sqrt(clamp(mu, 0.0, 1.0)) * f32(TAB_MU - 1u);
+    let y: f32 = clamp(rough, 0.0, 1.0) * f32(TAB_R - 1u);
+    let x0: u32 = min(u32(x), TAB_MU - 2u);
+    let y0: u32 = min(u32(y), TAB_R - 2u);
+    let fx: f32 = x - f32(x0);
+    let fy: f32 = y - f32(y0);
+    let i: u32 = y0 * TAB_MU + x0;
+    let r0: vec2f = tab_at(i) * (1.0 - fx) + tab_at(i + 1u) * fx;
+    let r1: vec2f = tab_at(i + TAB_MU) * (1.0 - fx) + tab_at(i + TAB_MU + 1u) * fx;
+    return r0 * (1.0 - fy) + r1 * fy;
+}
+fn tab_avg(rough: f32) -> vec2f {
+    let y: f32 = clamp(rough, 0.0, 1.0) * f32(TAB_R - 1u);
+    let y0: u32 = min(u32(y), TAB_R - 2u);
+    let fy: f32 = y - f32(y0);
+    return tab_at(TAB_MU * TAB_R + y0) * (1.0 - fy) + tab_at(TAB_MU * TAB_R + y0 + 1u) * fy;
+}
+// Kulla and Conty 2017: the share of the white multiple-scattering lobe a Fresnel of mean favg keeps.
+fn kms(favg: f32, eavg: f32) -> f32 {
+    return favg * favg * eavg / (1.0 - favg * (1.0 - eavg));
+}
+// rt_pt_math.hpp's energyOf: x the white multiple-scattering lobe, y the Lambert base's weight,
+// z the dielectric layer's multiple-scattering share, w Eavg.
+fn energy_of(rough: f32, spec: f32, muO: f32, muI: f32) -> vec4f {
+    let o: vec2f = tab_ab(muO, rough);
+    let i: vec2f = tab_ab(muI, rough);
+    let av: vec2f = tab_avg(rough);
+    let eo: f32 = min(1.0, o.x + o.y);
+    let ei: f32 = min(1.0, i.x + i.y);
+    let ea: f32 = min(1.0, av.x + av.y);
+    var ms: f32 = 0.0;
+    if (ea < 1.0) { ms = (1.0 - eo) * (1.0 - ei) / (PI * (1.0 - ea)); }
+    let lon: f32 = select(0.0, 1.0, spec > 0.0);
+    let d: f32 = 0.04 * spec;
+    let kd: f32 = kms(lon * (d + (1.0 - d) / 21.0), ea);
+    let eso: f32 = lon * (d * o.x + o.y) + kd * (1.0 - eo);
+    let esi: f32 = lon * (d * i.x + i.y) + kd * (1.0 - ei);
+    let esa: f32 = lon * (d * av.x + av.y) + kd * (1.0 - ea);
+    return vec4f(ms, (1.0 - eso) * (1.0 - esi) / (1.0 - esa), kd, ea);
+}
+// f cos and the mixture pdf, local frame: xyz f cos, w pdf. Interface v4's lobe (rt_pt_math.hpp's
+// evalBsdf); P.flags F_LEGACY gives v3's (Lambert added to single-scattering GGX), the energy control.
+fn eval_bsdf(base: vec3f, rough: f32, metal: f32, spec: f32, wo: vec3f, wi: vec3f, dropCos: bool) -> vec4f {
+    if (wo.z <= 0.0 || wi.z <= 0.0) { return vec4f(0.0); }
+    let legacy: bool = (P.flags & F_LEGACY) != 0u;
+    let ps: f32 = lobe_prob(metal, spec);
+    let cosI: f32 = select(wi.z, 1.0, dropCos);
+    var f: vec3f = base * ((1.0 - metal) / PI);
+    var pdf: f32 = (1.0 - ps) * wi.z / PI;
+    if (ps > 0.0) {
+        let a: f32 = max(1e-4, rough * rough);
+        let a2: f32 = a * a;
+        let h: vec3f = normalize(wo + wi);
+        let oh: f32 = dot(wo, h);
+        let dd: f32 = ggx_d(a2, h.z);
+        let g2: f32 = 1.0 / (1.0 + lambda_g(a2, wo.z) + lambda_g(a2, wi.z));
+        let g1: f32 = 1.0 / (1.0 + lambda_g(a2, wo.z));
+        let x1: f32 = clamp(1.0 - oh, 0.0, 1.0);
+        let fw: f32 = x1 * x1 * x1 * x1 * x1;
+        let f0: vec3f = mix(vec3f(0.04 * spec), base, vec3f(metal));
+        let sp: f32 = dd * g2 / (4.0 * wo.z * wi.z);
+        if (legacy) {
+            f = f + (f0 + (vec3f(1.0) - f0) * fw) * sp;
+        } else {
+            let en: vec4f = energy_of(rough, spec, wo.z, wi.z);
+            let f90: f32 = metal + (1.0 - metal) * select(0.0, 1.0, spec > 0.0);
+            let kmm: vec3f = vec3f(kms(base.x + (1.0 - base.x) / 21.0, en.w), kms(base.y + (1.0 - base.y) / 21.0, en.w), kms(base.z + (1.0 - base.z) / 21.0, en.w));
+            let km: vec3f = kmm * metal + vec3f((1.0 - metal) * en.z);
+            f = f * en.y + (f0 + (vec3f(f90) - f0) * fw) * sp + km * en.x;
+        }
+        pdf = pdf + ps * g1 * dd / (4.0 * wo.z);
+    }
+    return vec4f(f * cosI, pdf);
+}
+// The Lambert term of eval_bsdf alone, fd cos, by the same operations (interface v2's diffuse; v4
+// weights it by the energy terms' y where a specular lobe exists).
+fn lambert_cos(base: vec3f, rough: f32, metal: f32, spec: f32, wo: vec3f, wi: vec3f, dropCos: bool) -> vec3f {
+    if (wo.z <= 0.0 || wi.z <= 0.0) { return vec3f(0.0); }
+    let cosI: f32 = select(wi.z, 1.0, dropCos);
+    var f: vec3f = base * ((1.0 - metal) / PI);
+    if ((P.flags & F_LEGACY) == 0u && lobe_prob(metal, spec) > 0.0) {
+        let en: vec4f = energy_of(rough, spec, wo.z, wi.z);
+        f = f * en.y;
+    }
+    return f * cosI;
+}
+
 fn vtx(t: u32, k: u32) -> vec3f {
     return vec3f(T[t * 9u + k * 3u], T[t * 9u + k * 3u + 1u], T[t * 9u + k * 3u + 2u]);
 }
-// Moeller-Trumbore, raw/math/primitives.hpp's order: x t, y u, z v, w 1 on a hit.
-fn hit_tri(t: u32, o: vec3f, d: vec3f) -> vec4f {
-    let a: vec3f = vtx(t, 0u);
-    let e1: vec3f = vtx(t, 1u) - a;
-    let e2: vec3f = vtx(t, 2u) - a;
+// Watertight ray-triangle intersection (Woop, Benthin and Wald, JCGT 2013) by the operations of
+// raw/math/primitives.hpp: the ray's frame (largest |d| as z, x and y swapped when it is negative),
+// then the signs of the three sheared 2D edge functions. x t, y u, z v, w 1 on a hit (t > 1e-4).
+fn wt_frame(v: vec3f, kz: u32, sw: bool) -> vec3f {
+    var p: vec3f = v;
+    if (kz == 0u) { p = vec3f(v.y, v.z, v.x); }
+    if (kz == 1u) { p = vec3f(v.z, v.x, v.y); }
+    if (sw) { p = vec3f(p.y, p.x, p.z); }
+    return p;
+}
+fn wt_hit(o: vec3f, d: vec3f, a: vec3f, b: vec3f, c: vec3f) -> vec4f {
+    let ad: vec3f = abs(d);
+    var kz: u32 = 2u;
+    if (ad.x > ad.y && ad.x > ad.z) { kz = 0u; }
+    if (ad.x <= ad.y && ad.y > ad.z) { kz = 1u; }
+    let dk: vec3f = wt_frame(d, kz, false);
+    let sw: bool = dk.z < 0.0;
+    let dr: vec3f = wt_frame(d, kz, sw);
+    let sx: f32 = dr.x / dr.z;
+    let sy: f32 = dr.y / dr.z;
+    let sz: f32 = 1.0 / dr.z;
+    let pa: vec3f = wt_frame(a - o, kz, sw);
+    let pb: vec3f = wt_frame(b - o, kz, sw);
+    let pc: vec3f = wt_frame(c - o, kz, sw);
+    let ax: f32 = pa.x - sx * pa.z;
+    let ay: f32 = pa.y - sy * pa.z;
+    let bx: f32 = pb.x - sx * pb.z;
+    let by: f32 = pb.y - sy * pb.z;
+    let cx: f32 = pc.x - sx * pc.z;
+    let cy: f32 = pc.y - sy * pc.z;
+    let eu: f32 = cx * by - cy * bx;
+    let ev: f32 = ax * cy - ay * cx;
+    let ew: f32 = bx * ay - by * ax;
+    if ((eu < 0.0 || ev < 0.0 || ew < 0.0) && (eu > 0.0 || ev > 0.0 || ew > 0.0)) { return vec4f(0.0); }
+    let det: f32 = eu + ev + ew;
+    if (det == 0.0) { return vec4f(0.0); }
+    // The signs decided the hit. t, u and v come from Moeller-Trumbore's operations, whose t carries
+    // less rounding than the sheared sum; the sheared values only where its determinant is unusable.
+    let e1: vec3f = b - a;
+    let e2: vec3f = c - a;
     let p: vec3f = vec3f(d.y * e2.z - d.z * e2.y, d.z * e2.x - d.x * e2.z, d.x * e2.y - d.y * e2.x);
-    let det: f32 = e1.x * p.x + e1.y * p.y + e1.z * p.z;
-    if (det > -1e-7 && det < 1e-7) { return vec4f(0.0); }
-    let inv: f32 = 1.0 / det;
+    let dm: f32 = e1.x * p.x + e1.y * p.y + e1.z * p.z;
+    if (dm > -1e-7 && dm < 1e-7) {
+        let tz: f32 = eu * (sz * pa.z) + ev * (sz * pb.z) + ew * (sz * pc.z);
+        let inv0: f32 = 1.0 / det;
+        let t0: f32 = tz * inv0;
+        return vec4f(t0, ev * inv0, ew * inv0, select(0.0, 1.0, t0 > 1e-4));
+    }
+    let inv: f32 = 1.0 / dm;
     let tv: vec3f = o - a;
-    let u: f32 = (tv.x * p.x + tv.y * p.y + tv.z * p.z) * inv;
-    if (u < 0.0 || u > 1.0) { return vec4f(0.0); }
+    var u: f32 = max(0.0, (tv.x * p.x + tv.y * p.y + tv.z * p.z) * inv);
     let q: vec3f = vec3f(tv.y * e1.z - tv.z * e1.y, tv.z * e1.x - tv.x * e1.z, tv.x * e1.y - tv.y * e1.x);
-    let v: f32 = (d.x * q.x + d.y * q.y + d.z * q.z) * inv;
-    if (v < 0.0 || u + v > 1.0) { return vec4f(0.0); }
+    var v: f32 = max(0.0, (d.x * q.x + d.y * q.y + d.z * q.z) * inv);
     let tt: f32 = (e2.x * q.x + e2.y * q.y + e2.z * q.z) * inv;
+    let s: f32 = u + v;
+    if (s > 1.0) {
+        u = u / s;
+        v = v / s;
+    }
     return vec4f(tt, u, v, select(0.0, 1.0, tt > 1e-4));
+}
+fn hit_tri(t: u32, o: vec3f, d: vec3f) -> vec4f {
+    return wt_hit(o, d, vtx(t, 0u), vtx(t, 1u), vtx(t, 2u));
 }
 fn inv_c(x: f32) -> f32 {
     if (x != 0.0) { return 1.0 / x; }
@@ -323,7 +436,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
                     if (trace(offset_p(p, ng, ls), ls, BIG, true).w < 0.0) {
                         l = l + tp * es.xyz * P.sunIrr.xyz;
                         if (b == 0u) {
-                            let dsun: vec3f = lambert_cos(base, metal, wo, vec3f(dot(ls, tb), dot(ls, bb), dot(ls, n)), dropCos) * P.sunIrr.xyz;
+                            let dsun: vec3f = lambert_cos(base, rough, metal, spec, wo, vec3f(dot(ls, tb), dot(ls, bb), dot(ls, n)), dropCos) * P.sunIrr.xyz;
                             ld = ld + dsun;
                             lsp = lsp + (es.xyz * P.sunIrr.xyz - dsun);
                         } else { rr = rr + tw * es.xyz * P.sunIrr.xyz; }
@@ -358,7 +471,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
                         let lem: vec3f = vec3f(M[em + 4u], M[em + 5u], M[em + 6u]);
                         l = l + tp * ee.xyz * lem * (wm / pl);
                         if (b == 0u) {
-                            let dem: vec3f = lambert_cos(base, metal, wo, vec3f(dot(wl, tb), dot(wl, bb), dot(wl, n)), dropCos) * lem * (wm / pl);
+                            let dem: vec3f = lambert_cos(base, rough, metal, spec, wo, vec3f(dot(wl, tb), dot(wl, bb), dot(wl, n)), dropCos) * lem * (wm / pl);
                             ld = ld + dem;
                             lsp = lsp + (ee.xyz * lem * (wm / pl) - dem);
                         } else { rr = rr + tw * ee.xyz * lem * (wm / pl); }
@@ -374,7 +487,7 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
             if (e.w <= 0.0) { break; }
             tp = tp * e.xyz * (1.0 / e.w);
             if (b == 0u) {
-                wd = lambert_cos(base, metal, wo, s.xyz, dropCos) * (1.0 / e.w);
+                wd = lambert_cos(base, rough, metal, spec, wo, s.xyz, dropCos) * (1.0 / e.w);
                 ws = e.xyz * (1.0 / e.w) - wd;
             } else { tw = tw * e.xyz * (1.0 / e.w); }
             prevPdf = e.w;
@@ -461,22 +574,69 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
 fn vtx(t: u32, k: u32) -> vec3f {
     return vec3f(T[t * 9u + k * 3u], T[t * 9u + k * 3u + 1u], T[t * 9u + k * 3u + 2u]);
 }
-fn hit_tri(t: u32, o: vec3f, d: vec3f) -> vec4f {
-    let a: vec3f = vtx(t, 0u);
-    let e1: vec3f = vtx(t, 1u) - a;
-    let e2: vec3f = vtx(t, 2u) - a;
+// Watertight ray-triangle intersection (Woop, Benthin and Wald, JCGT 2013) by the operations of
+// raw/math/primitives.hpp: the ray's frame (largest |d| as z, x and y swapped when it is negative),
+// then the signs of the three sheared 2D edge functions. x t, y u, z v, w 1 on a hit (t > 1e-4).
+fn wt_frame(v: vec3f, kz: u32, sw: bool) -> vec3f {
+    var p: vec3f = v;
+    if (kz == 0u) { p = vec3f(v.y, v.z, v.x); }
+    if (kz == 1u) { p = vec3f(v.z, v.x, v.y); }
+    if (sw) { p = vec3f(p.y, p.x, p.z); }
+    return p;
+}
+fn wt_hit(o: vec3f, d: vec3f, a: vec3f, b: vec3f, c: vec3f) -> vec4f {
+    let ad: vec3f = abs(d);
+    var kz: u32 = 2u;
+    if (ad.x > ad.y && ad.x > ad.z) { kz = 0u; }
+    if (ad.x <= ad.y && ad.y > ad.z) { kz = 1u; }
+    let dk: vec3f = wt_frame(d, kz, false);
+    let sw: bool = dk.z < 0.0;
+    let dr: vec3f = wt_frame(d, kz, sw);
+    let sx: f32 = dr.x / dr.z;
+    let sy: f32 = dr.y / dr.z;
+    let sz: f32 = 1.0 / dr.z;
+    let pa: vec3f = wt_frame(a - o, kz, sw);
+    let pb: vec3f = wt_frame(b - o, kz, sw);
+    let pc: vec3f = wt_frame(c - o, kz, sw);
+    let ax: f32 = pa.x - sx * pa.z;
+    let ay: f32 = pa.y - sy * pa.z;
+    let bx: f32 = pb.x - sx * pb.z;
+    let by: f32 = pb.y - sy * pb.z;
+    let cx: f32 = pc.x - sx * pc.z;
+    let cy: f32 = pc.y - sy * pc.z;
+    let eu: f32 = cx * by - cy * bx;
+    let ev: f32 = ax * cy - ay * cx;
+    let ew: f32 = bx * ay - by * ax;
+    if ((eu < 0.0 || ev < 0.0 || ew < 0.0) && (eu > 0.0 || ev > 0.0 || ew > 0.0)) { return vec4f(0.0); }
+    let det: f32 = eu + ev + ew;
+    if (det == 0.0) { return vec4f(0.0); }
+    // The signs decided the hit. t, u and v come from Moeller-Trumbore's operations, whose t carries
+    // less rounding than the sheared sum; the sheared values only where its determinant is unusable.
+    let e1: vec3f = b - a;
+    let e2: vec3f = c - a;
     let p: vec3f = vec3f(d.y * e2.z - d.z * e2.y, d.z * e2.x - d.x * e2.z, d.x * e2.y - d.y * e2.x);
-    let det: f32 = e1.x * p.x + e1.y * p.y + e1.z * p.z;
-    if (det > -1e-7 && det < 1e-7) { return vec4f(0.0); }
-    let inv: f32 = 1.0 / det;
+    let dm: f32 = e1.x * p.x + e1.y * p.y + e1.z * p.z;
+    if (dm > -1e-7 && dm < 1e-7) {
+        let tz: f32 = eu * (sz * pa.z) + ev * (sz * pb.z) + ew * (sz * pc.z);
+        let inv0: f32 = 1.0 / det;
+        let t0: f32 = tz * inv0;
+        return vec4f(t0, ev * inv0, ew * inv0, select(0.0, 1.0, t0 > 1e-4));
+    }
+    let inv: f32 = 1.0 / dm;
     let tv: vec3f = o - a;
-    let u: f32 = (tv.x * p.x + tv.y * p.y + tv.z * p.z) * inv;
-    if (u < 0.0 || u > 1.0) { return vec4f(0.0); }
+    var u: f32 = max(0.0, (tv.x * p.x + tv.y * p.y + tv.z * p.z) * inv);
     let q: vec3f = vec3f(tv.y * e1.z - tv.z * e1.y, tv.z * e1.x - tv.x * e1.z, tv.x * e1.y - tv.y * e1.x);
-    let v: f32 = (d.x * q.x + d.y * q.y + d.z * q.z) * inv;
-    if (v < 0.0 || u + v > 1.0) { return vec4f(0.0); }
+    var v: f32 = max(0.0, (d.x * q.x + d.y * q.y + d.z * q.z) * inv);
     let tt: f32 = (e2.x * q.x + e2.y * q.y + e2.z * q.z) * inv;
+    let s: f32 = u + v;
+    if (s > 1.0) {
+        u = u / s;
+        v = v / s;
+    }
     return vec4f(tt, u, v, select(0.0, 1.0, tt > 1e-4));
+}
+fn hit_tri(t: u32, o: vec3f, d: vec3f) -> vec4f {
+    return wt_hit(o, d, vtx(t, 0u), vtx(t, 1u), vtx(t, 2u));
 }
 fn inv_c(x: f32) -> f32 {
     if (x != 0.0) { return 1.0 / x; }

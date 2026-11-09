@@ -5,18 +5,28 @@ project(raw_native VERSION 0.8.0
     LANGUAGES CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+if(MINGW)
+    add_link_options(-static)   # a MinGW build must not pick up another toolchain's libstdc++ DLL
+endif()
 
 option(RAW_NATIVE_BUILD_TESTS "Build the raw-native unit tests" ${PROJECT_IS_TOP_LEVEL})
 
 # The library: every layer except the RHI backends and the shader libraries,
 # which a build picks in cmake/gpu.cmake (docs/architecture/ARCHITECTURE.md).
 # scripts/check_layers.py enforces which layer may include which.
-set(RAW_NATIVE_LIB_LAYERS core cert scene assets graph renderer tools)
+set(RAW_NATIVE_LIB_LAYERS core cert scene assets graph renderer story game tools)
 set(LIB_SRCS "")
 foreach(layer ${RAW_NATIVE_LIB_LAYERS})
     file(GLOB layer_srcs CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/${layer}/*.cpp")
     list(APPEND LIB_SRCS ${layer_srcs})
 endforeach()
+# The action timeline (raw/game/action) keeps its sources in their own folder. Its math must
+# give the same bits as Low Water's JS (design/DETMATH.md there), so no floating-point
+# contraction into fused multiply-adds on any compiler.
+file(GLOB GAME_ACTION_SRCS CONFIGURE_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/src/game/action/*.cpp")
+set_source_files_properties(${GAME_ACTION_SRCS} PROPERTIES COMPILE_OPTIONS
+    "$<IF:$<CXX_COMPILER_ID:MSVC>,/fp:precise,-ffp-contract=off>")
+list(APPEND LIB_SRCS ${GAME_ACTION_SRCS})
 # The RHI validation layer wraps any backend (raw/rhi/validate.hpp, M3 criterion 3).
 list(APPEND LIB_SRCS src/rhi/validate/validate_device.cpp src/rhi/validate/validate_commands.cpp)
 # The GPU renderer is backend-neutral: it records a frame graph on the RHI.
@@ -27,7 +37,7 @@ list(APPEND LIB_SRCS src/renderer/gpu/gpu_renderer.cpp src/renderer/gpu/frame_pa
     src/renderer/gpu/post_parity.cpp
     src/renderer/gpu/swr_gpu.cpp src/renderer/gpu/swr_parity.cpp
     src/renderer/gpu/rt_gpu.cpp src/renderer/gpu/rt_bvh_parity.cpp
-    src/renderer/gpu/rt_pt_gpu.cpp src/renderer/gpu/rt_pt_parity.cpp
+    src/renderer/gpu/rt_pt_gpu.cpp src/renderer/gpu/rt_pt_parity.cpp src/renderer/gpu/rt_pt_parity_energy.cpp
     src/renderer/gpu/rt_hybrid.cpp src/renderer/gpu/rt_hybrid_parity.cpp
     src/renderer/gpu/sdf_gpu.cpp src/renderer/gpu/sdf_parity.cpp
     src/renderer/gpu/style_fixture.cpp src/renderer/gpu/style_gpu.cpp src/renderer/gpu/style_parity.cpp
@@ -42,7 +52,8 @@ list(APPEND LIB_SRCS src/renderer/gpu/gpu_renderer.cpp src/renderer/gpu/frame_pa
     src/renderer/gpu/style_parity_pixel.cpp src/renderer/gpu/style_parity_paint.cpp
     src/renderer/gpu/style_parity_crtp.cpp src/renderer/gpu/style_parity_crtp_gpu.cpp
     src/renderer/gpu/style_dispatch_check.cpp
-    src/renderer/gpu/art_gpu.cpp src/renderer/gpu/art_strokes_gpu.cpp src/renderer/gpu/fractal_gpu.cpp)
+    src/renderer/gpu/art_gpu.cpp src/renderer/gpu/art_strokes_gpu.cpp src/renderer/gpu/fractal_gpu.cpp
+    src/renderer/gpu/art_tiltshift_gpu.cpp)
 # The anisotropic split-albedo table, generated once and committed (cmake/embed.cmake).
 include(cmake/embed.cmake)
 raw_native_embed_aniso_table("${CMAKE_CURRENT_SOURCE_DIR}/src/renderer/data/aniso_albedo.f32"
@@ -90,6 +101,18 @@ set(RAW_NATIVE_NULL_BACKEND
     "${CMAKE_CURRENT_SOURCE_DIR}/src/rhi/null/null_device.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/renderer/gpu/shaders_none.cpp"
     "${CMAKE_CURRENT_SOURCE_DIR}/src/rhi/null/hw_null.cpp")
+
+add_executable(lw_trace_replay app/lw_trace_replay.cpp)
+target_link_libraries(lw_trace_replay PRIVATE raw_native)
+if(MINGW)
+    target_link_options(lw_trace_replay PRIVATE -static)
+endif()
+if(EMSCRIPTEN)
+    # raw_native compiles with -fwasm-exceptions (cmake/wasm.cmake), and the
+    # story layer throws. The link must name it too, or em++ picks the
+    # no-exceptions libc++ and __cpp_exception is undefined.
+    target_link_options(lw_trace_replay PRIVATE ${RAW_NATIVE_WASM_COMPILE})
+endif()
 
 if(RAW_NATIVE_BUILD_TESTS)
     enable_testing()
@@ -159,3 +182,8 @@ install(FILES "${CMAKE_CURRENT_BINARY_DIR}/raw_nativeConfig.cmake"
     "${CMAKE_CURRENT_BINARY_DIR}/raw_nativeConfigVersion.cmake"
     DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/raw_native)
 install(FILES LICENSE DESTINATION ${CMAKE_INSTALL_DATADIR}/doc/raw_native)
+
+# File bridge for script hosts (Windows): five synchronous calls over one root folder.
+if(WIN32)
+    target_sources(raw_native PRIVATE src/platform/win32/file_bridge_win32.cpp)
+endif()

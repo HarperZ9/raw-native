@@ -25,7 +25,8 @@ struct FilmStock {
     M3 E{};                                    // layer exposure from scene RGB, rows sum to 1
     std::vector<T3> negPrim, printW, printPrim, projV;
     std::vector<double> negConst;
-    double printBase{0}, bleach{0}, interimage{0}, sigmaD48{0};
+    double printBase{0}, bleach{0}, interimage{0};
+    T3 sigmaD48{};                             // RMS granularity per layer at 48 um, net density 1
     T3 negDmin{}, negSpan{}, negK{}, negX0{}, prtDmin{}, prtSpan{}, prtK{}, logGain{}, grainUm{};
     M3 out{};                                  // projected XYZ to display Rec.709, white adapted
 };
@@ -34,7 +35,8 @@ struct FilmParams {
     T3 printerPoints{0, 0, 0};
     double ev{0}, gateWidthMm{24.89}, grainScale{1}, grainAmount{1};
     bool remjet{true};
-    double pressurePlate{0.05}, emulsionSigmaUm{4.2};
+    double pressurePlate{0.05};
+    T3 emulsionSigmaUm{3.33, 3.75, 5.54};   // per layer: 50% MTF at 56.3, 49.9, 33.8 c/mm (H-1-5219t)
     T3 halationReach{0.25, 0.06, 0};
     double weaveUm{6}, jitterUm{1.5};
     int seed{1};
@@ -53,7 +55,7 @@ struct FilmPlan {
     int haloQ{1}, haloR{0};
     double ringMm{0};
     std::vector<float> haloWeights;            // (2R+1)^2, normalised
-    std::vector<float> mtf;                    // separable emulsion blur weights (1 entry: none)
+    std::vector<float> mtf;                    // separable emulsion blur weights per layer, interleaved (3 entries: none)
 };
 FilmPlan resolveFilm(const FilmParams& p, int inW, int inH, int outW, int outH);
 
@@ -64,7 +66,7 @@ HaloKernel filmHaloKernel(const BaseGlass& g, double mmPerPx, int maxCells);
 double filmRadialKappa(const BaseGlass& g, double dr, double rMax);
 std::vector<float> filmVarianceTable();
 const std::vector<std::uint32_t>& filmPoissonTable();   // 512 levels x 16 thresholds
-std::vector<float> filmMtfWeights(double sigmaPx);
+std::vector<float> filmMtfWeights(const T3& sigmaPx);   // interleaved w[3 (k + r) + c]; {1, 1, 1}: none
 // Gate weave of frame f in output pixels.
 std::array<double, 2> filmWeave(const FilmPlan& plan, int f);
 // Grain on layer c at pixel (px, py): the developed fraction after grain (grainAt). F is the

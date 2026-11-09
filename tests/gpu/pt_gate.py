@@ -8,7 +8,8 @@ float64 agrees with R1 there, not the path tracer); the gate prints it and allow
 pixel. Everything else is gated: P1 within and its control outside, P2 within and its control
 outside, P3, and P4's triangles, normals, depth, and albedo on retro_room. From interface v2,
 P5 (addendum 5, split radiance) must be present: P5a, P5b and P5c within, and their controls
-outside.
+outside. From interface v4, the energy checks (docs/rt-interface-v4.md) must be present: e2 and
+e3 within, and their controls outside.
 
     python tests/gpu/pt_gate.py result.json
 """
@@ -40,6 +41,11 @@ def main(path):
             seen.add((c, r["control"]))
             if r["within"] == r["control"]:
                 bad.append(r)
+        elif c in ("e2", "e3"):
+            control = r.get("control_legacy_lobe", r.get("control", False))
+            seen.add((c, control))
+            if r["within"] == control:
+                bad.append(r)
         elif c == "P4":
             allowed = 1 if r["scene"] == "iso_street" else 0
             if (r["triangle_differences"] != 0 or r["normal_over_1e-5"] != 0 or r["depth_over_1e-4"] != 0
@@ -49,6 +55,10 @@ def main(path):
                   f" float64 sides with the path tracer on {r['diagnosis_albedo_failures_matching_float64']['path_tracer']} albedo pixels")
     if d.get("interface_version", 1) >= 2:
         for want in [(c, ctl) for c in ("P5a", "P5b", "P5c") for ctl in (False, True)]:
+            if want not in seen:
+                bad.append({"missing": want[0], "control": want[1]})
+    if d.get("interface_version", 1) >= 4:
+        for want in [(c, ctl) for c in ("e2", "e3") for ctl in (False, True)]:
             if want not in seen:
                 bad.append({"missing": want[0], "control": want[1]})
     for r in bad:

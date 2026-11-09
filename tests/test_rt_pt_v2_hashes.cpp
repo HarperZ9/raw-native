@@ -1,8 +1,9 @@
-// Path tracer interface v3's compatibility promise (docs/rt-interface-v3.md, check c1 of
-// evidence/rt-v3-bounds.json): every v2 scene renders byte for byte as it did under v2. The
-// hashes below were recorded on main before the v3 code (c819792), per compiler family, since
-// the C runtimes' sin and cos differ in the last bit between them. A compiler with no recorded
-// hash prints its hashes and passes only the parts it can check (determinism across threads).
+// The bytes of every owned scene without v3 fields, per compiler family, since the C runtimes' sin
+// and cos differ in the last bit between them. Check c1 of evidence/rt-v3-bounds.json held these
+// to their v2 bytes from v3 until interface v4 moved them on purpose (docs/rt-interface-v4.md: the
+// energy-conserving lobe and the watertight triangle test); the pins now hold them to v4's bytes.
+// A compiler with no recorded hash prints its hashes and passes only the parts it can check
+// (determinism across threads).
 //   test_rt_pt_v2_hashes
 #include "raw/renderer/rt_pathtrace.hpp"
 #include "check.hpp"
@@ -44,10 +45,10 @@ constexpr const char* kFamily = "gcc";
 constexpr const char* kFamily = "other";
 #endif
 struct Pinned { const char* family; const char* scene; std::uint64_t hash; };
-// Recorded on main c819792 before any v3 code (2026-10-21): GCC 13.3 (Ubuntu 24.04) and MSVC 19.5x (VS 18).
+// Recorded 2026-10-31 for interface v4: GCC 13.3 (Ubuntu 24.04) and MSVC 19.5x (VS 18). Earlier pins are in git (c819792's).
 constexpr Pinned kPinned[] = {
-    {"gcc", "retro_room", 0x1dbddfac1787b0b7ull}, {"gcc", "iso_street", 0x5bf3adf36f36aa40ull}, {"gcc", "dense_block", 0xb1107bf96a6627beull}, {"gcc", "furnace", 0x6bdde867ecf6767dull},
-    {"msvc", "retro_room", 0xd9c9429d9672e23aull}, {"msvc", "iso_street", 0x7dbc720e1d370686ull}, {"msvc", "dense_block", 0xedc6fa9d542b39f3ull}, {"msvc", "furnace", 0xa83cdb542c1ce2fdull},
+    {"gcc", "retro_room", 0x594583490a5ff0f8ull}, {"gcc", "iso_street", 0x643b84aad166f7d8ull}, {"gcc", "dense_block", 0xcfdbe2beec95b76eull}, {"gcc", "furnace", 0x7e4b3ac30ea7d62cull},
+    {"msvc", "retro_room", 0xa1881e9b26a766d4ull}, {"msvc", "iso_street", 0xc2e7a375212775fdull}, {"msvc", "dense_block", 0x8d186dfd04451a39ull}, {"msvc", "furnace", 0xbaaa2daf4dce42acull},
 };
 }  // namespace
 
@@ -72,6 +73,6 @@ int main() {
         for (const Pinned& p : kPinned)
             if (!std::strcmp(p.family, kFamily) && !std::strcmp(p.scene, c.name) && p.hash != 0) { CHECK(ha == p.hash); ++checked; }
     }
-    std::printf("v2 hashes checked against the pre-v3 record: %d of %zu (compiler family %s)\n", checked, cases.size(), kFamily);
+    std::printf("hashes checked against the v4 record: %d of %zu (compiler family %s)\n", checked, cases.size(), kFamily);
     return raw_test_summary();
 }

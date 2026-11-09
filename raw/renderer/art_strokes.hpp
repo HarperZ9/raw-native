@@ -22,6 +22,17 @@ struct StrokeOrbitResult {
 };
 StrokeOrbitResult runStrokeOrbit(const StrokeOrbit& o, std::uint64_t seed);
 
+// The orbit's frames, motion, history and display references, and the advected canvas after each
+// frame (shared with P23's temporal checks).
+struct OrbitSeq {
+    std::vector<View> views;
+    std::vector<Frame> frames;
+    std::vector<std::vector<float>> mv;
+    std::vector<std::vector<std::uint8_t>> valid, ref;
+};
+OrbitSeq renderOrbit(const StrokeOrbit& o, double exposure);
+std::vector<style::PaintCanvas> advectOrbit(const OrbitSeq& s, int w, int h);
+
 // The lit frame through the paint prep's display transform (the shoulder at `exposure`, then
 // sRGB), as RGBA codes: the warp metric's reference.
 std::vector<std::uint8_t> paintReference(const std::vector<float>& lit, double exposure);

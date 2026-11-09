@@ -1,12 +1,12 @@
 #pragma once
-// raw-native's path tracer, interface version 3 (RT stage R2, evidence/rt-r2-bounds.json; v3,
-// docs/rt-interface-v3.md and evidence/rt-v3-bounds.json).
+// raw-native's path tracer, interface version 4 (RT stage R2, evidence/rt-r2-bounds.json; v3,
+// docs/rt-interface-v3.md and evidence/rt-v3-bounds.json; interface v4 in docs/rt-interface-v4.md and evidence/rt-v4-energy.json).
 //
 // Stable contract for its consumers: the hardware session (reference and training data for
 // learned ray reconstruction) and the shader lab (stylisation from its buffers). Any change
 // bumps kPathTraceVersion and is announced before it merges: in the RT session's PROGRESS.md
-// when one is running, otherwise in a dated design note under docs/ (v3: docs/rt-interface-v3.md).
-// Every v2 scene (no v3 field set) renders byte for byte as under v2.
+// when one is running, otherwise in a dated design note under docs/ (v3: docs/rt-interface-v3.md; v4: docs/rt-interface-v4.md).
+// v4 moved the bytes of every scene the v2 lobe or the triangle test touches; v3 fields keep their meaning.
 //
 // Determinism: the same scene, tree, seed, spp, sppBegin and size give the same bytes on one
 // backend. Random numbers are counter-based (PCG2D, Jarzynski and Olano, JCGT 2020) keyed by
@@ -57,7 +57,7 @@
 #include <vector>
 namespace raw::rt {
 
-inline constexpr int kPathTraceVersion = 3;
+inline constexpr int kPathTraceVersion = 4;
 
 struct PtMaterial {
     float baseFactor{1.0f};   // base colour = texel / 255 * baseFactor
@@ -100,13 +100,14 @@ struct PtControls {
     bool aovEmissionToDiffuse{false};      // P5b control: primary emission and sky go to diffuse
     bool envMisWeightOne{false};           // v3 c3 control: both environment strategies weighted 1
     bool envNoNee{false};                  // v3 c4: the environment only on escape (unbiased, noisier)
+    bool legacyLobeV2{false};              // v4 e1 and e2 control: interface v3's lobe (Lambert added with no (1 - F), single-scattering GGX)
 };
 
 struct PathTraceDesc {
     std::uint64_t seed{1};
     std::uint32_t spp{16};
     std::uint32_t sppBegin{0};       // first sample index: slices [sppBegin, sppBegin + spp) add up to a longer render
-    std::uint32_t maxBounces{8};
+    std::uint32_t maxBounces{64};    // v4: 64 (was 8); Russian roulette ends most paths long before (docs/rt-interface-v4.md)
     int width{256}, height{256};
     PtCamera camera, previous;       // previous: for motion; equal to camera for a still frame
     bool jitter{true};               // sub-pixel jitter of primary samples
@@ -137,6 +138,12 @@ PtScene ptRetroRoom();
 PtScene ptIsoStreet();
 PtScene ptDenseBlock();
 PtScene ptFurnace(float emission, float albedo);
+// The white-plane furnace (v4): one large quad facing +y with base colour 1 and material m in a
+// constant sky, no sun. Every ray leaving the plane escapes, so a pixel's radiance is the BSDF's
+// directional albedo at that view times sky; an energy-conserving white BSDF gives sky everywhere.
+// Its camera sees only the plane, from mu about 0.09 at the top row to 1 at the bottom.
+PtScene ptWhitePlane(const PtMaterial& m, Vec3 sky);
+PtCamera whitePlaneCamera();
 PtCamera cameraOf(const swr::Scene& s);
 
 // The CPU reference, row-parallel; identical output for any thread count.

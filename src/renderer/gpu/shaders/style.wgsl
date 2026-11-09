@@ -2679,7 +2679,8 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
         var xx: i32 = x;
         var yy: i32 = y;
         if (U.mtf_dir != 0u) { yy = clamp(y + k, 0, Hh - 1); } else { xx = clamp(x + k, 0, W - 1); }
-        s = s + mw[u32(k + r)] * a[u32(yy * W + xx)].xyz;
+        let j: u32 = u32(3 * (k + r));
+        s = s + vec3f(mw[j], mw[j + 1u], mw[j + 2u]) * a[u32(yy * W + xx)].xyz;
     }
     o[i] = vec4f(s, 0.0);
 }
@@ -4207,7 +4208,8 @@ fn main(@builtin(global_invocation_id) gid: vec3u) {
         rgb = rgb * rel.y + vec3f(rel.z);
     }
     let t: f32 = 1.0 - U.c.z * (1.0 - rel.x);
-    out8[i] = pack_rgb8(max(rgb * t, vec3f(0.0)));
+    // alpha carries the line factor for P23's defocus; colour checks skip alpha
+    out8[i] = (pack_rgb8(max(rgb * t, vec3f(0.0))) & 0x00ffffffu) | (u32(floor(clamp(t, 0.0, 1.0) * 255.0 + 0.5)) << 24u);
 }
 
 //@pass style_canvas_decide

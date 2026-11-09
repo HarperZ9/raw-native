@@ -32,3 +32,6 @@ web/explainer/fonts/*.atlas.json -text
 
 # The skinning fixture is read by tests/test_skin.cpp and compared byte for byte by a node test.
 tests/data/skin-fixture.txt text eol=lf
+tests/data/story/* -text
+# The action-timeline fixtures (tests/data/action/SOURCE.md) are compared byte for byte.
+tests/data/action/** -text

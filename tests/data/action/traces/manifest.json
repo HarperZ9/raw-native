@@ -1,0 +1,202 @@
+{
+ "01-w.boathook-captain.jsonl": {
+  "sha256": "a731c75a8783da47658e9fdee152b2dc3ba96d8b4fd66d84d4851b21c7a0ba3d",
+  "lines": 385,
+  "table": "4f99aefa3612"
+ },
+ "02-w.case-holder.jsonl": {
+  "sha256": "11c7938c6564224b39ae389a41a5cb8394b9cb3ad753e3b5db718a556604affb",
+  "lines": 346,
+  "table": "fb68a0b8d473"
+ },
+ "03-w.crowbar-skirmisher.jsonl": {
+  "sha256": "78177b2ba8c38d55f565d75fb51cef2d0b1e813e68fdce1c4e4c7291bf226057",
+  "lines": 349,
+  "table": "1be2823a9d68"
+ },
+ "04-w.hammer-zealot.jsonl": {
+  "sha256": "2113e13df48e7b82df68168eeb8b300f9cbef37e08f052a28cbea5fa00f79c2f",
+  "lines": 338,
+  "table": "1126b4d1246b"
+ },
+ "05-w.hands-grappler.jsonl": {
+  "sha256": "12a048a8f8e0a850302f5bc67faffc9518c90878d2a57a10afbd952db4daa976",
+  "lines": 338,
+  "table": "e3abf05c562f"
+ },
+ "06-w.knife-shield.jsonl": {
+  "sha256": "a8a33ff0333f59245ff7bed21efe5f2840dd619e47b8bbc6cf1e4f9ace6422b0",
+  "lines": 382,
+  "table": "7b377fab38cd"
+ },
+ "07-w.pole-sweeper.jsonl": {
+  "sha256": "803f3f391344655a34b184f426570cd7e6814bc588334d21e69f9162595271b0",
+  "lines": 342,
+  "table": "39f2d3611228"
+ },
+ "08-w.stick-cutter.jsonl": {
+  "sha256": "b21f16ce12b71998a2b1c9e9e11535882aa220bd7dd686c4860e7fcffd2e5773",
+  "lines": 357,
+  "table": "bd848a763ca3"
+ },
+ "09-w.boathook-hound.jsonl": {
+  "sha256": "92a8e10ace5480530a87631f10b8fb8bac0a95ca54bbf3bc52b3a166722ea331",
+  "lines": 367,
+  "table": "beeb3725d991"
+ },
+ "10-w.case-swarm.jsonl": {
+  "sha256": "c116bf8e67c1f7b7017975aacec6931e43452368ca795c3acda495b18af29a14",
+  "lines": 329,
+  "table": "e0143593f56d"
+ },
+ "11-w.crowbar-captain.jsonl": {
+  "sha256": "1a5e55076e05b59bd090a30fe210146f0443a3b311815fd601bd3365995bbddf",
+  "lines": 384,
+  "table": "8dd6ee6ad748"
+ },
+ "12-w.hammer-holder.jsonl": {
+  "sha256": "727c5746663d28fddfb41aef5b0c6bbd2eec4f410f92ea0f7b87634e8f3e54f1",
+  "lines": 366,
+  "table": "d50082b4a4ee"
+ },
+ "13-w.hands-skirmisher.jsonl": {
+  "sha256": "a4e075e2e046856ba845ad05ea8cd49537923a7c8a614208c905b6218a297dc6",
+  "lines": 356,
+  "table": "657baa80b204"
+ },
+ "14-w.knife-zealot.jsonl": {
+  "sha256": "f3726e290f051a3d7f1187acac6b7852d7e30f13dbd0cae7f3f6132c9a72934b",
+  "lines": 395,
+  "table": "746d36ae1bb8"
+ },
+ "15-w.pole-grappler.jsonl": {
+  "sha256": "74e83ee79e38383316c14919d43f4b68f0eecc40204df1b342ec51275ad1cb24",
+  "lines": 333,
+  "table": "66b074a9be7c"
+ },
+ "16-w.stick-shield.jsonl": {
+  "sha256": "2ba658a1d2d97ca86a9d9d60eeb3f403cacc75a5e61e77e414194b5d73fb1830",
+  "lines": 384,
+  "table": "81d0e40a3f41"
+ },
+ "17-w.boathook-sweeper.jsonl": {
+  "sha256": "7725b0d6a7c726a110e959af079b9a65ee7623dcce7cf9e69dbf9b798b7f261f",
+  "lines": 368,
+  "table": "a81014328d93"
+ },
+ "18-w.case-cutter.jsonl": {
+  "sha256": "4aa9fc58d155fb5467b0e7d95a68b76075019578c52b22868461f0fb83103ae1",
+  "lines": 368,
+  "table": "b2b61c9a5231"
+ },
+ "19-w.crowbar-hound.jsonl": {
+  "sha256": "c32dcfc067e3649f57030f6f63ee19edf1358e3bc767dbdf7f4e7d87e09eb751",
+  "lines": 345,
+  "table": "f4f55cf585ae"
+ },
+ "20-w.hammer-swarm.jsonl": {
+  "sha256": "c472787da00502f5be48cbd51bba6de7b14ee24927ebc37b82e0afb76c806b81",
+  "lines": 325,
+  "table": "6f6ce23dfb06"
+ },
+ "21-w.hands-captain.jsonl": {
+  "sha256": "f4a91421ce4295b2e5b1596387e0b51129af237e6cf35f4218ca0b4e2febbc24",
+  "lines": 385,
+  "table": "26247bf37011"
+ },
+ "22-w.knife-holder.jsonl": {
+  "sha256": "47a89958dcd58f7735f7991604a79fb857081acd0831c4ba55c60b53f1af5f12",
+  "lines": 366,
+  "table": "2513fad4d82a"
+ },
+ "23-w.pole-skirmisher.jsonl": {
+  "sha256": "41ef64c9bd58cf97ce08f5a38cebf9040e37c7837ed534f1a76e1646e87227bb",
+  "lines": 342,
+  "table": "a8fa3dca9fff"
+ },
+ "24-w.stick-zealot.jsonl": {
+  "sha256": "968123656cef92a3c948aa1dd4a563bcf61d9074ab5bb53f62404208e87b2ce0",
+  "lines": 328,
+  "table": "ecba8a278fb1"
+ },
+ "25-w.boathook-grappler.jsonl": {
+  "sha256": "104e0061590159044db8aed09cba51787e7a9bbe3a7274aaf08365bdd4ff96c7",
+  "lines": 402,
+  "table": "8e42a8a5c658"
+ },
+ "26-w.case-shield.jsonl": {
+  "sha256": "7d79fd6c363e6b6a041612a3a1c03e5dbfcd3d2eefb72ecc16363ccc42aaf78f",
+  "lines": 347,
+  "table": "75e55852e9b1"
+ },
+ "27-w.crowbar-sweeper.jsonl": {
+  "sha256": "33b7f2a04f158a4991b059e0f691eadeb2ad00a1dd84a192865c73b32a7c6720",
+  "lines": 324,
+  "table": "83ec7c3cb2ed"
+ },
+ "28-w.hammer-cutter.jsonl": {
+  "sha256": "0880e2a9b788aec3667d698a94bd38cabd0ce49c728fcaff2099b293b05a42a2",
+  "lines": 353,
+  "table": "2da540e92fba"
+ },
+ "29-w.hands-hound.jsonl": {
+  "sha256": "74bc53e06785ec1c0dac05c38be77cc7a5082c09f97214df7f816cb33b08495f",
+  "lines": 362,
+  "table": "1908fba7f48d"
+ },
+ "30-w.knife-swarm.jsonl": {
+  "sha256": "ec304d73920947a2f78b7ac1ac3585308a0ae675aacbc6828365e96ace972e68",
+  "lines": 325,
+  "table": "54d22e1dcf68"
+ },
+ "31-w.pole-captain.jsonl": {
+  "sha256": "01243d4a6fe7a3673468cc0c7925dac36456078b7ea492e724c85c247a27bc09",
+  "lines": 308,
+  "table": "f9dfaa9c5e57"
+ },
+ "32-w.stick-holder.jsonl": {
+  "sha256": "53093b5465fab45cbd6b3f96922b896dbd0d9596dff210fe2bc8704db1dda5ed",
+  "lines": 344,
+  "table": "bc81ad4c6c60"
+ },
+ "33-w.boathook-skirmisher.jsonl": {
+  "sha256": "ed4426f0a70eece9f076b3cb1f25846bd265df1651f62ae26da26205ee823541",
+  "lines": 324,
+  "table": "524da9cae673"
+ },
+ "34-w.case-zealot.jsonl": {
+  "sha256": "e4d839d79dadd36d452ac2e94e5d831fac93597387d96157c3f1be6665a6a39d",
+  "lines": 334,
+  "table": "b92511392f8f"
+ },
+ "35-w.crowbar-grappler.jsonl": {
+  "sha256": "a63425c3ca1ab95acfb615b253c43100fa604f99649e2ed189e1ea58007a0a2c",
+  "lines": 353,
+  "table": "9b6844829270"
+ },
+ "36-w.hammer-shield.jsonl": {
+  "sha256": "4612e74e4f552d9d868fe4c2ee9df7d2b9bb9f4c71b954d9372efa5bf41b531d",
+  "lines": 340,
+  "table": "1ecd4ec014ca"
+ },
+ "37-w.hands-sweeper.jsonl": {
+  "sha256": "6a4e2b5d79ba6412e571e933bc8e915dac0403b75cfb75a753b77b8131371b84",
+  "lines": 354,
+  "table": "c7ef0f4996e0"
+ },
+ "38-w.knife-cutter.jsonl": {
+  "sha256": "b7d9466ab4f891632298f666c698ddd85828ceb8f23d5b9325466a2c358cac85",
+  "lines": 351,
+  "table": "2eb26b1ce70f"
+ },
+ "39-w.pole-hound.jsonl": {
+  "sha256": "0b2455396f88879e9755006885fb71c87205a07d28e6a703668877e406cb249a",
+  "lines": 353,
+  "table": "780dee1004f2"
+ },
+ "40-w.stick-swarm.jsonl": {
+  "sha256": "9074374e765ba4c56874fd9abd125ed2c085545441163ee18975c5f27be6b6df",
+  "lines": 358,
+  "table": "d48e0b732138"
+ }
+}

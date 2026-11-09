@@ -2,6 +2,7 @@
 #include "raw/renderer/sdf_gpu.hpp"
 #include "shaders/sdf_layout.hpp"
 #include "rt_dev.hpp"
+#include <algorithm>
 #include <cmath>
 #include <cstring>
 namespace raw::gpu_check {
@@ -31,17 +32,28 @@ SdfGpu sdfGpu(rhi::Device& device, const sdf::Scene& s, const SdfJob& j) {
     const std::uint32_t gx = std::uint32_t((j.w + 7) / 8), gy = std::uint32_t((j.h + 7) / 8);
     const std::vector<std::uint32_t> p0 = params(s, j, 0);
     D.run("sdf_march", {D.uniform(p0.data(), p0.size()), N, M}, gx, gy);
-    BufferHandle GO, RG, TO, RT, FO, RF, CO, RC;
+    BufferHandle GO, RG, RT, FO, RF, CO, RC;
     if (j.god) {
         GO = D.make(npx * 16, kRW, "sdf god"); RG = D.make(npx * 16, kRB, "rb god");
         D.run("sdf_god", {D.uniform(p0.data(), p0.size()), N, M, GO}, gx, gy);
     }
     const std::uint32_t nPts = std::uint32_t(j.points.size() / 6), nFog = std::uint32_t(j.fogCases.size() / 8);
+    // The terms pass is one-dimensional, 64 points a group, and the RHI refuses more than 65,535 groups a
+    // dimension (#187). A 4K frame has up to 8.3 million points, so the pass runs in slices of at most
+    // kSlice points, each with its own input and output buffers, all copied into one readback buffer.
+    struct Slice { std::uint32_t first, count; BufferHandle out; };
+    std::vector<Slice> slices;
     if (nPts) {
-        const std::vector<std::uint32_t> pp = params(s, j, nPts);
-        const BufferHandle X = D.upload(j.points.data(), j.points.size() * 4, "sdf points");
-        TO = D.make(std::uint64_t(nPts) * 8, kRW, "sdf terms"); RT = D.make(std::uint64_t(nPts) * 8, kRB, "rb terms");
-        D.run("sdf_terms", {D.uniform(pp.data(), pp.size()), N, X, TO}, (nPts + 63) / 64);
+        constexpr std::uint32_t kSlice = 65535u * 64u;
+        RT = D.make(std::uint64_t(nPts) * 8, kRB, "rb terms");
+        for (std::uint32_t first = 0; first < nPts; first += kSlice) {
+            const std::uint32_t n = std::min(kSlice, nPts - first);
+            const std::vector<std::uint32_t> pp = params(s, j, n);
+            const BufferHandle X = D.upload(j.points.data() + std::size_t(first) * 6, std::size_t(n) * 6 * 4, "sdf points");
+            const BufferHandle O = D.make(std::uint64_t(n) * 8, kRW, "sdf terms");
+            D.run("sdf_terms", {D.uniform(pp.data(), pp.size()), N, X, O}, (n + 63) / 64);
+            slices.push_back({first, n, O});
+        }
     }
     if (nFog) {
         const std::vector<std::uint32_t> pf = params(s, j, nFog);
@@ -58,7 +70,7 @@ SdfGpu sdfGpu(rhi::Device& device, const sdf::Scene& s, const SdfJob& j) {
     D.to({M}, Access::CopySrc);
     D.cl->copyBuffer(M, 0, RM, 0, npx * 32);
     if (j.god) { D.to({GO}, Access::CopySrc); D.cl->copyBuffer(GO, 0, RG, 0, npx * 16); }
-    if (nPts) { D.to({TO}, Access::CopySrc); D.cl->copyBuffer(TO, 0, RT, 0, std::uint64_t(nPts) * 8); }
+    for (const Slice& sl : slices) { D.to({sl.out}, Access::CopySrc); D.cl->copyBuffer(sl.out, 0, RT, std::uint64_t(sl.first) * 8, std::uint64_t(sl.count) * 8); }
     if (nFog) { D.to({FO}, Access::CopySrc); D.cl->copyBuffer(FO, 0, RF, 0, std::uint64_t(nFog) * 16); }
     if (j.rasterVis && j.rasterDepth) { D.to({CO}, Access::CopySrc); D.cl->copyBuffer(CO, 0, RC, 0, npx * 16); }
     if (!device.submitAndWait(G.error)) return G;

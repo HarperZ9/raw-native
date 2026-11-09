@@ -4,7 +4,10 @@
 // and the shader lab's buffers.
 //   rt-pathtrace [--scene retro_room|iso_street|dense_block] [--width W] [--height H]
 //                [--spp N] [--seed S] [--bounces B] [--out DIR] [--cpu]
-//                [--prev-eye x,y,z] [--prev-target x,y,z]
+//                [--prev-eye x,y,z] [--prev-target x,y,z] [--eye x,y,z] [--target x,y,z] [--fovy RAD]
+// --scene also takes every rr-render scene (raw_hall, raw_hero, cloister, terrain_<seed>, ...), lit as
+// rr-render lights it. --eye, --target and --fovy override the scene's camera, so a caller can fly a
+// camera path frame by frame; the previous camera follows them unless --prev-eye or --prev-target is given.
 // Writes radiance.pfm and radiance.png (AgX to sRGB), albedo.pfm, normal.pfm, depth.pfm,
 // motion.pfm (x, y, 0), variance.pfm, triangle.u32 (little-endian, -1 a miss as 0xffffffff)
 // and pt.json (interface version, parameters, backend, time). On the GPU backend when the
