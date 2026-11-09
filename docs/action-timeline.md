@@ -20,6 +20,8 @@ for (const Event& e : tl.step()) { /* "move" on this very tick */ }
 tl.receive({.by = foe, .to = lamb, .move = "light_1"});   // a contact your game found
 ```
 
+Hit volumes from clip markers and telegraph retiming build on it: [action-hitvol.md](action-hitvol.md).
+
 ## The tick
 
 Each `step()` advances the tick by one, puts the presses made since the last step into their

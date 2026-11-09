@@ -95,7 +95,7 @@ static const char* kUsage =
     "       raw_native_cli threads [flags]  render the Threads module on the GPU backend\n"
     "         (--world 0..14 --frames --width --height --particles --substeps --fps --persistence\n"
     "          --exposure --spacing --levels --out); writes threads.ppm\n"
-    "       raw_native_cli action-dump table|strip|diff ...  frame data of lw-moves v1 move tables\n"
+    "       raw_native_cli action-dump table|strip|diff|tells|trials ...  frame data, clip markers, tell retiming\n"
     "         (table <moves.json>; strip <moves.json> <set> <id>; diff <a.txt> <b.txt>)\n"
     "       raw_native_cli bake-room [--out DIR] [--size N] [--spp K] [--paths P]\n"
     "         Source-style radiosity normal maps for a test room, drawn from the lightmaps and by\n"
