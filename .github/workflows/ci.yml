@@ -132,6 +132,7 @@ jobs:
           if command -v python3 >/dev/null && python3 --version >/dev/null 2>&1; then py=python3; else py=python; fi
           "$py" scripts/wgsl_to_hlsl.py --selftest
           "$py" scripts/wgsl_to_hlsl.py --check
+          "$py" scripts/hw_pt_hlsl.py --check
       - name: Every include follows the layer rules (docs/architecture/ARCHITECTURE.md)
         shell: bash
         run: |

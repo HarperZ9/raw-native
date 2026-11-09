@@ -1,0 +1,31 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/hw-h2-pt-bounds.json (committed a6fcd28 before any run; unchanged since)",
+ "runs": [
+  {
+   "run": 1,
+   "adapter": "RTX 4090, driver 610.88 (DXGI 32.0.16.1088), D3D12, under the D:/lw-gpu GPU lock, 2026-11-02",
+   "result": "pass on every bounded check. Q1 (hardware against CPU, different seeds, 256 spp): retro_room mean |z| 0.821, 0.008% over 4, image z 0.31; iso_street 0.381, 0, 0.33; raw_hall 0.775, 0, 0.10. Q2 (hardware against compute, same seed): mean |z| 0.0001, 0.0004 and 0.018; bit-identical pixels 19%, 90% and 6.7%; mean relative difference 9e-6, 2e-5 and 3e-3. Controls fail as required: C1 MIS weight 1 (mean |z| 1.81, image z 174), C2 cosine dropped (mean |z| 1.79, 3.5% over 4), C3 offset 1% of the diagonal (mean |z| 4.11, image z 91).",
+   "resolving_power": "the reported offset sweep fails Q1 at every size tried, down to 0.1% of the diagonal (0.02 scene units on retro_room: mean |z| 1.08, 1.8% over 4); the smallest offset the contract catches is therefore at most 0.1% at 128 x 96 and 256 spp. Run 1's file labels those reported rows FAIL; run 2 labels them reported.",
+   "evidence": "evidence/hw-h2-pt-rtx4090-run1.json"
+  },
+  {
+   "run": 2,
+   "adapter": "same",
+   "result": "the same command after labelling the sweep rows reported: every number identical to run 1 (the comparison is deterministic for a given seed).",
+   "evidence": "evidence/hw-h2-pt-rtx4090.json"
+  },
+  {
+   "run": "timing",
+   "adapter": "same, GPU lock held; a CPU-only job (microsystem-pilot) held a heavy-CPU entry throughout",
+   "result": "3840 x 2160, 64 spp, 64 bounces, one slice a submission: hardware ray query against the compute BVH tracer, wall time of the whole render (both include uploads and readback): retro_room 1.75 s against 6.00 s (3.4x), iso_street 1.47 s against 2.12 s (1.4x), raw_hall 2.02 s against 15.45 s (7.6x). Hardware GPU time of the traced slices 0.66 s, 0.45 s and 1.00 s; median slice 10.0, 7.0 and 17.0 ms; structure build 0.25, 0.28 and 2.9 ms. One run each; the compute side has no per-slice timestamps, so the ratio is of wall times.",
+   "evidence": "evidence/hw-h2-pt-timing-rtx4090.json"
+  },
+  {
+   "run": "Q3 forced off",
+   "adapter": "same, RAW_NATIVE_HW_DISABLE=ray_query",
+   "result": "pass: hw-pt render reports traversal compute bvh with fallback_reason 'ray query forced off' and writes the image. (The caustic command has no automatic fallback: it exits 1 with the same reason, and --cpu renders on the CPU.)"
+  }
+ ],
+ "ctest": "full ctest on the RTX 4090 under the GPU lock: 107 of 110 pass. The three failures are recorded open failures that predate this change: gpu_hw_rayquery (H1.1's coplanar-tie and grazing-tolerance misses, evidence/hw-h1-1-runs.json), gpu_rt_pt_parity (P4's one iso_street albedo pixel where float64 sides with R1, evidence/rt-r2-runs.json run 'method note 1'), gpu_raster_identity (raw-hall nave normal ratio). Inferred from the records and the unchanged numbers; not re-run on a baseline build."
+}

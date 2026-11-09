@@ -1,6 +1,7 @@
 // HW H1.0 on a backend without hardware features (the null and WebGPU backends): the probe
 // names the backend and reports no feature, and nothing runs.
 #include "raw/rhi/hw.hpp"
+#include "raw/rhi/hw_rt.hpp"
 namespace raw::rhi::hw {
 Probe probe(Device& dev){
     Probe p;
@@ -45,5 +46,18 @@ KernelRun bilateral(Device&, const std::vector<float>&, uint32_t, uint32_t, bool
 namespace raw::rhi::hw {
 VisDraw drawVisibility(Device&, const VisInput&, GeomPath, int, int){
     VisDraw r; r.error = "no graphics pipelines beyond the RHI on this backend"; return r;
+}
+}
+namespace raw::rhi::hw {
+// HW H2 and effect C1 (raw/rhi/hw_rt.hpp): no hardware ray tracing on this backend.
+std::unique_ptr<RayCaster> RayCaster::create(Device&, const std::vector<float>&, bool, std::string& err, const float*){
+    err = "no hardware ray tracing on this backend";
+    return nullptr;
+}
+PtPassResult pathTracePasses(Device&, const PtPassInput&){
+    PtPassResult r; r.error = "no hardware ray tracing on this backend"; return r;
+}
+SpectralPassResult spectralPasses(Device&, const SpectralPassInput&){
+    SpectralPassResult r; r.error = "no hardware ray tracing on this backend"; return r;
 }
 }

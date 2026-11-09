@@ -297,3 +297,41 @@ P14 (volumetric clouds and smoke) was added on 2026-10-21 and ranks after P8, wh
 noise from, and after the showcase scenes (P10, P11): it follows P11 in the order.
 
 P16 to P21 were added on 2026-10-22 for the stylised track, with P5 built first, by the author's direction that day: "Keep working on the engine, and rendering/shaders ~ lets really spend time supporting many visual features and techniques." They are built in order P5, P16, P17, P18, P19, P20, P21, each with its bounds file committed before its code; they share one owned analytic scene (the art scene), the P5 camera orbit and its warp metric, and one WGSL module (the art module). Light transport, GI, denoising, fog and grading stay with their own tracks.
+
+## Dated proposals (2026-11-02): hardware ray tracing, measured optics, engineering
+
+Landed with this entry (`docs/hw-rt.md`): HW H2.0, the path tracer on DXR inline ray queries, and
+effect C1, spectral caustics through catalogue glass. Both are checked against their CPU references by
+a tolerance contract with planted bugs. The rows below follow the rule of the 2026-10-21 table: a row
+joins a milestone only when its bounds file is committed before its code, and only a run on the
+reference machine (RTX 4090) sets raw-native's numbers. Paper codes (R1, L1, C3, G1 to G16, E1 to E5)
+refer to the 2026-11-02 rendering survey; a code marked "gap" means no 2024 to 2026 paper was found.
+
+Rendering track:
+
+| # | Proposal | Target (must meet) | Fails if | Measured data it needs |
+|---|---|---|---|---|
+| HR1 | Interactive spectral caustics (gap G1): four wavelengths a path, reservoir reuse across wavelength, a denoised 1080p frame | the prism's spectrum spread on the floor within 0.1 degree of the closed-form minimum deviation of N-SF11 between 450 and 650 nm; under 8 ms a frame at 1080p on the RTX 4090; C1's contract still met | the spread error or the time misses | have: the catalogue glasses (refractiveindex.info, CC0) |
+| HR2 | Glass absorption and coatings in C1: the maker's internal transmittance and a quarter-wave MgF2 coating | the transmitted fraction through a 10 mm N-SF11 slab within 0.5% of the catalogue's internal transmittance at 400, 500 and 700 nm; the coated surface's reflectance against the thin-film closed form within 1e-4 | either check misses | SCHOTT internal transmittance tables (catalogue, measured); MgF2 dispersion (refractiveindex.info) |
+| HR3 | Thin-film interference in the spectral tracer: soap films and oil on water as an Airy layer on a glass interface (the raster model already has KHR iridescence) | film colour against the Airy closed form within ΔE00 1 at 0 to 60 degrees for thicknesses 100 to 1000 nm; a draining soap film's band spacing against the wedge formula within 5% | either bound misses | water dispersion (Hale and Querry 1973 via refractiveindex.info) |
+| HR4 | Polarisation: Mueller transport through glass reflections, a polariser on the camera | the dark reflection of a horizontal N-BK7 plate through a crossed polariser at Brewster's angle within 0.5 degree of atan(n); unpolarised renders unchanged within C1's contract | the angle misses or the contract fails | hyperspectral polarimetric BRDFs (S1, 68 bands) for the diffuse materials |
+| HR5 | GI from hardware rays with a surfel or probe cache (MAP row 549, held P6 split cascades) | raw-hall diffuse indirect at 1080p under 6 ms; RMSE against the 8-bounce path trace at least 30% below lighting model 2; the thin-wall leak scene included | the leak scene's RMSE exceeds the no-GI baseline | none |
+| HR6 | Shader execution reordering on the light pass (R1; gap G4), DXR 1.2 | the light pass's GPU time with reordering against without, at C1's still settings, recorded with an interval; a divergence metric from one pass predicts the gain within 25% on at least 4 of 5 kernels | the prediction misses on 2 of 5 kernels | none; needs an Agility SDK and driver that expose reordering (unknown on the reference machine today) |
+| HR7 | Joules per converged frame as a ranking (gap G6), from the joules package | for 5 techniques at equal FLIP, the energy ranking and the time ranking, each with a bootstrap interval over 300 frames, both published | no interval is reported | none |
+| HR8 | Per-pixel error bars with tested coverage (gap G10), from the contract's batch statistics | 90% per-pixel intervals contain the 16k-sample reference at a rate between 85% and 95% on 3 scenes | the rate falls outside 85 to 95% | none |
+
+Engineering track:
+
+| # | Proposal | Target (must meet) | Fails if | Measured data it needs |
+|---|---|---|---|---|
+| EN1 | Lens PSF and MTF from a lens prescription on RayCaster (L1 for later speed) | the polychromatic MTF of 3 lenspipe designs at 3 field points within 2% of lenspipe's exact trace at 10, 30 and 50 lp/mm; within the maker's published curve's line width where one exists | any point misses | lens prescriptions (lenspipe, maker patents); the catalogue glasses (have) |
+| EN2 | Ghost and stray-light prediction from a prescription (gap G3, E1.1) | the 5 brightest ghosts of a real lens we hold located within 2% of the frame diagonal at 3 field angles, against one photograph of a point source each | any of the 5 misses | a real lens, its prescription and the photographs |
+| EN3 | Lidar and depth-camera ray casting on RayCaster (E2.1) | range images of the owned scenes equal the CPU BVH within H1.1's tolerances; 1 million rays under 1 ms on the RTX 4090; a fitted sensor model's recall within 10 points across two rooms with no refit (gap G12) | a range off tolerance, the time misses, or recall drops more than 10 points | the sensor's datasheet (beam divergence, wavelength); NIR reflectance at 905 nm (USGS and ASTER spectral libraries) |
+| EN4 | Camera sensor simulation: a measured quantum-efficiency curve in place of the CIE observer in C1 | a rendered ColorChecker under illuminant A against the chart's measured spectra through the same curve within ΔE00 1 on 24 patches | any patch misses | sensor QE curves (maker datasheets); ColorChecker reflectance spectra (measured, licence to check) |
+| EN5 | CAD precision: exact quadrics and trimmed patches as procedural candidates in the ray query, against tessellation (gap G14) | C1's lens with analytic sphere caps against today's 48 x 128 tessellation: the focal spot's centroid and radius differences recorded; 20 STEP parts render crack-free at under 3x the time of a tessellated render at equal pixel error | any crack, or above 3x | STEP parts with a clear licence |
+| EN6 | Inspection rendering with measured BRDFs (gap G13) | synthetic scratch data rendered with the materials package's measured BRDFs halves the synthetic-only to real-only mAP gap of randomised BRDFs | the gap shrinks by less than half | measured BRDFs (MERL fits in the measured package); a real scratch set |
+| EN7 | Hardware rays for non-graphics queries (E5, gap G16): containment and nearest-surface checks for tolerance and collision | at least 2x the compute BVH's throughput at equal answers on 1 million queries | below 2x or any wrong answer | none |
+
+Order: HR1 first (it extends C1 directly and answers the survey's first gap), then EN1 (lens design
+with the same glass and the same contract), then HR2 and EN5 (both sharpen C1 as an instrument), then
+HR7 and HR8 (measurement), then the rest.

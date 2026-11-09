@@ -1,0 +1,63 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/hw-h2-pt-bounds.json (timing: reported, not bounded)",
+ "runs": [
+  {
+   "scene": "retro_room",
+   "width": 3840,
+   "height": 2160,
+   "spp": 64,
+   "adapter": "NVIDIA GeForce RTX 4090",
+   "hardware": {
+    "build_ms": 0.252,
+    "slices": 64,
+    "median_slice_ms": 10.014,
+    "trace_ms": 662.43,
+    "finish_ms": 10.123,
+    "wall_ms": 1748.5
+   },
+   "compute": {
+    "wall_ms": 5998.6
+   },
+   "wall_ratio_compute_over_hardware": 3.431
+  },
+  {
+   "scene": "iso_street",
+   "width": 3840,
+   "height": 2160,
+   "spp": 64,
+   "adapter": "NVIDIA GeForce RTX 4090",
+   "hardware": {
+    "build_ms": 0.28,
+    "slices": 64,
+    "median_slice_ms": 6.957,
+    "trace_ms": 454.24,
+    "finish_ms": 10.117,
+    "wall_ms": 1472.0
+   },
+   "compute": {
+    "wall_ms": 2117.3
+   },
+   "wall_ratio_compute_over_hardware": 1.438
+  },
+  {
+   "scene": "raw_hall",
+   "width": 3840,
+   "height": 2160,
+   "spp": 64,
+   "adapter": "NVIDIA GeForce RTX 4090",
+   "hardware": {
+    "build_ms": 2.902,
+    "slices": 64,
+    "median_slice_ms": 16.953,
+    "trace_ms": 1002.4,
+    "finish_ms": 10.193,
+    "wall_ms": 2021.4
+   },
+   "compute": {
+    "wall_ms": 15448.3
+   },
+   "wall_ratio_compute_over_hardware": 7.642
+  }
+ ]
+}

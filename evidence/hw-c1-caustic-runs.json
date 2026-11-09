@@ -1,0 +1,44 @@
+{
+ "schema": "raw-native.evidence/1",
+ "bounds": "evidence/hw-c1-caustic-bounds.json (committed a6fcd28 before any run; addendum 1 after run 1, addendum 2 after run 2, each committed before the next run)",
+ "verdict": "not passed. K1 and the controls D1 to D3 meet their bounds from run 2 on; K2, the estimator-agreement check, fails its per-pixel bound in runs 2 and 3 while its image sums agree. The open question is written under run 3.",
+ "runs": [
+  {
+   "run": 1,
+   "adapter": "RTX 4090, driver 610.88, D3D12, under the D:/lw-gpu GPU lock, 2026-11-02",
+   "result": "fail. K1 met its bound (mean |z| 0.828, 0.005% over 4). D1 (no dispersion) also met it, so the control did not fail: the spectrum covers well under 1% of the 192 x 108 pixels and whole-image statistics cannot see a change confined there. D2 and D3 failed K1 as required. K2 failed (mean |z| 0.972, 1.36% over 4, image z of X 3.56). The index sweep left K1 unmoved up to +3e-3.",
+   "evidence": "evidence/hw-c1-caustic-rtx4090-run1.json"
+  },
+  {
+   "run": "diagnosis between 1 and 2",
+   "result": "With the glass removed (no light paths needed), the split estimator's next-event estimate and the BSDF-only estimate differed by +2.9%, +2.1% and -1.4% in X, Y and Z at 2048 against 131072 samples a pixel, while seed-to-seed spread was 0.1 to 0.4%. Moving only the wavelength's random dimension from 1 to 63 changed the gap to -1.2%, -1.5% and +1.4%. The estimate depended on which random dimension fed which decision, so the random numbers were not independent enough: both sides used the path tracer's PCG2D over (pixel, sample * 64 + dimension), and seeds below 2^32 only XOR the pixel index. A linear correlation test between dimensions across pixels found nothing (worst |r| 0.045 against a noise level of 0.056), so the dependence is not a simple correlation; its exact form was not established. With a nested lowbias32 hash of (seed, pixel, sample, dimension), the no-glass gap fell to 0.03 to 0.16%, inside the seed-to-seed spread of 0.1 to 0.2%, and with the glass back the image sums agreed within 0.04% at 4096 split samples against 262144 BSDF-only samples.",
+   "consequence_beyond_c1": "The path tracer (pt_trace.hlsl, rt_pt_math.hpp) uses the same PCG2D construction. Its furnace and energy checks pass, but they test one light path class each and would not see a bias of this size that depends on the pairing of dimensions. Not tested here; a proposal for the author."
+  },
+  {
+   "run": 2,
+   "adapter": "same",
+   "result": "after addendum 1 (region statistic, new random numbers). K1 pass (whole image mean |z| 0.859, 0.016% over 4, image z 0.28, 0.21, 1.09; caustic region of 479 pixels mean |z| 0.869, 0 over 4). D1 now fails as required, through the region: its mean |z| there is 0.926, over the 0.9 bound (0.14% of region values over 4, under the 0.5% bound; the whole image stays inside). D2 and D3 fail as required. Index sweep: no case from +1e-4 to +3e-3 leaves the bound. K2 fail: mean |z| 0.986, 1.59% over 4, image z 1.68, 2.03, 0.72, reference standard error 0.47% of Y, no glass pixel in view.",
+   "evidence": "evidence/hw-c1-caustic-rtx4090-run2.json"
+  },
+  {
+   "run": 3,
+   "adapter": "same",
+   "result": "after addendum 2 (a reported calibration row). Every K1, D and K2 number identical to run 2. K2_null, the K2 test between two BSDF-only seed sets, sits inside the bound (mean |z| 0.856, 0.039% over 4). So the per-pixel test is calibrated on the BSDF-only side, and K2's 1.6% of values past 4 is not explained by that side's variance: either the split estimator disagrees on a minority of pixels, or its own batch variance is too small there. The image sums agree within their errors.",
+   "open": "Which pixels disagree, and why, is not yet known. Candidates, untested: the split estimator's own batch variance underestimates its error where few light paths land (no split-against-split calibration row was run); the shading-normal adjoint factor for refraction, which light paths need and do not apply (raw-native's lens uses interpolated normals); and the K2 scene's 8x lamps meeting walls or the floor at grazing angles. A split-against-split row and a per-pixel z map are the next two measurements.",
+   "evidence": "evidence/hw-c1-caustic-rtx4090-run3.json"
+  },
+  {
+   "run": "timing and energy",
+   "adapter": "same, GPU lock held; a CPU-only job held a heavy-CPU entry throughout; other GPU clients (desktop compositor, browser) present",
+   "result": "3840 x 2160, a frame of 1 camera sample and 1 photon a pixel (8.3 million of each), 12 bounces, prism_room: frame GPU time median 2.326 ms (p5 2.306, p95 2.355) over 440 frames after 3 warm-up; camera pass 0.88 ms, light pass 1.44 ms (from the 40-frame run). Energy from NVML's total-energy counter through superframe's joules package (packages/joules/nvml.py at superframe c031d0e), differenced between 40- and 440-frame runs, 3 repeats: 1.295 J a frame gross (1.293 to 1.310), 1.129 J above the idle board power measured right before (1.100 to 1.152; idle 52 to 66 W). Wall time a frame in the differenced runs 2.76 to 2.92 ms, since every dispatch is its own submission and the host waits for each.",
+   "evidence": "evidence/hw-c1-caustic-timing-rtx4090.json, evidence/hw-c1-caustic-energy-rtx4090.json"
+  },
+  {
+   "run": "4K still",
+   "adapter": "same",
+   "result": "prism_room at 3840 x 2160, 4096 camera samples and 4096 photons a pixel, seed 20261102, exposure 40: camera GPU 3.65 s, light GPU 5.73 s, wall 12.0 s. Looked at in full and at 1:1 crops of the spectrum and the lens: the N-SF11 spectrum separates violet to red on the floor; the N-BK7 lens throws a focal spot with a blue fringe on one side and the ring of unrefracted lamp light around its shadow; no fireflies seen. Known flaws: the lens floats about 2 cm above its post, and the glass shows no absorption.",
+   "files": {"caustic.png": "45f6957f7fc09af7ea8ebe4ad5f3307ea99924c96589b89a8f89eb9f19f8f3e2", "caustic.pfm": "63f778ac991df70ae18667295906e1ae936360b7ad7795ea039f74bd3a67d45a", "caustic_xyz.f64": "b550a305f0a230f3393af1881c74e87a703a5ffbc17a2a03bd86d6adb6da7441"},
+   "note": "the images are not committed (25 MB PNG); the command and seed above reproduce them, and the hashes identify them"
+  }
+ ]
+}
