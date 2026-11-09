@@ -23,6 +23,11 @@ cmake-build-*/
 !api/snapshot-*/manifest.json
 # The third-party-shader check's reasoned allowlist (tools/ci).
 !tools/ci/*.json
+# The action-timeline fixtures (tests/data/action/SOURCE.md).
+!tests/data/action/*.json
+!tests/data/action/traces/*.json
+# The tell readability test's trial and key files (docs/action-hitvol.md).
+!tools/action/readability/*.json
 
 # CMake artifacts
 CMakeCache.txt

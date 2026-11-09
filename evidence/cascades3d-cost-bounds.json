@@ -1,0 +1,55 @@
+{
+  "what": "Cost and bias of the leak-tight 3D cascades (web/shaders/cascades3d), sixth round. Round 5 (evidence/cascades3d-leak-rtx4090.json) left J = jit 8, tf 32 on B0 plus sv 2, ft 1, cg 1: leak 0.12% to 0.40% at five placements, raw-hall 1080p RMSE 0.083 (0.078 to 0.088), bias +1.4%, but GI 6.38 to 6.66 ms against 6. cg 1 traces up to 8 segments at every hit whose depth test finds no probe (about 1.2 ms in the level pass, 0.4 to 0.7 ms in the screen rays). sv 2 alone brightens raw-hall by about 2% (bias +2.1% against B0's -0.5%)",
+  "written": "2026-11-07, after the CPU code of the switches below was written and the node unit tests passed, and before any diagnosis run, GPU run, measurement or parity run",
+  "switches": {
+    "cg_2": "the cache gather's fallback (no level-0 probe passes the depth-moment test) keeps the lit-side probes outside geometry whose farthest of the 4 depth rays in the texel toward the lifted point (the point plus a quarter spacing along the normal, the depth test's point) travels at least as far as the point. The depth pass already traces those rays once a jitter phase (static geometry); it now also stores each texel's nearest and farthest distance (vec4 instead of vec2). No rays at gather time; cg 1 traces up to 8",
+    "cg_3": "as cg 2 with the nearest of the 4 rays (all four must reach past the point): tighter, darker",
+    "sd_1": "with sv, a merge (level entries and screen-probe rays) weighs each trusted neighbour's dropped share (texels whose own start ray crossed a surface) back in, at the dropped texels' own mean capped per channel by the merge's trusted mean. The merge then never returns more than the trusted mean (no new light can enter), and the dark entries that sv 2 drops count again. This is a cap from the same merge, not the coarser level's value the brief named as one option: the coarser level can itself hold light from past a wall"
+  },
+  "why_leak_tight": "inferred, not proven. sd: the merged value is at most the trusted mean per channel, so it adds no light the leak-tight sv 2 merge does not already carry. cg 2: a probe in room A that a thin wall separates from the point has all 4 texel rays stop at the wall, closer than the point; a ray that grazes past the end of a wall within the same texel can reach farther, which is the case the leak runs test. cg 3 removes that case at the cost of light",
+  "candidates": {
+    "K": "jit 8, tf 32 on B0 (h0 0.5, c0 1, r0 2, f 2, fix probe, stride 8, m 6, static flags) plus sv 2, ft 1, cg 2, sd 1: the default candidate",
+    "K3": "K with cg 3 instead of cg 2, measured if K fails the leak bound or as the ablation",
+    "Kfix": "K without jit and tf (B0 plus sv 2, ft 1, cg 2, sd 1), the fixed grids of K's phases for the per-phase leak test",
+    "ablations": "J (round 5, cg 1) re-timed in this session as the control; J with cg 2 (no sd); J with sd (cg 1); B0 with sv 2 and sd; reported, not used for decisions except as stated below"
+  },
+  "metrics": {
+    "leak_closed": "leak-closed-B at 960 x 540, static flags, 20 frames: the frame's mean luminance over the room A view's reference mean (0.0501, pt-leak-closed-A-960-s1), as rounds 4 and 5",
+    "placements": "K at g0 and go = g1 [-2/3, -4/5, -1/2], g2 [-1/3, -3/5, -3/4], g3 [-8/9, -2/5, -1/4], g4 [-5/9, -1/5, -7/8] m",
+    "jit_phases": "Kfix at g0 to g4 and at ph4 to ph7 (build/diag phases.json; phases 0 to 3 of jit 8 are g1 to g4): every phase's grid on its own",
+    "door_room": "leak-door-B at 960 x 540 against 4096 spp: room B light ratio and relative error, reported",
+    "hall": "raw-hall nave at 1920 x 1080 against the 8-bounce path trace (two 1024 spp seeds): relative RMSE with the 95% 32 x 32 tile bootstrap, bias, wall and floor mottle, GPU GI median and 5th to 95th percentile of 50 frames per run, three timing runs for a candidate; 4K once for a candidate that becomes the default",
+    "parity": "GPU f32 against the CPU f64 reference on the existing 19 cases and new cases for cg 2, cg 3 and sd, bound 2e-3 a case (unchanged)"
+  },
+  "predictions": {
+    "cpu_16x10": "K's switches (sv 2, ft 1, cg 2, sd 1) on the CPU at 16 x 10 px: closed room under 0.1% at all 13 grids",
+    "leak": "K under 1% at g0 to g4, worst under 0.5%; Kfix under 1% at all 9 grids",
+    "time": "K's 1080p GI median 4.9 to 5.4 ms (J without cg read 5.0; sd adds arithmetic only)",
+    "hall": "K's RMSE 0.078 to 0.085, bias between -1% and +1% (sd pulls J's +1.4% toward B0's -0.5%)",
+    "door_room": "K's light ratio 0.6 to 1.0"
+  },
+  "pass_line": "a candidate passes when (a) the closed room reads under 1% at g0 to g4 and its fixed grids read under 1% at g0 to g4 and ph4 to ph7, (b) its raw-hall 1080p RMSE is at most 0.111 (B0's upper 95% limit; the target is jit's 0.080 to 0.085), and (c) the median GI time of each of three 1080p timing runs is under 6 ms. GPU parity within 2e-3 on every case",
+  "kill_line": {
+    "cheap_cg": "cg 2 is a null if K's (or J with cg 2's) worst closed-room placement reads above 1%, or if replacing cg 1 by cg 2 in J saves under 0.5 ms of GI median at 1080p",
+    "sd": "sd is a null if J with sd (or K against J with cg 2) does not move the raw-hall bias at least halfway from its value without sd toward zero, or raises the worst closed-room leak above 1%"
+  },
+  "decisions": {
+    "default": "if K (or K3 when K fails only the leak bound) passes the pass line, its switches become the default of planCascades3d in the same PR (tf 32 and jit 8 apply when screen probes run; stride 0 plans keep no jitter), with docs and the changelog saying so. Among passing candidates the lower RMSE wins; within 0.002 the lower worst leak",
+    "otherwise": "keep the shipped defaults and record the nulls"
+  },
+  "budget": "GPU memory under about 6 GB (shared with wmm-4 training using up to about 12 GB and a universe agent; never stop other processes; wait when the GPU is near full); at most 3 CPU workers at below-normal priority; one GPU run at a time; SwiftShader parity in CI only. Timings note that the GPU was shared",
+  "amendment_sd": {
+    "written": "2026-11-07, after the CPU 16 x 10 leak diagnosis (all settings 0.000% at 13 grids) and the CPU white-furnace unit test, before any GPU run",
+    "seen": "the cap version of sd 1 above failed the planted white furnace with cg 2 under jit: worst pixel 1.4% off the closed form (12 x 8 px). Dropped entries hold the far side of the surface that blocked them (outside the box, a back face or a surface whose cache gather finds no probe), and the cap only lowers values, so wrong dark values entered",
+    "change": "sd 1 is redefined before any GPU run: an entry whose own ray is blocked over [0, T_i] (sv 2's flag) traces that ray from 0 instead and holds the radiance of the surface that blocks it; merges then weigh every entry (no sv weights). The cap is dropped. Leak argument (inferred): that surface is the first one along the entry's ray from the probe, so it lies on the probe's side of any wall; the merge's probe-fix segment keeps the probe on the merging side. On the CPU the white furnace with sd (no cg) is exact to 2e-16 at a moved grid",
+    "also_seen": "every cg mode (cg 1 of round 5 included) returns no light where no probe is shown to see the surface; on the CPU white furnace at a moved grid (go g2) 10 of 96 pixels read up to 1.05% low, the same for cg 1, 2 and 3. Recorded as a limit of cg, not a new effect of cg 2",
+    "kill_line_sd": "unchanged in substance: sd is a null if J with sd (or K against J with cg 2) does not move the raw-hall bias at least halfway from its value without sd toward zero, or raises the worst closed-room leak above 1%",
+    "predictions": "unchanged"
+  },
+  "amendment_J2": {
+    "written": "2026-11-07, after K's leak runs (closed room 0.13% to 0.40% at g0 to g4; Kfix 0.000% to 0.24% at 9 grids) and the first raw-hall 1080p runs of K, J with cg 2 (J2), J (control) and J with sd, before any leak run of J2, its second and third timing runs and any 4K run",
+    "seen": "K reads RMSE 0.130 (0.121 to 0.139), bias -7.0%, 4.97 ms: sd darkens raw-hall (J with sd: 0.130, -6.9%), so K fails the error bound and sd meets its kill line in spirit (the bias moved from +1.4% to -6.9%, five times further from zero). J2 reads 0.082 (0.077 to 0.088), bias +1.3%, 5.05 ms; J in this session 0.083 (0.078 to 0.088), +1.4%, 6.30 ms",
+    "change": "J2 = J with cg 2 in place of cg 1 (jit 8, tf 32, sv 2, ft 1, cg 2 on B0), the successor of J that the brief names, becomes a default candidate under the unchanged pass line: closed room under 1% at g0 to g4, its fixed grids (B0 plus sv 2, ft 1, cg 2) under 1% at g0 to g4 and ph4 to ph7, RMSE at most 0.111, and three 1080p timing runs each with a median under 6 ms. If it passes, its switches become the default as written under decisions; a 4K run is reported",
+    "prediction": "J2 closed room within 0.1 percentage point of J's (0.12% to 0.40%), worst under 0.5%; its two further timing medians 4.8 to 5.4 ms"
+  }
+}

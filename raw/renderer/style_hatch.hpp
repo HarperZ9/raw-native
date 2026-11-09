@@ -12,6 +12,7 @@
 // capsule, rounded box) seen from its fixed camera; another scene would supply its own field.
 #include "raw/renderer/style_ditherlight.hpp"   // V3
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <vector>
 namespace raw::style {
@@ -33,6 +34,20 @@ struct HatchFrame {
     std::vector<double> rgba;                      // display-linear, alpha 1
     std::vector<std::uint8_t> hit, fallback;       // the ray hit the field; the umbilic fallback was used
 };
-HatchFrame runHatch(const HatchPlan& p, int w, int h);
+HatchFrame runHatch(const HatchPlan& p, int w, int h);   // the still life, no boil
+
+// Another field and camera through the same hatching (the held-time demo, P1), and boil: line and
+// contour offsets from raw::noise perlin3 at the hit, seeded by a held layer's boil seed
+// (raw/scene/held_time.hpp), so the ink lines step and wobble only when the pose changes.
+// amp 0 is the plain pass; amp is in line periods.
+struct HatchField {
+    std::function<double(const V3&)> sdf;
+    V3 eye, target, light;
+    double tanHalf{0.42};
+};
+HatchField stillField();
+Curvature curvatureOf(const HatchField& f, const V3& p, double umb);
+struct HatchBoil { std::uint32_t seed{0}; double amp{0}, freq{2.2}; };
+HatchFrame runHatchField(const HatchPlan& p, const HatchField& f, const HatchBoil& boil, int w, int h);
 
 }  // namespace raw::style

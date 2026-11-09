@@ -1,0 +1,1010 @@
+{
+ "schema": "raw-native evidence v1",
+ "bounds": "evidence/cascades3d-leak-bounds.json",
+ "date": "2026-11-07",
+ "machine": "RTX 4090, shared with training work and another agent (12.6 to 22.2 GB of 24.5 GB in use by other processes, 95 to 99% utilisation during the runs); runs at below-normal priority, one at a time",
+ "references": "reused from round 4 (same path tracer and scene files): raw-hall 8-bounce 1024 spp two seeds at 1080p, one at 4K; leak scenes 4096 spp",
+ "cpu_diagnosis_16x10": {
+  "what": "CPU float64, 16 x 10 px, leak-closed-B, fix probe, stride 4, m 3, 2 bounces: room B mean over the room A view mean (same plan), in percent. Exploratory, run after the bounds file",
+  "room_a_mean": 0.05524509065844576,
+  "B0": {
+   "g2": 13.855,
+   "ph0": 1.881,
+   "ph3": 0.343,
+   "ph6": 10.55,
+   "g0": 0.042,
+   "g3": 2.064,
+   "ph1": 13.855,
+   "ph4": 2.276,
+   "ph7": 2.474,
+   "g1": 1.881,
+   "g4": 0.343,
+   "ph2": 2.064,
+   "ph5": 2.13
+  },
+  "sv1": {
+   "g1": 0.0,
+   "g4": 0.0,
+   "ph2": 0.0,
+   "ph5": 0.0,
+   "g2": 0.959,
+   "ph0": 0.0,
+   "ph3": 0.0,
+   "ph6": 0.0,
+   "g0": 0.054,
+   "g3": 0.0,
+   "ph1": 0.959,
+   "ph4": 0.402,
+   "ph7": 0.109
+  },
+  "sv1fz": {
+   "g0": 0.0,
+   "g3": 0.0,
+   "ph1": 0.0,
+   "ph4": 0.145,
+   "ph7": 0.0,
+   "g1": 0.0,
+   "g4": 0.0,
+   "ph2": 0.0,
+   "ph5": 0.0,
+   "g2": 0.0,
+   "ph0": 0.0,
+   "ph3": 0.0,
+   "ph6": 0.0
+  },
+  "sv2": {
+   "g2": 0.0,
+   "ph0": 0.0,
+   "ph3": 0.0,
+   "ph6": 0.0,
+   "g0": 0.079,
+   "g3": 0.0,
+   "ph1": 0.0,
+   "ph4": 0.355,
+   "ph7": 0.108,
+   "g1": 0.0,
+   "g4": 0.0,
+   "ph2": 0.0,
+   "ph5": 0.0
+  },
+  "sv2ft": {
+   "g1": 0.0,
+   "g4": 0.0,
+   "ph2": 0.0,
+   "ph5": 0.0,
+   "g2": 0.0,
+   "ph0": 0.0,
+   "ph3": 0.0,
+   "ph6": 0.0,
+   "g0": 0.0,
+   "g3": 0.0,
+   "ph1": 0.0,
+   "ph4": 0.0,
+   "ph7": 0.0
+  },
+  "sv1ft": {
+   "g0": 0.0,
+   "g3": 0.0,
+   "ph1": 0.966,
+   "ph4": 0.145,
+   "ph7": 0.0,
+   "g1": 0.0,
+   "g4": 0.0,
+   "ph2": 0.0,
+   "ph5": 0.0,
+   "g2": 0.966,
+   "ph0": 0.0,
+   "ph3": 0.0,
+   "ph6": 0.0
+  },
+  "sv2ftcg": {
+   "g2": 0.0,
+   "ph0": 0.0,
+   "ph3": 0.0,
+   "ph6": 0.0,
+   "g0": 0.0,
+   "g3": 0.0,
+   "ph1": 0.0,
+   "ph4": 0.0,
+   "ph7": 0.0,
+   "g1": 0.0,
+   "g4": 0.0,
+   "ph2": 0.0,
+   "ph5": 0.0
+  },
+  "ftcg": {
+   "g1": 1.881,
+   "g4": 0.343,
+   "ph2": 2.095,
+   "ph5": 2.13,
+   "g2": 13.855,
+   "ph0": 1.881,
+   "ph3": 0.343,
+   "ph6": 10.55,
+   "g0": 0.0,
+   "g3": 2.095,
+   "ph1": 13.855,
+   "ph4": 2.091,
+   "ph7": 2.396
+  },
+  "sv2cg": {
+   "g0": 0.079,
+   "g3": 0.0,
+   "ph1": 0.0,
+   "ph4": 0.355,
+   "ph7": 0.108,
+   "g1": 0.0,
+   "g4": 0.0,
+   "ph2": 0.0,
+   "ph5": 0.0,
+   "g2": 0.0,
+   "ph0": 0.0,
+   "ph3": 0.0,
+   "ph6": 0.0
+  }
+ },
+ "hall": {
+  "B0-1080": {
+   "plan": {
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 0,
+    "tmax": 32,
+    "h0": 0.5,
+    "c0": 1,
+    "r0": 2,
+    "f": 2,
+    "sv": 0,
+    "fz": 0,
+    "ft": 0,
+    "cg": 0,
+    "jit": 0,
+    "jl": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 336030608,
+   "rel_rmse": 0.1043,
+   "interval95": [
+    0.0974,
+    0.1114
+   ],
+   "bias": -0.0051,
+   "mottle_walls": {
+    "band": 0.0404,
+    "interval95": [
+     0.0365,
+     0.0445
+    ]
+   },
+   "mottle_floor": {
+    "band": 0.0303,
+    "interval95": [
+     0.0265,
+     0.0343
+    ]
+   },
+   "gi_ms": {
+    "median": 3.823,
+    "p05": 3.574,
+    "p95": 4.177,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 2.103,
+    "cache": 0.009,
+    "svis": 0.292,
+    "srays": 1.218,
+    "ssum": 0.014,
+    "final": 0.165
+   }
+  },
+  "L-1080": {
+   "plan": {
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 0,
+    "tmax": 32,
+    "h0": 0.5,
+    "c0": 1,
+    "r0": 2,
+    "f": 2,
+    "sv": 2,
+    "fz": 0,
+    "ft": 1,
+    "cg": 1,
+    "jit": 0,
+    "jl": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 341471624,
+   "rel_rmse": 0.1121,
+   "interval95": [
+    0.1046,
+    0.1195
+   ],
+   "bias": 0.0236,
+   "mottle_walls": {
+    "band": 0.043,
+    "interval95": [
+     0.0388,
+     0.0474
+    ]
+   },
+   "mottle_floor": {
+    "band": 0.033,
+    "interval95": [
+     0.0294,
+     0.0368
+    ]
+   },
+   "gi_ms": {
+    "median": 4.944,
+    "p05": 4.631,
+    "p95": 5.676,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 3.005,
+    "cache": 0.009,
+    "svis": 0.3,
+    "srays": 1.379,
+    "ssum": 0.017,
+    "final": 0.188
+   }
+  },
+  "sv2-1080": {
+   "plan": {
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 0,
+    "tmax": 32,
+    "h0": 0.5,
+    "c0": 1,
+    "r0": 2,
+    "f": 2,
+    "sv": 2,
+    "fz": 0,
+    "ft": 0,
+    "cg": 0,
+    "jit": 0,
+    "jl": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 341471624,
+   "rel_rmse": 0.1126,
+   "interval95": [
+    0.1052,
+    0.12
+   ],
+   "bias": 0.0213,
+   "mottle_walls": {
+    "band": 0.0419,
+    "interval95": [
+     0.0377,
+     0.0462
+    ]
+   },
+   "mottle_floor": {
+    "band": 0.0329,
+    "interval95": [
+     0.0293,
+     0.0368
+    ]
+   },
+   "gi_ms": {
+    "median": 4.059,
+    "p05": 3.614,
+    "p95": 4.223,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 2.244,
+    "cache": 0.009,
+    "svis": 0.293,
+    "srays": 1.409,
+    "ssum": 0.015,
+    "final": 0.165
+   }
+  },
+  "Lnocg-1080": {
+   "plan": {
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 0,
+    "tmax": 32,
+    "h0": 0.5,
+    "c0": 1,
+    "r0": 2,
+    "f": 2,
+    "sv": 2,
+    "fz": 0,
+    "ft": 1,
+    "cg": 0,
+    "jit": 0,
+    "jl": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 341471624,
+   "rel_rmse": 0.1142,
+   "interval95": [
+    0.1066,
+    0.1218
+   ],
+   "bias": 0.0261,
+   "mottle_walls": {
+    "band": 0.043,
+    "interval95": [
+     0.0389,
+     0.0474
+    ]
+   },
+   "mottle_floor": {
+    "band": 0.033,
+    "interval95": [
+     0.0294,
+     0.0368
+    ]
+   },
+   "gi_ms": {
+    "median": 4.683,
+    "p05": 4.063,
+    "p95": 4.919,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 2.521,
+    "cache": 0.009,
+    "svis": 0.726,
+    "srays": 0.919,
+    "ssum": 0.012,
+    "final": 0.631
+   }
+  },
+  "jit-1080": {
+   "plan": {
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "tmax": 32,
+    "h0": 0.5,
+    "c0": 1,
+    "r0": 2,
+    "f": 2,
+    "sv": 0,
+    "fz": 0,
+    "ft": 0,
+    "cg": 0,
+    "jit": 8,
+    "jl": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 979096880,
+   "rel_rmse": 0.0797,
+   "interval95": [
+    0.0746,
+    0.085
+   ],
+   "bias": 0.001,
+   "mottle_walls": {
+    "band": 0.03,
+    "interval95": [
+     0.0275,
+     0.0326
+    ]
+   },
+   "mottle_floor": {
+    "band": 0.0178,
+    "interval95": [
+     0.0148,
+     0.0212
+    ]
+   },
+   "gi_ms": {
+    "median": 4.921,
+    "p05": 4.088,
+    "p95": 5.104,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 2.315,
+    "cache": 0.01,
+    "svis": 0.297,
+    "srays": 1.183,
+    "ssum": 0.014,
+    "final": 0.157,
+    "accum": 0.53
+   }
+  },
+  "jit-1080-r2": {
+   "plan": {
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "tmax": 32,
+    "h0": 0.5,
+    "c0": 1,
+    "r0": 2,
+    "f": 2,
+    "sv": 0,
+    "fz": 0,
+    "ft": 0,
+    "cg": 0,
+    "jit": 8,
+    "jl": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 979096880,
+   "rel_rmse": 0.0797,
+   "interval95": [
+    0.0746,
+    0.085
+   ],
+   "bias": 0.001,
+   "mottle_walls": {
+    "band": 0.03,
+    "interval95": [
+     0.0275,
+     0.0326
+    ]
+   },
+   "mottle_floor": {
+    "band": 0.0178,
+    "interval95": [
+     0.0148,
+     0.0212
+    ]
+   },
+   "gi_ms": {
+    "median": 4.656,
+    "p05": 4.124,
+    "p95": 4.997,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 2.229,
+    "cache": 0.01,
+    "svis": 0.301,
+    "srays": 1.279,
+    "ssum": 0.013,
+    "final": 0.157,
+    "accum": 0.485
+   }
+  },
+  "J-1080": {
+   "plan": {
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "tmax": 32,
+    "h0": 0.5,
+    "c0": 1,
+    "r0": 2,
+    "f": 2,
+    "sv": 2,
+    "fz": 0,
+    "ft": 1,
+    "cg": 1,
+    "jit": 8,
+    "jl": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 1027057832,
+   "rel_rmse": 0.0827,
+   "interval95": [
+    0.0777,
+    0.0883
+   ],
+   "bias": 0.0142,
+   "mottle_walls": {
+    "band": 0.0315,
+    "interval95": [
+     0.0288,
+     0.0344
+    ]
+   },
+   "mottle_floor": {
+    "band": 0.0183,
+    "interval95": [
+     0.015,
+     0.022
+    ]
+   },
+   "gi_ms": {
+    "median": 6.655,
+    "p05": 5.466,
+    "p95": 7.135,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 3.765,
+    "cache": 0.011,
+    "svis": 0.302,
+    "srays": 1.615,
+    "ssum": 0.017,
+    "final": 0.195,
+    "accum": 0.478
+   }
+  },
+  "J-1080-r2": {
+   "plan": {
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "tmax": 32,
+    "h0": 0.5,
+    "c0": 1,
+    "r0": 2,
+    "f": 2,
+    "sv": 2,
+    "fz": 0,
+    "ft": 1,
+    "cg": 1,
+    "jit": 8,
+    "jl": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 1027057832,
+   "rel_rmse": 0.0827,
+   "interval95": [
+    0.0777,
+    0.0883
+   ],
+   "bias": 0.0142,
+   "mottle_walls": {
+    "band": 0.0315,
+    "interval95": [
+     0.0288,
+     0.0344
+    ]
+   },
+   "mottle_floor": {
+    "band": 0.0183,
+    "interval95": [
+     0.015,
+     0.022
+    ]
+   },
+   "gi_ms": {
+    "median": 6.383,
+    "p05": 5.493,
+    "p95": 7.122,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 3.751,
+    "cache": 0.011,
+    "svis": 0.3,
+    "srays": 1.59,
+    "ssum": 0.016,
+    "final": 0.19,
+    "accum": 0.485
+   }
+  },
+  "J-1080-r3": {
+   "plan": {
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "tmax": 32,
+    "h0": 0.5,
+    "c0": 1,
+    "r0": 2,
+    "f": 2,
+    "sv": 2,
+    "fz": 0,
+    "ft": 1,
+    "cg": 1,
+    "jit": 8,
+    "jl": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 1027057832,
+   "rel_rmse": 0.0827,
+   "interval95": [
+    0.0777,
+    0.0883
+   ],
+   "bias": 0.0142,
+   "mottle_walls": {
+    "band": 0.0315,
+    "interval95": [
+     0.0288,
+     0.0344
+    ]
+   },
+   "mottle_floor": {
+    "band": 0.0183,
+    "interval95": [
+     0.015,
+     0.022
+    ]
+   },
+   "gi_ms": {
+    "median": 6.583,
+    "p05": 5.61,
+    "p95": 7.047,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 3.741,
+    "cache": 0.012,
+    "svis": 0.303,
+    "srays": 1.589,
+    "ssum": 0.016,
+    "final": 0.196,
+    "accum": 0.458
+   }
+  },
+  "Jnocg-1080": {
+   "plan": {
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "tmax": 32,
+    "h0": 0.5,
+    "c0": 1,
+    "r0": 2,
+    "f": 2,
+    "sv": 2,
+    "fz": 0,
+    "ft": 1,
+    "cg": 0,
+    "jit": 8,
+    "jl": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 1027057832,
+   "rel_rmse": 0.0864,
+   "interval95": [
+    0.0811,
+    0.0919
+   ],
+   "bias": 0.02,
+   "mottle_walls": {
+    "band": 0.0317,
+    "interval95": [
+     0.029,
+     0.0345
+    ]
+   },
+   "mottle_floor": {
+    "band": 0.0184,
+    "interval95": [
+     0.0151,
+     0.0222
+    ]
+   },
+   "gi_ms": {
+    "median": 5.018,
+    "p05": 4.515,
+    "p95": 5.379,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 2.576,
+    "cache": 0.01,
+    "svis": 0.7,
+    "srays": 0.925,
+    "ssum": 0.012,
+    "final": 0.597,
+    "accum": 0.263
+   }
+  },
+  "Jnocg-1080-r2": {
+   "plan": {
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "tmax": 32,
+    "h0": 0.5,
+    "c0": 1,
+    "r0": 2,
+    "f": 2,
+    "sv": 2,
+    "fz": 0,
+    "ft": 1,
+    "cg": 0,
+    "jit": 8,
+    "jl": 1
+   },
+   "size": [
+    1920,
+    1080
+   ],
+   "gpu_bytes": 1027057832,
+   "rel_rmse": 0.0864,
+   "interval95": [
+    0.0811,
+    0.0919
+   ],
+   "bias": 0.02,
+   "mottle_walls": {
+    "band": 0.0317,
+    "interval95": [
+     0.029,
+     0.0345
+    ]
+   },
+   "mottle_floor": {
+    "band": 0.0184,
+    "interval95": [
+     0.0151,
+     0.0222
+    ]
+   },
+   "gi_ms": {
+    "median": 4.966,
+    "p05": 4.395,
+    "p95": 5.302,
+    "frames": 50
+   },
+   "pass_ms": {
+    "level": 2.557,
+    "cache": 0.01,
+    "svis": 0.694,
+    "srays": 0.927,
+    "ssum": 0.012,
+    "final": 0.614,
+    "accum": 0.262
+   }
+  },
+  "L-4k": {
+   "plan": {
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 0,
+    "tmax": 32,
+    "h0": 0.5,
+    "c0": 1,
+    "r0": 2,
+    "f": 2,
+    "sv": 2,
+    "fz": 0,
+    "ft": 1,
+    "cg": 1,
+    "jit": 0,
+    "jl": 1
+   },
+   "size": [
+    3840,
+    2160
+   ],
+   "gpu_bytes": 797534024,
+   "rel_rmse": 0.1181,
+   "interval95": [
+    0.1139,
+    0.1224
+   ],
+   "bias": 0.0233,
+   "mottle_walls": {
+    "band": 0.0357,
+    "interval95": [
+     0.0337,
+     0.0376
+    ]
+   },
+   "mottle_floor": {
+    "band": 0.0299,
+    "interval95": [
+     0.0274,
+     0.0326
+    ]
+   },
+   "gi_ms": {
+    "median": 10.494,
+    "p05": 9.431,
+    "p95": 10.933,
+    "frames": 20
+   },
+   "pass_ms": {
+    "level": 3.473,
+    "cache": 0.01,
+    "svis": 0.413,
+    "srays": 5.721,
+    "ssum": 0.189,
+    "final": 0.579
+   }
+  },
+  "J-4k": {
+   "plan": {
+    "fix": "probe",
+    "stride": 8,
+    "m": 6,
+    "tf": 32,
+    "tmax": 32,
+    "h0": 0.5,
+    "c0": 1,
+    "r0": 2,
+    "f": 2,
+    "sv": 2,
+    "fz": 0,
+    "ft": 1,
+    "cg": 1,
+    "jit": 8,
+    "jl": 1
+   },
+   "size": [
+    3840,
+    2160
+   ],
+   "gpu_bytes": 1781718632,
+   "rel_rmse": 0.0937,
+   "interval95": [
+    0.0906,
+    0.0969
+   ],
+   "bias": 0.0137,
+   "mottle_walls": {
+    "band": 0.0252,
+    "interval95": [
+     0.0237,
+     0.0267
+    ]
+   },
+   "mottle_floor": {
+    "band": 0.0163,
+    "interval95": [
+     0.0147,
+     0.0179
+    ]
+   },
+   "gi_ms": {
+    "median": 12.283,
+    "p05": 11.031,
+    "p95": 13.522,
+    "frames": 20
+   },
+   "pass_ms": {
+    "level": 3.714,
+    "cache": 0.011,
+    "svis": 0.431,
+    "srays": 5.758,
+    "ssum": 0.167,
+    "final": 1.062,
+    "accum": 1.438
+   }
+  }
+ },
+ "leak_closed_room": {
+  "J": {
+   "g0": 0.00154,
+   "g1": 0.00295,
+   "g2": 0.00396,
+   "g3": 0.00166,
+   "g4": 0.00124
+  },
+  "Jnocg": {
+   "g0": 0.00453,
+   "g1": 0.00709,
+   "g2": 0.00534,
+   "g3": 0.00452,
+   "g4": 0.00407
+  },
+  "Jsv1": {
+   "g0": 0.02192,
+   "g1": 0.01505,
+   "g2": 0.01608,
+   "g3": 0.00865,
+   "g4": 0.00751
+  },
+  "L": {
+   "g0": 9e-05,
+   "g1": 0.00031,
+   "g2": 2e-05,
+   "g3": 6e-05,
+   "g4": 0.0,
+   "ph4": 3e-05,
+   "ph5": 6e-05,
+   "ph6": 2e-05,
+   "ph7": 0.00149
+  },
+  "Lnocg": {
+   "g0": 0.00014,
+   "g1": 0.00035,
+   "g2": 0.00074,
+   "g3": 0.00023,
+   "g4": 0.0002
+  },
+  "Lsv1": {
+   "g0": 9e-05,
+   "g1": 0.0003,
+   "g2": 0.0485,
+   "g3": 5e-05,
+   "g4": 0.0002
+  },
+  "what": "leak-closed-B at 960 x 540, 20 frames after warm-up, static flags: room B frame mean over the room A view reference mean (0.0501); bound 1%. ph4 to ph7 are jit phases 4 to 7 as fixed grids (phases 0 to 3 equal g1 to g4)"
+ },
+ "leak_door_room_b": {
+  "B0": {
+   "room_b_light_ratio": 0.533,
+   "room_b_rel_rmse": 1.329,
+   "no_gi_room_b_rel_rmse": 1.658,
+   "view_rel_rmse": 1.095
+  },
+  "J": {
+   "room_b_light_ratio": 0.832,
+   "room_b_rel_rmse": 0.936,
+   "no_gi_room_b_rel_rmse": 1.658,
+   "view_rel_rmse": 0.997
+  },
+  "L": {
+   "room_b_light_ratio": 0.514,
+   "room_b_rel_rmse": 1.269,
+   "no_gi_room_b_rel_rmse": 1.658,
+   "view_rel_rmse": 1.066
+  }
+ },
+ "parity_gpu_rtx4090": {
+  "leak-door-probe-s2": 3.99e-05,
+  "leak-door-none-world": 1.79e-06,
+  "leak-closed-full-s3": 5.93e-07,
+  "leak-door-A-probe-c2": 2.44e-07,
+  "furnace-planted": 6.12e-08,
+  "baseline-leak-door-A": 2.31e-07,
+  "denoise-spatial-s2": 3.76e-05,
+  "denoise-temporal-s2": 0.00014,
+  "denoise-both-moving-s2": 6.82e-05,
+  "furnace-denoise-planted": 6.07e-08,
+  "world-c1-s2": 3.07e-05,
+  "world-mw-vis-s2": 4.95e-05,
+  "world-sv-s2": 4.5e-05,
+  "world-sv-jit-s2": 3.82e-07,
+  "furnace-world-planted": 6.13e-08,
+  "leak-sv2-ft-cg-s2": 2.27e-06,
+  "leak-closed-sv2-ft-go": 0.0,
+  "leak-sv2-ft-cg-jit-s2": 3.85e-07,
+  "furnace-leak-planted": 6.06e-08
+ },
+ "decisions": {
+  "L": "passes the leak bound (closed room 0.000% to 0.15% at 5 placements and 4 more phase grids) and time (4.94 ms), fails the error bound by 0.001: RMSE 0.112 (0.105 to 0.120) against B0 upper limit 0.111; bias +2.4% against -0.5%. Not a default",
+  "J": "passes the leak bound (0.12% to 0.40%) and the error bound (0.083 against 0.085), fails time: 6.66, 6.38 and 6.58 ms against 6. Not a default; denoise stays off",
+  "J_without_cg": "passes leak (0.41% to 0.71%) and time (5.02, 4.97 ms), fails the error bound: 0.086 (0.081 to 0.092) against 0.085",
+  "kill_line": "not met: the best leak result is 0.40% worst-case, and no candidate loses light (biases +1.4% to +2.6%)",
+  "defaults": "unchanged",
+  "attribution": "sv 2 alone raises B0 RMSE to 0.113 and bias to +2.1% (it drops the dark entries whose skipped start crossed a surface); ft costs about 0.6 to 1.5 ms in the level pass in the hall; cg costs about 1.2 ms in the level pass and 0.4 to 0.7 ms in the screen rays (it runs at every traced hit with no depth-tested probe) and halves J's leak and lowers its RMSE from 0.086 to 0.083",
+  "predictions_missed": "J worst leak 0.40% against a predicted 0.3%; L RMSE above B0's interval; J time above 6 ms; ft cost above the predicted 1 ms in J"
+ },
+ "renders": "H: renders folder cascades3d-leak-2026-11-07: 4K frames, references and error maps of L and J; crops of B0, jit, L, J (round-4 frames for B0 and jit); closed-room and door-room panels at 960 x 540"
+}

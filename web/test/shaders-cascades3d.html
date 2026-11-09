@@ -1,0 +1,98 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>3D radiance cascades: GPU against the CPU reference, and measurement</title>
+<link rel="icon" href="data:,">
+<!-- Run by tests/web/cascades3d.py. Parity (default): each case of
+     evidence/shaders-cascades3d-parity-bounds.json through run3d.mjs (CPU, float64) and gpu3d.mjs.
+     ?mode=measure&scene=NAME|file=URL&plan=JSON&w=&h=[&planted=JSON]: one GPU run, its timing, and the frames,
+     kept in window.__frames for the driver to read in chunks (window.__chunk). -->
+<script type="module">
+import { createHost } from "../raw-gpu.mjs";
+import { buildScene3d, parseScene, bounds, furnaceExact } from "../shaders/cascades3d/scene3d.mjs";
+import { buildBvh, prepare } from "../shaders/cascades3d/bvh.mjs";
+import { planCascades3d } from "../shaders/cascades3d/math3d.mjs";
+import { runCascades3d, noGiBaseline } from "../shaders/cascades3d/run3d.mjs";
+import { createGpuCascades3d } from "../shaders/cascades3d/gpu3d.mjs";
+const q = new URLSearchParams(location.search), num = (k, d) => (q.has(k) ? Number(q.get(k)) : d);
+function compare(gpu, cpu, hit) {
+  let s = 0, m = 0, n = 0, flips = 0;
+  for (let p = 0; p < hit.length; p++) {
+    if (!hit[p] || gpu[4 * p + 3] <= 0) { if (hit[p] !== (gpu[4 * p + 3] > 0 ? 1 : 0)) flips++; continue; }
+    for (let c = 0; c < 3; c++) { const d = gpu[4 * p + c] - cpu[3 * p + c]; s += d * d; m += cpu[3 * p + c]; n++; }
+  }
+  return { rel_rmse: Math.sqrt(s / Math.max(1, n)) / Math.max(1e-30, m / Math.max(1, n)), coverage_flips: flips };
+}
+const b64 = (u8) => { let s = ""; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s); };
+window.__frames = {};
+window.__chunk = (name, i, size) => { const u8 = window.__frames[name]; return b64(u8.subarray(i * size, Math.min(u8.length, (i + 1) * size))); };
+try {
+  const host = await createHost({ timing: true });
+  const gpuErrors = []; host.device.onuncapturederror = (e) => gpuErrors.push(e.error.message);
+  if (q.get("mode") === "debug") {
+    const { probeFlags, entry, cacheOf, depthPass } = await import("../shaders/cascades3d/cascades3d.mjs");
+    const c = (await (await fetch("../../evidence/shaders-cascades3d-parity-bounds.json")).json()).cases.find((x) => x.id === q.get("case"));
+    const sc = buildScene3d(c.scene), S = prepare(sc, buildBvh(sc)), plan = planCascades3d(bounds(sc), c.plan), L = plan.levels;
+    const rc = await createGpuCascades3d(host, sc, S, plan, 40, 24); await rc.run(1); const g = await rc.readParts(); rc.destroy();
+    const ctx = { S, sc, plan, cachePrev: null, depth: depthPass(S, plan) }, out = { depth: 0, flags: [], levels: [] };
+    for (let i = 0; i < ctx.depth.length; i++) out.depth = Math.max(out.depth, Math.abs(ctx.depth[i] - g.depth[i]));
+    const flags = L.map((_, l) => probeFlags(ctx, l));
+    let off = 0; flags.forEach((f, l) => { let bad = 0; const ex = []; for (let i = 0; i < f.length; i++) if (f[i] !== ((g.flags[off + i] & 255) | (((g.flags[off + i] >> 16) & 15) >= 3 && ((g.flags[off + i] >> 16) & 15) > ((g.flags[off + i] >> 20) & 15) ? 256 : 0))) { bad++; if (ex.length < 4) ex.push([i, f[i].toString(2), g.flags[off + i].toString(2)]); } out.flags.push({ bad, ex }); off += f.length; });
+    let next = null;
+    for (let l = L.length - 1; l >= 0; l--) {
+      const cur = new Float64Array(3 * L[l].probes * L[l].texels); let worst = 0, wi = -1;
+      for (let i = 0; i < L[l].probes; i++) for (let k = 0; k < L[l].texels; k++) {
+        const v = entry(ctx, l, i, k, next, flags[l], flags[l + 1]), e = i * L[l].texels + k; cur.set(v, 3 * e);
+        const d = Math.abs(v[0] - g.levels[l][4 * e]); if (d > worst) { worst = d; wi = e; }
+      }
+      out.levels.unshift({ l, worst, at: wi, cpu: Array.from(cur.subarray(3 * wi, 3 * wi + 3)), gpu: Array.from(g.levels[l].subarray(4 * wi, 4 * wi + 3)), texels: L[l].texels });
+      next = cur;
+    }
+    await host.done();
+    window.__result = { out, gpuErrors };
+  } else if (q.get("mode") === "measure") {
+    const t0 = performance.now();
+    const sc = q.get("file") ? parseScene(await (await fetch(q.get("file"))).arrayBuffer(), q.get("file")) : buildScene3d(q.get("scene"));
+    const S = prepare(sc, buildBvh(sc)), bvhMs = performance.now() - t0, W = num("w", 512), H = num("h", 320);
+    const plan = planCascades3d(bounds(sc), JSON.parse(q.get("plan") || "{}"));
+    const planted = q.get("planted") ? JSON.parse(q.get("planted")) : null;
+    const rc = await createGpuCascades3d(host, sc, S, plan, W, H, { staticFlags: num("static", 0) === 1, planted });
+    const res = { scene: sc.name, size: [W, H], triangles: sc.alb.length / 3, bvh: { nodes: S.count, build_ms: bvhMs }, gpu_bytes: rc.bytes,
+      plan: { ...plan, omega: undefined, levels: plan.levels.map((l) => ({ ...l, T1: l.T1 === Infinity ? "inf" : l.T1, T1x: l.T1x === Infinity ? "inf" : l.T1x })) },
+      setup_ms: rc.setupTimes, static_flags: num("static", 0) === 1 };
+    await rc.run(plan.frames);
+    window.__frames.frame = new Uint8Array((await rc.read()).buffer);
+    if (num("pos", 0)) {
+      const G = (await rc.readParts()).G, pos = new Float32Array(4 * W * H), nrm = new Float32Array(4 * W * H);
+      for (let i = 0; i < W * H; i++) { pos.set(G.subarray(12 * i, 12 * i + 4), 4 * i); nrm.set(G.subarray(12 * i + 4, 12 * i + 8), 4 * i); }
+      window.__frames.pos = new Uint8Array(pos.buffer); window.__frames.nrm = new Uint8Array(nrm.buffer);
+    }
+    const frames = num("frames", 50);
+    if (frames > 0) { const t = await rc.time(frames); res.timing = t; res.gbuffer_ms = await rc.gbufferMs(10); }
+    if (num("baseline", 0) > 0) { await rc.baseline(num("baseline", 16)); window.__frames.baseline = new Uint8Array((await rc.read()).buffer); }
+    rc.destroy(); await host.done();
+    window.__result = { ...res, frames: Object.fromEntries(Object.entries(window.__frames).map(([k, v]) => [k, v.length])), adapter: host.info, gpuErrors };
+  } else {
+    const bounds_ = await (await fetch("../../evidence/shaders-cascades3d-parity-bounds.json")).json(), { width: W, height: H } = bounds_.output;
+    const cases = [];
+    for (const c of bounds_.cases) {
+      if (q.get("case") && q.get("case") !== c.id) continue;
+      const sc = buildScene3d(c.scene), S = prepare(sc, buildBvh(sc));
+      const plan = planCascades3d(bounds(sc), c.plan || { stride: 0 }), init = c.cacheInit ? sc.sky : null;
+      const want = c.baseline ? noGiBaseline(sc, S, W, H, c.baseline) : runCascades3d(sc, S, plan, W, H, { cacheInit: init });
+      const rc = await createGpuCascades3d(host, sc, S, plan, W, H, { cacheInit: init });
+      if (c.baseline) await rc.baseline(c.baseline); else await rc.run(plan.frames);
+      const got = await rc.read(); rc.destroy();
+      const row = { id: c.id, ...compare(got, want.radiance, want.hit) };
+      if (c.cacheInit) {
+        const L = furnaceExact(sc.alb[0]), A = new Float64Array(want.radiance.length).fill(L);
+        row.planted = { gpu_vs_closed_form: compare(got, A, want.hit).rel_rmse };
+        let s = 0, n = 0; for (let p = 0; p < want.hit.length; p++) if (want.hit[p]) { s += (want.radiance[3 * p] - L) ** 2; n++; }
+        row.planted.cpu_vs_closed_form = Math.sqrt(s / Math.max(1, n)) / L;
+      }
+      cases.push(row);
+    }
+    await host.done();
+    window.__result = { bounds: bounds_.bounds, cases, adapter: host.info, gpuErrors };
+  }
+} catch (e) { window.__result = { error: String(e && e.stack || e) }; }
+</script>

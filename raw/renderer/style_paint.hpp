@@ -54,5 +54,9 @@ std::array<double, 2> paintLayerWeights(const PaintCanvas& st);
 // multiplier the lines applied, so a later pass can take the ink out (P23's defocus).
 std::vector<float> runPaint(const PaintPlan& plan, const std::vector<float>& scene, const PaintCanvas* canvas);
 std::uint8_t paintEncode8(double v);
+// Paint boil (PROPOSALS P1): a canvas offset in pixels from a held layer's boil seed
+// (raw/scene/held_time.hpp), so the bristle, stroke and canvas noise step to a new place only when
+// the pose changes. Put it in PaintParams::canvasOffset for the offset canvas.
+std::array<double, 2> paintBoilOffset(std::uint32_t seed, double spanPx = 48);
 
 }  // namespace raw::style

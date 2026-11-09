@@ -17,6 +17,7 @@
 #include "raw/tools/pt_cmd.hpp"
 #include "raw/tools/model_scene.hpp"
 #include "raw/tools/noise_gallery.hpp"
+#include "raw/tools/heldtime_cmd.hpp"
 #include "raw/tools/art_cmd.hpp"
 #include "raw/tools/relight_cmd.hpp"
 #include "raw/tools/sdf_cmd.hpp"
@@ -29,6 +30,7 @@
 #include "raw/tools/hw_wave16_cmd.hpp"
 #include "raw/tools/hw_mesh_cmd.hpp"
 #include "raw/tools/style_cmd.hpp"
+#include "raw/tools/action_cmd.hpp"
 #include "raw/rhi/rhi.hpp"
 #include "raw/renderer/raster.hpp"
 #include "raw/renderer/accel.hpp"
@@ -95,6 +97,8 @@ static const char* kUsage =
     "       raw_native_cli threads [flags]  render the Threads module on the GPU backend\n"
     "         (--world 0..14 --frames --width --height --particles --substeps --fps --persistence\n"
     "          --exposure --spacing --levels --out); writes threads.ppm\n"
+    "       raw_native_cli action-dump table|strip|diff|tells|trials ...  frame data, clip markers, tell retiming\n"
+    "         (table <moves.json>; strip <moves.json> <set> <id>; diff <a.txt> <b.txt>)\n"
     "       raw_native_cli bake-room [--out DIR] [--size N] [--spp K] [--paths P]\n"
     "         Source-style radiosity normal maps for a test room, drawn from the lightmaps and by\n"
     "         path tracing; PNG, PFM and JSON\n"
@@ -115,12 +119,14 @@ static const char* kUsage =
     "       raw_native_cli swr-render [--out DIR] [--cpu-only]\n"
     "         raw-native's own rasterizer on its owned scenes, modern and retro modes; PNG and JSON\n"
     "       raw_native_cli pt-error --raster DIR [scene flags] [--spp N] [--bounces B] [--json FILE]\n"
+    "       raw_native_cli gi-reference (--scene-file F | scene flags) [--export F] [--pt DIR --spp N --bounces B --seed S] [--cpu]\n"
     "       raw_native_cli gpu-timestamps\n"
     "       raw_native_cli envmaps [--out DIR] [--size N]\n"
     "       raw_native_cli relight [--out DIR] [--size N]\n"
     "       raw_native_cli colonnade [--out DIR] [--sun-elev DEG] [--turbidity T] [--spp N] ...\n"
     "       raw_native_cli noise-gallery [--out DIR]\n"
     "       raw_native_cli noise-parity\n"
+    "       raw_native_cli held-time [--out DIR] [--raw DIR] [--w N] [--h N] [--frames N] [--fps N] [--threads N] [--palette N] [--quick]\n"
     "       raw_native_cli art strokes [--out DIR] [--threads N] [--frames N] [--no-orbit] [--gpu] [--cost]\n"
     "         the stylised track's checks (P5 world-anchored strokes); JSON and golden PNGs\n"
     "       raw_native_cli clouds [--out DIR] [--width W] [--height H]\n"
@@ -185,6 +191,7 @@ static int infoFlags(int argc, char** argv){
 int main(int argc, char** argv){
     if (int rc = infoFlags(argc, argv); rc >= 0) return rc;
     if (argc >= 2 && std::strcmp(argv[1], "threads") == 0) return threadsCommand(argc - 1, argv + 1);
+    if (argc >= 2 && std::strcmp(argv[1], "action-dump") == 0) return actionDumpCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "colour") == 0) return colourCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "material-gallery") == 0) return galleryCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "bake-room") == 0) return bakeCommand(argc - 1, argv + 1);
@@ -199,12 +206,14 @@ int main(int argc, char** argv){
     if (argc >= 2 && std::strcmp(argv[1], "swr-render") == 0) return swrRenderCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "rt-pathtrace") == 0) return ptCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "pt-error") == 0) return ptErrorCommand(argc - 1, argv + 1);
+    if (argc >= 2 && std::strcmp(argv[1], "gi-reference") == 0) return giReferenceCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "gpu-timestamps") == 0) return timestampsCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "envmaps") == 0) return envmapsCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "relight") == 0) return relightCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "colonnade") == 0) return colonnadeCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "noise-gallery") == 0) return noiseGalleryCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "noise-parity") == 0) return noiseParityCommand(argc - 1, argv + 1);
+    if (argc >= 2 && std::strcmp(argv[1], "held-time") == 0) return heldTimeCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "art") == 0) return artCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "clouds") == 0) return cloudsCommand(argc - 1, argv + 1);
     if (argc >= 2 && std::strcmp(argv[1], "fractal-dither") == 0) return fractalCommand(argc - 1, argv + 1);

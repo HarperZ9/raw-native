@@ -86,6 +86,8 @@ every push.
 | audio | nothing yet: the sound hook | math, core, platform |
 | world | nothing yet; exists only if the author puts a game runtime in scope | math, core, platform, cert, scene, assets, renderer, audio |
 | scripting | nothing yet; same condition | math, core, scene, world |
+| story | the story runtime and its traces | math, core |
+| game | game-agnostic gameplay cores: the action timeline, clip markers, hit volumes, telegraph retiming, the Low Water rules | math, core, scene, story |
 | tools | CLI parameters, runs, receipts, the verifier, the CLI | every layer above |
 | editor | nothing yet; same condition | every layer above, and tools |
 

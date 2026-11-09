@@ -1,0 +1,44 @@
+{
+  "what": "Thin-wall leak of the 3D radiance cascades (web/shaders/cascades3d), fifth round. Round 4 (evidence/cascades3d-world-rtx4090.json) found the shipped default leak-tight only at one grid placement (closed room 0.10%, and 9.9% to 37% at four others) and world-grid jitter with temporal accumulation (jit 8, tf 32), the best raw-hall setting, leaking 14% to 18%; sv cut that to 2.3% to 3.2%, sv with fz to 1.3% to 2.0% at a 21% loss of light in raw-hall. This round looks for a merge that neither leaks nor goes dark",
+  "written": "2026-11-07, after the CPU code of the three switches below was written and the node unit tests passed, and before any diagnosis run, GPU run, measurement or parity run",
+  "switches": {
+    "sv_2": "start visibility of the entry's own ray. Level i's entry for texel k traces only the texel-centre ray over [T_i, T_i+1]; its value comes from that one ray. Round 4's sv 1 weighs the entry by the share of 4 sub-texel rays that cross [0, T_i] unblocked, so an entry whose centre ray passed through a wall still counts with weight 1/4 to 3/4 when some sub-texel rays did not. sv 2 traces the centre ray over [0, T_i] once (static geometry) and gives the entry weight 1 or 0",
+    "ft_1": "a merge (level entries and screen-probe rays) that trusts no neighbour traces its own ray on from the end of its interval to infinity: a hit returns the surface's radiance with the cache, a miss the sky. fz 1 returned no light there (the 21% loss); the old default returns the plain mean of all eight neighbours (the leak). The continuation lies on the merge's own ray, which is unblocked up to the interval's end, so it cannot reach past a wall the ray did not cross",
+    "cg_1": "cache gather: when no level-0 probe passes the depth-moment test, the old chain falls back to the lit-side probes without a visibility test, then to all probes outside geometry, then to all eight. With cg 1 it keeps only lit-side probes outside geometry that an unblocked segment from the surface reaches, and returns no light when none does"
+  },
+  "why_leak_tight": "inferred, not proven: in a closed room, every radiance value reaches a pixel along a chain of unblocked segments (the pixel's ray, the segment to a level-1 neighbour, that neighbour's own ray from 0 under sv 2, its own segments to its neighbours, and so on, and the cache gather's tested probes). A chain of unblocked segments cannot leave a closed room. The tests are rays against the same triangles in f32 (GPU) and f64 (CPU), so grazing rays along a seam can still disagree",
+  "candidates": {
+    "L": "B0 (round-1 shipped setting: h0 0.5, c0 1, r0 2, f 2, fix probe, stride 8, m 6, static flags) plus sv 2, ft 1, cg 1",
+    "J": "jit 8, tf 32 on B0 plus sv 2, ft 1, cg 1",
+    "ablations": "each of L and J without cg, and with sv 1 for sv 2, to attribute the change; reported, not used for decisions"
+  },
+  "metrics": {
+    "leak_closed": "leak-closed-B at 960 x 540, static flags, 20 frames: the frame's mean luminance over the room A view's reference mean (0.0501, pt-leak-closed-A-960-s1), as round 4",
+    "placements": "g0 the shipped placement and go = g1 [-2/3, -4/5, -1/2], g2 [-1/3, -3/5, -3/4], g3 [-8/9, -2/5, -1/4], g4 [-5/9, -1/5, -7/8] m, as round 4",
+    "jit_phases": "for J also each of the 8 phases as its own fixed grid (go equal to the phase offset minus the jitter span, no jit, so the phase's grid exactly), at the shipped placement",
+    "door_room": "leak-door-B at 960 x 540 against 4096 spp: room B (x > 5.02) light ratio and relative error, reported (round 1 B0: 0.53, 1.33; no GI 1.66)",
+    "hall": "raw-hall nave at 1920 x 1080 against the 8-bounce path trace (two 1024 spp seeds): relative RMSE with the 95% 32 x 32 tile bootstrap, bias, wall and floor mottle (tests/web/cascades3d_mottle.py), GPU GI median and 5th to 95th percentile of 50 frames; also 4K for a setting that would become a default",
+    "parity": "GPU f32 against the CPU f64 reference on the existing 15 cases and new cases for sv 2, ft and cg, bound 2e-3 a case (unchanged)"
+  },
+  "predictions": {
+    "cpu_16x10": "L and J at 16 x 10 px on the CPU: closed room under 0.1% at all 5 placements and all 8 phases",
+    "leak": "L and J under 1% at all 5 placements (and J's 8 phases); the worst under 0.3%",
+    "hall_L": "RMSE within B0's interval (at most 0.111); bias between -3% and +3%; ft costs up to 1 ms (long rays only where no neighbour is trusted)",
+    "hall_J": "RMSE at most 0.085 (jit's upper 95% limit), wall mottle within 0.003 of jit's 0.030, GI under 6 ms",
+    "door_room": "light ratio between 0.4 and 1.5 for L and J"
+  },
+  "pass_line": "a candidate passes when the closed room reads under 1% at all 5 placements (and, for J, all 8 phases), its raw-hall RMSE is at most the upper 95% limit of the setting it modifies (B0 0.111 for L, jit 8 with tf 32 0.085 for J), and its 1080p GI median is under 6 ms. GPU parity within 2e-3 on every case",
+  "kill_line": "if the best candidate's worst closed-room placement reads above 1.3% (round 4's best leak-tight-ish jit result, jit with sv and fz, was 1.3% to 2.0%), or every candidate that passes the leak bound loses more than 10% of raw-hall's light (bias below -10%), the approach is a null: no default changes and the nulls are recorded",
+  "decisions": {
+    "default_L": "L becomes the default fix if it passes the pass line (it fixes a leak of the shipped default)",
+    "default_J": "J (jitter and temporal accumulation on) becomes the default only if it passes the pass line and its raw-hall RMSE is below L's (or B0's when L does not pass) by more than L's interval half-width, and a 4K run keeps the order. Otherwise the denoise stays off",
+    "otherwise": "keep the shipped defaults and record the nulls"
+  },
+  "budget": "GPU memory under 6 GB (the GPU is shared with training and another agent; never stop other processes); at most 3 CPU workers at below-normal priority; one GPU run at a time; SwiftShader parity in CI only",
+  "amendment_jnocg": {
+    "written": "2026-11-07, after the L, J, ablation and leak runs and before any hall run of J without cg",
+    "seen": "J passes the leak bound (0.12% to 0.40%) and the error bound (0.083 against 0.085) but reads 6.66, 6.38 and 6.58 ms (bound 6). cg costs 0.4 ms in the screen rays; J without cg leaks 0.41% to 0.71%, still under 1%",
+    "change": "J without cg (jit 8, tf 32, sv 2, ft 1) is measured on raw-hall at 1080p, twice for timing, under the same pass line and default rule as J",
+    "prediction": "RMSE within 0.002 of J's; GI median 5.8 to 6.3 ms, so the time bound stays marginal"
+  }
+}
