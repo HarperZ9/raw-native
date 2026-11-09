@@ -1,0 +1,60 @@
+{
+ "what": "Eighth round of the 3D cascades (web/shaders/cascades3d): the mechanism behind the +1.4% bias and the bright column-flank band on raw-hall, the door-lit room B's lost light, Tollenaar's surface-ray and transmittance ideas, and the 4K cost. Default at the start: H (round 7, evidence/cascades3d-furnace-rtx4090.json: J2 with pi 1, cg 6, sk 1; 1080p RMSE 0.083 (0.078 to 0.088), bias +1.45%, wall mottle 0.031, GI 5.2 ms; CPU furnace under 1e-6 at 63 grid-plan cases; closed room 0.015% to 0.048% at g0 to g4; door room B light ratio 0.69, J2 0.83; 4K 10.6 ms, screen rays 4.9 ms)",
+ "written": "2026-11-08, before any run of this round (GPU, CPU sweep, path trace or render). Only code reading and plan arithmetic (build/diag/planinfo.mjs: raw-hall has 97,812 level-0 probes, 6 levels, mean albedo 0.49) came before it",
+ "known_before": {
+  "bias_history": "raw-hall 1080p bias: B0 (round-1 setting) -0.51%, temporal only -0.09%, jit 8 + tf 32 +0.10%, sv 1 +1.57%, sv 2 alone +2.13%, L (sv 2 ft cg) +2.36%, J +1.42%, J2 +1.33%, H +1.45%; F with fd 2 (the dropped share filled by the merge's own ray traced on) +1.51%",
+  "band_history": "band region (round 7, 42,745 px of the metric's cover): B0 +0.106, temporal +0.113, sv 2 +0.159, jit +0.170, J2 +0.203, H +0.205; the rest of the frame: B0 -0.008, H +0.010",
+  "inference_to_test": "fd 2 replaces the share sv 2 drops with the exact radiance along the merge's own ray and leaves the bias where sv 2 put it. So the kept entries agree with the exact ray on average, the dropped ones were darker, and B0's near-zero bias may be a dark error (entries holding the far side of an occluder) cancelling a bright one elsewhere. This is an inference from one ablation and is tested by D2 and D4 below"
+ },
+ "diagnostics": {
+  "D1_reference_bounces": "raw_native_cli gi-reference on build/gi/hall-nave.bin at 1920 x 1080, 256 spp, seed 7, with 8 and with 64 bounces: the ratio of frame-mean luminances over pixels both hit. The cascades with tf 32 hold 8 to 39 bounces, the reference 8",
+  "D2_exact_rays": "the merges removed: plan levels 1 and c0 4 (one level whose interval is [0, infinity): every level-0 probe traces 96 full rays, the cache's L1 comes from them, and every screen ray runs to the end). Runs: X4 = H with levels 1, c0 4; X4b = the round-1 setting B0 with levels 1, c0 4; X2 = H with levels 1, c0 2. Same 1080p frame metrics as H, plus the band script. On the door room at 960 x 540 as well (X4 door)",
+  "D3_phases": "the grid phases one at a time: H without jit (jit 0, tf 32) at the 8 phase grids of jit 8 (build/diag/phases.json go offsets), and T (the round-1 setting with tf 32) at the same 8 grids. Band, rest and bias per phase",
+  "D4_sv_by_level": "new opt-in switch svl (a bit mask over levels 1 to 7; default all): start visibility applies only to the levels in the mask (others weigh 1). Runs: H with svl {1}, {2}, {3}, {4, 5}, and H with sv 0 (ft and cg kept). CPU float64 statistics on raw-hall (build/diag/svstats.mjs, pi 0, one frame from a uniform cache): per level, the share of entries outside buried probes that sv 2 drops, the share of those whose value is emission only (a back face) or past a wall, and in the merges below, the share of trusted weight dropped and the mean luminance of dropped against kept values",
+  "D5_door_room": "leak-door-B at 960 x 540 (round 7's setup): J2, J2 with pi only, J2 with cg 6 only, H, and X4 door; room B light ratio and error"
+ },
+ "predictions": {
+  "D1": "64 bounces read brighter than 8 by +0.05% to +0.4% (mean albedo 0.49, open hall)",
+  "D2": "X4's bias within 0.6 points of H's (the merges are not the main source) and its band at least +0.10; X4b's bias above B0's by at least 1 point; X2 within 0.5 points of X4",
+  "D3": "the band varies across the 8 phase grids by at least 0.05 (max minus min) for both H and T, and T's band at the default grid lies below the mean of T's 8 phases",
+  "D4": "level 1 (screen probes and level-0 merges) carries at least half of sv 2's bias shift; dropped entries are mostly emission-only back faces (at least 50% at levels 1 and 2)",
+  "D5": "pi accounts for most of the drop from 0.83 to 0.69 (J2 with pi only at or below 0.75); X4 door at or above 0.85"
+ },
+ "interpretation_rules": {
+  "D2": "if X4's bias is within 0.5 points of H's, the bias does not come from the merges (it is in the cache gather, the screen sampling and upsampling, or the reference); if X4's bias is at least 1 point below H's, the merges carry it. The same rule with 0.03 for the band",
+  "D1": "if 64 bounces read more than 0.5% brighter, every hall bias of this round is also reported against a 64-bounce reference (1024 spp, two seeds); decisions keep the 8-bounce reference so rounds stay comparable"
+ },
+ "candidates": "named by amendment, each before its first run, after D1 to D5. A candidate targets a mechanism D1 to D5 found; a fix that only cancels a symptom (a global scale, a clamp) is not admitted",
+ "pass_line": "a candidate passes when (a) the CPU white furnace reads under 1e-6 at the 21 grids of build/diag/furn.mjs with its three plans; (b) the closed room reads under 1% at g0 to g4 and on fixed grids at g0 to g4 and ph4 to ph7, and its worst at g0 to g4 is at most 0.1% (holding H's 0.048%); the CPU closed room 0.000% at 13 grids; (c) raw-hall 1080p RMSE at most 0.088 (round 6's J2 upper 95% limit); (d) wall mottle at most 0.035 (H 0.031, upper interval 0.034); (e) the GI median of each of three 1080p timing runs under 6 ms; (f) GPU parity within 2e-3 on every case, earlier cases unchanged",
+ "targets": {
+  "target_1": "the bias nearer zero than H's +1.45% by at least half (|bias| at most 0.73%) and the band's mean signed error at least 25% below H's +0.205, from a fix of a mechanism D1 to D5 identify",
+  "target_2": "door-lit room B light ratio at least 0.83 (J2's) with the closed room inside (b)",
+  "target_3": "Tollenaar: surface-point rays binned by hit distance, or transmittance-weighted bins against sv 2: built if D1 to D5 point to merges at the start of an interval; reported as a null otherwise",
+  "target_4": "4K GI time below H's 10.6 ms at RMSE no worse than H's 4K 0.094 + 0.005; screen rays first"
+ },
+ "kill_line": {
+  "target_1": "a null if no candidate moves the bias halfway to zero while passing (a) to (f), or if D2 to D4 do not localise the bias to one component (stated as unknown)",
+  "target_2": "a null if no candidate reaches 0.83 inside (b)",
+  "target_4": "a null if the 4K time does not fall by at least 1 ms within the error bound"
+ },
+ "decisions": {
+  "default": "a candidate that passes (a) to (f) and meets target 1 or 2 becomes the default of planCascades3d; among passing candidates the lower RMSE wins, within 0.002 the bias nearer zero. Docs and changelog say so; old tests and parity cases pin their switches and read as before",
+  "otherwise": "keep H and record the nulls"
+ },
+ "budget": "GPU memory under about 6 GB of the RTX 4090 shared with a training job and other agents (12.6 GB in use by them at the start); never stop other processes; wait when memory is near full. At most 3 CPU workers at below-normal priority",
+ "amendments": [
+  {
+   "date": "2026-11-08",
+   "before": "any run of sx (Hsx, B0sx, Hsxm5), of X4 in the closed room, and of the remaining D3 phase runs' reading (queued, none read)",
+   "seen_so_far": "D1: 64 bounces read 0.22% brighter than 8 (prediction met; below the 0.5% rule, so the 8-bounce reference stays). D2: X4 bias +0.04%, RMSE 0.049, mottle 0.009; X2 -0.88%; X4b -0.34% (prediction 'merges not the source' failed: with exact rays the bias is gone). D5: J2 with pi only reads 0.692, J2 with cg 6 only 0.832, H 0.692; X4 door 1.20 (over-lit). The 0.83 to 0.69 drop is pi's alone, and its size (6.6e-5 of luminance) matches J2's closed-room leak at g0 (7.6e-5): J2's extra light in room B was most likely the leak pi closed. D4 GPU: H with sv 0 -2.58%; sv on one level only: level 1 -0.51%, level 2 -3.01%, level 3 -1.96%, levels 4-5 -2.43%. D4 CPU (build/diag/svstats.mjs; a first 3-frame run compared against an exact ray shaded with a cache one bounce newer and is superseded by a 6-frame run with the same cache): the merge's mean signed deviation from the exact own ray traced on: level-0 merges without sv -5.7%, with sv 2 +1.4%; screen probes +3.5% / +5.0%; level-1 merges +1.5% / +2.5%; level-2 -1.6% / -0.1%. Start-to-start segment test (ss) instead: screen -1.4%, level 1 +0.5%, level 0 -5.7%",
+   "text": "New switch sx (CPU f64 and WGSL): screen probes trace every ray to the end (Tollenaar's rays from real surface points, for the screen level), with no level-1 merge and no segment tests (svis skips them under sx). Runs: Hsx = H with sx; B0sx; Hsxm5 = Hsx with m 5; X4 and Hsx in the closed room at g0 to g4 (Hsx also fixed grids g0 to g4, ph4 to ph7); Hsx in the door room. Candidate S = Hsx (and Sm5 = Hsxm5 if Hsx misses only time) under the pass line and decision rule above. Predictions: Hsx bias between -1% and +1%, RMSE at most 0.070, GI median 1.0 to 1.8 ms above H in the same session; door room B ratio 0.85 to 1.25; closed room under 0.1% at g0 to g4. Parity case sx-s2 added before its first run (bound unchanged)"
+  },
+  {
+   "date": "2026-11-08",
+   "before": "the default flip, the GPU parity run, and the repeat 4K runs that decide target 4",
+   "seen_so_far": "Hsx 1080p: RMSE 0.0537 (0.0502 to 0.0573), bias +0.30%, band +0.041, wall mottle 0.011, GI 6.53 ms (misses time only). Sm5 (Hsx with m 5): RMSE 0.0543 (0.0508 to 0.0579), bias +0.31%, band +0.041, wall mottle 0.0126, GI 5.48, 5.58, 5.38 ms (H control 5.08, 5.04 in the same session). Closed room Sm5 0.021%, 0.038%, 0.033%, 0.050%, 0.048% at g0 to g4; fixed grids at most 0.187% (ph7); door room B ratio 0.942, error 0.52. CPU furnace (63 cases) worst 2.2e-16, CPU closed room 0.000% at 13 grids. D3: the band of T over the 8 phase grids runs from 0.093 to 0.238, mean 0.168 (jit 8 + tf 32 read 0.170); round 1's grid read 0.113. H per phase 0.160 to 0.280, mean 0.208 (H 0.205). Band: Hsv0 0.123, X4 0.008, B0sx 0.004",
+   "slip": "Three 4K runs were made before any amendment named them: H with stride 16 (Hs16: RMSE 0.096, GI 6.72 ms), Sm5 with stride 16 (0.073, 6.87 ms) and Sm5 with stride 8 (0.069, 13.8 ms). Target 4 in this file allowed screen-ray cost cuts, but no candidate was named. They stay in the record as exploratory; the decision on target 4 rests on the repeat runs below, made after this entry",
+   "text": "Candidate S5 (Sm5) passes (a) to (e) and meets targets 1 and 2: it becomes the default if parity (f) passes, as plan default sx 1; the measured setting is stride 8, m 5 at 1080p. Target 4 candidate: the screen-probe stride scaled with resolution, stride 16 at 3840 x 2160 (the probe count of stride 8 at 1080p), for S5 and for H; two repeat 4K runs of S5 stride 16 and one of H stride 16 decide it, against H's round-7 4K (0.094, 10.6 ms). Prediction: S5 stride 16 at 4K 6.5 to 7.5 ms, RMSE 0.070 to 0.078"
+  }
+ ]
+}

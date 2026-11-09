@@ -75,13 +75,16 @@ export function jitter(p, k) {
 // screen probes every k pixels with m x m cosine directions, merged into level 1. fix: "none", "probe"
 // or "full" (cascades3d.mjs).
 export function planCascades3d(bounds, { h0 = 0.5, c0 = 1, r0 = 2, f = 2, levels = 0, fix = "probe", ov = 1, stride = 4, m = 8, bounces = 8, cd = 4,
-  tf = 32, tmax = 32, sf = 0, sl = 0, move = null, c1 = 0, mw = "seg", sv = 2, fz = 0, ft = 1, cg = 6, sd = 0, pi = 1, fd = 0, sk = undefined, jit = undefined, jl = 1, go = null } = {}) {
+  tf = 32, tmax = 32, sf = 0, sl = 0, move = null, c1 = 0, mw = "seg", sv = 2, fz = 0, ft = 1, cg = 6, sd = 0, pi = 1, fd = 0, sk = undefined, jit = undefined, jl = 1, go = null, svl = 255, sx = 1 } = {}) {
   // c1 (0 = off): level 1's face side, c0 times a power of two above c0; levels above keep at least
   // c1, so a parent texel splits into (c_i+1 / c_i)^2 children. mw: how screen probes weigh level 1's
   // neighbours ("seg" the segment test, "vis" depth-moment visibility); sv 1 weighs every merge by
   // the start visibility of the neighbour's texels (world.mjs).
   // cg 1 to 6: the cache gather's fallback; sd: blocked entries trace from 0; pi, sk, fd (world.mjs).
   // go: a fixed offset of the whole grid (metres), for testing how results depend on its placement.
+  // svl: a bit mask of the levels whose start visibility sv applies (bit l, level l; the others weigh 1).
+  // sx 1: screen probes trace every ray to the end instead of merging level 1 (the default since the eighth
+  // round, evidence/cascades3d-band-rtx4090.json: the merge's parallax made the +1.4% bias and the bright band).
   // jit K > 0: K phases of a world-grid offset of up to h0 2^jl a frame (world.mjs phasePlan).
   if (c1 && !(c1 > c0 && Number.isInteger(Math.log2(c1 / c0)))) throw new Error(`c1 ${c1}: c0 times a power of two above c0`);
   if (!["seg", "vis"].includes(mw)) throw new Error(`mw ${mw}`);
@@ -115,7 +118,7 @@ export function planCascades3d(bounds, { h0 = 0.5, c0 = 1, r0 = 2, f = 2, levels
   // history) after the warm-up; sf a-trous passes over the screen probes, sl their luminance edge stop.
   const warm = stride ? Math.max(1, bounces - 1) : bounces, frames = warm + (stride ? tf : 0);
   return { lo, levels: L, fix, ov, stride, m, bounces, frames, warm, tf: stride ? tf : 0, tmax, sf: stride ? sf : 0, sl, move,
-    h0, c0, r0, f, cd, dmax: 2 * Math.sqrt(3) * h0, omega: L.map((l) => omegaTable(l.c)), c1, mw, sv, fz, ft, cg: +cg, sd, pi, fd, sk, jit: stride ? jit : 0, jl, hj };
+    h0, c0, r0, f, cd, dmax: 2 * Math.sqrt(3) * h0, omega: L.map((l) => omegaTable(l.c)), c1, mw, sv, fz, ft, cg: +cg, sd, pi, fd, sk, jit: stride ? jit : 0, jl, hj, svl, sx };
 }
 // The 8 neighbours of point p on level l: { idx, w } with trilinear weights (clamped to the grid).
 export function neighbours(plan, l, p) {

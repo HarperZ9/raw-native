@@ -538,3 +538,70 @@ myself: in raw-hall J2 and H look the same at 1:1, and the column-flank band and
 under the arches remain in both. In the closed room at 40x, J2's walls glow evenly and its seams
 shine; under H the walls are dark, and a fainter line along the far wall's seams and sparse
 speckles remain.
+
+## The merge's parallax and exact screen rays (2026-11-08, eighth round)
+
+Two opt-in switches and a new default, CPU (`cascades3d.mjs`, `math3d.mjs`) and GPU (`wgsl3d-passes.mjs`,
+`wgsl3d-world.mjs`, `gpu3d.mjs`), with two new parity cases. Bounds, predictions and diagnostics were
+written before any run: `evidence/cascades3d-band-bounds.json` (two amendments, each logged before the
+runs it governs; the second records three exploratory 4K runs made before an amendment named them).
+Results: `evidence/cascades3d-band-rtx4090.json`.
+
+- `sx: 1` (the new default): a screen probe traces every one of its rays to the end and merges nothing
+  from level 1. The world levels still build the irradiance cache that shades every hit. This is the
+  part of J. Tollenaar's "Split Radiance Cascades" that applies here: rays start from real surface
+  points. Its hashed sparse probes and its deposit of each ray into the level its hit distance falls
+  in were not built.
+- `svl` (a diagnostic): a bit mask of the levels whose start visibility applies.
+
+What made the +1.4% bias and the bright band. Five diagnostics, in the order they ran:
+
+- The reference is not the cause: 64 bounces read 0.22% brighter than the 8 the reference uses.
+- With every ray exact (one level, `c0 4`, so level-0 probes trace 96 full rays and screen rays run to
+  the end), raw-hall reads +0.04% and the band +0.008. Both live in the merges.
+- A CPU census of every merge on raw-hall (`tests/web/cascades3d_svstats.mjs`) compares each merge with the
+  exact radiance along the probe's own ray past its interval. The screen probes' merges read +3.5%
+  without start visibility and +5.0% with `sv 2`; level-0 merges -5.7% without and +1.4% with it.
+- One level of `sv` at a time on the GPU: level 1 alone carries 2.1 of the 4.0 points `sv 2` adds.
+- Grid placement: the band over the 8 jitter grids, one at a time, runs from 0.093 to 0.238 with a
+  mean of 0.168; jitter with temporal accumulation read 0.170. Jitter adds no band of its own. Round
+  1's grid read 0.113 by chance of placement.
+
+The mechanism is the merge's parallax. An interval continues from neighbour probes whose interval
+starts sit up to 1.7 spacings off the probe's own ray, and level 1 starts one spacing out. Whatever
+picks the neighbours sets the sign of the error. The screen probe's segment test and `sv 2` keep
+neighbours whose interval starts in open space, and those see brighter surfaces than the probe's own
+ray would. Without `sv`, a merge keeps entries that start behind an occluder, and it reads dark. The
+band sits where geometry crowds the probes: column flanks and arch soffits.
+
+raw-hall nave at 1920 x 1080 against the 8-bounce path trace (GPU shared with a training job):
+
+| Setting | Relative RMSE | Bias | Band | Wall mottle | GI ms |
+|---|---|---|---|---|---|
+| H, round 7's default | 0.083 (0.078 to 0.088) | +1.45% | +0.205 | 0.031 | 4.49, 5.08, 5.04 |
+| H with `sv 0` | 0.081 | -2.58% | +0.123 | 0.030 | |
+| H with `sx`, m 6 | 0.054 (0.050 to 0.057) | +0.30% | +0.041 | 0.011 | 6.53 |
+| **S5: H with `sx`, m 5 (the new default)** | **0.054 (0.051 to 0.058)** | **+0.31%** | **+0.041** | **0.013** | **5.48, 5.58, 5.38** |
+| X4: every ray exact (diagnostic) | 0.049 | +0.04% | +0.008 | 0.009 | 21.2 |
+| S5 at 3840 x 2160, stride 16 | 0.073 (0.071 to 0.076) | +0.28% | | 0.016 | 7.06, 7.13 |
+| H at 3840 x 2160, stride 8 (round 7) | 0.094 | +1.40% | | 0.025 | 10.6 |
+
+At 4K, stride 16 keeps the screen-probe count of stride 8 at 1080p; S5 at stride 8 reads 0.069 at
+13.8 ms, and H at stride 16 0.096 at 6.7 ms.
+
+Closed room (bound 1%): S5 0.021%, 0.038%, 0.033%, 0.050%, 0.048% at g0 to g4, fixed grids at most
+0.187% (ph7); CPU white furnace under 1e-6 at all 63 grid and plan cases; CPU closed room 0.000% at 13
+grids. Parity: 33 cases, worst 1.4e-4; 30 earlier cases read bitwise as before.
+
+Door-lit room B: round 7's fall from 0.83 to 0.69 came from `pi` alone, and its size matches the
+closed-room leak `pi` removed, so the 0.83 held leaked light. S5 reads 0.94 with error 0.52 (H 0.69,
+0.97). Its room B is noisier to the eye: 25 rays a probe through a 0.8 m door leave coarse blotches
+that temporal accumulation does not clear in 20 frames.
+
+Nulls and misses: the prediction that the bias sat in the gather failed; the bounds file's reading of
+round 7's `fd 2` was wrong (the kept entries are themselves biased bright); a segment test between
+the two interval starts left level-0 merges at -5.7% and was not built; `sx` at m 6 misses 6 ms.
+
+Renders (`H:` renders folder `cascades3d-r8-2026-11-08`), opened at full size and at 1:1: the bright
+column-flank band and the broad soffit glow of H are gone under S5; thin bright edges under the arch
+lips remain in both; the hall's blotches give way to fine grain. Pass `sx: 0` for round 7's default.

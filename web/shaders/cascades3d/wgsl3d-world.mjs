@@ -34,7 +34,8 @@ export const START = PARAMS + CORE + /* wgsl */ `
 @group(0) @binding(2) var<storage, read_write> sv: array<f32>;
 @compute @workgroup_size(256) fn main(@builtin(global_invocation_id) gid: vec3u) {
   ${ID}
-  let l = P.level; let tex = P.ofs[l].z; let q = id / tex; let k = id % tex; let c = u32(P.geo[l].y); let T0 = P.geo[l].z;
+  let l = P.level & 0xffffu; let tex = P.ofs[l].z; let q = id / tex; let k = id % tex; let c = u32(P.geo[l].y); let T0 = P.geo[l].z;
+  if ((P.level >> 16u) != 0u) { sv[P.ofs[l].w + id] = 1.0; return; } // svl: a level outside the mask weighs 1
   let p = probePos(l, q); var n = 0.0;
   if (P.wo.y == 2u) { sv[P.ofs[l].w + id] = select(1.0, 0.0, T0 > 0.0 && occluded(p, texelDir(k, c), T0)); return; } // sv 2: the entry's own ray
   for (var r = 0u; r < 4u; r++) { if (T0 <= 0.0 || !occluded(p, subTexelDir(k, c, r & 1u, r >> 1u), T0)) { n += 1.0; } }
