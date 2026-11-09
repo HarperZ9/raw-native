@@ -1,15 +1,13 @@
 // Action-timeline trace replay: the inputs of a recorded trace through the C++ Timeline, written
 // with the recorder's rules (tools/action/record_timeline.mjs).
 #include "raw/game/action/trace.hpp"
+#include "trace_detail.hpp"
 #include <map>
 #include <sstream>
 #include <stdexcept>
 
 namespace raw::game::action {
-namespace {
-
-using raw::story::dump_json;
-using raw::story::parse_json;
+namespace trace_detail {
 
 double n_of(const Json& o, const char* k) {
     auto* p = o.get(k);
@@ -50,6 +48,12 @@ Json state_of(const Timeline& tl, const Actor& F) {
         r.add(num(v));
     return r;
 }
+
+}  // namespace trace_detail
+namespace {
+using namespace trace_detail;
+using raw::story::dump_json;
+using raw::story::parse_json;
 
 struct Script { Json begin; std::map<int, std::vector<Json>> ins, hits; int end = 0; };
 

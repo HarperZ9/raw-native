@@ -19,6 +19,7 @@ MarkerClip clip_of(const std::string& key, const Json& j) {
     const Json& mk = *j.get("markers");
     c.active = int_of(mk, "active"); c.recovery = int_of(mk, "recovery"); c.end = int_of(mk, "end");
     if (auto* t = mk.get("tell")) { c.has_tell = true; c.tell_on = (int)t->a[0].n; c.tell_off = (int)t->a[1].n; }
+    if (auto* sm = j.get("smear"); sm && sm->k == Json::Arr && sm->a.size() >= 2) { c.smear_from = (int)sm->a[0].n; c.smear_to = (int)sm->a[1].n; }
     for (const Json& h : j.get("hits")->a) {
         HitMarker m; m.on = int_of(h, "on"); m.off = int_of(h, "off");
         pair_of(h.get("arc"), m.arc); pair_of(h.get("r"), m.r); pair_of(h.get("y"), m.y);
@@ -66,6 +67,8 @@ std::vector<std::string> check_markers(const MarkerClip& c, const Move& m) {
     const Section* tell = m.find(Sec::Tell);
     diff(out, c.key, "tell", c.has_tell ? 1 : 0, tell ? 1 : 0);
     if (c.has_tell && tell) { diff(out, c.key, "tell.on", c.tell_on, tell->from); diff(out, c.key, "tell.off", c.tell_off, tell->to); }
+    diff(out, c.key, "smear.from", c.smear_from, m.smear_from);
+    diff(out, c.key, "smear.to", c.smear_to, m.smear_to);
     std::vector<const Section*> hits;
     for (const Section& s : m.sections) if (s.kind == Sec::Hit) hits.push_back(&s);
     diff(out, c.key, "hits", (int)c.hits.size(), (int)hits.size());

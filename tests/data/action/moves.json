@@ -1484,7 +1484,7 @@
    }
   },
   "warden.hook": {
-   "startup": 30,
+   "startup": 34,
    "active": 6,
    "recovery": 20,
    "stamina": 2,
@@ -1507,12 +1507,12 @@
    "tell": {
     "at": [
      4,
-     29
+     33
     ],
     "kind": "throw"
    },
    "track": 10,
-   "trackUntil": 24,
+   "trackUntil": 28,
    "hitstop": 8,
    "shake": 0.35
   },
@@ -2362,7 +2362,7 @@
    "shake": 0.25
   },
   "captain.hook": {
-   "startup": 28,
+   "startup": 34,
    "active": 6,
    "recovery": 30,
    "stamina": 2,
@@ -2385,12 +2385,12 @@
    "tell": {
     "at": [
      4,
-     27
+     33
     ],
     "kind": "throw"
    },
    "track": 9,
-   "trackUntil": 22,
+   "trackUntil": 28,
    "hitstop": 7,
    "shake": 0.3
   },

@@ -5,7 +5,8 @@
 //
 // One clip a move, at 60 Hz: the move's phase markers (active: its first active frame, recovery:
 // its first recovery frame, end: its free frame), its tell window and every hit window [on, off]
-// (inclusive, as the JS `at`) and the tell's kind, with the hit's ring (arc in degrees, radii r0..r1, height band).
+// (inclusive, as the JS `at`) and the tell's kind, with the hit's ring (arc in degrees, radii r0..r1, height band),
+// and the authored smear frames where the move has a swing travel (`sweep`).
 // Sets: base and tool/<id>/<lamb|slow|foe> as dump_frames.mjs names them (the moves.json expansion),
 // and inner/<flaw> for the inner fights' moves (flaws.mjs specials, through defineMoves), which carry
 // the T9 fields (parryable, blockable, signature). Output keys are sorted; the file is deterministic.
@@ -29,6 +30,9 @@ const clip = (m) => ({
   hits: m.hits.map((h) => ({ on: h.at[0], off: h.at[1], arc: h.arc, r: h.r, y: h.y })),
   parryable: m.parryable !== false, blockable: m.blockable !== false, signature: !!m.signature,
   ...(m.tell ? { tellKind: m.tell.kind || "" } : {}),
+  // the art's long swing travel, [from, startup) in the JS (sim/moves.mjs `sweep`): the authored smear frames,
+  // written inclusive [from, to] like the other windows (2026-11-09, G6)
+  ...(m.sweep ? { smear: [m.sweep[0], m.sweep[1] - 1] } : {}),
 });
 
 const clips = {};

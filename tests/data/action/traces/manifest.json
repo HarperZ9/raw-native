@@ -1,8 +1,8 @@
 {
  "01-w.boathook-captain.jsonl": {
-  "sha256": "a731c75a8783da47658e9fdee152b2dc3ba96d8b4fd66d84d4851b21c7a0ba3d",
-  "lines": 385,
-  "table": "4f99aefa3612"
+  "sha256": "ea7a422b6a689b7478eac6f9d68852dcd7bf30a4b381e056e9f2ce30646f7ed1",
+  "lines": 379,
+  "table": "b817fbee67ba"
  },
  "02-w.case-holder.jsonl": {
   "sha256": "11c7938c6564224b39ae389a41a5cb8394b9cb3ad753e3b5db718a556604affb",
@@ -50,9 +50,9 @@
   "table": "e0143593f56d"
  },
  "11-w.crowbar-captain.jsonl": {
-  "sha256": "1a5e55076e05b59bd090a30fe210146f0443a3b311815fd601bd3365995bbddf",
+  "sha256": "04ca08f0a89e7a246f4e0c7f508ab0cac9aab4bea846739e5d00b751dcea23f3",
   "lines": 384,
-  "table": "8dd6ee6ad748"
+  "table": "19a98bb0ca0e"
  },
  "12-w.hammer-holder.jsonl": {
   "sha256": "727c5746663d28fddfb41aef5b0c6bbd2eec4f410f92ea0f7b87634e8f3e54f1",
@@ -100,9 +100,9 @@
   "table": "6f6ce23dfb06"
  },
  "21-w.hands-captain.jsonl": {
-  "sha256": "f4a91421ce4295b2e5b1596387e0b51129af237e6cf35f4218ca0b4e2febbc24",
+  "sha256": "2b00d2bff3086076080680acb2c470ba22878f274619bee904684324227c6568",
   "lines": 385,
-  "table": "26247bf37011"
+  "table": "d3832331ce4d"
  },
  "22-w.knife-holder.jsonl": {
   "sha256": "47a89958dcd58f7735f7991604a79fb857081acd0831c4ba55c60b53f1af5f12",
@@ -150,9 +150,9 @@
   "table": "54d22e1dcf68"
  },
  "31-w.pole-captain.jsonl": {
-  "sha256": "01243d4a6fe7a3673468cc0c7925dac36456078b7ea492e724c85c247a27bc09",
+  "sha256": "dc6152f9e8b63fc332eeb3a76e1e822a60155d817f55c986b2c9b33abc050960",
   "lines": 308,
-  "table": "f9dfaa9c5e57"
+  "table": "871fd0b0e168"
  },
  "32-w.stick-holder.jsonl": {
   "sha256": "53093b5465fab45cbd6b3f96922b896dbd0d9596dff210fe2bc8704db1dda5ed",

@@ -50,8 +50,15 @@ struct ActionClasses {
     static uint64_t all() { return ~uint64_t(0); }
 };
 
+// A hit's geometry (lw-moves `hits`): live on frames [on, off], an arc in degrees from facing, radii r0..r1 and
+// a height band. raw/game/action/contact.hpp turns it into a capsule on the swing.
+struct Ring { int on = 0, off = -1; double arc[2]{0, 0}, r[2]{0, 0}, y[2]{0, 2.2}; };
+
 struct Move {
     std::string id, kind, anim, tell_kind;
+    std::vector<Ring> rings;                         // one a hit section, in the record's order
+    double shake = 0;                                // the camera's answer to the blow (presentation)
+    int smear_from = 0, smear_to = -1;               // authored smear frames, inclusive (lw-moves `sweep` [from, startup))
     int startup = 0, active = 0, recovery = 0, total = 0;
     double stamina = 0, dmg = 0, poise = 0, hitstop = 0, composure = 0;
     bool parryable = true, blockable = true, knockdown = false, pierce = false, item = false;
