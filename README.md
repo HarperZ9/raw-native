@@ -5,6 +5,11 @@
 
 # raw-native
 
+> **Moved.** The renderer now lives in [HarperZ9/superframe](https://github.com/HarperZ9/superframe)
+> under [`native/`](https://github.com/HarperZ9/superframe/tree/main/native), as part of The Playground.
+> New work, issues and pull requests go there. This repository keeps the history and the releases
+> up to v0.8.0.
+
 A C++23 renderer that runs a fast real-time effect beside a slower reference
 version of it and tells you how far apart they are. It runs on Windows, Linux
 and WebAssembly, with optional D3D12 and WebGPU builds.
