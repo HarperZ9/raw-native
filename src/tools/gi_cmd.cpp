@@ -3,10 +3,11 @@
 // evidence/p6-radiance-cascades-bounds.json).
 //
 //   raw_native_cli gi [scene flags] --out DIR [--frames F] [--warmup W] [--stride S] [--gpu]
-//                     [--no-cpu] [--time N] [--threads T]
+//                     [--no-cpu] [--time N] [--pt SPP] [--threads T]
 //
 // DIR gets frame_hdr.pfm (model 3, from the CPU reference, or from the GPU with --no-cpu) and
-// mask.pgm, which pt-error reads, indirect.pfm, frame.ppm and gi.json. RAW_NATIVE_GI_CONTROL=nomerge
+// mask.pgm, which pt-error reads, indirect.pfm, frame.ppm and gi.json; with --pt the path tracer's
+// frame of the same scene as pt_hdr.pfm. RAW_NATIVE_GI_CONTROL=nomerge
 // runs the GPU's test-only control merge. Exit 0 when the run finished, 2 on bad input, 4 when
 // --gpu finds no adapter.
 #include "raw/tools/gi_cmd.hpp"
@@ -16,6 +17,7 @@
 #include "raw/renderer/raster.hpp"
 #include "raw/renderer/ray_ao.hpp"
 #include "raw/renderer/render.hpp"
+#include "raw/renderer/rt_pt_convert.hpp"
 #include "raw/core/image.hpp"
 #include "raw/core/sha256.hpp"
 #include "raw/tools/cli_params.hpp"
@@ -31,7 +33,7 @@
 #include <vector>
 namespace raw {
 namespace {
-struct Opts { gi::Params p; bool gpu{false}, cpu{true}; int time{0}; };
+struct Opts { gi::Params p; bool gpu{false}, cpu{true}; int time{0}, pt{0}; };
 bool parseOpts(int argc, char** argv, Opts& o, std::vector<const char*>& rest){
     rest = {argv[0]};
     for (int i = 1; i < argc; ++i){
@@ -41,6 +43,7 @@ bool parseOpts(int argc, char** argv, Opts& o, std::vector<const char*>& rest){
         else if (a == "--warmup" && more) o.p.warmup = std::atoi(argv[++i]);
         else if (a == "--stride" && more) o.p.stride = std::atoi(argv[++i]);
         else if (a == "--time" && more) o.time = std::atoi(argv[++i]);
+        else if (a == "--pt" && more) o.pt = std::atoi(argv[++i]);
         else if (a == "--gpu") o.gpu = true;
         else if (a == "--no-cpu") o.cpu = false;
         else rest.push_back(argv[i]);
@@ -110,6 +113,17 @@ void writeOutputs(const Frame& f, const CliParams& p, const std::vector<Vec3>& i
     std::ofstream(p.out + "/gi.json", std::ios::binary) << json;
     std::printf("%s", json.c_str());
 }
+// With --pt N: the path tracer's frame of the same scene (8 bounces, N samples a pixel), for review images.
+void writePathTraced(const Frame& f, const CliParams& p, int spp){
+    const rt::PtScene pts = rt::ptFromScene(f.s, 0.2f, true);
+    rt::PathTraceDesc d;
+    d.width = p.width; d.height = p.height; d.spp = std::uint32_t(spp); d.maxBounces = 8; d.seed = 1;
+    d.camera = d.previous = rt::ptCameraOf(f.s.camera); d.jitter = false;
+    const rt::PathTraceOutput o = rt::pathTraceCpu(pts, d, p.threads);
+    Buffer<Vec3> img; img.resize(p.width, p.height);
+    for (std::size_t i = 0; i < img.px.size() && 3 * i + 2 < o.radiance.size(); ++i) img.px[i] = {o.radiance[3 * i], o.radiance[3 * i + 1], o.radiance[3 * i + 2]};
+    writePFM(img, p.out + "/pt_hdr.pfm");
+}
 }  // namespace
 
 int giCommand(int argc, char** argv){
@@ -119,7 +133,7 @@ int giCommand(int argc, char** argv){
     std::string err;
     const auto cp = parseArgs(int(rest.size()), rest.data(), err);
     if (!ok || !cp || cp->out.empty()){
-        std::printf("usage: raw_native_cli gi [scene flags] --out DIR [--frames F] [--warmup W] [--stride S] [--gpu] [--no-cpu] [--time N]%s%s\n",
+        std::printf("usage: raw_native_cli gi [scene flags] --out DIR [--frames F] [--warmup W] [--stride S] [--gpu] [--no-cpu] [--time N] [--pt SPP]%s%s\n",
                     err.empty() ? "" : "\n  ", err.c_str());
         return 2;
     }
@@ -149,6 +163,7 @@ int giCommand(int argc, char** argv){
         json += gpuJson(f, r, o.cpu ? &cpu : nullptr, control);
         if (!o.cpu) indirect = r.indirect;
     }
+    if (o.pt > 0) writePathTraced(f, p, o.pt);
     writeOutputs(f, p, indirect, json);
     return 0;
 }

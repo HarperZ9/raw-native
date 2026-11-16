@@ -1,0 +1,62 @@
+name: p6-gi
+# ROADMAP proposal P6 (evidence/p6-radiance-cascades-bounds.json): split radiance cascades on the GPU
+# against the CPU reference on WARP and lavapipe, the false control, and the convex-sphere zero check.
+on:
+  pull_request:
+    paths:
+      - 'src/renderer/gi_*'
+      - 'raw/renderer/gi_*'
+      - 'src/renderer/gpu/gi_gpu.cpp'
+      - 'src/renderer/gpu/shaders/gi*.wgsl'
+      - 'src/tools/gi_cmd.cpp'
+      - 'src/tools/leak_room.cpp'
+      - 'src/tools/flooded_arcade.cpp'
+      - 'src/tools/block_mesh.hpp'
+      - 'tests/gpu/p6_gi_gate.py'
+      - 'evidence/p6-*'
+      - '.github/workflows/p6-gi.yml'
+permissions:
+  contents: read
+jobs:
+  gi:
+    strategy:
+      fail-fast: false
+      matrix:
+        adapter: [warp, lavapipe]
+    runs-on: ${{ matrix.adapter == 'warp' && 'windows-latest' || 'ubuntu-24.04' }}
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install lavapipe and the Vulkan build tools
+        if: matrix.adapter == 'lavapipe'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends libvulkan-dev glslang-tools mesa-vulkan-drivers libxcb1-dev libwayland-dev wayland-protocols
+      - name: Build the GPU CLI
+        shell: bash
+        run: |
+          if [ "${{ matrix.adapter }}" = warp ]; then
+            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRAW_NATIVE_GPU_D3D12=ON
+            cmake --build build --config Release --target raw_native_cli
+            echo "CLI=build/Release/raw_native_cli.exe" >> "$GITHUB_ENV"; echo "RAW_NATIVE_D3D12_WARP=1" >> "$GITHUB_ENV"; echo "PY=python" >> "$GITHUB_ENV"
+          else
+            cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DRAW_NATIVE_VULKAN_RHI=ON
+            cmake --build build -j 4 --target raw_native_cli_vk
+            echo "CLI=build/raw_native_cli_vk" >> "$GITHUB_ENV"; echo "PY=python3" >> "$GITHUB_ENV"
+          fi
+      - name: g2 g5 g5c b3 the GPU against the CPU reference, 256 x 160, 12 frames
+        shell: bash
+        run: |
+          mkdir -p gi
+          run() { out=$1; shift; $CLI gi --width 256 --height 160 --threads 4 --frames 12 --warmup 4 --gpu --out gi/$out "$@" | grep -A3 '"gpu"'; }
+          run sphere --owned-scene control-sphere
+          run hall --owned-scene raw-hall-nave
+          run leak --owned-scene leak-room
+          run arcade --owned-scene flooded-arcade
+          RAW_NATIVE_GI_CONTROL=nomerge run control --owned-scene leak-room
+      - name: The gate
+        shell: bash
+        run: $PY tests/gpu/p6_gi_gate.py gi --out gi/summary.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with: { name: "p6-gi-${{ matrix.adapter }}", path: "gi/*.json\ngi/*/gi.json\ngi/*/frame.ppm", retention-days: 30 }

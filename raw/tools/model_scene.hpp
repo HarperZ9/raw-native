@@ -14,6 +14,8 @@ Scene sceneFromParams(const CliParams& p, Arena* arena);
 Scene controlSphereScene();
 // The thin-wall leak scene of evidence/p6-radiance-cascades-bounds.json (src/tools/leak_room.cpp).
 Scene leakRoomScene();
+// The block-built showcase of the same file's addendum A (src/tools/flooded_arcade.cpp).
+Scene floodedArcadeScene();
 // raw_native_cli pt-error: the rasterised frame against a path-traced reference (src/tools/pt_error_cmd.cpp).
 int ptErrorCommand(int argc, char** argv);
 // raw_native_cli restir-di: ReSTIR DI stage 1 on a scene with scattered point lights (src/tools/restir_cmd.cpp).
