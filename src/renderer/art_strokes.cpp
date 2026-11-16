@@ -1,28 +1,17 @@
 // P5's orbit run: see raw/renderer/art_strokes.hpp.
 #include "raw/renderer/art_strokes.hpp"
+#include "raw/renderer/art_orbit.hpp"
 #include "raw/core/parallel.hpp"
 #include "raw/renderer/style_image.hpp"
 #include <algorithm>
 #include <cmath>
 namespace raw::art {
 namespace {
-struct Seq {
-    std::vector<View> views;
-    std::vector<Frame> frames;
-    std::vector<std::vector<float>> mv;
-    std::vector<std::vector<std::uint8_t>> valid, ref;
-};
+struct Seq : OrbitSeq { std::vector<std::vector<std::uint8_t>> ref; };
 Seq renderOrbit(const StrokeOrbit& o, double exposure) {
     Seq s;
-    const Lighting L = daylight();
-    for (int t = 0; t < o.frames; ++t) {
-        s.views.push_back(orbitView(t, o.w, o.h, o.step));
-        s.frames.push_back(renderFrame(s.views.back(), L, o.threads));
-        s.ref.push_back(paintReference(s.frames.back().lit, exposure));
-        if (t == 0) { s.mv.emplace_back(std::size_t(o.w) * std::size_t(o.h) * 2, 0.0f); s.valid.emplace_back(); continue; }
-        s.mv.push_back(motionTo(s.frames[std::size_t(t)], s.views[std::size_t(t - 1)]));
-        s.valid.push_back(historyValid(s.frames[std::size_t(t)], s.frames[std::size_t(t - 1)], s.views[std::size_t(t - 1)], s.mv.back()));
-    }
+    static_cast<OrbitSeq&>(s) = renderOrbitSeq(o.w, o.h, o.frames, o.step, daylight(), o.threads);
+    for (const Frame& f : s.frames) s.ref.push_back(paintReference(f.lit, exposure));
     return s;
 }
 // The advected canvas after each frame. Sky pixels get a far distance so their history can hold.
@@ -46,12 +35,7 @@ std::vector<style::PaintCanvas> advectOrbit(const Seq& s, int w, int h) {
     }
     return out;
 }
-std::vector<double> series(const Seq& s, const std::vector<std::vector<std::uint8_t>>& out, int first, int w, int h) {
-    std::vector<double> v;
-    for (std::size_t t = std::size_t(first); t < out.size(); ++t)
-        v.push_back(instability(out[t], out[t - 1], s.ref[t], s.ref[t - 1], s.mv[t], s.valid[t], w, h));
-    return v;
-}
+std::vector<double> series(const Seq& s, const std::vector<std::vector<std::uint8_t>>& out, int first) { return instabilitySeries(s, out, s.ref, first); }
 }  // namespace
 
 std::vector<std::uint8_t> paintReference(const std::vector<float>& lit, double exposure) {
@@ -91,10 +75,10 @@ StrokeOrbitResult runStrokeOrbit(const StrokeOrbit& o, std::uint64_t seed) {
     });
     auto part = [&](int kind) { return std::vector<std::vector<std::uint8_t>>(outs.begin() + kind * F, outs.begin() + (kind + 1) * F); };
     StrokeOrbitResult r;
-    r.world = series(s, part(0), o.first, o.w, o.h);
-    r.advected = series(s, part(1), o.first, o.w, o.h);
-    r.shuffled = series(s, part(2), o.first, o.w, o.h);
-    r.offset = series(s, part(3), o.first, o.w, o.h);
+    r.world = series(s, part(0), o.first);
+    r.advected = series(s, part(1), o.first);
+    r.shuffled = series(s, part(2), o.first);
+    r.offset = series(s, part(3), o.first);
     r.worldVsAdvected = pairedBootstrap(r.world, r.advected, seed);
     r.shuffledVsAdvected = pairedBootstrap(r.shuffled, r.advected, seed);
     r.offsetVsAdvected = pairedBootstrap(r.offset, r.advected, seed);

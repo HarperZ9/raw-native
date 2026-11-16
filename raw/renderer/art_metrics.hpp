@@ -10,6 +10,8 @@ namespace raw::art {
 std::uint8_t encode8(double v);
 // RGBA f32 display-linear rows to 8-bit codes (alpha written as 255).
 std::vector<std::uint8_t> codes8(const std::vector<float>& rgba);
+// RGBA f32 display-encoded rows (already sRGB) to codes: clamp, round half up (alpha 255).
+std::vector<std::uint8_t> codes8Display(const std::vector<float>& rgba);
 
 // Temporal instability of one frame: the mean over pixels with valid history and over the three
 // colour channels of |(out_t - warp(out_{t-1})) - (ref_t - warp(ref_{t-1}))|, with values in [0, 1]

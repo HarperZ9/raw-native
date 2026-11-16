@@ -42,5 +42,6 @@ std::string statsJson(const CodeStats& s);
 bool writeText(const std::string& path, const std::string& text);
 
 int strokes(const Options& o);
+int enbcrt(const Options& o);
 
 }  // namespace raw::art_cmd

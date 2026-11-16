@@ -17,6 +17,12 @@ std::vector<std::uint8_t> codes8(const std::vector<float>& rgba) {
     return o;
 }
 
+std::vector<std::uint8_t> codes8Display(const std::vector<float>& rgba) {
+    std::vector<std::uint8_t> o(rgba.size());
+    for (std::size_t i = 0; i < rgba.size(); ++i) o[i] = (i & 3) == 3 ? 255 : std::uint8_t(std::floor(std::clamp(double(rgba[i]), 0.0, 1.0) * 255 + 0.5));
+    return o;
+}
+
 double instability(const std::vector<std::uint8_t>& out, const std::vector<std::uint8_t>& outPrev,
                    const std::vector<std::uint8_t>& ref, const std::vector<std::uint8_t>& refPrev,
                    const std::vector<float>& mv, const std::vector<std::uint8_t>& valid, int w, int h) {
