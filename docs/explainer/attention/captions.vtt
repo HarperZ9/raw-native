@@ -2,7 +2,7 @@ WEBVTT
 
 1
 00:00:02.500 --> 00:00:08.000
-How attention moves information between tokens.
+A pattern repeats. Watch a small model finish it.
 
 2
 00:00:08.000 --> 00:00:15.000
@@ -34,7 +34,7 @@ Then layer 1 looks for the earlier copy of the current character.
 
 9
 00:00:51.000 --> 00:00:55.000
-It attends to the character that came after that copy, and that is the prediction.
+It looks at the character that came after that copy. That character is the prediction.
 
 10
 00:00:55.000 --> 00:01:01.000
@@ -46,4 +46,4 @@ Two steps: copy the previous character forward, then match it to find what came 
 
 12
 00:01:07.000 --> 00:01:13.000
-Every number here was read from the model's output file while the film was drawn.
+The numbers come from data.json, in the same folder as this film.
