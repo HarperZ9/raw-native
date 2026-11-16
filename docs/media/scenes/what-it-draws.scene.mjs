@@ -36,12 +36,13 @@ export default {
       "Light brighter than the screen can show goes through a tone mapper: clip, AgX, or ACES 2.0.",
       `The GPU matches its C++ reference within ${gpuCodes} step in 255.`,
       `And the C++ version of ACES 2.0 matches OpenColorIO within a colour difference of ${de.toFixed(4)}.`,
-      "Every number here comes from the files in this release.",
     ];
     const tl = sayTimeline(lines, { timing });
-    this.duration = tl.duration;
+    // The file list holds after the last line; no narration line names it.
+    const filesAt = tl.end(6) + 0.8;
+    this.duration = Math.max(tl.duration, filesAt + 4.5);
     this.captions = () => tl.vtt();
-    this.chapters = [{ t: 0, title: "Strokes" }, { t: tl.at(3), title: "Paint and clips" }, { t: tl.at(4), title: "Colour" }, { t: tl.at(7), title: "The files" }];
+    this.chapters = [{ t: 0, title: "Strokes" }, { t: tl.at(3), title: "Paint and clips" }, { t: tl.at(4), title: "Colour" }, { t: filesAt, title: "The files" }];
     const atlas = await ctx.json("atlas.json");
     const T = (s, size, x, y, anchor = "center") => text(s, { atlas, size, x, y, anchor }).shape;
     // A 16 x 16 checker for the image fill, registered with the renderer when there is one.
@@ -49,7 +50,7 @@ export default {
     for (let j = 0; j < 16; j++) for (let i = 0; i < 16; i++) img.set((i + j) % 2 ? [0x1b, 0x2a, 0x4a, 255] : [0xe8, 0xa0, 0x6a, 255], 4 * (j * 16 + i));
     if (ctx.motion && ctx.motion.image) ctx.motion.image("checker", { width: 16, height: 16, data: img });
     const A = {
-      tl, lines, atlas, edgeMean, gpuCodes, de, n: Object.keys(cases).length,
+      tl, lines, filesAt, dur: this.duration, atlas, edgeMean, gpuCodes, de, n: Object.keys(cases).length,
       zig: parsePath("M300 760 L560 330 L820 760 L1080 330 L1340 760 L1600 330", { tolerance: 0.2 }),
       ring: circle(960, 560, 300, 160),
       star: parsePath("M960 250 L1050 470 L1290 480 L1100 630 L1170 860 L960 730 L750 860 L820 630 L630 480 L870 470 Z"),
@@ -66,7 +67,7 @@ export default {
     return A;
   },
   frame(t, ctx) {
-    const A = ctx.assets, tl = A.tl, items = [];
+    const A = ctx.assets, tl = A.tl, filesAt = A.filesAt, items = [];
     const put = (shape, fill, o, extra = {}) => { if (o > 0) items.push({ shape, fill, opacity: o, screen: true, ...extra }); };
     put(A.L.title, C.ink, window(t, 0.2, tl.at(1) - 0.3, 0.8, 0.6));
     put(A.L.sub, C.ink2, window(t, 0.5, tl.at(1) - 0.3, 0.8, 0.6));
@@ -103,7 +104,7 @@ export default {
     // Colour: the same over-bright lights through three tone mappers. The scene is
     // linear here, so its colours are linear light.
     let colour;
-    const s3 = window(t, tl.at(4), tl.at(7), 0.5, 0.5);
+    const s3 = window(t, tl.at(4), filesAt, 0.5, 0.5);
     if (s3 > 0) {
       const k = Math.min(2, Math.floor(span(t, tl.at(4) + 0.3, tl.at(5) + 2.0) * 3));
       colour = TONES[k][0];
@@ -116,14 +117,14 @@ export default {
         items.push({ shape: rect(320 + i * 20, 640, 20, 90), fill: [e, e, e, 1], screen: true });
       }
       put(A.L.tones[k], lin(C.ink), s3);
-      const nums = window(t, tl.at(5), tl.at(7), 0.5, 0.5);
+      const nums = window(t, tl.at(5), filesAt, 0.5, 0.5);
       put(A.L.codes, lin(C.ok), nums * span(t, tl.at(5), tl.at(5) + 0.6));
       put(A.L.ocio, lin(C.ink2), nums * span(t, tl.at(6), tl.at(6) + 0.6));
     }
 
     // The files.
-    const s4 = window(t, tl.at(7), tl.duration, 0.6, 1.0);
-    A.L.files.forEach((s, k) => put(s, C.ink2, s4 * span(t, tl.at(7) + k * 0.3, tl.at(7) + 0.6 + k * 0.3)));
+    const s4 = window(t, filesAt, A.dur, 0.6, 1.0);
+    A.L.files.forEach((s, k) => put(s, C.ink2, s4 * span(t, filesAt + k * 0.3, filesAt + 0.6 + k * 0.3)));
 
     for (const c of tl.cues) {
       const o = window(t, c.start, c.end, 0.3, 0.3);

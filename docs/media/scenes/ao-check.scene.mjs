@@ -31,8 +31,8 @@ export default {
       `The reference traces ${v("rt")} rays from every pixel. It is slow, and it is the standard to meet.`,
       `The fast method estimates the same thing from the depth buffer, with ${v("ss")} samples a pixel.`,
       `raw-native compares the two over ${fmt(Number(v("pixels")))} pixels. The error is ${rmse.toFixed(3)}, against a tolerance of ${tol.toFixed(2)}.`,
-      `So the certificate says ${verdict}: on this scene, the fast method is not close enough.`,
-      "The certificate is a file. Anyone can run the render again and check the same numbers.",
+      `So the certificate says ${verdict}. On this scene, the fast method misses by ${(rmse - tol).toFixed(3)}.`,
+      "The certificate is saved as a file. Run the render yourself and hold your numbers up against it.",
     ];
     if (verdict !== "refuted") lines[5] = `So the certificate says ${verdict}: on this scene, the fast method is close enough.`;
     const tl = sayTimeline(lines, { timing });
