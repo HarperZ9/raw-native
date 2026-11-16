@@ -89,7 +89,7 @@ function blinks(t, base) {
 // the medium frame so the gestures show. A cut lands in the middle of the pause before a line,
 // never inside a word (PROGRESS.md, step 19). Tallow's intro stays close throughout: his
 // gestures already fit his close frame.
-export const CLOSE_LINES = { tallow: null, pylon: [0, 6, 7], rerun: [0, 5, 6] };
+export const CLOSE_LINES = { tallow: null, pylon: [0, 9, 10], rerun: [0, 1, 14, 15] };
 export function introFrame(guide, t, M) {
   const lines = CLOSE_LINES[guide];
   if (!lines) return "close";
