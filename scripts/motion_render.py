@@ -97,6 +97,8 @@ class Sink:
         return ""
 
     def chunk(self, seq: int, data: bytes) -> str:
+        if seq == self.seq - 1:
+            return ""  # Night School local patch: the page resent a chunk after a dropped connection; it is already written
         if seq != self.seq:
             return f"expected chunk {self.seq}, got {seq}"
         self.file.write(data)
